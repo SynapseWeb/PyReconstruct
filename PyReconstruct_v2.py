@@ -622,7 +622,7 @@ class Field(QWidget):
                 return
             contours.append([])
             for point in trace.points:
-                p = self.fieldPointToPixmap(point)
+                p = round(point[0] / self.mag), round(point[1] / self.mag)
                 contours[-1].append(p)
         grid = Grid()
         for contour in contours:
@@ -637,7 +637,7 @@ class Field(QWidget):
             new_trace = Trace(name)
             new_trace.color = color
             for point in contour:
-                field_point = self.pixmapPointToField(point)
+                field_point = point[0] * self.mag, point[1] * self.mag
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)

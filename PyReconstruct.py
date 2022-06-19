@@ -86,6 +86,7 @@ class MainWindow(QMainWindow):
         self.openSeries(series_name + ".ser")
     
     def openSeries(self, series=None):
+        """Open an existing series"""
         if series: # if series is provided (only the case if opening from new)
             with open(series, "r") as series_file:
                 self.series_data = json.load(series_file)
@@ -520,6 +521,7 @@ class Field(QWidget):
                 self.update()
     
     def deselectAllTraces(self):
+        """Deselect all traces (Ctrl+D)"""
         for trace in self.selected_traces:
             self.drawTrace(trace)
         self.selected_traces = []
@@ -601,6 +603,7 @@ class Field(QWidget):
         self.update()
     
     def mergeSelectedTraces(self):
+        """Merge all selected traces"""
         if len(self.selected_traces) <= 1:
             print("Cannot merge one or less traces.")
             return

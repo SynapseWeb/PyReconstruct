@@ -495,7 +495,7 @@ class Field(QWidget):
             rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
             new_trace.add(rtform_point)
         self.traces.append(new_trace)
-        self.generateView()
+        self.generateView(generate_image=False)
         self.update()
         self.selected_traces.append(new_trace)
         self.drawTrace(new_trace, highlight=True)
@@ -570,8 +570,6 @@ class Field(QWidget):
         point = trace.points[0]
         last_x, last_y = self.point_tform.map(*point)
         last_x, last_y = self.fieldPointToPixmap((last_x, last_y))
-        if highlight:
-            painter.drawPoint(last_x, last_y)
         if 0 < last_x < self.pixmap_size[0] and 0 < last_y < self.pixmap_size[1]:
             within_field = True
         # connect points
@@ -599,7 +597,7 @@ class Field(QWidget):
         for trace in self.selected_traces:
             self.traces.remove(trace)
         self.selected_traces = []
-        self.generateView()
+        self.generateView(generate_image=False)
         self.update()
     
     def mergeSelectedTraces(self):
@@ -684,51 +682,57 @@ class Field(QWidget):
         tform_notrans = QTransform(*tform_notrans)
         return tform_notrans
     
-    def generateView(self):
+    def generateView(self, generate_image=True):
         """Generate the view seen by the user in the main window"""
         # get dimensions of field window and pixmap
         window_x, window_y, window_w, window_h = tuple(self.current_window)
         pixmap_w, pixmap_h = tuple(self.pixmap_size)
+
+        if generate_image:
+            # scaling: ratio of actual image dimensions to main window dimensions
+            self.x_scaling = pixmap_w / (window_w / self.mag)
+            self.y_scaling = pixmap_h / (window_h / self.mag)
+            if abs(self.x_scaling - self.y_scaling) > 1e-5: # scaling should be the same for x and y
+                print("ERROR: X and Y scaling are not equal")
+
+            # create empty window
+            self.field_pixmap = QPixmap(pixmap_w, pixmap_h)
+            self.field_pixmap.fill(QColor(0, 0, 0))
+
+            # get the coordinates to crop the image pixmap
+            crop_left = (window_x - self.image_vector[0]) / self.mag
+            left_empty = -crop_left if crop_left < 0 else 0
+            crop_left = 0 if crop_left < 0 else crop_left
+
+            crop_top = (window_y - self.image_vector[1] + window_h) / self.mag
+            image_height = self.image_pixmap.size().height()
+            top_empty = (crop_top - image_height) if crop_top > image_height else 0
+            crop_top = image_height if crop_top > image_height else crop_top
+            crop_top = image_height - crop_top
+
+            crop_right = (window_x - self.image_vector[0] + window_w) / self.mag
+            image_width = self.image_pixmap.size().width()
+            crop_right = image_width if crop_right > image_width else crop_right
+
+            crop_bottom = (window_y - self.image_vector[1]) / self.mag
+            crop_bottom = 0 if crop_bottom < 0 else crop_bottom
+            crop_bottom = image_height - crop_bottom
+
+            crop_w = crop_right - crop_left
+            crop_h = crop_bottom - crop_top
+
+            # put the transformed image on the empty window
+            painter = QPainter(self.field_pixmap)
+            painter.drawPixmap(left_empty * self.x_scaling, top_empty * self.y_scaling,
+                                crop_w * self.x_scaling, crop_h * self.y_scaling,
+                                self.image_pixmap,
+                                crop_left, crop_top, crop_w, crop_h)
+            painter.end()
+
+            self.image_layer = self.field_pixmap.copy()
         
-        # scaling: ratio of actual image dimensions to main window dimensions
-        self.x_scaling = pixmap_w / (window_w / self.mag)
-        self.y_scaling = pixmap_h / (window_h / self.mag)
-        if abs(self.x_scaling - self.y_scaling) > 1e-5: # scaling should be the same for x and y
-            print("ERROR: X and Y scaling are not equal")
-
-        # create empty window
-        self.field_pixmap = QPixmap(pixmap_w, pixmap_h)
-        self.field_pixmap.fill(QColor(0, 0, 0))
-
-        # get the coordinates to crop the image pixmap
-        crop_left = (window_x - self.image_vector[0]) / self.mag
-        left_empty = -crop_left if crop_left < 0 else 0
-        crop_left = 0 if crop_left < 0 else crop_left
-
-        crop_top = (window_y - self.image_vector[1] + window_h) / self.mag
-        image_height = self.image_pixmap.size().height()
-        top_empty = (crop_top - image_height) if crop_top > image_height else 0
-        crop_top = image_height if crop_top > image_height else crop_top
-        crop_top = image_height - crop_top
-
-        crop_right = (window_x - self.image_vector[0] + window_w) / self.mag
-        image_width = self.image_pixmap.size().width()
-        crop_right = image_width if crop_right > image_width else crop_right
-
-        crop_bottom = (window_y - self.image_vector[1]) / self.mag
-        crop_bottom = 0 if crop_bottom < 0 else crop_bottom
-        crop_bottom = image_height - crop_bottom
-
-        crop_w = crop_right - crop_left
-        crop_h = crop_bottom - crop_top
-
-        # put the transformed image on the empty window
-        painter = QPainter(self.field_pixmap)
-        painter.drawPixmap(left_empty * self.x_scaling, top_empty * self.y_scaling,
-                            crop_w * self.x_scaling, crop_h * self.y_scaling,
-                            self.image_pixmap,
-                            crop_left, crop_top, crop_w, crop_h)
-        painter.end()
+        else:
+            self.field_pixmap = self.image_layer.copy()
         
         # draw all the traces
         self.traces_within_field = []

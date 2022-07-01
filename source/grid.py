@@ -1,7 +1,4 @@
-from this import d
-
-
-cc_to_vector = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))  
+CC_TO_VECTOR = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))  
 
 class Grid():
 
@@ -9,7 +6,7 @@ class Grid():
         self.contours = []
         self.grid = []
         if points:
-            self.contours.append(points)
+            self.addClosedContour(points)
     
     def addClosedContour(self, points):
         self.contours.append(points)
@@ -97,7 +94,7 @@ class Grid():
                     return
         self.exterior_origin = (x1, y1)
         for c in range(8):
-            v = cc_to_vector[c]
+            v = CC_TO_VECTOR[c]
             x2 = x1 + v[0]
             y2 = y1 + v[1]
             if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
@@ -108,10 +105,10 @@ class Grid():
                     last_c = c
                     break
         while (x1, y1) != self.exterior_origin:
-            last_c = addc8(last_c, 5)
+            last_c = (last_c + 5) % 8
             for i in range(7):
-                c = addc8(last_c, i)
-                v = cc_to_vector[c]
+                c = (last_c + i) % 8
+                v = CC_TO_VECTOR[c]
                 x2 = x1 + v[0]
                 y2 = y1 + v[1]
                 if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
@@ -131,12 +128,12 @@ class Grid():
         polygon_pts = [(x1,y1)]
         for i in range(len(self.exterior_cc)-1):
             c1 = self.exterior_cc[i]
-            v1 = cc_to_vector[c1]
+            v1 = CC_TO_VECTOR[c1]
             x1 += v1[0]
             y1 += v1[1]
             polygon_pts.append((x1,y1))
             c2 = self.exterior_cc[i+1]
-            v2 = cc_to_vector[c2]
+            v2 = CC_TO_VECTOR[c2]
             x2 = x1 + v2[0]
             y2 = y1 + v2[1]
             if polygonArea(polygon_pts + [(x2, y2)]) > 8: # check area of polygon two points ahead
@@ -146,14 +143,14 @@ class Grid():
                 polygon_pts = [pt1, pt2]
         return points
     
-    def deleteContour(self, x, y):
+    def _deleteContour(self, x, y):
         stack = [(x,y)]
         while stack:
             x1, y1 = stack.pop()
             if self.grid[y1][x1]:
                 self.grid[y1][x1] = 0
                 for i in range(8):
-                    v = cc_to_vector[i]
+                    v = CC_TO_VECTOR[i]
                     x2 = x1 + v[0]
                     y2 = y1 + v[1]
                     if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
@@ -171,19 +168,19 @@ class Grid():
             else:
                 num_exteriors += 1
                 x1, y1 = self.exterior_origin
-                self.deleteContour(x1, y1)
+                self._deleteContour(x1, y1)
                 x1 += self.grid_shift[0]
                 y1 += self.grid_shift[1]
                 points = [(x1,y1)]
                 polygon_pts = [(x1,y1)]
                 for i in range(len(self.exterior_cc)-1):
                     c1 = self.exterior_cc[i]
-                    v1 = cc_to_vector[c1]
+                    v1 = CC_TO_VECTOR[c1]
                     x1 += v1[0]
                     y1 += v1[1]
                     polygon_pts.append((x1,y1))
                     c2 = self.exterior_cc[i+1]
-                    v2 = cc_to_vector[c2]
+                    v2 = CC_TO_VECTOR[c2]
                     x2 = x1 + v2[0]
                     y2 = y1 + v2[1]
                     if polygonArea(polygon_pts + [(x2, y2)]) > 8: # check area of polygon two points ahead
@@ -197,10 +194,6 @@ class Grid():
             return None
         else:
             return merged_contours
-
-
-def addc8(n1, n2):
-    return (n1 + n2) % 8
 
 # shoelace formula (source: https://algorithmtutor.com/Computational-Geometry/Area-of-a-polygon-given-a-set-of-points/)
 def polygonArea(vertices):

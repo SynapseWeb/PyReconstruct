@@ -1,0 +1,198 @@
+import os
+import json
+from PySide2.QtWidgets import (QMainWindow, QFileDialog,
+    QInputDialog, QShortcut, QApplication, QColorDialog, QAction)
+from PySide2.QtGui import (QPixmap, QIcon, QKeySequence)
+from mousedockwidget import MouseDockWidget
+
+from fieldwidget import FieldWidget
+from series import Series
+from section import Section
+
+class MainWindow(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("pyReconstruct")
+        self.menubar = self.menuBar()
+        self.filemenu = self.menubar.addMenu("File")
+        self.new_act = self.filemenu.addAction("New")
+        self.new_act.setShortcut("Ctrl+N")
+        self.new_act.triggered.connect(self.newSeries) # create a new series
+        self.new_act
+        self.open_act = self.filemenu.addAction("Open")
+        self.open_act.setShortcut("Ctrl+O")
+        self.open_act.triggered.connect(self.openSeries) # open an existing series
+        self.field = None
+        self.setMouseTracking(True)
+        self.setGeometry(100, 100, 500, 500)
+        self.show()
+    
+    def newSeries(self):
+        """Create a new series from a set of images"""
+        # get images from user
+        image_locations, extensions = QFileDialog.getOpenFileNames(self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
+        if len(image_locations) == 0:
+            return
+        
+        # get calibration (microns per pix) from user
+        mag, confirmed = QInputDialog.getDouble(self, "Section Calibration",
+                                                "What is the calibration for this series?",
+                                                0.00254, minValue=0, decimals=6)
+        if not confirmed:
+            return
+        
+        # change working directory to folder with images
+        first_image = image_locations[0]
+        if "/" in first_image:
+            self.wdir = first_image[:first_image.rfind("/")+1]
+        
+        # get the name of the series from user
+        series_name, confirmed = QInputDialog.getText(self, "Series Name", "What is the name of this series?")
+        if not confirmed:
+            return
+        
+        # create series data file (.ser)
+        series_data = {}
+        series_data["sections"] = []
+        series_data["current_section"] = 0
+        series_data["window"] = [0, 0, 1, 1]
+        for i in range(len(image_locations)):
+            series_data["sections"].append(series_name + "." + str(i))
+        with open(self.wdir + series_name + ".ser", "w") as series_file:
+            series_file.write(json.dumps(series_data, indent=2))
+        
+        # create section files (.#)
+        for i in range(len(image_locations)):
+            section_data = {}
+            section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]
+            section_data["mag"] = mag
+            section_data["tform"] = [1, 0, 0, 0, 1, 0]
+            section_data["traces"] = []
+            with open(self.wdir + series_name + "." + str(i), "w") as section_file:
+                section_file.write(json.dumps(section_data, indent=2))
+    
+        # open series after creating
+        self.openSeries(series_name + ".ser")
+    
+    def openSeries(self, series_fp=None):
+        """Open an existing series"""
+        if series_fp: # if series is provided (only the case if opening from new)
+            self.series = Series(series_fp)
+        else: 
+            # get series file from user
+            series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
+            if series_fp == "":
+                return
+            self.series = Series(series_fp)
+        self.series_fp = series_fp
+
+        # change working directory to series location
+        if "/" in series_fp:
+            self.wdir = series_fp[:series_fp.rfind("/")+1]
+        
+        # create trace field for given section on last known window
+        self.initField()
+    
+    def initField(self):
+        """Create the field for tracing"""
+        # set the main window to be slightly less than the size of the monitor
+        screen = QApplication.primaryScreen()
+        screen_rect = screen.size()
+        x = 50
+        y = 80
+        w = screen_rect.width() - 100
+        h = screen_rect.height() - 160
+        self.setGeometry(x, y, w, h)
+
+        # create status bar (at bottom of window)
+        self.statusbar = self.statusBar()
+
+        # create the field and set as main widget
+        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
+        self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
+        self.setCentralWidget(self.field)
+
+        # create mouse dock
+        self.createMouseDock()
+        mouse_dock_sc = QShortcut(QKeySequence("Ctrl+T"), self)
+        mouse_dock_sc.activated.connect(self.createMouseDock)
+
+        # create shortcuts
+        merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
+        merge_sc.activated.connect(self.field.mergeSelectedTraces)
+        deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
+        deselect_sc.activated.connect(self.field.deselectAllTraces)
+    
+    def createMouseDock(self):
+        self.mouse_dock = MouseDockWidget(self)
+    
+    def toPointer(self):
+        """Set mouse mode to pointer"""
+        self.field.setMouseMode(FieldWidget.POINTER)
+
+    def toPanzoom(self):
+        """Set mouse mode to panzoom"""
+        self.field.setMouseMode(FieldWidget.PANZOOM)
+
+    def toPencil(self):
+        """Set mouse mode to pencil"""
+        self.field.setMouseMode(FieldWidget.PENCIL)
+
+    def setPencilColor(self):
+        """Change the field pencil color"""
+        new_color = QColorDialog.getColor()
+        self.field.setPencilColor(new_color)
+
+    def setPencilName(self):
+        """Change the field pencil name"""
+        new_name, confirmed = QInputDialog.getText(self, "Pencil Name", "Enter the new pencil name:")
+        if confirmed and new_name != "":
+            self.field.setPencilName(new_name)
+    
+    def keyPressEvent(self, event):
+        # do not respond to keyboard if field is not created
+        if not self.field:
+            return
+        # if PgUp is pressed
+        elif event.key() == 16777238 and self.series.current_section < len(self.series.sections)-1:
+            self.changeSection(self.series.current_section + 1)
+        # if PgDn is pressed
+        elif event.key() == 16777239 and self.series.current_section > 0:
+            self.changeSection(self.series.current_section - 1)
+        # if Del is pressed
+        elif event.key() == 16777223:
+            self.field.deleteSelectedTraces()
+    
+    def wheelEvent(self, event):
+        # do not respond to mouse wheel if field is not created
+        if not self.field:
+            return
+        # if scroll up
+        elif event.angleDelta().y() > 0  and self.series.current_section < len(self.series.sections)-1:
+            self.changeSection(self.series.current_section + 1)
+        # if scroll down
+        elif event.angleDelta().y() < 0 and self.series.current_section > 0:
+            self.changeSection(self.series.current_section - 1)
+    
+    def changeSection(self, section_num):
+        """Change the section of the field"""
+        self.saveFieldTraces()
+        self.series.current_section = section_num
+        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
+        self.field.loadSection(self.series.current_section, self.section)
+    
+    def saveFieldTraces(self):
+        """Save the current field traces in the corresponding section file"""
+        self.section.traces = self.field.traces
+        self.section.save()
+    
+    def closeEvent(self, event):
+        """Save traces, section num, and window if user exits"""
+        if not self.field: # do not do anything if field is not created
+            event.accept()
+            return
+        self.saveFieldTraces()
+        self.series.window = self.field.current_window
+        self.series.save()
+        event.accept()

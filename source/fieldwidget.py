@@ -1,264 +1,25 @@
-import os
-import sys
-import json
-from ClosedContour import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
+from PySide2.QtWidgets import QWidget
+from PySide2.QtCore import Qt
+from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
-class Trace():
+from grid import Grid
+from trace import Trace
 
-    def __init__(self, name):
-        self.points = []
-        self.color = (0, 0, 0)
-        self.name = name
-        self.closed = True
-    
-    def add(self, point):
-        """Add a point to the trace"""
-        self.points.append(point)
-    
-    def setClosed(self, closed : bool):
-        """Set closed status of the trace"""
-        self.closed = closed
+class FieldWidget(QWidget):
+    POINTER, PANZOOM, PENCIL = range(3)  # mouse modes
 
-class MainWindow(QMainWindow):
-
-    def __init__(self):
-        super().__init__()
-        self.menubar = self.menuBar()
-        self.filemenu = self.menubar.addMenu("File")
-        self.new_act = self.filemenu.addAction("New")
-        self.new_act.triggered.connect(self.newSeries) # create a new series
-        self.open_act = self.filemenu.addAction("Open")
-        self.open_act.triggered.connect(self.openSeries) # open an existing series
-        self.field = None
-        self.setMouseTracking(True)
-        self.setGeometry(100, 100, 500, 500)
-        self.show()
-    
-    def newSeries(self):
-        """Create a new series from a set of images"""
-        # get images from user
-        image_locations, extensions = QFileDialog.getOpenFileNames(self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
-        if len(image_locations) == 0:
-            return
-        
-        # get calibration (microns per pix) from user
-        mag, confirmed = QInputDialog.getDouble(self, "Section Calibration",
-                                                "What is the calibration for this series?",
-                                                0.00254, minValue=0, decimals=6)
-        if not confirmed:
-            return
-        
-        # change working directory to folder with images
-        first_image = image_locations[0]
-        if "/" in first_image:
-            file_path = first_image[:first_image.rfind("/")]
-            os.chdir(file_path)
-        
-        # get the name of the series from user
-        series_name, confirmed = QInputDialog.getText(self, "Series Name", "What is the name of this series?")
-        if not confirmed:
-            return
-        
-        # create series data file (.ser)
-        series_data = {}
-        series_data["sections"] = []
-        series_data["current_section"] = 0
-        series_data["window"] = [0, 0, 1, 1]
-        for i in range(len(image_locations)):
-            series_data["sections"].append(series_name + "." + str(i))
-        with open(series_name + ".ser", "w") as series_file:
-            series_file.write(json.dumps(series_data, indent=2))
-        
-        # create section files (.#)
-        for i in range(len(image_locations)):
-            section_data = {}
-            section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]
-            section_data["mag"] = mag
-            section_data["tform"] = [1, 0, 0, 0, 1, 0]
-            section_data["traces"] = []
-            with open(series_name + "." + str(i), "w") as section_file:
-                section_file.write(json.dumps(section_data, indent=2))
-    
-        # open series after creating
-        self.openSeries(series_name + ".ser")
-    
-    def openSeries(self, series=None):
-        """Open an existing series"""
-        if series: # if series is provided (only the case if opening from new)
-            with open(series, "r") as series_file:
-                self.series_data = json.load(series_file)
-        else: 
-            # get series file from user
-            series, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
-            if series == "":
-                return
-            with open(series, "r") as series_file:
-                self.series_data = json.load(series_file)
-        self.series_file_path = series
-
-        # change working directory to series location
-        if "/" in series:
-            file_path = series[:series.rfind("/")]
-            os.chdir(file_path)
-        
-        # get the last known section and load data
-        self.section_num = self.series_data["current_section"]
-        with open(self.series_data["sections"][self.section_num], "r") as section_file:
-            self.section_data = json.load(section_file)
-        
-        # create trace field for given section on last known window
-        self.initField(self.section_data, self.series_data["window"])
-    
-    def initField(self, section_data, window):
-        """Create the field for tracing"""
-        # set the main window to be slightly less than the size of the monitor
-        screen = QApplication.primaryScreen()
-        screen_rect = screen.size()
-        x = 50
-        y = 80
-        w = screen_rect.width() - 100
-        h = screen_rect.height() - 160
-        self.setGeometry(x, y, w, h)
-
-        # create status bar (at bottom of window)
-        self.statusbar = self.statusBar()
-
-        # create the field and set as main widget
-        self.field = Field(self.section_num, section_data, window, self)
-        self.setCentralWidget(self.field)
-
-        # create toolbar for interacting with field
-        self.toolbar = self.addToolBar("Mouse Modes")
-        pointer_act = self.toolbar.addAction("POINTER")
-        pointer_act.setIcon(QIcon(QPixmap("pointer.png")))
-        pointer_act.triggered.connect(self.toPointer)
-        panzoom_act = self.toolbar.addAction("PAN/ZOOM")
-        panzoom_act.setIcon(QIcon(QPixmap("panzoom.png")))
-        panzoom_act.triggered.connect(self.toPanzoom)
-        pencil_act = self.toolbar.addAction("PENCIL")
-        pencil_act.setIcon(QIcon(QPixmap("pencil.png")))
-        pencil_act.triggered.connect(self.toPencil)
-        name_act = self.toolbar.addAction("PENCIL NAME")
-        name_act.setIcon(QIcon(QPixmap("name.png")))
-        name_act.triggered.connect(self.changePencilName)
-        color_act = self.toolbar.addAction("PENCIL COLOR")
-        color_act.setIcon(QIcon(QPixmap("color.png")))
-        color_act.triggered.connect(self.changePencilColor)
-
-        # create shortcuts
-        merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
-        merge_sc.activated.connect(self.field.mergeSelectedTraces)
-        deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
-        deselect_sc.activated.connect(self.field.deselectAllTraces)
-    
-    def toPointer(self):
-        """Set mouse mode to pointer"""
-        self.field.setMouseMode(Field.POINTER)
-
-    def toPanzoom(self):
-        """Set mouse mode to panzoom"""
-        self.field.setMouseMode(Field.PANZOOM)
-
-    def toPencil(self):
-        """Set mouse mode to pencil"""
-        self.field.setMouseMode(Field.PENCIL)
-
-    def changePencilColor(self):
-        """Change the field pencil color"""
-        new_color = QColorDialog.getColor()
-        self.field.setPencilColor(new_color)
-
-    def changePencilName(self):
-        """Change the field pencil name"""
-        new_name, confirmed = QInputDialog.getText(self, "Pencil Name", "Enter the new pencil name:")
-        if confirmed and new_name != "":
-            self.field.setPencilName(new_name)
-    
-    def keyPressEvent(self, event):
-        # do not respond to keyboard if field is not created
-        if not self.field:
-            return
-        # if PgUp is pressed
-        elif event.key() == 16777238 and self.section_num < len(self.series_data["sections"])-1:
-            self.changeSection(self.section_num + 1)
-        # if PgDn is pressed
-        elif event.key() == 16777239 and self.section_num > 0:
-            self.changeSection(self.section_num - 1)
-        # if Del is pressed
-        elif event.key() == 16777223:
-            self.field.deleteSelectedTraces()
-    
-    def wheelEvent(self, event):
-        # do not respond to mouse wheel if field is not created
-        if not self.field:
-            return
-        # if scroll up
-        elif event.angleDelta().y() > 0  and self.section_num < len(self.series_data["sections"])-1:
-            self.changeSection(self.section_num + 1)
-        # if scroll down
-        elif event.angleDelta().y() < 0 and self.section_num > 0:
-            self.changeSection(self.section_num - 1)
-    
-    def changeSection(self, section_num):
-        """Change the section of the field"""
-        self.saveFieldTraces()
-        self.section_num = section_num
-        self.series_data["current_section"] = self.section_num
-        with open(self.series_data["sections"][self.section_num], "r") as section_file:
-            self.section_data = json.load(section_file)
-        self.field.loadSection(self.section_num, self.section_data)
-    
-    def saveFieldTraces(self):
-        """Save the current field traces in the corresponding section file"""
-        traces = self.field.traces
-        self.section_data["traces"] = []
-        for trace in traces:
-            trace_data = {}
-            trace_data["name"] = trace.name
-            trace_data["color"] = trace.color
-            trace_data["closed"] = trace.closed
-            trace_data["points"] = trace.points
-            self.section_data["traces"].append(trace_data)
-        with open(self.series_data["sections"][self.section_num], "w") as section_file:
-            section_file.write(json.dumps(self.section_data, indent=2))
-    
-    def closeEvent(self, event):
-        """Save traces, section num, and window if user exits"""
-        if not self.field: # do not do anything if field is not created
-            event.accept()
-            return
-        self.saveFieldTraces()
-        self.series_data["window"] = self.field.current_window
-        with open(self.series_file_path, "w") as series_file:
-            series_file.write(json.dumps(self.series_data, indent=2))
-        event.accept()
-
-class Field(QWidget):
-    POINTER, PANZOOM, PENCIL = range(3) # mouse modes
-
-    def __init__(self, section_num, section_data, window, parent=None):
+    def __init__(self, section_num, section, window, parent):
         # add parent if provided (this should be the case)
-        if parent:
-            super().__init__(parent)
-            self.parent_widget = parent
-        else:
-            super().__init__()
-            self.parent_widget = None
+        super().__init__(parent)
+        self.parent_widget = parent
 
-        # set geometry to match parent if provided
-        if self.parent_widget:
-            parent_rect = self.parent_widget.geometry()
-            self.pixmap_size = parent_rect.width(), parent_rect.height()
-            self.setGeometry(parent_rect)
-        else:
-            self.pixmap_size = (500, 500)
-            self.setGeometry(100, 100, 500, 500)
+        # set geometry to match parent
+        parent_rect = self.parent_widget.geometry()
+        self.pixmap_size = parent_rect.width(), parent_rect.height()
+        self.setGeometry(parent_rect)
         
-        # default mouse mode: panzoom
-        self.mouse_mode = Field.PANZOOM
+        # default mouse mode: pointer
+        self.mouse_mode = FieldWidget.POINTER
         self.setMouseTracking(True)
 
         # resize last known window to match proportions of current geometry
@@ -272,7 +33,7 @@ class Field(QWidget):
 
         self.field_pixmap = QPixmap()
 
-        self.loadSection(section_num, section_data)
+        self.loadSection(section_num, section)
         self.show()
     
     def setPencilColor(self, color):
@@ -283,16 +44,16 @@ class Field(QWidget):
         """Set the pencil name for traces"""
         self.pencil_name = name
     
-    def loadSection(self, section_num, section_data):
+    def loadSection(self, section_num, section):
         """Load a new section into the field"""
         self.section_num = section_num
 
         # create transforms
-        t = section_data["tform"] # identity would be: 1 0 0 0 1 0
+        t = section.tform # identity would be: 1 0 0 0 1 0
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
-        self.mag = section_data["mag"] # get magnification
-        base_pixmap = QPixmap(section_data["src"]) # load image
+        self.mag = section.mag # get magnification
+        base_pixmap = QPixmap(self.parent_widget.wdir + section.src) # load image
         self.image_pixmap = base_pixmap.transformed(self.image_tform) # transform image
         self.calcTformOrigin(base_pixmap, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
         x_shift = t[2] - self.tform_origin[0]*self.mag # calculate x translation for image placement in field
@@ -300,37 +61,28 @@ class Field(QWidget):
         self.image_vector = x_shift, y_shift # store as vector
 
         # create traces
-        self.traces = []
-        self.selected_traces = []
-        for trace_data in section_data["traces"]:
-            name = trace_data["name"]
-            trace = Trace(name)
-            trace.color = trace_data["color"]
-            trace.points = trace_data["points"]
-            trace.closed = trace_data["closed"]
-            self.traces.append(trace)
+        self.traces = section.traces.copy()
 
         self.updateStatusBar(None)
-        #self.generateView()
-        #self.update()
+        self.generateView()
+        self.update()
     
     def updateStatusBar(self, event):
         """Update status bar with useful information"""
-        if self.parent_widget:
-            if event:
-                s = "Section: " + str(self.section_num) + "  |  "
-                x, y = event.pos().x(), event.pos().y()
-                x, y = self.pixmapPointToField((x, y))
-                s += "x = " + str("{:.4f}".format(x)) + ", "
-                s += "y = " + str("{:.4f}".format(y)) + "  |  "
-                s += "Tracing: " + '"' + self.pencil_name + '"'
-                closest_trace = self.findClosestTrace(x, y)
-                if closest_trace:
-                    s += "  |  Nearest trace: " + closest_trace.name
-            else:
-                message = self.parent_widget.statusbar.currentMessage()
-                s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
-            self.parent_widget.statusbar.showMessage(s)
+        if event:
+            s = "Section: " + str(self.section_num) + "  |  "
+            x, y = event.pos().x(), event.pos().y()
+            x, y = self.pixmapPointToField((x, y))
+            s += "x = " + str("{:.4f}".format(x)) + ", "
+            s += "y = " + str("{:.4f}".format(y)) + "  |  "
+            s += "Tracing: " + '"' + self.pencil_name + '"'
+            closest_trace = self.findClosestTrace(x, y)
+            if closest_trace:
+                s += "  |  Nearest trace: " + closest_trace.name
+        else:
+            message = self.parent_widget.statusbar.currentMessage()
+            s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
+        self.parent_widget.statusbar.showMessage(s)
 
     def resizeEvent(self, event):
         """Scale field window if main window size changes"""
@@ -349,30 +101,30 @@ class Field(QWidget):
         self.mouse_mode = mode
     
     def mousePressEvent(self, event):
-        if self.mouse_mode == Field.POINTER:
+        if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
-        elif self.mouse_mode == Field.PANZOOM:
+        elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomPress(event)
-        elif self.mouse_mode == Field.PENCIL:
+        elif self.mouse_mode == FieldWidget.PENCIL:
             self.pencilPress(event)
 
     def mouseMoveEvent(self, event):
         if not event.buttons():
             self.updateStatusBar(event)
             return
-        if self.mouse_mode == Field.POINTER:
+        if self.mouse_mode == FieldWidget.POINTER:
             self.pointerMove(event)
-        elif self.mouse_mode == Field.PANZOOM:
+        elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomMove(event)
-        elif self.mouse_mode == Field.PENCIL:
+        elif self.mouse_mode == FieldWidget.PENCIL:
             self.pencilMove(event)
 
     def mouseReleaseEvent(self, event):
-        if self.mouse_mode == Field.POINTER:
+        if self.mouse_mode == FieldWidget.POINTER:
             self.pointerRelease(event)
-        if self.mouse_mode == Field.PANZOOM:
+        if self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomRelease(event)
-        elif self.mouse_mode == Field.PENCIL:
+        elif self.mouse_mode == FieldWidget.PENCIL:
             self.pencilRelease(event)
         
     def panzoomPress(self, event):
@@ -484,21 +236,22 @@ class Field(QWidget):
     def pencilRelease(self, event):
         """Mouse is released in pencil mode"""
         # calculate actual trace coordinates on the field and reload field view
-        trace_grid = Grid(self.current_trace)
-        trace_grid.generateGrid()
-        self.current_trace = trace_grid.getExteriorPoints()
-        new_trace = Trace(self.pencil_name)
-        color = self.tracing_pencil.color()
-        new_trace.color = (color.red(), color.green(), color.blue())
-        for point in self.current_trace:
-            field_point = self.pixmapPointToField(point)
-            rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
-            new_trace.add(rtform_point)
-        self.traces.append(new_trace)
-        self.generateView(generate_image=False)
-        self.update()
-        self.selected_traces.append(new_trace)
-        self.drawTrace(new_trace, highlight=True)
+        if len(self.current_trace) > 1:
+            trace_grid = Grid(self.current_trace)
+            trace_grid.generateGrid()
+            self.current_trace = trace_grid.getExteriorPoints()
+            trace_color = self.tracing_pencil.color()
+            trace_color = (trace_color.red(), trace_color.green(), trace_color.blue())
+            new_trace = Trace(self.pencil_name, trace_color, closed=True)
+            for point in self.current_trace:
+                field_point = self.pixmapPointToField(point)
+                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
+                new_trace.add(rtform_point)
+            self.traces.append(new_trace)
+            self.generateView(generate_image=False)
+            self.update()
+            self.selected_traces.append(new_trace)
+            self.drawTrace(new_trace, highlight=True)
     
     def pointerPress(self, event):
         """Mouse is pressed in pointer mode"""
@@ -627,7 +380,7 @@ class Field(QWidget):
             return
         self.deleteSelectedTraces()
         for contour in merged_contours:
-            new_trace = Trace(name)
+            new_trace = Trace(name, color)
             new_trace.color = color
             for point in contour:
                 field_point = point[0] * self.mag, point[1] * self.mag
@@ -749,11 +502,3 @@ class Field(QWidget):
         field_painter = QPainter(self)
         field_painter.drawPixmap(self.rect(), self.field_pixmap, self.field_pixmap.rect())
         field_painter.end()
-
-# adjust dpi scaling
-if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-
-app = QApplication(sys.argv)
-main_window = MainWindow()
-app.exec_()

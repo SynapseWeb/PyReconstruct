@@ -18,6 +18,8 @@ class MouseDockWidget(QDockWidget):
     def __init__(self, parent, button_size=30):
         super().__init__(parent)
         self.setFloating(True)
+        self.setFeatures(QDockWidget.DockWidgetFloatable |
+                         QDockWidget.DockWidgetMovable)
         self.setAllowedAreas(Qt.NoDockWidgetArea)
         self.setWindowTitle(" ")
         self.bsize = button_size

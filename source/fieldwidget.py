@@ -28,21 +28,15 @@ class FieldWidget(QWidget):
 
         # establish defaults
         self.selected_traces = []
-        self.pencil_name = "TRACE"
-        self.tracing_pencil = QPen(QColor(255, 0, 255), 1)
+        self.tracing_trace = Trace("TRACE", (255, 0, 255))
 
         self.field_pixmap = QPixmap()
 
         self.loadSection(section_num, section)
         self.show()
     
-    def setPencilColor(self, color):
-        """Set the pencil color for traces"""
-        self.tracing_pencil = QPen(color, 1)
-    
-    def setPencilName(self, name):
-        """Set the pencil name for traces"""
-        self.pencil_name = name
+    def setTracingTrace(self, trace):
+        self.tracing_trace = trace
     
     def loadSection(self, section_num, section):
         """Load a new section into the field"""
@@ -75,7 +69,7 @@ class FieldWidget(QWidget):
             x, y = self.pixmapPointToField((x, y))
             s += "x = " + str("{:.4f}".format(x)) + ", "
             s += "y = " + str("{:.4f}".format(y)) + "  |  "
-            s += "Tracing: " + '"' + self.pencil_name + '"'
+            s += "Tracing: " + '"' + self.tracing_trace.name + '"'
             closest_trace = self.findClosestTrace(x, y)
             if closest_trace:
                 s += "  |  Nearest trace: " + closest_trace.name
@@ -224,7 +218,8 @@ class FieldWidget(QWidget):
         x = event.x()
         y = event.y()
         painter = QPainter(self.field_pixmap)
-        painter.setPen(self.tracing_pencil)
+        color = QColor(*self.tracing_trace.color)
+        painter.setPen(QPen(color, 1))
         painter.drawLine(self.last_x, self.last_y, x, y)
         painter.end()
         self.current_trace.append((x, y))
@@ -240,9 +235,7 @@ class FieldWidget(QWidget):
             trace_grid = Grid(self.current_trace)
             trace_grid.generateGrid()
             self.current_trace = trace_grid.getExteriorPoints()
-            trace_color = self.tracing_pencil.color()
-            trace_color = (trace_color.red(), trace_color.green(), trace_color.blue())
-            new_trace = Trace(self.pencil_name, trace_color, closed=True)
+            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=True)
             for point in self.current_trace:
                 field_point = self.pixmapPointToField(point)
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image

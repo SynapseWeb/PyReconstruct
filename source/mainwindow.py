@@ -8,6 +8,7 @@ from mousedockwidget import MouseDockWidget
 from fieldwidget import FieldWidget
 from series import Series
 from section import Section
+from trace import Trace
 
 class MainWindow(QMainWindow):
 
@@ -59,6 +60,33 @@ class MainWindow(QMainWindow):
         series_data["window"] = [0, 0, 1, 1]
         for i in range(len(image_locations)):
             series_data["sections"].append(series_name + "." + str(i))
+
+        series_data["palette_traces"] = []
+
+        diamond_trace = Trace("diamond", (255, 0, 0))
+        diamond_trace.points = [(0, 0.5), (-0.5, 0), (0, -0.5), (0.5, 0)]
+        series_data["palette_traces"].append(diamond_trace.getDict())
+
+        triangle_trace = Trace("triangle", (0, 255, 0))
+        triangle_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0, 0.5)]
+        series_data["palette_traces"].append(triangle_trace.getDict())
+
+        circle_trace = Trace("circle", (0, 0, 255))
+        circle_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.5), (0.16667, -0.5),
+                               (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.5), (-0.16667, 0.5)]
+        series_data["palette_traces"].append(circle_trace.getDict())
+
+        square_trace = Trace("square", (255, 0, 255))
+        square_trace.points = [(0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5)]
+        series_data["palette_traces"].append(square_trace.getDict())
+
+        cross_trace = Trace("cross", (0, 255, 255))
+        cross_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.16667),
+                              (-0.16667, -0.5), (0.16667, -0.5), (0.16667, -0.16667),
+                              (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.16667),
+                              (0.16667, 0.5), (-0.16667, 0.5), (-0.16667, 0.16667)]
+        series_data["palette_traces"].append(cross_trace.getDict())
+
         with open(self.wdir + series_name + ".ser", "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
@@ -73,7 +101,7 @@ class MainWindow(QMainWindow):
                 section_file.write(json.dumps(section_data, indent=2))
     
         # open series after creating
-        self.openSeries(series_name + ".ser")
+        self.openSeries(self.wdir + series_name + ".ser")
     
     def openSeries(self, series_fp=None):
         """Open an existing series"""
@@ -114,18 +142,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.field)
 
         # create mouse dock
-        self.createMouseDock()
-        mouse_dock_sc = QShortcut(QKeySequence("Ctrl+T"), self)
-        mouse_dock_sc.activated.connect(self.createMouseDock)
+        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self)
 
         # create shortcuts
         merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
         merge_sc.activated.connect(self.field.mergeSelectedTraces)
         deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
         deselect_sc.activated.connect(self.field.deselectAllTraces)
-    
-    def createMouseDock(self):
-        self.mouse_dock = MouseDockWidget(self)
     
     def toPointer(self):
         """Set mouse mode to pointer"""
@@ -139,16 +162,8 @@ class MainWindow(QMainWindow):
         """Set mouse mode to pencil"""
         self.field.setMouseMode(FieldWidget.PENCIL)
 
-    def setPencilColor(self):
-        """Change the field pencil color"""
-        new_color = QColorDialog.getColor()
-        self.field.setPencilColor(new_color)
-
-    def setPencilName(self):
-        """Change the field pencil name"""
-        new_name, confirmed = QInputDialog.getText(self, "Pencil Name", "Enter the new pencil name:")
-        if confirmed and new_name != "":
-            self.field.setPencilName(new_name)
+    def changeTracingTrace(self, trace):
+        self.field.setTracingTrace(trace)
     
     def keyPressEvent(self, event):
         # do not respond to keyboard if field is not created

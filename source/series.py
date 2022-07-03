@@ -1,4 +1,5 @@
 import json
+from trace import Trace
 
 class Series():
 
@@ -11,6 +12,9 @@ class Series():
         self.sections = series_data["sections"]
         self.current_section = series_data["current_section"]
         self.window = series_data["window"]
+        self.palette_traces = series_data["palette_traces"]
+        for i in range(len(self.palette_traces)):
+            self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
     
     def getDict(self):
         """Convert series object into a dictionary"""
@@ -18,6 +22,9 @@ class Series():
         d["sections"] = self.sections
         d["current_section"] = self.current_section
         d["window"] = self.window
+        d["palette_traces"] = []
+        for trace in self.palette_traces:
+            d["palette_traces"].append(trace.getDict())
         return d
         
     def save(self):

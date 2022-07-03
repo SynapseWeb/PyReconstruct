@@ -1,11 +1,14 @@
 from PySide2.QtWidgets import QWidget, QDockWidget, QPushButton
-from PySide2.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
+from PySide2.QtGui import QIcon, QPixmap
 from PySide2.QtCore import QSize, Qt
+
+from palettebutton import PaletteButton
 
 class MouseDockWidget(QDockWidget):
 
-    def __init__(self, parent, button_size=30):
+    def __init__(self, palette_traces, parent, button_size=30):
         super().__init__(parent)
+        self.parent_widget = parent
         self.setFloating(True)
         self.setFeatures(QDockWidget.DockWidgetFloatable |
                          QDockWidget.DockWidgetMovable)
@@ -13,48 +16,55 @@ class MouseDockWidget(QDockWidget):
         self.setWindowTitle(" ")
         self.bsize = button_size
         self.central_widget = QWidget()
-        self.setFixedSize(self.bsize*5, self.bsize*2)
+        self.setFixedSize(self.bsize*5, 5 + self.bsize*4)
 
-        self.buttons = {}
+        self.mode_buttons = {}
+        self.createModeButton("pointer", 0, 0, parent.toPointer)
+        self.createModeButton("panzoom", 1, 0, parent.toPanzoom)
+        self.createModeButton("pencil", 0, 1, parent.toPencil)
 
-        self.createButton("pointer", 0, 0, parent.toPointer)
-        self.createButton("panzoom", 1, 0, parent.toPanzoom)
-        self.createButton("pencil", 0, 1, parent.toPencil)
-        #self.createButton("color", 1, 1, parent.setPencilColor)
-        #self.createButton("name", 2, 1, parent.setPencilName)
-
-        self.highlight_pixmap = QPixmap(self.bsize, self.bsize)
-        self.highlight_pixmap.fill(Qt.transparent)
-        painter = QPainter(self.highlight_pixmap)
-        painter.setPen(QPen(QColor(0, 0, 0), 5))
-        painter.drawLine(0, 0, 0, self.bsize)
-        painter.drawLine(0, self.bsize, self.bsize, self.bsize)
-        painter.drawLine(self.bsize, self.bsize, self.bsize, 0)
-        painter.drawLine(self.bsize, 0, 0, 0)
-        painter.end()
+        self.palette_buttons = []
+        for i in range(len(palette_traces)):
+            self.createPaletteButton(palette_traces[i], i % 5, 2 + i//5)
 
         self.setWidget(self.central_widget)
         self.show()
     
-    def buttonClicked(self):
+    def modeButtonClicked(self):
         sender = self.sender()
-        for name, button in self.buttons.items():
+        for name, button in self.mode_buttons.items():
             if button[0] == sender:
                 button[0].setChecked(True)
                 button[1]()
             else:
                 button[0].setChecked(False)      
 
-    def createButton(self, name, row, col, func):
+    def createModeButton(self, name, row, col, func):
         b = QPushButton(self.central_widget)
         pixmap = QPixmap(name + ".png").scaled(self.bsize, self.bsize)
-        #pixmap = changePixmapOpacity(pixmap, 0.5)
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.bsize, self.bsize))
         b.setGeometry(row*self.bsize, col*self.bsize, self.bsize, self.bsize)
         b.setCheckable(True)
         if (row, col) == (0, 0):
             b.setChecked(True)
-        b.clicked.connect(self.buttonClicked)
-        self.buttons[name] = (b, func)
+        b.clicked.connect(self.modeButtonClicked)
+        self.mode_buttons[name] = (b, func)
+    
+    def paletteButtonClicked(self):
+        sender = self.sender()
+        for button in self.palette_buttons:
+            if button == sender:
+                button.setChecked(True)
+                self.parent_widget.changeTracingTrace(button.trace)
+            else:
+                button.setChecked(False)
+    
+    def createPaletteButton(self, trace, row, col):
+        b = PaletteButton(self.central_widget)
+        b.setGeometry(row*self.bsize, 5 + col*self.bsize, self.bsize, self.bsize)
+        b.setTrace(trace)
+        b.setCheckable(True)
+        b.clicked.connect(self.paletteButtonClicked)
+        self.palette_buttons.append(b)
         

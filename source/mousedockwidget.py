@@ -1,17 +1,6 @@
-import sys
-
 from PySide2.QtWidgets import QWidget, QDockWidget, QPushButton
 from PySide2.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 from PySide2.QtCore import QSize, Qt
-
-def changePixmapOpacity(pixmap, value):
-    new_pixmap = QPixmap(pixmap.size())
-    new_pixmap.fill(Qt.transparent)
-    painter = QPainter(new_pixmap)
-    painter.setOpacity(value)
-    painter.drawPixmap(0, 0, pixmap)
-    painter.end()
-    return new_pixmap
 
 class MouseDockWidget(QDockWidget):
 
@@ -58,8 +47,8 @@ class MouseDockWidget(QDockWidget):
 
     def createButton(self, name, row, col, func):
         b = QPushButton(self.central_widget)
-        pixmap = QPixmap(name + ".bmp").scaled(self.bsize, self.bsize)
-        pixmap = changePixmapOpacity(pixmap, 0.5)
+        pixmap = QPixmap(name + ".png").scaled(self.bsize, self.bsize)
+        #pixmap = changePixmapOpacity(pixmap, 0.5)
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.bsize, self.bsize))
         b.setGeometry(row*self.bsize, col*self.bsize, self.bsize, self.bsize)

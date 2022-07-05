@@ -1,7 +1,5 @@
 * High-priority tasks
 
-- [ ] Stamps
-- [ ] Click-tracing
 - [ ] Knife tool
 - [ ] Correct merge tool
 - [ ] Meet with Vijay (Neuroglancer, automation?)
@@ -53,3 +51,6 @@
 - [X] Pointer / pan-zoom tool
 - [X] Trace exteriors
 - [X] Simple trace palette
+- [X] Stamps
+- [X] Click-tracing
+- [X] Open line and pencil tracing

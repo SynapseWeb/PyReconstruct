@@ -1,0 +1,55 @@
+* High-priority tasks
+
+- [ ] Stamps
+- [ ] Click-tracing
+- [ ] Knife tool
+- [ ] Correct merge tool
+- [ ] Meet with Vijay (Neuroglancer, automation?)
+
+* Must-do
+
+- [ ] Run on mac machine
+
+* Simple tasks
+
+- [ ] CTRL-s hotkey to save (Patrick request)
+- [ ] Hotkey (h? hh?) to turn on/off traces
+
+* Medium-priority tasks
+
+- [ ] Reconcropper
+- [ ] JSON -> XML -> JSON
+- [ ] Z-traces
+- [ ] Visualize in 3D in Blender / Neuroglancer
+- [ ] Cool "3D" or automated tool (cutting off spines?, import to Blender?)
+- [ ] Redo function (undo-undo)
+- [ ] Calibration
+- [ ] Section thickness
+- [ ] Add tags to objects
+- [ ] Trace list
+- [ ] Object list
+   1) [ ] Start / End
+   2) [ ] Count 
+   3) [ ] Flat area
+   4) [ ] Surface area? (Different algorithms?)
+   5) [ ] Volume
+
+* Low-priority tasks
+
+- [ ] Export images and traces as SVG file
+- [ ] Add-on / extension menu
+- [ ] Make hotkeys editable by user
+- [ ] Give user option of selection number of RAM-loaded images
+- [ ] CTRL-c items from the object this for easy pasting into Excel
+- [ ] Change stamp into a different shape
+- [ ] Sort object list in a variety of ways (by section number, tag, etc.)
+
+* Completed tasks
+
+- [X] GUI module (QT for Python)
+- [X] Images + field display
+- [X] Image transformations
+- [X] Pencil tool
+- [X] Pointer / pan-zoom tool
+- [X] Trace exteriors
+- [X] Simple trace palette

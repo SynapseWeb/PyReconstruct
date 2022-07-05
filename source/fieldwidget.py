@@ -6,7 +6,7 @@ from grid import Grid
 from trace import Trace
 
 class FieldWidget(QWidget):
-    POINTER, PANZOOM, PENCIL = range(3)  # mouse modes
+    POINTER, PANZOOM, PENCIL, STAMP, OPENLINE, CLOSEDLINE = range(6)  # mouse modes
 
     def __init__(self, section_num, section, window, parent):
         # add parent if provided (this should be the case)
@@ -101,6 +101,8 @@ class FieldWidget(QWidget):
             self.panzoomPress(event)
         elif self.mouse_mode == FieldWidget.PENCIL:
             self.pencilPress(event)
+        elif self.mouse_mode == FieldWidget.STAMP:
+            self.stampPress(event)
 
     def mouseMoveEvent(self, event):
         if not event.buttons():
@@ -242,9 +244,9 @@ class FieldWidget(QWidget):
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
             self.generateView(generate_image=False)
-            self.update()
             self.selected_traces.append(new_trace)
             self.drawTrace(new_trace, highlight=True)
+            self.update()
     
     def pointerPress(self, event):
         """Mouse is pressed in pointer mode"""
@@ -265,6 +267,18 @@ class FieldWidget(QWidget):
                 self.drawTrace(selected_trace)
                 self.selected_traces.remove(selected_trace)
                 self.update()
+    
+    def stampPress(self, event):
+        pix_x, pix_y = event.x(), event.y()
+        field_x, field_y = self.pixmapPointToField((pix_x, pix_y))
+        new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color)
+        for point in self.tracing_trace.points:
+            new_trace.add((point[0] + field_x, point[1] + field_y))
+        self.traces.append(new_trace)
+        self.generateView(generate_image=False)
+        self.selected_traces.append(new_trace)
+        self.drawTrace(new_trace, highlight=True)
+        self.update()
     
     def deselectAllTraces(self):
         """Deselect all traces (Ctrl+D)"""

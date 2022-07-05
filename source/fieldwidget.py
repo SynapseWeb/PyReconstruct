@@ -57,6 +57,7 @@ class FieldWidget(QWidget):
 
         # create traces
         self.traces = section.traces.copy()
+        self.selected_traces = []
 
         self.updateStatusBar(None)
         self.generateView()
@@ -469,8 +470,8 @@ class FieldWidget(QWidget):
     
     def fieldPointToPixmap(self, point):
         """Convert field window coordinates to main window coordinates"""
-        x = (point[0] - self.current_window[0]) / self.mag * self.x_scaling
-        y = (point[1] - self.current_window[1])/ self.mag * self.y_scaling
+        x = (point[0] - self.current_window[0]) / self.mag * self.x_scaling - 0.5
+        y = (point[1] - self.current_window[1])/ self.mag * self.y_scaling - 0.5
         y = self.pixmap_size[1] - y
         return round(x), round(y)
     

@@ -22,10 +22,12 @@ class MouseDockWidget(QDockWidget):
         self.mode_buttons = {}
         self.createModeButton("pointer", 0, 0, FieldWidget.POINTER)
         self.createModeButton("panzoom", 1, 0, FieldWidget.PANZOOM)
-        self.createModeButton("pencil", 0, 1, FieldWidget.PENCIL)
-        self.createModeButton("stamp", 3, 1, FieldWidget.STAMP)
-        self.createModeButton("closedline", 1, 1, FieldWidget.CLOSEDLINE)
-        self.createModeButton("openline", 2, 1, FieldWidget.OPENLINE)
+
+        self.createModeButton("closedpencil", 0, 1, FieldWidget.CLOSEDPENCIL)
+        self.createModeButton("openpencil", 1, 1, FieldWidget.OPENPENCIL)
+        self.createModeButton("closedline", 2, 1, FieldWidget.CLOSEDLINE)
+        self.createModeButton("openline", 3, 1, FieldWidget.OPENLINE)
+        self.createModeButton("stamp", 4, 1, FieldWidget.STAMP)
 
         self.palette_traces = palette_traces
         self.palette_buttons = []

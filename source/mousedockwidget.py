@@ -23,9 +23,10 @@ class MouseDockWidget(QDockWidget):
         self.createModeButton("panzoom", 1, 0, parent.toPanzoom)
         self.createModeButton("pencil", 0, 1, parent.toPencil)
 
+        self.palette_traces = palette_traces
         self.palette_buttons = []
         for i in range(len(palette_traces)):
-            self.createPaletteButton(palette_traces[i], i % 5, 2 + i//5)
+            self.createPaletteButton(palette_traces[i], i % 5, i//5)
 
         self.setWidget(self.central_widget)
         self.show()
@@ -60,11 +61,21 @@ class MouseDockWidget(QDockWidget):
             else:
                 button.setChecked(False)
     
-    def createPaletteButton(self, trace, row, col):
+    def createPaletteButton(self, trace, x, y):
         b = PaletteButton(self.central_widget)
-        b.setGeometry(row*self.bsize, 5 + col*self.bsize, self.bsize, self.bsize)
+        b.setGeometry(x*self.bsize, 5 + (2+y)*self.bsize, self.bsize, self.bsize)
         b.setTrace(trace)
         b.setCheckable(True)
         b.clicked.connect(self.paletteButtonClicked)
         self.palette_buttons.append(b)
-        
+    
+    def getPaletteTraces(self):
+        return self.palette_traces
+    
+    def setPaletteTraces(self, palette_traces):
+        if len(palette_traces) != len(self.palette_buttons):
+            print("ERROR: Number palette traces do not match number of buttons")
+            return
+        self.palette_traces = palette_traces
+        for button, trace in zip(self.palette_buttons, palette_traces):
+            button.setTrace(trace)

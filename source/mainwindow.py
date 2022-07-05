@@ -9,6 +9,7 @@ from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
+from editpalettewidget import EditPaletteWidget
 
 class MainWindow(QMainWindow):
 
@@ -22,7 +23,6 @@ class MainWindow(QMainWindow):
         self.new_act.triggered.connect(self.newSeries) # create a new series
         self.new_act
         self.open_act = self.filemenu.addAction("Open")
-        self.open_act.setShortcut("Ctrl+O")
         self.open_act.triggered.connect(self.openSeries) # open an existing series
         self.field = None
         self.setMouseTracking(True)
@@ -87,6 +87,8 @@ class MainWindow(QMainWindow):
                               (0.16667, 0.5), (-0.16667, 0.5), (-0.16667, 0.16667)]
         series_data["palette_traces"].append(cross_trace.getDict())
 
+        series_data["current_trace"] = diamond_trace.getDict()
+
         with open(self.wdir + series_name + ".ser", "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
@@ -143,12 +145,15 @@ class MainWindow(QMainWindow):
 
         # create mouse dock
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self)
+        self.changeTracingTrace(self.series.current_trace) # set the current trace
 
         # create shortcuts
         merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
         merge_sc.activated.connect(self.field.mergeSelectedTraces)
         deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
         deselect_sc.activated.connect(self.field.deselectAllTraces)
+        edit_trace_palette_sc = QShortcut(QKeySequence("Ctrl+O"), self)
+        edit_trace_palette_sc.activated.connect(self.openTracePaletteEditor)
     
     def toPointer(self):
         """Set mouse mode to pointer"""
@@ -163,6 +168,7 @@ class MainWindow(QMainWindow):
         self.field.setMouseMode(FieldWidget.PENCIL)
 
     def changeTracingTrace(self, trace):
+        self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
     def keyPressEvent(self, event):
@@ -201,6 +207,12 @@ class MainWindow(QMainWindow):
         """Save the current field traces in the corresponding section file"""
         self.section.traces = self.field.traces
         self.section.save()
+    
+    def openTracePaletteEditor(self):
+        epw = EditPaletteWidget(self.mouse_dock.getPaletteTraces(), self)
+    
+    def editTracePalette(self, palette_traces):
+        self.mouse_dock.setPaletteTraces(palette_traces)
     
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""

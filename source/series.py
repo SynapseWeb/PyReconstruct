@@ -15,6 +15,7 @@ class Series():
         self.palette_traces = series_data["palette_traces"]
         for i in range(len(self.palette_traces)):
             self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
+        self.current_trace = Trace.fromDict(series_data["current_trace"])
     
     def getDict(self):
         """Convert series object into a dictionary"""
@@ -25,6 +26,7 @@ class Series():
         d["palette_traces"] = []
         for trace in self.palette_traces:
             d["palette_traces"].append(trace.getDict())
+        d["current_trace"] = self.current_trace.getDict()
         return d
         
     def save(self):

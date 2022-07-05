@@ -3,6 +3,7 @@ from PySide2.QtGui import QIcon, QPixmap
 from PySide2.QtCore import QSize, Qt
 
 from palettebutton import PaletteButton
+from fieldwidget import FieldWidget
 
 class MouseDockWidget(QDockWidget):
 
@@ -19,14 +20,18 @@ class MouseDockWidget(QDockWidget):
         self.setFixedSize(self.bsize*5, 5 + self.bsize*4)
 
         self.mode_buttons = {}
-        self.createModeButton("pointer", 0, 0, parent.toPointer)
-        self.createModeButton("panzoom", 1, 0, parent.toPanzoom)
-        self.createModeButton("pencil", 0, 1, parent.toPencil)
+        self.createModeButton("pointer", 0, 0, FieldWidget.POINTER)
+        self.createModeButton("panzoom", 1, 0, FieldWidget.PANZOOM)
+        self.createModeButton("pencil", 0, 1, FieldWidget.PENCIL)
+        self.createModeButton("stamp", 3, 1, FieldWidget.STAMP)
+        self.createModeButton("closedline", 1, 1, FieldWidget.CLOSEDLINE)
+        self.createModeButton("openline", 2, 1, FieldWidget.OPENLINE)
 
         self.palette_traces = palette_traces
         self.palette_buttons = []
         for i in range(len(palette_traces)):
             self.createPaletteButton(palette_traces[i], i % 5, i//5)
+        self.central_widget.paletteButtonChanged = self.paletteButtonChanged # there's no way in hell this is good practice but it works
 
         self.setWidget(self.central_widget)
         self.show()
@@ -36,7 +41,7 @@ class MouseDockWidget(QDockWidget):
         for name, button in self.mode_buttons.items():
             if button[0] == sender:
                 button[0].setChecked(True)
-                button[1]()
+                self.parent_widget.changeMouseMode(button[1])
             else:
                 button[0].setChecked(False)      
 
@@ -61,6 +66,11 @@ class MouseDockWidget(QDockWidget):
             else:
                 button.setChecked(False)
     
+    def paletteButtonChanged(self, button):
+        for b in self.palette_buttons:
+            if b.isChecked() and b == button:
+                self.parent_widget.changeTracingTrace(button.trace)
+    
     def createPaletteButton(self, trace, x, y):
         b = PaletteButton(self.central_widget)
         b.setGeometry(x*self.bsize, 5 + (2+y)*self.bsize, self.bsize, self.bsize)
@@ -71,11 +81,3 @@ class MouseDockWidget(QDockWidget):
     
     def getPaletteTraces(self):
         return self.palette_traces
-    
-    def setPaletteTraces(self, palette_traces):
-        if len(palette_traces) != len(self.palette_buttons):
-            print("ERROR: Number palette traces do not match number of buttons")
-            return
-        self.palette_traces = palette_traces
-        for button, trace in zip(self.palette_buttons, palette_traces):
-            button.setTrace(trace)

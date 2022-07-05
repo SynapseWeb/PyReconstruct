@@ -1,15 +1,14 @@
 import os
 import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QShortcut, QApplication, QColorDialog, QAction)
-from PySide2.QtGui import (QPixmap, QIcon, QKeySequence)
+    QInputDialog, QShortcut, QApplication)
+from PySide2.QtGui import (QKeySequence)
 from mousedockwidget import MouseDockWidget
 
 from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
-from editpalettewidget import EditPaletteWidget
 
 class MainWindow(QMainWindow):
 
@@ -152,20 +151,9 @@ class MainWindow(QMainWindow):
         merge_sc.activated.connect(self.field.mergeSelectedTraces)
         deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
         deselect_sc.activated.connect(self.field.deselectAllTraces)
-        edit_trace_palette_sc = QShortcut(QKeySequence("Ctrl+O"), self)
-        edit_trace_palette_sc.activated.connect(self.openTracePaletteEditor)
     
-    def toPointer(self):
-        """Set mouse mode to pointer"""
-        self.field.setMouseMode(FieldWidget.POINTER)
-
-    def toPanzoom(self):
-        """Set mouse mode to panzoom"""
-        self.field.setMouseMode(FieldWidget.PANZOOM)
-
-    def toPencil(self):
-        """Set mouse mode to pencil"""
-        self.field.setMouseMode(FieldWidget.PENCIL)
+    def changeMouseMode(self, new_mode):
+        self.field.setMouseMode(new_mode)
 
     def changeTracingTrace(self, trace):
         self.series.current_trace = trace
@@ -207,12 +195,6 @@ class MainWindow(QMainWindow):
         """Save the current field traces in the corresponding section file"""
         self.section.traces = self.field.traces
         self.section.save()
-    
-    def openTracePaletteEditor(self):
-        epw = EditPaletteWidget(self.mouse_dock.getPaletteTraces(), self)
-    
-    def editTracePalette(self, palette_traces):
-        self.mouse_dock.setPaletteTraces(palette_traces)
     
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""

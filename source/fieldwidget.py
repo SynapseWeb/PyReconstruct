@@ -6,7 +6,7 @@ from grid import Grid
 from trace import Trace
 
 class FieldWidget(QWidget):
-    POINTER, PANZOOM, PENCIL, STAMP, OPENLINE, CLOSEDLINE = range(6)  # mouse modes
+    POINTER, PANZOOM, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(7)  # mouse modes
 
     def __init__(self, section_num, section, window, parent):
         # add parent if provided (this should be the case)
@@ -29,6 +29,7 @@ class FieldWidget(QWidget):
         # establish defaults
         self.selected_traces = []
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
+        self.is_line_tracing = False
 
         self.field_pixmap = QPixmap()
 
@@ -99,29 +100,37 @@ class FieldWidget(QWidget):
             self.pointerPress(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomPress(event)
-        elif self.mouse_mode == FieldWidget.PENCIL:
+        elif self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
             self.pencilPress(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampPress(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDLINE:
+            self.linePress(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE:
+            self.linePress(event, closed=False)
 
     def mouseMoveEvent(self, event):
-        if not event.buttons():
-            self.updateStatusBar(event)
-            return
-        if self.mouse_mode == FieldWidget.POINTER:
+        self.updateStatusBar(event)
+        if self.mouse_mode == FieldWidget.POINTER and event.buttons():
             self.pointerMove(event)
-        elif self.mouse_mode == FieldWidget.PANZOOM:
+        elif self.mouse_mode == FieldWidget.PANZOOM and event.buttons():
             self.panzoomMove(event)
-        elif self.mouse_mode == FieldWidget.PENCIL:
+        elif (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL) and event.buttons():
             self.pencilMove(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
+            self.lineMove(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
+            self.lineMove(event, closed=False)
 
     def mouseReleaseEvent(self, event):
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerRelease(event)
         if self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomRelease(event)
-        elif self.mouse_mode == FieldWidget.PENCIL:
-            self.pencilRelease(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+            self.pencilRelease(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENPENCIL:
+            self.pencilRelease(event, closed=False)
         
     def panzoomPress(self, event):
         """Mouse is clicked in panzoom mode"""
@@ -230,23 +239,10 @@ class FieldWidget(QWidget):
 
         self.update()
 
-    def pencilRelease(self, event):
+    def pencilRelease(self, event, closed=True):
         """Mouse is released in pencil mode"""
         # calculate actual trace coordinates on the field and reload field view
-        if len(self.current_trace) > 1:
-            trace_grid = Grid(self.current_trace)
-            trace_grid.generateGrid()
-            self.current_trace = trace_grid.getExteriorPoints()
-            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=True)
-            for point in self.current_trace:
-                field_point = self.pixmapPointToField(point)
-                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
-                new_trace.add(rtform_point)
-            self.traces.append(new_trace)
-            self.generateView(generate_image=False)
-            self.selected_traces.append(new_trace)
-            self.drawTrace(new_trace, highlight=True)
-            self.update()
+        self.newTrace(self.current_trace, closed=closed)
     
     def pointerPress(self, event):
         """Mouse is pressed in pointer mode"""
@@ -280,6 +276,71 @@ class FieldWidget(QWidget):
         self.drawTrace(new_trace, highlight=True)
         self.update()
     
+    def linePress(self, event, closed=True):
+        x, y = event.x(), event.y()
+        if event.button() == Qt.LeftButton:
+            if self.is_line_tracing:
+                self.current_trace.append((x, y))
+                self.field_pixmap = self.field_pixmap_copy.copy()
+                painter = QPainter(self.field_pixmap)
+                color = QColor(*self.tracing_trace.color)
+                painter.setPen(QPen(color, 1))
+                if closed:
+                    start = 0
+                else:
+                    start = 1
+                for i in range(start, len(self.current_trace)):
+                    painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+                painter.end()
+                self.update()
+            else:
+                self.current_trace = [(x, y)]
+                self.is_line_tracing = True
+        elif event.button() == Qt.RightButton:
+            if self.is_line_tracing:
+                if closed:
+                    self.newTrace(self.current_trace, closed=True)
+                else:
+                    self.newTrace(self.current_trace, closed=False)
+                self.is_line_tracing = False
+    
+    def lineMove(self, event, closed=True):
+        x, y = event.x(), event.y()
+        self.field_pixmap = self.field_pixmap_copy.copy()
+        painter = QPainter(self.field_pixmap)
+        color = QColor(*self.tracing_trace.color)
+        pen = QPen(color, 1)
+        painter.setPen(pen)
+        if closed:
+            start = 0
+        else:
+            start = 1
+        for i in range(start, len(self.current_trace)):
+            painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+        pen.setDashPattern([2,5])
+        painter.setPen(pen)
+        painter.drawLine(*self.current_trace[-1], x, y)
+        if closed:
+            painter.drawLine(*self.current_trace[0], x, y)
+        self.update()
+    
+    def newTrace(self, pix_trace, closed=True):
+        if len(pix_trace) > 1:
+            if closed:
+                trace_grid = Grid(pix_trace)
+                trace_grid.generateGrid()
+                pix_trace = trace_grid.getExteriorPoints()
+            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
+            for point in pix_trace:
+                field_point = self.pixmapPointToField(point)
+                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
+                new_trace.add(rtform_point)
+            self.traces.append(new_trace)
+            self.generateView(generate_image=False)
+            self.selected_traces.append(new_trace)
+            self.drawTrace(new_trace, highlight=True)
+            self.update()
+
     def deselectAllTraces(self):
         """Deselect all traces (Ctrl+D)"""
         for trace in self.selected_traces:

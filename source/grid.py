@@ -209,7 +209,6 @@ def reducePoints(points):
             reduced_points.pop(i)
         else:
             i += 1
-    print(len(reduced_points) / len(points))
     return reduced_points
 
 def getExterior(points):

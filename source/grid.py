@@ -1,3 +1,5 @@
+import math
+
 CC_TO_VECTOR = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))  
 
 class Grid():
@@ -37,19 +39,19 @@ class Grid():
                 self.grid[i].append(0)
         for i in range(len(self.contours)):
             contour = self.contours[i]
-            prev_point = contour[-1]
             for j in range(len(contour)):
-                x1, y1 = prev_point
+                x1, y1 = contour[j-1]
                 x2, y2 = contour[j]
                 x1 -= xmin
                 y1 -= ymin
                 x2 -= xmin
                 y2 -= ymin
                 self._drawGridLine(x1, y1, x2, y2)
-                prev_point = contour[j]
         self.grid_h = len(self.grid)
         self.grid_w = len(self.grid[0])
         self.grid_shift = xmin, ymin
+
+        self.printGrid()
 
     # DDA algorithm (source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm)
     def _drawGridLine(self, x0, y0, x1, y1):
@@ -65,26 +67,35 @@ class Grid():
         x_increment = dx / steps
         y_increment = dy / steps
 
-        x = x0
-        y = y0
-        self.grid[y][x] = 1
+        x, y = x0, y0
+        self.grid[y][x] += 1
+        last_x, last_y = x, y
         for i in range(steps):
             x += x_increment
             y += y_increment
             rx = round(x)
             ry = round(y)
-            self.grid[ry][rx] = 1
+            if (rx != last_x and ry != last_y):
+                self.grid[last_y][rx] += 1
+                self.grid[ry][rx] += 1
+                last_x, last_y = rx, ry
+            elif (rx != last_x or ry != last_y):
+                self.grid[ry][rx] += 1
+                last_x, last_y = rx, ry
+
 
     def printGrid(self):
         for r in range(len(self.grid)):
             for c in range(len(self.grid[r])):
-                if self.grid[r][c]: print("x", end="")
+                if self.grid[r][c]: print(self.grid[r][c], end="")
                 else: print(" ", end="")
             print()
     
-    def _generateExteriorChainCode(self, x=0, y=0):
-        self.exterior_cc = []
+    def generateExterior(self, x=0, y=0):
+        exterior = []
         x1, y1 = x, y
+        xshift = self.grid_shift[0]
+        yshift = self.grid_shift[1]
         while not self.grid[y1][x1]:
             x1 += 1
             if x1 == self.grid_w:
@@ -92,19 +103,22 @@ class Grid():
                 y1 += 1
                 if y1 == self.grid_h:
                     return
-        self.exterior_origin = (x1, y1)
+        exterior_origin = (x1, y1)
+        if self.grid[y1][x1] > 1:
+            exterior.append((x1 + xshift, y1 + yshift))
         for c in range(8):
             v = CC_TO_VECTOR[c]
             x2 = x1 + v[0]
             y2 = y1 + v[1]
             if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
                 if self.grid[y2][x2]:
-                    self.exterior_cc.append(c)
                     x1 = x2
                     y1 = y2
                     last_c = c
                     break
-        while (x1, y1) != self.exterior_origin:
+        if self.grid[y1][x1] > 1:
+            exterior.append((x1 + xshift, y1 + yshift))
+        while (x1, y1) != exterior_origin:
             last_c = (last_c + 5) % 8
             for i in range(7):
                 c = (last_c + i) % 8
@@ -113,35 +127,13 @@ class Grid():
                 y2 = y1 + v[1]
                 if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
                     if self.grid[y2][x2]:
-                        self.exterior_cc.append(c)
                         x1 = x2
                         y1 = y2
                         last_c = c
+                        if self.grid[y1][x1] > 1:
+                            exterior.append((x1 + xshift, y1 + yshift))
                         break
-
-    def getExteriorPoints(self):
-        self._generateExteriorChainCode()
-        x1, y1 = self.exterior_origin
-        x1 += self.grid_shift[0]
-        y1 += self.grid_shift[1]
-        points = [(x1,y1)]
-        polygon_pts = [(x1,y1)]
-        for i in range(len(self.exterior_cc)-1):
-            c1 = self.exterior_cc[i]
-            v1 = CC_TO_VECTOR[c1]
-            x1 += v1[0]
-            y1 += v1[1]
-            polygon_pts.append((x1,y1))
-            c2 = self.exterior_cc[i+1]
-            v2 = CC_TO_VECTOR[c2]
-            x2 = x1 + v2[0]
-            y2 = y1 + v2[1]
-            if polygonArea(polygon_pts + [(x2, y2)]) > 8: # check area of polygon two points ahead
-                pt1 = polygon_pts[-2]
-                pt2 = polygon_pts[-1]
-                points.append(pt1)
-                polygon_pts = [pt1, pt2]
-        return points
+        return exterior
     
     def _deleteContour(self, x, y):
         stack = [(x,y)]
@@ -171,23 +163,7 @@ class Grid():
                 self._deleteContour(x1, y1)
                 x1 += self.grid_shift[0]
                 y1 += self.grid_shift[1]
-                points = [(x1,y1)]
-                polygon_pts = [(x1,y1)]
-                for i in range(len(self.exterior_cc)-1):
-                    c1 = self.exterior_cc[i]
-                    v1 = CC_TO_VECTOR[c1]
-                    x1 += v1[0]
-                    y1 += v1[1]
-                    polygon_pts.append((x1,y1))
-                    c2 = self.exterior_cc[i+1]
-                    v2 = CC_TO_VECTOR[c2]
-                    x2 = x1 + v2[0]
-                    y2 = y1 + v2[1]
-                    if polygonArea(polygon_pts + [(x2, y2)]) > 8: # check area of polygon two points ahead
-                        pt1 = polygon_pts[-2]
-                        pt2 = polygon_pts[-1]
-                        points.append(pt1)
-                        polygon_pts = [pt1, pt2]
+                points = self.chainCodeToPoints(self.exterior_cc, x1, y1)
                 merged_contours.append(points)
         self.grid = grid_copy
         if num_exteriors == len(self.contours):
@@ -195,22 +171,7 @@ class Grid():
         else:
             return merged_contours
 
-# shoelace formula (source: https://algorithmtutor.com/Computational-Geometry/Area-of-a-polygon-given-a-set-of-points/)
-def polygonArea(vertices):
-    if len(vertices) == 2:
-        return 0
-
-    psum = 0
-    nsum = 0
-
-    for i in range(len(vertices)):
-        sindex = (i + 1) % len(vertices)
-        prod = vertices[i][0] * vertices[sindex][1]
-        psum += prod
-
-    for i in range(len(vertices)):
-        sindex = (i + 1) % len(vertices)
-        prod = vertices[sindex][0] * vertices[i][1]
-        nsum += prod
-
-    return abs(1/2*(psum - nsum))
+def getExterior(points):
+    grid = Grid(points)
+    grid.generateGrid()
+    return grid.generateExterior()

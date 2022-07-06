@@ -4,11 +4,11 @@ CC_TO_VECTOR = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))
 
 class Grid():
 
-    def __init__(self, points=None):
-        self.contours = []
+    def __init__(self, contours, cutline=None):
+        self.contours = contours
+        self.cutline = cutline
         self.grid = []
-        if points:
-            self.addClosedContour(points)
+        self._generateGrid()
     
     def printGrid(self):
         for r in range(len(self.grid)):
@@ -16,9 +16,6 @@ class Grid():
                 if self.grid[r][c]: print(self.grid[r][c], end="")
                 else: print(" ", end="")
             print()
-    
-    def addClosedContour(self, points):
-        self.contours.append(points)
     
     # DDA algorithm (source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm)
     def _drawGridLine(self, x0, y0, x1, y1):
@@ -46,6 +43,35 @@ class Grid():
                 self.grid[ry][rx] += 1
                 last_x, last_y = rx, ry
     
+    def _drawCutLine(self, x0, y0, x1, y1):
+        if (x0 == x1 and y0 == y1):
+            return
+        dx = x1 - x0
+        dy = y1 - y0
+        if (abs(dx) > abs(dy)):
+            steps = abs(dx)
+        else:
+            steps = abs(dy)
+        
+        x_increment = dx / steps
+        y_increment = dy / steps
+
+        x, y = x0, y0
+        if 0 <= x < len(self.grid[0]) and 0 <= y < len(self.grid):
+            self.grid[y][x] += 1
+        last_x, last_y = x, y
+        for i in range(steps):
+            x += x_increment
+            y += y_increment
+            rx = round(x)
+            ry = round(y)
+            if (rx != last_x or ry != last_y) and 0 <= rx < len(self.grid[0]) and 0 <= ry < len(self.grid):
+                if self.grid[rx][ry] <= 0:
+                    self.grid[ry][rx] -= 1
+                else:
+                    self.grid[ry][rx] = -self.grid[ry][rx] - 1
+                last_x, last_y = rx, ry
+
     def _getMinMaxXY(self):
         xmin = self.contours[0][0][0]
         ymin = self.contours[0][0][1]
@@ -63,7 +89,7 @@ class Grid():
                     ymax = point[1]
         return xmin, ymin, xmax, ymax
     
-    def generateGrid(self):
+    def _generateGrid(self):
         self.grid = []
         xmin, ymin, xmax, ymax = self._getMinMaxXY()
         for i in range(ymax - ymin + 1):
@@ -84,7 +110,7 @@ class Grid():
         self.grid_w = len(self.grid[0])
         self.grid_shift = xmin, ymin
     
-    def checkSurrounding(self, x, y):
+    def _checkSurrounding(self, x, y):
         count = 0
         for i in range(8):
             v = CC_TO_VECTOR[i]
@@ -111,7 +137,7 @@ class Grid():
                 if y1 == self.grid_h:
                     return
         exterior_origin = (x1, y1)
-        if self.grid[y1][x1] > 1 or self.checkSurrounding(x1, y1) >= 4:
+        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:
             exterior.append((x1 + xshift, y1 + yshift))
         for c in range(8):
             v = CC_TO_VECTOR[c]
@@ -123,7 +149,7 @@ class Grid():
                     y1 = y2
                     last_c = c
                     break
-        if self.grid[y1][x1] > 1 or self.checkSurrounding(x1, y1) >= 4:
+        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:
             exterior.append((x1 + xshift, y1 + yshift))
         while (x1, y1) != exterior_origin:
             last_c = (last_c + 5) % 8
@@ -137,7 +163,7 @@ class Grid():
                         x1 = x2
                         y1 = y2
                         last_c = c
-                        if self.grid[y1][x1] > 1 or self.checkSurrounding(x1, y1) >= 4:
+                        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:
                             exterior.append((x1 + xshift, y1 + yshift))
                         break
         if delete:
@@ -212,17 +238,13 @@ def reducePoints(points):
     return reduced_points
 
 def getExterior(points):
-    grid = Grid(points)
-    grid.generateGrid()
+    grid = Grid([points])
     new_points = grid.generateExterior()
     new_points = reducePoints(new_points)
     return new_points
 
 def mergeTraces(trace_list):
-    grid = Grid()
-    for points in trace_list:
-        grid.addClosedContour(points)
-    grid.generateGrid()
+    grid = Grid(trace_list)
     #grid.printGrid()
     new_traces = []
     grid_has_traces = True

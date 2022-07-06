@@ -183,29 +183,6 @@ class Grid():
                     y2 = y1 + v[1]
                     if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
                         stack.append((x2,y2))
-    
-    def getMergedPoints(self):
-        grid_copy = self.grid.copy()
-        grid_contains_contours = True
-        merged_contours = []
-        num_exteriors = 0
-        while grid_contains_contours:
-            self._generateExteriorChainCode()
-            if not self.exterior_cc:
-                grid_contains_contours = False
-            else:
-                num_exteriors += 1
-                x1, y1 = self.exterior_origin
-                self._deleteContour(x1, y1)
-                x1 += self.grid_shift[0]
-                y1 += self.grid_shift[1]
-                points = self.chainCodeToPoints(self.exterior_cc, x1, y1)
-                merged_contours.append(points)
-        self.grid = grid_copy
-        if num_exteriors == len(self.contours):
-            return None
-        else:
-            return merged_contours
 
 def polygonArea(vertices):
     if len(vertices) == 2:

@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Qt
 from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
-from grid import Grid
+from grid import getExterior, mergeTraces
 from trace import Trace
 
 class FieldWidget(QWidget):
@@ -328,9 +328,7 @@ class FieldWidget(QWidget):
     def newTrace(self, pix_trace, closed=True):
         if len(pix_trace) > 1:
             if closed:
-                trace_grid = Grid(pix_trace)
-                trace_grid.generateGrid()
-                pix_trace = trace_grid.getExteriorPoints()
+                pix_trace = getExterior(pix_trace)
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(point)
@@ -427,32 +425,28 @@ class FieldWidget(QWidget):
         if len(self.selected_traces) <= 1:
             print("Cannot merge one or less traces.")
             return
-        contours = []
+        traces = []
         first_trace = self.selected_traces[0]
         name = first_trace.name
         color = first_trace.color
         for trace in self.selected_traces:
             if trace.name != name:
-                print("Cannot merge differently named traces")
+                print("Cannot merge differently named traces.")
                 return
-            contours.append([])
+            traces.append([])
             for point in trace.points:
-                p = round(point[0] / self.mag), round(point[1] / self.mag)
-                contours[-1].append(p)
-        grid = Grid()
-        for contour in contours:
-            grid.addClosedContour(contour)
-        grid.generateGrid()
-        merged_contours = grid.getMergedPoints()
-        if not merged_contours:
-            print("Contours already merged.")
+                p = self.fieldPointToPixmap(point)
+                traces[-1].append(p)
+        merged_traces = mergeTraces(traces)
+        if merged_traces == traces:
+            print("Traces already merged.")
             return
         self.deleteSelectedTraces()
-        for contour in merged_contours:
+        for trace in merged_traces:
             new_trace = Trace(name, color)
             new_trace.color = color
-            for point in contour:
-                field_point = point[0] * self.mag, point[1] * self.mag
+            for point in trace:
+                field_point = self.pixmapPointToField(point)
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
@@ -464,14 +458,14 @@ class FieldWidget(QWidget):
 
     def pixmapPointToField(self, point):
         """Convert main window coordinates to field window coordinates"""
-        x = (point[0] + 0.5) / self.x_scaling * self.mag + self.current_window[0]
-        y = (self.pixmap_size[1] - (point[1] + 0.5)) / self.y_scaling * self.mag  + self.current_window[1]
+        x = (point[0]) / self.x_scaling * self.mag + self.current_window[0]
+        y = (self.pixmap_size[1] - (point[1])) / self.y_scaling * self.mag  + self.current_window[1]
         return x, y
     
     def fieldPointToPixmap(self, point):
         """Convert field window coordinates to main window coordinates"""
-        x = (point[0] - self.current_window[0]) / self.mag * self.x_scaling - 0.5
-        y = (point[1] - self.current_window[1])/ self.mag * self.y_scaling - 0.5
+        x = (point[0] - self.current_window[0]) / self.mag * self.x_scaling
+        y = (point[1] - self.current_window[1])/ self.mag * self.y_scaling
         y = self.pixmap_size[1] - y
         return round(x), round(y)
     

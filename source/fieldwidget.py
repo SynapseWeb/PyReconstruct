@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Qt
 from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
-from grid import Grid
+from grid import getExterior
 from trace import Trace
 
 class FieldWidget(QWidget):
@@ -328,9 +328,7 @@ class FieldWidget(QWidget):
     def newTrace(self, pix_trace, closed=True):
         if len(pix_trace) > 1:
             if closed:
-                trace_grid = Grid(pix_trace)
-                trace_grid.generateGrid()
-                pix_trace = trace_grid.getExteriorPoints()
+                pix_trace = getExterior(pix_trace)
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(point)

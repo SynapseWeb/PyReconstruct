@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Qt
 from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
-from grid import getExterior, mergeTraces
+from grid import getExterior, mergeTraces, reducePoints
 from trace import Trace
 
 class FieldWidget(QWidget):
@@ -329,6 +329,8 @@ class FieldWidget(QWidget):
         if len(pix_trace) > 1:
             if closed:
                 pix_trace = getExterior(pix_trace)
+            else:
+                pix_trace = reducePoints(pix_trace)
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(point)
@@ -430,6 +432,9 @@ class FieldWidget(QWidget):
         name = first_trace.name
         color = first_trace.color
         for trace in self.selected_traces:
+            if trace.closed == False:
+                print("Can only merge closed traces.")
+                return
             if trace.name != name:
                 print("Cannot merge differently named traces.")
                 return

@@ -6,6 +6,9 @@ class Trace():
         self.closed = closed
         self.points = []
         self.hidden = False
+
+        # for translation between Reconstruct and pyReconstruct
+        self.new = True
     
     def add(self, point):
         """Add a point to the trace"""
@@ -23,6 +26,9 @@ class Trace():
     def setHidden(self, hidden=True):
         self.hidden = hidden
     
+    def setNew(self, new):
+        self.new = new
+
     def getDict(self):
         return self.__dict__
     

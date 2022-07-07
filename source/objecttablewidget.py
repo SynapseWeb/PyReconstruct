@@ -31,7 +31,6 @@ class ObjectTableWidget(QDockWidget):
             horizontal_headers.append("Flat Area")
         if quantities["volume"]:
             horizontal_headers.append("Volume")
-        print(horizontal_headers)
         self.table = QTableWidget(len(self._objdict), len(horizontal_headers))
         row = 0
         for name in sorted(self._objdict.keys()):

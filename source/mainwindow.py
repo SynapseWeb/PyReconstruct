@@ -1,8 +1,9 @@
 import os
 import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QShortcut, QApplication)
+    QInputDialog, QShortcut, QApplication, QProgressDialog)
 from PySide2.QtGui import (QKeySequence)
+from PySide2.QtCore import Qt
 from objecttablewidget import ObjectTableWidget
 from mousedockwidget import MouseDockWidget
 
@@ -10,6 +11,10 @@ from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
+from pyrecon.utils.reconstruct_reader import process_series_directory
+from pyrecon.utils.reconstruct_writer import write_series
+from pyrecon.classes.contour import Contour
+from pyrecon.classes.transform import Transform as XMLTransform
 
 class MainWindow(QMainWindow):
 
@@ -22,9 +27,10 @@ class MainWindow(QMainWindow):
         self.new_act = self.filemenu.addAction("New")
         self.new_act.setShortcut("Ctrl+N")
         self.new_act.triggered.connect(self.newSeries) # create a new series
-        self.new_act
         self.open_act = self.filemenu.addAction("Open")
         self.open_act.triggered.connect(self.openSeries) # open an existing series
+        self.new_from_xml_act = self.filemenu.addAction("New from xml series")
+        self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
 
         self.field = None
         self.setMouseTracking(True)
@@ -69,33 +75,8 @@ class MainWindow(QMainWindow):
         for i in range(len(image_locations)):
             series_data["sections"].append(series_name + "." + str(i))
 
-        series_data["palette_traces"] = []
-
-        diamond_trace = Trace("diamond", (255, 0, 0))
-        diamond_trace.points = [(0, 0.5), (-0.5, 0), (0, -0.5), (0.5, 0)]
-        series_data["palette_traces"].append(diamond_trace.getDict())
-
-        triangle_trace = Trace("triangle", (0, 255, 0))
-        triangle_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0, 0.5)]
-        series_data["palette_traces"].append(triangle_trace.getDict())
-
-        circle_trace = Trace("circle", (0, 0, 255))
-        circle_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.5), (0.16667, -0.5),
-                               (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.5), (-0.16667, 0.5)]
-        series_data["palette_traces"].append(circle_trace.getDict())
-
-        square_trace = Trace("square", (255, 0, 255))
-        square_trace.points = [(0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5)]
-        series_data["palette_traces"].append(square_trace.getDict())
-
-        cross_trace = Trace("cross", (0, 255, 255))
-        cross_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.16667),
-                              (-0.16667, -0.5), (0.16667, -0.5), (0.16667, -0.16667),
-                              (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.16667),
-                              (0.16667, 0.5), (-0.16667, 0.5), (-0.16667, 0.16667)]
-        series_data["palette_traces"].append(cross_trace.getDict())
-
-        series_data["current_trace"] = diamond_trace.getDict()
+        series_data["palette_traces"] = getDefaultPaletteTraces()
+        series_data["current_trace"] = series_data["palette_traces"][0]
 
         with open(self.wdir + series_name + ".ser", "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
@@ -114,6 +95,115 @@ class MainWindow(QMainWindow):
         # open series after creating
         self.openSeries(self.wdir + series_name + ".ser")
     
+    def newSeriesFromXML(self):
+        xml_file, ext = QFileDialog.getOpenFileName(self, "Open the XML SER file", filter="*.ser")
+        xml_dir = xml_file[:xml_file.rfind("/")]
+        json_dir = QFileDialog.getExistingDirectory(self, "Select folder to contain JSON files")
+        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Open XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        series = process_series_directory(xml_dir, progbar=progbar)
+
+        series_data = {}
+        series_data["sections"] = []
+        series_data["current_section"] = 0
+        series_data["window"] = [0, 0, 1, 1]
+        series_data["sections"] = []
+        series_data["palette_traces"] = getDefaultPaletteTraces()
+        series_data["current_trace"] = series_data["palette_traces"][0]
+
+        progbar = QProgressDialog("Importing series data...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Import XML Data")
+        progbar.setWindowModality(Qt.WindowModal)
+        prog_value = 0
+        final_value = len(series.sections)
+        for n, section in sorted(series.sections.items()):
+            series_data["sections"].append(section.name)
+            section_data = {}
+            image = section.images[0]
+            section_data["src"] = image.src
+            section_data["mag"] = image.mag
+            section_data["thickness"] = section.thickness
+            transform = image.transform
+            forward_transform = transform._tform
+            ft = forward_transform
+            section_data["tform"] = (ft[0, 0], ft[0, 1], ft[0, 2], ft[1, 0], ft[1, 1], ft[1, 2])
+            section_data["traces"] = []
+            for contour in section.contours:
+                name = contour.name
+                color = list(contour.border)
+                for i in range(len(color)):
+                    color[i] *= 255
+                closed = contour.closed
+                new_trace = Trace(name, color, closed=closed, exported=True)
+                points = contour.points
+                points = contour.transform.transformPoints(points)
+                points = transform.inverse.transformPoints(points)
+                new_trace.points = points
+                section_data["traces"].append(new_trace.getDict())
+
+            with open(json_dir + "/" + section.name, "w") as section_file:
+                section_file.write(json.dumps(section_data, indent=2))
+            
+            if progbar.wasCanceled(): return
+            prog_value += 1
+            progbar.setValue(prog_value / final_value * 100)
+
+        series_fp = json_dir + "/" + series.name + ".ser"
+        with open(series_fp, "w") as series_file:
+                series_file.write(json.dumps(series_data, indent=2))
+        self.openSeries(series_fp)
+    
+    def exportTracesToXML(self):
+        self.saveAllData()
+        xml_file, ext = QFileDialog.getOpenFileName(self, "Locate the XML SER file", filter="*.ser")
+        xml_dir = xml_file[:xml_file.rfind("/")]
+        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Open XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        xml_series = process_series_directory(xml_dir, progbar=progbar)
+
+        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Open XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        prog_value = 0
+        final_value = len(self.series.sections)
+        for section_name in self.series.sections:
+            section = Section(self.wdir + section_name)
+            section_num = int(section_name[section_name.rfind(".")+1:])
+            for trace in section.traces:
+                if not trace.exported:
+                    contour_color = list(trace.color)
+                    for i in range(len(contour_color)):
+                        contour_color[i] *= 255
+                    tf = section.tform
+                    xcoef = (tf[2], tf[0], tf[1])
+                    ycoef = (tf[5], tf[3], tf[4])
+                    transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
+                    new_contour = Contour(
+                        name = trace.name,
+                        comment = "",
+                        hidden = False,
+                        closed = trace.closed,
+                        simplified = True,
+                        mode = 11,
+                        border = contour_color,
+                        fill = contour_color,
+                        points = trace.points,
+                        transform = transform
+                    )
+                    xml_series.sections[section_num].contours.append(new_contour)
+                    trace.setExported(True)
+            if progbar.wasCanceled(): return
+            prog_value += 1
+            progbar.setValue(prog_value / final_value * 100)
+        
+        progbar = QProgressDialog("Writing to XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Write XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
+        
+
     def openSeries(self, series_fp=None):
         """Open an existing series"""
         if series_fp: # if series is provided (only the case if opening from new)
@@ -151,6 +241,8 @@ class MainWindow(QMainWindow):
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
         self.objectlist_act.triggered.connect(self.openObjectList)
+        self.export_to_xml_act = self.filemenu.addAction("Export added traces to XML...")
+        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
         # create the field and set as main widget
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
@@ -231,7 +323,10 @@ class MainWindow(QMainWindow):
         quantities["surface_area"] = True
         quantities["flat_area"] = True
         quantities["volume"] = True
-        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
+        progbar = QProgressDialog("Loading object data...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Object Data")
+        progbar.setWindowModality(Qt.WindowModal)
+        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, progbar, self)
 
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""
@@ -240,3 +335,32 @@ class MainWindow(QMainWindow):
             return
         self.saveAllData()
         event.accept()
+
+def getDefaultPaletteTraces():
+    palette_traces = []
+
+    diamond_trace = Trace("diamond", (255, 0, 0))
+    diamond_trace.points = [(0, 0.5), (-0.5, 0), (0, -0.5), (0.5, 0)]
+    palette_traces.append(diamond_trace.getDict())
+
+    triangle_trace = Trace("triangle", (0, 255, 0))
+    triangle_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0, 0.5)]
+    palette_traces.append(triangle_trace.getDict())
+
+    circle_trace = Trace("circle", (0, 0, 255))
+    circle_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.5), (0.16667, -0.5),
+                            (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.5), (-0.16667, 0.5)]
+    palette_traces.append(circle_trace.getDict())
+
+    square_trace = Trace("square", (255, 0, 255))
+    square_trace.points = [(0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5)]
+    palette_traces.append(square_trace.getDict())
+
+    cross_trace = Trace("cross", (0, 255, 255))
+    cross_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.16667),
+                            (-0.16667, -0.5), (0.16667, -0.5), (0.16667, -0.16667),
+                            (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.16667),
+                            (0.16667, 0.5), (-0.16667, 0.5), (-0.16667, 0.16667)]
+    palette_traces.append(cross_trace.getDict())
+
+    return palette_traces

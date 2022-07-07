@@ -1,22 +1,12 @@
 * High-priority tasks
 
-- [ ] Object list
-   1) [ ] Start / End
-   2) [ ] Count 
-   3) [ ] Flat area
-   4) [ ] Surface area? (Different algorithms?)
-   5) [ ] Volume
 - [ ] JSON -> XML -> JSON
-- [ ] Section thickness
+- [ ] Undo and redo functions
 - [ ] Meet with Vijay (Neuroglancer, automation?)
 
 * Must-do
 
 - [ ] Run on mac machine
-
-* Simple tasks
-
-- [ ] CTRL-s hotkey to save (Patrick request)
 
 * Medium-priority tasks
 
@@ -25,7 +15,6 @@
 - [ ] Z-traces
 - [ ] Visualize in 3D in Blender / Neuroglancer
 - [ ] Cool "3D" or automated tool (cutting off spines?, import to Blender?)
-- [ ] Redo function (undo-undo)
 - [ ] Calibration
 - [ ] Add tags to objects
 - [ ] Trace list
@@ -56,4 +45,14 @@
 - [X] Correct merge tool
 - [X] Ctrl+H to hide selected traces
 - [X] Shift+H to toggle on/off hide all traces
+- [X] Object list
+   1) [X] Start / End
+   2) [X] Count 
+   3) [X] Flat area
+   4) [X] Surface area? (Different algorithms?)
+   5) [X] Volume
+- [X] Section thickness
+- [X] CTRL-s hotkey to save (Patrick request)
+
+
 

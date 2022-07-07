@@ -6,6 +6,8 @@
    3) [ ] Flat area
    4) [ ] Surface area? (Different algorithms?)
    5) [ ] Volume
+- [ ] JSON -> XML -> JSON
+- [ ] Section thickness
 - [ ] Meet with Vijay (Neuroglancer, automation?)
 
 * Must-do
@@ -15,18 +17,16 @@
 * Simple tasks
 
 - [ ] CTRL-s hotkey to save (Patrick request)
-- [ ] Hotkey (h? hh?) to turn on/off traces
 
 * Medium-priority tasks
 
+- [ ] Knife tool
 - [ ] Reconcropper
-- [ ] JSON -> XML -> JSON
 - [ ] Z-traces
 - [ ] Visualize in 3D in Blender / Neuroglancer
 - [ ] Cool "3D" or automated tool (cutting off spines?, import to Blender?)
 - [ ] Redo function (undo-undo)
 - [ ] Calibration
-- [ ] Section thickness
 - [ ] Add tags to objects
 - [ ] Trace list
 
@@ -53,6 +53,7 @@
 - [X] Stamps
 - [X] Click-tracing
 - [X] Open line and pencil tracing
-- [X] Knife tool
 - [X] Correct merge tool
+- [X] Ctrl+H to hide selected traces
+- [X] Shift+H to toggle on/off hide all traces
 

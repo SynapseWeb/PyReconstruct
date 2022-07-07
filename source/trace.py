@@ -1,6 +1,6 @@
 class Trace():
 
-    def __init__(self, name, color, closed=True):
+    def __init__(self, name, color, closed=True, exported=False):
         self.name = name
         self.color = color
         self.closed = closed
@@ -8,7 +8,7 @@ class Trace():
         self.hidden = False
 
         # for translation between Reconstruct and pyReconstruct
-        self.new = True
+        self.exported = exported
     
     def add(self, point):
         """Add a point to the trace"""
@@ -26,8 +26,8 @@ class Trace():
     def setHidden(self, hidden=True):
         self.hidden = hidden
     
-    def setNew(self, new):
-        self.new = new
+    def setExported(self, exported):
+        self.exported = exported
 
     def getDict(self):
         return self.__dict__

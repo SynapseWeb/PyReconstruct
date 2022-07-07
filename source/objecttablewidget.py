@@ -6,7 +6,7 @@ from objecttableitem import ObjectTableItem
 
 class ObjectTableWidget(QDockWidget):
 
-    def __init__(self, series, wdir, quantities, parent):
+    def __init__(self, series, wdir, quantities, progbar, parent):
         super().__init__(parent)
         self.series = series
         self.wdir = wdir
@@ -17,7 +17,8 @@ class ObjectTableWidget(QDockWidget):
         self.setWindowTitle("Object List")
 
         self._objdict = {}
-        self.loadSeriesData()
+        self.loadSeriesData(progbar)
+        if progbar.wasCanceled(): return
 
         horizontal_headers = ["Name"]
         if quantities["range"]:
@@ -61,15 +62,17 @@ class ObjectTableWidget(QDockWidget):
         self.table.verticalHeader().hide()
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
-        total_w = 5
+        total_w = 10
         for i in range(self.table.columnCount()):
             total_w += self.table.columnWidth(i)
         self.setWidget(self.table)
         self.resize(total_w, parent.height())
         self.show()
 
-    def loadSeriesData(self):
+    def loadSeriesData(self, progbar):
         self._objdict = {}
+        prog_value = 0
+        final_value = len(self.series.sections)
         for i in range(len(self.series.sections)):
             section = self.series.sections[i]
             section_num = int(section[section.rfind(".")+1:])
@@ -83,3 +86,6 @@ class ObjectTableWidget(QDockWidget):
                 if name not in self._objdict:
                     self._objdict[name] = ObjectTableItem(name)
                 self._objdict[name].addTrace(points, closed, section_num, section_thickness)
+            prog_value += 1
+            progbar.setValue(prog_value / final_value * 100)
+            if progbar.wasCanceled(): return

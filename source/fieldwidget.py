@@ -26,10 +26,11 @@ class FieldWidget(QWidget):
         window[3] = window[2]/self.pixmap_size[0] * self.pixmap_size[1]
         self.current_window = window
 
-        # establish defaults
+        # establish misc defaults
         self.selected_traces = []
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.is_line_tracing = False
+        self.all_traces_hidden = False
 
         self.field_pixmap = QPixmap()
 
@@ -57,6 +58,8 @@ class FieldWidget(QWidget):
 
         # create traces
         self.traces = section.traces.copy()
+        for trace in self.traces:
+            trace.setHidden(False)
         self.selected_traces = []
 
         self.updateStatusBar(None)
@@ -459,7 +462,25 @@ class FieldWidget(QWidget):
             self.update()
             self.selected_traces.append(new_trace)
             self.drawTrace(new_trace, highlight=True)
-
+    
+    def hideSelectedTraces(self):
+        for trace in self.selected_traces:
+            trace.setHidden(True)
+        self.selected_traces = []
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def toggleHideAllTraces(self):
+        if self.all_traces_hidden:
+            for trace in self.traces:
+                trace.setHidden(False)
+            self.all_traces_hidden = False
+        else:
+            for trace in self.traces:
+                trace.setHidden(True)
+            self.all_traces_hidden = True
+        self.generateView(generate_image=False)
+        self.update()
 
     def pixmapPointToField(self, point):
         """Convert main window coordinates to field window coordinates"""
@@ -558,11 +579,12 @@ class FieldWidget(QWidget):
         # draw all the traces
         self.traces_within_field = []
         for trace in self.traces:
-            within_field = self.drawTrace(trace)
-            if within_field:
-                self.traces_within_field.append(trace)
-                if trace in self.selected_traces:
-                    self.drawTrace(trace, highlight=True)
+            if not trace.hidden:
+                within_field = self.drawTrace(trace)
+                if within_field:
+                    self.traces_within_field.append(trace)
+                    if trace in self.selected_traces:
+                        self.drawTrace(trace, highlight=True)
         
         self.field_pixmap_copy = self.field_pixmap.copy()
     

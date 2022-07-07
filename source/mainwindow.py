@@ -3,6 +3,7 @@ import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication)
 from PySide2.QtGui import (QKeySequence)
+from objecttablewidget import ObjectTableWidget
 from mousedockwidget import MouseDockWidget
 
 from fieldwidget import FieldWidget
@@ -15,6 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("pyReconstruct")
+
         self.menubar = self.menuBar()
         self.filemenu = self.menubar.addMenu("File")
         self.new_act = self.filemenu.addAction("New")
@@ -23,6 +25,7 @@ class MainWindow(QMainWindow):
         self.new_act
         self.open_act = self.filemenu.addAction("Open")
         self.open_act.triggered.connect(self.openSeries) # open an existing series
+
         self.field = None
         self.setMouseTracking(True)
         self.setGeometry(100, 100, 500, 500)
@@ -35,10 +38,21 @@ class MainWindow(QMainWindow):
         if len(image_locations) == 0:
             return
         
+        # get the name of the series from user
+        series_name, confirmed = QInputDialog.getText(self, "Series Name", "What is the name of this series?")
+        if not confirmed:
+            return
+        
         # get calibration (microns per pix) from user
         mag, confirmed = QInputDialog.getDouble(self, "Section Calibration",
                                                 "What is the calibration for this series?",
-                                                0.00254, minValue=0, decimals=6)
+                                                0.00254, minValue=0.000001, decimals=6)
+
+        # get section thickness (microns) from user
+        thickness, confirmed = QInputDialog.getDouble(self, "Section Thickness",
+                                                "What is the section thickness for this series?",
+                                                0.05, minValue=0.000001, decimals=6)
+
         if not confirmed:
             return
         
@@ -46,11 +60,6 @@ class MainWindow(QMainWindow):
         first_image = image_locations[0]
         if "/" in first_image:
             self.wdir = first_image[:first_image.rfind("/")+1]
-        
-        # get the name of the series from user
-        series_name, confirmed = QInputDialog.getText(self, "Series Name", "What is the name of this series?")
-        if not confirmed:
-            return
         
         # create series data file (.ser)
         series_data = {}
@@ -96,6 +105,7 @@ class MainWindow(QMainWindow):
             section_data = {}
             section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]
             section_data["mag"] = mag
+            section_data["thickness"] = thickness
             section_data["tform"] = [1, 0, 0, 0, 1, 0]
             section_data["traces"] = []
             with open(self.wdir + series_name + "." + str(i), "w") as section_file:
@@ -137,16 +147,23 @@ class MainWindow(QMainWindow):
         # create status bar (at bottom of window)
         self.statusbar = self.statusBar()
 
+        # add to menu bar
+        self.objectmenu = self.menubar.addMenu("Object")
+        self.objectlist_act = self.objectmenu.addAction("Open object list")
+        self.objectlist_act.triggered.connect(self.openObjectList)
+
         # create the field and set as main widget
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
         self.setCentralWidget(self.field)
 
         # create mouse dock
-        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self)
+        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
 
         # create shortcuts
+        save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
+        save_sc.activated.connect(self.saveAllData)
         merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
         merge_sc.activated.connect(self.field.mergeSelectedTraces)
         deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
@@ -190,22 +207,36 @@ class MainWindow(QMainWindow):
     
     def changeSection(self, section_num):
         """Change the section of the field"""
-        self.saveFieldTraces()
+        self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field.loadSection(self.series.current_section, self.section)
     
-    def saveFieldTraces(self):
-        """Save the current field traces in the corresponding section file"""
+    def saveAllData(self):
         self.section.traces = self.field.traces
+        self.series.window = self.field.current_window
+        self.series.palette_traces = []
+        for button in self.mouse_dock.palette_buttons:
+            self.series.palette_traces.append(button.trace)
+            if button.isChecked():
+                self.series.current_trace = button.trace
         self.section.save()
+        self.series.save()
     
+    def openObjectList(self):
+        self.saveAllData()
+        quantities = {}
+        quantities["range"] = True
+        quantities["count"] = True
+        quantities["surface_area"] = True
+        quantities["flat_area"] = True
+        quantities["volume"] = True
+        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
+
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""
         if not self.field: # do not do anything if field is not created
             event.accept()
             return
-        self.saveFieldTraces()
-        self.series.window = self.field.current_window
-        self.series.save()
+        self.saveAllData()
         event.accept()

@@ -1,7 +1,11 @@
 * High-priority tasks
 
-- [ ] Knife tool
-- [ ] Correct merge tool
+- [ ] Object list
+   1) [ ] Start / End
+   2) [ ] Count 
+   3) [ ] Flat area
+   4) [ ] Surface area? (Different algorithms?)
+   5) [ ] Volume
 - [ ] Meet with Vijay (Neuroglancer, automation?)
 
 * Must-do
@@ -25,16 +29,11 @@
 - [ ] Section thickness
 - [ ] Add tags to objects
 - [ ] Trace list
-- [ ] Object list
-   1) [ ] Start / End
-   2) [ ] Count 
-   3) [ ] Flat area
-   4) [ ] Surface area? (Different algorithms?)
-   5) [ ] Volume
 
 * Low-priority tasks
 
 - [ ] Export images and traces as SVG file
+- [ ] In-program Python console
 - [ ] Add-on / extension menu
 - [ ] Make hotkeys editable by user
 - [ ] Give user option of selection number of RAM-loaded images
@@ -54,3 +53,6 @@
 - [X] Stamps
 - [X] Click-tracing
 - [X] Open line and pencil tracing
+- [X] Knife tool
+- [X] Correct merge tool
+

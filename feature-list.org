@@ -1,6 +1,7 @@
 * High-priority tasks
 
 - [ ] JSON -> XML -> JSON
+- [ ] Undo and redo functions
 - [ ] Meet with Vijay (Neuroglancer, automation?)
 
 * Must-do
@@ -14,7 +15,6 @@
 - [ ] Z-traces
 - [ ] Visualize in 3D in Blender / Neuroglancer
 - [ ] Cool "3D" or automated tool (cutting off spines?, import to Blender?)
-- [ ] Redo function (undo-undo)
 - [ ] Calibration
 - [ ] Add tags to objects
 - [ ] Trace list

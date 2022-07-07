@@ -7,7 +7,7 @@ from fieldwidget import FieldWidget
 
 class MouseDockWidget(QDockWidget):
 
-    def __init__(self, palette_traces, parent, button_size=30):
+    def __init__(self, palette_traces, selected_trace, parent, button_size=30):
         super().__init__(parent)
         self.parent_widget = parent
         self.setFloating(True)
@@ -32,7 +32,10 @@ class MouseDockWidget(QDockWidget):
         self.palette_traces = palette_traces
         self.palette_buttons = []
         for i in range(len(palette_traces)):
-            self.createPaletteButton(palette_traces[i], i % 5, i//5)
+            trace = palette_traces[i]
+            self.createPaletteButton(trace, i % 5, i//5)
+            if trace.isSameTrace(selected_trace):
+                self.palette_buttons[i].setChecked(True)
         self.central_widget.paletteButtonChanged = self.paletteButtonChanged # there's no way in hell this is good practice but it works
 
         self.setWidget(self.central_widget)

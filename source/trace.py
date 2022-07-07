@@ -11,6 +11,15 @@ class Trace():
         """Add a point to the trace"""
         self.points.append(point)
     
+    def isSameTrace(self, other):
+        if self.name != other.name:
+            return False
+        if self.color != other.color:
+            return False
+        if self.points != other.points:
+            return False
+        return True
+    
     def setHidden(self, hidden=True):
         self.hidden = hidden
     

@@ -151,6 +151,10 @@ class MainWindow(QMainWindow):
         merge_sc.activated.connect(self.field.mergeSelectedTraces)
         deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
         deselect_sc.activated.connect(self.field.deselectAllTraces)
+        hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
+        hide_sc.activated.connect(self.field.hideSelectedTraces)
+        hideall_sc = QShortcut(QKeySequence("Shift+H"), self)
+        hideall_sc.activated.connect(self.field.toggleHideAllTraces)
     
     def changeMouseMode(self, new_mode):
         self.field.setMouseMode(new_mode)

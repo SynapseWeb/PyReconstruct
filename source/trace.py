@@ -5,10 +5,14 @@ class Trace():
         self.color = color
         self.closed = closed
         self.points = []
+        self.hidden = False
     
     def add(self, point):
         """Add a point to the trace"""
         self.points.append(point)
+    
+    def setHidden(self, hidden=True):
+        self.hidden = hidden
     
     def getDict(self):
         return self.__dict__
@@ -17,4 +21,5 @@ class Trace():
         """Create a Contour object from a dictionary"""
         new_trace = Trace(d["name"], d["color"], d["closed"])
         new_trace.points = d["points"]
+        new_trace.setHidden(d["hidden"])
         return new_trace

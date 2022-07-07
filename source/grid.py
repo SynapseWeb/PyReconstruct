@@ -58,7 +58,10 @@ class Grid():
 
         x, y = x0, y0
         if 0 <= x < len(self.grid[0]) and 0 <= y < len(self.grid):
-            self.grid[y][x] += 1
+            if self.grid[rx][ry] <= 0:
+                self.grid[ry][rx] -= 1
+            else:
+                self.grid[ry][rx] = -self.grid[ry][rx] - 1
         last_x, last_y = x, y
         for i in range(steps):
             x += x_increment

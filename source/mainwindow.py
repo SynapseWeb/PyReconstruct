@@ -335,13 +335,10 @@ class MainWindow(QMainWindow):
         quantities = {}
         quantities["range"] = True
         quantities["count"] = True
-        quantities["surface_area"] = True
+        quantities["surface_area"] = False
         quantities["flat_area"] = True
         quantities["volume"] = True
-        progbar = QProgressDialog("Loading object data...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Object Data")
-        progbar.setWindowModality(Qt.WindowModal)
-        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, progbar, self)
+        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
 
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""

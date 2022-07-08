@@ -454,8 +454,7 @@ class FieldWidget(QWidget):
             new_trace.color = color
             for point in trace:
                 field_point = self.pixmapPointToField(point)
-                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
-                new_trace.add(rtform_point)
+                new_trace.add(field_point)
             self.traces.append(new_trace)
             self.generateView(generate_image=False)
             self.update()

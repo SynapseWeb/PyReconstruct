@@ -258,8 +258,8 @@ class FieldWidget(QWidget):
         # select and highlight trace if left button
         if selected_trace != None and event.button() == Qt.LeftButton:
             if not selected_trace in self.selected_traces:
-                self.drawTrace(selected_trace, highlight=True)
                 self.selected_traces.append(selected_trace)
+                self.generateView(generate_image=False)
                 self.update()
         # deselect and unhighlight trace if right button
         elif selected_trace != None and event.button() == Qt.RightButton:
@@ -275,9 +275,8 @@ class FieldWidget(QWidget):
         for point in self.tracing_trace.points:
             new_trace.add((point[0] + field_x, point[1] + field_y))
         self.traces.append(new_trace)
-        self.generateView(generate_image=False)
         self.selected_traces.append(new_trace)
-        self.drawTrace(new_trace, highlight=True)
+        self.generateView(generate_image=False)
         self.update()
     
     def linePress(self, event, closed=True):
@@ -340,9 +339,8 @@ class FieldWidget(QWidget):
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
-            self.generateView(generate_image=False)
             self.selected_traces.append(new_trace)
-            self.drawTrace(new_trace, highlight=True)
+            self.generateView(generate_image=False)
             self.update()
 
     def deselectAllTraces(self):
@@ -456,10 +454,9 @@ class FieldWidget(QWidget):
                 field_point = self.pixmapPointToField(point)
                 new_trace.add(field_point)
             self.traces.append(new_trace)
+            self.selected_traces.append(new_trace)
             self.generateView(generate_image=False)
             self.update()
-            self.selected_traces.append(new_trace)
-            self.drawTrace(new_trace, highlight=True)
     
     def hideSelectedTraces(self):
         for trace in self.selected_traces:

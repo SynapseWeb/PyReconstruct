@@ -1,7 +1,8 @@
 import os
 import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QShortcut, QApplication, QProgressDialog)
+    QInputDialog, QShortcut, QApplication, QProgressDialog,
+    QMessageBox)
 from PySide2.QtGui import (QKeySequence)
 from PySide2.QtCore import Qt
 from objecttablewidget import ObjectTableWidget
@@ -97,8 +98,12 @@ class MainWindow(QMainWindow):
     
     def newSeriesFromXML(self):
         xml_file, ext = QFileDialog.getOpenFileName(self, "Open the XML SER file", filter="*.ser")
+        if not xml_file:
+            return
         xml_dir = xml_file[:xml_file.rfind("/")]
         json_dir = QFileDialog.getExistingDirectory(self, "Select folder to contain JSON files")
+        if not json_dir:
+            return
         progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Open XML Series")
         progbar.setWindowModality(Qt.WindowModal)
@@ -125,7 +130,7 @@ class MainWindow(QMainWindow):
             section_data["mag"] = image.mag
             section_data["thickness"] = section.thickness
             transform = image.transform
-            forward_transform = transform._tform
+            forward_transform = transform.tform()
             ft = forward_transform
             section_data["tform"] = (ft[0, 0], ft[0, 1], ft[0, 2], ft[1, 0], ft[1, 1], ft[1, 2])
             section_data["traces"] = []
@@ -135,10 +140,10 @@ class MainWindow(QMainWindow):
                 for i in range(len(color)):
                     color[i] *= 255
                 closed = contour.closed
-                new_trace = Trace(name, color, closed=closed, exported=True)
+                new_trace = Trace(name, color, closed=closed)
                 points = contour.points
                 points = contour.transform.transformPoints(points)
-                points = transform.inverse.transformPoints(points)
+                points = transform.inverseTransformPoints(points)
                 new_trace.points = points
                 section_data["traces"].append(new_trace.getDict())
 
@@ -156,7 +161,18 @@ class MainWindow(QMainWindow):
     
     def exportTracesToXML(self):
         self.saveAllData()
+        warn = QMessageBox()
+        warn.setIcon(QMessageBox.Warning)
+        warn.setText("WARNING: All traces on the XML file will be overwritten.")
+        warn.setInformativeText("Backing up is suggested.")
+        warn.setWindowTitle("Warning")
+        warn.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        response = warn.exec_()
+        if response == QMessageBox.Cancel:
+            return
         xml_file, ext = QFileDialog.getOpenFileName(self, "Locate the XML SER file", filter="*.ser")
+        if not xml_file:
+            return
         xml_dir = xml_file[:xml_file.rfind("/")]
         progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Open XML Series")
@@ -171,33 +187,31 @@ class MainWindow(QMainWindow):
         for section_name in self.series.sections:
             section = Section(self.wdir + section_name)
             section_num = int(section_name[section_name.rfind(".")+1:])
+            xml_series.sections[section_num].contours = []
             for trace in section.traces:
-                if not trace.exported:
-                    print(trace.name, section_num)
-                    contour_color = list(trace.color)
-                    for i in range(len(contour_color)):
-                        contour_color[i] *= 255
-                    tf = section.tform
-                    xcoef = (tf[2], tf[0], tf[1])
-                    ycoef = (tf[5], tf[3], tf[4])
-                    transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
-                    new_contour = Contour(
-                        name = trace.name,
-                        comment = "",
-                        hidden = False,
-                        closed = trace.closed,
-                        simplified = True,
-                        mode = 11,
-                        border = contour_color,
-                        fill = contour_color,
-                        points = trace.points,
-                        transform = transform
-                    )
-                    xml_series.sections[section_num].contours.append(new_contour)
-                    trace.setExported(True)
-            if progbar.wasCanceled(): return
-            prog_value += 1
-            progbar.setValue(prog_value / final_value * 100)
+                contour_color = list(trace.color)
+                for i in range(len(contour_color)):
+                    contour_color[i] *= 255
+                tf = section.tform
+                xcoef = (tf[2], tf[0], tf[1])
+                ycoef = (tf[5], tf[3], tf[4])
+                transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
+                new_contour = Contour(
+                    name = trace.name,
+                    comment = "",
+                    hidden = False,
+                    closed = trace.closed,
+                    simplified = True,
+                    mode = 11,
+                    border = contour_color,
+                    fill = contour_color,
+                    points = trace.points,
+                    transform = transform
+                )
+                xml_series.sections[section_num].contours.append(new_contour)
+                if progbar.wasCanceled(): return
+                prog_value += 1
+                progbar.setValue(prog_value / final_value * 100)
         
         progbar = QProgressDialog("Writing to XML series...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Write XML Series")
@@ -242,7 +256,7 @@ class MainWindow(QMainWindow):
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
         self.objectlist_act.triggered.connect(self.openObjectList)
-        self.export_to_xml_act = self.filemenu.addAction("Export added traces to XML...")
+        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
         # create the field and set as main widget

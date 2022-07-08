@@ -34,7 +34,7 @@ class Trace():
     
     def fromDict(d):
         """Create a Contour object from a dictionary"""
-        new_trace = Trace(d["name"], d["color"], d["closed"])
+        new_trace = Trace(d["name"], d["color"], d["closed"], d["exported"])
         new_trace.points = d["points"]
         new_trace.setHidden(d["hidden"])
         return new_trace

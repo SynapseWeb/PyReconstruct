@@ -33,4 +33,4 @@ class Series():
         """Save file into json"""
         d = self.getDict()
         with open(self.filename, "w") as f:
-            f.write(json.dumps(d, indent=2))
+            f.write(json.dumps(d, indent=1))

@@ -1,22 +1,30 @@
+* Meetings
+
+- [ ] Next Vijay meeting: Monday, Aug. 1 
+
 * High-priority tasks
 
-- [ ] Undo and redo functions
-- [ ] Meet with Vijay (Neuroglancer, automation?)
+- [ ] Undo/ redo functions
+- [ ] Add dim 6 handling for xml import
+- [ ] Trace list
+- [ ] Investigate using zarr (as "images" and "points")
 
 * Must-do
 
-- [ ] Run on mac machine
+- [ ] Run on mac / linux machine
+- [ ] SWiFT integration (extension?)
 
 * Medium-priority tasks
 
 - [ ] Knife tool
 - [ ] Reconcropper
+- [ ] Image contrast / brightness
 - [ ] Z-traces
+- [ ] Take a look at SynapseWeb recon2ng
 - [ ] Visualize in 3D in Blender / Neuroglancer
-- [ ] Cool "3D" or automated tool (cutting off spines?, import to Blender?)
+- [ ] Cool "3D" or automated tool (Cutting off spines? Import to Blender?)
 - [ ] Calibration
 - [ ] Add tags to objects
-- [ ] Trace list
 
 * Low-priority tasks
 
@@ -29,8 +37,22 @@
 - [ ] Change stamp into a different shape
 - [ ] Sort object list in a variety of ways (by section number, tag, etc.)
 
+* Crazy ideas
+
+- [ ] Be able to view 3D "building" in Blender as you're tracing
+- [ ] Be able to rotate the section in z inside Reconstruct
+
+* Things to consider
+
+- (Vijay) Saving points as .obj file / function to export to .obj
+- (Vijay) Objects pointing to an obj file instead of sections
+- 3D numpy arrays for autoseg
+- Export to zarr?
+- Boolean arrays to store object data
+  
 * Completed tasks
 
+- [X] Meet with Vijay (Neuroglancer, automation?)
 - [X] GUI module (QT for Python)
 - [X] Images + field display
 - [X] Image transformations
@@ -54,6 +76,4 @@
 - [X] CTRL-s hotkey to save (Patrick request)
 - [X] JSON -> XML -> JSON
 - [X] Progress bars
-
-
 

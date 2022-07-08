@@ -1,6 +1,5 @@
 * High-priority tasks
 
-- [ ] JSON -> XML -> JSON
 - [ ] Undo and redo functions
 - [ ] Meet with Vijay (Neuroglancer, automation?)
 
@@ -53,6 +52,8 @@
    5) [X] Volume
 - [X] Section thickness
 - [X] CTRL-s hotkey to save (Patrick request)
+- [X] JSON -> XML -> JSON
+- [X] Progress bars
 
 
 

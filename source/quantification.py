@@ -30,7 +30,7 @@ def distance(x1, y1, x2, y2):
     dist = ((x1-x2)**2 + (y1-y2)**2) ** 0.5
     return dist
 
-def lineDistance(pts, closed = "true"):
+def lineDistance(pts, closed =True):
     """Calculate distance along multi-vertex line.
 
     x and y represent a list of x- and y-coordinates.

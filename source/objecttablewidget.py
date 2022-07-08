@@ -1,5 +1,6 @@
 import json
 from PySide2.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide2.QtGui import QTransform
 from PySide2.QtCore import Qt
 
 from objecttableitem import ObjectTableItem
@@ -79,10 +80,14 @@ class ObjectTableWidget(QDockWidget):
             with open(self.wdir + section, "r") as section_file:
                 section_data = json.load(section_file)
             section_thickness = section_data["thickness"]
+            t = section_data["tform"]
+            point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
             for trace in section_data["traces"]:
                 name = trace["name"]
                 closed = trace["closed"]
                 points = trace["points"]
+                for i in range(len(points)):
+                    points[i] = point_tform.map(*points[i])
                 if name not in self._objdict:
                     self._objdict[name] = ObjectTableItem(name)
                 self._objdict[name].addTrace(points, closed, section_num, section_thickness)

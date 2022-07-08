@@ -16,7 +16,7 @@ class ObjectTableItem():
             self.start = section_num
         self.end = max(section_num, self.end)
         self.count += 1
-        trace_distance = lineDistance(trace_points)
+        trace_distance = lineDistance(trace_points, closed=trace_is_closed)
         if trace_is_closed:
             trace_area = area(trace_points)
             self.surface_area += trace_distance * section_thickness

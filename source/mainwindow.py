@@ -163,8 +163,8 @@ class MainWindow(QMainWindow):
         progbar.setWindowModality(Qt.WindowModal)
         xml_series = process_series_directory(xml_dir, progbar=progbar)
 
-        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Open XML Series")
+        progbar = QProgressDialog("Exporting new traces...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Export to XML Series")
         progbar.setWindowModality(Qt.WindowModal)
         prog_value = 0
         final_value = len(self.series.sections)
@@ -173,6 +173,7 @@ class MainWindow(QMainWindow):
             section_num = int(section_name[section_name.rfind(".")+1:])
             for trace in section.traces:
                 if not trace.exported:
+                    print(trace.name, section_num)
                     contour_color = list(trace.color)
                     for i in range(len(contour_color)):
                         contour_color[i] *= 255

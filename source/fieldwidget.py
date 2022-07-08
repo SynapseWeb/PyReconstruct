@@ -370,9 +370,8 @@ class FieldWidget(QWidget):
         closest_trace = None
         for trace in self.traces_within_field: # check only traces within the current window view
             for point in trace.points:
-                x = point[0]
-                y = point[1]
-                if left < point[0] < right and bottom < point[1] < top:
+                x, y = self.point_tform.map(*point)
+                if left < x < right and bottom < y < top:
                     distance = ((x - field_x)**2 + (y - field_y)**2) ** (0.5)
                     if not closest_trace or distance < min_distance:
                         min_distance = distance

@@ -4,8 +4,6 @@
 
 * High-priority tasks
 
-- [ ] Undo/ redo functions
-- [ ] Add dim 6 handling for xml import
 - [ ] Trace list
 - [ ] Investigate using zarr (as "images" and "points")
 
@@ -76,4 +74,6 @@
 - [X] CTRL-s hotkey to save (Patrick request)
 - [X] JSON -> XML -> JSON
 - [X] Progress bars
+- [X] Undo/ redo functions
+- [X] Add dim 6 handling for xml import (NOT TESTED YET)
 

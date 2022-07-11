@@ -279,6 +279,11 @@ class MainWindow(QMainWindow):
         hide_sc.activated.connect(self.field.hideSelectedTraces)
         hideall_sc = QShortcut(QKeySequence("Shift+H"), self)
         hideall_sc.activated.connect(self.field.toggleHideAllTraces)
+        undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
+        undo_sc.activated.connect(self.field.undoState)
+        redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
+        redo_sc.activated.connect(self.field.redoState)
+
     
     def changeMouseMode(self, new_mode):
         self.field.setMouseMode(new_mode)
@@ -300,6 +305,7 @@ class MainWindow(QMainWindow):
         # if Del is pressed
         elif event.key() == 16777223:
             self.field.deleteSelectedTraces()
+
     
     def wheelEvent(self, event):
         # do not respond to mouse wheel if field is not created
@@ -320,7 +326,7 @@ class MainWindow(QMainWindow):
         self.field.loadSection(self.series.current_section, self.section)
     
     def saveAllData(self):
-        self.section.traces = self.field.traces
+        #self.section.traces = self.field.traces
         self.series.window = self.field.current_window
         self.series.palette_traces = []
         for button in self.mouse_dock.palette_buttons:

@@ -113,7 +113,15 @@ class MainWindow(QMainWindow):
         series_data["sections"] = {}
         series_data["current_section"] = 0
         series_data["window"] = [0, 0, 1, 1]
-        series_data["palette_traces"] = getDefaultPaletteTraces()
+        series_data["palette_traces"] = []
+        for contour in series.contours:
+            name = contour.name
+            color = list(contour.border)
+            for i in range(len(color)):
+                color[i] *= 255
+            new_trace = Trace(name, color)
+            new_trace.points = contour.points
+            series_data["palette_traces"].append(new_trace.getDict())
         series_data["current_trace"] = series_data["palette_traces"][0]
 
         progbar = QProgressDialog("Importing series data...", "Cancel", 0, 100, self)
@@ -342,7 +350,7 @@ class MainWindow(QMainWindow):
     def openObjectList(self):
         self.saveAllData()
         quantities = {}
-        quantities["range"] = True
+        quantities["range"] = False
         quantities["count"] = True
         quantities["surface_area"] = False
         quantities["flat_area"] = True
@@ -362,30 +370,67 @@ class MainWindow(QMainWindow):
         event.accept()
 
 def getDefaultPaletteTraces():
-    palette_traces = []
+    palette_traces = [None] * 20
+    n = 0
 
-    diamond_trace = Trace("diamond", (255, 0, 0))
-    diamond_trace.points = [(0, 0.5), (-0.5, 0), (0, -0.5), (0.5, 0)]
-    palette_traces.append(diamond_trace.getDict())
+    new_trace = Trace("circle1", (255, 128, 64))
+    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.5), (-0.1667, 0.5)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
 
-    triangle_trace = Trace("triangle", (0, 255, 0))
-    triangle_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0, 0.5)]
-    palette_traces.append(triangle_trace.getDict())
+    new_trace = Trace("star", (128, 0, 255))
+    new_trace.points = [(-0.2, 0.1), (-0.5, 0.0), (-0.2, -0.1), (-0.4, -0.4), (-0.1, -0.2), (0.0, -0.5), (0.1, -0.2), (0.4, -0.4), (0.2, -0.1), (0.5, 0.0), (0.2, 0.1), (0.4, 0.4), (0.1, 0.2), (0.0, 0.5), (-0.1, 0.2), (-0.4, 0.4)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
 
-    circle_trace = Trace("circle", (0, 0, 255))
-    circle_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.5), (0.16667, -0.5),
-                            (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.5), (-0.16667, 0.5)]
-    palette_traces.append(circle_trace.getDict())
+    new_trace = Trace("triangle", (255, 0, 128))
+    new_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0.0, 0.4167)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
 
-    square_trace = Trace("square", (255, 0, 255))
-    square_trace.points = [(0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5)]
-    palette_traces.append(square_trace.getDict())
+    new_trace = Trace("cross", (255, 0, 0))
+    new_trace.points = [(-0.5, 0.5), (-0.1429, 0.0), (-0.5, -0.5), (-0.2857, -0.5), (0.0, -0.0714), (0.2857, -0.5), (0.5, -0.5), (0.1429, 0.0), (0.5, 0.5), (0.2857, 0.5), (0.0, 0.0714), (-0.2857, 0.5)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
 
-    cross_trace = Trace("cross", (0, 255, 255))
-    cross_trace.points = [(-0.5, 0.16667), (-0.5, -0.16667), (-0.16667, -0.16667),
-                            (-0.16667, -0.5), (0.16667, -0.5), (0.16667, -0.16667),
-                            (0.5, -0.16667), (0.5, 0.16667), (0.16667, 0.16667),
-                            (0.16667, 0.5), (-0.16667, 0.5), (-0.16667, 0.16667)]
-    palette_traces.append(cross_trace.getDict())
+    new_trace = Trace("square", (255, 255, 0))
+    new_trace.points = [(0.4, 0.4), (0.4, -0.4), (-0.4, -0.4), (-0.4, 0.3), (-0.5, 0.4), (-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5), (-0.4, 0.4)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
+
+    new_trace = Trace("diamond", (0, 0, 255))
+    new_trace.points = [(0.0, 0.5), (-0.5, 0.0), (0.0, -0.5), (0.5, 0.0)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
+
+    new_trace = Trace("circle2", (255, 0, 255))
+    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.5), (-0.1667, 0.5)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
+
+    new_trace = Trace("arrow1", (255, 0, 0))
+    new_trace.points = [(0.25, -0.25), (0.0, -0.25), (0.0, -0.125), (0.125, 0.0), (0.5, 0.125), (0.25, 0.25), (0.125, 0.5), (-0.125, 0.25), (-0.25, 0.0), (-0.25, -0.25), (-0.5, -0.25), (-0.125, -0.5)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
+
+    new_trace = Trace("plus", (0, 255, 0))
+    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.1667, -0.1667), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.1667), (0.1667, 0.5), (-0.1667, 0.5), (-0.1667, 0.1667)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
+
+    new_trace = Trace("arrow2", (0, 255, 255))
+    new_trace.points = [(0.0, 0.5), (0.1667, 0.3333), (-0.5, -0.3333), (-0.3333, -0.5), (0.3333, 0.1667), (0.5, 0.0), (0.5, 0.5)]
+    palette_traces[n] = new_trace.getDict()
+    palette_traces[10+n] = new_trace.getDict()
+    n += 1
 
     return palette_traces

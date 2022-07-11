@@ -4,6 +4,7 @@ from PySide2.QtGui import QTransform
 from PySide2.QtCore import Qt, QModelIndex
 
 from objecttableitem import ObjectTableItem
+from quantification import sigfigRound
 
 class ObjectTableWidget(QDockWidget):
 
@@ -68,13 +69,13 @@ class ObjectTableWidget(QDockWidget):
                 self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.count)))
                 col += 1
             if self.quantities["surface_area"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(round(trace_obj.surface_area, 6))))
+                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.surface_area, 6))))
                 col += 1
             if self.quantities["flat_area"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(round(trace_obj.flat_area, 6))))
+                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.flat_area, 6))))
                 col += 1
             if self.quantities["volume"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(round(trace_obj.volume, 6))))
+                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.volume, 6))))
                 col += 1
             row += 1
         self.table.setShowGrid(False)
@@ -83,7 +84,7 @@ class ObjectTableWidget(QDockWidget):
         self.table.verticalHeader().hide()
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
-        w = 10
+        w = 20
         for i in range(self.table.columnCount()):
             w += self.table.columnWidth(i)
         h = self.parent_widget.height()
@@ -137,3 +138,9 @@ class ObjectTableWidget(QDockWidget):
         obj_item = self._objdict[obj_name]
         obj_section = obj_item.end
         self.parent_widget.setToObject(obj_name, obj_section)
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        w = event.size().width()
+        h = event.size().height()
+        self.table.resize(w, h-20)

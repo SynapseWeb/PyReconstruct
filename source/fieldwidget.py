@@ -45,7 +45,8 @@ class FieldWidget(QWidget):
         self.section_num = section_num
 
         # create transforms
-        t = section.tform # identity would be: 1 0 0 0 1 0
+        self.tform = section.tform.copy()
+        t = self.tform # identity would be: 1 0 0 0 1 0
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
         self.mag = section.mag # get magnification
@@ -62,9 +63,41 @@ class FieldWidget(QWidget):
             trace.setHidden(False)
         self.selected_traces = []
 
+        # reset undo-redo states
+        self.current_state = (self.traces.copy(), self.tform.copy())
+        self.undo_states = []
+        self.redo_states = []
+
         self.updateStatusBar(None)
         self.generateView()
         self.update()
+    
+    def saveState(self):
+        self.undo_states.append(self.current_state)
+        self.current_state = (self.traces.copy(), self.tform.copy())
+        self.redo_states = []
+    
+    def restoreState(self):
+        self.traces = self.current_state[0].copy()
+        self.selected_traces = []
+        self.tform = self.current_state[1].copy()
+        t = self.tform
+        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
+        self.generateView()
+        self.update()
+
+    def undoState(self):
+        if len(self.undo_states) >= 1:
+            self.redo_states.append(self.current_state)
+            self.current_state = self.undo_states.pop()
+            self.restoreState()
+    
+    def redoState(self):
+        if len(self.redo_states) >= 1:
+            self.undo_states.append(self.current_state)
+            self.current_state = self.redo_states.pop()
+            self.restoreState()
     
     def updateStatusBar(self, event):
         """Update status bar with useful information"""
@@ -275,6 +308,7 @@ class FieldWidget(QWidget):
         for point in self.tracing_trace.points:
             new_trace.add((point[0] + field_x, point[1] + field_y))
         self.traces.append(new_trace)
+        self.saveState()
         self.selected_traces.append(new_trace)
         self.generateView(generate_image=False)
         self.update()
@@ -339,6 +373,7 @@ class FieldWidget(QWidget):
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
+            self.saveState()
             self.selected_traces.append(new_trace)
             self.generateView(generate_image=False)
             self.update()
@@ -414,10 +449,12 @@ class FieldWidget(QWidget):
 
         return within_field
     
-    def deleteSelectedTraces(self):
+    def deleteSelectedTraces(self, save_state=True):
         """Delete selected traces"""
         for trace in self.selected_traces:
             self.traces.remove(trace)
+        if save_state:
+            self.saveState()
         self.selected_traces = []
         self.generateView(generate_image=False)
         self.update()
@@ -446,7 +483,7 @@ class FieldWidget(QWidget):
         if merged_traces == traces:
             print("Traces already merged.")
             return
-        self.deleteSelectedTraces()
+        self.deleteSelectedTraces(save_state=False)
         for trace in merged_traces:
             new_trace = Trace(name, color)
             new_trace.color = color
@@ -455,8 +492,10 @@ class FieldWidget(QWidget):
                 new_trace.add(field_point)
             self.traces.append(new_trace)
             self.selected_traces.append(new_trace)
-            self.generateView(generate_image=False)
-            self.update()
+            
+        self.saveState()
+        self.generateView(generate_image=False)
+        self.update()
     
     def hideSelectedTraces(self):
         for trace in self.selected_traces:

@@ -17,7 +17,7 @@ class MouseDockWidget(QDockWidget):
         self.setWindowTitle(" ")
         self.bsize = button_size
         self.central_widget = QWidget()
-        self.setFixedSize(self.bsize*5, 5 + self.bsize*4)
+        self.setFixedSize(self.bsize*10, 5 + self.bsize*4)
 
         self.mode_buttons = {}
         self.createModeButton("pointer", 0, 0, FieldWidget.POINTER)
@@ -33,9 +33,11 @@ class MouseDockWidget(QDockWidget):
         self.palette_buttons = []
         for i in range(len(palette_traces)):
             trace = palette_traces[i]
-            self.createPaletteButton(trace, i % 5, i//5)
-            if trace.isSameTrace(selected_trace):
-                self.palette_buttons[i].setChecked(True)
+            self.createPaletteButton(trace, i % 10, i//10)
+        for button in self.palette_buttons:
+            if button.trace.isSameTrace(selected_trace):
+                button.setChecked(True)
+                break
         self.central_widget.paletteButtonChanged = self.paletteButtonChanged # there's no way in hell this is good practice but it works
 
         self.setWidget(self.central_widget)

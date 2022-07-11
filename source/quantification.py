@@ -1,5 +1,6 @@
 # 2022-07-07 for Julian
 # Note that function centroid makes use of function area
+import math
 
 def area(pts):
     """Area of cross-section."""
@@ -46,3 +47,9 @@ def lineDistance(pts, closed =True):
         point_dist = distance(x[-1], y[-1], x[0], y[0])
         dist += point_dist
     return round(dist, 7)
+
+def sigfigRound(n, sf):
+    if n == 0:
+        return 0
+    greatest_place = math.floor(math.log(abs(n))/math.log(10))
+    return round(n, sf - (greatest_place+1))

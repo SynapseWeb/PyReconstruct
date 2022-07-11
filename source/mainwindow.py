@@ -70,11 +70,11 @@ class MainWindow(QMainWindow):
         
         # create series data file (.ser)
         series_data = {}
-        series_data["sections"] = []
+        series_data["sections"] = {}
         series_data["current_section"] = 0
         series_data["window"] = [0, 0, 1, 1]
         for i in range(len(image_locations)):
-            series_data["sections"].append(series_name + "." + str(i))
+            series_data["sections"][i] = series_name + "." + str(i)
 
         series_data["palette_traces"] = getDefaultPaletteTraces()
         series_data["current_trace"] = series_data["palette_traces"][0]
@@ -110,10 +110,9 @@ class MainWindow(QMainWindow):
         series = process_series_directory(xml_dir, progbar=progbar)
 
         series_data = {}
-        series_data["sections"] = []
+        series_data["sections"] = {}
         series_data["current_section"] = 0
         series_data["window"] = [0, 0, 1, 1]
-        series_data["sections"] = []
         series_data["palette_traces"] = getDefaultPaletteTraces()
         series_data["current_trace"] = series_data["palette_traces"][0]
 
@@ -123,7 +122,7 @@ class MainWindow(QMainWindow):
         prog_value = 0
         final_value = len(series.sections)
         for n, section in sorted(series.sections.items()):
-            series_data["sections"].append(section.name)
+            series_data["sections"][n] = section.name
             section_data = {}
             image = section.images[0]
             section_data["src"] = image.src
@@ -140,7 +139,8 @@ class MainWindow(QMainWindow):
                 for i in range(len(color)):
                     color[i] *= 255
                 closed = contour.closed
-                new_trace = Trace(name, color, closed=closed)
+                mode = contour.mode
+                new_trace = Trace(name, color, closed=closed, mode=mode)
                 points = contour.points
                 points = contour.transform.transformPoints(points)
                 points = transform.inverseTransformPoints(points)
@@ -184,9 +184,8 @@ class MainWindow(QMainWindow):
         progbar.setWindowModality(Qt.WindowModal)
         prog_value = 0
         final_value = len(self.series.sections)
-        for section_name in self.series.sections:
+        for section_num, section_name in self.series.sections.items():
             section = Section(self.wdir + section_name)
-            section_num = int(section_name[section_name.rfind(".")+1:])
             xml_series.sections[section_num].contours = []
             for trace in section.traces:
                 contour_color = list(trace.color)
@@ -202,7 +201,7 @@ class MainWindow(QMainWindow):
                     hidden = False,
                     closed = trace.closed,
                     simplified = True,
-                    mode = 11,
+                    mode = trace.mode,
                     border = contour_color,
                     fill = contour_color,
                     points = trace.points,
@@ -260,6 +259,8 @@ class MainWindow(QMainWindow):
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
         # create the field and set as main widget
+        if self.series.current_section not in self.series.sections:
+            self.series.current_section = list(self.series.sections.keys())[0]
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
         self.setCentralWidget(self.field)
@@ -297,10 +298,10 @@ class MainWindow(QMainWindow):
         if not self.field:
             return
         # if PgUp is pressed
-        elif event.key() == 16777238 and self.series.current_section < len(self.series.sections)-1:
+        elif event.key() == 16777238:
             self.changeSection(self.series.current_section + 1)
         # if PgDn is pressed
-        elif event.key() == 16777239 and self.series.current_section > 0:
+        elif event.key() == 16777239:
             self.changeSection(self.series.current_section - 1)
         # if Del is pressed
         elif event.key() == 16777223:
@@ -320,6 +321,8 @@ class MainWindow(QMainWindow):
     
     def changeSection(self, section_num):
         """Change the section of the field"""
+        if section_num not in self.series.sections:
+            return
         self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])

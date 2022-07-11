@@ -29,7 +29,6 @@ class ObjectTableWidget(QDockWidget):
         self.findlast_act = self.menubar.addAction("Find Last!")
         self.findlast_act.triggered.connect(self.findLast)
         
-
         self.createTable()
 
         self.show()
@@ -95,9 +94,8 @@ class ObjectTableWidget(QDockWidget):
         self._objdict = {}
         prog_value = 0
         final_value = len(self.series.sections)
-        for i in range(len(self.series.sections)):
-            section = self.series.sections[i]
-            section_num = int(section[section.rfind(".")+1:])
+        for section_num in self.series.sections:
+            section = self.series.sections[section_num]
             with open(self.wdir + section, "rb") as section_file:
                 section_data = orjson.loads(section_file.read())
             section_thickness = section_data["thickness"]

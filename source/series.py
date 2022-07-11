@@ -9,7 +9,9 @@ class Series():
         with open(filename, "r") as f:
             series_data = json.load(f)
         
-        self.sections = series_data["sections"]
+        self.sections = {}
+        for section_num, section_filename in series_data["sections"].items():
+            self.sections[int(section_num)] = section_filename
         self.current_section = series_data["current_section"]
         self.window = series_data["window"]
         self.palette_traces = series_data["palette_traces"]

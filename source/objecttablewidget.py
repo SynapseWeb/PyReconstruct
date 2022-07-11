@@ -24,8 +24,10 @@ class ObjectTableWidget(QDockWidget):
         self.listmenu = self.menubar.addMenu("List")
         self.refresh_act = self.listmenu.addAction("Refresh")
         self.refresh_act.triggered.connect(self.refresh)
-        self. findfirst_act = self.menubar.addAction("Find 1st!")
+        self.findfirst_act = self.menubar.addAction("Find First!")
         self.findfirst_act.triggered.connect(self.findFirst)
+        self.findlast_act = self.menubar.addAction("Find Last!")
+        self.findlast_act.triggered.connect(self.findLast)
         
 
         self.createTable()
@@ -115,6 +117,7 @@ class ObjectTableWidget(QDockWidget):
             if progbar.wasCanceled(): return
     
     def refresh(self):
+        self.parent_widget.saveAllData()
         self.createTable()
     
     def findFirst(self):
@@ -123,4 +126,16 @@ class ObjectTableWidget(QDockWidget):
             return
         r = selected_indexes[0].row()
         obj_name = self.table.item(r, 0).text()
-        print(obj_name)
+        obj_item = self._objdict[obj_name]
+        obj_section = obj_item.start
+        self.parent_widget.setToObject(obj_name, obj_section)
+    
+    def findLast(self):
+        selected_indexes = self.table.selectedIndexes()
+        if len(selected_indexes) != 1 or selected_indexes[0].column() != 0:
+            return
+        r = selected_indexes[0].row()
+        obj_name = self.table.item(r, 0).text()
+        obj_item = self._objdict[obj_name]
+        obj_section = obj_item.end
+        self.parent_widget.setToObject(obj_name, obj_section)

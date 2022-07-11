@@ -22,8 +22,7 @@ class FieldWidget(QWidget):
         self.mouse_mode = FieldWidget.POINTER
         self.setMouseTracking(True)
 
-        # resize last known window to match proportions of current geometry
-        window[3] = window[2]/self.pixmap_size[0] * self.pixmap_size[1]
+        # set window from previous data
         self.current_window = window
 
         # establish misc defaults
@@ -120,11 +119,7 @@ class FieldWidget(QWidget):
         """Scale field window if main window size changes"""
         w = event.size().width()
         h = event.size().height()
-        x_scale = w / self.pixmap_size[0]
-        y_scale = h / self.pixmap_size[1]
         self.pixmap_size = (w, h)
-        self.current_window[2] *= x_scale
-        self.current_window[3] *= y_scale
         self.generateView()
         self.update()
     
@@ -306,7 +301,9 @@ class FieldWidget(QWidget):
         field_x, field_y = self.pixmapPointToField((pix_x, pix_y))
         new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color)
         for point in self.tracing_trace.points:
-            new_trace.add((point[0] + field_x, point[1] + field_y))
+            field_point = (point[0] + field_x, point[1] + field_y)
+            rtform_point = self.point_tform.inverted()[0].map(*field_point)
+            new_trace.add(rtform_point)
         self.traces.append(new_trace)
         self.saveState()
         self.selected_traces.append(new_trace)
@@ -377,7 +374,21 @@ class FieldWidget(QWidget):
             self.selected_traces.append(new_trace)
             self.generateView(generate_image=False)
             self.update()
-
+    
+    def findTrace(self, trace_name, occurence=1):
+        count = 0
+        for trace in self.traces:
+            if trace.name == trace_name:
+                count += 1
+                if count == occurence:
+                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+                    range_x = max_x - min_x
+                    range_y = max_y - min_y
+                    self.current_window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+                    self.selected_traces = [trace]
+                    self.generateView()
+                    self.update()
+                
     def deselectAllTraces(self):
         """Deselect all traces (Ctrl+D)"""
         for trace in self.selected_traces:
@@ -492,7 +503,7 @@ class FieldWidget(QWidget):
                 new_trace.add(field_point)
             self.traces.append(new_trace)
             self.selected_traces.append(new_trace)
-            
+
         self.saveState()
         self.generateView(generate_image=False)
         self.update()
@@ -561,15 +572,28 @@ class FieldWidget(QWidget):
     def generateView(self, generate_image=True):
         """Generate the view seen by the user in the main window"""
         # get dimensions of field window and pixmap
+        # resize last known window to match proportions of current geometry
         window_x, window_y, window_w, window_h = tuple(self.current_window)
         pixmap_w, pixmap_h = tuple(self.pixmap_size)
+        window_ratio = window_w/window_h
+        pixmap_ratio = pixmap_w / pixmap_h
+        if abs(window_ratio - pixmap_ratio) > 1e-5:
+            if window_ratio < pixmap_ratio:  # increase the width
+                new_w = window_h * pixmap_ratio
+                new_x = window_x - (new_w - window_w) / 2
+                window_w = new_w
+                window_x = new_x
+            else: # increase the height
+                new_h = window_w / pixmap_ratio
+                new_y = window_y - (new_h - window_h) / 2
+                window_h = new_h
+                window_y = new_y
+            self.current_window = [window_x, window_y, window_w, window_h]
 
         if generate_image:
-            # scaling: ratio of actual image dimensions to main window dimensions
+            # scaling: ratio of actual image dimensions to main window dimensions (should be equal)
             self.x_scaling = pixmap_w / (window_w / self.mag)
             self.y_scaling = pixmap_h / (window_h / self.mag)
-            if abs(self.x_scaling - self.y_scaling) > 1e-5: # scaling should be the same for x and y
-                print("ERROR: X and Y scaling are not equal")
 
             # create empty window
             self.field_pixmap = QPixmap(pixmap_w, pixmap_h)

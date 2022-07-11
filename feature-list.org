@@ -76,4 +76,6 @@
 - [X] Progress bars
 - [X] Undo/ redo functions
 - [X] Add dim 6 handling for xml import (NOT TESTED YET)
+- [X] Find First function in obj list
+- [X] Find Last function in obj list
 

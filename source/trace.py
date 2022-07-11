@@ -32,3 +32,13 @@ class Trace():
         new_trace.points = d["points"]
         new_trace.setHidden(d["hidden"])
         return new_trace
+    
+    def getBounds(self, tform=None):
+        if tform is None:
+            x = [p[0] for p in self.points]
+            y = [p[1] for p in self.points]
+        else:
+            tform_points = [tform.map(*p) for p in self.points]
+            x = [p[0] for p in tform_points]
+            y = [p[1] for p in tform_points]
+        return min(x), min(y), max(x), max(y)

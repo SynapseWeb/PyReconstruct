@@ -326,7 +326,7 @@ class MainWindow(QMainWindow):
         self.field.loadSection(self.series.current_section, self.section)
     
     def saveAllData(self):
-        #self.section.traces = self.field.traces
+        self.section.traces = self.field.traces
         self.series.window = self.field.current_window
         self.series.palette_traces = []
         for button in self.mouse_dock.palette_buttons:
@@ -345,6 +345,10 @@ class MainWindow(QMainWindow):
         quantities["flat_area"] = True
         quantities["volume"] = True
         obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
+    
+    def setToObject(self, obj_name, section_num):
+        self.changeSection(section_num)
+        self.field.findTrace(obj_name)
 
     def closeEvent(self, event):
         """Save traces, section num, and window if user exits"""

@@ -1,19 +1,24 @@
 * Meetings
 
-- [ ] Next Vijay meeting: Monday, Aug. 1 
+- [ ] pyReconstruct walk-through: Friday, July 15
+- [ ] Next Vijay meeting: Monday, August 1
 
 * High-priority tasks
 
 - [ ] Trace list
-- [ ] Investigate using zarr (as "images" and "points")
+- [ ] Expandable (s) / grabbable (g) traces (left click = confirm, right click = cancel)
+- [ ] Come up with style
 
 * Must-do
 
 - [ ] Run on mac / linux machine
 - [ ] SWiFT integration (extension?)
+- [ ] Investigate using zarr (as "images" and "points")
+- [ ] Test dim 6 XML import
 
 * Medium-priority tasks
 
+- [ ] Setup files (setup.py)
 - [ ] Knife tool
 - [ ] Reconcropper
 - [ ] Image contrast / brightness
@@ -23,12 +28,17 @@
 - [ ] Cool "3D" or automated tool (Cutting off spines? Import to Blender?)
 - [ ] Calibration
 - [ ] Add tags to objects
+- [ ] Object list
+   - [ ] Limit output (regular expressions?)
+   - [ ] Limit to object tags
+   - [ ] Check box / selected?
+- [ ] Consider transformation module for upcoming transformational armaggeddon (spelling?) 
 
 * Low-priority tasks
 
 - [ ] Export images and traces as SVG file
 - [ ] In-program Python console
-- [ ] Add-on / extension menu
+- [ ] Add-on / extension menu / API?
 - [ ] Make hotkeys editable by user
 - [ ] Give user option of selection number of RAM-loaded images
 - [ ] CTRL-c items from the object this for easy pasting into Excel
@@ -39,6 +49,7 @@
 
 - [ ] Be able to view 3D "building" in Blender as you're tracing
 - [ ] Be able to rotate the section in z inside Reconstruct
+- [ ] Compendium of regular expressions
 
 * Things to consider
 

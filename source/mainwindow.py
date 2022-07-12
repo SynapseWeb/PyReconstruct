@@ -2,7 +2,7 @@ import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
     QMessageBox)
-from PySide2.QtGui import (QKeySequence)
+from PySide2.QtGui import QKeySequence
 from PySide2.QtCore import Qt
 from objecttablewidget import ObjectTableWidget
 from mousedockwidget import MouseDockWidget

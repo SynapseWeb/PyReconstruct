@@ -1,27 +1,27 @@
-from PySide2.QtWidgets import QWidget
+from PySide2.QtWidgets import (QWidget, QMainWindow)
 from PySide2.QtCore import Qt
 from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
 from section import Section
-from mainwindow import MainWindow
 from grid import getExterior, mergeTraces, reducePoints
 from trace import Trace
 
 class FieldWidget(QWidget):
     POINTER, PANZOOM, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(7)  # mouse modes
 
-    def __init__(self, section_num : int, section : Section, window : list, parent : MainWindow):
+    def __init__(self, section_num : int, section : Section, window : list, parent : QMainWindow):
         """Create the field widget.
         
             Params:
                 section_num (int): the section number (to display in the status bar)
                 section (Section): the Section object containing the section data (tform, traces, etc)
-                """
-        # add parent if provided (this should be the case)
+                window (list): x, y, w, h of window in FIELD COORDINATES
+                parent (MainWindow): the main window that contains this widget
+        """
         super().__init__(parent)
         self.parent_widget = parent
 
-        # set geometry to match parent
+        # set initial geometry to match parent
         parent_rect = self.parent_widget.geometry()
         self.pixmap_size = parent_rect.width(), parent_rect.height()
         self.setGeometry(parent_rect)
@@ -44,11 +44,8 @@ class FieldWidget(QWidget):
         self.loadSection(section_num, section)
         self.show()
     
-    def setTracingTrace(self, trace):
-        self.tracing_trace = trace
-    
     def loadSection(self, section_num, section):
-        """Load a new section into the field"""
+        """Load a new section into the field."""
         self.endPendingEvents()
         self.section_num = section_num
 
@@ -60,7 +57,7 @@ class FieldWidget(QWidget):
         self.mag = section.mag # get magnification
         base_pixmap = QPixmap(self.parent_widget.wdir + section.src) # load image
         self.image_pixmap = base_pixmap.transformed(self.image_tform) # transform image
-        self.calcTformOrigin(base_pixmap, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
+        self.tform_origin = self.calcTformOrigin(base_pixmap, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
         x_shift = t[2] - self.tform_origin[0]*self.mag # calculate x translation for image placement in field
         y_shift = t[5] - (self.image_pixmap.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
@@ -80,515 +77,14 @@ class FieldWidget(QWidget):
         self.generateView()
         self.update()
     
-    def saveState(self):
-        self.undo_states.append(self.current_state)
-        self.current_state = (self.traces.copy(), self.tform.copy())
-        self.redo_states = []
-    
-    def restoreState(self):
-        self.traces = self.current_state[0].copy()
-        self.selected_traces = []
-        self.tform = self.current_state[1].copy()
-        t = self.tform
-        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
-        self.generateView()
-        self.update()
-
-    def undoState(self):
-        if len(self.undo_states) >= 1:
-            self.redo_states.append(self.current_state)
-            self.current_state = self.undo_states.pop()
-            self.restoreState()
-    
-    def redoState(self):
-        if len(self.redo_states) >= 1:
-            self.undo_states.append(self.current_state)
-            self.current_state = self.redo_states.pop()
-            self.restoreState()
-    
-    def updateStatusBar(self, event):
-        """Update status bar with useful information"""
-        if event:
-            s = "Section: " + str(self.section_num) + "  |  "
-            x, y = event.pos().x(), event.pos().y()
-            x, y = self.pixmapPointToField((x, y))
-            s += "x = " + str("{:.4f}".format(x)) + ", "
-            s += "y = " + str("{:.4f}".format(y)) + "  |  "
-            s += "Tracing: " + '"' + self.tracing_trace.name + '"'
-            closest_trace = self.findClosestTrace(x, y)
-            if closest_trace:
-                s += "  |  Nearest trace: " + closest_trace.name
-        else:
-            message = self.parent_widget.statusbar.currentMessage()
-            s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
-        self.parent_widget.statusbar.showMessage(s)
-
-    def resizeEvent(self, event):
-        """Scale field window if main window size changes"""
-        w = event.size().width()
-        h = event.size().height()
-        self.pixmap_size = (w, h)
-        self.generateView()
-        self.update()
-    
-    def setMouseMode(self, mode):
-        """Set the mode of the mouse"""
-        self.endPendingEvents()
-        self.mouse_mode = mode
-    
-    def mousePressEvent(self, event):
-        if self.mouse_mode == FieldWidget.POINTER:
-            self.pointerPress(event)
-        elif self.mouse_mode == FieldWidget.PANZOOM:
-            self.panzoomPress(event)
-        elif self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
-            self.pencilPress(event)
-        elif self.mouse_mode == FieldWidget.STAMP:
-            self.stampPress(event)
-        elif self.mouse_mode == FieldWidget.CLOSEDLINE:
-            self.linePress(event, closed=True)
-        elif self.mouse_mode == FieldWidget.OPENLINE:
-            self.linePress(event, closed=False)
-
-    def mouseMoveEvent(self, event):
-        self.updateStatusBar(event)
-        if self.mouse_mode == FieldWidget.POINTER and event.buttons():
-            self.pointerMove(event)
-        elif self.mouse_mode == FieldWidget.PANZOOM and event.buttons():
-            self.panzoomMove(event)
-        elif (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL) and event.buttons():
-            self.pencilMove(event)
-        elif self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
-            self.lineMove(event, closed=True)
-        elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
-            self.lineMove(event, closed=False)
-
-    def mouseReleaseEvent(self, event):
-        if self.mouse_mode == FieldWidget.POINTER:
-            self.pointerRelease(event)
-        if self.mouse_mode == FieldWidget.PANZOOM:
-            self.panzoomRelease(event)
-        elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
-            self.pencilRelease(event, closed=True)
-        elif self.mouse_mode == FieldWidget.OPENPENCIL:
-            self.pencilRelease(event, closed=False)
-        
-    def panzoomPress(self, event):
-        """Mouse is clicked in panzoom mode"""
-        self.clicked_x = event.x()
-        self.clicked_y = event.y()
-
-    def panzoomMove(self, event):
-        """Mouse is moved in panzoom mode"""
-        # if left mouse button is pressed, do panning
-        if event.buttons() == Qt.LeftButton:
-            move_x = (event.x() - self.clicked_x)
-            move_y = (event.y() - self.clicked_y)
-
-            # move field with mouse
-            new_field = QPixmap(*self.pixmap_size)
-            new_field.fill(QColor(0, 0, 0))
-            painter = QPainter(new_field)
-            painter.drawPixmap(move_x, move_y, *self.pixmap_size, self.field_pixmap_copy)
-            self.field_pixmap = new_field
-            painter.end()
-
-            self.update()
-
-        # if right mouse button is pressed, do zooming
-        elif event.buttons() == Qt.RightButton:
-            # up and down mouse movement only
-            move_y = event.y() - self.clicked_y
-            zoom_factor = 1.005 ** (move_y) # 1.005 is arbitrary
-
-            # calculate new geometry of window based on zoom factor
-            xcoef = (self.clicked_x / self.pixmap_size[0]) * 2
-            ycoef = (self.clicked_y / self.pixmap_size[1]) * 2
-            w = self.pixmap_size[0] * zoom_factor
-            h = self.pixmap_size[1] * zoom_factor
-            x = (self.pixmap_size[0] - w) / 2 * xcoef
-            y = (self.pixmap_size[1] - h) / 2 * ycoef
-
-            # adjust field
-            new_field = QPixmap(*self.pixmap_size)
-            new_field.fill(QColor(0, 0, 0))
-            painter = QPainter(new_field)
-            painter.drawPixmap(x, y, w, h,
-                                self.field_pixmap_copy)
-            self.field_pixmap = new_field
-            painter.end()
-
-            self.update()
-
-
-    def panzoomRelease(self, event):
-        """Mouse is released in panzoom mode"""
-
-        # set new window for panning
-        if event.button() == Qt.LeftButton:
-            move_x = -(event.x() - self.clicked_x) / self.x_scaling * self.mag
-            move_y = (event.y() - self.clicked_y) / self.y_scaling * self.mag
-            self.current_window[0] += move_x
-            self.current_window[1] += move_y
-            self.generateView()
-            self.update()
-
-        # set new window for zooming
-        elif event.button() == Qt.RightButton:
-            move_y = event.y() - self.clicked_y
-            zoom_factor = 1.005 ** (move_y)
-
-            xcoef = (self.clicked_x / self.pixmap_size[0]) * 2
-            ycoef = (self.clicked_y / self.pixmap_size[1]) * 2
-            w = self.pixmap_size[0] * zoom_factor
-            h = self.pixmap_size[1] * zoom_factor
-            x = (self.pixmap_size[0] - w) / 2 * xcoef
-            y = (self.pixmap_size[1] - h) / 2 * ycoef
-
-            window_x = - x  / self.x_scaling / zoom_factor * self.mag
-            window_y = - (self.pixmap_size[1] - y - self.pixmap_size[1] * zoom_factor)  / self.y_scaling / zoom_factor * self.mag
-            self.current_window[0] += window_x
-            self.current_window[1] += window_y
-            self.current_window[2] /= zoom_factor
-            if self.current_window[2] < self.mag:
-                self.current_window[2] = self.mag
-            self.current_window[3] /= zoom_factor
-            if self.current_window[3] < self.mag:
-                self.current_window[3] = self.mag
-            self.generateView()
-            self.update()
-    
-    def pencilPress(self, event):
-        """Mouse is pressed in pencil mode"""
-        self.last_x = event.x()
-        self.last_y = event.y()
-        self.current_trace = [(self.last_x, self.last_y)]
-
-    def pencilMove(self, event):
-        """Mouse is moved in pencil mode"""
-        # draw trace on pixmap
-        x = event.x()
-        y = event.y()
-        painter = QPainter(self.field_pixmap)
-        color = QColor(*self.tracing_trace.color)
-        painter.setPen(QPen(color, 1))
-        painter.drawLine(self.last_x, self.last_y, x, y)
-        painter.end()
-        self.current_trace.append((x, y))
-        self.last_x = x
-        self.last_y = y
-
-        self.update()
-
-    def pencilRelease(self, event, closed=True):
-        """Mouse is released in pencil mode"""
-        # calculate actual trace coordinates on the field and reload field view
-        self.newTrace(self.current_trace, closed=closed)
-    
-    def pointerPress(self, event):
-        """Mouse is pressed in pointer mode"""
-        pix_x, pix_y = event.x(), event.y()
-        field_x, field_y = self.pixmapPointToField((pix_x, pix_y))
-        radius = max(self.pixmap_size) / 25 * self.mag / self.x_scaling # set radius to be 4% of widget length
-        selected_trace = self.findClosestTrace(field_x, field_y, radius)
-        
-        # select and highlight trace if left button
-        if selected_trace != None and event.button() == Qt.LeftButton:
-            if not selected_trace in self.selected_traces:
-                self.selected_traces.append(selected_trace)
-                self.generateView(generate_image=False)
-                self.update()
-        # deselect and unhighlight trace if right button
-        elif selected_trace != None and event.button() == Qt.RightButton:
-            if selected_trace in self.selected_traces:
-                self.drawTrace(selected_trace)
-                self.selected_traces.remove(selected_trace)
-                self.update()
-    
-    def stampPress(self, event):
-        pix_x, pix_y = event.x(), event.y()
-        field_x, field_y = self.pixmapPointToField((pix_x, pix_y))
-        new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color)
-        for point in self.tracing_trace.points:
-            field_point = (point[0] + field_x, point[1] + field_y)
-            rtform_point = self.point_tform.inverted()[0].map(*field_point)
-            new_trace.add(rtform_point)
-        self.traces.append(new_trace)
-        self.saveState()
-        self.selected_traces.append(new_trace)
-        self.generateView(generate_image=False)
-        self.update()
-    
-    def linePress(self, event, closed=True):
-        x, y = event.x(), event.y()
-        if event.button() == Qt.LeftButton:
-            if self.is_line_tracing:
-                self.current_trace.append((x, y))
-                self.field_pixmap = self.field_pixmap_copy.copy()
-                painter = QPainter(self.field_pixmap)
-                color = QColor(*self.tracing_trace.color)
-                painter.setPen(QPen(color, 1))
-                if closed:
-                    start = 0
-                else:
-                    start = 1
-                for i in range(start, len(self.current_trace)):
-                    painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-                painter.end()
-                self.update()
-            else:
-                self.current_trace = [(x, y)]
-                self.is_line_tracing = True
-        elif event.button() == Qt.RightButton:
-            if self.is_line_tracing:
-                if closed:
-                    self.newTrace(self.current_trace, closed=True)
-                else:
-                    self.newTrace(self.current_trace, closed=False)
-                self.is_line_tracing = False
-    
-    def lineMove(self, event, closed=True):
-        x, y = event.x(), event.y()
-        self.field_pixmap = self.field_pixmap_copy.copy()
-        painter = QPainter(self.field_pixmap)
-        color = QColor(*self.tracing_trace.color)
-        pen = QPen(color, 1)
-        painter.setPen(pen)
-        if closed:
-            start = 0
-        else:
-            start = 1
-        for i in range(start, len(self.current_trace)):
-            painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-        pen.setDashPattern([2,5])
-        painter.setPen(pen)
-        painter.drawLine(*self.current_trace[-1], x, y)
-        if closed:
-            painter.drawLine(*self.current_trace[0], x, y)
-        self.update()
-    
-    def newTrace(self, pix_trace, closed=True):
-        if len(pix_trace) > 1:
-            if closed:
-                pix_trace = getExterior(pix_trace)
-            else:
-                pix_trace = reducePoints(pix_trace)
-            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
-            for point in pix_trace:
-                field_point = self.pixmapPointToField(point)
-                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
-                new_trace.add(rtform_point)
-            self.traces.append(new_trace)
-            self.saveState()
-            self.selected_traces.append(new_trace)
-            self.generateView(generate_image=False)
-            self.update()
-    
-    def findTrace(self, trace_name, occurence=1):
-        count = 0
-        for trace in self.traces:
-            if trace.name == trace_name:
-                count += 1
-                if count == occurence:
-                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
-                    range_x = max_x - min_x
-                    range_y = max_y - min_y
-                    self.current_window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
-                    self.selected_traces = [trace]
-                    self.generateView()
-                    self.update()
-                
-    def deselectAllTraces(self):
-        """Deselect all traces (Ctrl+D)"""
-        for trace in self.selected_traces:
-            self.drawTrace(trace)
-        self.selected_traces = []
-        self.update()
-    
-    def pointerMove(self, event):
-        """Mouse is moved in pointer mode"""
-        return
-    
-    def pointerRelease(self, event):
-        """Mouse is released in pointer mode"""
-        return
-    
-    def endPendingEvents(self):
-        if self.is_line_tracing:
-            if self.mouse_mode == FieldWidget.CLOSEDLINE:
-                self.newTrace(self.current_trace, closed=True)
-            else:
-                self.newTrace(self.current_trace, closed=False)
-            self.is_line_tracing = False
-    
-    def findClosestTrace(self, field_x, field_y, radius=1):
-        """Find closest trace to field coordinates in a given radius"""
-        left = field_x - radius
-        right = field_x + radius
-        bottom = field_y - radius
-        top = field_y + radius
-        min_distance = -1
-        closest_trace = None
-        for trace in self.traces_within_field: # check only traces within the current window view
-            for point in trace.points:
-                x, y = self.point_tform.map(*point)
-                if left < x < right and bottom < y < top:
-                    distance = ((x - field_x)**2 + (y - field_y)**2) ** (0.5)
-                    if not closest_trace or distance < min_distance:
-                        min_distance = distance
-                        closest_trace = trace
-        return closest_trace
-
-    def drawTrace(self, trace, highlight=False):
-        """Draw a trace on the current trace layer and return bool indicating if trace is in the current view"""
-        # set up painter
-        painter = QPainter(self.field_pixmap)
-        within_field = False
-        if highlight: # create dashed white line if trace is to be highlighted
-            pen = QPen(QColor(255, 255, 255), 1)
-            pen.setDashPattern([2, 5])
-            painter.setPen(pen)
-        else:
-            painter.setPen(QPen(QColor(*trace.color), 1))
-        
-        # establish first point
-        point = trace.points[0]
-        last_x, last_y = self.point_tform.map(*point)
-        last_x, last_y = self.fieldPointToPixmap((last_x, last_y))
-        if 0 < last_x < self.pixmap_size[0] and 0 < last_y < self.pixmap_size[1]:
-            within_field = True
-        # connect points
-        for i in range(1, len(trace.points)):
-            point = trace.points[i]
-            x, y = self.point_tform.map(*point)
-            x, y = self.fieldPointToPixmap((x, y))
-            painter.drawLine(last_x, last_y, x, y)
-            if 0 < x < self.pixmap_size[0] and 0 < y < self.pixmap_size[1]:
-                within_field = True
-            last_x = x
-            last_y = y
-        # connect last point to first point if closed
-        if trace.closed:
-            point = trace.points[0]
-            x, y = self.point_tform.map(*point)
-            x, y = self.fieldPointToPixmap((x,y))
-            painter.drawLine(last_x, last_y, x, y)
-        painter.end()
-
-        return within_field
-    
-    def deleteSelectedTraces(self, save_state=True):
-        """Delete selected traces"""
-        for trace in self.selected_traces:
-            self.traces.remove(trace)
-        if save_state:
-            self.saveState()
-        self.selected_traces = []
-        self.generateView(generate_image=False)
-        self.update()
-    
-    def mergeSelectedTraces(self):
-        """Merge all selected traces"""
-        if len(self.selected_traces) <= 1:
-            print("Cannot merge one or less traces.")
-            return
-        traces = []
-        first_trace = self.selected_traces[0]
-        name = first_trace.name
-        color = first_trace.color
-        for trace in self.selected_traces:
-            if trace.closed == False:
-                print("Can only merge closed traces.")
-                return
-            if trace.name != name:
-                print("Cannot merge differently named traces.")
-                return
-            traces.append([])
-            for point in trace.points:
-                p = self.fieldPointToPixmap(point)
-                traces[-1].append(p)
-        merged_traces = mergeTraces(traces)
-        if merged_traces == traces:
-            print("Traces already merged.")
-            return
-        self.deleteSelectedTraces(save_state=False)
-        for trace in merged_traces:
-            new_trace = Trace(name, color)
-            new_trace.color = color
-            for point in trace:
-                field_point = self.pixmapPointToField(point)
-                new_trace.add(field_point)
-            self.traces.append(new_trace)
-            self.selected_traces.append(new_trace)
-
-        self.saveState()
-        self.generateView(generate_image=False)
-        self.update()
-    
-    def hideSelectedTraces(self):
-        for trace in self.selected_traces:
-            trace.setHidden(True)
-        self.selected_traces = []
-        self.generateView(generate_image=False)
-        self.update()
-    
-    def toggleHideAllTraces(self):
-        if self.all_traces_hidden:
-            for trace in self.traces:
-                trace.setHidden(False)
-            self.all_traces_hidden = False
-        else:
-            for trace in self.traces:
-                trace.setHidden(True)
-            self.all_traces_hidden = True
-        self.generateView(generate_image=False)
-        self.update()
-
-    def pixmapPointToField(self, point):
-        """Convert main window coordinates to field window coordinates"""
-        x = (point[0]) / self.x_scaling * self.mag + self.current_window[0]
-        y = (self.pixmap_size[1] - (point[1])) / self.y_scaling * self.mag  + self.current_window[1]
-        return x, y
-    
-    def fieldPointToPixmap(self, point):
-        """Convert field window coordinates to main window coordinates"""
-        x = (point[0] - self.current_window[0]) / self.mag * self.x_scaling
-        y = (point[1] - self.current_window[1])/ self.mag * self.y_scaling
-        y = self.pixmap_size[1] - y
-        return round(x), round(y)
-    
-    def calcTformOrigin(self, base_pixmap, tform):
-        """Calculate the vector for the bottom left corner of a transformed image"""
-        base_coords = base_pixmap.size() # base image dimensions
-        tform_notrans = self.tformNoTrans(tform) # get tform without translation
-        height_vector = tform_notrans.map(0, base_coords.height()) # create a vector for base height and transform
-        width_vector = tform_notrans.map(base_coords.width(), 0) # create a vector for base width and transform
-
-        # calculate coordinates for the top left corner of image
-        if height_vector[0] < 0:
-            x_orig_topleft = -height_vector[0]
-        else:
-            x_orig_topleft = 0
-        if width_vector[1] < 0:
-            y_orig_topleft = -width_vector[1]
-        else:
-            y_orig_topleft = 0
-        
-        # calculate coordinates for the bottom left corner of the image
-        x_orig_bottomleft = x_orig_topleft + height_vector[0]
-        y_orig_bottomleft = y_orig_topleft + height_vector[1]
-
-        self.tform_origin = x_orig_bottomleft, y_orig_bottomleft
-    
-    def tformNoTrans(self, tform):
-        """Return a transfrom without translation"""
-        tform_notrans = (tform.m11(), tform.m12(), tform.m21(), tform.m22(), 0, 0)
-        tform_notrans = QTransform(*tform_notrans)
-        return tform_notrans
-    
     def generateView(self, generate_image=True):
-        """Generate the view seen by the user in the main window"""
+        """Generate the view seen by the user in the main window.
+        
+            Params:
+                generate_image (bool): whether or not to redraw the image
+            This function uses the values of self.current_window to adjust the view.
+            This attribute is expected to be changed outside of this function.
+        """
         # get dimensions of field window and pixmap
         # resize last known window to match proportions of current geometry
         window_x, window_y, window_w, window_h = tuple(self.current_window)
@@ -607,7 +103,6 @@ class FieldWidget(QWidget):
                 window_h = new_h
                 window_y = new_y
             self.current_window = [window_x, window_y, window_w, window_h]
-
         if generate_image:
             # scaling: ratio of actual image dimensions to main window dimensions (should be equal)
             self.x_scaling = pixmap_w / (window_w / self.mag)
@@ -648,7 +143,6 @@ class FieldWidget(QWidget):
             painter.end()
 
             self.image_layer = self.field_pixmap.copy()
-        
         else:
             self.field_pixmap = self.image_layer.copy()
         
@@ -664,7 +158,695 @@ class FieldWidget(QWidget):
         
         self.field_pixmap_copy = self.field_pixmap.copy()
     
+    def pixmapPointToField(self, x : float, y : float) -> tuple:
+        """Convert main window pixmap coordinates to field window coordinates.
+        
+            Params:
+                x (float): x-value for pixmap point
+                y (float): y-value for pixmap point
+            Returns:
+                (tuple) converted point in field coordinates
+        """
+        x = x / self.x_scaling * self.mag + self.current_window[0]
+        y = (self.pixmap_size[1] - y) / self.y_scaling * self.mag  + self.current_window[1]
+
+        return x, y
+    
+    def fieldPointToPixmap(self, x : float, y : float) -> tuple:
+        """Convert field window coordinates to main window pixmap coordinates.
+        
+            Params:
+                x (float): x-value for field point
+                y (float): y-value for field point
+            Returns:
+                (tuple) converted point in pixmap coordinates
+        """
+        x = (x - self.current_window[0]) / self.mag * self.x_scaling
+        y = (y - self.current_window[1])/ self.mag * self.y_scaling
+        y = self.pixmap_size[1] - y
+
+        return round(x), round(y)
+    
+    def drawTrace(self, trace : Trace, highlight=False) -> bool:
+        """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
+        
+            Params:
+                trace (Trace): the trace to draw on the pixmap
+                highlight (bool): whether or not the trace is being highlighted
+            Returns:
+                (bool) if the trace is within the current field window view
+        """
+        # set up painter
+        painter = QPainter(self.field_pixmap)
+        within_field = False
+        if highlight: # create dashed white line if trace is to be highlighted
+            pen = QPen(QColor(255, 255, 255), 1)
+            pen.setDashPattern([2, 5])
+            painter.setPen(pen)
+        else:
+            painter.setPen(QPen(QColor(*trace.color), 1))
+        # establish first point
+        point = trace.points[0]
+        last_x, last_y = self.point_tform.map(*point)
+        last_x, last_y = self.fieldPointToPixmap(last_x, last_y)
+        if 0 < last_x < self.pixmap_size[0] and 0 < last_y < self.pixmap_size[1]:
+            within_field = True
+        # connect points
+        for i in range(1, len(trace.points)):
+            point = trace.points[i]
+            x, y = self.point_tform.map(*point)
+            x, y = self.fieldPointToPixmap(x, y)
+            painter.drawLine(last_x, last_y, x, y)
+            if 0 < x < self.pixmap_size[0] and 0 < y < self.pixmap_size[1]:
+                within_field = True
+            last_x = x
+            last_y = y
+        # connect last point to first point if closed
+        if trace.closed:
+            point = trace.points[0]
+            x, y = self.point_tform.map(*point)
+            x, y = self.fieldPointToPixmap(x,y)
+            painter.drawLine(last_x, last_y, x, y)
+        painter.end()
+
+        return within_field
+    
+    def calcTformOrigin(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
+        """Calculate the vector for the bottom left corner of a transformed image.
+        
+            Params:
+                base_pixmap (QPixmap): untransformed image
+                tform (QTransform): transform to apply to the image
+            Returns:
+                (tuple) the bottom left corner coordinates of the transformed image
+        """
+        base_coords = base_pixmap.size() # base image dimensions
+        tform_notrans = self.tformNoTrans(tform) # get tform without translation
+        height_vector = tform_notrans.map(0, base_coords.height()) # create a vector for base height and transform
+        width_vector = tform_notrans.map(base_coords.width(), 0) # create a vector for base width and transform
+        # calculate coordinates for the top left corner of image
+        if height_vector[0] < 0:
+            x_orig_topleft = -height_vector[0]
+        else:
+            x_orig_topleft = 0
+        if width_vector[1] < 0:
+            y_orig_topleft = -width_vector[1]
+        else:
+            y_orig_topleft = 0
+        # calculate coordinates for the bottom left corner of the image
+        x_orig_bottomleft = x_orig_topleft + height_vector[0]
+        y_orig_bottomleft = y_orig_topleft + height_vector[1]
+
+        return x_orig_bottomleft, y_orig_bottomleft
+    
+    def tformNoTrans(self, tform : QTransform) -> QTransform:
+        """Return a transfrom without a translation component.
+        
+            Params:
+                tform (QTransform): the reference transform
+            Returns:
+                (QTransform) the reference transform without a translation component
+        """
+        tform_notrans = (tform.m11(), tform.m12(), tform.m21(), tform.m22(), 0, 0)
+        tform_notrans = QTransform(*tform_notrans)
+
+        return tform_notrans
+    
+    def updateStatusBar(self, event):
+        """Update status bar with useful information.
+        
+            Params:
+                event: contains data on mouse position
+        """
+        if event:
+            s = "Section: " + str(self.section_num) + "  |  "
+            x, y = event.pos().x(), event.pos().y()
+            x, y = self.pixmapPointToField(x, y)
+            s += "x = " + str("{:.4f}".format(x)) + ", "
+            s += "y = " + str("{:.4f}".format(y)) + "  |  "
+            s += "Tracing: " + '"' + self.tracing_trace.name + '"'
+            closest_trace = self.findClosestTrace(x, y)
+            if closest_trace:
+                s += "  |  Nearest trace: " + closest_trace.name
+        else:
+            message = self.parent_widget.statusbar.currentMessage()
+            s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
+        self.parent_widget.statusbar.showMessage(s)
+    
+    def saveState(self):
+        """Save the current traces and transform."""
+        self.undo_states.append(self.current_state)
+        self.current_state = (self.traces.copy(), self.tform.copy())
+        self.redo_states = []  # clear redo states when an action is made
+    
+    def restoreState(self):
+        """Restore traces and transform stored in the current state (self.current_state)."""
+        self.traces = self.current_state[0].copy()
+        self.selected_traces = []  # clear selected traces
+        self.tform = self.current_state[1].copy()
+        t = self.tform  # easier visual in next lines
+        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
+        self.generateView()
+        self.update()
+
+    def undoState(self):
+        """Undo last action (switch to last state)."""
+        if len(self.undo_states) >= 1:
+            self.redo_states.append(self.current_state)
+            self.current_state = self.undo_states.pop()
+            self.restoreState()
+    
+    def redoState(self):
+        """Redo an undo (switch to last undid state)."""
+        if len(self.redo_states) >= 1:
+            self.undo_states.append(self.current_state)
+            self.current_state = self.redo_states.pop()
+            self.restoreState()
+    
+    def newTrace(self, pix_trace : list, closed=True):
+        """Create a new trace from pixel coordinates.
+        
+            Params:
+                pix_trace (list): pixel coordinates for the new trace
+                closed (bool): whether or not the new trace is closed"""
+        if len(pix_trace) > 1:  # do not create a new trace if there is only one point
+            if closed:
+                pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
+            else:
+                pix_trace = reducePoints(pix_trace)  # only reduce points if trace is open
+            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
+            for point in pix_trace:
+                field_point = self.pixmapPointToField(*point)
+                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
+                new_trace.add(rtform_point)
+            self.traces.append(new_trace)
+            self.saveState()
+            self.selected_traces.append(new_trace)
+            self.generateView(generate_image=False)
+            self.update()
+    
     def paintEvent(self, event):
+        """Called when self.update() and various other functions are run.
+        
+        Overwritten from QWidget.
+        Paints self.field_pixmap onto self (the widget).
+
+            Params:
+                event: unused
+        """
         field_painter = QPainter(self)
         field_painter.drawPixmap(self.rect(), self.field_pixmap, self.field_pixmap.rect())
         field_painter.end()
+    
+    def resizeEvent(self, event):
+        """Scale field window if main window size changes.
+        
+        Overwritten from QWidget Class.
+
+            Params:
+                event: contains data on window size
+        """
+        w = event.size().width()
+        h = event.size().height()
+        self.pixmap_size = (w, h)
+        self.generateView()
+        self.update()
+    
+    def mousePressEvent(self, event):
+        """Called when mouse is clicked.
+        
+        Overwritten from QWidget class.
+
+            Params:
+                event: contains mouse input data
+        """
+        if self.mouse_mode == FieldWidget.POINTER:
+            self.pointerPress(event)
+        elif self.mouse_mode == FieldWidget.PANZOOM:
+            self.panzoomPress(event)
+        elif self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+            self.pencilPress(event)
+        elif self.mouse_mode == FieldWidget.STAMP:
+            self.stampPress(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDLINE:
+            self.linePress(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE:
+            self.linePress(event, closed=False)
+
+    def mouseMoveEvent(self, event):
+        """Called when mouse is moved.
+        
+        Overwritten from QWidget class.
+        
+            Params:
+                event: contains mouse input data
+        """
+        self.updateStatusBar(event)
+        if self.mouse_mode == FieldWidget.POINTER and event.buttons():
+            self.pointerMove(event)
+        elif self.mouse_mode == FieldWidget.PANZOOM and event.buttons():
+            self.panzoomMove(event)
+        elif (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL) and event.buttons():
+            self.pencilMove(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
+            self.lineMove(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
+            self.lineMove(event, closed=False)
+
+    def mouseReleaseEvent(self, event):
+        """Called when mouse button is released.
+        
+        Overwritten from QWidget Class.
+        
+            Params:
+                event: contains mouse input data
+        """
+        if self.mouse_mode == FieldWidget.POINTER:
+            self.pointerRelease(event)
+        if self.mouse_mode == FieldWidget.PANZOOM:
+            self.panzoomRelease(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+            self.pencilRelease(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENPENCIL:
+            self.pencilRelease(event, closed=False)
+    
+    def setMouseMode(self, mode : int):
+        """Set the mode of the mouse.
+        
+            Params:
+                mode (int): number corresponding to mouse mode
+        """
+        self.endPendingEvents()  # end any mouse-related pending events
+        self.mouse_mode = mode
+    
+    def setTracingTrace(self, trace : Trace):
+        """Set the trace used by the pencil/line tracing/stamp.
+        
+            Params:
+                trace (Trace): the new trace to use as refernce for further tracing
+        """
+        self.tracing_trace = trace
+    
+    def pointerPress(self, event):
+        """Called when mouse is pressed in pointer mode.
+
+        Selects/deselcts the nearest trace
+        
+            Params:
+                event: contains mouse input data
+        """
+        pix_x, pix_y = event.x(), event.y()
+        field_x, field_y = self.pixmapPointToField(pix_x, pix_y)
+        radius = max(self.pixmap_size) / 25 * self.mag / self.x_scaling # set radius to be 4% of widget length
+        selected_trace = self.findClosestTrace(field_x, field_y, radius)
+        # select and highlight trace if left button
+        if selected_trace != None and event.button() == Qt.LeftButton:
+            if not selected_trace in self.selected_traces:
+                self.selected_traces.append(selected_trace)
+                self.generateView(generate_image=False)
+                self.update()
+        # deselect and unhighlight trace if right button
+        elif selected_trace != None and event.button() == Qt.RightButton:
+            if selected_trace in self.selected_traces:
+                self.drawTrace(selected_trace)
+                self.selected_traces.remove(selected_trace)
+                self.update()
+    
+    def pointerMove(self, event):
+        """Called when mouse is moved in pointer mode.
+        
+        Not implemented yet.
+        """
+        return
+    
+    def pointerRelease(self, event):
+        """Called when mouse is released in pointer mode.
+        
+        Not implemented yet.
+        """
+        return
+        
+    def panzoomPress(self, event):
+        """Called when mouse is clicked in panzoom mode.
+        
+        Saves the position of the mouse.
+
+            Params:
+                event: contains mouse input data
+        """
+        self.clicked_x = event.x()
+        self.clicked_y = event.y()
+
+    def panzoomMove(self, event):
+        """Called when mouse is moved in panzoom mode.
+        
+        Generates image outputfor panning and zooming.
+
+            Params:
+                event: contains mouse input data
+        """
+        # if left mouse button is pressed, do panning
+        if event.buttons() == Qt.LeftButton:
+            move_x = (event.x() - self.clicked_x)
+            move_y = (event.y() - self.clicked_y)
+            # move field with mouse
+            new_field = QPixmap(*self.pixmap_size)
+            new_field.fill(QColor(0, 0, 0))
+            painter = QPainter(new_field)
+            painter.drawPixmap(move_x, move_y, *self.pixmap_size, self.field_pixmap_copy)
+            self.field_pixmap = new_field
+            painter.end()
+            self.update()
+        # if right mouse button is pressed, do zooming
+        elif event.buttons() == Qt.RightButton:
+            # up and down mouse movement only
+            move_y = event.y() - self.clicked_y
+            zoom_factor = 1.005 ** (move_y) # 1.005 is arbitrary
+            # calculate new geometry of window based on zoom factor
+            xcoef = (self.clicked_x / self.pixmap_size[0]) * 2
+            ycoef = (self.clicked_y / self.pixmap_size[1]) * 2
+            w = self.pixmap_size[0] * zoom_factor
+            h = self.pixmap_size[1] * zoom_factor
+            x = (self.pixmap_size[0] - w) / 2 * xcoef
+            y = (self.pixmap_size[1] - h) / 2 * ycoef
+            # adjust field
+            new_field = QPixmap(*self.pixmap_size)
+            new_field.fill(QColor(0, 0, 0))
+            painter = QPainter(new_field)
+            painter.drawPixmap(x, y, w, h,
+                                self.field_pixmap_copy)
+            self.field_pixmap = new_field
+            painter.end()
+            self.update()
+
+    def panzoomRelease(self, event):
+        """Called when mouse is released in panzoom mode.
+
+        Adjusts new window view.
+        
+            Params:
+                event: contains mouse input data
+        """
+        # set new window for panning
+        if event.button() == Qt.LeftButton:
+            move_x = -(event.x() - self.clicked_x) / self.x_scaling * self.mag
+            move_y = (event.y() - self.clicked_y) / self.y_scaling * self.mag
+            self.current_window[0] += move_x
+            self.current_window[1] += move_y
+            self.generateView()
+            self.update()
+        # set new window for zooming
+        elif event.button() == Qt.RightButton:
+            move_y = event.y() - self.clicked_y
+            zoom_factor = 1.005 ** (move_y)
+            # calculate pixel equivalents for window view
+            xcoef = (self.clicked_x / self.pixmap_size[0]) * 2
+            ycoef = (self.clicked_y / self.pixmap_size[1]) * 2
+            w = self.pixmap_size[0] * zoom_factor
+            h = self.pixmap_size[1] * zoom_factor
+            x = (self.pixmap_size[0] - w) / 2 * xcoef
+            y = (self.pixmap_size[1] - h) / 2 * ycoef
+            # convert pixel equivalents to field coordinates
+            window_x = - x  / self.x_scaling / zoom_factor * self.mag 
+            window_y = - (self.pixmap_size[1] - y - self.pixmap_size[1] * zoom_factor)  / self.y_scaling / zoom_factor * self.mag
+            self.current_window[0] += window_x
+            self.current_window[1] += window_y
+            self.current_window[2] /= zoom_factor
+            # set limit on how far user can zoom in
+            if self.current_window[2] < self.mag:
+                self.current_window[2] = self.mag
+            self.current_window[3] /= zoom_factor
+            if self.current_window[3] < self.mag:
+                self.current_window[3] = self.mag
+            self.generateView()
+            self.update()
+    
+    def pencilPress(self, event):
+        """Called when mouse is pressed in pencil mode.
+
+        Begins creating a new trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        self.last_x = event.x()
+        self.last_y = event.y()
+        self.current_trace = [(self.last_x, self.last_y)]
+
+    def pencilMove(self, event):
+        """Called when mouse is moved in pencil mode with the left mouse button pressed.
+
+        Draws continued trace on the screen.
+        
+            Params:
+                event: contains mouse input data
+        """
+        # draw trace on pixmap
+        x = event.x()
+        y = event.y()
+        painter = QPainter(self.field_pixmap)
+        color = QColor(*self.tracing_trace.color)
+        painter.setPen(QPen(color, 1))
+        painter.drawLine(self.last_x, self.last_y, x, y)
+        painter.end()
+        self.current_trace.append((x, y))
+        self.last_x = x
+        self.last_y = y
+        self.update()
+
+    def pencilRelease(self, event, closed=True):
+        """Called when mouse is released in pencil mode.
+
+        Completes and adds trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        self.newTrace(self.current_trace, closed=closed)
+    
+    def linePress(self, event, closed=True):
+        """Called when mouse is pressed in a line mode.
+        
+        Begins create a line trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        x, y = event.x(), event.y()
+        if event.button() == Qt.LeftButton:  # begin/add to trace if left mouse button
+            if self.is_line_tracing:  # start new trace
+                self.current_trace.append((x, y))
+                self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
+                painter = QPainter(self.field_pixmap)
+                color = QColor(*self.tracing_trace.color)
+                painter.setPen(QPen(color, 1))
+                if closed:
+                    start = 0
+                else:
+                    start = 1
+                for i in range(start, len(self.current_trace)):
+                    painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+                painter.end()
+                self.update()
+            else:  # add to existing
+                self.current_trace = [(x, y)]
+                self.is_line_tracing = True
+        elif event.button() == Qt.RightButton:  # complete existing trace if right mouse button
+            if self.is_line_tracing:
+                if closed:
+                    self.newTrace(self.current_trace, closed=True)
+                else:
+                    self.newTrace(self.current_trace, closed=False)
+                self.is_line_tracing = False
+    
+    def lineMove(self, event, closed=True):
+        """Called when mouse is moved in a line mode.
+        
+        Adds dashed lines to screen connecting the mouse pointer to the existing trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        x, y = event.x(), event.y()
+        self.field_pixmap = self.field_pixmap_copy.copy()
+        # draw solid lines for existing trace
+        painter = QPainter(self.field_pixmap)
+        color = QColor(*self.tracing_trace.color)
+        pen = QPen(color, 1)
+        painter.setPen(pen)
+        if closed:
+            start = 0
+        else:
+            start = 1
+        for i in range(start, len(self.current_trace)):
+            painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+        # draw dashed lines that connect to mouse pointer
+        pen.setDashPattern([2,5])
+        painter.setPen(pen)
+        painter.drawLine(*self.current_trace[-1], x, y)
+        if closed:
+            painter.drawLine(*self.current_trace[0], x, y)
+        self.update()
+    
+    def stampPress(self, event):
+        """Called when mouse is pressed in stamp mode.
+        
+        Creates a stamp centered on the mouse location.
+        
+            Params:
+                event: contains mouse input data
+        """
+        # get mouse coords and convert to field coords
+        pix_x, pix_y = event.x(), event.y()
+        field_x, field_y = self.pixmapPointToField(pix_x, pix_y)
+        # create stamp new trace
+        new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color)
+        for point in self.tracing_trace.points:
+            field_point = (point[0] + field_x, point[1] + field_y)
+            rtform_point = self.point_tform.inverted()[0].map(*field_point)  # fix the coords to image
+            new_trace.add(rtform_point)
+        self.traces.append(new_trace)
+        self.saveState()
+        self.selected_traces.append(new_trace)
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def findTrace(self, trace_name : str, occurence=1):
+        """Focus the window view on a given trace.
+        
+            Params:
+                trace_name (str): the name of the trace to focus on
+                occurence (int): find the nth trace on the section"""
+        count = 0
+        for trace in self.traces:
+            if trace.name == trace_name:
+                count += 1
+                if count == occurence:
+                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+                    range_x = max_x - min_x
+                    range_y = max_y - min_y
+                    self.current_window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+                    self.selected_traces = [trace]
+                    self.generateView()
+                    self.update()
+                
+    def deselectAllTraces(self):
+        """Deselect all traces."""
+        for trace in self.selected_traces:
+            self.drawTrace(trace)
+        self.selected_traces = []
+        self.update()
+    
+    def endPendingEvents(self):
+        """End ongoing events that are connected to the mouse."""
+        if self.is_line_tracing:
+            if self.mouse_mode == FieldWidget.CLOSEDLINE:
+                self.newTrace(self.current_trace, closed=True)
+            elif self.mouse_mode == FieldWidget.OPENLINE:
+                self.newTrace(self.current_trace, closed=False)
+            self.is_line_tracing = False
+    
+    def findClosestTrace(self, field_x : float, field_y : float, radius=1) -> Trace:
+        """Find closest trace to field coordinates in a given radius.
+        
+            Params:
+                field_x (float): x coordinate of search center
+                field_y (float): y coordinate of search center
+                radius (float): 1/2 of the side length of search square
+            
+            Returns:
+                (Trace) the trace closest to the center
+                None if no trace points are found within the radius
+        """
+        # create search square
+        left = field_x - radius
+        right = field_x + radius
+        bottom = field_y - radius
+        top = field_y + radius
+        min_distance = -1
+        closest_trace = None
+        for trace in self.traces_within_field: # check only traces within the current window view
+            for point in trace.points:
+                x, y = self.point_tform.map(*point)
+                if left < x < right and bottom < y < top:
+                    distance = ((x - field_x)**2 + (y - field_y)**2) ** (0.5)
+                    if not closest_trace or distance < min_distance:
+                        min_distance = distance
+                        closest_trace = trace
+
+        return closest_trace
+    
+    def deleteSelectedTraces(self, save_state=True):
+        """Delete selected traces.
+        
+            Params:
+                save_state (bool): whether or not to save the state after deleting
+        """
+        for trace in self.selected_traces:
+            self.traces.remove(trace)
+        if save_state:
+            self.saveState()
+        self.selected_traces = []
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def mergeSelectedTraces(self):
+        """Merge all selected traces."""
+        if len(self.selected_traces) <= 1:
+            print("Cannot merge one or less traces.")
+            return
+        traces = []
+        first_trace = self.selected_traces[0]
+        name = first_trace.name
+        color = first_trace.color  # use color of first trace selected
+        for trace in self.selected_traces:
+            if trace.closed == False:
+                print("Can only merge closed traces.")
+                return
+            if trace.name != name:
+                print("Cannot merge differently named traces.")
+                return
+            # collect pixel values for trace points
+            traces.append([])
+            for point in trace.points:
+                p = self.fieldPointToPixmap(*point)
+                traces[-1].append(p)
+        merged_traces = mergeTraces(traces)  # merge the pixel traces
+        if merged_traces == traces:  # function returns same list if traces cannot be further merged
+            print("Traces already merged.")
+            return
+        # create new merged trace
+        self.deleteSelectedTraces(save_state=False)
+        for trace in merged_traces:
+            new_trace = Trace(name, color)
+            new_trace.color = color
+            for point in trace:
+                field_point = self.pixmapPointToField(*point)
+                new_trace.add(field_point)
+            self.traces.append(new_trace)
+            self.selected_traces.append(new_trace)
+        self.saveState()
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def hideSelectedTraces(self):
+        """Hide all selected traces."""
+        for trace in self.selected_traces:
+            trace.setHidden(True)
+        self.selected_traces = []
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def toggleHideAllTraces(self):
+        """Hide/unhide every trace on the section."""
+        if self.all_traces_hidden:
+            for trace in self.traces:
+                trace.setHidden(False)
+            self.all_traces_hidden = False
+        else:
+            for trace in self.traces:
+                trace.setHidden(True)
+            self.all_traces_hidden = True
+        self.generateView(generate_image=False)
+        self.update()

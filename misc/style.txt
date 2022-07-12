@@ -1,0 +1,7 @@
+Examples of styles
+
+peps.python.org/pep-0008/
+
+variables / attributes: pizza_pie
+classes: PizzaPie
+function / method: pizzaPie()

@@ -1,4 +1,3 @@
-import os
 import json
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
@@ -12,6 +11,7 @@ from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
+
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
 from pyrecon.classes.contour import Contour
@@ -20,75 +20,78 @@ from pyrecon.classes.transform import Transform as XMLTransform
 class MainWindow(QMainWindow):
 
     def __init__(self):
-        super().__init__()
+        """Constructs the skeleton for an empty main window."""
+        super().__init__() # run QMainWindow init function
         self.setWindowTitle("pyReconstruct")
 
+        # menu at top of window
         self.menubar = self.menuBar()
+
+        # file menu
         self.filemenu = self.menubar.addMenu("File")
-        self.new_act = self.filemenu.addAction("New")
+        self.new_act = self.filemenu.addAction("New")  # create a new series
         self.new_act.setShortcut("Ctrl+N")
-        self.new_act.triggered.connect(self.newSeries) # create a new series
-        self.open_act = self.filemenu.addAction("Open")
-        self.open_act.triggered.connect(self.openSeries) # open an existing series
-        self.new_from_xml_act = self.filemenu.addAction("New from xml series")
+        self.new_act.triggered.connect(self.newSeries)
+        self.open_act = self.filemenu.addAction("Open")  # open an existing series
+        self.open_act.triggered.connect(self.openSeries)
+        self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
         self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
 
-        self.field = None
-        self.setMouseTracking(True)
+        self.field = None  # placeholder for field
+        self.mouse_dock = None  # placeholder for mouse dock
+
+        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.setGeometry(100, 100, 500, 500)
         self.show()
     
     def newSeries(self):
-        """Create a new series from a set of images"""
+        """Create a new series from a set of images."""
         # get images from user
-        image_locations, extensions = QFileDialog.getOpenFileNames(self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
+        image_locations, extensions = QFileDialog.getOpenFileNames(
+            self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
         if len(image_locations) == 0:
             return
-        
         # get the name of the series from user
-        series_name, confirmed = QInputDialog.getText(self, "Series Name", "What is the name of this series?")
+        series_name, confirmed = QInputDialog.getText(
+            self, "Series Name", "What is the name of this series?")
         if not confirmed:
             return
-        
         # get calibration (microns per pix) from user
-        mag, confirmed = QInputDialog.getDouble(self, "Section Calibration",
-                                                "What is the calibration for this series?",
-                                                0.00254, minValue=0.000001, decimals=6)
-
-        # get section thickness (microns) from user
-        thickness, confirmed = QInputDialog.getDouble(self, "Section Thickness",
-                                                "What is the section thickness for this series?",
-                                                0.05, minValue=0.000001, decimals=6)
-
+        mag, confirmed = QInputDialog.getDouble(
+            self, "Section Calibration", "What is the calibration for this series?",
+            0.00254, minValue=0.000001, decimals=6)
         if not confirmed:
             return
-        
-        # change working directory to folder with images
+        # get section thickness (microns) from user
+        thickness, confirmed = QInputDialog.getDouble(
+            self, "Section Thickness", "What is the section thickness for this series?",
+            0.05, minValue=0.000001, decimals=6)
+        if not confirmed:
+            return
+        # store directory to folder with images
         first_image = image_locations[0]
         if "/" in first_image:
             self.wdir = first_image[:first_image.rfind("/")+1]
         
         # create series data file (.ser)
         series_data = {}
-        series_data["sections"] = {}
-        series_data["current_section"] = 0
-        series_data["window"] = [0, 0, 1, 1]
+        series_data["sections"] = {}  # section_number : section_filename
+        series_data["current_section"] = 0  # last section left off
+        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
         for i in range(len(image_locations)):
             series_data["sections"][i] = series_name + "." + str(i)
-
-        series_data["palette_traces"] = getDefaultPaletteTraces()
+        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
         series_data["current_trace"] = series_data["palette_traces"][0]
-
         with open(self.wdir + series_name + ".ser", "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
         # create section files (.#)
         for i in range(len(image_locations)):
             section_data = {}
-            section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]
-            section_data["mag"] = mag
-            section_data["thickness"] = thickness
-            section_data["tform"] = [1, 0, 0, 0, 1, 0]
+            section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]  # image location
+            section_data["mag"] = mag  # microns per pixel
+            section_data["thickness"] = thickness  # section thickness
+            section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
             section_data["traces"] = []
             with open(self.wdir + series_name + "." + str(i), "w") as section_file:
                 section_file.write(json.dumps(section_data, indent=2))
@@ -97,24 +100,30 @@ class MainWindow(QMainWindow):
         self.openSeries(self.wdir + series_name + ".ser")
     
     def newSeriesFromXML(self):
+        """Create a new series from existing XML series data."""
+        # get the XML file location from the user
         xml_file, ext = QFileDialog.getOpenFileName(self, "Open the XML SER file", filter="*.ser")
         if not xml_file:
             return
         xml_dir = xml_file[:xml_file.rfind("/")]
+        # get the intended location for the new JSON files
         json_dir = QFileDialog.getExistingDirectory(self, "Select folder to contain JSON files")
         if not json_dir:
             return
+        
+        # load all the XML series data
         progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Open XML Series")
         progbar.setWindowModality(Qt.WindowModal)
         series = process_series_directory(xml_dir, progbar=progbar)
 
+        # create new series JSON file
         series_data = {}
         series_data["sections"] = {}
         series_data["current_section"] = 0
         series_data["window"] = [0, 0, 1, 1]
         series_data["palette_traces"] = []
-        for contour in series.contours:
+        for contour in series.contours:  # import XML trace palette
             name = contour.name
             color = list(contour.border)
             for i in range(len(color)):
@@ -124,119 +133,68 @@ class MainWindow(QMainWindow):
             series_data["palette_traces"].append(new_trace.getDict())
         series_data["current_trace"] = series_data["palette_traces"][0]
 
+        # import data from each XML section file
         progbar = QProgressDialog("Importing series data...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Import XML Data")
         progbar.setWindowModality(Qt.WindowModal)
         prog_value = 0
         final_value = len(series.sections)
         for n, section in sorted(series.sections.items()):
-            series_data["sections"][n] = section.name
+            series_data["sections"][n] = section.name  # add section name to series file data
             section_data = {}
             image = section.images[0]
             section_data["src"] = image.src
             section_data["mag"] = image.mag
             section_data["thickness"] = section.thickness
             transform = image.transform
-            forward_transform = transform.tform()
-            ft = forward_transform
+            forward_transform = transform.tform()  # get the forward transform 3x3 numpy matrix
+            ft = forward_transform  # just to make it easier to index in next line
             section_data["tform"] = (ft[0, 0], ft[0, 1], ft[0, 2], ft[1, 0], ft[1, 1], ft[1, 2])
             section_data["traces"] = []
-            for contour in section.contours:
+            for contour in section.contours:  # iterate through all contours
                 name = contour.name
                 color = list(contour.border)
                 for i in range(len(color)):
                     color[i] *= 255
                 closed = contour.closed
-                mode = contour.mode
+                mode = contour.mode  # not used in pyReconstruct, but useful to store for exporting back to XML
                 new_trace = Trace(name, color, closed=closed, mode=mode)
                 points = contour.points
-                points = contour.transform.transformPoints(points)
-                points = transform.inverseTransformPoints(points)
+                points = contour.transform.transformPoints(points)  # transform points by its own contour (get field points)
+                points = transform.inverseTransformPoints(points)  # reverse transform points by image transform (fix points to image)
                 new_trace.points = points
                 section_data["traces"].append(new_trace.getDict())
-
             with open(json_dir + "/" + section.name, "w") as section_file:
                 section_file.write(json.dumps(section_data, indent=2))
-            
-            if progbar.wasCanceled(): return
+            if progbar.wasCanceled(): return  # cancel function if user hits cancel during loading
             prog_value += 1
             progbar.setValue(prog_value / final_value * 100)
 
+        # save series file
         series_fp = json_dir + "/" + series.name + ".ser"
         with open(series_fp, "w") as series_file:
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
     
-    def exportTracesToXML(self):
-        self.saveAllData()
-        warn = QMessageBox()
-        warn.setIcon(QMessageBox.Warning)
-        warn.setText("WARNING: All traces on the XML file will be overwritten.")
-        warn.setInformativeText("Backing up is suggested.")
-        warn.setWindowTitle("Warning")
-        warn.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        response = warn.exec_()
-        if response == QMessageBox.Cancel:
-            return
-        xml_file, ext = QFileDialog.getOpenFileName(self, "Locate the XML SER file", filter="*.ser")
-        if not xml_file:
-            return
-        xml_dir = xml_file[:xml_file.rfind("/")]
-        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Open XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        xml_series = process_series_directory(xml_dir, progbar=progbar)
-
-        progbar = QProgressDialog("Exporting new traces...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Export to XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        prog_value = 0
-        final_value = len(self.series.sections)
-        for section_num, section_name in self.series.sections.items():
-            section = Section(self.wdir + section_name)
-            xml_series.sections[section_num].contours = []
-            for trace in section.traces:
-                contour_color = list(trace.color)
-                for i in range(len(contour_color)):
-                    contour_color[i] *= 255
-                tf = section.tform
-                xcoef = (tf[2], tf[0], tf[1])
-                ycoef = (tf[5], tf[3], tf[4])
-                transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
-                new_contour = Contour(
-                    name = trace.name,
-                    comment = "",
-                    hidden = False,
-                    closed = trace.closed,
-                    simplified = True,
-                    mode = trace.mode,
-                    border = contour_color,
-                    fill = contour_color,
-                    points = trace.points,
-                    transform = transform
-                )
-                xml_series.sections[section_num].contours.append(new_contour)
-                if progbar.wasCanceled(): return
-                prog_value += 1
-                progbar.setValue(prog_value / final_value * 100)
+    def openSeries(self, series_fp=""):
+        """Open an existing series.
         
-        progbar = QProgressDialog("Writing to XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Write XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
-        
-
-    def openSeries(self, series_fp=None):
-        """Open an existing series"""
-        if series_fp: # if series is provided (only the case if opening from new)
+            Params:
+                series_fp (str): series filepath (optional)
+        """
+        if series_fp:  # if series is provided (only the case if opening from new)
             self.series = Series(series_fp)
-        else: 
-            # get series file from user
+        else:  # get series file from user
             series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
-            if series_fp == "":
-                return
-            self.series = Series(series_fp)
+            if series_fp == "": return  # exit function if user does not provide series
+            self.series = Series(series_fp)  # load series data into Series object
         self.series_fp = series_fp
+
+        # close previous if widgets if other series has already been opened
+        if self.field is not None:
+            self.field.close()
+        if self.mouse_dock is not None:
+            self.mouse_dock.close()
 
         # change working directory to series location
         if "/" in series_fp:
@@ -246,7 +204,7 @@ class MainWindow(QMainWindow):
         self.initField()
     
     def initField(self):
-        """Create the field for tracing"""
+        """Create the tracing field after opening a series."""
         # set the main window to be slightly less than the size of the monitor
         screen = QApplication.primaryScreen()
         screen_rect = screen.size()
@@ -259,15 +217,15 @@ class MainWindow(QMainWindow):
         # create status bar (at bottom of window)
         self.statusbar = self.statusBar()
 
-        # add to menu bar
+        # add options to menu bar (is there a better way to do this?)
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
         self.objectlist_act.triggered.connect(self.openObjectList)
         self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
-        # create the field and set as main widget
-        if self.series.current_section not in self.series.sections:
+        # create the FieldWidget object and set as main widget
+        if self.series.current_section not in self.series.sections:  # if last known section number is not valid
             self.series.current_section = list(self.series.sections.keys())[0]
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
@@ -295,52 +253,63 @@ class MainWindow(QMainWindow):
 
     
     def changeMouseMode(self, new_mode):
+        """Change the mouse mode of the field (pointer, panzoom, tracing...).
+
+        Called when user clicks on mouse mode palette.
+        """
         self.field.setMouseMode(new_mode)
 
     def changeTracingTrace(self, trace):
+        """Change the trace utilized by the user.
+
+        Called when user clicks on trace palette.
+        """
         self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
-    def keyPressEvent(self, event):
-        # do not respond to keyboard if field is not created
-        if not self.field:
-            return
-        # if PgUp is pressed
-        elif event.key() == 16777238:
-            self.changeSection(self.series.current_section + 1)
-        # if PgDn is pressed
-        elif event.key() == 16777239:
-            self.changeSection(self.series.current_section - 1)
-        # if Del is pressed
-        elif event.key() == 16777223:
-            self.field.deleteSelectedTraces()
-
-    
-    def wheelEvent(self, event):
-        # do not respond to mouse wheel if field is not created
-        if not self.field:
-            return
-        # if scroll up
-        elif event.angleDelta().y() > 0  and self.series.current_section < len(self.series.sections)-1:
-            self.changeSection(self.series.current_section + 1)
-        # if scroll down
-        elif event.angleDelta().y() < 0 and self.series.current_section > 0:
-            self.changeSection(self.series.current_section - 1)
-    
     def changeSection(self, section_num):
-        """Change the section of the field"""
-        if section_num not in self.series.sections:
+        """Change the section of the field."""
+        if section_num not in self.series.sections:  # check if requested section exists
             return
         self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field.loadSection(self.series.current_section, self.section)
     
+    def keyPressEvent(self, event):
+        """Called when any key is pressed and user focus is on main window."""
+        if not self.field:  # do not respond to keyboard if field is not created
+            return
+        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        if event.key() == 16777238:  # if PgUp is pressed
+            if section_number_i < len(section_numbers) - 1:
+                self.changeSection(section_numbers[section_number_i + 1])
+        elif event.key() == 16777239:  # if PgDn is pressed
+            if section_number_i > 0:
+                self.changeSection(section_numbers[section_number_i - 1])
+        elif event.key() == 16777223:  # if Del is pressed
+            self.field.deleteSelectedTraces()
+    
+    def wheelEvent(self, event):
+        """Called when mouse scroll is used."""
+        if not self.field:  # do not respond to mouse wheel if field is not created
+            return
+        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        if event.angleDelta().y() > 0:  # if scroll up
+            if section_number_i < len(section_numbers) - 1:
+                self.changeSection(section_numbers[section_number_i + 1])
+        elif event.angleDelta().y() < 0:  # if scroll down
+            if section_number_i > 0:
+                self.changeSection(section_numbers[section_number_i - 1])
+    
     def saveAllData(self):
-        self.section.traces = self.field.traces
-        self.series.window = self.field.current_window
+        """Write current series and section data into JSON files."""
+        self.section.traces = self.field.traces  # get traces from field
+        self.series.window = self.field.current_window  # get window view
         self.series.palette_traces = []
-        for button in self.mouse_dock.palette_buttons:
+        for button in self.mouse_dock.palette_buttons:  # get trace palette
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace
@@ -348,7 +317,9 @@ class MainWindow(QMainWindow):
         self.series.save()
     
     def openObjectList(self):
+        """Open the object list widget."""
         self.saveAllData()
+        # current placeholder until options widget is created
         quantities = {}
         quantities["range"] = False
         quantities["count"] = True
@@ -357,12 +328,86 @@ class MainWindow(QMainWindow):
         quantities["volume"] = True
         obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
     
-    def setToObject(self, obj_name, section_num):
+    def setToObject(self, obj_name : str, section_num : str):
+        """Focus the field on an object from a specified section.
+        
+            Params:
+                obj_name (str): the name of the object
+                section_num (str): the section the object is located
+        """
         self.changeSection(section_num)
         self.field.findTrace(obj_name)
+    
+    def exportTracesToXML(self):
+        """Export all traces to existing XML series.
+        
+        This function overwrites the traces in the XML series.
+        """
+        self.saveAllData()
+        # warn the user about overwriting the XML traces
+        warn = QMessageBox()
+        warn.setIcon(QMessageBox.Warning)
+        warn.setText("WARNING: All traces on the XML file will be overwritten.")
+        warn.setInformativeText("Backing up is suggested.")
+        warn.setWindowTitle("Warning")
+        warn.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        response = warn.exec_()
+        if response == QMessageBox.Cancel:
+            return
+        
+        # get the XML file from the user
+        xml_file, ext = QFileDialog.getOpenFileName(self, "Locate the XML SER file", filter="*.ser")
+        if not xml_file:
+            return
+        xml_dir = xml_file[:xml_file.rfind("/")]
+        # load the XML series file data
+        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Open XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        xml_series = process_series_directory(xml_dir, progbar=progbar)
+    
+        # export the tracesin the JSON files to the XML file data
+        progbar = QProgressDialog("Exporting new traces...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Export to XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        prog_value = 0
+        final_value = len(self.series.sections)
+        for section_num, section_name in self.series.sections.items():
+            section = Section(self.wdir + section_name)
+            xml_series.sections[section_num].contours = []  # clear the list of XML file contours
+            for trace in section.traces:
+                contour_color = list(trace.color)  # get trace color
+                for i in range(len(contour_color)):
+                    contour_color[i] *= 255
+                tf = section.tform
+                xcoef = (tf[2], tf[0], tf[1])
+                ycoef = (tf[5], tf[3], tf[4])
+                transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse  # invert transform
+                new_contour = Contour(
+                    name = trace.name,
+                    comment = "",
+                    hidden = False,
+                    closed = trace.closed,
+                    simplified = True,
+                    mode = trace.mode,
+                    border = contour_color,
+                    fill = contour_color,  # the fill is set as border color
+                    points = trace.points,
+                    transform = transform
+                )
+                xml_series.sections[section_num].contours.append(new_contour)  # add the new contour to XML data
+                if progbar.wasCanceled(): return
+                prog_value += 1
+                progbar.setValue(prog_value / final_value * 100)
+        
+        # write modified XML data to XML files
+        progbar = QProgressDialog("Writing to XML series...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Write XML Series")
+        progbar.setWindowModality(Qt.WindowModal)
+        write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
 
     def closeEvent(self, event):
-        """Save traces, section num, and window if user exits"""
+        """Save all data to files when the user exits."""
         if not self.field: # do not do anything if field is not created
             event.accept()
             return
@@ -370,6 +415,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
 def getDefaultPaletteTraces():
+    """Function to store data for default trace palette"""
     palette_traces = [None] * 20
     n = 0
 

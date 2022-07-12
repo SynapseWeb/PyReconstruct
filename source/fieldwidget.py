@@ -2,13 +2,21 @@ from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Qt
 from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
 
+from section import Section
+from mainwindow import MainWindow
 from grid import getExterior, mergeTraces, reducePoints
 from trace import Trace
 
 class FieldWidget(QWidget):
     POINTER, PANZOOM, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(7)  # mouse modes
 
-    def __init__(self, section_num, section, window, parent):
+    def __init__(self, section_num : int, section : Section, window : list, parent : MainWindow):
+        """Create the field widget.
+        
+            Params:
+                section_num (int): the section number (to display in the status bar)
+                section (Section): the Section object containing the section data (tform, traces, etc)
+                """
         # add parent if provided (this should be the case)
         super().__init__(parent)
         self.parent_widget = parent
@@ -41,6 +49,7 @@ class FieldWidget(QWidget):
     
     def loadSection(self, section_num, section):
         """Load a new section into the field"""
+        self.endPendingEvents()
         self.section_num = section_num
 
         # create transforms
@@ -125,6 +134,7 @@ class FieldWidget(QWidget):
     
     def setMouseMode(self, mode):
         """Set the mode of the mouse"""
+        self.endPendingEvents()
         self.mouse_mode = mode
     
     def mousePressEvent(self, event):
@@ -403,6 +413,14 @@ class FieldWidget(QWidget):
     def pointerRelease(self, event):
         """Mouse is released in pointer mode"""
         return
+    
+    def endPendingEvents(self):
+        if self.is_line_tracing:
+            if self.mouse_mode == FieldWidget.CLOSEDLINE:
+                self.newTrace(self.current_trace, closed=True)
+            else:
+                self.newTrace(self.current_trace, closed=False)
+            self.is_line_tracing = False
     
     def findClosestTrace(self, field_x, field_y, radius=1):
         """Find closest trace to field coordinates in a given radius"""

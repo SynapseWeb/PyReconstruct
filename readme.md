@@ -1,4 +1,3 @@
-Python Reonstruct notes
+Python Reconstruct notes
 
-run the following command in Command Prompt:
-pip install PySide2
+Run the following command in Command Prompt: pip install PySide2

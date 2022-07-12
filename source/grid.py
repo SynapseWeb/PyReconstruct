@@ -1,4 +1,4 @@
-import math
+from quantification import area
 
 CC_TO_VECTOR = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))  
 
@@ -187,31 +187,12 @@ class Grid():
                     if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
                         stack.append((x2,y2))
 
-def polygonArea(vertices):
-    if len(vertices) == 2:
-        return 0
-
-    psum = 0
-    nsum = 0
-
-    for i in range(len(vertices)):
-        sindex = (i + 1) % len(vertices)
-        prod = vertices[i][0] * vertices[sindex][1]
-        psum += prod
-
-    for i in range(len(vertices)):
-        sindex = (i + 1) % len(vertices)
-        prod = vertices[sindex][0] * vertices[i][1]
-        nsum += prod
-
-    return abs(1/2*(psum - nsum))
-
 def reducePoints(points):
     reduced_points = points.copy()
     i = 1
     while i < len(reduced_points) - 1:
-        area = polygonArea((reduced_points[i-1], reduced_points[i], reduced_points[i+1]))
-        if area <= 1:
+        a = area((reduced_points[i-1], reduced_points[i], reduced_points[i+1]))
+        if a <= 1:
             reduced_points.pop(i)
         else:
             i += 1
@@ -225,7 +206,6 @@ def getExterior(points):
 
 def mergeTraces(trace_list):
     grid = Grid(trace_list)
-    #grid.printGrid()
     new_traces = []
     grid_has_traces = True
     while grid_has_traces:

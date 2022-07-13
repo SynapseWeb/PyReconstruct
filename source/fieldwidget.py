@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import (QWidget, QMainWindow)
-from PySide2.QtCore import Qt
-from PySide2.QtGui import (QPixmap, QPen, QColor, QTransform, QPainter)
+from PySide2.QtCore import Qt, QRectF
+from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
 
 from section import Section
 from grid import getExterior, mergeTraces, reducePoints
@@ -55,11 +55,11 @@ class FieldWidget(QWidget):
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
         self.mag = section.mag # get magnification
-        base_pixmap = QPixmap(self.parent_widget.wdir + section.src) # load image
-        self.image_pixmap = base_pixmap.transformed(self.image_tform) # transform image
-        self.tform_origin = self.calcTformOrigin(base_pixmap, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
+        self.base_image = QImage(self.parent_widget.wdir + section.src) # load image
+        self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
+        self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
         x_shift = t[2] - self.tform_origin[0]*self.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.image_pixmap.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
 
         # create traces
@@ -118,13 +118,13 @@ class FieldWidget(QWidget):
             crop_left = 0 if crop_left < 0 else crop_left
 
             crop_top = (window_y - self.image_vector[1] + window_h) / self.mag
-            image_height = self.image_pixmap.size().height()
+            image_height = self.tformed_image.size().height()
             top_empty = (crop_top - image_height) if crop_top > image_height else 0
             crop_top = image_height if crop_top > image_height else crop_top
             crop_top = image_height - crop_top
 
             crop_right = (window_x - self.image_vector[0] + window_w) / self.mag
-            image_width = self.image_pixmap.size().width()
+            image_width = self.tformed_image.size().width()
             crop_right = image_width if crop_right > image_width else crop_right
 
             crop_bottom = (window_y - self.image_vector[1]) / self.mag
@@ -136,10 +136,10 @@ class FieldWidget(QWidget):
 
             # put the transformed image on the empty window
             painter = QPainter(self.field_pixmap)
-            painter.drawPixmap(left_empty * self.x_scaling, top_empty * self.y_scaling,
-                                crop_w * self.x_scaling, crop_h * self.y_scaling,
-                                self.image_pixmap,
-                                crop_left, crop_top, crop_w, crop_h)
+            painter.drawImage(QRectF(left_empty * self.x_scaling, top_empty * self.y_scaling,
+                                crop_w * self.x_scaling, crop_h * self.y_scaling),
+                                self.tformed_image,
+                                QRectF(crop_left, crop_top, crop_w, crop_h))
             painter.end()
 
             self.image_layer = self.field_pixmap.copy()

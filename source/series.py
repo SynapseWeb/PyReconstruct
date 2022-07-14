@@ -3,10 +3,14 @@ from trace import Trace
 
 class Series():
 
-    def __init__(self, filename):
-        """Load the series file"""
-        self.filename = filename
-        with open(filename, "r") as f:
+    def __init__(self, filepath):
+        """Load the series file.
+        
+            Params:
+                filepath (str): the filepath for the series JSON file
+        """
+        self.filepath = filepath
+        with open(filepath, "r") as f:
             series_data = json.load(f)
         
         self.sections = {}
@@ -19,8 +23,12 @@ class Series():
             self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
         self.current_trace = Trace.fromDict(series_data["current_trace"])
     
-    def getDict(self):
-        """Convert series object into a dictionary"""
+    def getDict(self) -> dict:
+        """Convert series object into a dictionary.
+        
+            Returns:
+                (dict) all of the compiled section data
+        """
         d = {}
         d["sections"] = self.sections
         d["current_section"] = self.current_section
@@ -32,7 +40,7 @@ class Series():
         return d
         
     def save(self):
-        """Save file into json"""
+        """Save file into json."""
         d = self.getDict()
-        with open(self.filename, "w") as f:
+        with open(self.filepath, "w") as f:
             f.write(json.dumps(d, indent=1))

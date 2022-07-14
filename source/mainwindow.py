@@ -278,6 +278,7 @@ class MainWindow(QMainWindow):
     
     def keyPressEvent(self, event):
         """Called when any key is pressed and user focus is on main window."""
+        print(event.key())
         if not self.field:  # do not respond to keyboard if field is not created
             return
         section_numbers = list(self.series.sections.keys())  # get list of all section numbers
@@ -290,6 +291,10 @@ class MainWindow(QMainWindow):
                 self.changeSection(section_numbers[section_number_i - 1])
         elif event.key() == 16777223:  # if Del is pressed
             self.field.deleteSelectedTraces()
+        elif event.key() == 45:  # if - is pressed
+            self.field.changeBrightness(-1)
+        elif event.key() == 61:  # if + is pressed
+            self.field.changeBrightness(1)
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""

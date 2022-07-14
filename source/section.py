@@ -3,12 +3,15 @@ from trace import Trace
 
 class Section():
 
-    def __init__(self, filename):
-        """Load the section file"""
-        self.filename = filename
-        with open(filename, "r") as f:
+    def __init__(self, filepath : str):
+        """Load the section file.
+        
+            Params:
+                filepath (str): the file path for the section JSON file
+        """
+        self.filepath = filepath
+        with open(filepath, "r") as f:
             section_data = json.load(f)
-
         self.src = section_data["src"]
         self.mag = section_data["mag"]
         self.thickness = section_data["thickness"]
@@ -17,8 +20,12 @@ class Section():
         for i in range(len(self.traces)):  # convert contour dictionaries into Contour objects
             self.traces[i] = Trace.fromDict(self.traces[i])
 
-    def getDict(self):
-        """Convert section object into a dictionary"""
+    def getDict(self) -> dict:
+        """Convert section object into a dictionary.
+        
+            Returns:
+                (dict) all of the compiled section data
+        """
         d = {}
         d["src"] = self.src
         d["mag"] = self.mag
@@ -30,7 +37,7 @@ class Section():
         return d
     
     def save(self):
-        """Save file into json"""
+        """Save file into json."""
         d = self.getDict()
-        with open(self.filename, "w") as f:
+        with open(self.filepath, "w") as f:
             f.write(json.dumps(d, indent=1))

@@ -77,6 +77,12 @@ class FieldWidget(QWidget):
         self.generateView()
         self.update()
     
+    def changeBrightness(self, change):
+        """Change the brightness of the section.
+        
+        Not implemented yet."""
+        return
+    
     def generateView(self, generate_image=True):
         """Generate the view seen by the user in the main window.
         

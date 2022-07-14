@@ -2,8 +2,14 @@ from quantification import area, lineDistance
 
 class ObjectTableItem():
 
-    def __init__(self, name):
+    def __init__(self, name : str):
+        """Create an object table item.
+        
+            Params:
+                name (str): the name of the trace
+        """
         self.name = name
+        # establish defaults
         self.start = -1
         self.end = -1
         self.count = 0
@@ -11,7 +17,15 @@ class ObjectTableItem():
         self.flat_area = 0
         self.volume = 0
     
-    def addTrace(self, trace_points, trace_is_closed, section_num, section_thickness):
+    def addTrace(self, trace_points : list, trace_is_closed : bool, section_num : int, section_thickness : float):
+        """Add trace data to the existing object.
+        
+            Params:
+                trace_points (list): list of points
+                trace_is_closed (bool): whether or not the trace is closed
+                section_num (int): the section number the trace is on
+                section_thickness (float): the section thickness for the trace
+        """
         if self.start == -1:
             self.start = section_num
         self.end = max(section_num, self.end)

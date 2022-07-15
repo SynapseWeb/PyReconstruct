@@ -25,7 +25,7 @@ class MouseDockWidget(QDockWidget):
         self.setWindowTitle(" ")  # no title for the dock
         self.bsize = button_size
         self.central_widget = QWidget()
-        self.setBaseSize(self.bsize*10, 5 + self.bsize*4)
+        self.resize(self.bsize*10, 5 + self.bsize*4)
 
         self.mode_buttons = {}
         self.createModeButton("pointer", 0, 0, FieldWidget.POINTER)

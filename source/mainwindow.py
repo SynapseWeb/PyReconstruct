@@ -1,4 +1,5 @@
 import json
+from time import time
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
     QMessageBox)
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
 
         self.field = None  # placeholder for field
         self.mouse_dock = None  # placeholder for mouse dock
+        self.obj_list = None
 
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.setGeometry(100, 100, 500, 500)
@@ -269,16 +271,17 @@ class MainWindow(QMainWindow):
     
     def changeSection(self, section_num):
         """Change the section of the field."""
+        start_time = time()
         if section_num not in self.series.sections:  # check if requested section exists
             return
         self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field.loadSection(self.series.current_section, self.section)
+        print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
         """Called when any key is pressed and user focus is on main window."""
-        print(event.key())
         if not self.field:  # do not respond to keyboard if field is not created
             return
         section_numbers = list(self.series.sections.keys())  # get list of all section numbers
@@ -320,6 +323,8 @@ class MainWindow(QMainWindow):
                 self.series.current_trace = button.trace
         self.section.save()
         self.series.save()
+        if self.obj_list is not None and self.obj_list.isVisible():  # update the table if present
+            self.obj_list.updateSectionData(self.series.current_section, self.section)
     
     def openObjectList(self):
         """Open the object list widget."""
@@ -331,7 +336,7 @@ class MainWindow(QMainWindow):
         quantities["surface_area"] = False
         quantities["flat_area"] = True
         quantities["volume"] = True
-        obj_table = ObjectTableWidget(self.series, self.wdir, quantities, self)
+        self.obj_list = ObjectTableWidget(self.series, self.wdir, quantities, self)
     
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.

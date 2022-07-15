@@ -7,7 +7,7 @@
 
 - [ ] Trace list
 - [ ] Expandable (s) / grabbable (g) traces (left click = confirm, right click = cancel)
-- [ ] Come up with style
+- [ ] Describe default style we will use
 
 * Must-do
 
@@ -30,6 +30,7 @@
 - [ ] Add tags to objects
 - [ ] Object list
    - [ ] Limit output (regular expressions?)
+   - [ ] "Live" object list update (no need to refresh list constantly)
    - [ ] Limit to object tags
    - [ ] Check box / selected?
 - [ ] Consider transformation module for upcoming transformational armaggeddon (spelling?) 

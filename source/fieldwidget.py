@@ -45,7 +45,9 @@ class FieldWidget(QWidget):
         self.show()
     
     def loadSection(self, section_num, section):
-        """Load a new section into the field."""
+        """Load a new section into the field.
+        
+            Params:"""
         self.endPendingEvents()
         self.section_num = section_num
 
@@ -57,6 +59,7 @@ class FieldWidget(QWidget):
         self.mag = section.mag # get magnification
         self.base_image = QImage(self.parent_widget.wdir + section.src) # load image
         self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
+        # in order to place the image correctly in the field...
         self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
         x_shift = t[2] - self.tform_origin[0]*self.mag # calculate x translation for image placement in field
         y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
@@ -64,7 +67,7 @@ class FieldWidget(QWidget):
 
         # create traces
         self.traces = section.traces.copy()
-        for trace in self.traces:
+        for trace in self.traces:  # temporary
             trace.setHidden(False)
         self.selected_traces = []
 
@@ -284,7 +287,7 @@ class FieldWidget(QWidget):
             Params:
                 event: contains data on mouse position
         """
-        if event:
+        if event is not None:
             s = "Section: " + str(self.section_num) + "  |  "
             x, y = event.pos().x(), event.pos().y()
             x, y = self.pixmapPointToField(x, y)
@@ -302,6 +305,8 @@ class FieldWidget(QWidget):
     def saveState(self):
         """Save the current traces and transform."""
         self.undo_states.append(self.current_state)
+        if len(self.undo_states) > 20:  # limit the number of undo states
+            self.undo_states.pop(0)
         self.current_state = (self.traces.copy(), self.tform.copy())
         self.redo_states = []  # clear redo states when an action is made
     
@@ -344,7 +349,7 @@ class FieldWidget(QWidget):
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(*point)
-                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to image
+                rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
             self.saveState()
@@ -464,16 +469,16 @@ class FieldWidget(QWidget):
         """
         pix_x, pix_y = event.x(), event.y()
         field_x, field_y = self.pixmapPointToField(pix_x, pix_y)
-        radius = max(self.pixmap_size) / 25 * self.mag / self.x_scaling # set radius to be 4% of widget length
-        selected_trace = self.findClosestTrace(field_x, field_y, radius)
-        # select and highlight trace if left button
-        if selected_trace != None and event.button() == Qt.LeftButton:
+        select_radius = max(self.pixmap_size) / 25 * self.mag / self.x_scaling # set radius to be 4% of widget length
+        selected_trace = self.findClosestTrace(field_x, field_y, select_radius)
+        # select and highlight trace if left mouse click
+        if selected_trace is not None and event.button() == Qt.LeftButton:
             if not selected_trace in self.selected_traces:
                 self.selected_traces.append(selected_trace)
                 self.generateView(generate_image=False)
                 self.update()
-        # deselect and unhighlight trace if right button
-        elif selected_trace != None and event.button() == Qt.RightButton:
+        # deselect and unhighlight trace if right mouse click
+        elif selected_trace is not None and event.button() == Qt.RightButton:
             if selected_trace in self.selected_traces:
                 self.drawTrace(selected_trace)
                 self.selected_traces.remove(selected_trace)
@@ -753,7 +758,7 @@ class FieldWidget(QWidget):
                 self.newTrace(self.current_trace, closed=False)
             self.is_line_tracing = False
     
-    def findClosestTrace(self, field_x : float, field_y : float, radius=1) -> Trace:
+    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5) -> Trace:
         """Find closest trace to field coordinates in a given radius.
         
             Params:
@@ -799,8 +804,8 @@ class FieldWidget(QWidget):
     
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
-        if len(self.selected_traces) <= 1:
-            print("Cannot merge one or less traces.")
+        if len(self.selected_traces) < 2:
+            print("Cannot merge fewer than two traces.")
             return
         traces = []
         first_trace = self.selected_traces[0]
@@ -819,8 +824,8 @@ class FieldWidget(QWidget):
                 p = self.fieldPointToPixmap(*point)
                 traces[-1].append(p)
         merged_traces = mergeTraces(traces)  # merge the pixel traces
-        if merged_traces == traces:  # function returns same list if traces cannot be further merged
-            print("Traces already merged.")
+        if merged_traces == traces:  # function returns same list if traces cannot be merged
+            print("Traces cannot be merged.")
             return
         # create new merged trace
         self.deleteSelectedTraces(save_state=False)

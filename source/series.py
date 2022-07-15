@@ -3,7 +3,7 @@ from trace import Trace
 
 class Series():
 
-    def __init__(self, filepath):
+    def __init__(self, filepath : str):
         """Load the series file.
         
             Params:
@@ -13,7 +13,7 @@ class Series():
         with open(filepath, "r") as f:
             series_data = json.load(f)
         
-        self.sections = {}
+        self.sections = {}  # section number : section file
         for section_num, section_filename in series_data["sections"].items():
             self.sections[int(section_num)] = section_filename
         self.current_section = series_data["current_section"]

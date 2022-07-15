@@ -55,6 +55,7 @@ class Trace():
         """
         return self.__dict__
     
+    # STATIC METHOD
     def fromDict(d):
         """Create a Contour object from a dictionary.
         

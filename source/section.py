@@ -17,7 +17,7 @@ class Section():
         self.thickness = section_data["thickness"]
         self.tform = section_data["tform"]
         self.traces = section_data["traces"]
-        for i in range(len(self.traces)):  # convert contour dictionaries into Contour objects
+        for i in range(len(self.traces)):  # convert trace dictionaries into trace objects
             self.traces[i] = Trace.fromDict(self.traces[i])
 
     def getDict(self) -> dict:
@@ -32,7 +32,7 @@ class Section():
         d["thickness"] = self.thickness
         d["tform"] = self.tform
         d["traces"] = self.traces.copy()
-        for i in range(len(d["traces"])):  # convert Contour objects in contour dictionaries
+        for i in range(len(d["traces"])):  # convert trace objects in trace dictionaries
             d["traces"][i] = d["traces"][i].getDict()
         return d
     

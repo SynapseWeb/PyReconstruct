@@ -210,7 +210,7 @@ class Grid():
         exterior_origin = (x1, y1)  # save contour location
 
         # check points: add to contour if there is a point, intersection, or cluster of lines
-        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:  # cehck first point
+        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:  # cehck first point
             exterior.append((x1 + xshift, y1 + yshift))
         for c in range(8):  # find the next point
             v = CC_TO_VECTOR[c]
@@ -222,7 +222,7 @@ class Grid():
                     y1 = y2
                     last_c = c
                     break
-        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:  # check next point
+        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:  # check next point
             exterior.append((x1 + xshift, y1 + yshift))
         # begin traveling around the contour
         while (x1, y1) != exterior_origin:
@@ -237,7 +237,7 @@ class Grid():
                         x1 = x2
                         y1 = y2
                         last_c = c
-                        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 4:
+                        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:
                             exterior.append((x1 + xshift, y1 + yshift))
                         break
         # delete the contour if requested

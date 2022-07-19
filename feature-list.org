@@ -1,6 +1,5 @@
 * Meetings
 
-- [ ] pyReconstruct walk-through: Friday, July 15
 - [ ] Next Vijay meeting: Monday, August 1
 
 * High-priority tasks
@@ -37,7 +36,6 @@
 
 * Low-priority tasks
 
-- [ ] Export images and traces as SVG file
 - [ ] In-program Python console
 - [ ] Add-on / extension menu / API?
 - [ ] Make hotkeys editable by user
@@ -49,6 +47,7 @@
 * Crazy ideas
 
 - [ ] Be able to view 3D "building" in Blender as you're tracing
+- [ ] Export images and traces as SVG file
 - [ ] Be able to rotate the section in z inside Reconstruct
 - [ ] Compendium of regular expressions
 

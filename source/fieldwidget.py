@@ -20,15 +20,26 @@ class FieldWidget(QWidget):
         """
         super().__init__(parent)
         self.parent_widget = parent
+        self.setMouseTracking(True)
 
         # set initial geometry to match parent
         parent_rect = self.parent_widget.geometry()
         self.pixmap_size = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_size)
-        
+
+        self.loadSeries(section_num, section, window)
+        self.show()
+    
+    def loadSeries(self, section_num : int, section : Section, window : list):
+        """Load a new series.
+
+            Params:
+                section_num (int): the section number (to display in the status bar)
+                section (Section): the Section object containing the section data (tform, traces, etc)
+                window (list): x, y, w, h of window in FIELD COORDINATES
+        """
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER
-        self.setMouseTracking(True)
 
         # set window from previous data
         self.current_window = window
@@ -39,10 +50,7 @@ class FieldWidget(QWidget):
         self.is_line_tracing = False
         self.all_traces_hidden = False
 
-        self.field_pixmap = QPixmap()
-
         self.loadSection(section_num, section)
-        self.show()
     
     def loadSection(self, section_num, section):
         """Load a new section into the field.

@@ -25,6 +25,31 @@ class MainWindow(QMainWindow):
         super().__init__() # run QMainWindow init function
         self.setWindowTitle("pyReconstruct")
 
+        # set the main window to be slightly less than the size of the monitor
+        screen = QApplication.primaryScreen()
+        screen_rect = screen.size()
+        x = 50
+        y = 80
+        w = screen_rect.width() - 100
+        h = screen_rect.height() - 160
+        self.setGeometry(x, y, w, h)
+
+        # misc defaults
+        self.field = None  # placeholder for field
+        self.mouse_dock = None  # placeholder for mouse dock
+        self.obj_list = None
+        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
+
+        # create status bar (at bottom of window)
+        self.statusbar = self.statusBar()
+
+        # open the series and create the field
+        self.openSeries("welcome_series/welcome.ser")
+        # reset welcome window view
+        self.field.current_window = [0,0,1,1]
+        self.field.generateView()
+        self.field.update()
+
         # menu at top of window
         self.menubar = self.menuBar()
 
@@ -37,14 +62,65 @@ class MainWindow(QMainWindow):
         self.open_act.triggered.connect(self.openSeries)
         self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
         self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
+        # object menu
+        self.objectmenu = self.menubar.addMenu("Object")
+        self.objectlist_act = self.objectmenu.addAction("Open object list")
+        self.objectlist_act.triggered.connect(self.openObjectList)
+        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
+        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
-        self.field = None  # placeholder for field
-        self.mouse_dock = None  # placeholder for mouse dock
-        self.obj_list = None
+        # create shortcuts
+        save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
+        save_sc.activated.connect(self.saveAllData)
+        merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
+        merge_sc.activated.connect(self.field.mergeSelectedTraces)
+        deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
+        deselect_sc.activated.connect(self.field.deselectAllTraces)
+        hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
+        hide_sc.activated.connect(self.field.hideSelectedTraces)
+        hideall_sc = QShortcut(QKeySequence("Shift+H"), self)
+        hideall_sc.activated.connect(self.field.toggleHideAllTraces)
+        undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
+        undo_sc.activated.connect(self.field.undoState)
+        redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
+        redo_sc.activated.connect(self.field.redoState)
 
-        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
-        self.setGeometry(100, 100, 500, 500)
         self.show()
+    
+    def openSeries(self, series_fp=""):
+        """Open an existing series and create the field.
+        
+            Params:
+                series_fp (str): series filepath (optional)
+        """
+        if series_fp:  # if series is provided (only the case if opening from new)
+            self.series = Series(series_fp)
+        else:  # get series file from user
+            series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
+            if series_fp == "": return  # exit function if user does not provide series
+            self.series = Series(series_fp)  # load series data into Series object
+        self.series_fp = series_fp
+
+        # close previous if widgets if other series has already been opened
+        if self.field is not None:
+            self.field.close()
+        if self.mouse_dock is not None:
+            self.mouse_dock.close()
+
+        # change working directory to series location
+        if "/" in series_fp:
+            self.wdir = series_fp[:series_fp.rfind("/")+1]
+
+        # create the FieldWidget object and set as main widget
+        if self.series.current_section not in self.series.sections:  # if last known section number is not valid
+            self.series.current_section = list(self.series.sections.keys())[0]
+        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
+        self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
+        self.setCentralWidget(self.field)
+
+        # create mouse dock
+        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
+        self.changeTracingTrace(self.series.current_trace) # set the current trace
     
     def newSeries(self):
         """Create a new series from a set of images."""
@@ -177,82 +253,6 @@ class MainWindow(QMainWindow):
         with open(series_fp, "w") as series_file:
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
-    
-    def openSeries(self, series_fp=""):
-        """Open an existing series.
-        
-            Params:
-                series_fp (str): series filepath (optional)
-        """
-        if series_fp:  # if series is provided (only the case if opening from new)
-            self.series = Series(series_fp)
-        else:  # get series file from user
-            series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
-            if series_fp == "": return  # exit function if user does not provide series
-            self.series = Series(series_fp)  # load series data into Series object
-        self.series_fp = series_fp
-
-        # close previous if widgets if other series has already been opened
-        if self.field is not None:
-            self.field.close()
-        if self.mouse_dock is not None:
-            self.mouse_dock.close()
-
-        # change working directory to series location
-        if "/" in series_fp:
-            self.wdir = series_fp[:series_fp.rfind("/")+1]
-        
-        # create trace field for given section on last known window
-        self.initField()
-    
-    def initField(self):
-        """Create the tracing field after opening a series."""
-        # set the main window to be slightly less than the size of the monitor
-        screen = QApplication.primaryScreen()
-        screen_rect = screen.size()
-        x = 50
-        y = 80
-        w = screen_rect.width() - 100
-        h = screen_rect.height() - 160
-        self.setGeometry(x, y, w, h)
-
-        # create status bar (at bottom of window)
-        self.statusbar = self.statusBar()
-
-        # add options to menu bar (is there a better way to do this?)
-        self.objectmenu = self.menubar.addMenu("Object")
-        self.objectlist_act = self.objectmenu.addAction("Open object list")
-        self.objectlist_act.triggered.connect(self.openObjectList)
-        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
-        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
-
-        # create the FieldWidget object and set as main widget
-        if self.series.current_section not in self.series.sections:  # if last known section number is not valid
-            self.series.current_section = list(self.series.sections.keys())[0]
-        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
-        self.setCentralWidget(self.field)
-
-        # create mouse dock
-        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
-        self.changeTracingTrace(self.series.current_trace) # set the current trace
-
-        # create shortcuts
-        save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
-        save_sc.activated.connect(self.saveAllData)
-        merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
-        merge_sc.activated.connect(self.field.mergeSelectedTraces)
-        deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
-        deselect_sc.activated.connect(self.field.deselectAllTraces)
-        hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
-        hide_sc.activated.connect(self.field.hideSelectedTraces)
-        hideall_sc = QShortcut(QKeySequence("Shift+H"), self)
-        hideall_sc.activated.connect(self.field.toggleHideAllTraces)
-        undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
-        undo_sc.activated.connect(self.field.undoState)
-        redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
-        redo_sc.activated.connect(self.field.redoState)
-
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).

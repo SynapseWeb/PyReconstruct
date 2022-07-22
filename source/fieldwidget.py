@@ -23,8 +23,8 @@ class FieldWidget(QWidget):
 
         # set initial geometry to match parent
         parent_rect = self.parent_widget.geometry()
-        self.pixmap_size = parent_rect.width(), parent_rect.height()
-        self.setGeometry(parent_rect)
+        self.pixmap_size = parent_rect.width(), parent_rect.height()-20
+        self.setGeometry(0, 0, *self.pixmap_size)
         
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER

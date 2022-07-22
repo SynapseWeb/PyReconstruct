@@ -52,10 +52,13 @@ class FieldWidget(QWidget):
 
         self.loadSection(section_num, section)
     
-    def loadSection(self, section_num, section):
+    def loadSection(self, section_num : int, section : Section):
         """Load a new section into the field.
         
-            Params:"""
+            Params:
+                section_num (int): the section number
+                section (Section): the Section object containing the section data
+        """
         self.endPendingEvents()
         self.section_num = section_num
 

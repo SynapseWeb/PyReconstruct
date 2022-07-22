@@ -101,13 +101,7 @@ class MainWindow(QMainWindow):
             self.series = Series(series_fp)  # load series data into Series object
         self.series_fp = series_fp
 
-        # close previous if widgets if other series has already been opened
-        if self.field is not None:
-            self.field.close()
-        if self.mouse_dock is not None:
-            self.mouse_dock.close()
-
-        # change working directory to series location
+        # get working directory as series location
         if "/" in series_fp:
             self.wdir = series_fp[:series_fp.rfind("/")+1]
 
@@ -115,10 +109,15 @@ class MainWindow(QMainWindow):
         if self.series.current_section not in self.series.sections:  # if last known section number is not valid
             self.series.current_section = list(self.series.sections.keys())[0]
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
-        self.setCentralWidget(self.field)
+        if self.field is None: # create field widget if not already
+            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
+            self.setCentralWidget(self.field)
+        else:
+            self.field.loadSeries(self.series.current_section, self.section, self.series.window)
 
         # create mouse dock
+        if self.mouse_dock is not None: # close if one exists
+            self.mouse_dock.close()
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
     

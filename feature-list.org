@@ -1,6 +1,6 @@
 * Meetings
 
-- [ ] Next Vijay meeting: Monday, August 1
+- [ ] Next Vijay meeting: Monday, August 8, ~1030
 
 * High-priority tasks
 
@@ -90,3 +90,16 @@
 - [X] Find First function in obj list
 - [X] Find Last function in obj list
 
+* Lab meeting
+** Intro
+** Start new series from scratch (? vol Joseph)
+** Demo tools
+** Open existing series
+** Go back to old Reconstruct after making changes
+** Vijay integration
+*** To Neuroglancer
+- [ ] Export to zarr (? Vijay has code for this)
+*** Autosegmnet (Vijay)
+*** Back to Reconstruct
+- [ ] How translate .zarr to field coordinates?
+- [ ] ZarrGrid class?

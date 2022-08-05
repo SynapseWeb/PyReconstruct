@@ -1,5 +1,6 @@
 import json
 from time import time
+import random
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
     QMessageBox)
@@ -12,6 +13,7 @@ from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
+from zarrtorecon import getZarrObjects
 
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
@@ -62,12 +64,14 @@ class MainWindow(QMainWindow):
         self.open_act.triggered.connect(self.openSeries)
         self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
         self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
+        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
+        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
+        self.import_from_json = self.filemenu.addAction("Import objects from zarr...")
+        self.import_from_json.triggered.connect(self.importZarrObjects)
         # object menu
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
         self.objectlist_act.triggered.connect(self.openObjectList)
-        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
-        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
 
         # create shortcuts
         save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
@@ -252,6 +256,60 @@ class MainWindow(QMainWindow):
         with open(series_fp, "w") as series_file:
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
+    
+    def importZarrObjects(self):
+        """Import objects from a zarr folder."""
+        # get the file path
+        zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
+        if not zarr_fp:
+            return
+        # retrieve objects from zarr
+        progbar = QProgressDialog("Loading Zarr data...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Zarr Data")
+        progbar.setWindowModality(Qt.WindowModal)
+        objects = getZarrObjects(zarr_fp, progbar)
+        # assign random colors to each id
+        color_dict = {}
+        for id in objects:
+            color_dict[id] = self.randomColor()
+        # import loaded zarr objects
+        progbar = QProgressDialog("Importing objects...", "Cancel", 0, 100, self)
+        progbar.setWindowTitle("Load JSON Objects")
+        progbar.setWindowModality(Qt.WindowModal)
+        final_value = len(self.series.sections.keys())
+        progress = 0
+        for section_num in self.series.sections:
+            section = Section(self.wdir + self.series.sections[int(section_num)])
+            for id, traces in objects.items():
+                if section_num in traces.keys():
+                    for trace in traces[section_num]:
+                        new_trace = Trace(str(id), color_dict[id])
+                        new_trace.points = trace
+                        section.traces.append(new_trace)
+                        if section_num == self.series.current_section:
+                            self.field.traces.append(new_trace)
+            section.save()
+            if progbar.wasCanceled():
+                return
+            else:
+                progress += 1
+                progbar.setValue(progress/final_value * 100)
+        self.field.saveState()
+        self.field.generateView(generate_image=False)
+        self.field.update()
+    
+    def randomColor(self):
+        """Returns a random primary or secondary color.
+        
+            Returns:
+                (tuple): color (255,255,255)
+        """
+        n = random.randint(1,5)
+        if n == 1: return (0,255,0)
+        elif n == 2: return (0,255,255)
+        elif n == 3: return (255,0,0)
+        elif n == 4: return (255,0,255)
+        elif n == 5: return (255,255,0)
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).

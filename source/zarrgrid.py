@@ -109,6 +109,7 @@ class ZarrGrid():
         all_contours = []
         exterior = self.generateExterior(0, 0, delete=True)
         while exterior is not None: # exterior will be None when none are left
+            exterior = reducePoints(exterior) # reduce points
             all_contours.append(exterior)
             exterior = self.generateExterior(*exterior[0], delete=True)
         self.grid = grid_copy # restore the original grid
@@ -135,28 +136,5 @@ def reducePoints(points : list) -> list:
         else:
             end_i += 1
     return reduced_points
-
-from PIL import Image
-im = Image.open("test.bmp").convert("L")
-p = np.array(im)
-grid = p.astype(bool)
-zgrid = ZarrGrid(grid)
-contours = zgrid.getAllContours()
-
-outlines = np.zeros(grid.shape, bool)
-for contour in contours:
-    for point in contour:
-        outlines[point[1], point[0]] = True
-outlines_im = Image.fromarray(outlines)
-outlines_im.save("outlines.bmp")
-
-reduced = np.zeros(grid.shape, bool)
-for contour in contours:
-    red = reducePoints(contour)
-    for point in red:
-        reduced[point[1], point[0]] = True
-reduced_im = Image.fromarray(reduced)
-reduced_im.save("reduced.bmp")
-
 
 

@@ -1,18 +1,20 @@
 import daisy
 import numpy as np
 from PIL import Image
-#from zarrgrid import ZarrGrid
-#from skimage import measure
 import cv2
+
+from grid import reducePoints
 
 def voxelToField(cv_contours, ysize, offset, resolution):
     # iterate through all points and convert
     new_contours = []
     for contour in cv_contours:
+        contour = contour[:,0].tolist()
+        contour = reducePoints(contour)
         new_contour = []
         for point in contour:
-            x = point[0][0]
-            y = ysize - point[0][1]
+            x = point[0]
+            y = ysize - point[1]
             new_point = ((x * resolution[2] + offset[2]) / 1000, 
                          (y * resolution[1] + offset[1]) / 1000)
             new_contour.append(new_point)
@@ -34,10 +36,7 @@ def zarrToContours(labels_dataset, relative_offset, section_thickness, label_id)
         ysize = array.shape[0]
 
         # get contour from boolean array
-        #zarrgrid = ZarrGrid(array)
-        #contours = zarrgrid.getAllContours()
-        #contours = measure.find_contours(array)
-        cv_contours = cv2.findContours(array, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        cv_contours = cv2.findContours(array, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
 
         # convert x,y coordinates to field coordinates
         contours = voxelToField(cv_contours, ysize, relative_offset, resolution)

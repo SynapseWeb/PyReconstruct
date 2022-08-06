@@ -11,7 +11,7 @@ print("yeet")
 new_image = np.ndarray(cv2.imread("trace_test.bmp").shape)
 
 counter = 0
-print(len(contours), h)
+print(contours[0].shape)
 for contour in contours:
     for point in contour:
         color = np.array([0,0,0])

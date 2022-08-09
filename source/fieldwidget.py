@@ -1,13 +1,14 @@
+from dataclasses import Field
 from PySide2.QtWidgets import (QWidget, QMainWindow)
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
 
 from section import Section
-from grid import getExterior, mergeTraces, reducePoints
+from grid import getExterior, mergeTraces, reducePoints, cutTraces
 from trace import Trace
 
 class FieldWidget(QWidget):
-    POINTER, PANZOOM, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(7)  # mouse modes
+    POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)  # mouse modes
 
     def __init__(self, section_num : int, section : Section, window : list, parent : QMainWindow):
         """Create the field widget.
@@ -223,8 +224,17 @@ class FieldWidget(QWidget):
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
             painter.setPen(pen)
+            # # internal use: draw highlight as points
+            # painter.setPen(QPen(QColor(255, 255, 255), 5))
+            # for point in trace.points:
+            #     x, y = self.point_tform.map(*point)
+            #     x, y = self.fieldPointToPixmap(x,y)
+            #     painter.drawPoint(x,y)
+            # painter.end()
+            # return
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
+
         # establish first point
         point = trace.points[0]
         last_x, last_y = self.point_tform.map(*point)
@@ -356,7 +366,7 @@ class FieldWidget(QWidget):
             if closed:
                 pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
             else:
-                pix_trace = reducePoints(pix_trace)  # only reduce points if trace is open
+                pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(*point)
@@ -415,6 +425,8 @@ class FieldWidget(QWidget):
             self.linePress(event, closed=True)
         elif self.mouse_mode == FieldWidget.OPENLINE:
             self.linePress(event, closed=False)
+        elif self.mouse_mode == FieldWidget.SCALPEL:
+            self.scalpelPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -435,6 +447,8 @@ class FieldWidget(QWidget):
             self.lineMove(event, closed=True)
         elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
             self.lineMove(event, closed=False)
+        elif self.mouse_mode == FieldWidget.SCALPEL and event.buttons():
+            self.scalpelMove(event)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -452,6 +466,8 @@ class FieldWidget(QWidget):
             self.pencilRelease(event, closed=True)
         elif self.mouse_mode == FieldWidget.OPENPENCIL:
             self.pencilRelease(event, closed=False)
+        elif self.mouse_mode == FieldWidget.SCALPEL:
+            self.scalpelRelease(event)
     
     def setMouseMode(self, mode : int):
         """Set the mode of the mouse.
@@ -731,6 +747,79 @@ class FieldWidget(QWidget):
         self.traces.append(new_trace)
         self.saveState()
         self.selected_traces.append(new_trace)
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def scalpelPress(self, event):
+        """Called when mouse is pressed in scalpel mode.
+
+        Begins creating a new trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        self.last_x = event.x()
+        self.last_y = event.y()
+        self.scalpel_trace = [(self.last_x, self.last_y)]
+
+    def scalpelMove(self, event):
+        """Called when mouse is moved in pencil mode with a mouse button pressed.
+
+        Draws continued scalpel trace on the screen.
+        
+            Params:
+                event: contains mouse input data
+        """
+        # draw scalpel trace on pixmap
+        x = event.x()
+        y = event.y()
+        painter = QPainter(self.field_pixmap)
+        color = QColor(255,0,0)
+        painter.setPen(QPen(color, 1))
+        painter.drawLine(self.last_x, self.last_y, x, y)
+        painter.end()
+        self.scalpel_trace.append((x, y))
+        self.last_x = x
+        self.last_y = y
+        self.update()
+
+    def scalpelRelease(self, event, closed=True):
+        """Called when mouse is released in pencil mode.
+
+        Completes and adds trace.
+        
+            Params:
+                event: contains mouse input data
+        """
+        if len(self.selected_traces) == 0:
+            print("Please select traces you wish to cut.")
+            self.generateView(generate_image=False)
+            self.update()
+            return
+        elif len(self.selected_traces) > 1:
+            print("Please select only one trace to cut at a time.")
+            self.generateView(generate_image=False)
+            self.update()
+            return
+        trace = self.selected_traces[0]
+        name = trace.name
+        color = trace.color
+        trace_to_cut = []
+        for point in self.selected_traces[0].points:
+            p = self.fieldPointToPixmap(*point)
+            trace_to_cut.append(p)
+        cut_traces = cutTraces(trace_to_cut, self.scalpel_trace)  # merge the pixel traces
+        # create new traces
+        self.deleteSelectedTraces(save_state=False)
+        for trace in cut_traces:
+            new_trace = Trace(name, color)
+            new_trace.color = color
+            for point in trace:
+                field_point = self.pixmapPointToField(*point)
+                new_trace.add(field_point)
+            self.traces.append(new_trace)
+            self.selected_traces.append(new_trace)
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     

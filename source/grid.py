@@ -78,22 +78,20 @@ class Grid():
                 if 0 <= rx < w and 0 <= ry < h:
                     self.grid[ry,rx] = 2 if scalpel else 1
                 last_x, last_y = rx, ry
-    
+
     def removeHangingCuts(self):
-        h, w = self.grid.shape
-        stack = [(w-1, h-1)]
-        while len(stack) > 0:
-            x, y = stack.pop()
-            if 0 <= x < w and 0 <= y < h:
-                p = self.grid[y,x]
-                if not (p == 1 or p == 3):
-                    self.grid[y,x] = 3
-                    stack.append((x+1, y))
-                    stack.append((x, y+1))
-                    stack.append((x-1, y))
-                    stack.append((x, y-1))
-        self.grid[self.grid == 3] = 0
-        self.grid[self.grid == 2] = 1
+        y_vals, x_vals = np.where(self.grid == 2)
+        for x, y in zip(x_vals, y_vals):
+            inside = False
+            for contour in self.contours:
+                ptest = cv2.pointPolygonTest(contour,
+                                        (int(x + self.grid_shift[0]), int(y + self.grid_shift[1])),
+                                        measureDist=False)
+                if ptest >= 0:
+                    inside = True
+            if not inside:
+                self.grid[y][x] = 0
+
     
     def printGrid(self):
         """Print the grid to the console.
@@ -124,7 +122,7 @@ class Grid():
             Returns:
                 (list) the interiors of the contours
         """
-        #self.removeHangingCuts()
+        self.removeHangingCuts()
         cv_contours, hierarchy = cv2.findContours(self.grid, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         contours = []
         for contour in cv_contours[:-1]:

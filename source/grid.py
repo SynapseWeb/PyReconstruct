@@ -131,29 +131,13 @@ class Grid():
             contours.append((contour[:,0,:] + self.grid_shift).tolist())
         return contours
 
-
-def reducePoints(points : list, threshold=1, iterations=2) -> list:
-    """Remove points the do not contribute further information to a contour.
-    
-        Params:
-            points (list): list of points describing contour
-            iterations (int): number of times to implement algorithm
-        Returns:
-            (list) reduced points
-    """
-    points = points.copy()
+def reducePoints(points, ep=0.75, iterations=1, closed=True):
     for _ in range(iterations):
-        reduced_points = points.copy()
-        i = 1
-        while i < len(reduced_points) - 1:
-            a = area((reduced_points[i-1], reduced_points[i], reduced_points[i+1]))
-            if a <= threshold: # remove point from contour if affect on trace is insignificant
-                reduced_points.pop(i)
-            else:
-                i += 1
-        #print(len(reduced_points)/len(points))
-        points = reduced_points
-    return reduced_points
+        reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
+        print(len(reduced_points) / len(points))
+        points = reduced_points.copy()
+    return points[:,0,:].tolist()
+
 
 def getExterior(points : list):
     """Get the exterior of a single set of points.

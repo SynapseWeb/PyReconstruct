@@ -132,7 +132,7 @@ class Grid():
 def reducePoints(points, ep=0.75, iterations=1, closed=True):
     for _ in range(iterations):
         reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
-        print(len(reduced_points) / len(points))
+        # print(len(reduced_points) / len(points))
         points = reduced_points.copy()
     return points[:,0,:].tolist()
 

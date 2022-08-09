@@ -224,8 +224,17 @@ class FieldWidget(QWidget):
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
             painter.setPen(pen)
+            # # internal use: draw highlight as points
+            # painter.setPen(QPen(QColor(255, 255, 255), 5))
+            # for point in trace.points:
+            #     x, y = self.point_tform.map(*point)
+            #     x, y = self.fieldPointToPixmap(x,y)
+            #     painter.drawPoint(x,y)
+            # painter.end()
+            # return
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
+
         # establish first point
         point = trace.points[0]
         last_x, last_y = self.point_tform.map(*point)
@@ -357,7 +366,7 @@ class FieldWidget(QWidget):
             if closed:
                 pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
             else:
-                pix_trace = reducePoints(pix_trace)  # only reduce points if trace is open
+                pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
             new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(*point)

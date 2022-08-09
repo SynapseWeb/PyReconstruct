@@ -1,68 +1,51 @@
-from quantification import area
+import numpy as np
+import cv2
 
-CC_TO_VECTOR = ((1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1))  
+from quantification import area
 
 class Grid():
 
     def __init__(self, contours, cutline=None):
         """Create a grid object."""
-        self.contours = contours  # list of traces (pixel coordinates)
-        self.cutline = cutline  # scalpel line (not implemented yet)
-        self.grid = []
+        self.contours = [np.array(contour) for contour in contours]
+        self.cutline = cutline  # scalpel line
         self._generateGrid()
     
     def _generateGrid(self):
         """Draw all the contours on the grid."""
-        self.grid = []  # clear existing grid
-        xmin, ymin, xmax, ymax = self._getMinMaxXY()
+        xvals = [contour[:,0] for contour in self.contours]
+        yvals = [contour[:,1] for contour in self.contours]
+        xmin = min([x.min() for x in xvals])
+        ymin = min([y.min() for y in yvals])
+        xmax = max([x.max() for x in xvals])
+        ymax = max([y.max() for y in yvals])
         # create an empty grid
-        for i in range(ymax - ymin + 1):
-            self.grid.append([])
-            for j in range(xmax - xmin + 1):
-                self.grid[i].append(0)
-        # draw the trace on the grid
-        for i in range(len(self.contours)):
-            contour = self.contours[i]
-            for j in range(len(contour)):
-                x1, y1 = contour[j-1]
-                x2, y2 = contour[j]
+        self.grid = np.array(np.zeros((ymax-ymin+2, xmax-xmin+2)), dtype="uint8")
+        # draw cut line on the grid
+        if self.cutline is not None:
+            for i in range(1, len(self.cutline)):
+                x1, y1 = self.cutline[i-1]
+                x2, y2 = self.cutline[i]
+                x1 -= xmin
+                y1 -= ymin
+                x2 -= xmin
+                y2 -= ymin
+                self._drawGridLine(x1, y1, x2, y2, scalpel=True)
+        # draw the trace(s) on the grid
+        for contour in self.contours:
+            for i in range(len(contour)):
+                x1, y1 = contour[i-1]
+                x2, y2 = contour[i]
                 x1 -= xmin
                 y1 -= ymin
                 x2 -= xmin
                 y2 -= ymin
                 self._drawGridLine(x1, y1, x2, y2)
         # save grid information
-        self.grid_h = len(self.grid)
-        self.grid_w = len(self.grid[0])
         self.grid_shift = xmin, ymin
     
-    def _getMinMaxXY(self) -> tuple:
-        """Get the min and max coordinate values for all contours
-        
-            Returns:
-                (float) min x value
-                (float) min y value
-                (float) max x value
-                (float) max y value
-        """
-        xmin = self.contours[0][0][0]
-        ymin = self.contours[0][0][1]
-        xmax = self.contours[0][0][0]
-        ymax = self.contours[0][0][1]
-        for contour in self.contours:
-            for point in contour:
-                if point[0] < xmin:
-                    xmin = point[0]
-                elif point[0] > xmax:
-                    xmax = point[0]
-                if point[1] < ymin:
-                    ymin = point[1]
-                elif point[1] > ymax:
-                    ymax = point[1]
-        return xmin, ymin, xmax, ymax
-    
     # DDA algorithm (source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm)
-    def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int):
+    def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int, scalpel=False):
         """Draw a line on self.grid
         
             Params:
@@ -82,55 +65,35 @@ class Grid():
         x_increment = dx / steps
         y_increment = dy / steps
         x, y = x0, y0
-        self.grid[y][x] += 1
+        h, w = self.grid.shape
+        if 0 <= x < w and 0 <= y < h:
+            self.grid[y,x] = 2 if scalpel else 1
         last_x, last_y = x, y
-        for i in range(steps):
+        for _ in range(steps):
             x += x_increment
             y += y_increment
             rx = round(x)
             ry = round(y)
             if (rx != last_x or ry != last_y):
-                self.grid[ry][rx] += 1
+                if 0 <= rx < w and 0 <= ry < h:
+                    self.grid[ry,rx] = 2 if scalpel else 1
                 last_x, last_y = rx, ry
     
-    def _drawCutLine(self, x0 : int, y0 : int, x1 : int, y1 : int):
-        """Draw a scalpel line on the grid (not used yet)
-        
-            Params:
-                x0 (int): x value of start point
-                y0 (int): y value of start point
-                x1 (int): x value of end point
-                y1 (int): y value of end point
-        """
-        if (x0 == x1 and y0 == y1):
-            return
-        dx = x1 - x0
-        dy = y1 - y0
-        if (abs(dx) > abs(dy)):
-            steps = abs(dx)
-        else:
-            steps = abs(dy)
-        x_increment = dx / steps
-        y_increment = dy / steps
-        x, y = x0, y0
-        # draw scalpel lines as negative numbers
-        if 0 <= x < len(self.grid[0]) and 0 <= y < len(self.grid):
-            if self.grid[rx][ry] <= 0:
-                self.grid[ry][rx] -= 1
-            else:
-                self.grid[ry][rx] = -self.grid[ry][rx] - 1
-        last_x, last_y = x, y
-        for i in range(steps):
-            x += x_increment
-            y += y_increment
-            rx = round(x)
-            ry = round(y)
-            if (rx != last_x or ry != last_y) and 0 <= rx < len(self.grid[0]) and 0 <= ry < len(self.grid):
-                if self.grid[rx][ry] <= 0:
-                    self.grid[ry][rx] -= 1
-                else:
-                    self.grid[ry][rx] = -self.grid[ry][rx] - 1
-                last_x, last_y = rx, ry
+    def removeHangingCuts(self):
+        h, w = self.grid.shape
+        stack = [(w-1, h-1)]
+        while len(stack) > 0:
+            x, y = stack.pop()
+            if 0 <= x < w and 0 <= y < h:
+                p = self.grid[y,x]
+                if not (p == 1 or p == 3):
+                    self.grid[y,x] = 3
+                    stack.append((x+1, y))
+                    stack.append((x, y+1))
+                    stack.append((x-1, y))
+                    stack.append((x, y-1))
+        self.grid[self.grid == 3] = 0
+        self.grid[self.grid == 2] = 1
     
     def printGrid(self):
         """Print the grid to the console.
@@ -139,130 +102,42 @@ class Grid():
         """
         for r in range(len(self.grid)):
             for c in range(len(self.grid[r])):
-                if self.grid[r][c]: print(self.grid[r][c], end="")
+                if self.grid[r,c]: print(self.grid[r,c], end="")
                 else: print(" ", end="")
             print()
     
-    def _checkSurrounding(self, x : int, y : int):
-        """Find the number of occupied spaces around a given point.
-        
-            Params:
-                x (int): x-value of point
-                y (int) y-value of point
-            Returns:
-                (int) the number of occupied (non-zero) spaces around the point
-                """
-        count = 0
-        for i in range(8):
-            v = CC_TO_VECTOR[i]
-            x1 = x + v[0]
-            y1 = y + v[1]
-            if x1 < 0 or x1 >= len(self.grid[0]):
-                continue
-            if y1 < 0 or y1 >= len(self.grid):
-                continue
-            if self.grid[y + v[1]][x + v[0]] > 0:
-                count += 1
-        return count
-    
-    def _deleteContour(self, x : int, y : int):
-        """Delete the contour on the grid at a given point.
-        
-            Params:
-                x (int): x-value of point on contour
-                y (int) y-value of point on contour
-        """
-        # use a stack instead of recursion
-        stack = [(x,y)]
-        while stack:
-            x1, y1 = stack.pop()
-            if self.grid[y1][x1]:
-                self.grid[y1][x1] = 0
-                for i in range(8):
-                    v = CC_TO_VECTOR[i]
-                    x2 = x1 + v[0]
-                    y2 = y1 + v[1]
-                    if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
-                        stack.append((x2,y2))
-    
-    def generateExterior(self, x=0, y=0, delete=False) -> list:
+    def getExterior(self):
         """Get the exterior of the contour(s) on the grid.
         
-            Params:
-                x (int): x-value of point on contour
-                y (int): y-value of pointon contour
-                delete (bool): whether or not to delete the contour when finished
             Returns:
                 (list) the exterior of the contour(s)
         """
-        exterior = []
-        # search the grid until a contour is found
-        x1, y1 = x, y
-        xshift = self.grid_shift[0]
-        yshift = self.grid_shift[1]
-        while not self.grid[y1][x1]:
-            x1 += 1
-            if x1 == self.grid_w:
-                x1 = 0
-                y1 += 1
-                if y1 == self.grid_h:
-                    return
-        exterior_origin = (x1, y1)  # save contour location
+        cv_contours = cv2.findContours(self.grid, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
+        contours = []
+        for contour in cv_contours:
+            contours.append((contour[:,0,:] + self.grid_shift).tolist())
+        return contours
 
-        # check points: add to contour if there is a point, intersection, or cluster of lines
-        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:  # cehck first point
-            exterior.append((x1 + xshift, y1 + yshift))
-        for c in range(8):  # find the next point
-            v = CC_TO_VECTOR[c]
-            x2 = x1 + v[0]
-            y2 = y1 + v[1]
-            if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
-                if self.grid[y2][x2]:
-                    x1 = x2
-                    y1 = y2
-                    last_c = c
-                    break
-        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:  # check next point
-            exterior.append((x1 + xshift, y1 + yshift))
-        # begin traveling around the contour
-        while (x1, y1) != exterior_origin:
-            last_c = (last_c + 4) % 8  # invert the last chain code direction
-            for i in range(1, 8):
-                c = (last_c + i) % 8  # search for the next point starting from the outside
-                v = CC_TO_VECTOR[c]
-                x2 = x1 + v[0]
-                y2 = y1 + v[1]
-                if 0 <= x2 < self.grid_w and 0 <= y2 < self.grid_h:
-                    if self.grid[y2][x2]:
-                        x1 = x2
-                        y1 = y2
-                        last_c = c
-                        if self.grid[y1][x1] > 1 or self._checkSurrounding(x1, y1) >= 3:
-                            exterior.append((x1 + xshift, y1 + yshift))
-                        break
-        # delete the contour if requested
-        if delete:
-            self._deleteContour(x1, y1)
+    def getInteriors(self):
+        """Get the interiors of the contours on the grid.
         
-        return exterior
+            Returns:
+                (list) the interiors of the contours
+        """
+        #self.removeHangingCuts()
+        cv_contours, hierarchy = cv2.findContours(self.grid, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        contours = []
+        for contour in cv_contours[:-1]:
+            contours.append((contour[:,0,:] + self.grid_shift).tolist())
+        return contours
 
-def reducePoints(points : list) -> list:
-    """Remove points the do not contribute further information to a contour.
-    
-        Params:
-            points (list): list of points describing contour
-        Returns:
-            (list) reduced points
-    """
-    reduced_points = points.copy()
-    i = 1
-    while i < len(reduced_points) - 1:
-        a = area((reduced_points[i-1], reduced_points[i], reduced_points[i+1]))
-        if a <= 1.5: # remove point from contour if affect on trace is insignificant
-            reduced_points.pop(i)
-        else:
-            i += 1
-    return reduced_points
+def reducePoints(points, ep=0.75, iterations=1, closed=True):
+    for _ in range(iterations):
+        reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
+        print(len(reduced_points) / len(points))
+        points = reduced_points.copy()
+    return points[:,0,:].tolist()
+
 
 def getExterior(points : list):
     """Get the exterior of a single set of points.
@@ -273,7 +148,7 @@ def getExterior(points : list):
             (list) points describing contour exterior
     """
     grid = Grid([points])
-    new_points = grid.generateExterior()
+    new_points = grid.getExterior()[0]
     new_points = reducePoints(new_points)
     return new_points
 
@@ -286,15 +161,27 @@ def mergeTraces(trace_list : list):
             (list) merged set of traces
     """
     grid = Grid(trace_list)
+    new_traces = grid.getExterior()
+    for i in range(len(new_traces)):
+        new_traces[i] = reducePoints(new_traces[i])
+    return new_traces
+
+def cutTraces(trace, cut_trace : list):
+    """Cut a set of traces.
+    
+        Params:
+            trace_list (list): set of traces
+            cut_line (list): a single curve
+        Returns:
+            (list) the newly cut traces
+    """
+    threshold = area(trace) * 0.01
+    grid = Grid([trace], cut_trace)
+    interiors = grid.getInteriors()
     new_traces = []
-    grid_has_traces = True
-    while grid_has_traces:
-        new_points = grid.generateExterior(delete=True)
-        if new_points is None:
-            grid_has_traces = False
-        else:
-            new_traces.append(new_points)
-    if len(new_traces) == len(trace_list):
-        return trace_list
+    for i in range(len(interiors)):
+        if area(interiors[i]) >= threshold: # exclude traces that are smaller than 1% of the original trace area
+            new_traces.append(reducePoints(interiors[i]))
+
     return new_traces
 

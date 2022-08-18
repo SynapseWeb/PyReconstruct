@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
             color_dict[id] = self.randomColor()
         # import loaded zarr objects
         progbar = QProgressDialog("Importing objects...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Load JSON Objects")
+        progbar.setWindowTitle("Load objects")
         progbar.setWindowModality(Qt.WindowModal)
         final_value = len(self.series.sections.keys())
         progress = 0

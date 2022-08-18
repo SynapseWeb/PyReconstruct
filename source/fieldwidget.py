@@ -6,6 +6,7 @@ from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
 from section import Section
 from grid import getExterior, mergeTraces, reducePoints, cutTraces
 from trace import Trace
+from quantification import getDistanceFromTrace, lineIntersectsContour
 
 class FieldWidget(QWidget):
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)  # mouse modes
@@ -84,7 +85,7 @@ class FieldWidget(QWidget):
         self.selected_traces = []
 
         # reset undo-redo states
-        self.current_state = (self.traces.copy(), self.tform.copy())
+        self.current_state = [self.traces.copy(), [], self.tform.copy()]
         self.undo_states = []
         self.redo_states = []
 
@@ -224,32 +225,35 @@ class FieldWidget(QWidget):
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
             painter.setPen(pen)
-            # # internal use: draw highlight as points
-            # painter.setPen(QPen(QColor(255, 255, 255), 5))
-            # for point in trace.points:
-            #     x, y = self.point_tform.map(*point)
-            #     x, y = self.fieldPointToPixmap(x,y)
-            #     painter.drawPoint(x,y)
-            # painter.end()
-            # return
-            # # end internal use
+            # internal use: draw highlight as points
+            painter.setPen(QPen(QColor(255, 255, 255), 5))
+            for point in trace.points:
+                x, y = self.point_tform.map(*point)
+                x, y = self.fieldPointToPixmap(x,y)
+                painter.drawPoint(x,y)
+            painter.end()
+            return
+            # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
+        
+        # initialize window contour
+        window_contour = [(0, 0), (self.pixmap_size[0], 0), (self.pixmap_size[0], self.pixmap_size[1]),
+                         (0, self.pixmap_size[1])]
 
         # establish first point
         point = trace.points[0]
         last_x, last_y = self.point_tform.map(*point)
         last_x, last_y = self.fieldPointToPixmap(last_x, last_y)
-        if 0 < last_x < self.pixmap_size[0] and 0 < last_y < self.pixmap_size[1]:
-            within_field = True
+        within_field |= 0 < last_x < self.pixmap_size[0] and 0 < last_y < self.pixmap_size[1]
         # connect points
         for i in range(1, len(trace.points)):
             point = trace.points[i]
             x, y = self.point_tform.map(*point)
             x, y = self.fieldPointToPixmap(x, y)
+            within_field |= 0 < x < self.pixmap_size[0] and 0 < y < self.pixmap_size[1]
             painter.drawLine(last_x, last_y, x, y)
-            if 0 < x < self.pixmap_size[0] and 0 < y < self.pixmap_size[1]:
-                within_field = True
+            # within_field |= lineIntersectsContour(last_x, last_y, x, y, window_contour)
             last_x = x
             last_y = y
         # connect last point to first point if closed
@@ -258,6 +262,7 @@ class FieldWidget(QWidget):
             x, y = self.point_tform.map(*point)
             x, y = self.fieldPointToPixmap(x,y)
             painter.drawLine(last_x, last_y, x, y)
+            # within_field |= lineIntersectsContour(last_x, last_y, x, y, window_contour)
         painter.end()
 
         return within_field
@@ -303,7 +308,7 @@ class FieldWidget(QWidget):
 
         return tform_notrans
     
-    def updateStatusBar(self, event):
+    def updateStatusBar(self, event, find_closest_trace=True):
         """Update status bar with useful information.
         
             Params:
@@ -316,27 +321,31 @@ class FieldWidget(QWidget):
             s += "x = " + str("{:.4f}".format(x)) + ", "
             s += "y = " + str("{:.4f}".format(y)) + "  |  "
             s += "Tracing: " + '"' + self.tracing_trace.name + '"'
-            closest_trace = self.findClosestTrace(x, y)
-            if closest_trace:
-                s += "  |  Nearest trace: " + closest_trace.name
+            if find_closest_trace:
+                closest_trace = self.findClosestTrace(x, y)
+                if closest_trace:
+                    s += "  |  Nearest trace: " + closest_trace.name
         else:
             message = self.parent_widget.statusbar.currentMessage()
             s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
         self.parent_widget.statusbar.showMessage(s)
     
-    def saveState(self):
+    def saveState(self, selected_only=False):
         """Save the current traces and transform."""
-        self.undo_states.append(self.current_state)
-        if len(self.undo_states) > 20:  # limit the number of undo states
-            self.undo_states.pop(0)
-        self.current_state = (self.traces.copy(), self.tform.copy())
-        self.redo_states = []  # clear redo states when an action is made
+        if selected_only:
+            self.current_state[1] = self.selected_traces.copy()
+        else:
+            self.undo_states.append(self.current_state)
+            if len(self.undo_states) > 20:  # limit the number of undo states
+                self.undo_states.pop(0)
+            self.current_state = [self.traces.copy(), self.selected_traces.copy(), self.tform.copy()]
+            self.redo_states = []
     
     def restoreState(self):
         """Restore traces and transform stored in the current state (self.current_state)."""
         self.traces = self.current_state[0].copy()
-        self.selected_traces = []  # clear selected traces
-        self.tform = self.current_state[1].copy()
+        self.selected_traces = self.current_state[1].copy()
+        self.tform = self.current_state[2].copy()
         t = self.tform  # easier visual in next lines
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
@@ -374,8 +383,8 @@ class FieldWidget(QWidget):
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
-            self.saveState()
             self.selected_traces.append(new_trace)
+            self.saveState()
             self.generateView(generate_image=False)
             self.update()
     
@@ -437,7 +446,11 @@ class FieldWidget(QWidget):
             Params:
                 event: contains mouse input data
         """
-        self.updateStatusBar(event)
+        if event.buttons():
+            if self.mouse_mode != FieldWidget.PANZOOM:
+                self.updateStatusBar(event, find_closest_trace=False)
+        else:
+            self.updateStatusBar(event)
         if self.mouse_mode == FieldWidget.POINTER and event.buttons():
             self.pointerMove(event)
         elif self.mouse_mode == FieldWidget.PANZOOM and event.buttons():
@@ -503,13 +516,15 @@ class FieldWidget(QWidget):
         if selected_trace is not None and event.button() == Qt.LeftButton:
             if not selected_trace in self.selected_traces:
                 self.selected_traces.append(selected_trace)
+                self.saveState(selected_only=True)
                 self.generateView(generate_image=False)
                 self.update()
         # deselect and unhighlight trace if right mouse click
         elif selected_trace is not None and event.button() == Qt.RightButton:
             if selected_trace in self.selected_traces:
-                self.drawTrace(selected_trace)
                 self.selected_traces.remove(selected_trace)
+                self.saveState(selected_only=True)
+                self.generateView(generate_image=False)
                 self.update()
     
     def pointerMove(self, event):
@@ -746,8 +761,8 @@ class FieldWidget(QWidget):
             rtform_point = self.point_tform.inverted()[0].map(*field_point)  # fix the coords to image
             new_trace.add(rtform_point)
         self.traces.append(new_trace)
-        self.saveState()
         self.selected_traces.append(new_trace)
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     
@@ -840,14 +855,15 @@ class FieldWidget(QWidget):
                     range_y = max_y - min_y
                     self.current_window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
                     self.selected_traces = [trace]
+                    self.saveState()
                     self.generateView()
                     self.update()
                 
     def deselectAllTraces(self):
         """Deselect all traces."""
-        for trace in self.selected_traces:
-            self.drawTrace(trace)
         self.selected_traces = []
+        self.saveState(selected_only=True)
+        self.generateView(generate_image=False)
         self.update()
     
     def endPendingEvents(self):
@@ -871,23 +887,19 @@ class FieldWidget(QWidget):
                 (Trace) the trace closest to the center
                 None if no trace points are found within the radius
         """
-        # create search square
-        left = field_x - radius
-        right = field_x + radius
-        bottom = field_y - radius
-        top = field_y + radius
         min_distance = -1
         closest_trace = None
         for trace in self.traces_within_field: # check only traces within the current window view
+            points = []
             for point in trace.points:
                 x, y = self.point_tform.map(*point)
-                if left < x < right and bottom < y < top:
-                    distance = ((x - field_x)**2 + (y - field_y)**2) ** (0.5)
-                    if not closest_trace or distance < min_distance:
-                        min_distance = distance
-                        closest_trace = trace
-
-        return closest_trace
+                #x, y = self.fieldPointToPixmap(x, y)
+                points.append((x,y))
+            dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.mag)
+            if closest_trace is None or dist < min_distance:
+                min_distance = dist
+                closest_trace = trace
+        return closest_trace if min_distance <= radius else None
     
     def deleteSelectedTraces(self, save_state=True):
         """Delete selected traces.
@@ -897,9 +909,9 @@ class FieldWidget(QWidget):
         """
         for trace in self.selected_traces:
             self.traces.remove(trace)
+        self.selected_traces = []
         if save_state:
             self.saveState()
-        self.selected_traces = []
         self.generateView(generate_image=False)
         self.update()
     
@@ -947,6 +959,7 @@ class FieldWidget(QWidget):
         for trace in self.selected_traces:
             trace.setHidden(True)
         self.selected_traces = []
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     
@@ -960,5 +973,7 @@ class FieldWidget(QWidget):
             for trace in self.traces:
                 trace.setHidden(True)
             self.all_traces_hidden = True
+        self.selected_traces = []
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()

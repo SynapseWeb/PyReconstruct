@@ -46,7 +46,7 @@ def zarrToContours(labels_dataset, relative_offset, section_thickness, label_id)
 
 def saveZarrImages(zarr_fp, save_fp):
     zarr_name = zarr_fp[zarr_fp.rfind("/")+1 : zarr_fp.rfind(".")]
-    image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s2")
+    image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s0")
     image_array = image_dataset.to_ndarray()
     image_fp_list = []
     for i, array in enumerate(image_array):
@@ -56,11 +56,11 @@ def saveZarrImages(zarr_fp, save_fp):
     return image_fp_list
 
 def getZarrObjects(zarr_fp, progbar=None):
-    image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s2")
+    image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s0")
     image_roi = image_dataset.roi
     image_offset = image_roi.get_offset()
 
-    labels_dataset = daisy.open_ds(zarr_fp, "labels/s2")
+    labels_dataset = daisy.open_ds(zarr_fp, "labels/s0")
     label_ids = np.unique(labels_dataset.to_ndarray())
     labels_roi = labels_dataset.roi
     labels_offset = labels_roi.get_offset()

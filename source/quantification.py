@@ -1,6 +1,8 @@
 # 2022-07-07 for Julian
 # Note that function centroid makes use of function area
 import math
+import cv2
+import numpy as np
 
 def area(pts : list) -> float:
     """Find the area of a closed contour.
@@ -87,3 +89,38 @@ def sigfigRound(n : float, sf : int) -> float:
         return 0
     greatest_place = math.floor(math.log(abs(n))/math.log(10))
     return round(n, sf - (greatest_place+1))
+
+def getDistanceFromTrace(x : float, y: float, trace : list, factor=1.0, absolute=True):
+    """Find the distance a point is from a given trace (uses opencv).
+    
+        Params:
+            x (float): the x-coord of the point
+            y (float): the y-coord of the point
+            trace (list): the trace to check against the point
+        Returns:
+            (float) the distance of the point from the trace
+    """
+    pp_test = cv2.pointPolygonTest((np.array(trace) * factor).astype(int), (x * factor, y * factor), measureDist=True)
+    return abs(pp_test / factor) if absolute else pp_test / factor
+
+# source: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
+def ccw(A,B,C):
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+# Return true if line segments AB and CD intersect
+def linesIntersect(A,B,C,D):
+    return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
+def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
+    p1 = (x1, y1)
+    p2 = (x2, y2)
+    if closed:
+        start = 0
+    else:
+        start = 1
+    for i in range(start, len(contour)):
+        p3 = contour[i-1]
+        p4 = contour[i]
+        if linesIntersect(p1, p2, p3, p4):
+            return True
+    return False

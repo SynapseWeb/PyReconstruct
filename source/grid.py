@@ -193,7 +193,7 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True) -> list:
         """
     for _ in range(iterations):
         reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
-        print(len(reduced_points) / len(points))
+        # print(len(reduced_points) / len(points))
         points = reduced_points.copy()
     return points[:,0,:].tolist()
 
@@ -243,4 +243,5 @@ def cutTraces(trace, cut_trace : list):
             new_traces.append(reducePoints(interiors[i]))
 
     return new_traces
+        
 

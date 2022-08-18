@@ -175,8 +175,8 @@ class FieldWidget(QWidget):
                 within_field = self.drawTrace(trace)
                 if within_field:
                     self.traces_within_field.append(trace)
-                    if trace in self.selected_traces:
-                        self.drawTrace(trace, highlight=True)
+                if trace in self.selected_traces:
+                    self.drawTrace(trace, highlight=True)
         
         self.field_pixmap_copy = self.field_pixmap.copy()
     
@@ -225,15 +225,15 @@ class FieldWidget(QWidget):
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
             painter.setPen(pen)
-            # internal use: draw highlight as points
-            painter.setPen(QPen(QColor(255, 255, 255), 5))
-            for point in trace.points:
-                x, y = self.point_tform.map(*point)
-                x, y = self.fieldPointToPixmap(x,y)
-                painter.drawPoint(x,y)
-            painter.end()
-            return
-            # end internal use
+            # # internal use: draw highlight as points
+            # painter.setPen(QPen(QColor(255, 255, 255), 5))
+            # for point in trace.points:
+            #     x, y = self.point_tform.map(*point)
+            #     x, y = self.fieldPointToPixmap(x,y)
+            #     painter.drawPoint(x,y)
+            # painter.end()
+            # return
+            # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
         
@@ -366,27 +366,28 @@ class FieldWidget(QWidget):
             self.current_state = self.redo_states.pop()
             self.restoreState()
     
-    def newTrace(self, pix_trace : list, closed=True):
+    def newTrace(self, pix_trace : list, name="", color=(), closed=True):
         """Create a new trace from pixel coordinates.
         
             Params:
                 pix_trace (list): pixel coordinates for the new trace
                 closed (bool): whether or not the new trace is closed"""
+        if name == "":
+            name = self.tracing_trace.name
+        if color == ():
+            color = self.tracing_trace.color
         if len(pix_trace) > 1:  # do not create a new trace if there is only one point
             if closed:
                 pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
             else:
                 pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
-            new_trace = Trace(self.tracing_trace.name, self.tracing_trace.color, closed=closed)
+            new_trace = Trace(name, color, closed=closed)
             for point in pix_trace:
                 field_point = self.pixmapPointToField(*point)
                 rtform_point = self.point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
                 new_trace.add(rtform_point)
             self.traces.append(new_trace)
             self.selected_traces.append(new_trace)
-            self.saveState()
-            self.generateView(generate_image=False)
-            self.update()
     
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
@@ -446,10 +447,9 @@ class FieldWidget(QWidget):
             Params:
                 event: contains mouse input data
         """
-        if event.buttons():
-            if self.mouse_mode != FieldWidget.PANZOOM:
-                self.updateStatusBar(event, find_closest_trace=False)
-        else:
+        if (event.buttons() and self.mouse_mode != FieldWidget.PANZOOM) or self.is_line_tracing:
+            self.updateStatusBar(event, find_closest_trace=False)
+        elif not event.buttons():
             self.updateStatusBar(event)
         if self.mouse_mode == FieldWidget.POINTER and event.buttons():
             self.pointerMove(event)
@@ -678,6 +678,9 @@ class FieldWidget(QWidget):
                 event: contains mouse input data
         """
         self.newTrace(self.current_trace, closed=closed)
+        self.saveState()
+        self.generateView(generate_image=False)
+        self.update()
     
     def linePress(self, event, closed=True):
         """Called when mouse is pressed in a line mode.
@@ -713,6 +716,9 @@ class FieldWidget(QWidget):
                 else:
                     self.newTrace(self.current_trace, closed=False)
                 self.is_line_tracing = False
+                self.saveState()
+                self.generateView(generate_image=False)
+                self.update()
     
     def lineMove(self, event, closed=True):
         """Called when mouse is moved in a line mode.
@@ -822,19 +828,14 @@ class FieldWidget(QWidget):
         color = trace.color
         trace_to_cut = []
         for point in self.selected_traces[0].points:
-            p = self.fieldPointToPixmap(*point)
+            p = self.point_tform.map(*point)
+            p = self.fieldPointToPixmap(*p)
             trace_to_cut.append(p)
         cut_traces = cutTraces(trace_to_cut, self.scalpel_trace)  # merge the pixel traces
         # create new traces
         self.deleteSelectedTraces(save_state=False)
         for trace in cut_traces:
-            new_trace = Trace(name, color)
-            new_trace.color = color
-            for point in trace:
-                field_point = self.pixmapPointToField(*point)
-                new_trace.add(field_point)
-            self.traces.append(new_trace)
-            self.selected_traces.append(new_trace)
+            self.newTrace(trace, name=name, color=color)
         self.saveState()
         self.generateView(generate_image=False)
         self.update()
@@ -874,6 +875,9 @@ class FieldWidget(QWidget):
             elif self.mouse_mode == FieldWidget.OPENLINE:
                 self.newTrace(self.current_trace, closed=False)
             self.is_line_tracing = False
+            self.saveState()
+            self.generateView(generate_image=False)
+            self.update()
     
     def findClosestTrace(self, field_x : float, field_y : float, radius=0.5) -> Trace:
         """Find closest trace to field coordinates in a given radius.
@@ -934,7 +938,8 @@ class FieldWidget(QWidget):
             # collect pixel values for trace points
             traces.append([])
             for point in trace.points:
-                p = self.fieldPointToPixmap(*point)
+                p = self.point_tform.map(*point)
+                p = self.fieldPointToPixmap(*p)
                 traces[-1].append(p)
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         if merged_traces == traces:  # function returns same list if traces cannot be merged
@@ -943,13 +948,7 @@ class FieldWidget(QWidget):
         # create new merged trace
         self.deleteSelectedTraces(save_state=False)
         for trace in merged_traces:
-            new_trace = Trace(name, color)
-            new_trace.color = color
-            for point in trace:
-                field_point = self.pixmapPointToField(*point)
-                new_trace.add(field_point)
-            self.traces.append(new_trace)
-            self.selected_traces.append(new_trace)
+            self.newTrace(trace, name=name, color=color)
         self.saveState()
         self.generateView(generate_image=False)
         self.update()

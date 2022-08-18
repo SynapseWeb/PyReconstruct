@@ -1,6 +1,5 @@
 import daisy
 import numpy as np
-from PIL import Image
 import cv2
 
 from grid import reducePoints
@@ -45,12 +44,16 @@ def zarrToContours(labels_dataset, relative_offset, section_thickness, label_id)
     
     return all_contours
 
-def saveImages(zarr_fp):
+def saveZarrImages(zarr_fp, save_fp):
+    zarr_name = zarr_fp[zarr_fp.rfind("/")+1 : zarr_fp.rfind(".")]
     image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s2")
     image_array = image_dataset.to_ndarray()
+    image_fp_list = []
     for i, array in enumerate(image_array):
-        image = Image.fromarray(array)
-        image.save(zarr_fp + "_" + str(i) + ".tif")
+        image_fp = save_fp + "/" + zarr_name + "_" + str(i) + ".tif"
+        cv2.imwrite(image_fp, array)
+        image_fp_list.append(image_fp)
+    return image_fp_list
 
 def getZarrObjects(zarr_fp, progbar=None):
     image_dataset = daisy.open_ds(zarr_fp, "clahe_raw/s2")

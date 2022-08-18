@@ -232,6 +232,7 @@ class FieldWidget(QWidget):
             #     painter.drawPoint(x,y)
             # painter.end()
             # return
+            # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
 

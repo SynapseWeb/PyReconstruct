@@ -13,7 +13,7 @@ from fieldwidget import FieldWidget
 from series import Series
 from section import Section
 from trace import Trace
-from zarrtorecon import getZarrObjects
+from zarrtorecon import getZarrObjects, saveZarrImages
 
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
@@ -64,10 +64,12 @@ class MainWindow(QMainWindow):
         self.open_act.triggered.connect(self.openSeries)
         self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
         self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
+        self.new_from_zarr_act = self.filemenu.addAction("New from zarr file")
+        self.new_from_zarr_act.triggered.connect(self.newSeriesFromZarr)
         self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
-        self.import_from_json = self.filemenu.addAction("Import objects from zarr...")
-        self.import_from_json.triggered.connect(self.importZarrObjects)
+        self.import_from_json_act = self.filemenu.addAction("Import objects from zarr...")
+        self.import_from_json_act.triggered.connect(self.importZarrObjects)
         # object menu
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
@@ -125,13 +127,14 @@ class MainWindow(QMainWindow):
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
     
-    def newSeries(self):
+    def newSeries(self, image_locations=[]):
         """Create a new series from a set of images."""
         # get images from user
-        image_locations, extensions = QFileDialog.getOpenFileNames(
-            self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
         if len(image_locations) == 0:
-            return
+            image_locations, extensions = QFileDialog.getOpenFileNames(
+                self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
+            if len(image_locations) == 0:
+                return
         # get the name of the series from user
         series_name, confirmed = QInputDialog.getText(
             self, "Series Name", "What is the name of this series?")
@@ -257,12 +260,13 @@ class MainWindow(QMainWindow):
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
     
-    def importZarrObjects(self):
+    def importZarrObjects(self, zarr_fp=""):
         """Import objects from a zarr folder."""
         # get the file path
-        zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
-        if not zarr_fp:
-            return
+        if zarr_fp == "":
+            zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
+            if not zarr_fp:
+                return
         # retrieve objects from zarr
         progbar = QProgressDialog("Loading Zarr data...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Zarr Data")
@@ -297,6 +301,17 @@ class MainWindow(QMainWindow):
         self.field.saveState()
         self.field.generateView(generate_image=False)
         self.field.update()
+    
+    def newSeriesFromZarr(self):
+        zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
+        if not zarr_fp:
+            return
+        save_fp = QFileDialog.getExistingDirectory(self, "Select Folder for New Series")
+        if not save_fp:
+            return
+        image_locations = saveZarrImages(zarr_fp, save_fp)
+        self.newSeries(image_locations)
+        self.importZarrObjects(zarr_fp)
     
     def randomColor(self):
         """Returns a random primary or secondary color.

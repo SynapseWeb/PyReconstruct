@@ -20,7 +20,7 @@ class Grid():
         xmax = max([x.max() for x in xvals])
         ymax = max([y.max() for y in yvals])
         # create an empty grid
-        self.grid = np.array(np.zeros((ymax-ymin+2, xmax-xmin+2)), dtype="uint8")
+        self.grid = np.array(np.zeros((ymax-ymin+2, xmax-xmin+2)), dtype="int")
         # draw cut line on the grid
         if self.cutline is not None:
             for i in range(1, len(self.cutline)):
@@ -67,7 +67,10 @@ class Grid():
         x, y = x0, y0
         h, w = self.grid.shape
         if 0 <= x < w and 0 <= y < h:
-            self.grid[y,x] = 2 if scalpel else 1
+            if scalpel:
+                self.grid[y, x] -= 1
+            else:
+                self.grid[y, x] = abs(self.grid[y, x]) + 1
         last_x, last_y = x, y
         for _ in range(steps):
             x += x_increment
@@ -76,23 +79,29 @@ class Grid():
             ry = round(y)
             if (rx != last_x or ry != last_y):
                 if 0 <= rx < w and 0 <= ry < h:
-                    self.grid[ry,rx] = 2 if scalpel else 1
+                    if scalpel:
+                        self.grid[ry, rx] -= 1
+                    else:
+                        self.grid[ry, rx] = abs(self.grid[ry, rx]) + 1
                 last_x, last_y = rx, ry
 
-    def removeHangingCuts(self):
-        y_vals, x_vals = np.where(self.grid == 2)
+    def removeCuts(self):
+        """Turn grid cuts into normal lines."""
+        y_vals, x_vals = np.where(self.grid < 0) # get positions of negative numbers (cut line)
         for x, y in zip(x_vals, y_vals):
             inside = False
+            # check if the point is inside any of the contours
             for contour in self.contours:
                 ptest = cv2.pointPolygonTest(contour,
                                         (int(x + self.grid_shift[0]), int(y + self.grid_shift[1])),
                                         measureDist=False)
                 if ptest >= 0:
                     inside = True
-            if not inside:
-                self.grid[y][x] = 0
+            if not inside: # if cut is not within any trace, remove it
+                self.grid[y, x] = 0
+            else: # otherwise, make it part of the trace
+                self.grid[y, x] *= -1
 
-    
     def printGrid(self):
         """Print the grid to the console.
         
@@ -104,35 +113,87 @@ class Grid():
                 else: print(" ", end="")
             print()
     
-    def getExterior(self):
+    def isAnchorPoint(self, x : int, y : int) -> bool:
+        """Check if a grid point should be included in the final trace points.
+        
+            Params:
+                x (int): the x-coord of the point to check
+                y (int): the y-coord of the point to check
+            Returns:
+                (bool) whether or not the point is important to the trace
+        """
+        if self.grid[y, x] > 1: # point is automatically included if it is greater than 1
+            return True
+        else: # otherwise, check surrounding points
+            cc_list = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1)]
+            total = 0
+            for dx, dy in cc_list:
+                if self.grid[y + dy, x + dx] > 0:
+                    total += 1
+            if total >= 3: # if the point as three or more nonzero neighbors, include it
+                return True
+            else:
+                return False
+
+    def getAnchorContour(self, contour : np.ndarray) -> np.ndarray:
+        """Get the "anchor" contour from a numpy cv2 contour.
+        
+        Often run after cv2.findContours is run on the grid.
+        
+            Params:
+                contour (np.ndarray): the contour returned by cv2.findContours
+            Returns:
+                (np.ndarray) the anchor points of the contour
+        """
+        new_contour = []
+        for point in contour:
+            if self.isAnchorPoint(*point):
+                new_contour.append(point)
+        return np.array(new_contour)
+    
+    def getExterior(self) -> list:
         """Get the exterior of the contour(s) on the grid.
         
             Returns:
-                (list) the exterior of the contour(s)
+                (list) the exterior of the contour(s) (also represented as lists)
         """
-        cv_contours = cv2.findContours(self.grid, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
+        cv_contours, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         contours = []
         for contour in cv_contours:
-            contours.append((contour[:,0,:] + self.grid_shift).tolist())
+            new_contour = self.getAnchorContour(contour[:,0,:])
+            new_contour += self.grid_shift
+            contours.append(new_contour.tolist())
         return contours
 
     def getInteriors(self):
         """Get the interiors of the contours on the grid.
         
             Returns:
-                (list) the interiors of the contours
+                (list) the interiors of the contours (also represented as lists)
         """
-        self.removeHangingCuts()
-        cv_contours, hierarchy = cv2.findContours(self.grid, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        self.removeCuts()
+        cv_contours, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         contours = []
         for contour in cv_contours[:-1]:
-            contours.append((contour[:,0,:] + self.grid_shift).tolist())
+            new_contour = self.getAnchorContour(contour[:,0,:])
+            new_contour += self.grid_shift
+            contours.append(new_contour.tolist())
         return contours
 
-def reducePoints(points, ep=0.75, iterations=1, closed=True):
+def reducePoints(points : list, ep=0.80, iterations=1, closed=True) -> list:
+    """Reduce the number of points in a trace (uses cv2.approxPolyDP).
+    
+        Params:
+            points (list): the list of points in the contour
+            ep (float): the epsilon value for the approximation
+            iterations (int): the number of times the approximation is run
+            closed (bool): whether or not the trace is closed
+        Returns:
+            (list) the final points after the approximation
+        """
     for _ in range(iterations):
         reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
-        # print(len(reduced_points) / len(points))
+        print(len(reduced_points) / len(points))
         points = reduced_points.copy()
     return points[:,0,:].tolist()
 

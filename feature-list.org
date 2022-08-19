@@ -91,15 +91,51 @@
 - [X] Find Last function in obj list
 
 * Lab meeting
-** Intro
-** Start new series from scratch (? vol Joseph)
-** Demo tools
-** Open existing series
-** Go back to old Reconstruct after making changes
-** Vijay integration
-*** To Neuroglancer
-- [ ] Export to zarr (? Vijay has code for this)
-*** Autosegmnet (Vijay)
-*** Back to Reconstruct
-- [ ] How translate .zarr to field coordinates?
-- [ ] ZarrGrid class?
+
+** Intro (Michael)
+
+- What we've been doing
+- Original goals
+- First demo (shut up) / then explanations
+
+** Demo (Julian)
+
+- Open py-reconstruct and start new series
+  
+- Demo tools
+  
+   + Trace object
+   + Stamp
+   + Undo / redo
+   + Scalpel
+   + Merge
+   + Pan / Zoom
+   + Obj list / autorefreshing
+   + Importing "SWiFT" transformations
+   + Exporting back to legacy Reconstruct
+   + Importing a series from legacy Reconstruct
+   + Imports zarr files
+     
+- Explanation (think about differences with legacy Reconstruct)
+  
+   + PyQT, numpy, openCV
+   + JSON structure (XML contrasted with the same JSON)
+   + Transformations
+   + Point storage (consider simplifying trace points on series import)
+   + Merge differences
+   + Things are good about Reconstruct
+     
+** Summary / Future directions (Michael)
+
+- Advantages Py-reconstruct
+  
+   + Not fixed (adaptable) / Reconstruct wish-list (e.g., objects tags)
+   + Cross-platform
+   + Extensible / customizable
+   + Integration with team Vijay
+     
+- Export to zarr (incorporate Vijay code)
+  
+- 3D in Blender
+  
+- API

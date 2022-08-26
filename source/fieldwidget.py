@@ -68,14 +68,14 @@ class FieldWidget(QWidget):
         self.tform = section.tform.copy()
         t = self.tform # identity would be: 1 0 0 0 1 0
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
+        self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
         self.mag = section.mag # get magnification
         self.base_image = QImage(self.parent_widget.wdir + section.src) # load image
         self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
         # in order to place the image correctly in the field...
         self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
-        x_shift = t[2] - self.tform_origin[0]*self.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
+        x_shift = t[2] - self.tform_origin[0] * self.image_tform.m11() * self.mag # calculate x translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.image_tform.m22() * self.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
 
         # create traces
@@ -893,11 +893,12 @@ class FieldWidget(QWidget):
         """
         min_distance = -1
         closest_trace = None
-        for trace in self.traces_within_field: # check only traces within the current window view
+        # for trace in self.traces_within_field: # check only traces within the current window view
+        for trace in self.traces:
             points = []
             for point in trace.points:
                 x, y = self.point_tform.map(*point)
-                #x, y = self.fieldPointToPixmap(x, y)
+                # x, y = self.fieldPointToPixmap(x, y)
                 points.append((x,y))
             dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.mag)
             if closest_trace is None or dist < min_distance:

@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         deselect_sc.activated.connect(self.field.deselectAllTraces)
         hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
         hide_sc.activated.connect(self.field.hideSelectedTraces)
-        hideall_sc = QShortcut(QKeySequence("Shift+H"), self)
+        hideall_sc = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
         hideall_sc.activated.connect(self.field.toggleHideAllTraces)
         undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
         undo_sc.activated.connect(self.field.undoState)

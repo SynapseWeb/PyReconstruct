@@ -46,7 +46,7 @@ class Grid():
     
     # DDA algorithm (source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm)
     def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int, scalpel=False):
-        """Draw a line on self.grid
+        """Draw a line on self.grid.
         
             Params:
                 x0 (int): x value of start point
@@ -165,7 +165,7 @@ class Grid():
             contours.append(new_contour.tolist())
         return contours
 
-    def getInteriors(self):
+    def getInteriors(self) -> list:
         """Get the interiors of the contours on the grid.
         
             Returns:
@@ -198,7 +198,7 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True) -> list:
     return points[:,0,:].tolist()
 
 
-def getExterior(points : list):
+def getExterior(points : list) -> list:
     """Get the exterior of a single set of points.
     
         Params:
@@ -211,7 +211,7 @@ def getExterior(points : list):
     new_points = reducePoints(new_points)
     return new_points
 
-def mergeTraces(trace_list : list):
+def mergeTraces(trace_list : list) -> list:
     """Get the exterior(s) of a set of traces.
     
         Params:
@@ -225,7 +225,7 @@ def mergeTraces(trace_list : list):
         new_traces[i] = reducePoints(new_traces[i])
     return new_traces
 
-def cutTraces(trace, cut_trace : list):
+def cutTraces(trace, cut_trace : list) -> list:
     """Cut a set of traces.
     
         Params:

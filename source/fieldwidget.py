@@ -64,19 +64,12 @@ class FieldWidget(QWidget):
         self.endPendingEvents()
         self.section_num = section_num
 
+        # get data from section info
+        self.mag = section.mag
+        self.src = section.src
+
         # create transforms
-        self.tform = section.tform.copy()
-        t = self.tform # identity would be: 1 0 0 0 1 0
-        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
-        self.mag = section.mag # get magnification
-        self.base_image = QImage(self.parent_widget.wdir + section.src) # load image
-        self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
-        # in order to place the image correctly in the field...
-        self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
-        x_shift = t[2] - self.tform_origin[0] * self.image_tform.m11() * self.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.image_tform.m22() * self.mag # calculate y translation for image placement in field
-        self.image_vector = x_shift, y_shift # store as vector
+        self.loadTransformation(section.tform.copy(), update=False, save_state=False)
 
         # create traces
         self.traces = section.traces.copy()
@@ -92,6 +85,30 @@ class FieldWidget(QWidget):
         self.updateStatusBar(None)
         self.generateView()
         self.update()
+    
+    def loadTransformation(self, tform : list, update=True, save_state=True):
+        """Load the transformation data for a given section image
+        
+            Params:
+                tform (list): the image transform as a list (identity: 1 0 0 0 1 0)"""
+        # create transforms
+        self.tform = tform
+        t = self.tform # identity would be: 1 0 0 0 1 0
+        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
+        self.base_image = QImage(self.parent_widget.wdir + self.src) # load image
+        self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
+        # in order to place the image correctly in the field...
+        self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
+        x_shift = t[2] - self.tform_origin[0] * self.image_tform.m11() * self.mag # calculate x translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.image_tform.m22() * self.mag # calculate y translation for image placement in field
+        self.image_vector = x_shift, y_shift # store as vector
+        if update:
+            self.updateStatusBar(None)
+            self.generateView()
+            self.update()
+        if save_state:
+            self.saveState()
     
     def changeBrightness(self, change):
         """Change the brightness of the section.
@@ -345,10 +362,10 @@ class FieldWidget(QWidget):
         """Restore traces and transform stored in the current state (self.current_state)."""
         self.traces = self.current_state[0].copy()
         self.selected_traces = self.current_state[1].copy()
-        self.tform = self.current_state[2].copy()
-        t = self.tform  # easier visual in next lines
-        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], t[1], t[3], t[4], t[2], t[5]) # changed positions for image tform
+        prev_tform = self.tform.copy()
+        new_tform = self.current_state[2].copy()
+        if new_tform != prev_tform:
+            self.loadTransformation(new_tform, save_state=False)
         self.generateView()
         self.update()
 

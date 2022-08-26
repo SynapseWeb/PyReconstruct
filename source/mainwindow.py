@@ -14,6 +14,7 @@ from series import Series
 from section import Section
 from trace import Trace
 from zarrtorecon import getZarrObjects, saveZarrImages
+from defaults import getDefaultPaletteTraces
 
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
@@ -90,6 +91,8 @@ class MainWindow(QMainWindow):
         undo_sc.activated.connect(self.field.undoState)
         redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
         redo_sc.activated.connect(self.field.redoState)
+        change_tform_sc = QShortcut(QKeySequence("Ctrl+T"), self)
+        change_tform_sc.activated.connect(self.changeTform)
 
         self.show()
     
@@ -127,10 +130,10 @@ class MainWindow(QMainWindow):
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
     
-    def newSeries(self, image_locations=[]):
+    def newSeries(self, image_locations : list):
         """Create a new series from a set of images."""
         # get images from user
-        if len(image_locations) == 0:
+        if not image_locations:
             image_locations, extensions = QFileDialog.getOpenFileNames(
                 self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
             if len(image_locations) == 0:
@@ -260,10 +263,10 @@ class MainWindow(QMainWindow):
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
     
-    def importZarrObjects(self, zarr_fp=""):
+    def importZarrObjects(self, zarr_fp : str):
         """Import objects from a zarr folder."""
         # get the file path
-        if zarr_fp == "":
+        if not zarr_fp:
             zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
             if not zarr_fp:
                 return
@@ -271,7 +274,7 @@ class MainWindow(QMainWindow):
         progbar = QProgressDialog("Loading Zarr data...", "Cancel", 0, 100, self)
         progbar.setWindowTitle("Zarr Data")
         progbar.setWindowModality(Qt.WindowModal)
-        objects = getZarrObjects(zarr_fp, progbar)
+        objects = getZarrObjects(zarr_fp, progbar=progbar)
         # assign random colors to each id
         color_dict = {}
         for id in objects:
@@ -341,12 +344,13 @@ class MainWindow(QMainWindow):
         self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
-    def changeSection(self, section_num):
+    def changeSection(self, section_num, save=True):
         """Change the section of the field."""
         start_time = time()
         if section_num not in self.series.sections:  # check if requested section exists
             return
-        self.saveAllData()
+        if save:
+            self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field.loadSection(self.series.current_section, self.section)
@@ -487,7 +491,22 @@ class MainWindow(QMainWindow):
         progbar.setWindowTitle("Write XML Series")
         progbar.setWindowModality(Qt.WindowModal)
         write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
-
+    
+    def changeTform(self):
+        current_tform = " ".join([str(round(n, 2)) for n in self.section.tform])
+        new_tform, confirmed = QInputDialog.getText(
+            self, "New Transform", "Enter the desired section transform:", text=current_tform)
+        if not confirmed:
+            return
+        try:
+            new_tform = [float(n) for n in new_tform.split()]
+            if len(new_tform) != 6:
+                return
+        except ValueError:
+            return
+        self.section.tform = new_tform
+        self.field.loadTransformation(new_tform, update=True, save_state=True)
+        
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         if not self.field: # do not do anything if field is not created
@@ -495,70 +514,3 @@ class MainWindow(QMainWindow):
             return
         self.saveAllData()
         event.accept()
-
-def getDefaultPaletteTraces():
-    """Function to store data for default trace palette"""
-    palette_traces = [None] * 20
-    n = 0
-
-    new_trace = Trace("circle1", (255, 128, 64))
-    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.5), (-0.1667, 0.5)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("star", (128, 0, 255))
-    new_trace.points = [(-0.2, 0.1), (-0.5, 0.0), (-0.2, -0.1), (-0.4, -0.4), (-0.1, -0.2), (0.0, -0.5), (0.1, -0.2), (0.4, -0.4), (0.2, -0.1), (0.5, 0.0), (0.2, 0.1), (0.4, 0.4), (0.1, 0.2), (0.0, 0.5), (-0.1, 0.2), (-0.4, 0.4)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("triangle", (255, 0, 128))
-    new_trace.points = [(-0.5, -0.5), (0.5, -0.5), (0.0, 0.4167)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("cross", (255, 0, 0))
-    new_trace.points = [(-0.5, 0.5), (-0.1429, 0.0), (-0.5, -0.5), (-0.2857, -0.5), (0.0, -0.0714), (0.2857, -0.5), (0.5, -0.5), (0.1429, 0.0), (0.5, 0.5), (0.2857, 0.5), (0.0, 0.0714), (-0.2857, 0.5)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("square", (255, 255, 0))
-    new_trace.points = [(0.4, 0.4), (0.4, -0.4), (-0.4, -0.4), (-0.4, 0.3), (-0.5, 0.4), (-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5), (-0.4, 0.4)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("diamond", (0, 0, 255))
-    new_trace.points = [(0.0, 0.5), (-0.5, 0.0), (0.0, -0.5), (0.5, 0.0)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("circle2", (255, 0, 255))
-    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.5), (-0.1667, 0.5)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("arrow1", (255, 0, 0))
-    new_trace.points = [(0.25, -0.25), (0.0, -0.25), (0.0, -0.125), (0.125, 0.0), (0.5, 0.125), (0.25, 0.25), (0.125, 0.5), (-0.125, 0.25), (-0.25, 0.0), (-0.25, -0.25), (-0.5, -0.25), (-0.125, -0.5)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("plus", (0, 255, 0))
-    new_trace.points = [(-0.5, 0.1667), (-0.5, -0.1667), (-0.1667, -0.1667), (-0.1667, -0.5), (0.1667, -0.5), (0.1667, -0.1667), (0.5, -0.1667), (0.5, 0.1667), (0.1667, 0.1667), (0.1667, 0.5), (-0.1667, 0.5), (-0.1667, 0.1667)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    new_trace = Trace("arrow2", (0, 255, 255))
-    new_trace.points = [(0.0, 0.5), (0.1667, 0.3333), (-0.5, -0.3333), (-0.3333, -0.5), (0.3333, 0.1667), (0.5, 0.0), (0.5, 0.5)]
-    palette_traces[n] = new_trace.getDict()
-    palette_traces[10+n] = new_trace.getDict()
-    n += 1
-
-    return palette_traces

@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
         self.import_from_json_act = self.filemenu.addAction("Import objects from zarr...")
         self.import_from_json_act.triggered.connect(self.importZarrObjects)
+        self.import_transforms = self.filemenu.addAction("Import transforms...")
+        self.import_transforms.triggered.connect(self.importTransforms)
         # object menu
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
@@ -263,6 +265,40 @@ class MainWindow(QMainWindow):
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
     
+    def importTransforms(self):
+        """Import transforms from a text file."""
+        # get file from user
+        tforms_file, ext = QFileDialog.getOpenFileName(self, "Select file containing transforms")
+        if not tforms_file:
+            return
+        # read through file
+        with open(tforms_file, "r") as f:
+            lines = f.readlines()
+        tforms = {}
+        for line in lines:
+            nums = line.split()
+            if len(nums) != 7:
+                print("Incorrect transform file format")
+                return
+            try:
+                if int(nums[0]) not in self.series.sections:
+                    print("Transform file section numbers do not correspond to this series")
+                    return
+                tforms[int(nums[0])] = [float(n) for n in nums[1:]]
+            except ValueError:
+                print("Incorrect transform file format")
+                return
+        # set tforms
+        for section_num, tform in tforms.items():
+            section = Section(self.wdir + self.series.sections[int(section_num)])
+            # multiply pixel translations by magnification of section
+            tform[2] *= section.mag
+            tform[5] *= section.mag
+            section.tform = tform
+            section.save()
+        # reload current section
+        self.changeSection(self.series.current_section, save=False)
+
     def importZarrObjects(self, zarr_fp : str):
         """Import objects from a zarr folder."""
         # get the file path

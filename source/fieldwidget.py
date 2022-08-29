@@ -192,8 +192,8 @@ class FieldWidget(QWidget):
                 within_field = self.drawTrace(trace)
                 if within_field:
                     self.traces_within_field.append(trace)
-                if trace in self.selected_traces:
-                    self.drawTrace(trace, highlight=True)
+        for trace in self.selected_traces:
+            self.drawTrace(trace, highlight=True)
         
         self.field_pixmap_copy = self.field_pixmap.copy()
     
@@ -912,6 +912,8 @@ class FieldWidget(QWidget):
         closest_trace = None
         # for trace in self.traces_within_field: # check only traces within the current window view
         for trace in self.traces:
+            if trace.hidden:
+                continue
             points = []
             for point in trace.points:
                 x, y = self.point_tform.map(*point)

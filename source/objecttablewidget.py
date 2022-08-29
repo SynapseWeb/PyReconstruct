@@ -151,7 +151,7 @@ class ObjectTableWidget(QDockWidget):
         
         row = 0        
         for name in sorted(self._objdict.keys()):
-            if self.table.item(row, 0).text() != name:
+            if self.table.item(row, 0) is None or self.table.item(row, 0).text() != name:
                 self.table.insertRow(row)
             if name in objects_to_update:
                 trace_obj = self._objdict[name]
@@ -176,43 +176,9 @@ class ObjectTableWidget(QDockWidget):
                     self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getVolume(), 6))))
                     col += 1
             row += 1
-
-
-        self.horizontal_headers = ["Name"]
-        if self.quantities["range"]:
-            self.horizontal_headers.append("Start")
-            self.horizontal_headers.append("End")
-        if self.quantities["count"]:
-            self.horizontal_headers.append("Count")
-        if self.quantities["flat_area"]:
-            self.horizontal_headers.append("Flat Area")
-        if self.quantities["volume"]:
-            self.horizontal_headers.append("Volume")
-        self.table.setHorizontalHeaderLabels(self.horizontal_headers)
-        row = 0
-        for name in sorted(self._objdict.keys()):
-            trace_obj = self._objdict[name]
-            count = trace_obj.getCount()
-            if count == 0:
-                del self._objdict[name]
-                continue
-            self.table.setItem(row, 0, QTableWidgetItem(name))
-            col = 1
-            if self.quantities["range"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getStart())))
-                col += 1
-                self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getEnd())))
-                col += 1
-            if self.quantities["count"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(count)))
-                col += 1
-            if self.quantities["flat_area"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getFlatArea(), 6))))
-                col += 1
-            if self.quantities["volume"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getVolume(), 6))))
-                col += 1
-            row += 1
+            
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
     
     def refresh(self):
         """Executed when user hits refresh: reloads all table data."""

@@ -100,8 +100,8 @@ class FieldWidget(QWidget):
         self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
         # in order to place the image correctly in the field...
         self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
-        x_shift = t[2] - self.tform_origin[0] * self.image_tform.m11() * self.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.image_tform.m22() * self.mag # calculate y translation for image placement in field
+        x_shift = t[2] - self.tform_origin[0] * self.mag # calculate x translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
         if update:
             self.updateStatusBar(None)

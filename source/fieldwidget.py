@@ -78,7 +78,7 @@ class FieldWidget(QWidget):
         self.selected_traces = []
 
         # reset undo-redo states
-        self.current_state = [self.traces.copy(), [], self.tform.copy()]
+        self.current_state = [self.traces.copy(), self.tform.copy()]
         self.undo_states = []
         self.redo_states = []
 
@@ -347,25 +347,22 @@ class FieldWidget(QWidget):
             s = "Section: " + str(self.section_num) + "  " + message[message.find("|"):]
         self.parent_widget.statusbar.showMessage(s)
     
-    def saveState(self, selected_only=False):
+    def saveState(self):
         """Save the current traces and transform."""
-        if selected_only:
-            self.current_state[1] = self.selected_traces.copy()
-        else:
-            self.undo_states.append(self.current_state)
-            if len(self.undo_states) > 20:  # limit the number of undo states
-                self.undo_states.pop(0)
-            self.current_state = [self.traces.copy(), self.selected_traces.copy(), self.tform.copy()]
-            self.redo_states = []
+        self.undo_states.append(self.current_state)
+        if len(self.undo_states) > 20:  # limit the number of undo states
+            self.undo_states.pop(0)
+        self.current_state = [self.traces.copy(), self.tform.copy()]
+        self.redo_states = []
     
     def restoreState(self):
         """Restore traces and transform stored in the current state (self.current_state)."""
         self.traces = self.current_state[0].copy()
-        self.selected_traces = self.current_state[1].copy()
         prev_tform = self.tform.copy()
-        new_tform = self.current_state[2].copy()
+        new_tform = self.current_state[1]
         if new_tform != prev_tform:
             self.loadTransformation(new_tform, save_state=False)
+        self.selected_traces = []
         self.generateView()
         self.update()
 
@@ -533,14 +530,12 @@ class FieldWidget(QWidget):
         if selected_trace is not None and event.button() == Qt.LeftButton:
             if not selected_trace in self.selected_traces:
                 self.selected_traces.append(selected_trace)
-                self.saveState(selected_only=True)
                 self.generateView(generate_image=False)
                 self.update()
         # deselect and unhighlight trace if right mouse click
         elif selected_trace is not None and event.button() == Qt.RightButton:
             if selected_trace in self.selected_traces:
                 self.selected_traces.remove(selected_trace)
-                self.saveState(selected_only=True)
                 self.generateView(generate_image=False)
                 self.update()
     
@@ -880,7 +875,6 @@ class FieldWidget(QWidget):
     def deselectAllTraces(self):
         """Deselect all traces."""
         self.selected_traces = []
-        self.saveState(selected_only=True)
         self.generateView(generate_image=False)
         self.update()
     

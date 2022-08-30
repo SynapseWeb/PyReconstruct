@@ -63,6 +63,8 @@ class MainWindow(QMainWindow):
         self.new_act.triggered.connect(self.newSeries)
         self.open_act = self.filemenu.addAction("Open")  # open an existing series
         self.open_act.triggered.connect(self.openSeries)
+        self.import_transforms = self.filemenu.addAction("Import transforms...")
+        self.import_transforms.triggered.connect(self.importTransforms)
         self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
         self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
         self.new_from_zarr_act = self.filemenu.addAction("New from zarr file")
@@ -71,8 +73,6 @@ class MainWindow(QMainWindow):
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
         self.import_from_json_act = self.filemenu.addAction("Import objects from zarr...")
         self.import_from_json_act.triggered.connect(self.importZarrObjects)
-        self.import_transforms = self.filemenu.addAction("Import transforms...")
-        self.import_transforms.triggered.connect(self.importTransforms)
         # object menu
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")

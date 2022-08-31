@@ -1,0 +1,10 @@
+daisy==0.2.1
+lxml==4.9.1
+networkx==2.8.6
+numpy==1.23.2
+opencv-python==4.6.0.66
+orjson==3.8.0
+pymongo==4.2.0
+PySide2==5.15.2.1
+shiboken2==5.15.2.1
+tornado==5.1.1

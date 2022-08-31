@@ -1,4 +1,5 @@
 import json
+import os
 from time import time
 import random
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
@@ -15,6 +16,7 @@ from section import Section
 from trace import Trace
 from zarrtorecon import getZarrObjects, saveZarrImages
 from defaults import getDefaultPaletteTraces
+import constants as C
 
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
@@ -47,7 +49,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open the series and create the field
-        self.openSeries("welcome_series/welcome.ser")
+        self.openSeries(C.src_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
         self.field.generateView()

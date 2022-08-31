@@ -1,3 +1,6 @@
 *~
 env/
 /__pycache__/
+*.pyc
+welcome.0
+welcome.ser

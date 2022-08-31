@@ -269,6 +269,7 @@ class MainWindow(QMainWindow):
     
     def importTransforms(self):
         """Import transforms from a text file."""
+        self.saveAllData()
         # get file from user
         tforms_file, ext = QFileDialog.getOpenFileName(self, "Select file containing transforms")
         if not tforms_file:
@@ -303,6 +304,7 @@ class MainWindow(QMainWindow):
 
     def importZarrObjects(self, zarr_fp : str):
         """Import objects from a zarr folder."""
+        self.saveAllData()
         # get the file path
         if not zarr_fp:
             zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")

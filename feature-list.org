@@ -131,10 +131,10 @@
 
 - Advantages Py-reconstruct
   
-   + Not fixed (adaptable) / Reconstruct wish-list (e.g., scalpel, autorefreshing object list, redo, objects tags)
-   + Extensible / customizable (new tools on the fly)
-   + Cross-platform (Run in Linux)
-   + Integration with team Vijay
+  + Not fixed (adaptable) / Reconstruct wish-list (e.g., scalpel, autorefreshing object list, redo, objects tags)
+  + Extensible / customizable (new tools on the fly)
+  + Cross-platform (Run in Linux)
+  + Integration with team Vijay
      
 - Export to zarr (incorporate Vijay code)
   
@@ -145,3 +145,15 @@
 - VC with git / automatic backing up
 
 - Automatic log lifes (e.g., with insertion of transformations)
+
+- What have we learned through this process
+
+  - VC
+
+  - Working together as a team
+
+  - Managing dependencies
+
+  - Linux
+
+  - Programming skills

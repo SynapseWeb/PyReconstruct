@@ -38,7 +38,6 @@ class MouseDockWidget(QDockWidget):
         self.createModeButton("closedline", 2, 1, FieldWidget.CLOSEDLINE)
         self.createModeButton("openline", 3, 1, FieldWidget.OPENLINE)
         self.createModeButton("stamp", 4, 1, FieldWidget.STAMP)
-        
 
         self.palette_traces = palette_traces
         self.palette_buttons = []
@@ -48,11 +47,20 @@ class MouseDockWidget(QDockWidget):
         for button in self.palette_buttons:  # highlight the first match for the selected trace
             if button.trace.isSameTrace(selected_trace):
                 button.setChecked(True)
+                self.setWindowTitle(selected_trace.name)
                 break
         self.central_widget.paletteButtonChanged = self.paletteButtonChanged # there's no way in hell this is good practice but it works
 
+        self.selected_mode = "pointer"
+        self.selected_trace = selected_trace.name
+        self.updateTitle()
+
         self.setWidget(self.central_widget)
         self.show()
+    
+    def updateTitle(self):
+        s = "Tool: " + self.selected_mode + "  |  Tracing: " + self.selected_trace
+        self.setWindowTitle(s)
     
     def modeButtonClicked(self):
         """Executed when any mouse mode button is clicked: changes mouse mode."""
@@ -61,6 +69,8 @@ class MouseDockWidget(QDockWidget):
             if button[0] == sender:
                 button[0].setChecked(True)
                 self.parent_widget.changeMouseMode(button[1])
+                self.selected_mode = name
+                self.updateTitle()
             else:
                 button[0].setChecked(False)      
 
@@ -92,6 +102,8 @@ class MouseDockWidget(QDockWidget):
             if button == sender:
                 button.setChecked(True)
                 self.parent_widget.changeTracingTrace(button.trace)
+                self.selected_trace = button.trace.name
+                self.updateTitle()
             else:
                 button.setChecked(False)
     

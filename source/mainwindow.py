@@ -504,7 +504,7 @@ class MainWindow(QMainWindow):
             for trace in section.traces:
                 contour_color = list(trace.color)  # get trace color
                 for i in range(len(contour_color)):
-                    contour_color[i] *= 255
+                    contour_color[i] /= 255
                 tf = section.tform
                 xcoef = (tf[2], tf[0], tf[1])
                 ycoef = (tf[5], tf[3], tf[4])

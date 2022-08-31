@@ -4,9 +4,9 @@
  },
  "current_section": 0,
  "window": [
-  -0.3665906499429875,
   0,
-  1.733181299885975,
+  0,
+  1,
   1
  ],
  "palette_traces": [
@@ -1008,11 +1008,11 @@
   }
  ],
  "current_trace": {
-  "name": "circle2",
+  "name": "circle1",
   "color": [
    255,
-   0,
-   255
+   128,
+   64
   ],
   "closed": true,
   "points": [

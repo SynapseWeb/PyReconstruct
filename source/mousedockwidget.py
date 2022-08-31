@@ -5,6 +5,7 @@ from PySide2.QtCore import QSize, Qt
 from palettebutton import PaletteButton
 from fieldwidget import FieldWidget
 from trace import Trace
+import constants as C
 
 class MouseDockWidget(QDockWidget):
 
@@ -73,7 +74,7 @@ class MouseDockWidget(QDockWidget):
                 mouse_mode (int): the mode this button is connected to
         """
         b = QPushButton(self.central_widget)
-        pixmap = QPixmap(name + ".png").scaled(self.bsize, self.bsize)
+        pixmap = QPixmap(C.img_dir + "/" + name + ".png").scaled(self.bsize, self.bsize)
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.bsize, self.bsize))
         b.setGeometry(x*self.bsize, y*self.bsize, self.bsize, self.bsize)

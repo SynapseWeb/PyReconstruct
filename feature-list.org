@@ -1,12 +1,9 @@
-* Meetings
-
-- [ ] Michael + Julian, Sep 2 at 9 AM
-
 * High-priority tasks
 
 - [ ] Trace list
 - [ ] Expandable (s) / grabbable (g) traces (left click = confirm, right click = cancel)
 - [ ] Describe default style we will use
+- [ ] Autosave any changes before major operations (e.g., importing transformations)
 
 * Must-do
 
@@ -17,6 +14,8 @@
 
 * Medium-priority tasks
 
+- [ ] Pyside2 v. Pyside6
+- [ ] Change "radius" to "diameter" for stamps
 - [ ] Setup files (setup.py)
 - [ ] Knife tool
 - [ ] Reconcropper
@@ -96,6 +95,9 @@
 
 - What we've been doing
 - Original goals
+   - Wanted to keep the spirit of "legacy" Reconstruct (simplicity, be able to go back and forth)
+   - Capitalize on work already done in the lab (Larry and Michael)
+   - Incorporate this work with autosegmentation efforts (Vijay)
 - First demo (shut up) / then explanations
 
 ** Demo (Julian)
@@ -106,8 +108,8 @@
   
    + Trace object
    + Stamp
-   + Undo / redo
    + Scalpel
+   + Undo / redo
    + Merge
    + Pan / Zoom
    + Obj list / autorefreshing
@@ -129,13 +131,29 @@
 
 - Advantages Py-reconstruct
   
-   + Not fixed (adaptable) / Reconstruct wish-list (e.g., objects tags)
-   + Cross-platform
-   + Extensible / customizable
-   + Integration with team Vijay
+  + Not fixed (adaptable) / Reconstruct wish-list (e.g., scalpel, autorefreshing object list, redo, objects tags)
+  + Extensible / customizable (new tools on the fly)
+  + Cross-platform (Run in Linux)
+  + Integration with team Vijay
      
 - Export to zarr (incorporate Vijay code)
   
 - 3D in Blender
   
 - API
+
+- VC with git / automatic backing up
+
+- Automatic log lifes (e.g., with insertion of transformations)
+
+- What have we learned through this process
+
+  - VC
+
+  - Working together as a team
+
+  - Managing dependencies
+
+  - Linux
+
+  - Programming skills

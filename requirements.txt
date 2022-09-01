@@ -1,6 +1,10 @@
+asciitree==0.3.3
 daisy==0.2.1
+entrypoints==0.4
+fasteners==0.17.3
 lxml==4.9.1
 networkx==2.8.6
+numcodecs==0.10.2
 numpy==1.23.2
 opencv-python==4.6.0.66
 orjson==3.8.0
@@ -8,3 +12,5 @@ pymongo==4.2.0
 PySide2==5.15.2.1
 shiboken2==5.15.2.1
 tornado==5.1.1
+typing_extensions==4.3.0
+zarr==2.12.0

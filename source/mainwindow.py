@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open the series and create the field
-        self.openSeries(C.src_dir + "/welcome_series/welcome.ser")
+        self.openSeries(C.assets_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
         self.field.generateView()

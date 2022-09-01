@@ -2,5 +2,7 @@
 env/
 /__pycache__/
 *.pyc
+/source/assets/welcome_series/welcome.ser
+/source/assets/welcome_series/welcome.0
 welcome.0
-welcome.ser
+run_julian.sh

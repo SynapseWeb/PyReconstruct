@@ -11,6 +11,7 @@
 - [ ] SWiFT integration (extension?)
 - [ ] Investigate using zarr (as "images" and "points")
 - [ ] Test dim 6 XML import
+- [ ] Stop pyReconstruct from saving changes to welcome series
 
 * Medium-priority tasks
 

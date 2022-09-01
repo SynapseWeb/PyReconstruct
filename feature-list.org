@@ -1,13 +1,23 @@
+* Questions for Julian
+- Are transformations stored as coefficients or real matrices?
+- We should try this on TACC just to see if we can.
+- Written tutorial? Quickstart tutorial?
+- We need to learn more about QT in general
+- Exporting obj data as csv and json
+- Can we do a simple 3D scene for vanilla pyReconstruct and something more instense for Blender?
 * High-priority tasks
 
 - [ ] Trace list
 - [ ] Expandable (s) / grabbable (g) traces (left click = confirm, right click = cancel)
-- [ ] Describe default style we will use
-- [ ] Autosave any changes before major operations (e.g., importing transformations)
+- [ ] Describe default coding style we will use and put it somewhere to reference
+- [ ] Autosave, log any changes before major operations (e.g., importing transformations)
+- [ ] Undo/redo per section and not per series
+- [ ] Reconcropper integration
 
 * Must-do
 
-- [ ] Run on mac / linux machine
+- [X] Run on Linux machine
+- [ ] Run on Mac maching
 - [ ] SWiFT integration (extension?)
 - [ ] Investigate using zarr (as "images" and "points")
 - [ ] Test dim 6 XML import
@@ -90,18 +100,46 @@
 - [X] Find First function in obj list
 - [X] Find Last function in obj list
 
-* Lab meeting
+* Lab meeting 20220901
+** Intro
+*** Summer "mini" project
 
-** Intro (Michael)
+- New understanding of Reconstruct machinations
+- "Reconstruct-parallel" tools
+- ? Integrate tools into "Reconstruct"
+- But in Python
+- Minimize hubris
+- Most basic Reconstruct function?
 
-- What we've been doing
-- Original goals
-   - Wanted to keep the spirit of "legacy" Reconstruct (simplicity, be able to go back and forth)
-   - Capitalize on work already done in the lab (Larry and Michael)
-   - Incorporate this work with autosegmentation efforts (Vijay)
-- First demo (shut up) / then explanations
+*** Original primary goal
 
-** Demo (Julian)
+Draw lines on images using *Python*???
+
+*** Updated goals post-wow factor
+
+Let's keep the good times going!
+  
+- Keep spirit of "legacy" Reconstruct
+- Simple and ports to/from legacy Reconstruct
+- Capitalize on previous work (Larry and Michael)
+- Incorporate with autosegmentation efforts (Vijay)
+  
+*** How?
+
+- Prioritized major Reconstruct functions 
+- Moved down list sequentially
+- How far can we get?
+  
+*** This presentation
+
+- Full demo of *pyReconstruct*
+- 100% Python (3 months)
+- v0.0.-2
+- Super basic / unpolished GUI
+- Reconstuct tool emulation
+- Questions at end
+  
+** Demo (Michael shuts up)
 
 - Open py-reconstruct and start new series
   
@@ -128,33 +166,35 @@
    + Merge differences
    + Things are good about Reconstruct
      
-** Summary / Future directions (Michael)
+** Future / Summary
+*** pyReconstruct advantages
 
-- Advantages Py-reconstruct
-  
-  + Not fixed (adaptable) / Reconstruct wish-list (e.g., scalpel, autorefreshing object list, redo, objects tags)
-  + Extensible / customizable (new tools on the fly)
-  + Cross-platform (Run in Linux)
-  + Integration with team Vijay
+- Not fixed (adaptable) - Reconstruct wish-list (e.g., scalpel, auto-refreshing object list, redo)
+- Extensible / customizable / new tools on the fly (e.g., variable-radius circles)
+- Integration with team Vijay
+- Cross-platform (e.g., run in Linux, TACC)
      
-- Export to zarr (incorporate Vijay code)
+*** Future
   
 - 3D in Blender
-  
-- API
-
+- API (application programming interface)
 - VC with git / automatic backing up
 
-- Automatic log lifes (e.g., with insertion of transformations)
+*** Personal growth
 
-- What have we learned through this process
+- Team work
+- VC, git, gitHub, gitHub Desktop
+- Managing dependencies
+- Linux
+- Programming skills
 
-  - VC
+*** Q and A
 
-  - Working together as a team
-
-  - Managing dependencies
-
-  - Linux
-
-  - Programming skills
+- Soft balls to Michael
+- Hard questions to Julian
+** Notes
+- Redo / undo per section
+- Consider history / state tab
+- Consider logging in as UTeID
+- Dependency-free environment?
+- Keep pyReconstruct slim!

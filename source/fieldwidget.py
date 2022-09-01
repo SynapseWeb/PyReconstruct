@@ -1,4 +1,4 @@
-from copy import deepcopy
+from dataclasses import Field
 from PySide2.QtWidgets import (QWidget, QMainWindow)
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
@@ -50,6 +50,7 @@ class FieldWidget(QWidget):
         self.selected_traces = []
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.is_line_tracing = False
+        self.all_traces_hidden = False
 
         self.loadSection(section_num, section)
     
@@ -351,7 +352,7 @@ class FieldWidget(QWidget):
         self.undo_states.append(self.current_state)
         if len(self.undo_states) > 20:  # limit the number of undo states
             self.undo_states.pop(0)
-        self.current_state = [deepcopy(self.traces), self.tform.copy()]
+        self.current_state = [self.traces.copy(), self.tform.copy()]
         self.redo_states = []
     
     def restoreState(self):
@@ -977,18 +978,14 @@ class FieldWidget(QWidget):
     
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
-        # check if all traces are hidden
-        all_hidden = True
-        for trace in self.traces:
-            if not trace.hidden:
-                all_hidden = False
-                break
-        if all_hidden:
+        if self.all_traces_hidden:
             for trace in self.traces:
                 trace.setHidden(False)
+            self.all_traces_hidden = False
         else:
             for trace in self.traces:
                 trace.setHidden(True)
+            self.all_traces_hidden = True
         self.selected_traces = []
         self.saveState()
         self.generateView(generate_image=False)

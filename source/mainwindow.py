@@ -447,7 +447,7 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         # current placeholder until options widget is created
         quantities = {}
-        quantities["range"] = True
+        quantities["range"] = False
         quantities["count"] = True
         quantities["surface_area"] = False
         quantities["flat_area"] = True

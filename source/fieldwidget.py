@@ -1,4 +1,4 @@
-from dataclasses import Field
+from copy import deepcopy
 from PySide2.QtWidgets import (QWidget, QMainWindow)
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
@@ -351,7 +351,7 @@ class FieldWidget(QWidget):
         self.undo_states.append(self.current_state)
         if len(self.undo_states) > 20:  # limit the number of undo states
             self.undo_states.pop(0)
-        self.current_state = [self.traces.copy(), self.tform.copy()]
+        self.current_state = [deepcopy(self.traces), self.tform.copy()]
         self.redo_states = []
     
     def restoreState(self):

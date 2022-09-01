@@ -4,10 +4,17 @@
  },
  "current_section": 0,
  "window": [
+<<<<<<< HEAD:source/welcome_series/welcome.ser
   -0.3665906499429875,
   0,
   1.733181299885975,
   1
+=======
+  -0.5376282782212087,
+  -0.09420431870011403,
+  2.0752565564424175,
+  1.188408637400228
+>>>>>>> 519075abdfd431c3e9ed568d320125ea44692ece:source/assets/welcome_series/welcome.ser
  ],
  "palette_traces": [
   {

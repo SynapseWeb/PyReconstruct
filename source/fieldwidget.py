@@ -50,7 +50,6 @@ class FieldWidget(QWidget):
         self.selected_traces = []
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.is_line_tracing = False
-        self.all_traces_hidden = False
 
         self.loadSection(section_num, section)
     
@@ -978,14 +977,18 @@ class FieldWidget(QWidget):
     
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
-        if self.all_traces_hidden:
+        # check if all traces are hidden
+        all_hidden = True
+        for trace in self.traces:
+            if not trace.hidden:
+                all_hidden = False
+                break
+        if all_hidden:
             for trace in self.traces:
                 trace.setHidden(False)
-            self.all_traces_hidden = False
         else:
             for trace in self.traces:
                 trace.setHidden(True)
-            self.all_traces_hidden = True
         self.selected_traces = []
         self.saveState()
         self.generateView(generate_image=False)

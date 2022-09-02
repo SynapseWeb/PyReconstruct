@@ -1,5 +1,5 @@
 import json
-from trace import Trace
+from .trace import Trace
 
 class Series():
 

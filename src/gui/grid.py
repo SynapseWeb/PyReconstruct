@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from quantification import area
+from calc.quantification import area
 
 class Grid():
 
@@ -44,7 +44,8 @@ class Grid():
         # save grid information
         self.grid_shift = xmin, ymin
     
-    # DDA algorithm (source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm)
+    # DDA algorithm
+    # Source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm
     def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int, scalpel=False):
         """Draw a line on self.grid.
         

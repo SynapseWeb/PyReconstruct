@@ -3,10 +3,10 @@ from PySide2.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbst
 from PySide2.QtGui import QTransform
 from PySide2.QtCore import Qt
 
-from series import Series
-from section import Section
-from objecttableitem import ObjectTableItem
-from quantification import sigfigRound
+from recon.series import Series
+from recon.section import Section
+from gui.objecttableitem import ObjectTableItem
+from calc.quantification import sigfigRound
 
 class ObjectTableWidget(QDockWidget):
 

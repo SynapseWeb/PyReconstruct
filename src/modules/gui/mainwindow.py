@@ -16,15 +16,16 @@ from modules.gui.fieldwidget import FieldWidget
 from modules.recon.series import Series
 from modules.recon.section import Section
 from modules.recon.trace import Trace
-from modules.recon.zarrtorecon import getZarrObjects, saveZarrImages
-from modules.recon.defaults import getDefaultPaletteTraces
 
 from modules.pyrecon.utils.reconstruct_reader import process_series_directory
 from modules.pyrecon.utils.reconstruct_writer import write_series
 from modules.pyrecon.classes.contour import Contour
 from modules.pyrecon.classes.transform import Transform as XMLTransform
 
-from constants import locations as loc
+from modules.autoseg.zarrtorecon import getZarrObjects, saveZarrImages
+
+from constants.locations import assets_dir
+from constants.defaults import getDefaultPaletteTraces
 
 class MainWindow(QMainWindow):
 
@@ -52,7 +53,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open the series and create the field
-        self.openSeries(loc.assets_dir + "/welcome_series/welcome.ser")
+        self.openSeries(assets_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
         self.field.generateView()

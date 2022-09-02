@@ -1,8 +1,8 @@
 #+TITLE: Welcome to the GitHub repository for pyReconstruct!
 #+OPTIONS: toc:nil
-pyReconstruct is an updated, actively maintained, and extensible version of RECONSTRUCT written entirely in Python using Python versions 3.9 and 3.10.
+pyReconstruct is an actively maintained, updated, and extensible version of RECONSTRUCT written entirely in Python using Python versions 3.9 and 3.10.
 
-Though this his project is still in its infancy stages, but we are happy to share with you what we have so far.
+Though this project is still in its initial stages, we are happy to share with you what we have so far.
 
 * Repository structure
 

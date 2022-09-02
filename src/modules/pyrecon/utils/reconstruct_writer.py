@@ -3,7 +3,7 @@ import os
 
 from lxml import etree
 
-from pyrecon.classes import (
+from modules.pyrecon.classes import (
     Contour, Image, Section, Series, Transform, ZContour
 )
 

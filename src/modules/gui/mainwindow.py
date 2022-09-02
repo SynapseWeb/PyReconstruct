@@ -2,26 +2,29 @@ import json
 import os
 from time import time
 import random
+
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
     QMessageBox)
 from PySide2.QtGui import QKeySequence
 from PySide2.QtCore import Qt
-from objecttablewidget import ObjectTableWidget
-from mousedockwidget import MouseDockWidget
 
-from fieldwidget import FieldWidget
-from series import Series
-from section import Section
-from trace import Trace
-from zarrtorecon import getZarrObjects, saveZarrImages
-from defaults import getDefaultPaletteTraces
-import constants as C
+from modules.gui.objecttablewidget import ObjectTableWidget
+from modules.gui.mousedockwidget import MouseDockWidget
+from modules.gui.fieldwidget import FieldWidget
 
-from pyrecon.utils.reconstruct_reader import process_series_directory
-from pyrecon.utils.reconstruct_writer import write_series
-from pyrecon.classes.contour import Contour
-from pyrecon.classes.transform import Transform as XMLTransform
+from modules.recon.series import Series
+from modules.recon.section import Section
+from modules.recon.trace import Trace
+from modules.recon.zarrtorecon import getZarrObjects, saveZarrImages
+from modules.recon.defaults import getDefaultPaletteTraces
+
+from modules.pyrecon.utils.reconstruct_reader import process_series_directory
+from modules.pyrecon.utils.reconstruct_writer import write_series
+from modules.pyrecon.classes.contour import Contour
+from modules.pyrecon.classes.transform import Transform as XMLTransform
+
+from constants import locations as loc
 
 class MainWindow(QMainWindow):
 
@@ -49,7 +52,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open the series and create the field
-        self.openSeries(C.assets_dir + "/welcome_series/welcome.ser")
+        self.openSeries(loc.assets_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
         self.field.generateView()

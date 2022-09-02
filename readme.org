@@ -1,0 +1,45 @@
+#+TITLE: Welcome to SynapseWeb's Github repository for pyReconstruct!
+#+OPTIONS: toc:nil
+
+* PyReconstruct
+
+pyReconstruct is an updated, actively maintained, and extensible version of RECONSTRUCT written entirely in Python. pyReconstruct was built using Python versions 3.9 and 3.10.
+
+Though this his project is still in its infancy stages, but we are happy to share with you what we have so far.
+
+* Repository structure
+
+This GitHub repository is structured to be easily understandable. All source files can be found under ~src/~ and you can find various file types here:
+
+|------------------------------------+----------------------|
+| File type(s)                       | Location             |
+|------------------------------------+----------------------|
+| Script to run pyReconstruct        | src/pyReconstruct.py |
+| List of dependencies               | src/requirements.txt |
+| Modules                            | src/modules          |
+| Images and example series          | src/assets           |
+| File locations and other constants | src/constants        |
+| Notes and features                 | notes/               |
+| Miscellaneous                      | misc/                |
+|------------------------------------+----------------------|
+
+* Dependencies
+
+Dependencies needed to run pyReconstruct can found here: ~/src/requirements.txt~
+
+They can be installed via PIP: =pip install -r requirements.txt=
+
+We recommend using virtual environments such as Python's built-in /venv/ module to manage the dependencies necessary to run pyReconstruct. Here is an example of install dependencies in a newly created virtual environment in Linux:
+
+- Change current working directory to your local copy of this repo: =cd /path/to/repo=
+- Create a virtual environment (for this example we will call it "env"): =python -m venv env=
+- Activate the virtual environment: =source env/bin/activate=
+- Install dependencies: =pip install -r src/requirements.txt=
+
+* Starting up pyReconstruct
+
+Once in the correct directory, pyReconstruct can be started with the following command:
+
+=python pyReconstruct.py=
+
+

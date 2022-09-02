@@ -2,9 +2,10 @@ from PySide2.QtWidgets import QWidget, QDockWidget, QPushButton
 from PySide2.QtGui import QIcon, QPixmap
 from PySide2.QtCore import QSize, Qt
 
-from gui.palettebutton import PaletteButton
-from gui.fieldwidget import FieldWidget
-from recon.trace import Trace
+from modules.gui.palettebutton import PaletteButton
+from modules.gui.fieldwidget import FieldWidget
+from modules.recon.trace import Trace
+
 from constants import locations as loc
 
 class MouseDockWidget(QDockWidget):

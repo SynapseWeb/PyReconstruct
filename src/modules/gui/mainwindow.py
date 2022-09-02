@@ -2,26 +2,29 @@ import json
 import os
 from time import time
 import random
+
 from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QShortcut, QApplication, QProgressDialog,
     QMessageBox)
 from PySide2.QtGui import QKeySequence
 from PySide2.QtCore import Qt
-from gui.objecttablewidget import ObjectTableWidget
-from gui.mousedockwidget import MouseDockWidget
 
-from gui.fieldwidget import FieldWidget
-from recon.series import Series
-from recon.section import Section
-from recon.trace import Trace
-from recon.zarrtorecon import getZarrObjects, saveZarrImages
-from recon.defaults import getDefaultPaletteTraces
+from modules.gui.objecttablewidget import ObjectTableWidget
+from modules.gui.mousedockwidget import MouseDockWidget
+from modules.gui.fieldwidget import FieldWidget
+
+from modules.recon.series import Series
+from modules.recon.section import Section
+from modules.recon.trace import Trace
+from modules.recon.zarrtorecon import getZarrObjects, saveZarrImages
+from modules.recon.defaults import getDefaultPaletteTraces
+
+from modules.pyrecon.utils.reconstruct_reader import process_series_directory
+from modules.pyrecon.utils.reconstruct_writer import write_series
+from modules.pyrecon.classes.contour import Contour
+from modules.pyrecon.classes.transform import Transform as XMLTransform
+
 from constants import locations as loc
-
-from pyrecon.utils.reconstruct_reader import process_series_directory
-from pyrecon.utils.reconstruct_writer import write_series
-from pyrecon.classes.contour import Contour
-from pyrecon.classes.transform import Transform as XMLTransform
 
 class MainWindow(QMainWindow):
 

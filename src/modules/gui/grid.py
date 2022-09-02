@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from calc.quantification import area
+from modules.calc.quantification import area
 
 class Grid():
 

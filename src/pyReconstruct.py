@@ -20,7 +20,7 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.fspath(
 #################################################################
 
 
-from gui.mainwindow import MainWindow
+from modules.gui.mainwindow import MainWindow
 
 # adjust dpi scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):

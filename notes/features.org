@@ -1,4 +1,5 @@
 * Questions for Julian
+- Need to put .bat file to run py reconstruct from repo root in Windows for Kristen
 - Can we standardize imports? (Lookat mainwindow.py)
 - Is /src/pyrecon necessary?
 - Are transformations stored as coefficients or real matrices?

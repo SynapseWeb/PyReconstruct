@@ -1,8 +1,6 @@
-#+TITLE: Welcome to the GitHub repository for pyReconstruct!
+#+TITLE: pyReconstruct
 #+OPTIONS: toc:nil
-pyReconstruct is an actively maintained, updated, and extensible version of RECONSTRUCT written entirely in Python using Python versions 3.9 and 3.10.
-
-Though this project is still in its initial stages, we are happy to share with you what we have so far.
+pyReconstruct is an actively maintained, updated, and extensible version of *RECONSTRUCT* written entirely in Python. Though this project is still in its initial stages, we are happy to share with you what we have so far.
 
 * Repository structure
 
@@ -35,8 +33,6 @@ Here is an example of installing dependencies in a newly created virtual environ
 
 * Running pyReconstruct
 
-Once in the correct directory, pyReconstruct can be started with the following command:
-
-=python pyReconstruct.py=
+Once in the correct directory, pyReconstruct can be started with the following command: =python pyReconstruct.py=
 
 

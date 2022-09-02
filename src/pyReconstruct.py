@@ -2,6 +2,7 @@ import sys
 from PySide2.QtWidgets import QApplication
 from PySide2.QtCore import Qt
 
+
 ###############################################################
 # STOPGAP FOR WAYLAND QT ISSUE
 # https://stackoverflow.com/questions/68417682/qt-and-opencv-app-not-working-in-virtual-environment
@@ -10,7 +11,7 @@ import os
 from pathlib import Path
 
 import PySide2
-from PySide2.QtWidgets import QWidget # others imports
+from PySide2.QtWidgets import QWidget
 import cv2
 
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.fspath(
@@ -19,7 +20,7 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.fspath(
 #################################################################
 
 
-from mainwindow import MainWindow
+from gui.mainwindow import MainWindow
 
 # adjust dpi scaling for high resolution monitors
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):

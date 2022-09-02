@@ -1,4 +1,4 @@
-from quantification import area, lineDistance
+from calc.quantification import area, lineDistance
 
 class ObjectTableItem():
 

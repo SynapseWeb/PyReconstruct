@@ -1,12 +1,14 @@
 from dataclasses import Field
+
 from PySide2.QtWidgets import (QWidget, QMainWindow)
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
 
-from section import Section
-from grid import getExterior, mergeTraces, reducePoints, cutTraces
-from trace import Trace
-from quantification import getDistanceFromTrace, lineIntersectsContour
+from recon.section import Section
+from recon.trace import Trace
+
+from gui.grid import getExterior, mergeTraces, reducePoints, cutTraces
+from calc.quantification import getDistanceFromTrace, lineIntersectsContour
 
 class FieldWidget(QWidget):
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)  # mouse modes

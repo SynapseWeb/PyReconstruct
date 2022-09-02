@@ -7,16 +7,16 @@ from PySide2.QtWidgets import (QMainWindow, QFileDialog,
     QMessageBox)
 from PySide2.QtGui import QKeySequence
 from PySide2.QtCore import Qt
-from objecttablewidget import ObjectTableWidget
-from mousedockwidget import MouseDockWidget
+from gui.objecttablewidget import ObjectTableWidget
+from gui.mousedockwidget import MouseDockWidget
 
-from fieldwidget import FieldWidget
-from series import Series
-from section import Section
-from trace import Trace
-from zarrtorecon import getZarrObjects, saveZarrImages
-from defaults import getDefaultPaletteTraces
-import constants as C
+from gui.fieldwidget import FieldWidget
+from recon.series import Series
+from recon.section import Section
+from recon.trace import Trace
+from recon.zarrtorecon import getZarrObjects, saveZarrImages
+from recon.defaults import getDefaultPaletteTraces
+from constants import locations as loc
 
 from pyrecon.utils.reconstruct_reader import process_series_directory
 from pyrecon.utils.reconstruct_writer import write_series
@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open the series and create the field
-        self.openSeries(C.assets_dir + "/welcome_series/welcome.ser")
+        self.openSeries(loc.assets_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
         self.field.generateView()

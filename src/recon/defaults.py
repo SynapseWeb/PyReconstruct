@@ -1,4 +1,4 @@
-from trace import Trace
+from .trace import Trace
 
 def getDefaultPaletteTraces():
     """Function to store data for default trace palette"""

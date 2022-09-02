@@ -2,7 +2,7 @@ import daisy
 import numpy as np
 import cv2
 
-from grid import reducePoints
+from gui.grid import reducePoints
 
 def voxelToField(cv_contours : np.ndarray, ysize : float, offset : tuple, resolution : tuple) -> list:
     """Converts voxel coordinates to 2D field coordinates.

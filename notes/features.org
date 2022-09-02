@@ -1,21 +1,24 @@
 * Questions for Julian
+
 - Need to put .bat file to run py reconstruct from repo root in Windows for Kristen
-- Can we standardize imports? (Lookat mainwindow.py)
-- Is /src/pyrecon necessary?
 - Are transformations stored as coefficients or real matrices?
 - We should try this on TACC just to see if we can.
 - Written tutorial? Quickstart tutorial?
 - We need to learn more about QT in general
 - Exporting obj data as csv and json
 - Can we do a simple 3D scene for vanilla pyReconstruct and something more instense for Blender?
+  
 * High-priority tasks
 
+- [ ] Style notes
+   - [ ] Import statements (follow mainwindow.py template)
 - [ ] Trace list
 - [ ] Expandable (s) / grabbable (g) traces (left click = confirm, right click = cancel)
 - [ ] Describe default coding style we will use and put it somewhere to reference
 - [ ] Autosave, log any changes before major operations (e.g., importing transformations)
 - [ ] Undo/redo per section and not per series
 - [ ] Reconcropper integration
+- [ ] Object exporter (json and python)
 
 * Must-do
 

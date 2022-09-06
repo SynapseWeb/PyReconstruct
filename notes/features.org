@@ -31,6 +31,7 @@
 
 * Medium-priority tasks
 
+- [ ] Ability to work without loading images
 - [ ] Pyside2 v. Pyside6
 - [ ] Change "radius" to "diameter" for stamps
 - [ ] Setup files (setup.py)

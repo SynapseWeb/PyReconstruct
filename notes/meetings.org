@@ -1,4 +1,4 @@
-* Lab meeting 20220901
+* 20220908 NN1
 ** Intro
 *** Summer "mini" project
 
@@ -32,7 +32,6 @@ Let's keep the good times going!
 
 - Full demo of *pyReconstruct*
 - 100% Python (3 months)
-- v0.0.-2
 - Super basic / unpolished GUI
 - Reconstuct tool emulation
 - Questions at end
@@ -76,7 +75,9 @@ Let's keep the good times going!
   
 - 3D in Blender
 - API (application programming interface)
+- Next generation SWiFT transformations
 - VC with git / automatic backing up
+- Consider zarr format in image display
 
 *** Personal growth
 

@@ -10,6 +10,7 @@
   
 * High-priority tasks
 
+- [ ] Trackpad
 - [ ] Style notes
    - [ ] Import statements (follow mainwindow.py template)
 - [ ] Trace list

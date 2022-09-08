@@ -1,7 +1,7 @@
 import orjson
-from PySide2.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
-from PySide2.QtGui import QTransform
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
+from PySide6.QtGui import QTransform
+from PySide6.QtCore import Qt
 
 from modules.recon.series import Series
 from modules.recon.section import Section

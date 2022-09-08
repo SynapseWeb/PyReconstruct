@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QWidget, QDockWidget, QPushButton
-from PySide2.QtGui import QIcon, QPixmap
-from PySide2.QtCore import QSize, Qt
+from PySide6.QtWidgets import QWidget, QDockWidget, QPushButton
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QSize, Qt
 
 from modules.gui.palettebutton import PaletteButton
 from modules.gui.fieldwidget import FieldWidget

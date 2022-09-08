@@ -3,11 +3,11 @@ import os
 from time import time
 import random
 
-from PySide2.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QShortcut, QApplication, QProgressDialog,
+from PySide6.QtWidgets import (QMainWindow, QFileDialog,
+    QInputDialog, QApplication, QProgressDialog,
     QMessageBox)
-from PySide2.QtGui import QKeySequence
-from PySide2.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import Qt
 
 from modules.gui.objecttablewidget import ObjectTableWidget
 from modules.gui.mousedockwidget import MouseDockWidget

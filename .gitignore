@@ -4,3 +4,4 @@ env/
 *.pyc
 run_julian.sh
 venv/
+pyrightconfig.json

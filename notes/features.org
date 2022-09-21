@@ -12,6 +12,7 @@
 * High-priority tasks
 
 - [ ] pyReconstruct to zarr exported (contours, images)
+- [ ] Find images feature
 - [ ] Brush tool (Vijay request)
 - [ ] Trackpad
 - [ ] Style notes
@@ -22,8 +23,9 @@
 - [ ] Autosave, log any changes before major operations (e.g., importing transformations)
 - [ ] Undo/redo per section and not per series
 - [ ] Reconcropper integration
+- [ ] Make object list alternate row colors for ease of visibility
 - [ ] Object exporter (json and python)
-
+  
 * Must-do
 
 - [ ] Center image on open series

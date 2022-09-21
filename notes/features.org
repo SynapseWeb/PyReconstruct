@@ -7,9 +7,12 @@
 - We need to learn more about QT in general
 - Exporting obj data as csv and json
 - Can we do a simple 3D scene for vanilla pyReconstruct and something more instense for Blender?
+- Can we "reserve" a color for seleted traces instead of making it dotted?
   
 * High-priority tasks
 
+- [ ] pyReconstruct to zarr exported (contours, images)
+- [ ] Brush tool (Vijay request)
 - [ ] Trackpad
 - [ ] Style notes
    - [ ] Import statements (follow mainwindow.py template)

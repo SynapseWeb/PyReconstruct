@@ -27,6 +27,10 @@ from modules.autoseg.zarrtorecon import getZarrObjects, saveZarrImages
 from constants.locations import assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
+
+def my_example(arg):
+    print(arg)
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -101,6 +105,11 @@ class MainWindow(QMainWindow):
         redo_sc.activated.connect(self.field.redoState)
         change_tform_sc = QShortcut(QKeySequence("Ctrl+T"), self)
         change_tform_sc.activated.connect(self.changeTform)
+
+        ########### TESTING #####################################
+        # Example shortcut
+        example_sc = QShortcut(QKeySequence("Ctrl+G"), self)
+        ### example_sc.activated.connect(self.series.section)
 
         self.show()
     

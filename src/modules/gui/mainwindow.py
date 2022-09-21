@@ -105,6 +105,8 @@ class MainWindow(QMainWindow):
         redo_sc.activated.connect(self.field.redoState)
         change_tform_sc = QShortcut(QKeySequence("Ctrl+T"), self)
         change_tform_sc.activated.connect(self.changeTform)
+        goto_sc = QShortcut(QKeySequence("Ctrl+G"), self)
+        goto_sc.activated.connect(self.gotoSection)
 
         ########### TESTING #####################################
         # Example shortcut
@@ -460,7 +462,7 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         # current placeholder until options widget is created
         quantities = {}
-        quantities["range"] = False
+        quantities["range"] = True
         quantities["count"] = True
         quantities["surface_area"] = False
         quantities["flat_area"] = True
@@ -559,6 +561,17 @@ class MainWindow(QMainWindow):
             return
         self.section.tform = new_tform
         self.field.loadTransformation(new_tform, update=True, save_state=True)
+    
+    def gotoSection(self):
+        new_section_num, confirmed = QInputDialog.getText(
+            self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
+        if not confirmed:
+            return
+        try:
+            new_section_num = int(new_section_num)
+            self.changeSection(new_section_num)
+        except ValueError:
+            return
         
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

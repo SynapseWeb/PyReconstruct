@@ -86,40 +86,21 @@ class MainWindow(QMainWindow):
         self.objectlist_act.triggered.connect(self.openObjectList)
 
         # create shortcuts
-
-        shortcuts = [("Ctrl+S", self.saveAllData),
-                     ("Ctrl+M", self.field.mergeSelectedTraces),
-                     ("Ctrl+D", self.field.deselectAllTraces),
-                     ("Ctrl+H", self.field.hideSelectedTraces),
-                     ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
-                     ("Ctrl+Z", self.field.undoState),
-                     ("Ctrl+Y", self.field.redoState),
-                     ("Ctrl+T", self.changeTform),
-                     ("Ctrl+G", self.gotoSection)]
+        shortcuts = [
+            ("Ctrl+S", self.saveAllData),
+            ("Ctrl+M", self.field.mergeSelectedTraces),
+            ("Ctrl+D", self.field.deselectAllTraces),
+            ("Ctrl+H", self.field.hideSelectedTraces),
+            ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
+            ("Ctrl+Z", self.field.undoState),
+            ("Ctrl+Y", self.field.redoState),
+            ("Ctrl+T", self.changeTform),
+            ("Ctrl+G", self.gotoSection)
+        ]
         
-        for elem in shortcuts:
-            QShortcut(QKeySequence(elem[0]), self).activated.connect(elem[1])
+        for kbd, act in shortcuts:
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
             
-        
-        # save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
-        # save_sc.activated.connect(self.saveAllData)
-        # merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
-        # merge_sc.activated.connect(self.field.mergeSelectedTraces)
-        # deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
-        # deselect_sc.activated.connect(self.field.deselectAllTraces)
-        # hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
-        # hide_sc.activated.connect(self.field.hideSelectedTraces)
-        # hideall_sc = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
-        # hideall_sc.activated.connect(self.field.toggleHideAllTraces)
-        # undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
-        # undo_sc.activated.connect(self.field.undoState)
-        # redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
-        # redo_sc.activated.connect(self.field.redoState)
-        # change_tform_sc = QShortcut(QKeySequence("Ctrl+T"), self)
-        # change_tform_sc.activated.connect(self.changeTform)
-        # goto_sc = QShortcut(QKeySequence("Ctrl+G"), self)
-        # goto_sc.activated.connect(self.gotoSection)
-
         self.show()
     
     def openSeries(self, series_fp=""):

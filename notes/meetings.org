@@ -101,3 +101,7 @@ Let's keep the good times going!
 
 - Blender hotkeys
 - ...
+* 20220909 JF-VT-MC
+** Potential autosegmentation paths
+- Normal tracing
+- Bush tool

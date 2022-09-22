@@ -4,10 +4,10 @@
  },
  "current_section": 0,
  "window": [
-  -1.1532091097308488,
-  -0.33437826541274807,
-  3.3064182194616976,
-  1.6687565308254961
+  0,
+  0,
+  1,
+  1
  ],
  "palette_traces": [
   {
@@ -52,8 +52,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "star",
@@ -129,8 +128,7 @@
      0.4
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "triangle",
@@ -154,8 +152,7 @@
      0.4167
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "cross",
@@ -215,8 +212,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "square",
@@ -268,8 +264,7 @@
      0.4
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "diamond",
@@ -297,8 +292,7 @@
      0.0
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "circle2",
@@ -342,8 +336,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "arrow1",
@@ -403,8 +396,7 @@
      -0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "plus",
@@ -464,8 +456,7 @@
      0.1667
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "arrow2",
@@ -505,8 +496,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "circle1",
@@ -550,8 +540,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "star",
@@ -627,8 +616,7 @@
      0.4
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "triangle",
@@ -652,8 +640,7 @@
      0.4167
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "cross",
@@ -713,8 +700,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "square",
@@ -766,8 +752,7 @@
      0.4
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "diamond",
@@ -795,8 +780,7 @@
      0.0
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "circle2",
@@ -840,8 +824,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "arrow1",
@@ -901,8 +884,7 @@
      -0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "plus",
@@ -962,8 +944,7 @@
      0.1667
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   },
   {
    "name": "arrow2",
@@ -1003,8 +984,7 @@
      0.5
     ]
    ],
-   "hidden": false,
-   "mode": 11
+   "hidden": false
   }
  ],
  "current_trace": {
@@ -1057,7 +1037,6 @@
     0.4
    ]
   ],
-  "hidden": false,
-  "mode": 11
+  "hidden": false
  }
 }

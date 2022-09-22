@@ -46,7 +46,7 @@ def series_contour_to_xml(contour):
         border=" ".join(map("{:.3f}".format, map(float, contour.border))),
         fill=" ".join(map("{:.3f}".format, map(float, contour.fill))),
         mode=str(contour.mode),
-        points=",     ".join([" ".join(map(str, map(int, list(pt)))) for pt in contour.points])+",     "
+        points=",     ".join([" ".join(map(str, map(float, list(pt)))) for pt in contour.points])+",     "
     )
     return element
 

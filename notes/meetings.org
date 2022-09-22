@@ -1,11 +1,10 @@
-* 20220908 NN1
+* 20220908 NN1 meeting
 ** Intro
 *** Summer "mini" project
 
 - New understanding of Reconstruct machinations
-- "Reconstruct-parallel" tools
-- ? Integrate tools into "Reconstruct"
-- But in Python
+- Reconstruct-parallel tools
+- ? Integrate tools "Reconstruct"
 - Minimize hubris
 - Most basic Reconstruct function?
 
@@ -64,36 +63,45 @@ Let's keep the good times going!
    + Things are good about Reconstruct
      
 ** Future / Summary
-*** pyReconstruct advantages
+*** Advantages
 
-- Not fixed (adaptable) - Reconstruct wish-list (e.g., scalpel, auto-refreshing object list, redo)
+- Not fixed (adaptable)
+- Reconstruct wish-list (e.g., scalpel, auto-refreshing object list, redo)
 - Extensible / customizable / new tools on the fly (e.g., variable-radius circles)
 - Integration with team Vijay
-- Cross-platform (e.g., run in Linux, TACC)
+- Cross-platform (e.g., run in Linux and Mac, TACC?)
      
 *** Future
   
 - 3D in Blender
-- API (application programming interface)
+- API / Console in program
 - Next generation SWiFT transformations
 - VC with git / automatic backing up
-- Consider zarr format in image display
+- Consider zarr format for image display
 
 *** Personal growth
 
-- Team work
-- VC, git, gitHub, gitHub Desktop
-- Managing dependencies
-- Linux
-- Programming skills
-
+- NONE.
+  
 *** Q and A
 
 - Soft balls to Michael
 - Hard questions to Julian
+  
 ** Notes
+*** 20220901 Lab meeting
+
 - Redo / undo per section
 - Consider history / state tab
 - Consider logging in as UTeID
 - Dependency-free environment?
 - Keep pyReconstruct slim!
+  
+*** 20220908 NN1 meeting
+
+- Blender hotkeys
+- ...
+* 20220909 JF-VT-MC
+** Potential autosegmentation paths
+- Normal tracing
+- Bush tool

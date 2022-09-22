@@ -1,6 +1,9 @@
-from PySide2.QtWidgets import (QWidget, QMainWindow)
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
+import os
+
+from PySide6.QtWidgets import (QWidget, QMainWindow)
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
+os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.recon.section import Section
 from modules.recon.trace import Trace

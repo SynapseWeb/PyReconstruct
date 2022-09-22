@@ -7,5 +7,5 @@ call env\Scripts\activate
 echo Installing dependencies...
 START /B /WAIT cmd /c pip install -r src/requirements.txt
 call deactivate
-cd install
+cd windows
 echo Finished.

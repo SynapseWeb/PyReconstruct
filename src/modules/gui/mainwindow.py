@@ -403,7 +403,7 @@ class MainWindow(QMainWindow):
         """Called when any key is pressed and user focus is on main window."""
         if not self.field:  # do not respond to keyboard if field is not created
             return
-        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.key() == 16777238:  # if PgUp is pressed
             if section_number_i < len(section_numbers) - 1:

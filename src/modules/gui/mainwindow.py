@@ -3,11 +3,11 @@ import os
 from time import time
 import random
 
-from PySide2.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QShortcut, QApplication, QProgressDialog,
+from PySide6.QtWidgets import (QMainWindow, QFileDialog,
+    QInputDialog, QApplication, QProgressDialog,
     QMessageBox)
-from PySide2.QtGui import QKeySequence
-from PySide2.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import Qt
 
 from modules.gui.objecttablewidget import ObjectTableWidget
 from modules.gui.mousedockwidget import MouseDockWidget
@@ -27,11 +27,12 @@ from modules.autoseg.zarrtorecon import getZarrObjects, saveZarrImages
 from constants.locations import assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
         """Constructs the skeleton for an empty main window."""
-        super().__init__() # run QMainWindow init function
+        super().__init__() # initialize QMainWindow
         self.setWindowTitle("pyReconstruct")
 
         # set the main window to be slightly less than the size of the monitor
@@ -49,10 +50,10 @@ class MainWindow(QMainWindow):
         self.obj_list = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
 
-        # create status bar (at bottom of window)
+        # create status bar at bottom of window
         self.statusbar = self.statusBar()
 
-        # open the series and create the field
+        # open series and create field
         self.openSeries(assets_dir + "/welcome_series/welcome.ser")
         # reset welcome window view
         self.field.current_window = [0,0,1,1]
@@ -85,25 +86,21 @@ class MainWindow(QMainWindow):
         self.objectlist_act.triggered.connect(self.openObjectList)
 
         # create shortcuts
-        save_sc = QShortcut(QKeySequence("Ctrl+S"), self)
-        save_sc.activated.connect(self.saveAllData)
-        merge_sc = QShortcut(QKeySequence("Ctrl+M"), self)
-        merge_sc.activated.connect(self.field.mergeSelectedTraces)
-        deselect_sc = QShortcut(QKeySequence("Ctrl+D"), self)
-        deselect_sc.activated.connect(self.field.deselectAllTraces)
-        hide_sc = QShortcut(QKeySequence("Ctrl+H"), self)
-        hide_sc.activated.connect(self.field.hideSelectedTraces)
-        hideall_sc = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
-        hideall_sc.activated.connect(self.field.toggleHideAllTraces)
-        undo_sc = QShortcut(QKeySequence("Ctrl+Z"), self)
-        undo_sc.activated.connect(self.field.undoState)
-        redo_sc = QShortcut(QKeySequence("Ctrl+Y"), self)
-        redo_sc.activated.connect(self.field.redoState)
-        change_tform_sc = QShortcut(QKeySequence("Ctrl+T"), self)
-        change_tform_sc.activated.connect(self.changeTform)
-        goto_sc = QShortcut(QKeySequence("Ctrl+G"), self)
-        goto_sc.activated.connect(self.gotoSection)
-
+        shortcuts = [
+            ("Ctrl+S", self.saveAllData),
+            ("Ctrl+M", self.field.mergeSelectedTraces),
+            ("Ctrl+D", self.field.deselectAllTraces),
+            ("Ctrl+H", self.field.hideSelectedTraces),
+            ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
+            ("Ctrl+Z", self.field.undoState),
+            ("Ctrl+Y", self.field.redoState),
+            ("Ctrl+T", self.changeTform),
+            ("Ctrl+G", self.gotoSection)
+        ]
+        
+        for kbd, act in shortcuts:
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
+            
         self.show()
     
     def openSeries(self, series_fp=""):
@@ -453,7 +450,7 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         # current placeholder until options widget is created
         quantities = {}
-        quantities["range"] = False
+        quantities["range"] = True
         quantities["count"] = True
         quantities["surface_area"] = False
         quantities["flat_area"] = True

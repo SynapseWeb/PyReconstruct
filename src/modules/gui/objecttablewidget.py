@@ -53,21 +53,16 @@ class ObjectTableWidget(QDockWidget):
         prog_value = 0
         final_value = len(self.series.sections)
         for section_num in self.series.sections:
-            section = self.series.sections[section_num]
-            with open(self.wdir + section, "rb") as section_file:
-                section_data = orjson.loads(section_file.read())  # orjson was mildly faster?
-            section_thickness = section_data["thickness"]
-            t = section_data["tform"]
+            section = Section(self.wdir + self.series.sections[section_num])
+            t = section.tform
             point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            for trace in section_data["traces"]:
-                name = trace["name"]
-                closed = trace["closed"]
-                points = trace["points"]
+            for trace in section.traces:
+                points = trace.points.copy()
                 for i in range(len(points)):
                     points[i] = point_tform.map(*points[i])  # transform the points to get accurate data
-                if name not in self._objdict:
-                    self._objdict[name] = ObjectTableItem(name)  # create new object if not already exists
-                self._objdict[name].addTrace(points, closed, section_num, section_thickness)
+                if trace.name not in self._objdict:
+                    self._objdict[trace.name] = ObjectTableItem(trace.name)  # create new object if not already exists
+                self._objdict[trace.name].addTrace(points, trace.closed, section_num, section.thickness)
             prog_value += 1
             progbar.setValue(prog_value / final_value * 100)
             if progbar.wasCanceled(): return

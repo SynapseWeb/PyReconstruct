@@ -1,6 +1,9 @@
+from modules.pyrecon.classes.contour import Contour as XMLContour
+from modules.pyrecon.classes.transform import Transform as XMLTransform
+
 class Trace():
 
-    def __init__(self, name : str, color : tuple, closed=True, mode=11):
+    def __init__(self, name : str, color : tuple, closed=True):
         """Create a Trace object.
         
             Params:
@@ -14,7 +17,12 @@ class Trace():
         self.closed = closed
         self.points = []
         self.hidden = False  # default to False
-        self.mode = mode  # not used in this program, but stored for XML file purposes
+
+        # extra hidden attributes for XML support
+        self.comment = None
+        self.simplified = None
+        self.mode = 11
+        self.fill = [c / 255 for c in self.color]
     
     def add(self, point : tuple):
         """Add a point to the trace.
@@ -51,24 +59,85 @@ class Trace():
         """Return the trace data as a dictionary.
         
             Returns:
-                (dict) Dictionary containing the trace data
+                (dict) dictionary containing the trace data
         """
-        return self.__dict__
+        d = {}
+        d["name"] = self.name
+        d["color"] = self.color
+        d["closed"] = self.closed
+        d["points"] = self.points
+        d["hidden"] = self.hidden
+        return d
+    
+    def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
+        """Returns the trace data as an XML object.
+            Params:
+                xml_image_tform (XMLTransform): the xml image transform object
+            Returns:
+                (XMLContour) the trace as an xml contour object
+        """
+        border_color = list(self.color.copy())
+        for i in range(len(border_color)):
+            border_color[i] /= 255
+        xml_contour = XMLContour(
+            name = self.name,
+            comment = self.comment,
+            hidden = self.hidden,
+            closed = self.closed,
+            simplified = self.simplified,
+            mode = self.mode,
+            border = border_color,
+            fill = self.fill,
+            points = self.points,
+            transform = xml_image_tform
+        )
+        return xml_contour
     
     # STATIC METHOD
     def fromDict(d):
-        """Create a Contour object from a dictionary.
+        """Create a trace object from a dictionary.
         
             Params:
                 d (dict): the dictionary contour data
             Returns:
                 (Trace) a Trace object constructed from the dictionary data
         """
-        new_trace = Trace(d["name"], d["color"], d["closed"], d["mode"])
+        new_trace = Trace(d["name"], d["color"], d["closed"])
         new_trace.points = d["points"]
         new_trace.setHidden(d["hidden"])
         return new_trace
     
+    # STATIC METHOD
+    def fromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None):
+        """Create a trace from an xml contour object.
+        
+            Params:
+                xml_trace (XMLContour): the xml contour object
+                xml_image_tform (XMLTransform): the xml image transform object
+            Returns:
+                (Trace) the trace object
+        """
+        name = xml_trace.name
+        color = list(xml_trace.border)
+        for i in range(len(color)):
+            color[i] = int(color[i] * 255)
+        closed = xml_trace.closed
+        points = xml_trace.points.copy()
+        if xml_trace.transform is not None:
+            points = xml_trace.transform.transformPoints(xml_trace.points)
+        if xml_image_tform is not None:
+            points = xml_image_tform.inverseTransformPoints(points)
+        new_trace = Trace(name, color, closed)
+        new_trace.points = points
+
+        # store extra attributes for traces from xml files
+        new_trace.comment = xml_trace.comment
+        new_trace.simplified = xml_trace.simplified
+        new_trace.mode = xml_trace.mode
+        new_trace.fill = xml_trace.fill
+
+        return new_trace
+
     def getBounds(self, tform=None) -> tuple:
         """Get the most extreme coordinates for the trace.
         

@@ -15,13 +15,14 @@ class FieldWidget(QWidget):
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
 
-    def __init__(self, section_num : int, section : Section, window : list, parent : QMainWindow):
+    def __init__(self, section_num : int, section : Section, window : list, src_dir : str, parent : QMainWindow):
         """Create the field widget.
         
             Params:
                 section_num (int): the section number (to display in the status bar)
                 section (Section): the Section object containing the section data (tform, traces, etc)
                 window (list): x, y, w, h of window in FIELD COORDINATES
+                src_dir (str): the image src directory
                 parent (MainWindow): the main window that contains this widget
         """
         super().__init__(parent)
@@ -33,16 +34,17 @@ class FieldWidget(QWidget):
         self.pixmap_size = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_size)
 
-        self.loadSeries(section_num, section, window)
+        self.loadSeries(section_num, section, window, src_dir)
         self.show()
     
-    def loadSeries(self, section_num : int, section : Section, window : list):
+    def loadSeries(self, section_num : int, section : Section, window : list, src_dir : str):
         """Load a new series.
 
             Params:
                 section_num (int): the section number (to display in the status bar)
                 section (Section): the Section object containing the section data (tform, traces, etc)
                 window (list): x, y, w, h of window in FIELD COORDINATES
+                src_dir (str): the directory containing the images
         """
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER
@@ -56,14 +58,25 @@ class FieldWidget(QWidget):
         self.is_line_tracing = False
         self.all_traces_hidden = False
 
-        self.loadSection(section_num, section)
+        # ensure that images are found
+        if src_dir == "":
+            src_dir = self.parent_widget.wdir
+            src_path = os.path.join(src_dir, section.src)
+        else:
+            src_path = os.path.join(src_dir, os.path.basename(section.src))
+        if not os.path.isfile(src_path):
+            self.parent_widget.changeSrcDir(notify=True)
+            src_dir = self.parent_widget.series.src_dir
+
+        self.loadSection(section_num, section, src_dir)
     
-    def loadSection(self, section_num : int, section : Section):
+    def loadSection(self, section_num : int, section : Section, src_dir : str):
         """Load a new section into the field.
         
             Params:
                 section_num (int): the section number
                 section (Section): the Section object containing the section data
+                src_dir (str): the directory for loading the images
         """
         self.endPendingEvents()
         self.section_num = section_num
@@ -73,7 +86,7 @@ class FieldWidget(QWidget):
         self.src = section.src
 
         # create transforms
-        self.loadTransformation(section.tform.copy(), update=False, save_state=False)
+        self.loadTransformation(section.tform.copy(), src_dir, update=False, save_state=False)
 
         # create traces
         self.traces = section.traces.copy()
@@ -90,17 +103,27 @@ class FieldWidget(QWidget):
         self.generateView()
         self.update()
     
-    def loadTransformation(self, tform : list, update=True, save_state=True):
+    def loadTransformation(self, tform : list, src_dir : str, update=True, save_state=True):
         """Load the transformation data for a given section image
         
             Params:
-                tform (list): the image transform as a list (identity: 1 0 0 0 1 0)"""
+                tform (list): the image transform as a list (identity: 1 0 0 0 1 0)
+                src_dir (str): the directory for the image"""
         # create transforms
         self.tform = tform
         t = self.tform # identity would be: 1 0 0 0 1 0
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
-        self.base_image = QImage(self.parent_widget.wdir + self.src) # load image
+
+        # load the image
+        if src_dir == "":
+            src_dir = self.parent_widget.wdir
+            src_path = os.path.join(src_dir, self.src)
+        else:
+            src_path = os.path.join(src_dir, os.path.basename(self.src))
+        self.base_image = QImage(src_path)
+
+        # apply transform
         self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
         # in order to place the image correctly in the field...
         self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)

@@ -101,6 +101,11 @@ class MainWindow(QMainWindow):
                 menu_self = getattr(self, act)
                 menu_self.setShortcut(kbd)
                 menu_self.triggered.connect(f)
+                
+        # series menu
+        self.seriesmenu = self.menubar.addMenu("Series")
+        self.change_src_act = self.seriesmenu.addAction("Change image directory")
+        self.change_src_act.triggered.connect(self.changeSrcDir)
 
         # create shortcuts
         shortcuts = [
@@ -143,10 +148,10 @@ class MainWindow(QMainWindow):
             self.series.current_section = list(self.series.sections.keys())[0]
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         if self.field is None: # create field widget if not already
-            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
+            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self.series.src_dir, self)
             self.setCentralWidget(self.field)
         else:
-            self.field.loadSeries(self.series.current_section, self.section, self.series.window)
+            self.field.loadSeries(self.series.current_section, self.section, self.series.window, self.series.src_dir)
 
         # create mouse dock
         if self.mouse_dock is not None: # close if one exists
@@ -413,14 +418,14 @@ class MainWindow(QMainWindow):
             self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        self.field.loadSection(self.series.current_section, self.section)
+        self.field.loadSection(self.series.current_section, self.section, self.series.src_dir)
         print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
         """Called when any key is pressed and user focus is on main window."""
         if not self.field:  # do not respond to keyboard if field is not created
             return
-        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.key() == 16777238:  # if PgUp is pressed
             if section_number_i < len(section_numbers) - 1:
@@ -490,6 +495,17 @@ class MainWindow(QMainWindow):
         This function overwrites the traces in the XML series.
         """
         self.saveAllData()
+        
+        # check series filetype
+        if self.series.filetype == "XML":
+            QMessageBox.information(
+                self,
+                "Series Filetype",
+                "Series is already in XML format.",
+                QMessageBox.Ok
+            )
+            return
+
         # warn the user about overwriting the XML traces
         warn = QMessageBox()
         warn.setIcon(QMessageBox.Warning)
@@ -553,6 +569,7 @@ class MainWindow(QMainWindow):
         write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
     
     def changeTform(self):
+        """Open a dialog to change the transform of a section."""
         current_tform = " ".join([str(round(n, 2)) for n in self.section.tform])
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
@@ -568,6 +585,7 @@ class MainWindow(QMainWindow):
         self.field.loadTransformation(new_tform, update=True, save_state=True)
     
     def gotoSection(self):
+        """Open a dialog to jump to a specific section number."""
         new_section_num, confirmed = QInputDialog.getText(
             self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
         if not confirmed:
@@ -577,6 +595,34 @@ class MainWindow(QMainWindow):
             self.changeSection(new_section_num)
         except ValueError:
             return
+    
+    def changeSrcDir(self, notify=False):
+        """Open a series of dialogs to change the image source directory."""
+        if notify:
+            reply = QMessageBox.question(
+                self,
+                "Images Not Found",
+                "Images not found.\nWould you like to locate them?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
+        if not new_src_dir:
+            return
+        if os.path.samefile(new_src_dir, self.wdir):
+            self.series.src_dir = ""
+        else:
+            self.series.src_dir = new_src_dir
+        QMessageBox.information(
+            self,
+            "Image Directory",
+            "New image directory saved.",
+            QMessageBox.Ok
+        )
+        if not notify:
+            self.changeSection(self.series.current_section)
         
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

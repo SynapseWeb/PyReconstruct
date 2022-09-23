@@ -87,43 +87,14 @@ class MainWindow(QMainWindow):
         ]
          
         for menu in menu_options:
+            print(menu.get('attribute'))
             setattr(self, menu.get('attribute'), self.menubar.addMenu(menu.get('name')))
-            for act, text, kbd, f in menu.get('opts'):
+            for (act, text, kbd, f) in menu.get('opts'):
+                print(text)
                 setattr(self, act, self.filemenu.addAction(text))
-                getattr(self, act).setShortcut(kbd)
-                getattr(self, act).triggered.connect(f)
-            
-
-        
-        # # file menu
-        # self.filemenu = self.menubar.addMenu("File")
-
-        # file_opts = [
-        #     ("new_act", "New", "Ctrl+N", self.newSeries),
-        #     ("open_act", "Open", "", self.openSeries),
-        #     ("import_transforms_act", "Import transformations...", "", self.importTransforms),
-        #     ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
-        #     ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
-        #     ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
-        #     ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
-        # ]
-
-        # for act, text, kbd, f in file_opts:
-        #     setattr(self, act, self.filemenu.addAction(text))
-        #     getattr(self, act).setShortcut(kbd)
-        #     getattr(self, act).triggered.connect(f)
-
-            
-        # # object menu
-        # self.objectmenu = self.menubar.addMenu("Object")
-        # object_opts = [
-        #     ("objectlist_act", "Open object list", "", self.openObjectList)
-        # ]
-
-        # for act, text, kbd, f in file_opts:
-        #     setattr(self, act, self.filemenu.addAction(text))
-        #     getattr(self, act).setShortcut(kbd)
-        #     getattr(self, act).triggered.connect(f)
+                menu_self = getattr(self, act)
+                menu_self.setShortcut(kbd)
+                menu_self.triggered.connect(f)
 
         # create shortcuts
         shortcuts = [

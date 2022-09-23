@@ -61,7 +61,13 @@ class Trace():
             Returns:
                 (dict) dictionary containing the trace data
         """
-        return self.__dict__
+        d = {}
+        d["name"] = self.name
+        d["color"] = self.color
+        d["closed"] = self.closed
+        d["points"] = self.points
+        d["hidden"] = self.hidden
+        return d
     
     def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
         """Returns the trace data as an XML object.

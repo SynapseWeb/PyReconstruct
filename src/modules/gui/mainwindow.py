@@ -65,24 +65,28 @@ class MainWindow(QMainWindow):
 
         menu_options = [
             
-            {"attribute": "filemenu",
-             "name": "File",
-             "opts": [
-                 ("new_act", "New", "Ctrl+N", self.newSeries),
-                 ("open_act", "Open", "", self.openSeries),
-                 ("import_transforms_act", "Import transformations...", "", self.importTransforms),
-                 ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
-                 ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
-                 ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
-                 ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
-             ]
+            {
+                "attribute": "filemenu",
+                "name": "File",
+                "opts":
+                [
+                    ("new_act", "New", "Ctrl+N", self.newSeries),
+                    ("open_act", "Open", "", self.openSeries),
+                    ("import_transforms_act", "Import transformations...", "", self.importTransforms),
+                    ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
+                    ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
+                    ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
+                    ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
+                ]
              },
             
-            {"attribute": "objectmenu",
-             "name": "Objects",
-             "opts": [
-                 ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
-             ]
+            {
+                "attribute": "objectmenu",
+                "name": "Objects",
+                "opts":
+                [
+                    ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
+                ]
              }
         ]
 

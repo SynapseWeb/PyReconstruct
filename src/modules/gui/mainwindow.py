@@ -85,14 +85,16 @@ class MainWindow(QMainWindow):
              ]
              }
         ]
-         
+
+        # Populate menu bar with menus and options
         for menu in menu_options:
-            print(menu.get('attribute'))
+            # Create menu
             setattr(self, menu.get('attribute'), self.menubar.addMenu(menu.get('name')))
-            menu_items = menu.get('opts')
-            for act, text, kbd, f in menu_items:
+            current_menu = getattr(self, menu.get('attribute'))
+            # Add menu options
+            for act, text, kbd, f in menu.get('opts'):
                 print(text)
-                setattr(self, act, self.filemenu.addAction(text))
+                setattr(self, act, current_menu.addAction(text))
                 menu_self = getattr(self, act)
                 menu_self.setShortcut(kbd)
                 menu_self.triggered.connect(f)

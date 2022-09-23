@@ -89,7 +89,8 @@ class MainWindow(QMainWindow):
         for menu in menu_options:
             print(menu.get('attribute'))
             setattr(self, menu.get('attribute'), self.menubar.addMenu(menu.get('name')))
-            for (act, text, kbd, f) in menu.get('opts'):
+            menu_items = menu.get('opts')
+            for act, text, kbd, f in menu_items:
                 print(text)
                 setattr(self, act, self.filemenu.addAction(text))
                 menu_self = getattr(self, act)

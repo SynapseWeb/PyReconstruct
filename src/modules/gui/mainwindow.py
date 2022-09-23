@@ -477,6 +477,17 @@ class MainWindow(QMainWindow):
         This function overwrites the traces in the XML series.
         """
         self.saveAllData()
+        
+        # check series filetype
+        if self.series.filetype == "XML":
+            QMessageBox.information(
+                self,
+                "Series Filetype",
+                "Series is already in XML format.",
+                QMessageBox.Ok
+            )
+            return
+
         # warn the user about overwriting the XML traces
         warn = QMessageBox()
         warn.setIcon(QMessageBox.Warning)

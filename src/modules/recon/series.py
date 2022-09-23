@@ -26,6 +26,10 @@ class Series():
             for section_num, section_filename in series_data["sections"].items():
                 self.sections[int(section_num)] = section_filename
             self.current_section = series_data["current_section"]
+            try:
+                self.src_dir = series_data["src_dir"]
+            except KeyError:
+                self.src_dir = ""
             self.window = series_data["window"]
             self.palette_traces = series_data["palette_traces"]
             for i in range(len(self.palette_traces)):
@@ -46,6 +50,7 @@ class Series():
                     self.sections[int(ext)] = filename
             
             self.current_section = self.xml_series.index
+            self.src_dir = ""
             self.window = list(self.xml_series.viewport[:2]) + [5, 5]
             self.palette_traces = []
             for xml_contour in self.xml_series.contours:
@@ -61,6 +66,7 @@ class Series():
         d = {}
         d["sections"] = self.sections
         d["current_section"] = self.current_section
+        d["src_dir"] = self.src_dir
         d["window"] = self.window
         d["palette_traces"] = []
         for trace in self.palette_traces:

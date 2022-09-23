@@ -80,6 +80,10 @@ class MainWindow(QMainWindow):
         self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
         self.import_from_json_act = self.filemenu.addAction("Import objects from zarr...")
         self.import_from_json_act.triggered.connect(self.importZarrObjects)
+        # series menu
+        self.seriesmenu = self.menubar.addMenu("Series")
+        self.change_src_act = self.seriesmenu.addAction("Change image directory")
+        self.change_src_act.triggered.connect(self.changeSrcDir)
         # object menu
         self.objectmenu = self.menubar.addMenu("Object")
         self.objectlist_act = self.objectmenu.addAction("Open object list")
@@ -126,10 +130,10 @@ class MainWindow(QMainWindow):
             self.series.current_section = list(self.series.sections.keys())[0]
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         if self.field is None: # create field widget if not already
-            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self)
+            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self.series.src_dir, self)
             self.setCentralWidget(self.field)
         else:
-            self.field.loadSeries(self.series.current_section, self.section, self.series.window)
+            self.field.loadSeries(self.series.current_section, self.section, self.series.window, self.series.src_dir)
 
         # create mouse dock
         if self.mouse_dock is not None: # close if one exists
@@ -396,7 +400,7 @@ class MainWindow(QMainWindow):
             self.saveAllData()
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        self.field.loadSection(self.series.current_section, self.section)
+        self.field.loadSection(self.series.current_section, self.section, self.series.src_dir)
         print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
@@ -536,6 +540,7 @@ class MainWindow(QMainWindow):
         write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
     
     def changeTform(self):
+        """Open a dialog to change the transform of a section."""
         current_tform = " ".join([str(round(n, 2)) for n in self.section.tform])
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
@@ -551,6 +556,7 @@ class MainWindow(QMainWindow):
         self.field.loadTransformation(new_tform, update=True, save_state=True)
     
     def gotoSection(self):
+        """Open a dialog to jump to a specific section number."""
         new_section_num, confirmed = QInputDialog.getText(
             self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
         if not confirmed:
@@ -560,6 +566,34 @@ class MainWindow(QMainWindow):
             self.changeSection(new_section_num)
         except ValueError:
             return
+    
+    def changeSrcDir(self, notify=False):
+        """Open a series of dialogs to change the image source directory."""
+        if notify:
+            reply = QMessageBox.question(
+                self,
+                "Images Not Found",
+                "Images not found.\nWould you like to locate them?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
+        if not new_src_dir:
+            return
+        if os.path.samefile(new_src_dir, self.wdir):
+            self.series.src_dir = ""
+        else:
+            self.series.src_dir = new_src_dir
+        QMessageBox.information(
+            self,
+            "Image Directory",
+            "New image directory saved.",
+            QMessageBox.Ok
+        )
+        if not notify:
+            self.changeSection(self.series.current_section)
         
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

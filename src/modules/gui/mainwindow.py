@@ -79,6 +79,15 @@ class MainWindow(QMainWindow):
                     ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
                 ]
              },
+
+            {
+                "attribute": "seriesmenu",
+                "name": "Series",
+                "opts":
+                [
+                    ("change_src_act", "Change Image Directory", "", self.changeSrcDir)
+                ]
+             },
             
             {
                 "attribute": "objectmenu",
@@ -101,11 +110,6 @@ class MainWindow(QMainWindow):
                 menu_self = getattr(self, act)
                 menu_self.setShortcut(kbd)
                 menu_self.triggered.connect(f)
-                
-        # series menu
-        self.seriesmenu = self.menubar.addMenu("Series")
-        self.change_src_act = self.seriesmenu.addAction("Change image directory")
-        self.change_src_act.triggered.connect(self.changeSrcDir)
 
         # create shortcuts
         shortcuts = [

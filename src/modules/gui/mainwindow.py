@@ -1,6 +1,6 @@
 import json
 import os
-from time import time
+from time import thread_time, time
 import random
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
@@ -63,27 +63,67 @@ class MainWindow(QMainWindow):
         # menu at top of window
         self.menubar = self.menuBar()
 
-        # file menu
-        self.filemenu = self.menubar.addMenu("File")
-        self.new_act = self.filemenu.addAction("New")  # create a new series
-        self.new_act.setShortcut("Ctrl+N")
-        self.new_act.triggered.connect(self.newSeries)
-        self.open_act = self.filemenu.addAction("Open")  # open an existing series
-        self.open_act.triggered.connect(self.openSeries)
-        self.import_transforms = self.filemenu.addAction("Import transforms...")
-        self.import_transforms.triggered.connect(self.importTransforms)
-        self.new_from_xml_act = self.filemenu.addAction("New from xml series")  # create a new series from XML Reconstruct data
-        self.new_from_xml_act.triggered.connect(self.newSeriesFromXML)
-        self.new_from_zarr_act = self.filemenu.addAction("New from zarr file")
-        self.new_from_zarr_act.triggered.connect(self.newSeriesFromZarr)
-        self.export_to_xml_act = self.filemenu.addAction("Export traces to XML...")
-        self.export_to_xml_act.triggered.connect(self.exportTracesToXML)
-        self.import_from_json_act = self.filemenu.addAction("Import objects from zarr...")
-        self.import_from_json_act.triggered.connect(self.importZarrObjects)
-        # object menu
-        self.objectmenu = self.menubar.addMenu("Object")
-        self.objectlist_act = self.objectmenu.addAction("Open object list")
-        self.objectlist_act.triggered.connect(self.openObjectList)
+        menu_options = [
+            
+            {"attribute": "filemenu",
+             "name": "File",
+             "opts": [
+                 ("new_act", "New", "Ctrl+N", self.newSeries),
+                 ("open_act", "Open", "", self.openSeries),
+                 ("import_transforms_act", "Import transformations...", "", self.importTransforms),
+                 ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
+                 ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
+                 ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
+                 ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
+             ]
+             },
+            
+            {"attribute": "objectmenu",
+             "name": "Objects",
+             "opts": [
+                 ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
+             ]
+             }
+        ]
+         
+        for menu in menu_options:
+            setattr(self, menu.get('attribute'), self.menubar.addMenu(menu.get('name')))
+            for act, text, kbd, f in menu.get('opts'):
+                setattr(self, act, self.filemenu.addAction(text))
+                getattr(self, act).setShortcut(kbd)
+                getattr(self, act).triggered.connect(f)
+            
+
+        
+        # # file menu
+        # self.filemenu = self.menubar.addMenu("File")
+
+        # file_opts = [
+        #     ("new_act", "New", "Ctrl+N", self.newSeries),
+        #     ("open_act", "Open", "", self.openSeries),
+        #     ("import_transforms_act", "Import transformations...", "", self.importTransforms),
+        #     ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
+        #     ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
+        #     ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
+        #     ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
+        # ]
+
+        # for act, text, kbd, f in file_opts:
+        #     setattr(self, act, self.filemenu.addAction(text))
+        #     getattr(self, act).setShortcut(kbd)
+        #     getattr(self, act).triggered.connect(f)
+
+            
+        # # object menu
+        # self.objectmenu = self.menubar.addMenu("Object")
+        # object_opts = [
+        #     ("objectlist_act", "Open object list", "", self.openObjectList)
+        # ]
+
+        # for act, text, kbd, f in file_opts:
+        #     setattr(self, act, self.filemenu.addAction(text))
+        #     getattr(self, act).setShortcut(kbd)
+        #     getattr(self, act).triggered.connect(f)
 
         # create shortcuts
         shortcuts = [

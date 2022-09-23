@@ -12,7 +12,8 @@ from modules.calc.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 
 class FieldWidget(QWidget):
-    POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)  # mouse modes
+    # mouse modes
+    POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
 
     def __init__(self, section_num : int, section : Section, window : list, parent : QMainWindow):
         """Create the field widget.
@@ -441,18 +442,25 @@ class FieldWidget(QWidget):
             Params:
                 event: contains mouse input data
         """
+
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
+            
         elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomPress(event)
+            
         elif self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
             self.pencilPress(event)
+            
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampPress(event)
+            
         elif self.mouse_mode == FieldWidget.CLOSEDLINE:
             self.linePress(event, closed=True)
+            
         elif self.mouse_mode == FieldWidget.OPENLINE:
             self.linePress(event, closed=False)
+            
         elif self.mouse_mode == FieldWidget.SCALPEL:
             self.scalpelPress(event)
 

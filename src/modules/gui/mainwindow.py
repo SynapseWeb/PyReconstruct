@@ -97,7 +97,6 @@ class MainWindow(QMainWindow):
             current_menu = getattr(self, menu.get('attribute'))
             # Add menu options
             for act, text, kbd, f in menu.get('opts'):
-                print(text)
                 setattr(self, act, current_menu.addAction(text))
                 menu_self = getattr(self, act)
                 menu_self.setShortcut(kbd)

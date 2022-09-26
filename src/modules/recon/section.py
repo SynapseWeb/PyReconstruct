@@ -6,6 +6,8 @@ from modules.pyrecon.classes.transform import Transform as XMLTransform
 from modules.pyrecon.utils.reconstruct_reader import process_section_file
 from modules.pyrecon.utils.reconstruct_writer import write_section
 
+from constants.locations import assets_dir
+
 class Section():
 
     def __init__(self, filepath : str):
@@ -61,6 +63,9 @@ class Section():
     
     def save(self):
         """Save file into json or xml."""
+        if self.filepath == assets_dir + "/welcome_series/welcome.0":
+            return  # ignore welcome series
+
         if self.filetype == "JSON":
             d = self.getDict()
             with open(self.filepath, "w") as f:

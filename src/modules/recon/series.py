@@ -5,6 +5,8 @@ from .trace import Trace
 from modules.pyrecon.utils.reconstruct_reader import process_series_file
 from modules.pyrecon.utils.reconstruct_writer import write_series
 
+from constants.locations import assets_dir
+
 class Series():
 
     def __init__(self, filepath : str):
@@ -76,6 +78,9 @@ class Series():
         
     def save(self):
         """Save file into json."""
+        if self.filepath == assets_dir + "/welcome_series/welcome.ser":
+            return  # ignore welcome series
+
         if self.filetype == "JSON":
             d = self.getDict()
             with open(self.filepath, "w") as f:

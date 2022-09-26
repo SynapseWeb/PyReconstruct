@@ -111,6 +111,7 @@ class ObjectTableWidget(QDockWidget):
                 col += 1
             row += 1
         self.table.setShowGrid(False)  # no grid
+        self.table.setAlternatingRowColors(True)  # alternate row colors
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header

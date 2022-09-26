@@ -1,6 +1,6 @@
 * High-priority tasks
 
-- [ ] Read XML files into series and section objects (JF)
+- [X] Read XML files into series and section objects (JF)
 - [ ] Attribute dialog (JF)
 - [ ] Finish object list (JF)
   - [ ] Alternating row color
@@ -9,11 +9,11 @@
   - [ ] Export as CSV (or JSON)
 - [ ] Start preferences widget (MC)
   - [ ] Outline preference features
-  - [ ] Find images feature
+  - [X] Find images feature
   - [ ] Series options
 - [ ] Trace list (JF)
 - [ ] Section list (JF)
-- [ ] Stop pyReconstruct from saving changes to welcome series (MC)
+- [X] Stop pyReconstruct from saving changes to welcome series (MC)
 
 * Investigate
 

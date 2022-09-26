@@ -3,7 +3,7 @@
 - [X] Read XML files into series and section objects (JF)
 - [ ] Attribute dialog (JF)
 - [ ] Finish object list (JF)
-  - [ ] Alternating row color
+  - [X] Alternating row color
   - [ ] Object attributes (dialog)
   - [ ] Delete objects
   - [ ] Export as CSV (or JSON)

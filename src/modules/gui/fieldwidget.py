@@ -8,6 +8,8 @@ os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 from modules.recon.section import Section
 from modules.recon.trace import Trace
 
+from modules.gui.attributedialog import AttributeDialog
+
 from modules.calc.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 
@@ -1022,5 +1024,28 @@ class FieldWidget(QWidget):
             self.all_traces_hidden = True
         self.selected_traces = []
         self.saveState()
+        self.generateView(generate_image=False)
+        self.update()
+    
+    def changeTraceAttributes(self):
+        """Open a dialog to change the name and/or color of a trace."""
+        if len(self.selected_traces) == 0:  # skip if no traces selected
+            return
+        name = self.selected_traces[0].name
+        color = self.selected_traces[0].color
+        for trace in self.selected_traces[1:]:
+            if trace.name != name:
+                name = ""
+            if trace.color != color:
+                color = None
+        attr_input = AttributeDialog(parent=self, name=name, color=color).exec_()
+        if attr_input is None:
+            return
+        new_name, new_color = attr_input
+        for trace in self.selected_traces:
+            if new_name != "":
+                trace.name = new_name
+            if new_color is not None:
+                trace.color = new_color
         self.generateView(generate_image=False)
         self.update()

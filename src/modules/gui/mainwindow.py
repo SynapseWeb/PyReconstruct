@@ -121,7 +121,8 @@ class MainWindow(QMainWindow):
             ("Ctrl+Z", self.field.undoState),
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
-            ("Ctrl+G", self.gotoSection)
+            ("Ctrl+G", self.gotoSection),
+            ("Ctrl+A", self.field.changeTraceAttributes)
         ]
         
         for kbd, act in shortcuts:

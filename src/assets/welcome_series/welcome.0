@@ -1,5 +1,7 @@
 {
  "src": "welcome.tif",
+ "brightness": 0,
+ "contrast": 0,
  "mag": 0.001,
  "thickness": 0.05,
  "tform": [

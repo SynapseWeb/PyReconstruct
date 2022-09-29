@@ -198,6 +198,7 @@ class MainWindow(QMainWindow):
         series_data = {}
         series_data["sections"] = {}  # section_number : section_filename
         series_data["current_section"] = 0  # last section left off
+        series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
         for i in range(len(image_locations)):
             series_data["sections"][i] = series_name + "." + str(i)
@@ -210,6 +211,8 @@ class MainWindow(QMainWindow):
         for i in range(len(image_locations)):
             section_data = {}
             section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]  # image location
+            section_data["brightness"] = 0
+            section_data["contrast"] = 0
             section_data["mag"] = mag  # microns per pixel
             section_data["thickness"] = thickness  # section thickness
             section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
@@ -242,6 +245,7 @@ class MainWindow(QMainWindow):
         series_data = {}
         series_data["sections"] = {}
         series_data["current_section"] = 0
+        series_data["src_dir"] = ""
         series_data["window"] = [0, 0, 1, 1]
         series_data["palette_traces"] = []
         for contour in series.contours:  # import XML trace palette
@@ -265,6 +269,8 @@ class MainWindow(QMainWindow):
             section_data = {}
             image = section.images[0]
             section_data["src"] = image.src
+            section_data["brightness"] = 0
+            section_data["contrast"] = 0
             section_data["mag"] = image.mag
             section_data["thickness"] = section.thickness
             transform = image.transform
@@ -278,8 +284,7 @@ class MainWindow(QMainWindow):
                 for i in range(len(color)):
                     color[i] *= 255
                 closed = contour.closed
-                mode = contour.mode  # not used in pyReconstruct, but useful to store for exporting back to XML
-                new_trace = Trace(name, color, closed=closed, mode=mode)
+                new_trace = Trace(name, color, closed=closed)
                 points = contour.points
                 points = contour.transform.transformPoints(points)  # transform points by its own contour (get field points)
                 points = transform.inverseTransformPoints(points)  # reverse transform points by image transform (fix points to image)
@@ -430,20 +435,27 @@ class MainWindow(QMainWindow):
         """Called when any key is pressed and user focus is on main window."""
         if not self.field:  # do not respond to keyboard if field is not created
             return
-        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.key() == 16777238:  # if PgUp is pressed
+            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
+            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i < len(section_numbers) - 1:
                 self.changeSection(section_numbers[section_number_i + 1])
         elif event.key() == 16777239:  # if PgDn is pressed
+            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
+            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i > 0:
                 self.changeSection(section_numbers[section_number_i - 1])
         elif event.key() == 16777223:  # if Del is pressed
             self.field.deleteSelectedTraces()
         elif event.key() == 45:  # if - is pressed
-            self.field.changeBrightness(-1)
+            self.field.changeBrightness(-5)
         elif event.key() == 61:  # if + is pressed
-            self.field.changeBrightness(1)
+            self.field.changeBrightness(5)
+        elif event.key() == 91: # if [ is pressed
+            self.field.changeContrast(-0.2)
+        elif event.key() == 93: # if ] is pressed
+            self.field.changeContrast(0.2)
+        # print(event.key())  # developer purposes
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""
@@ -460,6 +472,8 @@ class MainWindow(QMainWindow):
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""
+        self.section.brightness = self.field.brightness
+        self.section.contrast = self.field.contrast
         self.section.traces = self.field.traces  # get traces from field
         self.series.window = self.field.current_window  # get window view
         self.series.palette_traces = []
@@ -556,7 +570,7 @@ class MainWindow(QMainWindow):
                     hidden = False,
                     closed = trace.closed,
                     simplified = True,
-                    mode = trace.mode,
+                    mode = 11,
                     border = contour_color,
                     fill = contour_color,  # the fill is set as border color
                     points = trace.points,
@@ -587,7 +601,7 @@ class MainWindow(QMainWindow):
         except ValueError:
             return
         self.section.tform = new_tform
-        self.field.loadTransformation(new_tform, update=True, save_state=True)
+        self.field.loadTransformation(new_tform, src_dir=self.series.src_dir, update=True, save_state=True)
     
     def gotoSection(self):
         """Open a dialog to jump to a specific section number."""

@@ -26,9 +26,11 @@ class Section():
         
         if self.filetype == "JSON":
             self.src = section_data["src"]
+            self.brightness = section_data["brightness"]
+            self.contrast = section_data["contrast"]
             self.mag = section_data["mag"]
-            self.thickness = section_data["thickness"]
             self.tform = section_data["tform"]
+            self.thickness = section_data["thickness"]
             self.traces = section_data["traces"]
             for i in range(len(self.traces)):  # convert trace dictionaries into trace objects
                 self.traces[i] = Trace.fromDict(self.traces[i])
@@ -38,6 +40,8 @@ class Section():
             image = self.xml_section.images[0] # assume only one image
             tform = list(image.transform.tform()[:2,:].reshape(6))
             self.src = image.src
+            self.brightness = 0
+            self.contrast = 0
             self.mag = image.mag
             self.thickness = self.xml_section.thickness
             self.tform = tform
@@ -53,9 +57,11 @@ class Section():
         """
         d = {}
         d["src"] = self.src
+        d["brightness"] = self.brightness
+        d["contrast"] = self.contrast
         d["mag"] = self.mag
-        d["thickness"] = self.thickness
         d["tform"] = self.tform
+        d["thickness"] = self.thickness
         d["traces"] = self.traces.copy()
         for i in range(len(d["traces"])):  # convert trace objects in trace dictionaries
             d["traces"][i] = d["traces"][i].getDict()

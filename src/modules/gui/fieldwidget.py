@@ -1,8 +1,8 @@
 import os
 
 from PySide6.QtWidgets import (QWidget, QMainWindow)
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter)
+from PySide6.QtCore import Qt, QRectF, QPoint
+from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.recon.section import Section
@@ -62,8 +62,7 @@ class FieldWidget(QWidget):
 
         # ensure that images are found
         if src_dir == "":
-            src_dir = self.parent_widget.wdir
-            src_path = os.path.join(src_dir, section.src)
+            src_path = os.path.join(self.parent_widget.wdir, section.src)
         else:
             src_path = os.path.join(src_dir, os.path.basename(section.src))
         if not os.path.isfile(src_path):
@@ -86,6 +85,8 @@ class FieldWidget(QWidget):
         # get data from section info
         self.mag = section.mag
         self.src = section.src
+        self.brightness = section.brightness
+        self.contrast = section.contrast
 
         # create transforms
         self.loadTransformation(section.tform.copy(), src_dir, update=False, save_state=False)
@@ -123,12 +124,16 @@ class FieldWidget(QWidget):
             src_path = os.path.join(src_dir, self.src)
         else:
             src_path = os.path.join(src_dir, os.path.basename(self.src))
-        self.base_image = QImage(src_path)
+        base_image = QImage(src_path)
 
+        # get base corners
+        bw, bh = base_image.width(), base_image.height()
+        self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
         # apply transform
-        self.tformed_image = self.base_image.transformed(self.image_tform) # transform image
+        self.tformed_image = base_image.transformed(self.image_tform) # transform image
         # in order to place the image correctly in the field...
-        self.tform_origin = self.calcTformOrigin(self.base_image, self.image_tform) # find the coordinates of the tformed image origin (bottom left corner)
+        self.tform_corners = self.calcTformCorners(base_image, self.image_tform)
+        self.tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
         x_shift = t[2] - self.tform_origin[0] * self.mag # calculate x translation for image placement in field
         y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
@@ -140,12 +145,29 @@ class FieldWidget(QWidget):
             self.saveState()
     
     def changeBrightness(self, change):
-        """Change the brightness of the section.
-        
-        Not implemented yet."""
-        return
+        """Change the brightness of the section."""
+        self.brightness += change
+        if self.brightness > 255:
+            self.brightness = 255
+            return
+        elif self.brightness < -255:
+            self.brightness = -255
+            return
+        self.generateView(generate_traces=False)
+        self.update()
     
-    def generateView(self, generate_image=True):
+    def changeContrast(self, change):
+        self.contrast = round(self.contrast + change, 1)
+        if self.contrast > 4:
+            self.contrast = 4
+            return
+        elif self.contrast < 0:
+            self.contrast = 0
+            return
+        self.generateView(generate_traces=False)
+        self.update()
+    
+    def generateView(self, generate_image=True, generate_traces=True):
         """Generate the view seen by the user in the main window.
         
             Params:
@@ -154,7 +176,7 @@ class FieldWidget(QWidget):
             This attribute is expected to be changed outside of this function.
         """
         # get dimensions of field window and pixmap
-        # resize last known window to match proportions of current geometry
+        # resize window to match proportions of current geometry
         window_x, window_y, window_w, window_h = tuple(self.current_window)
         pixmap_w, pixmap_h = tuple(self.pixmap_size)
         window_ratio = window_w/window_h
@@ -177,8 +199,8 @@ class FieldWidget(QWidget):
             self.y_scaling = pixmap_h / (window_h / self.mag)
 
             # create empty window
-            self.field_pixmap = QPixmap(pixmap_w, pixmap_h)
-            self.field_pixmap.fill(QColor(0, 0, 0))
+            self.image_layer = QPixmap(pixmap_w, pixmap_h)
+            self.image_layer.fill(Qt.black)
 
             # get the coordinates to crop the image pixmap
             crop_left = (window_x - self.image_vector[0]) / self.mag
@@ -186,13 +208,13 @@ class FieldWidget(QWidget):
             crop_left = 0 if crop_left < 0 else crop_left
 
             crop_top = (window_y - self.image_vector[1] + window_h) / self.mag
-            image_height = self.tformed_image.size().height()
+            image_height = self.tformed_image.height()
             top_empty = (crop_top - image_height) if crop_top > image_height else 0
             crop_top = image_height if crop_top > image_height else crop_top
             crop_top = image_height - crop_top
 
             crop_right = (window_x - self.image_vector[0] + window_w) / self.mag
-            image_width = self.tformed_image.size().width()
+            image_width = self.tformed_image.width()
             crop_right = image_width if crop_right > image_width else crop_right
 
             crop_bottom = (window_y - self.image_vector[1]) / self.mag
@@ -202,27 +224,46 @@ class FieldWidget(QWidget):
             crop_w = crop_right - crop_left
             crop_h = crop_bottom - crop_top
 
+            # calculate corners of the original image
+            corners = list(self.tform_corners)
+            for i in range(len(corners)):
+                p = corners[i]
+                x = p[0]*self.x_scaling - window_x/self.mag*self.x_scaling
+                y = p[1]*self.y_scaling + window_y/self.mag*self.y_scaling
+                corners[i] = QPoint(x, y)
+
             # put the transformed image on the empty window
-            painter = QPainter(self.field_pixmap)
+            painter = QPainter(self.image_layer)
             painter.drawImage(QRectF(left_empty * self.x_scaling, top_empty * self.y_scaling,
                                 crop_w * self.x_scaling, crop_h * self.y_scaling),
                                 self.tformed_image,
                                 QRectF(crop_left, crop_top, crop_w, crop_h))
             painter.end()
-
-            self.image_layer = self.field_pixmap.copy()
-        else:
-            self.field_pixmap = self.image_layer.copy()
+            
+            # draw in brightness
+            self.drawBrightness()
+            
+            # draw in contrast
+            self.drawContrast()
         
         # draw all the traces
-        self.traces_within_field = []
-        for trace in self.traces:
-            if not trace.hidden:
-                within_field = self.drawTrace(trace)
-                if within_field:
-                    self.traces_within_field.append(trace)
-        for trace in self.selected_traces:
-            self.drawTrace(trace, highlight=True)
+        if generate_traces:
+            self.trace_layer = QPixmap(pixmap_w, pixmap_h)
+            self.trace_layer.fill(Qt.transparent)
+            self.traces_within_field = []
+            for trace in self.traces:
+                if not trace.hidden:
+                    within_field = self.drawTrace(trace)
+                    if within_field:
+                        self.traces_within_field.append(trace)
+            for trace in self.selected_traces:
+                self.drawTrace(trace, highlight=True)
+        
+        self.field_pixmap = QPixmap(pixmap_w, pixmap_h)
+        painter = QPainter(self.field_pixmap)
+        painter.drawPixmap(0, 0, self.image_layer)
+        painter.drawPixmap(0, 0, self.trace_layer)
+        painter.end()
         
         self.field_pixmap_copy = self.field_pixmap.copy()
     
@@ -265,7 +306,7 @@ class FieldWidget(QWidget):
                 (bool) if the trace is within the current field window view
         """
         # set up painter
-        painter = QPainter(self.field_pixmap)
+        painter = QPainter(self.trace_layer)
         within_field = False
         if highlight: # create dashed white line if trace is to be highlighted
             pen = QPen(QColor(255, 255, 255), 1)
@@ -282,10 +323,6 @@ class FieldWidget(QWidget):
             # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
-        
-        # initialize window contour
-        window_contour = [(0, 0), (self.pixmap_size[0], 0), (self.pixmap_size[0], self.pixmap_size[1]),
-                         (0, self.pixmap_size[1])]
 
         # establish first point
         point = trace.points[0]
@@ -313,14 +350,49 @@ class FieldWidget(QWidget):
 
         return within_field
     
-    def calcTformOrigin(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
-        """Calculate the vector for the bottom left corner of a transformed image.
+    def drawBrightness(self):
+        """Draw the brightness on the image field."""
+        # establish first point
+        brightness_poly = QPolygon()
+        for p in self.base_corners:
+            x, y = [n*self.mag for n in p]
+            x, y = self.point_tform.map(x, y)
+            x, y = self.fieldPointToPixmap(x, y)
+            brightness_poly.append(QPoint(x, y))
+        # paint to image
+        painter = QPainter(self.image_layer)
+        if self.brightness >= 0:
+            painter.setCompositionMode(QPainter.CompositionMode_Plus)
+            brightness_color = QColor(*([self.brightness]*3))
+        else:
+            painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+            brightness_color = QColor(*([255+self.brightness]*3))
+        painter.setPen(QPen(brightness_color, 0))
+        painter.setBrush(brightness_color)
+        painter.drawPolygon(brightness_poly)
+    
+    def drawContrast(self):
+        """Draw the contrast on the image field."""
+        # overlay image on itself for added contrast
+        painter = QPainter(self.image_layer)
+        painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+        for _ in range(int(self.contrast)):
+            painter.drawPixmap(0, 0, self.image_layer)
+        opacity = self.contrast % 1
+        if opacity > 0:
+            painter.setOpacity(opacity)
+            painter.drawPixmap(0, 0, self.image_layer)
+        painter.end()
+        
+    
+    def calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
+        """Calculate the vector for each corner of a transformed image.
         
             Params:
                 base_pixmap (QPixmap): untransformed image
                 tform (QTransform): transform to apply to the image
             Returns:
-                (tuple) the bottom left corner coordinates of the transformed image
+                (tuple) the four corners (starting from bottom left moving clockwise)
         """
         base_coords = base_pixmap.size() # base image dimensions
         tform_notrans = self.tformNoTrans(tform) # get tform without translation
@@ -328,18 +400,28 @@ class FieldWidget(QWidget):
         width_vector = tform_notrans.map(base_coords.width(), 0) # create a vector for base width and transform
         # calculate coordinates for the top left corner of image
         if height_vector[0] < 0:
-            x_orig_topleft = -height_vector[0]
+            tl_x = -height_vector[0]
         else:
-            x_orig_topleft = 0
+            tl_x = 0
         if width_vector[1] < 0:
-            y_orig_topleft = -width_vector[1]
+            tl_y = -width_vector[1]
         else:
-            y_orig_topleft = 0
+            tl_y = 0
+        tl = (tl_x, tl_y)
         # calculate coordinates for the bottom left corner of the image
-        x_orig_bottomleft = x_orig_topleft + height_vector[0]
-        y_orig_bottomleft = y_orig_topleft + height_vector[1]
+        bl_x = tl_x + height_vector[0]
+        bl_y = tl_y + height_vector[1]
+        bl = (bl_x, bl_y)
+        # calculate coordinates for top right corner of the image
+        tr_x = tl_x + width_vector[0]
+        tr_y = tl_y + width_vector[1]
+        tr = (tr_x, tr_y)
+        # calculate coordinates for bottom right corner of the image
+        br_x = bl_x + width_vector[0]
+        br_y = bl_y + width_vector[1]
+        br = (br_x, br_y)
 
-        return x_orig_bottomleft, y_orig_bottomleft
+        return bl, tl, tr, br
     
     def tformNoTrans(self, tform : QTransform) -> QTransform:
         """Return a transfrom without a translation component.

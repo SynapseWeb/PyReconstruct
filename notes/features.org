@@ -17,6 +17,7 @@
 - [ ] Reorganize structure for Section and Series objects (JF)
   - [ ] Keep list of attributes? (JF)
   - [ ] FieldWidget object should operate on Section object (JF)
+- [ ] Store section traces as dicts (name: traces list)
 
 
 * Investigate

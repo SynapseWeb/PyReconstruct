@@ -13,11 +13,15 @@
   - [ ] Series options
 - [ ] Trace list (JF)
 - [ ] Section list (JF)
-- [X] Stop pyReconstruct from saving changes to welcome series (MC)
+- [X] Stop pyReconstruct from saving changes to welcome series (MC/JF)
+- [ ] Reorganize structure for Section and Series objects (JF)
+  - [ ] Keep list of attributes? (JF)
+  - [ ] FieldWidget object should operate on Section object (JF)
+
 
 * Investigate
 
-- [ ] brightness/contrast (JF)
+- [X] brightness/contrast (JF)
 - [ ] color?
 - [ ] extensions (MC)
 - [ ] Python console (MC)

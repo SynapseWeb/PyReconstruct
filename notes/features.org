@@ -19,7 +19,6 @@
   - [ ] FieldWidget object should operate on Section object (JF)
 - [ ] Store section traces as dicts (name: traces list)
 
-
 * Investigate
 
 - [X] brightness/contrast (JF)
@@ -32,7 +31,6 @@
 - [ ] Brush tool
 - [ ] Expandable (s) and grabbable (g) traces (left click = confirm, right click = cancel)
 
-  
 * Must-do
 
 - [ ] Center image on open series

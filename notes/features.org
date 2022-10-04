@@ -1,3 +1,9 @@
+* This week
+
+- Julian: Continue object list, trace list
+- Michael: Continue options widget and investigate 3D
+- Next meeting: Wed, 12 Oct 10 AM Denver / 6 PM Trieste
+
 * High-priority tasks
 
 - [X] Read XML files into series and section objects (JF)

@@ -105,16 +105,36 @@ Let's keep the good times going!
 ** Potential autosegmentation paths
 - Normal tracing
 - Bush tool
-* 20221005 Joel meeting
+* 20221004 Joel meeting
+
+- Reconstruct
+
+- Retrospective alignment
+
+- PyReconstruct
+
+- Get SWiFT working on local machine
+
+- Question from lab meeting
+  
+   - Why are we using conda instead of venv?
+   - Can we wrap new swift in a docker file
 
 - SWiFT questions
-   - Questions from Mon presentation
+  
    - Bounding box issue (translation issue)
    - Export transformations
-   - Any pipeline between programs
   
 - GUI questions
+  
    - Python console in pyReconstruct
    - QtPy v. PySide2 v. Pyside6
    - TACC integration
    - Brightness/contrast
+   - Qtwebengine
+   - What things are on the horizon of GUI that we should look into
+     
+- Neuroglancer
+  
+   - How incorporated into SWiFT
+   - 3D visualization

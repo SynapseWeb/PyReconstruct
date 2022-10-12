@@ -1,8 +1,5 @@
-import os
-
-from PySide6.QtWidgets import (QWidget, QMainWindow)
-from PySide6.QtCore import Qt, QRectF, QPoint
-from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter, QPolygon
 
 from modules.recon.section import Section
 from modules.recon.trace import Trace
@@ -24,14 +21,6 @@ class TraceLayer():
         self.section = section
         self.selected_traces = []
         self.all_traces_hidden = False
-    
-    def addTrace(self, trace : Trace):
-        """Add a trace to the trace list.
-            
-            Params:
-                trace (Trace): the trace to add to the list
-        """
-        self.append(trace)
     
     def findClosestTrace(self, field_x : float, field_y : float, radius=0.5) -> Trace:
         """Find closest trace to field coordinates in a given radius.

@@ -157,6 +157,36 @@ class TraceLayer():
         for trace in merged_traces:
             self.newTrace(trace, name=name, color=color)
     
+    def cutTrace(self, scalpel_trace : list):
+        """Cuts the selected trace along the scalpel line.
+        
+            Params:
+                scalpel_pix_points (list): the scalpel trace in pixmap points
+        """
+        if len(self.selected_traces) == 0:
+            print("Please select traces you wish to cut.")
+            return
+        elif len(self.selected_traces) > 1:
+            print("Please select only one trace to cut at a time.")
+            return
+        trace = self.selected_traces[0]
+        name = trace.name
+        color = trace.color
+        trace_to_cut = []
+        # establish tform
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        for point in self.selected_traces[0].points:
+            x, y = tuple(point)
+            x, y = point_tform.map(x, y)
+            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            trace_to_cut.append((x, y))
+        cut_traces = cutTraces(trace_to_cut, scalpel_trace)  # merge the pixel traces
+        # create new traces
+        self.deleteSelectedTraces(save_state=False)
+        for trace in cut_traces:
+            self.newTrace(trace, name=name, color=color)
+    
     def deleteSelectedTraces(self):
         """Delete selected traces.
         

@@ -3,7 +3,6 @@ import os
 from PySide6.QtWidgets import (QWidget, QMainWindow)
 from PySide6.QtCore import Qt, QRectF, QPoint
 from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
-os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.recon.section import Section
 from modules.recon.trace import Trace
@@ -14,10 +13,10 @@ from modules.calc.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
 
-class TraceField():
+class TraceLayer():
 
     def __init__(self, section : Section):
-        """Create a trace field.
+        """Create a trace layer.
         
             Params:
                 traces (list): the existing trace list (from a Section object)
@@ -48,14 +47,14 @@ class TraceField():
         """
         min_distance = -1
         closest_trace = None
-        # for trace in self.traces_within_field: # check only traces within the current window view
-        for trace in self.traces:
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        for trace in self.section.traces:
             if trace.hidden:
                 continue
             points = []
             for point in trace.points:
-                x, y = self.point_tform.map(*point)
-                # x, y = self.fieldPointToPixmap(x, y)
+                x, y = point_tform.map(*point)
                 points.append((x,y))
             dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.mag)
             if closest_trace is None or dist < min_distance:
@@ -70,6 +69,31 @@ class TraceField():
                 field_x (float): the x-coord of the point in the field
                 field_y (float): the y-coord of the point in the field
         """
+        selected = self.findClosestTrace(field_x, field_y)
+        if selected is not None:
+            self.selected_traces.append(selected)
+    
+    def newTrace(self, pix_trace : list, name, color, closed=True):
+        """Create a new trace from pixel coordinates.
+        
+            Params:
+                pix_trace (list): pixel coordinates for the new trace
+                closed (bool): whether or not the new trace is closed"""
+        if len(pix_trace) < 1:  # do not create a new trace if there is only one point
+            return
+        if closed:
+            pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
+        else:
+            pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
+        new_trace = Trace(name, color, closed=closed)
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        for point in pix_trace:
+            field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
+            rtform_point = point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
+            new_trace.add(rtform_point)
+        self.section.traces.append(new_trace)
+        self.selected_traces.append(new_trace)
         
     def changeTraceAttributes(self):
         """Open a dialog to change the name and/or color of a trace."""
@@ -92,25 +116,70 @@ class TraceField():
             if new_color is not None:
                 trace.color = new_color
     
+    def deselectAllTraces(self):
+        """Deselect all traces."""
+        self.selected_traces = []
+    
     def hideSelectedTraces(self):
         """Hide all selected traces."""
         for trace in self.selected_traces:
             trace.setHidden(True)
         self.selected_traces = []
     
+    def mergeSelectedTraces(self):
+        """Merge all selected traces."""
+        if len(self.selected_traces) < 2:
+            print("Cannot merge fewer than two traces.")
+            return
+        traces = []
+        first_trace = self.selected_traces[0]
+        name = first_trace.name
+        color = first_trace.color  # use color of first trace selected
+        for trace in self.selected_traces:
+            if trace.closed == False:
+                print("Can only merge closed traces.")
+                return
+            if trace.name != name:
+                print("Cannot merge differently named traces.")
+                return
+            # collect pixel values for trace points
+            traces.append([])
+            t = self.section.tform
+            point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+            for point in trace.points:
+                x, y = tuple(point)
+                x, y = point_tform.map(x, y)
+                x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+                traces[-1].append((x, y))
+        merged_traces = mergeTraces(traces)  # merge the pixel traces
+        # create new merged trace
+        self.deleteSelectedTraces()
+        for trace in merged_traces:
+            self.newTrace(trace, name=name, color=color)
+    
+    def deleteSelectedTraces(self):
+        """Delete selected traces.
+        
+            Params:
+                save_state (bool): whether or not to save the state after deleting
+        """
+        for trace in self.selected_traces:
+            self.section.traces.remove(trace)
+        self.selected_traces = []
+    
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
         if self.all_traces_hidden:
-            for trace in self.traces:
+            for trace in self.section.traces:
                 trace.setHidden(False)
             self.all_traces_hidden = False
         else:
-            for trace in self.traces:
+            for trace in self.section.traces:
                 trace.setHidden(True)
             self.all_traces_hidden = True
         self.selected_traces = []
     
-    def drawTrace(self, trace_field : QPixmap, trace : Trace, window : list, pixmap_dim : tuple, highlight=False) -> bool:
+    def drawTrace(self, trace_field : QPixmap, trace : Trace, highlight=False) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         
             Params:
@@ -120,13 +189,12 @@ class TraceField():
                 (bool) if the trace is within the current field window view
         """
         # get window and pixmap values
-        pixmap_w, pixmap_h = tuple(pixmap_dim)
+        pixmap_w, pixmap_h = tuple(self.pixmap_dim)
         # establish tform
         t = self.section.tform
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # set up painter
         painter = QPainter(trace_field)
-        within_field = False
         if highlight: # create dashed white line if trace is to be highlighted
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
@@ -142,52 +210,48 @@ class TraceField():
             # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
-        
-        # establish first point
-        point = trace.points[0]
-        last_x, last_y = point_tform.map(*point)
-        last_x, last_y = fieldPointToPixmap(last_x, last_y, window, pixmap_dim, self.section.mag)
-        within_field |= 0 < last_x < pixmap_w and 0 < last_y < pixmap_h
-        # connect points
-        for i in range(1, len(trace.points)):
-            point = trace.points[i]
-            x, y = point_tform.map(*point)
-            x, y = fieldPointToPixmap(x, y, window, pixmap_dim, self.section.mag)
-            within_field |= 0 < x < pixmap_w and 0 < y < pixmap_h
-            painter.drawLine(last_x, last_y, x, y)
-            last_x = x
-            last_y = y
-        # connect last point to first point if closed
+        # iterate through points and convert to screen coord points
+        qpoints = []
+        for point in trace.points:
+            x, y = tuple(point)
+            x, y = point_tform.map(x, y)
+            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            qpoints.append(QPoint(x, y))
+        # draw trace
         if trace.closed:
-            point = trace.points[0]
-            x, y = point_tform.map(*point)
-            x, y = fieldPointToPixmap(x, y, window, pixmap_dim, self.section.mag)
-            painter.drawLine(last_x, last_y, x, y)
-        painter.end()
-
-        return within_field
+            painter.drawPolygon(qpoints)
+        else:
+            painter.drawPolyline(qpoints)
     
-    def generateTraceField(self, pixmap_dim : tuple, window : list) -> QPixmap:
+    def generateTraceLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+        """Generate the traces on a transparent background.
+        
+            Params:
+                pixmap_dim (tuple): the w and h of the pixmap to be output
+                window (list): the voew of the window (x, y, w, h)
+        """
         # draw all the traces
+        self.window = window
+        self.pixmap_dim = pixmap_dim
         pixmap_w, pixmap_h = tuple(pixmap_dim)
-        trace_field = QPixmap(pixmap_w, pixmap_h)
-        trace_field.fill(Qt.transparent)
-        for trace in self.traces:
+        trace_layer = QPixmap(pixmap_w, pixmap_h)
+        trace_layer.fill(Qt.transparent)
+        for trace in self.section.traces:
             if not trace.hidden:
                 self.drawTrace(
-                    trace_field,
+                    trace_layer,
                     trace,
                     window,
                     pixmap_dim
                 )
         for trace in self.selected_traces:
             self.drawTrace(
-                trace_field,
+                trace_layer,
                 trace,
                 window,
                 pixmap_dim,
                 highlight=True
             )
-        return trace_field
+        return trace_layer
     
     

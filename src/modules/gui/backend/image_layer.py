@@ -6,6 +6,8 @@ os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.recon.section import Section
 
+from modules.calc.pfconversions import fieldPointToPixmap
+
 class ImageLayer():
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
@@ -39,8 +41,8 @@ class ImageLayer():
         self.tform_corners = self.calcTformCorners(base_image, self.image_tform)
         self.tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
         t = self.section.tform
-        x_shift = t[2] - self.tform_origin[0] * self.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.mag # calculate y translation for image placement in field
+        x_shift = t[2] - self.tform_origin[0] * self.section.mag # calculate x translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
     
     def calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
@@ -130,22 +132,22 @@ class ImageLayer():
             Params:
                 change (int): the degree to which brightness is changed
         """
-        self.brightness += change
-        if self.brightness > 255:
-            self.brightness = 255
-        elif self.brightness < -255:
-            self.brightness = -255
+        self.section.brightness += change
+        if self.section.brightness > 255:
+            self.section.brightness = 255
+        elif self.section.brightness < -255:
+            self.section.brightness = -255
     
     def changeContrast(self, change : float):
         """Change the contrast of the section.
         
             Params:
                 change (float): the degree to which brightness is changed"""
-        self.contrast = round(self.contrast + change, 1)
-        if self.contrast > 4:
-            self.contrast = 4
-        elif self.contrast < 0:
-            self.contrast = 0
+        self.section.contrast = round(self.section.contrast + change, 1)
+        if self.section.contrast > 4:
+            self.section.contrast = 4
+        elif self.section.contrast < 0:
+            self.section.contrast = 0
     
     def drawBrightness(self, image_layer : QPixmap):
         """Draw the brightness on the image field.
@@ -156,18 +158,18 @@ class ImageLayer():
         # establish first point
         brightness_poly = QPolygon()
         for p in self.base_corners:
-            x, y = [n*self.mag for n in p]
+            x, y = [n*self.section.mag for n in p]
             x, y = self.point_tform.map(x, y)
-            x, y = self.fieldPointToPixmap(x, y)
+            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             brightness_poly.append(QPoint(x, y))
         # paint to image
         painter = QPainter(image_layer)
-        if self.brightness >= 0:
+        if self.section.brightness >= 0:
             painter.setCompositionMode(QPainter.CompositionMode_Plus)
-            brightness_color = QColor(*([self.brightness]*3))
+            brightness_color = QColor(*([self.section.brightness]*3))
         else:
             painter.setCompositionMode(QPainter.CompositionMode_Multiply)
-            brightness_color = QColor(*([255+self.brightness]*3))
+            brightness_color = QColor(*([255+self.section.brightness]*3))
         painter.setPen(QPen(brightness_color, 0))
         painter.setBrush(brightness_color)
         painter.drawPolygon(brightness_poly)
@@ -181,9 +183,9 @@ class ImageLayer():
         # overlay image on itself for added contrast
         painter = QPainter(image_layer)
         painter.setCompositionMode(QPainter.CompositionMode_Overlay)
-        for _ in range(int(self.contrast)):
+        for _ in range(int(self.section.contrast)):
             painter.drawPixmap(0, 0, image_layer)
-        opacity = self.contrast % 1
+        opacity = self.section.contrast % 1
         if opacity > 0:
             painter.setOpacity(opacity)
             painter.drawPixmap(0, 0, image_layer)
@@ -196,6 +198,8 @@ class ImageLayer():
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the viewing window in the field (x, y, w, h)
         """
+        self.pixmap_dim = pixmap_dim
+        self.window = window
         # get dimensions of field window and pixmap
         window_x, window_y, window_w, window_h = tuple(window)
         pixmap_w, pixmap_h = tuple(pixmap_dim)

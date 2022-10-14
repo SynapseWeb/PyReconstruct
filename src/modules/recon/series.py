@@ -5,6 +5,8 @@ from .trace import Trace
 from modules.pyrecon.utils.reconstruct_reader import process_series_file
 from modules.pyrecon.utils.reconstruct_writer import write_series
 
+from modules.recon.section import Section
+
 from constants.locations import assets_dir
 
 class Series():
@@ -93,3 +95,12 @@ class Series():
             for trace in self.palette_traces:
                 self.xml_series.contours.append(trace.getXMLObj())
             write_series(self.xml_series, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
+    
+    def loadSection(self, section_num : int) -> Section:
+        """Load a section object.
+        
+            Params:
+                section_num (int): the section number
+        """
+        wdir = os.path.dirname(self.filepath)
+        return Section(wdir + self.sections[section_num])

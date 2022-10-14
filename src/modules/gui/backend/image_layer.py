@@ -17,20 +17,23 @@ class ImageLayer():
 
             Params:
                 section (Section): the section object for the field
-                src_dir (str): the directory for the images
+                src_dir (str): the immediate directory for the images
         """
         self.section = section
-        self.src_dir = src_dir
         # establish transformation
         t = self.section.tform
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
-        self.transformImage()
+        self._transformImage(src_dir)
     
-    def transformImage(self):
-        """Apply the transform to the image."""
+    def _transformImage(self, src_dir : str):
+        """Apply the transform to the image.
+        
+            Params:
+                src_dir (str): the immediate directory containing the image files
+        """
         # load the image
-        src_path = os.path.join(self.src_dir, os.path.basename(self.src))
+        src_path = os.path.join(src_dir, os.path.basename(self.src))
         base_image = QImage(src_path)
         # get base corners
         bw, bh = base_image.width(), base_image.height()
@@ -38,14 +41,14 @@ class ImageLayer():
         # apply transform
         self.tformed_image = base_image.transformed(self.image_tform) # transform image
         # in order to place the image correctly in the field...
-        self.tform_corners = self.calcTformCorners(base_image, self.image_tform)
+        self.tform_corners = self._calcTformCorners(base_image, self.image_tform)
         self.tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
         t = self.section.tform
         x_shift = t[2] - self.tform_origin[0] * self.section.mag # calculate x translation for image placement in field
         y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
     
-    def calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
+    def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
         
             Params:
@@ -55,7 +58,7 @@ class ImageLayer():
                 (tuple) the four corners (starting from bottom left moving clockwise)
         """
         base_coords = base_pixmap.size() # base image dimensions
-        tform_notrans = self.tformNoTrans(tform) # get tform without translation
+        tform_notrans = tformNoTrans(tform) # get tform without translation
         height_vector = tform_notrans.map(0, base_coords.height()) # create a vector for base height and transform
         width_vector = tform_notrans.map(base_coords.width(), 0) # create a vector for base width and transform
         # calculate coordinates for the top left corner of image
@@ -82,21 +85,8 @@ class ImageLayer():
         br = (br_x, br_y)
 
         return bl, tl, tr, br
-    
-    def tformNoTrans(self, tform : QTransform) -> QTransform:
-        """Return a transfrom without a translation component.
-        
-            Params:
-                tform (QTransform): the reference transform
-            Returns:
-                (QTransform) the reference transform without a translation component
-        """
-        tform_notrans = (tform.m11(), tform.m12(), tform.m21(), tform.m22(), 0, 0)
-        tform_notrans = QTransform(*tform_notrans)
 
-        return tform_notrans
-
-    def setTransform(self, new_tform : list):
+    def changeTform(self, new_tform : list):
         """Set the transform for the image.
         
             Params:
@@ -116,15 +106,7 @@ class ImageLayer():
                 break
         # if the two transformations do not have the same shape, reload image
         if not same_shape:
-            self.transformImage()
-    
-    def setSrcDir(self, new_src_dir : str):
-        """Set the directory for the images.
-        
-            Params:
-                new_src_dir (str): the new directory for the images
-        """
-        self.src_dir = new_src_dir
+            self._transformImage()
     
     def changeBrightness(self, change : int):
         """Change the brightness of the section.
@@ -149,7 +131,7 @@ class ImageLayer():
         elif self.section.contrast < 0:
             self.section.contrast = 0
     
-    def drawBrightness(self, image_layer : QPixmap):
+    def _drawBrightness(self, image_layer : QPixmap):
         """Draw the brightness on the image field.
         
             Params:
@@ -174,7 +156,7 @@ class ImageLayer():
         painter.setBrush(brightness_color)
         painter.drawPolygon(brightness_poly)
     
-    def drawContrast(self, image_layer : QPixmap):
+    def _drawContrast(self, image_layer : QPixmap):
         """Draw the contrast on the image field.
         
             Params:
@@ -251,9 +233,22 @@ class ImageLayer():
         painter.end()
         
         # draw in brightness
-        self.drawBrightness()
+        self._drawBrightness()
         
         # draw in contrast
-        self.drawContrast()
+        self._drawContrast()
 
         return image_layer
+
+def tformNoTrans(self, tform : QTransform) -> QTransform:
+    """Return a transfrom without a translation component.
+    
+        Params:
+            tform (QTransform): the reference transform
+        Returns:
+            (QTransform) the reference transform without a translation component
+    """
+    tform_notrans = (tform.m11(), tform.m12(), tform.m21(), tform.m22(), 0, 0)
+    tform_notrans = QTransform(*tform_notrans)
+
+    return tform_notrans

@@ -198,7 +198,7 @@ class TraceLayer():
             self.all_traces_hidden = True
         self.selected_traces = []
     
-    def drawTrace(self, trace_field : QPixmap, trace : Trace, highlight=False) -> bool:
+    def _drawTrace(self, trace_field : QPixmap, trace : Trace, highlight=False) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         
             Params:
@@ -257,14 +257,14 @@ class TraceLayer():
         trace_layer.fill(Qt.transparent)
         for trace in self.section.traces:
             if not trace.hidden:
-                self.drawTrace(
+                self._drawTrace(
                     trace_layer,
                     trace,
                     window,
                     pixmap_dim
                 )
         for trace in self.selected_traces:
-            self.drawTrace(
+            self._drawTrace(
                 trace_layer,
                 trace,
                 window,

@@ -22,7 +22,18 @@ class Trace():
         self.comment = None
         self.simplified = None
         self.mode = 11
-        self.fill = [c / 255 for c in self.color]
+        self.fill = tuple([c / 255 for c in self.color])
+    
+    def copy(self):
+        """Create a copy of the trace object.
+        
+            Returns:
+                (Trace): a copy of the object
+        """
+        copy_trace = Trace(None, None)
+        copy_trace.__dict__ = self.__dict__.copy()
+        copy_trace.points = self.points.copy()
+        return copy_trace
     
     def add(self, point : tuple):
         """Add a point to the trace.
@@ -156,4 +167,5 @@ class Trace():
             tform_points = [tform.map(*p) for p in self.points]
             x = [p[0] for p in tform_points]
             y = [p[1] for p in tform_points]
+        
         return min(x), min(y), max(x), max(y)

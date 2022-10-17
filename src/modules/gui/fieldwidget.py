@@ -8,9 +8,11 @@ os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 from modules.recon.series import Series
 from modules.recon.trace import Trace
 
+from modules.calc.pfconversions import pixmapPointToField
+
 from modules.gui.backend.field_view import FieldView
 
-class FieldWidget(QWidget):
+class FieldWidget(QWidget, FieldView):
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
 
@@ -21,7 +23,8 @@ class FieldWidget(QWidget):
                 series (Series): the series object
                 parent (MainWindow): the main window that contains this widget
         """
-        super().__init__(parent)
+        QWidget().__init__(parent)
+        FieldView().__init__(series)
         self.parent_widget = parent
         self.setMouseTracking(True)
 
@@ -30,14 +33,12 @@ class FieldWidget(QWidget):
         self.pixmap_dim = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_dim)
 
-        # get series
-        self.series = series
-
-        # create fieldview object
-        self.fieldview = FieldView(self.series)
-
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER
+
+        # ensure that the first section is found
+        if self.series.current_section not in self.series.sections:
+            self.series.current_section = self.series.sections.keys()[0]
 
         # ensure that images are found
         section = self.series.loadSection(self.series.current_section)
@@ -82,10 +83,10 @@ class FieldWidget(QWidget):
             QMessageBox.Ok
         )
         if not notify:
-            self.fieldview.reloadSection(self.series.current_section)
+            self.reloadSection(self.series.current_section)
     
     def generateView(self, generate_image=True, generate_traces=True, blend=False):
-        self.field_pixmap = self.fieldview.generateView(self.pixmap_dim,
+        self.field_pixmap = FieldView().generateView(self.pixmap_dim,
             generate_image,
             generate_traces,
             blend=self.blend_sections
@@ -127,9 +128,9 @@ class FieldWidget(QWidget):
                 find_closest_trace (bool): whether or not to display closest trace
         """
         if event is not None:
-            s = "Section: " + str(self.section_num) + "  |  "
+            s = "Section: " + str(self.series.current_section) + "  |  "
             x, y = event.pos().x(), event.pos().y()
-            x, y = self.pixmapPointToField(x, y)
+            x, y = pixmapPointToField(x, y, self.pixmap_dim, self.series.window, self.section.mag)
             s += "x = " + str("{:.4f}".format(x)) + ", "
             s += "y = " + str("{:.4f}".format(y)) + "  |  "
             s += "Tracing: " + '"' + self.tracing_trace.name + '"'
@@ -138,7 +139,7 @@ class FieldWidget(QWidget):
                 if closest_trace:
                     s += "  |  Nearest trace: " + closest_trace.name
         else:
-            s = "Section: " + str(self.section_num)
+            s = "Section: " + str(self.series.current_section)
         self.parent_widget.setStatusBar(s)
     
     def mousePressEvent(self, event):
@@ -235,7 +236,7 @@ class FieldWidget(QWidget):
         """
         pix_x, pix_y = event.x(), event.y()
         deselect = (event.button() == Qt.RightButton)
-        requires_update = self.fieldview.selectTrace(pix_x, pix_y, deselect=deselect)
+        requires_update = self.selectTrace(pix_x, pix_y, deselect=deselect)
         if requires_update:
             self.generateView(generate_image=False)
             self.update()
@@ -317,7 +318,7 @@ class FieldWidget(QWidget):
         """
         # set new window for panning
         if event.button() == Qt.LeftButton:
-            section = self.fieldview.section
+            section = self.section
             x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
             y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
             move_x = -(event.x() - self.clicked_x) / x_scaling * section.mag
@@ -328,7 +329,7 @@ class FieldWidget(QWidget):
             self.update()
         # set new window for zooming
         elif event.button() == Qt.RightButton:
-            section = self.fieldview.section
+            section = self.section
             x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
             y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
             move_y = event.y() - self.clicked_y
@@ -396,12 +397,12 @@ class FieldWidget(QWidget):
             Params:
                 event: contains mouse input data
         """
-        self.fieldview.newTrace(self.current_trace,
+        self.newTrace(self.current_trace,
             name=self.tracing_trace.name,
             color = self.tracing_trace.color,
             closed=closed
         )
-        self.fieldview.saveState()
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     
@@ -434,13 +435,13 @@ class FieldWidget(QWidget):
                 self.is_line_tracing = True
         elif event.button() == Qt.RightButton:  # complete existing trace if right mouse button
             if self.is_line_tracing:
-                self.fieldview.newTrace(self.current_trace,
+                self.newTrace(self.current_trace,
                     name=self.tracing_trace.name,
                     color=self.tracing_trace.color,
                     closed=closed
                 )
                 self.is_line_tracing = False
-                self.fieldview.saveState()
+                self.saveState()
                 self.generateView(generate_image=False)
                 self.update()
     
@@ -483,8 +484,8 @@ class FieldWidget(QWidget):
         """
         # get mouse coords and convert to field coords
         pix_x, pix_y = event.x(), event.y()
-        self.fieldview.placeStamp(pix_x, pix_y, self.tracing_trace)
-        self.fieldview.saveState()
+        self.placeStamp(pix_x, pix_y, self.tracing_trace)
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     
@@ -529,8 +530,8 @@ class FieldWidget(QWidget):
             Params:
                 event: contains mouse input data
         """
-        self.fieldview.cutTrace(self.scalpel_trace)
-        self.fieldview.saveState()
+        self.cutTrace(self.scalpel_trace)
+        self.saveState()
         self.generateView(generate_image=False)
         self.update()
     
@@ -541,8 +542,7 @@ class FieldWidget(QWidget):
                 trace_name (str): the name of the trace to focus on
                 occurence (int): find the nth trace on the section"""
         count = 0
-        section = self.fieldview.section
-        for trace in section.traces:
+        for trace in self.section.traces:
             if trace.name == trace_name:
                 count += 1
                 if count == occurence:
@@ -558,10 +558,10 @@ class FieldWidget(QWidget):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             if self.mouse_mode == FieldWidget.CLOSEDLINE:
-                self.fieldview.newTrace(self.current_trace, closed=True)
+                self.newTrace(self.current_trace, closed=True)
             elif self.mouse_mode == FieldWidget.OPENLINE:
-                self.fieldview.newTrace(self.current_trace, closed=False)
+                self.newTrace(self.current_trace, closed=False)
             self.is_line_tracing = False
-            self.fieldview.saveState()
+            self.saveState()
             self.generateView(generate_image=False)
             self.update()

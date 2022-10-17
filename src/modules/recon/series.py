@@ -8,6 +8,7 @@ from modules.pyrecon.utils.reconstruct_writer import write_series
 from modules.recon.section import Section
 
 from constants.locations import assets_dir
+from constants.defaults import getDefaultPaletteTraces
 
 class Series():
 
@@ -30,10 +31,7 @@ class Series():
             for section_num, section_filename in series_data["sections"].items():
                 self.sections[int(section_num)] = section_filename
             self.current_section = series_data["current_section"]
-            try:
-                self.src_dir = series_data["src_dir"]
-            except KeyError:
-                self.src_dir = ""
+            self.src_dir = series_data["src_dir"]
             self.window = series_data["window"]
             self.palette_traces = series_data["palette_traces"]
             for i in range(len(self.palette_traces)):
@@ -77,6 +75,38 @@ class Series():
             d["palette_traces"].append(trace.getDict())
         d["current_trace"] = self.current_trace.getDict()
         return d
+    
+    # STATIC METHOD
+    def new(image_locations : list, series_name : str, mag : float, thickness : float):
+        """Create a new blank series.
+        
+            Params:
+                image_locations (list): the paths for each image
+                series_name (str): user-entered series name
+                mag (float): the microns per pixel for the series
+                thickness (float): the section thickness
+            Returns:
+                (Series): the newly created series object
+        """
+        wdir = os.path.dirname(image_locations[0])
+        series_data = {}
+        series_data["sections"] = {}  # section_number : section_filename
+        series_data["current_section"] = 0  # last section left off
+        series_data["src_dir"] = ""  # the directory of the images
+        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
+        for i in range(len(image_locations)):
+            series_data["sections"][i] = series_name + "." + str(i)
+        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
+        series_data["current_trace"] = series_data["palette_traces"][0]
+        series_fp = os.path.join(wdir, series_name + ".ser")
+        with open(series_fp) as series_file:
+            series_file.write(json.dumps(series_data, indent=2))
+        
+        # create section files (.#)
+        for i in range(len(image_locations)):
+            Section.new(series_name, i, image_locations[i], mag, thickness, wdir)
+        
+        return Series(series_fp)
         
     def save(self):
         """Save file into json."""

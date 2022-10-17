@@ -53,10 +53,17 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open series and create field
-        self.openSeries(assets_dir + "/welcome_series/welcome.ser")
+        welcome_series = Series(assets_dir + "/welcome_series/welcome.ser")
+        self.openSeries(welcome_series)
         self.field.generateView()
-        self.field.update()
 
+        # create menu and shortcuts
+        self.createMenu()
+        self.createShortcuts()
+
+        self.show()
+
+    def createMenu(self):
         # menu at top of window
         self.menubar = self.menuBar()
 
@@ -82,7 +89,7 @@ class MainWindow(QMainWindow):
                 "name": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Change Image Directory", "", self.changeSrcDir)
+                    ("change_src_act", "Change Image Directory", "", self.field.changeSrcDir)
                 ]
              },
             
@@ -108,24 +115,28 @@ class MainWindow(QMainWindow):
                 menu_self.setShortcut(kbd)
                 menu_self.triggered.connect(f)
 
+    def createShortcuts(self):
         # create shortcuts
         shortcuts = [
             ("Ctrl+S", self.saveAllData),
-            ("Ctrl+M", self.field.mergeSelectedTraces),
-            ("Ctrl+D", self.field.deselectAllTraces),
-            ("Ctrl+H", self.field.hideSelectedTraces),
-            ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
-            ("Ctrl+Z", self.field.undoState),
-            ("Ctrl+Y", self.field.redoState),
+            ("Ctrl+M", (self.field.mergeSelectedTraces, self.field.generateView)),
+            ("Ctrl+D", (self.field.deselectAllTraces, lambda : self.field.generateView(save_state=False))),
+            ("Ctrl+H", (self.field.hideSelectedTraces, self.field.generateView)),
+            ("Ctrl+Shift+H", (self.field.toggleHideAllTraces, self.field.generateView)),
+            ("Ctrl+Z", (self.field.undoState, lambda : self.field.generateView(save_state=False))),
+            ("Ctrl+Y", (self.field.redoState, lambda : self.field.generateView(save_state=False))),
             ("Ctrl+T", self.changeTform),
             ("Ctrl+G", self.gotoSection),
-            ("Ctrl+A", self.field.changeTraceAttributes)
+            ("Ctrl+A", (self.field.changeTraceAttributes, self.field.generateView))
         ]
         
         for kbd, act in shortcuts:
-            QShortcut(QKeySequence(kbd), self).activated.connect(act)
-            
-        self.show()
+            if type(act) is tuple:
+                sc = QShortcut(QKeySequence(kbd), self)
+                for func in act:
+                    sc.activated.connect(func)
+            else:
+                QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def openSeries(self, series_obj=None):
         """Open an existing series and create the field.
@@ -133,19 +144,19 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
-        if series_obj is not None:  # if series is provided (only the case if opening from new)
-            self.series = series_obj
-        else:  # get series file from user
+        if not series_obj:  # if series is not provided
             series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
             if series_fp == "": return  # exit function if user does not provide series
             self.series = Series(series_fp)  # load series data into Series object
-        self.series_fp = series_fp
+        else:
+            self.series = series_obj
 
         # create field
         if self.field is not None:  # close previous field widget
-            self.field.close()
-        self.field = FieldWidget(self.series, self)
-        self.setCentralWidget(self.field)
+            self.field.createField(self.series)
+        else:
+            self.field = FieldWidget(self.series, self)
+            self.setCentralWidget(self.field)
 
         # create mouse dock
         if self.mouse_dock is not None: # close previous mouse dock
@@ -392,9 +403,15 @@ class MainWindow(QMainWindow):
     def changeSection(self, section_num, save=True):
         """Change the section of the field."""
         start_time = time()
+        # save data
         if save:
             self.saveAllData()
+        # change the field section
         self.field.changeSection(section_num)
+        # refresh view
+        self.field.generateView()
+        # update status bar
+        self.field.updateStatusBar()
         print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
@@ -413,14 +430,22 @@ class MainWindow(QMainWindow):
                 self.changeSection(section_numbers[section_number_i - 1])
         elif event.key() == 16777223:  # Del
             self.field.deleteSelectedTraces()
+            self.field.generateView(generate_image=False)
         elif event.key() == 45:  # -
             self.field.changeBrightness(-5)
+            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 61:  # +
             self.field.changeBrightness(5)
+            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 91: # [
             self.field.changeContrast(-0.2)
+            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 93: # ]
             self.field.changeContrast(0.2)
+            self.field.generateView(generate_traces=False, save_state=False)
+        elif event.key() == 32: # Space
+            self.field.blend_sections = not self.field.blend_sections
+            self.field.generateView(save_state=False)
         print(event.key())  # developer purposes
     
     def wheelEvent(self, event):
@@ -564,6 +589,7 @@ class MainWindow(QMainWindow):
         except ValueError:
             return
         self.field.changeTform(new_tform)
+        self.field.generateView(generate_traces=False)
     
     def gotoSection(self):
         """Open a dialog to jump to a specific section number."""

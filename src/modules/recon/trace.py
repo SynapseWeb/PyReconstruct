@@ -30,7 +30,7 @@ class Trace():
             Returns:
                 (Trace): a copy of the object
         """
-        copy_trace = Trace(None, None)
+        copy_trace = Trace("", [0,0,0])
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
         return copy_trace

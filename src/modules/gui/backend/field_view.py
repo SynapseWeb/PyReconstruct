@@ -1,4 +1,5 @@
-from PySide6.QtGui import QPixmap, QPainter
+from PySide6.QtGui import QPainter
+from numpy import swapaxes
 
 from modules.recon.series import Series
 
@@ -11,7 +12,7 @@ class FieldState():
         """Create a field state with traces and the transform"""
         self.traces = []
         for trace in traces:
-            self.trace.append(trace.copy())
+            self.traces.append(trace.copy())
         self.tform = tform.copy()
 
 class FieldView(ImageLayer, TraceLayer):
@@ -25,23 +26,41 @@ class FieldView(ImageLayer, TraceLayer):
         """
         self.series = series
         self.section = self.series.loadSection(self.series.current_section)
-        self.b_section = None
 
-        ImageLayer().__init__(self.section, self.series.src_dir)
-        TraceLayer().__init__(self.section)
+        # b section stored attributes
+        self.b_section = None
+        self.b_section_number = None
+        self.b_tformed_image = None
+        self.b_selected_traces = None
+
+        # get image dir
+        if self.series.src_dir == "":
+            self.src_dir = self.series.getwdir()
+        else:
+            self.src_dir = self.series.src_dir
+        
+        ImageLayer.__init__(self, self.section, self.src_dir)
+        TraceLayer.__init__(self, self.section)
 
         self.states = {}
         self.current_state = FieldState(self.section.traces, self.section.tform)
         self.states[self.series.current_section] = []
         self.redo_states = []
+
+    def swapABattr(self):
+        """Swap all stored section attributes for the two sections in memory."""
+        self.section, self.b_section = self.b_section, self.section
+        self.series.current_section, self.b_section_number = self.b_section_number, self.series.current_section
+        self.tformed_image, self.b_tformed_image = self.b_tformed_image, self.tformed_image
+        self.selected_traces, self.b_selected_traces = self.b_selected_traces, self.selected_traces
     
     def executeOnB(self, function):
         # swap the sections, perform function, swap the sections
-        self.section, self.b_section = self.b_section, self.section
+        self.swapABattr()
         ret = function()
-        self.section, self.b_section = self.b_section, self.section
+        self.swapABattr()
         return ret
-    
+
     def saveState(self):
         """Save the current traces and transform."""
         state_list = self.states[self.series.current_section]
@@ -84,19 +103,23 @@ class FieldView(ImageLayer, TraceLayer):
         """
         if new_section_num not in self.series.sections:
             return
-        if new_section_num == self.b_section_number:
-            # switch section and b_section if requested
-            self.section, self.b_section = self.b_section, self.section
-        else:
-            # move primary section data to b section data
-            self.b_section = self.section
-            # create new section
+        # move current section data to b section
+        self.swapABattr()
+        # load new section if required
+        if new_section_num != self.series.current_section:
+            # load section
             self.section = self.series.loadSection(new_section_num)
+            # load new image
+            self._transformImage()
+            # set new current section
+            self.series.current_section = new_section_num
+            # clear selected traces
+            self.selected_traces = []
         # clear redo states
         self.redo_states = []
-        # set new current section and b section number
-        self.b_section_number = self.series.current_section
-        self.series.current_section = new_section_num
+        # create new list for states if needed
+        if new_section_num not in self.states:
+            self.states[new_section_num] = []
     
     def reloadSection(self):
         """Reload Section trace data from file (if file was changed)."""
@@ -131,46 +154,47 @@ class FieldView(ImageLayer, TraceLayer):
                 window_y = new_y
             self.series.window = [window_x, window_y, window_w, window_h]
 
-    def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False) -> QPixmap:
+    def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap view
                 generate_image (bool): whether or not to redraw the image
                 generate_traces (bool): whether or not to redraw the traces
-            Returns:
-                (QPixmap): the view to be output to the screen
         """
         # resize series window to match view proportions
-        self.resizeWindow()
+        self.resizeWindow(pixmap_dim)
         # generate layer pixmaps
         if generate_image:
-            self.image_pixmap = self.generateImageLayer(pixmap_dim, self.series.window)
+            self.image_layer = self.generateImageLayer(pixmap_dim, self.series.window)
         if generate_traces:
-            self.trace_pixmap = self.generateTraceLayer(pixmap_dim, self.series.window)
+            self.trace_layer = self.generateTraceLayer(pixmap_dim, self.series.window)
         # combine pixmaps
-        view = self.image_pixmap.copy()
+        view = self.image_layer.copy()
         painter = QPainter(view)
-        painter.drawPixmap(0, 0, self.trace_pixmap)
+        painter.drawPixmap(0, 0, self.trace_layer)
         painter.end()
         # blend b section if requested
         if blend and self.b_section is not None:
             if generate_image:
-                self.b_image_pixmap = self.executeOnB(
+                self.b_image_layer = self.executeOnB(
                     lambda : self.generateImageLayer(pixmap_dim, self.series.window)
                 )
             if generate_traces:
-                self.b_trace_pixmap = self.executeOnB(
+                self.b_trace_layer = self.executeOnB(
                     lambda : self.generateTraceLayer(pixmap_dim, self.series.window)
                 )
-            b_view = self.b_image_pixmap.copy()
+            b_view = self.b_image_layer.copy()
             painter = QPainter(b_view)
-            painter.drawPixmap(0, 0, self.b_trace_pixmap)
+            painter.drawPixmap(0, 0, self.b_trace_layer)
             painter.end()
             # overlay a and b sections
             painter = QPainter(view)
             painter.setOpacity(0.5)
             painter.drawPixmap(0, 0, b_view)
             painter.end()
+        else:
+            self.b_image_layer = None
+            self.b_trace_layer = None
         return view
     

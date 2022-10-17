@@ -23,7 +23,7 @@ class ImageLayer():
         t = self.section.tform
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
-        self._transformImage(src_dir)
+        self._transformImage()
     
     def _transformImage(self):
         """Apply the transform to the image."""
@@ -135,7 +135,7 @@ class ImageLayer():
         elif self.section.contrast < 0:
             self.section.contrast = 0
     
-    def _drawBrightness(self, image_layer : QPixmap):
+    def _drawBrightness(self, image_layer):
         """Draw the brightness on the image field.
         
             Params:
@@ -160,7 +160,7 @@ class ImageLayer():
         painter.setBrush(brightness_color)
         painter.drawPolygon(brightness_poly)
     
-    def _drawContrast(self, image_layer : QPixmap):
+    def _drawContrast(self, image_layer):
         """Draw the contrast on the image field.
         
             Params:
@@ -177,7 +177,7 @@ class ImageLayer():
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
     
-    def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+    def generateImageLayer(self, pixmap_dim : tuple, window : list):
         """Generate the view seen by the user in the main window.
         
             Params:
@@ -237,14 +237,14 @@ class ImageLayer():
         painter.end()
         
         # draw in brightness
-        self._drawBrightness()
+        self._drawBrightness(image_layer)
         
         # draw in contrast
-        self._drawContrast()
+        self._drawContrast(image_layer)
 
         return image_layer
 
-def tformNoTrans(self, tform : QTransform) -> QTransform:
+def tformNoTrans(tform : QTransform) -> QTransform:
     """Return a transfrom without a translation component.
     
         Params:

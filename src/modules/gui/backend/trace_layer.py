@@ -45,7 +45,7 @@ class TraceLayer():
             for point in trace.points:
                 x, y = point_tform.map(*point)
                 points.append((x,y))
-            dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.mag)
+            dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.section.mag)
             if closest_trace is None or dist < min_distance:
                 min_distance = dist
                 closest_trace = trace
@@ -77,7 +77,8 @@ class TraceLayer():
         
             Params:
                 pix_trace (list): pixel coordinates for the new trace
-                closed (bool): whether or not the new trace is closed"""
+                closed (bool): whether or not the new trace is closed
+        """
         if len(pix_trace) < 1:  # do not create a new trace if there is only one point
             return
         if closed:
@@ -205,7 +206,7 @@ class TraceLayer():
             trace_to_cut.append((x, y))
         cut_traces = cutTraces(trace_to_cut, scalpel_trace)  # merge the pixel traces
         # create new traces
-        self.deleteSelectedTraces(save_state=False)
+        self.deleteSelectedTraces()
         for trace in cut_traces:
             self.newTrace(trace, name=name, color=color)
     
@@ -231,22 +232,21 @@ class TraceLayer():
             self.all_traces_hidden = True
         self.selected_traces = []
     
-    def _drawTrace(self, trace_field : QPixmap, trace : Trace, highlight=False) -> bool:
+    def _drawTrace(self, trace_layer : QPixmap, trace : Trace, highlight=False) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         
             Params:
+                trace_layer (QPixmap): the pixmap to draw the traces
                 trace (Trace): the trace to draw on the pixmap
                 highlight (bool): whether or not the trace is being highlighted
             Returns:
                 (bool) if the trace is within the current field window view
         """
-        # get window and pixmap values
-        pixmap_w, pixmap_h = tuple(self.pixmap_dim)
         # establish tform
         t = self.section.tform
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # set up painter
-        painter = QPainter(trace_field)
+        painter = QPainter(trace_layer)
         if highlight: # create dashed white line if trace is to be highlighted
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([2, 5])
@@ -275,12 +275,12 @@ class TraceLayer():
         else:
             painter.drawPolyline(qpoints)
     
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+    def generateTraceLayer(self, pixmap_dim : tuple, window : list):
         """Generate the traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
-                window (list): the voew of the window (x, y, w, h)
+                window (list): the view of the window (x, y, w, h)
         """
         # draw all the traces
         self.window = window
@@ -293,17 +293,12 @@ class TraceLayer():
                 self._drawTrace(
                     trace_layer,
                     trace,
-                    window,
-                    pixmap_dim
                 )
         for trace in self.selected_traces:
             self._drawTrace(
                 trace_layer,
                 trace,
-                window,
-                pixmap_dim,
                 highlight=True
-            )
+            )  
         return trace_layer
-    
-    
+        

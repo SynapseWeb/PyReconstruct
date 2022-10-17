@@ -90,14 +90,14 @@ class Section():
         section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
         section_data["traces"] = []
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
-        with open(section_fp) as section_file:
+        with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
         return Section(section_fp)
 
     
     def save(self):
         """Save file into json or xml."""
-        if self.filepath == assets_dir + "/welcome_series/welcome.0":
+        if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series/welcome.0")):
             return  # ignore welcome series
 
         if self.filetype == "JSON":

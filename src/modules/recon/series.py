@@ -99,7 +99,7 @@ class Series():
         series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
         series_data["current_trace"] = series_data["palette_traces"][0]
         series_fp = os.path.join(wdir, series_name + ".ser")
-        with open(series_fp) as series_file:
+        with open(series_fp, "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
         # create section files (.#)
@@ -135,4 +135,4 @@ class Series():
             Params:
                 section_num (int): the section number
         """
-        return Section(self.getwdir() + self.sections[section_num])
+        return Section(os.path.join(self.getwdir(), self.sections[section_num]))

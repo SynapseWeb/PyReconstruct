@@ -96,11 +96,13 @@ class Series():
                 self.xml_series.contours.append(trace.getXMLObj())
             write_series(self.xml_series, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
     
+    def getwdir(self):
+        return os.path.dirname(self.filepath)
+    
     def loadSection(self, section_num : int) -> Section:
         """Load a section object.
         
             Params:
                 section_num (int): the section number
         """
-        wdir = os.path.dirname(self.filepath)
-        return Section(wdir + self.sections[section_num])
+        return Section(self.getwdir() + self.sections[section_num])

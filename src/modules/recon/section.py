@@ -67,6 +67,34 @@ class Section():
             d["traces"][i] = d["traces"][i].getDict()
         return d
     
+    # STATIC METHOD
+    def new(series_name : str, snum : int, image_location : str, mag : float, thickness : float, wdir : str):
+        """Create a new blank section file.
+        
+            Params:
+                series_name (str): the name for the series
+                snum (int): the sectino number
+                image_location (str): the file path for the image
+                mag (float): microns per pixel for the section
+                thickness (float): the section thickness in microns
+                wdir (str): the working directory for the sections
+            Returns:
+                (Section): the newly created section object
+        """
+        section_data = {}
+        section_data["src"] = os.path.basename(image_location)  # image location
+        section_data["brightness"] = 0
+        section_data["contrast"] = 0
+        section_data["mag"] = mag  # microns per pixel
+        section_data["thickness"] = thickness  # section thickness
+        section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
+        section_data["traces"] = []
+        section_fp = os.path.join(wdir, series_name + "." + str(snum))
+        with open(section_fp) as section_file:
+            section_file.write(json.dumps(section_data, indent=2))
+        return Section(section_fp)
+
+    
     def save(self):
         """Save file into json or xml."""
         if self.filepath == assets_dir + "/welcome_series/welcome.0":

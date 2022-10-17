@@ -1,6 +1,6 @@
 import json
 import os
-from time import thread_time, time
+from time import time
 import random
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
@@ -25,7 +25,6 @@ from modules.pyrecon.classes.transform import Transform as XMLTransform
 from modules.autoseg.zarrtorecon import getZarrObjects, saveZarrImages
 
 from constants.locations import assets_dir
-from constants.defaults import getDefaultPaletteTraces
 
 
 class MainWindow(QMainWindow):
@@ -47,7 +46,7 @@ class MainWindow(QMainWindow):
         # misc defaults
         self.field = None  # placeholder for field
         self.mouse_dock = None  # placeholder for mouse dock
-        self.obj_list = None
+        self.obj_list = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
 
         # create status bar at bottom of window
@@ -55,8 +54,6 @@ class MainWindow(QMainWindow):
 
         # open series and create field
         self.openSeries(assets_dir + "/welcome_series/welcome.ser")
-        # reset welcome window view
-        self.field.current_window = [0,0,1,1]
         self.field.generateView()
         self.field.update()
 
@@ -130,39 +127,35 @@ class MainWindow(QMainWindow):
             
         self.show()
     
-    def openSeries(self, series_fp=""):
+    def openSeries(self, series_obj=None):
         """Open an existing series and create the field.
         
             Params:
-                series_fp (str): series filepath (optional)
+                series_obj (Series): the series object (optional)
         """
-        if series_fp:  # if series is provided (only the case if opening from new)
-            self.series = Series(series_fp)
+        if series_obj is not None:  # if series is provided (only the case if opening from new)
+            self.series = series_obj
         else:  # get series file from user
             series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
             if series_fp == "": return  # exit function if user does not provide series
             self.series = Series(series_fp)  # load series data into Series object
         self.series_fp = series_fp
 
-        # get working directory as series location
-        if "/" in series_fp:
-            self.wdir = series_fp[:series_fp.rfind("/")+1]
-
-        # create the FieldWidget object and set as main widget
-        if self.series.current_section not in self.series.sections:  # if last known section number is not valid
-            self.series.current_section = list(self.series.sections.keys())[0]
-        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        if self.field is None: # create field widget if not already
-            self.field = FieldWidget(self.series.current_section, self.section, self.series.window, self.series.src_dir, self)
-            self.setCentralWidget(self.field)
-        else:
-            self.field.loadSeries(self.series.current_section, self.section, self.series.window, self.series.src_dir)
+        # create field
+        if self.field is not None:  # close previous field widget
+            self.field.close()
+        self.field = FieldWidget(self.series, self)
+        self.setCentralWidget(self.field)
 
         # create mouse dock
-        if self.mouse_dock is not None: # close if one exists
+        if self.mouse_dock is not None: # close previous mouse dock
             self.mouse_dock.close()
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+
+        if self.obj_list is not None:
+            self.obj_list.close()
+            self.obj_list = None
     
     def newSeries(self, image_locations : list):
         """Create a new series from a set of images."""
@@ -194,36 +187,13 @@ class MainWindow(QMainWindow):
         if "/" in first_image:
             self.wdir = first_image[:first_image.rfind("/")+1]
         
-        # create series data file (.ser)
-        series_data = {}
-        series_data["sections"] = {}  # section_number : section_filename
-        series_data["current_section"] = 0  # last section left off
-        series_data["src_dir"] = ""  # the directory of the images
-        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
-        for i in range(len(image_locations)):
-            series_data["sections"][i] = series_name + "." + str(i)
-        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
-        series_data["current_trace"] = series_data["palette_traces"][0]
-        with open(self.wdir + series_name + ".ser", "w") as series_file:
-            series_file.write(json.dumps(series_data, indent=2))
-        
-        # create section files (.#)
-        for i in range(len(image_locations)):
-            section_data = {}
-            section_data["src"] = image_locations[i][image_locations[i].rfind("/")+1:]  # image location
-            section_data["brightness"] = 0
-            section_data["contrast"] = 0
-            section_data["mag"] = mag  # microns per pixel
-            section_data["thickness"] = thickness  # section thickness
-            section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
-            section_data["traces"] = []
-            with open(self.wdir + series_name + "." + str(i), "w") as section_file:
-                section_file.write(json.dumps(section_data, indent=2))
+        # create new series
+        series = Series.new(image_locations, series_name, mag, thickness)
     
         # open series after creating
-        self.openSeries(self.wdir + series_name + ".ser")
+        self.openSeries(series)
     
-    def newSeriesFromXML(self):
+    def newSeriesFromXML(self):  # MIGRATE TO BACKEND
         """Create a new series from existing XML series data."""
         # get the XML file location from the user
         xml_file, ext = QFileDialog.getOpenFileName(self, "Open the XML SER file", filter="*.ser")
@@ -302,7 +272,7 @@ class MainWindow(QMainWindow):
                 series_file.write(json.dumps(series_data, indent=2))
         self.openSeries(series_fp)
     
-    def importTransforms(self):
+    def importTransforms(self):  # MIGRATE TO BACKEND
         """Import transforms from a text file."""
         self.saveAllData()
         # get file from user
@@ -337,7 +307,7 @@ class MainWindow(QMainWindow):
         # reload current section
         self.changeSection(self.series.current_section, save=False)
 
-    def importZarrObjects(self, zarr_fp : str):
+    def importZarrObjects(self, zarr_fp : str):  # MIGRATE TO BACKEND
         """Import objects from a zarr folder."""
         self.saveAllData()
         # get the file path
@@ -380,7 +350,7 @@ class MainWindow(QMainWindow):
         self.field.generateView(generate_image=False)
         self.field.update()
     
-    def newSeriesFromZarr(self):
+    def newSeriesFromZarr(self):  # MIGRATE TO BACKEND
         zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
         if not zarr_fp:
             return
@@ -391,7 +361,7 @@ class MainWindow(QMainWindow):
         self.newSeries(image_locations)
         self.importZarrObjects(zarr_fp)
     
-    def randomColor(self):
+    def randomColor(self):  # MIGRATE TO BACKEND
         """Returns a random primary or secondary color.
         
             Returns:
@@ -422,40 +392,36 @@ class MainWindow(QMainWindow):
     def changeSection(self, section_num, save=True):
         """Change the section of the field."""
         start_time = time()
-        if section_num not in self.series.sections:  # check if requested section exists
-            return
         if save:
             self.saveAllData()
-        self.series.current_section = section_num
-        self.section = Section(self.wdir + self.series.sections[self.series.current_section])
-        self.field.loadSection(self.series.current_section, self.section, self.series.src_dir)
+        self.field.changeSection(section_num)
         print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
         """Called when any key is pressed and user focus is on main window."""
         if not self.field:  # do not respond to keyboard if field is not created
             return
-        if event.key() == 16777238:  # if PgUp is pressed
+        if event.key() == 16777238:  # PgUp
             section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
             section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i < len(section_numbers) - 1:
                 self.changeSection(section_numbers[section_number_i + 1])
-        elif event.key() == 16777239:  # if PgDn is pressed
+        elif event.key() == 16777239:  # PgDn
             section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
             section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i > 0:
                 self.changeSection(section_numbers[section_number_i - 1])
-        elif event.key() == 16777223:  # if Del is pressed
+        elif event.key() == 16777223:  # Del
             self.field.deleteSelectedTraces()
-        elif event.key() == 45:  # if - is pressed
+        elif event.key() == 45:  # -
             self.field.changeBrightness(-5)
-        elif event.key() == 61:  # if + is pressed
+        elif event.key() == 61:  # +
             self.field.changeBrightness(5)
-        elif event.key() == 91: # if [ is pressed
+        elif event.key() == 91: # [
             self.field.changeContrast(-0.2)
-        elif event.key() == 93: # if ] is pressed
+        elif event.key() == 93: # ]
             self.field.changeContrast(0.2)
-        # print(event.key())  # developer purposes
+        print(event.key())  # developer purposes
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""
@@ -472,19 +438,16 @@ class MainWindow(QMainWindow):
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""
-        self.section.brightness = self.field.brightness
-        self.section.contrast = self.field.contrast
-        self.section.traces = self.field.traces  # get traces from field
-        self.series.window = self.field.current_window  # get window view
+        # save the trace palette
         self.series.palette_traces = []
         for button in self.mouse_dock.palette_buttons:  # get trace palette
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace
-        self.section.save()
+        self.field.section.save()
         self.series.save()
         if self.obj_list is not None and self.obj_list.isVisible():  # update the table if present
-            self.obj_list.updateSectionData(self.series.current_section, self.section)
+            self.obj_list.updateSectionData(self.series.current_section, self.field.section)
     
     def openObjectList(self):
         """Open the object list widget."""
@@ -508,7 +471,7 @@ class MainWindow(QMainWindow):
         self.changeSection(section_num)
         self.field.findTrace(obj_name)
     
-    def exportTracesToXML(self):
+    def exportTracesToXML(self):  # MIGRATE TO BACKEND
         """Export all traces to existing XML series.
         
         This function overwrites the traces in the XML series.
@@ -589,7 +552,7 @@ class MainWindow(QMainWindow):
     
     def changeTform(self):
         """Open a dialog to change the transform of a section."""
-        current_tform = " ".join([str(round(n, 2)) for n in self.section.tform])
+        current_tform = " ".join([str(round(n, 2)) for n in self.field.section.tform])
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
         if not confirmed:
@@ -600,8 +563,7 @@ class MainWindow(QMainWindow):
                 return
         except ValueError:
             return
-        self.section.tform = new_tform
-        self.field.loadTransformation(new_tform, src_dir=self.series.src_dir, update=True, save_state=True)
+        self.field.changeTform(new_tform)
     
     def gotoSection(self):
         """Open a dialog to jump to a specific section number."""
@@ -614,34 +576,6 @@ class MainWindow(QMainWindow):
             self.changeSection(new_section_num)
         except ValueError:
             return
-    
-    def changeSrcDir(self, notify=False):
-        """Open a series of dialogs to change the image source directory."""
-        if notify:
-            reply = QMessageBox.question(
-                self,
-                "Images Not Found",
-                "Images not found.\nWould you like to locate them?",
-                QMessageBox.Yes,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.No:
-                return
-        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
-        if not new_src_dir:
-            return
-        if os.path.samefile(new_src_dir, self.wdir):
-            self.series.src_dir = ""
-        else:
-            self.series.src_dir = new_src_dir
-        QMessageBox.information(
-            self,
-            "Image Directory",
-            "New image directory saved.",
-            QMessageBox.Ok
-        )
-        if not notify:
-            self.changeSection(self.series.current_section)
         
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

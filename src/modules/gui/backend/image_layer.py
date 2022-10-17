@@ -9,8 +9,6 @@ from modules.recon.section import Section
 from modules.calc.pfconversions import fieldPointToPixmap
 
 class ImageLayer():
-    # mouse modes
-    POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
 
     def __init__(self, section : Section, src_dir : str):
         """Create the image field.
@@ -20,20 +18,17 @@ class ImageLayer():
                 src_dir (str): the immediate directory for the images
         """
         self.section = section
+        self.src_dir = src_dir
         # establish transformation
         t = self.section.tform
         self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
         self._transformImage(src_dir)
     
-    def _transformImage(self, src_dir : str):
-        """Apply the transform to the image.
-        
-            Params:
-                src_dir (str): the immediate directory containing the image files
-        """
+    def _transformImage(self):
+        """Apply the transform to the image."""
         # load the image
-        src_path = os.path.join(src_dir, os.path.basename(self.src))
+        src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
         base_image = QImage(src_path)
         # get base corners
         bw, bh = base_image.width(), base_image.height()
@@ -47,6 +42,15 @@ class ImageLayer():
         x_shift = t[2] - self.tform_origin[0] * self.section.mag # calculate x translation for image placement in field
         y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
+    
+    def setSrcDir(self, src_dir : str):
+        """Set the immediate source directory and reload image.
+        
+            Params:
+                src_dir (str): the new directory for the images
+        """
+        self.src_dir = src_dir
+        self._transformImage()
     
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
@@ -187,8 +191,8 @@ class ImageLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
 
         # scaling: ratio of actual image dimensions to main window dimensions (should be equal)
-        self.x_scaling = pixmap_w / (window_w / self.section.mag)
-        self.y_scaling = pixmap_h / (window_h / self.section.mag)
+        x_scaling = pixmap_w / (window_w / self.section.mag)
+        y_scaling = pixmap_h / (window_h / self.section.mag)
 
         # create empty window
         image_layer = QPixmap(pixmap_w, pixmap_h)
@@ -220,14 +224,14 @@ class ImageLayer():
         corners = list(self.tform_corners)
         for i in range(len(corners)):
             p = corners[i]
-            x = p[0]*self.x_scaling - window_x/self.section.mag*self.x_scaling
-            y = p[1]*self.y_scaling + window_y/self.section.mag*self.y_scaling
+            x = p[0]*x_scaling - window_x/self.section.mag*x_scaling
+            y = p[1]*y_scaling + window_y/self.section.mag*y_scaling
             corners[i] = QPoint(x, y)
 
         # put the transformed image on the empty window
         painter = QPainter(image_layer)
-        painter.drawImage(QRectF(left_empty * self.x_scaling, top_empty * self.y_scaling,
-                            crop_w * self.x_scaling, crop_h * self.y_scaling),
+        painter.drawImage(QRectF(left_empty * x_scaling, top_empty * y_scaling,
+                            crop_w * x_scaling, crop_h * y_scaling),
                             self.tformed_image,
                             QRectF(crop_left, crop_top, crop_w, crop_h))
         painter.end()

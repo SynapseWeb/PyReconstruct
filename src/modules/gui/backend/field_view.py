@@ -24,10 +24,11 @@ class FieldView(ImageLayer, TraceLayer):
                 wdir (str): the working directory for the series
         """
         self.series = series
-
         self.section = self.series.loadSection(self.series.current_section)
-
         self.b_section = None
+
+        ImageLayer().__init__(self.section, self.series.src_dir)
+        TraceLayer().__init__(self.section)
 
         self.states = {}
         self.current_state = FieldState(self.section.traces, self.section.tform)
@@ -155,9 +156,13 @@ class FieldView(ImageLayer, TraceLayer):
         # blend b section if requested
         if blend and self.b_section is not None:
             if generate_image:
-                self.b_image_pixmap = self.executeOnB(lambda : self.generateImageLayer(pixmap_dim, self.series.window))
+                self.b_image_pixmap = self.executeOnB(
+                    lambda : self.generateImageLayer(pixmap_dim, self.series.window)
+                )
             if generate_traces:
-                self.b_trace_pixmap = self.executeOnB(lambda : self.generateTraceLayer(pixmap_dim, self.series.window))
+                self.b_trace_pixmap = self.executeOnB(
+                    lambda : self.generateTraceLayer(pixmap_dim, self.series.window)
+                )
             b_view = self.b_image_pixmap.copy()
             painter = QPainter(b_view)
             painter.drawPixmap(0, 0, self.b_trace_pixmap)

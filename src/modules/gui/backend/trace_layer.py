@@ -51,17 +51,27 @@ class TraceLayer():
                 closest_trace = trace
         return closest_trace if min_distance <= radius else None
     
-    def selectTrace(self, field_x, field_y):
+    def selectTrace(self, pix_x, pix_y, deselect=False):
         """"Select the closest trace to the given field coordinates.
         
             Params:
                 field_x (float): the x-coord of the point in the field
                 field_y (float): the y-coord of the point in the field
         """
-        selected = self.findClosestTrace(field_x, field_y)
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        # calculate radius based on window size (2% of window size)
+        window_size = max(self.window[2:])
+        radius = window_size / 25
+        selected = self.findClosestTrace(field_x, field_y, radius=radius)
         if selected is not None:
-            self.selected_traces.append(selected)
-    
+            if not deselect:
+                self.selected_traces.append(selected)
+                return True
+            elif deselect and selected in self.selected_traces:
+                self.selected_traces.remove(selected)
+                return True
+        return False
+
     def newTrace(self, pix_trace : list, name, color, closed=True):
         """Create a new trace from pixel coordinates.
         
@@ -80,6 +90,29 @@ class TraceLayer():
         for point in pix_trace:
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
             rtform_point = point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
+            new_trace.add(rtform_point)
+        self.section.traces.append(new_trace)
+        self.selected_traces.append(new_trace)
+    
+    def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
+        """Called when mouse is pressed in stamp mode.
+        
+        Creates a stamp centered on the mouse location.
+        
+            Params:
+                pix_x (int): pixel x-coord to place stamp
+                pix_y (int): pixel y-coord to place stamp
+                trace (Trace): the trace to place down
+        """
+        # get mouse coords and convert to field coords
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        # create new stamp trace
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        new_trace = Trace(trace.name, trace.color)
+        for point in trace.points:
+            field_point = (point[0] + field_x, point[1] + field_y)
+            rtform_point = point_tform.inverted()[0].map(*field_point)  # fix the coords to image
             new_trace.add(rtform_point)
         self.section.traces.append(new_trace)
         self.selected_traces.append(new_trace)

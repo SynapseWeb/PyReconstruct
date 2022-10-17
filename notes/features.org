@@ -2,7 +2,6 @@
 
 - Julian: Continue object list, trace list
 - Michael: Continue options widget and investigate 3D
-- Next meeting: Wed, 12 Oct 10 AM Denver / 6 PM Trieste
 
 * High-priority tasks
 
@@ -25,6 +24,7 @@
    - [ ] FieldWidget object should operate on Section object (JF)
 - [ ] Fix import statement for dim 6
 - [ ] Store section traces as dicts (name: traces list)
+- [ ] Ability to move traces using arrow keys (maybe later by clicking and dragging?)
 
 * Investigate
 

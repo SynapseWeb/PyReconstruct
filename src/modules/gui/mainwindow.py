@@ -119,15 +119,15 @@ class MainWindow(QMainWindow):
         # create shortcuts
         shortcuts = [
             ("Ctrl+S", self.saveAllData),
-            ("Ctrl+M", (self.field.mergeSelectedTraces, self.field.generateView)),
-            ("Ctrl+D", (self.field.deselectAllTraces, lambda : self.field.generateView(save_state=False))),
-            ("Ctrl+H", (self.field.hideSelectedTraces, self.field.generateView)),
-            ("Ctrl+Shift+H", (self.field.toggleHideAllTraces, self.field.generateView)),
-            ("Ctrl+Z", (self.field.undoState, lambda : self.field.generateView(save_state=False))),
-            ("Ctrl+Y", (self.field.redoState, lambda : self.field.generateView(save_state=False))),
+            ("Ctrl+M", self.field.mergeSelectedTraces),
+            ("Ctrl+D", self.field.deselectAllTraces),
+            ("Ctrl+H", self.field.hideSelectedTraces),
+            ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
+            ("Ctrl+Z", self.field.undoState),
+            ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
             ("Ctrl+G", self.gotoSection),
-            ("Ctrl+A", (self.field.changeTraceAttributes, self.field.generateView))
+            ("Ctrl+A", self.field.changeTraceAttributes)
         ]
         
         for kbd, act in shortcuts:
@@ -408,8 +408,6 @@ class MainWindow(QMainWindow):
             self.saveAllData()
         # change the field section
         self.field.changeSection(section_num)
-        # refresh view
-        self.field.generateView()
         # update status bar
         self.field.updateStatusBar()
         print("Time taken to change section:", time() - start_time, "sec")
@@ -430,22 +428,16 @@ class MainWindow(QMainWindow):
                 self.changeSection(section_numbers[section_number_i - 1])
         elif event.key() == 16777223:  # Del
             self.field.deleteSelectedTraces()
-            self.field.generateView(generate_image=False)
         elif event.key() == 45:  # -
             self.field.changeBrightness(-5)
-            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 61:  # +
             self.field.changeBrightness(5)
-            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 91: # [
             self.field.changeContrast(-0.2)
-            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 93: # ]
             self.field.changeContrast(0.2)
-            self.field.generateView(generate_traces=False, save_state=False)
         elif event.key() == 32: # Space
-            self.field.blend_sections = not self.field.blend_sections
-            self.field.generateView(save_state=False)
+            self.field.toggleBlend()
         print(event.key())  # developer purposes
     
     def wheelEvent(self, event):
@@ -589,7 +581,6 @@ class MainWindow(QMainWindow):
         except ValueError:
             return
         self.field.changeTform(new_tform)
-        self.field.generateView(generate_traces=False)
     
     def gotoSection(self):
         """Open a dialog to jump to a specific section number."""

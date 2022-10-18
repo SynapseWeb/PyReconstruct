@@ -57,10 +57,9 @@ class FieldWidget(QWidget, FieldView):
         if self.series.src_dir == "":
             src_path = os.path.join(self.series.getwdir(), section.src)
         else:
-            src_path = os.path.join(src_dir, os.path.basename(section.src))
+            src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
         if not os.path.isfile(src_path):
             self.changeSrcDir(notify=True)
-            src_dir = self.series.src_dir
 
         # establish misc defaults
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
@@ -86,20 +85,21 @@ class FieldWidget(QWidget, FieldView):
             return
         if os.path.samefile(new_src_dir, self.series.getwdir()):
             self.series.src_dir = ""
-            self.setSrcDir(self.series.getwdir())
         else:
             self.series.src_dir = new_src_dir
-            self.setSrcDir(self.series.src_dir)
         QMessageBox.information(
             self,
             "Image Directory",
             "New image directory saved.",
             QMessageBox.Ok
         )
-        if not notify:
-            self.reloadSection(self.series.current_section)
+        self.reload()
     
-    def generateView(self, generate_image=True, generate_traces=True, blend=False, save_state=True, update=True):
+    def toggleBlend(self):
+        self.blend_sections = not self.blend_sections
+        self.generateView()
+    
+    def generateView(self, generate_image=True, generate_traces=True, update=True):
         self.field_pixmap = FieldView.generateView(
             self,
             self.pixmap_dim,
@@ -108,10 +108,7 @@ class FieldWidget(QWidget, FieldView):
             blend=self.blend_sections
         )
         self.field_pixmap_copy = self.field_pixmap.copy()
-        if save_state:
-            self.saveState()
-        if update:
-            self.update()
+        self.update()
     
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
@@ -137,7 +134,7 @@ class FieldWidget(QWidget, FieldView):
         w = event.size().width()
         h = event.size().height()
         self.pixmap_dim = (w, h)
-        self.generateView(save_state=False)
+        self.generateView()
     
     def updateStatusBar(self, event=None, find_closest_trace=True):
         """Update status bar with useful information.
@@ -255,9 +252,7 @@ class FieldWidget(QWidget, FieldView):
         """
         pix_x, pix_y = event.x(), event.y()
         deselect = (event.button() == Qt.RightButton)
-        requires_update = self.selectTrace(pix_x, pix_y, deselect=deselect)
-        if requires_update:
-            self.generateView(generate_image=False, save_state=False)
+        self.selectTrace(pix_x, pix_y, deselect=deselect)
     
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode.
@@ -343,7 +338,7 @@ class FieldWidget(QWidget, FieldView):
             move_y = (event.y() - self.clicked_y) / y_scaling * section.mag
             self.series.window[0] += move_x
             self.series.window[1] += move_y
-            self.generateView(save_state=False)
+            self.generateView()
         # set new window for zooming
         elif event.button() == Qt.RightButton:
             section = self.section
@@ -370,7 +365,7 @@ class FieldWidget(QWidget, FieldView):
             self.series.window[3] /= zoom_factor
             if self.series.window[3] < section.mag:
                 self.series.window[3] = section.mag
-            self.generateView(save_state=False)
+            self.generateView()
     
     def pencilPress(self, event):
         """Called when mouse is pressed in pencil mode.
@@ -415,10 +410,9 @@ class FieldWidget(QWidget, FieldView):
         """
         self.newTrace(self.current_trace,
             name=self.tracing_trace.name,
-            color = self.tracing_trace.color,
+            color=self.tracing_trace.color,
             closed=closed
         )
-        self.generateView(generate_image=False)
     
     def linePress(self, event, closed=True):
         """Called when mouse is pressed in a line mode.
@@ -455,7 +449,6 @@ class FieldWidget(QWidget, FieldView):
                     closed=closed
                 )
                 self.is_line_tracing = False
-                self.generateView(generate_image=False)
     
     def lineMove(self, event, closed=True):
         """Called when mouse is moved in a line mode.
@@ -497,7 +490,6 @@ class FieldWidget(QWidget, FieldView):
         # get mouse coords and convert to field coords
         pix_x, pix_y = event.x(), event.y()
         self.placeStamp(pix_x, pix_y, self.tracing_trace)
-        self.generateView(generate_image=False)
     
     def scalpelPress(self, event):
         """Called when mouse is pressed in scalpel mode.
@@ -541,32 +533,13 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         self.cutTrace(self.scalpel_trace)
-        self.generateView(generate_image=False)
-    
-    def findTrace(self, trace_name : str, occurence=1):
-        """Focus the window view on a given trace.
-        
-            Params:
-                trace_name (str): the name of the trace to focus on
-                occurence (int): find the nth trace on the section"""
-        count = 0
-        for trace in self.section.traces:
-            if trace.name == trace_name:
-                count += 1
-                if count == occurence:
-                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
-                    range_x = max_x - min_x
-                    range_y = max_y - min_y
-                    self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
-                    self.selected_traces = [trace]
-                    self.generateView(save_state=False)
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             if self.mouse_mode == FieldWidget.CLOSEDLINE:
-                self.newTrace(self.current_trace, closed=True)
+                self.section_layer.newTrace(self.current_trace, closed=True)
             elif self.mouse_mode == FieldWidget.OPENLINE:
-                self.newTrace(self.current_trace, closed=False)
+                self.section_layer.newTrace(self.current_trace, closed=False)
             self.is_line_tracing = False
             self.generateView(generate_image=False)

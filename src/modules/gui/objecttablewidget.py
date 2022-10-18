@@ -1,10 +1,9 @@
 from PySide6.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
-from PySide6.QtGui import QTransform
 from PySide6.QtCore import Qt
 
 from modules.recon.series import Series
 from modules.recon.section import Section
-from modules.gui.objecttableitem import ObjectTableItem
+from modules.gui.backend.object_table_data import loadSeriesData, getObjectsToUpdate
 from modules.calc.quantification import sigfigRound
 
 class ObjectTableWidget(QDockWidget):
@@ -41,38 +40,13 @@ class ObjectTableWidget(QDockWidget):
 
         self.show()
     
-    def loadSeriesData(self, progbar : QProgressDialog):
-        """Load all of the data for each object in the series.
-        
-            Params:
-                progbar (QPorgressDialog): progress bar to update as function progresses
-        """
-        self._objdict = {}  # object name : ObjectTableItem (contains data on object)
-        prog_value = 0
-        final_value = len(self.series.sections)
-        for section_num in self.series.sections:
-            section = self.series.loadSection(section_num)
-            t = section.tform
-            point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            for trace in section.traces:
-                points = trace.points.copy()
-                for i in range(len(points)):
-                    points[i] = point_tform.map(*points[i])  # transform the points to get accurate data
-                if trace.name not in self._objdict:
-                    self._objdict[trace.name] = ObjectTableItem(trace.name)  # create new object if not already exists
-                self._objdict[trace.name].addTrace(points, trace.closed, section_num, section.thickness)
-            prog_value += 1
-            progbar.setValue(prog_value / final_value * 100)
-            if progbar.wasCanceled(): return
-    
     def createTable(self):
         """Create the table widget."""
         # load all of the series data
         progbar = QProgressDialog("Loading object data...", "Cancel", 0, 100, self.parent_widget)
         progbar.setWindowTitle("Object Data")
         progbar.setWindowModality(Qt.WindowModal)
-        self._objdict = {}
-        self.loadSeriesData(progbar)
+        self._objdict = loadSeriesData(self.series, progbar)
         if progbar.wasCanceled(): return
 
         # create the table
@@ -122,27 +96,8 @@ class ObjectTableWidget(QDockWidget):
         self.resize(w, h)
         self.table.setGeometry(0, 20, w, h-20)
     
-    def updateSectionData(self, section_num, section : Section):
-        objects_to_update = set()
-        for name, item in self._objdict.items():
-            had_existing_data = item.clearSectionData(section_num)
-            if had_existing_data:
-                objects_to_update.add(name)
-        
-        t = section.tform
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-        section_thickness = section.thickness
-        for trace in section.traces:
-            name = trace.name
-            closed = trace.closed
-            points = trace.points.copy()
-            for i in range(len(points)):
-                points[i] = point_tform.map(*points[i])  # transform the points to get accurate data
-            if name not in self._objdict:
-                self._objdict[name] = ObjectTableItem(name)  # create new object if not already exists
-            self._objdict[name].addTrace(points, closed, section_num, section_thickness)
-            objects_to_update.add(name)
-        
+    def updateSectionData(self, section_num : int, section : Section):
+        objects_to_update = getObjectsToUpdate(self._objdict, section_num, section)
         row = 0        
         for name in sorted(self._objdict.keys()):
             if self.table.item(row, 0) is None or self.table.item(row, 0).text() != name:

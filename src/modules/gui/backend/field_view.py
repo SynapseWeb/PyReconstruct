@@ -12,6 +12,12 @@ class FieldState():
         for trace in traces:
             self.traces.append(trace.copy())
         self.tform = tform.copy()
+    
+    def getTraces(self):
+        return self.traces.copy()
+    
+    def getTform(self):
+        return self.tform.copy()
 
 class FieldView():
 
@@ -63,8 +69,8 @@ class FieldView():
                 state (FieldState): the field state to restore
         """
         self.current_state = state
-        self.section_layer.changeTform(state.tform)
-        self.section.traces = state.traces
+        self.section_layer.changeTform(state.getTform())
+        self.section.traces = state.getTraces()
         self.section_layer.selected_traces = []
         self.generateView()
 
@@ -229,7 +235,6 @@ class FieldView():
     
     def deselectAllTraces(self):
         self.section_layer.deselectAllTraces()
-        self.saveState()
         self.generateView(generate_image=False)
     
     def hideSelectedTraces(self):

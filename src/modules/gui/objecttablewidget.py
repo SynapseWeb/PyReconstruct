@@ -1,4 +1,3 @@
-import orjson
 from PySide6.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
 from PySide6.QtGui import QTransform
 from PySide6.QtCore import Qt
@@ -10,17 +9,16 @@ from modules.calc.quantification import sigfigRound
 
 class ObjectTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, wdir : str, quantities : dict, parent : QWidget):
-        """Creat the object table dock widget.
+    def __init__(self, series : Series, quantities : dict, parent : QWidget):
+        """Create the object table dock widget.
         
             Params:
                 series (Series): the Series object
-                wdir (str): the directory containing the JSON files
                 quantities (dict): information on which calculations to include
-                parent (QWidget): the main window the dock is connected to"""
+                parent (QWidget): the main window the dock is connected to
+        """
         super().__init__(parent)
         self.series = series
-        self.wdir = wdir
         self.quantities = quantities
         self.parent_widget = parent
 
@@ -53,7 +51,7 @@ class ObjectTableWidget(QDockWidget):
         prog_value = 0
         final_value = len(self.series.sections)
         for section_num in self.series.sections:
-            section = Section(self.wdir + self.series.sections[section_num])
+            section = self.series.loadSection(section_num)
             t = section.tform
             point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
             for trace in section.traces:

@@ -1,10 +1,8 @@
 from PySide6.QtGui import QPainter
-from numpy import swapaxes
 
 from modules.recon.series import Series
 
-from modules.gui.backend.image_layer import ImageLayer
-from modules.gui.backend.trace_layer import TraceLayer
+from modules.gui.backend.section_layer import SectionLayer
 
 class FieldState():
 
@@ -15,7 +13,7 @@ class FieldState():
             self.traces.append(trace.copy())
         self.tform = tform.copy()
 
-class FieldView(ImageLayer, TraceLayer):
+class FieldView():
 
     def __init__(self, series : Series):
         """Create the field view object.
@@ -24,46 +22,34 @@ class FieldView(ImageLayer, TraceLayer):
                 series (Series): the series object
                 wdir (str): the working directory for the series
         """
+        # get series and current section
         self.series = series
         self.section = self.series.loadSection(self.series.current_section)
-
-        # b section stored attributes
-        self.b_section = None
-        self.b_section_number = None
-        self.b_tformed_image = None
-        self.b_selected_traces = None
 
         # get image dir
         if self.series.src_dir == "":
             self.src_dir = self.series.getwdir()
         else:
             self.src_dir = self.series.src_dir
-        
-        ImageLayer.__init__(self, self.section, self.src_dir)
-        TraceLayer.__init__(self, self.section)
 
-        self.states = {}
+        # create section view
+        self.section_layer = SectionLayer(self.section, self.src_dir)
+
+        # b section and view placeholder
+        self.b_section = None
+        self.b_section_layer = None
+
+        self.undo_states = {}
         self.current_state = FieldState(self.section.traces, self.section.tform)
-        self.states[self.series.current_section] = []
+        self.undo_states[self.series.current_section] = []
         self.redo_states = []
-
-    def swapABattr(self):
-        """Swap all stored section attributes for the two sections in memory."""
-        self.section, self.b_section = self.b_section, self.section
-        self.series.current_section, self.b_section_number = self.b_section_number, self.series.current_section
-        self.tformed_image, self.b_tformed_image = self.b_tformed_image, self.tformed_image
-        self.selected_traces, self.b_selected_traces = self.b_selected_traces, self.selected_traces
     
-    def executeOnB(self, function):
-        # swap the sections, perform function, swap the sections
-        self.swapABattr()
-        ret = function()
-        self.swapABattr()
-        return ret
+    def reload(self):
+        self.__init__(self.series)
 
     def saveState(self):
         """Save the current traces and transform."""
-        state_list = self.states[self.series.current_section]
+        state_list = self.undo_states[self.series.current_section]
         state_list.append(self.current_state)
         if len(state_list) > 20:  # limit the number of undo states
             state_list.pop(0)
@@ -77,23 +63,29 @@ class FieldView(ImageLayer, TraceLayer):
                 state (FieldState): the field state to restore
         """
         self.current_state = state
-        self.changeTform(state.tform)
+        self.section_layer.changeTform(state.tform)
         self.section.traces = state.traces
-        self.selected_traces = []
+        self.section_layer.selected_traces = []
+        self.generateView()
 
     def undoState(self):
         """Undo last action (switch to last state)."""
-        state_list = self.states[self.series.current_section]
+        state_list = self.undo_states[self.series.current_section]
         if len(state_list) >= 1:
             self.redo_states.append(self.current_state)
             self.restoreState(state_list.pop())
     
     def redoState(self):
         """Redo an undo (switch to last undid state)."""
-        state_list = self.states[self.series.current_section]
+        state_list = self.undo_states[self.series.current_section]
         if len(self.redo_states) >= 1:
             state_list.append(self.current_state)
             self.restoreState(self.redo_states.pop())
+    
+    def swapABsections(self):
+        """Switch the A and B sections."""
+        self.section, self.b_section = self.b_section, self.section
+        self.section_layer, self.b_section_layer = self.b_section_layer, self.section_layer
     
     def changeSection(self, new_section_num : int):
         """Change the displayed section.
@@ -104,31 +96,42 @@ class FieldView(ImageLayer, TraceLayer):
         if new_section_num not in self.series.sections:
             return
         # move current section data to b section
-        self.swapABattr()
+        self.swapABsections()
         # load new section if required
         if new_section_num != self.series.current_section:
             # load section
             self.section = self.series.loadSection(new_section_num)
-            # load new image
-            self._transformImage()
+            # load section view
+            self.section_layer = SectionLayer(self.section, self.src_dir)
             # set new current section
             self.series.current_section = new_section_num
             # clear selected traces
-            self.selected_traces = []
+            self.section_layer.selected_traces = []
         # clear redo states
         self.redo_states = []
         # create new list for states if needed
-        if new_section_num not in self.states:
-            self.states[new_section_num] = []
+        if new_section_num not in self.undo_states:
+            self.undo_states[new_section_num] = []
+        # generate view and update status bar
+        self.generateView()
     
-    def reloadSection(self):
-        """Reload Section trace data from file (if file was changed)."""
-        self.section = self.series.loadSection(self.series.current_section)
-        self.changeTform(self.section.tform)
-        self.selected_traces = []
-        if self.b_section is not None:
-            self.b_section = self.series.loadSection(self.b_section_number)
-            self.executeOnB(lambda : self.changeTform(self.b_section.tform))
+    def findTrace(self, trace_name : str, occurence=1):
+        """Focus the window view on a given trace.
+        
+            Params:
+                trace_name (str): the name of the trace to focus on
+                occurence (int): find the nth trace on the section"""
+        count = 0
+        for trace in self.section.traces:
+            if trace.name == trace_name:
+                count += 1
+                if count == occurence:
+                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+                    range_x = max_x - min_x
+                    range_y = max_y - min_y
+                    self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+                    self.selected_traces = [trace]
+                    self.generateView(save_state=False)
     
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.
@@ -141,7 +144,7 @@ class FieldView(ImageLayer, TraceLayer):
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_ratio = window_w/window_h
         pixmap_ratio = pixmap_w / pixmap_h
-        if abs(window_ratio - pixmap_ratio) > 1e-5:
+        if abs(window_ratio - pixmap_ratio) > 1e-6:
             if window_ratio < pixmap_ratio:  # increase the width
                 new_w = window_h * pixmap_ratio
                 new_x = window_x - (new_w - window_w) / 2
@@ -164,37 +167,96 @@ class FieldView(ImageLayer, TraceLayer):
         """
         # resize series window to match view proportions
         self.resizeWindow(pixmap_dim)
-        # generate layer pixmaps
-        if generate_image:
-            self.image_layer = self.generateImageLayer(pixmap_dim, self.series.window)
-        if generate_traces:
-            self.trace_layer = self.generateTraceLayer(pixmap_dim, self.series.window)
-        # combine pixmaps
-        view = self.image_layer.copy()
-        painter = QPainter(view)
-        painter.drawPixmap(0, 0, self.trace_layer)
-        painter.end()
+        # generate section view
+        view = self.section_layer.generateView(
+            pixmap_dim,
+            self.series.window,
+            generate_image=generate_image,
+            generate_traces=generate_traces
+        )
         # blend b section if requested
         if blend and self.b_section is not None:
-            if generate_image:
-                self.b_image_layer = self.executeOnB(
-                    lambda : self.generateImageLayer(pixmap_dim, self.series.window)
-                )
-            if generate_traces:
-                self.b_trace_layer = self.executeOnB(
-                    lambda : self.generateTraceLayer(pixmap_dim, self.series.window)
-                )
-            b_view = self.b_image_layer.copy()
-            painter = QPainter(b_view)
-            painter.drawPixmap(0, 0, self.b_trace_layer)
-            painter.end()
+            # generate b section view
+            b_view = self.b_section_layer.generateView(
+                pixmap_dim,
+                self.series.window,
+                generate_image=generate_image,
+                generate_traces=generate_traces
+            )
             # overlay a and b sections
             painter = QPainter(view)
             painter.setOpacity(0.5)
             painter.drawPixmap(0, 0, b_view)
             painter.end()
-        else:
-            self.b_image_layer = None
-            self.b_trace_layer = None
+        
         return view
+    
+    # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
+    # look up a better way to do this??
+
+    def deleteSelectedTraces(self):
+        self.section_layer.deleteSelectedTraces()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def mergeSelectedTraces(self):
+        self.section_layer.mergeSelectedTraces()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def cutTrace(self, scalpel_trace):
+        self.section_layer.cutTrace(scalpel_trace)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def newTrace(self, pix_trace, name, color, closed=True):
+        self.section_layer.newTrace(pix_trace, name, color, closed)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def placeStamp(self, pix_x, pix_y, stamp):
+        self.section_layer.placeStamp(pix_x, pix_y, stamp)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def findClosestTrace(self, field_x, field_y, radius=0.5):
+        return self.section_layer.findClosestTrace(field_x, field_y, radius)
+    
+    def selectTrace(self, pix_x, pix_y, deselect=False):
+        requires_update = self.section_layer.selectTrace(pix_x, pix_y, deselect=deselect)
+        if requires_update:
+            self.generateView(generate_image=False)
+    
+    def deselectAllTraces(self):
+        self.section_layer.deselectAllTraces()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def hideSelectedTraces(self):
+        self.section_layer.hideSelectedTraces()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def toggleHideAllTraces(self):
+        self.section_layer.toggleHideAllTraces
+        self.generateView(generate_image=False)
+    
+    def changeTraceAttributes(self):
+        self.section_layer.changeTraceAttributes()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def changeBrightness(self, change):
+        self.section_layer.changeBrightness(change)
+        self.generateView(generate_traces=False)
+    
+    def changeContrast(self, change):
+        self.section_layer.changeContrast(change)
+        self.generateView(generate_traces=False)
+    
+    def changeTform(self, new_tform):
+        self.section_layer.changeTform(new_tform)
+        self.saveState()
+        self.generateView()
+    
     

@@ -19,28 +19,27 @@ class ImageLayer():
         """
         self.section = section
         self.src_dir = src_dir
-        # establish transformation
-        t = self.section.tform
-        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
         self._transformImage()
     
-    def _transformImage(self):
+    def _transformImage(self, load_image=True):
         """Apply the transform to the image."""
-        # load the image
-        src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
-        base_image = QImage(src_path)
-        # get base corners
-        bw, bh = base_image.width(), base_image.height()
-        self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
-        # apply transform
-        self.tformed_image = base_image.transformed(self.image_tform) # transform image
-        # in order to place the image correctly in the field...
-        self.tform_corners = self._calcTformCorners(base_image, self.image_tform)
-        self.tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
+        # load transform
         t = self.section.tform
-        x_shift = t[2] - self.tform_origin[0] * self.section.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - self.tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
+        image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
+        if load_image:
+            # load the image
+            src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
+            base_image = QImage(src_path)
+            # get base corners
+            bw, bh = base_image.width(), base_image.height()
+            self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
+            # apply transform
+            self.tformed_image = base_image.transformed(image_tform) # transform image
+            # in order to place the image correctly in the field...
+            self.tform_corners = self._calcTformCorners(base_image, image_tform)
+        tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
+        x_shift = t[2] - tform_origin[0] * self.section.mag # calculate x translation for image placement in field
+        y_shift = t[5] - (self.tformed_image.height() - tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
         self.image_vector = x_shift, y_shift # store as vector
     
     def setSrcDir(self, src_dir : str):
@@ -99,9 +98,6 @@ class ImageLayer():
         old_tform = self.section.tform
         # store new transform
         self.section.tform = new_tform
-        t = new_tform
-        self.point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        self.image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
         # check if the old tform and new one differ only in translation
         same_shape = True
         for i in (0, 1, 3, 4):
@@ -109,8 +105,7 @@ class ImageLayer():
                 same_shape = False
                 break
         # if the two transformations do not have the same shape, reload image
-        if not same_shape:
-            self._transformImage()
+        self._transformImage(load_image=(not same_shape))
     
     def changeBrightness(self, change : int):
         """Change the brightness of the section.
@@ -141,11 +136,14 @@ class ImageLayer():
             Params:
                 image_layer (QPixmap): the pixmap to draw brightness on
         """
+        # get transform
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # establish first point
         brightness_poly = QPolygon()
         for p in self.base_corners:
             x, y = [n*self.section.mag for n in p]
-            x, y = self.point_tform.map(x, y)
+            x, y = point_tform.map(x, y)
             x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             brightness_poly.append(QPoint(x, y))
         # paint to image

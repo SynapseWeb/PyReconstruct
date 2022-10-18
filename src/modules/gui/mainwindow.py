@@ -476,7 +476,7 @@ class MainWindow(QMainWindow):
         quantities["surface_area"] = False
         quantities["flat_area"] = True
         quantities["volume"] = True
-        self.obj_list = ObjectTableWidget(self.series, self.wdir, quantities, self)
+        self.obj_list = ObjectTableWidget(self.series, quantities, self)
     
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.

@@ -1,30 +1,21 @@
-import json
 import os
 from time import time
-import random
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QApplication, QProgressDialog,
+    QInputDialog, QApplication,
     QMessageBox)
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtCore import Qt
 
 from modules.gui.objecttablewidget import ObjectTableWidget
 from modules.gui.mousedockwidget import MouseDockWidget
 from modules.gui.fieldwidget import FieldWidget
 
-from modules.gui.backend.xml_json_conversions import xmlToJSON, jsonToXML
+from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
+from modules.backend.import_transforms import importTransforms
 
 from modules.recon.series import Series
-from modules.recon.section import Section
-from modules.recon.trace import Trace
 
-from modules.pyrecon.utils.reconstruct_reader import process_series_directory
-from modules.pyrecon.utils.reconstruct_writer import write_series
-from modules.pyrecon.classes.contour import Contour
-from modules.pyrecon.classes.transform import Transform as XMLTransform
-
-from modules.autoseg.zarrtorecon import getZarrObjects, saveZarrImages
+from modules.autoseg.zarrtorecon import saveZarrImages, importZarrObjects
 
 from constants.locations import assets_dir
 
@@ -261,40 +252,17 @@ class MainWindow(QMainWindow):
         elif outtype == "JSON":
             xmlToJSON(self.series, new_dir)
     
-    def importTransforms(self):  # MIGRATE TO BACKEND
+    def importTransforms(self):
         """Import transforms from a text file."""
         self.saveAllData()
         # get file from user
         tforms_file, ext = QFileDialog.getOpenFileName(self, "Select file containing transforms")
         if not tforms_file:
             return
-        # read through file
-        with open(tforms_file, "r") as f:
-            lines = f.readlines()
-        tforms = {}
-        for line in lines:
-            nums = line.split()
-            if len(nums) != 7:
-                print("Incorrect transform file format")
-                return
-            try:
-                if int(nums[0]) not in self.series.sections:
-                    print("Transform file section numbers do not correspond to this series")
-                    return
-                tforms[int(nums[0])] = [float(n) for n in nums[1:]]
-            except ValueError:
-                print("Incorrect transform file format")
-                return
-        # set tforms
-        for section_num, tform in tforms.items():
-            section = Section(self.wdir + self.series.sections[int(section_num)])
-            # multiply pixel translations by magnification of section
-            tform[2] *= section.mag
-            tform[5] *= section.mag
-            section.tform = tform
-            section.save()
-        # reload current section
-        self.changeSection(self.series.current_section, save=False)
+        # import the transforms
+        importTransforms(self.series, tforms_file)
+        # reload the section
+        self.field.reload()
 
     def importZarrObjects(self, zarr_fp : str):  # MIGRATE TO BACKEND
         """Import objects from a zarr folder."""
@@ -304,42 +272,10 @@ class MainWindow(QMainWindow):
             zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
             if not zarr_fp:
                 return
-        # retrieve objects from zarr
-        progbar = QProgressDialog("Loading Zarr data...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Zarr Data")
-        progbar.setWindowModality(Qt.WindowModal)
-        objects = getZarrObjects(zarr_fp, progbar=progbar)
-        # assign random colors to each id
-        color_dict = {}
-        for id in objects:
-            color_dict[id] = self.randomColor()
-        # import loaded zarr objects
-        progbar = QProgressDialog("Importing objects...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Load objects")
-        progbar.setWindowModality(Qt.WindowModal)
-        final_value = len(self.series.sections.keys())
-        progress = 0
-        for section_num in self.series.sections:
-            section = Section(self.wdir + self.series.sections[int(section_num)])
-            for id, traces in objects.items():
-                if section_num in traces.keys():
-                    for trace in traces[section_num]:
-                        new_trace = Trace(str(id), color_dict[id])
-                        new_trace.points = trace
-                        section.traces.append(new_trace)
-                        if section_num == self.series.current_section:
-                            self.field.traces.append(new_trace)
-            section.save()
-            if progbar.wasCanceled():
-                return
-            else:
-                progress += 1
-                progbar.setValue(progress/final_value * 100)
-        self.field.saveState()
-        self.field.generateView(generate_image=False)
-        self.field.update()
+        importZarrObjects(self, self.series, zarr_fp)
+        self.field.reload()
     
-    def newSeriesFromZarr(self):  # MIGRATE TO BACKEND
+    def newSeriesFromZarr(self):
         zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
         if not zarr_fp:
             return
@@ -349,19 +285,6 @@ class MainWindow(QMainWindow):
         image_locations = saveZarrImages(zarr_fp, save_fp)
         self.newSeries(image_locations)
         self.importZarrObjects(zarr_fp)
-    
-    def randomColor(self):  # MIGRATE TO BACKEND
-        """Returns a random primary or secondary color.
-        
-            Returns:
-                (tuple): color (255,255,255)
-        """
-        n = random.randint(1,5)
-        if n == 1: return (0,255,0)
-        elif n == 2: return (0,255,255)
-        elif n == 3: return (255,0,0)
-        elif n == 4: return (255,0,255)
-        elif n == 5: return (255,255,0)
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).
@@ -465,85 +388,6 @@ class MainWindow(QMainWindow):
         """
         self.changeSection(section_num)
         self.field.findTrace(obj_name)
-    
-    def exportTracesToXML(self):  # MIGRATE TO BACKEND
-        """Export all traces to existing XML series.
-        
-        This function overwrites the traces in the XML series.
-        """
-        self.saveAllData()
-        
-        # check series filetype
-        if self.series.filetype == "XML":
-            QMessageBox.information(
-                self,
-                "Series Filetype",
-                "Series is already in XML format.",
-                QMessageBox.Ok
-            )
-            return
-
-        # warn the user about overwriting the XML traces
-        warn = QMessageBox()
-        warn.setIcon(QMessageBox.Warning)
-        warn.setText("WARNING: All traces on the XML file will be overwritten.")
-        warn.setInformativeText("Backing up is suggested.")
-        warn.setWindowTitle("Warning")
-        warn.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        response = warn.exec_()
-        if response == QMessageBox.Cancel:
-            return
-        
-        # get the XML file from the user
-        xml_file, ext = QFileDialog.getOpenFileName(self, "Locate the XML SER file", filter="*.ser")
-        if not xml_file:
-            return
-        xml_dir = xml_file[:xml_file.rfind("/")]
-        # load the XML series file data
-        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Open XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        xml_series = process_series_directory(xml_dir, progbar=progbar)
-    
-        # export the tracesin the JSON files to the XML file data
-        progbar = QProgressDialog("Exporting new traces...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Export to XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        prog_value = 0
-        final_value = len(self.series.sections)
-        for section_num, section_name in self.series.sections.items():
-            section = Section(self.wdir + section_name)
-            xml_series.sections[section_num].contours = []  # clear the list of XML file contours
-            for trace in section.traces:
-                contour_color = list(trace.color)  # get trace color
-                for i in range(len(contour_color)):
-                    contour_color[i] /= 255
-                tf = section.tform
-                xcoef = (tf[2], tf[0], tf[1])
-                ycoef = (tf[5], tf[3], tf[4])
-                transform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse  # invert transform
-                new_contour = Contour(
-                    name = trace.name,
-                    comment = "",
-                    hidden = False,
-                    closed = trace.closed,
-                    simplified = True,
-                    mode = 11,
-                    border = contour_color,
-                    fill = contour_color,  # the fill is set as border color
-                    points = trace.points,
-                    transform = transform
-                )
-                xml_series.sections[section_num].contours.append(new_contour)  # add the new contour to XML data
-                if progbar.wasCanceled(): return
-                prog_value += 1
-                progbar.setValue(prog_value / final_value * 100)
-        
-        # write modified XML data to XML files
-        progbar = QProgressDialog("Writing to XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Write XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        write_series(xml_series, xml_dir, sections=True, overwrite=True, progbar=progbar)
     
     def changeTform(self):
         """Open a dialog to change the transform of a section."""

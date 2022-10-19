@@ -2,7 +2,7 @@ from PySide6.QtGui import QPainter
 
 from modules.recon.series import Series
 
-from modules.gui.backend.section_layer import SectionLayer
+from modules.backend.section_layer import SectionLayer
 
 class FieldState():
 

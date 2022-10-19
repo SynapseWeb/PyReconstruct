@@ -6,7 +6,7 @@ from modules.recon.trace import Trace
 
 from modules.gui.attributedialog import AttributeDialog
 
-from modules.calc.grid import getExterior, mergeTraces, reducePoints, cutTraces
+from modules.backend.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
 

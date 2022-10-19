@@ -6,7 +6,7 @@ import random
 from PySide6.QtWidgets import QMainWindow, QProgressDialog
 from PySide6.QtCore import Qt
 
-from modules.calc.grid import reducePoints
+from modules.backend.grid import reducePoints
 
 from modules.recon.series import Series
 from modules.recon.trace import Trace

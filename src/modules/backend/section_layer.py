@@ -1,7 +1,7 @@
 from PySide6.QtGui import QPainter
 
-from modules.gui.backend.image_layer import ImageLayer
-from modules.gui.backend.trace_layer import TraceLayer
+from modules.backend.image_layer import ImageLayer
+from modules.backend.trace_layer import TraceLayer
 
 from modules.recon.section import Section
 

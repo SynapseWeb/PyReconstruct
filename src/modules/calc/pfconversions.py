@@ -14,7 +14,7 @@ def pixmapPointToField(x : float, y : float, pixmap_dim : tuple, window : list, 
     window_x, window_y, window_w, window_h = tuple(window)
     x_scaling = pixmap_w / (window_w / mag) # screen pixel to actual image pixel ratio
     y_scaling = pixmap_h / (window_h / mag) # should be the same number as previous
-    assert abs(x_scaling - y_scaling) < 1e-6
+    assert abs(x_scaling - y_scaling) < 1e-5
     x = x / x_scaling * mag + window_x
     y = (pixmap_h - y) / y_scaling * mag  + window_y
 
@@ -33,7 +33,7 @@ def fieldPointToPixmap(x : float, y : float, window : list, pixmap_dim : tuple, 
     window_x, window_y, window_w, window_h = tuple(window)
     x_scaling = pixmap_w / (window_w / mag) # screen pixel to actual image pixel ratio
     y_scaling = pixmap_h / (window_h / mag) # should be the same number as previous
-    assert abs(x_scaling - y_scaling) < 1e-6
+    assert abs(x_scaling - y_scaling) < 1e-5
     x = (x - window_x) / mag * x_scaling
     y = (y - window_y)/ mag * y_scaling
     y = pixmap_h - y

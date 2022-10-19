@@ -13,6 +13,8 @@ from modules.gui.objecttablewidget import ObjectTableWidget
 from modules.gui.mousedockwidget import MouseDockWidget
 from modules.gui.fieldwidget import FieldWidget
 
+from modules.gui.backend.xml_json_conversions import xmlToJSON, jsonToXML
+
 from modules.recon.series import Series
 from modules.recon.section import Section
 from modules.recon.trace import Trace
@@ -67,6 +69,11 @@ class MainWindow(QMainWindow):
         # menu at top of window
         self.menubar = self.menuBar()
 
+        if self.series.filetype == "XML":
+            outtype = "JSON"
+        elif self.series.filetype == "JSON":
+            outtype = "XML"
+
         menu_options = [
             
             {
@@ -76,10 +83,9 @@ class MainWindow(QMainWindow):
                 [
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "", self.openSeries),
+                    ("export_series_act", f"Export series to {outtype}...", "", lambda : self.exportSeries(outtype)),
                     ("import_transforms_act", "Import transformations...", "", self.importTransforms),
-                    ("new_from_xml_act", "New from XML series...", "", self.newSeriesFromXML),
                     ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
-                    ("export_to_xml_act", "Export traces to XML...", "", self.exportTracesToXML),
                     ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
                 ]
              },
@@ -89,7 +95,7 @@ class MainWindow(QMainWindow):
                 "name": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Change Image Directory", "", self.field.changeSrcDir)
+                    ("change_src_act", "Change image directory...", "", self.changeSrcDir)
                 ]
              },
             
@@ -138,6 +144,34 @@ class MainWindow(QMainWindow):
             else:
                 QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
+    def changeSrcDir(self, notify=False):
+        """Open a series of dialogs to change the image source directory."""
+        if notify:
+            reply = QMessageBox.question(
+                self,
+                "Images Not Found",
+                "Images not found.\nWould you like to locate them?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
+        if not new_src_dir:
+            return
+        if os.path.samefile(new_src_dir, self.series.getwdir()):
+            self.series.src_dir = ""
+        else:
+            self.series.src_dir = new_src_dir
+        QMessageBox.information(
+            self,
+            "Image Directory",
+            "New image directory saved.",
+            QMessageBox.Ok
+        )
+        if not notify:
+            self.field.reload()
+    
     def openSeries(self, series_obj=None):
         """Open an existing series and create the field.
         
@@ -150,6 +184,15 @@ class MainWindow(QMainWindow):
             self.series = Series(series_fp)  # load series data into Series object
         else:
             self.series = series_obj
+        
+        # ensure that images are found
+        section = self.series.loadSection(self.series.current_section)
+        if self.series.src_dir == "":
+            src_path = os.path.join(self.series.getwdir(), section.src)
+        else:
+            src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
+        if not os.path.isfile(src_path):
+            self.changeSrcDir(notify=True)
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -204,84 +247,19 @@ class MainWindow(QMainWindow):
         # open series after creating
         self.openSeries(series)
     
-    def newSeriesFromXML(self):  # MIGRATE TO BACKEND
-        """Create a new series from existing XML series data."""
-        # get the XML file location from the user
-        xml_file, ext = QFileDialog.getOpenFileName(self, "Open the XML SER file", filter="*.ser")
-        if not xml_file:
-            return
-        xml_dir = xml_file[:xml_file.rfind("/")]
-        # get the intended location for the new JSON files
-        json_dir = QFileDialog.getExistingDirectory(self, "Select folder to contain JSON files")
-        if not json_dir:
-            return
+    def exportSeries(self, outtype : str):
+        """Export the series to a given filetype.
         
-        # load all the XML series data
-        progbar = QProgressDialog("Loading XML series...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Open XML Series")
-        progbar.setWindowModality(Qt.WindowModal)
-        series = process_series_directory(xml_dir, progbar=progbar)
-
-        # create new series JSON file
-        series_data = {}
-        series_data["sections"] = {}
-        series_data["current_section"] = 0
-        series_data["src_dir"] = ""
-        series_data["window"] = [0, 0, 1, 1]
-        series_data["palette_traces"] = []
-        for contour in series.contours:  # import XML trace palette
-            name = contour.name
-            color = list(contour.border)
-            for i in range(len(color)):
-                color[i] *= 255
-            new_trace = Trace(name, color)
-            new_trace.points = contour.points
-            series_data["palette_traces"].append(new_trace.getDict())
-        series_data["current_trace"] = series_data["palette_traces"][0]
-
-        # import data from each XML section file
-        progbar = QProgressDialog("Importing series data...", "Cancel", 0, 100, self)
-        progbar.setWindowTitle("Import XML Data")
-        progbar.setWindowModality(Qt.WindowModal)
-        prog_value = 0
-        final_value = len(series.sections)
-        for n, section in sorted(series.sections.items()):
-            series_data["sections"][n] = section.name  # add section name to series file data
-            section_data = {}
-            image = section.images[0]
-            section_data["src"] = image.src
-            section_data["brightness"] = 0
-            section_data["contrast"] = 0
-            section_data["mag"] = image.mag
-            section_data["thickness"] = section.thickness
-            transform = image.transform
-            forward_transform = transform.tform()  # get the forward transform 3x3 numpy matrix
-            ft = forward_transform  # just to make it easier to index in next line
-            section_data["tform"] = (ft[0, 0], ft[0, 1], ft[0, 2], ft[1, 0], ft[1, 1], ft[1, 2])
-            section_data["traces"] = []
-            for contour in section.contours:  # iterate through all contours
-                name = contour.name
-                color = list(contour.border)
-                for i in range(len(color)):
-                    color[i] *= 255
-                closed = contour.closed
-                new_trace = Trace(name, color, closed=closed)
-                points = contour.points
-                points = contour.transform.transformPoints(points)  # transform points by its own contour (get field points)
-                points = transform.inverseTransformPoints(points)  # reverse transform points by image transform (fix points to image)
-                new_trace.points = points
-                section_data["traces"].append(new_trace.getDict())
-            with open(json_dir + "/" + section.name, "w") as section_file:
-                section_file.write(json.dumps(section_data, indent=2))
-            if progbar.wasCanceled(): return  # cancel function if user hits cancel during loading
-            prog_value += 1
-            progbar.setValue(prog_value / final_value * 100)
-
-        # save series file
-        series_fp = json_dir + "/" + series.name + ".ser"
-        with open(series_fp, "w") as series_file:
-                series_file.write(json.dumps(series_data, indent=2))
-        self.openSeries(series_fp)
+            Params:
+                outtype (str): XML or JSON
+        """
+        new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
+        if not new_dir:
+            return
+        if outtype == "XML":
+            jsonToXML(self.series, new_dir)
+        elif outtype == "JSON":
+            xmlToJSON(self.series, new_dir)
     
     def importTransforms(self):  # MIGRATE TO BACKEND
         """Import transforms from a text file."""

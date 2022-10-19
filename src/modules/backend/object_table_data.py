@@ -2,7 +2,7 @@ from PySide6.QtGui import QTransform
 
 from modules.calc.quantification import area, lineDistance
 
-from modules.recon.section import Section
+from modules.pyrecon.section import Section
 
 class ObjectTableItem():
 

@@ -13,7 +13,7 @@ from modules.gui.fieldwidget import FieldWidget
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
 
-from modules.recon.series import Series
+from modules.pyrecon.series import Series
 
 from modules.autoseg.zarrtorecon import saveZarrImages, importZarrObjects
 

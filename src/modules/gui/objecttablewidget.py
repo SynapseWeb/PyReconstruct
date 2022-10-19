@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
 from PySide6.QtCore import Qt
 
-from modules.recon.series import Series
-from modules.recon.section import Section
+from modules.pyrecon.series import Series
+from modules.pyrecon.section import Section
 from modules.backend.object_table_data import loadSeriesData, getObjectsToUpdate
 from modules.calc.quantification import sigfigRound
 

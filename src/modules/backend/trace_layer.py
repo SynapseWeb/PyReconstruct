@@ -1,8 +1,8 @@
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter, QPolygon
 
-from modules.recon.section import Section
-from modules.recon.trace import Trace
+from modules.pyrecon.section import Section
+from modules.pyrecon.trace import Trace
 
 from modules.gui.attributedialog import AttributeDialog
 

@@ -2,9 +2,9 @@ import os
 import json
 from .trace import Trace
 
-from modules.pyrecon.classes.transform import Transform as XMLTransform
-from modules.pyrecon.utils.reconstruct_reader import process_section_file
-from modules.pyrecon.utils.reconstruct_writer import write_section
+from modules.legacy_recon.classes.transform import Transform as XMLTransform
+from modules.legacy_recon.utils.reconstruct_reader import process_section_file
+from modules.legacy_recon.utils.reconstruct_writer import write_section
 
 from constants.locations import assets_dir
 

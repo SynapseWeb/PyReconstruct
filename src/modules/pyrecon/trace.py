@@ -1,5 +1,5 @@
-from modules.pyrecon.classes.contour import Contour as XMLContour
-from modules.pyrecon.classes.transform import Transform as XMLTransform
+from modules.legacy_recon.classes.contour import Contour as XMLContour
+from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
 class Trace():
 

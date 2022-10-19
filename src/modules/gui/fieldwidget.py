@@ -5,8 +5,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPen, QColor, QPainter
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
-from modules.recon.series import Series
-from modules.recon.trace import Trace
+from modules.pyrecon.series import Series
+from modules.pyrecon.trace import Trace
 
 from modules.calc.pfconversions import pixmapPointToField
 

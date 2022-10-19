@@ -4,7 +4,7 @@ from PySide6.QtCore import QSize, Qt
 
 from modules.gui.palettebutton import PaletteButton
 from modules.gui.fieldwidget import FieldWidget
-from modules.recon.trace import Trace
+from modules.pyrecon.trace import Trace
 
 from constants import locations as loc
 

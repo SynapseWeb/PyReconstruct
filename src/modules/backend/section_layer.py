@@ -3,7 +3,7 @@ from PySide6.QtGui import QPainter
 from modules.backend.image_layer import ImageLayer
 from modules.backend.trace_layer import TraceLayer
 
-from modules.recon.section import Section
+from modules.pyrecon.section import Section
 
 class SectionLayer(ImageLayer, TraceLayer):
 

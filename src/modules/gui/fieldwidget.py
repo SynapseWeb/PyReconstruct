@@ -52,48 +52,12 @@ class FieldWidget(QWidget, FieldView):
         if self.series.current_section not in self.series.sections:
             self.series.current_section = self.series.sections.keys()[0]
 
-        # ensure that images are found
-        section = self.series.loadSection(self.series.current_section)
-        if self.series.src_dir == "":
-            src_path = os.path.join(self.series.getwdir(), section.src)
-        else:
-            src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
-        if not os.path.isfile(src_path):
-            self.changeSrcDir(notify=True)
-
         # establish misc defaults
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.is_line_tracing = False
         self.blend_sections = False
 
         self.generateView()
-    
-    def changeSrcDir(self, notify=False):
-        """Open a series of dialogs to change the image source directory."""
-        if notify:
-            reply = QMessageBox.question(
-                self,
-                "Images Not Found",
-                "Images not found.\nWould you like to locate them?",
-                QMessageBox.Yes,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.No:
-                return
-        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
-        if not new_src_dir:
-            return
-        if os.path.samefile(new_src_dir, self.series.getwdir()):
-            self.series.src_dir = ""
-        else:
-            self.series.src_dir = new_src_dir
-        QMessageBox.information(
-            self,
-            "Image Directory",
-            "New image directory saved.",
-            QMessageBox.Ok
-        )
-        self.reload()
     
     def toggleBlend(self):
         self.blend_sections = not self.blend_sections

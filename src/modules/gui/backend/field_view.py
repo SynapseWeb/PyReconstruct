@@ -51,7 +51,8 @@ class FieldView():
         self.redo_states = []
     
     def reload(self):
-        self.__init__(self.series)
+        FieldView.__init__(self, self.series)
+        self.generateView()
 
     def saveState(self):
         """Save the current traces and transform."""

@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog
 from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
 from PySide6.QtCore import Qt
 
-from modules.recon.trace import Trace
+from modules.pyrecon.trace import Trace
 
 class PaletteButton(QPushButton):
 

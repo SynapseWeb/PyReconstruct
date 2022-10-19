@@ -2,8 +2,8 @@ import os
 
 from constants.blank_legacy_files import blank_series, blank_section
 
-from modules.recon.series import Series
-from modules.recon.section import Section
+from modules.pyrecon.series import Series
+from modules.pyrecon.section import Section
 
 def xmlToJSON(original_series : Series, new_dir : str):
     """Convert a series in XML to JSON.

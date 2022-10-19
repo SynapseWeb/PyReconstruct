@@ -1,4 +1,4 @@
-from modules.recon.series import Series
+from modules.pyrecon.series import Series
 
 def importTransforms(series : Series, tforms_fp : str):  # MIGRATE TO BACKEND
         """Import transforms from a text file.

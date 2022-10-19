@@ -1,4 +1,4 @@
-from modules.recon.trace import Trace
+from modules.pyrecon.trace import Trace
 
 def getDefaultPaletteTraces():
     """Function to store data for default trace palette"""

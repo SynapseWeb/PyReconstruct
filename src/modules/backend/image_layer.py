@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QRectF, QPoint
 from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
-from modules.recon.section import Section
+from modules.pyrecon.section import Section
 
 from modules.calc.pfconversions import fieldPointToPixmap
 

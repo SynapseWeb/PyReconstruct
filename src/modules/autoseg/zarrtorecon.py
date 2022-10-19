@@ -8,8 +8,8 @@ from PySide6.QtCore import Qt
 
 from modules.backend.grid import reducePoints
 
-from modules.recon.series import Series
-from modules.recon.trace import Trace
+from modules.pyrecon.series import Series
+from modules.pyrecon.trace import Trace
 
 def voxelToField(cv_contours : np.ndarray, ysize : float, offset : tuple, resolution : tuple) -> list:
     """Converts voxel coordinates to 2D field coordinates.

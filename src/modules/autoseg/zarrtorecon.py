@@ -1,8 +1,15 @@
 import daisy
 import numpy as np
 import cv2
+import random
+
+from PySide6.QtWidgets import QMainWindow, QProgressDialog
+from PySide6.QtCore import Qt
 
 from modules.calc.grid import reducePoints
+
+from modules.recon.series import Series
+from modules.recon.trace import Trace
 
 def voxelToField(cv_contours : np.ndarray, ysize : float, offset : tuple, resolution : tuple) -> list:
     """Converts voxel coordinates to 2D field coordinates.
@@ -110,5 +117,56 @@ def getZarrObjects(zarr_fp : str, resolution_label="s2", progbar=None) -> dict:
             progress += 1
             progbar.setValue(progress/final_value * 100)
     return objects
+
+def importZarrObjects(main_window : QMainWindow, series : Series, zarr_fp : str):  # MIGRATE TO BACKEND
+    """Import objects from a zarr folder
+    
+        Params:
+            main_window (QMainWindow): the main window object to create progress dialogs
+            series (Series): the series to import objects to
+            zarr_fp (str): the filepath for the zarr file
+    """
+    # retrieve objects from zarr
+    progbar = QProgressDialog("Loading Zarr data...", "Cancel", 0, 100, main_window)
+    progbar.setWindowTitle("Zarr Data")
+    progbar.setWindowModality(Qt.WindowModal)
+    objects = getZarrObjects(zarr_fp, progbar=progbar)
+    # assign random colors to each id
+    color_dict = {}
+    for id in objects:
+        color_dict[id] = randomColor()
+    # import loaded zarr objects
+    progbar = QProgressDialog("Importing objects...", "Cancel", 0, 100, main_window)
+    progbar.setWindowTitle("Load objects")
+    progbar.setWindowModality(Qt.WindowModal)
+    final_value = len(series.sections.keys())
+    progress = 0
+    for section_num in series.sections:
+        section = series.loadSection(section_num)
+        for id, traces in objects.items():
+            if section_num in traces.keys():
+                for trace in traces[section_num]:
+                    new_trace = Trace(str(id), color_dict[id])
+                    new_trace.points = trace
+                    section.traces.append(new_trace)
+        section.save()
+        if progbar.wasCanceled():
+            return
+        else:
+            progress += 1
+            progbar.setValue(progress/final_value * 100)
+
+def randomColor():  # MIGRATE TO BACKEND
+    """Returns a random primary or secondary color.
+    
+        Returns:
+            (tuple): color (255,255,255)
+    """
+    n = random.randint(1,5)
+    if n == 1: return (0,255,0)
+    elif n == 2: return (0,255,255)
+    elif n == 3: return (255,0,0)
+    elif n == 4: return (255,0,255)
+    elif n == 5: return (255,255,0)
 
 

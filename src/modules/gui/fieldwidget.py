@@ -10,7 +10,7 @@ from modules.recon.trace import Trace
 
 from modules.calc.pfconversions import pixmapPointToField
 
-from modules.gui.backend.field_view import FieldView
+from modules.backend.field_view import FieldView
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes

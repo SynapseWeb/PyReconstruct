@@ -421,7 +421,7 @@ class MainWindow(QMainWindow):
     
     def changeSection(self, section_num, save=True):
         """Change the section of the field."""
-        start_time = time()
+        # start_time = time()
         if section_num not in self.series.sections:  # check if requested section exists
             return
         if save:
@@ -429,7 +429,7 @@ class MainWindow(QMainWindow):
         self.series.current_section = section_num
         self.section = Section(self.wdir + self.series.sections[self.series.current_section])
         self.field.loadSection(self.series.current_section, self.section, self.series.src_dir)
-        print("Time taken to change section:", time() - start_time, "sec")
+        # print("Time taken to change section:", time() - start_time, "sec")
     
     def keyPressEvent(self, event):
         """Called when any key is pressed and user focus is on main window."""
@@ -462,6 +462,7 @@ class MainWindow(QMainWindow):
         if not self.field:  # do not respond to mouse wheel if field is not created
             return
         section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_numbers.sort()  # sort section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.angleDelta().y() > 0:  # if scroll up
             if section_number_i < len(section_numbers) - 1:

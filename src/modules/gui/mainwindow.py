@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
         # ensure that images are found
         section = self.series.loadSection(self.series.current_section)
         if self.series.src_dir == "":
-            src_path = os.path.join(self.series.getwdir(), section.src)
+            src_path = os.path.join(self.series.getwdir(), os.path.basename(section.src))
         else:
             src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
         if not os.path.isfile(src_path):

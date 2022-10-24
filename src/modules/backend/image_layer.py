@@ -1,5 +1,7 @@
 import os
 
+import zarr
+
 from PySide6.QtCore import Qt, QRectF, QPoint, QPointF, QRect
 from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon, QPolygonF)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
@@ -19,14 +21,19 @@ class ImageLayer():
         """
         self.section = section
         self.src_dir = src_dir
+        self.is_zarr_file = self.src_dir.endswith(".zarr")
         self.loadImage()
     
     def loadImage(self):
         """Load the image."""
         src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
-        self.image = QImage(src_path)
-        bw, bh = self.image.width(), self.image.height()
-        self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
+        if self.is_zarr_file:
+            self.image = zarr.open(src_path, mode="r")
+            self.bh, self.bw = self.image.shape
+        else:
+            self.image = QImage(src_path)
+            self.bw, self.bh = self.image.width(), self.image.height()
+        self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
     
     def setSrcDir(self, src_dir : str):
         """Set the immediate source directory and reload image.
@@ -185,7 +192,6 @@ class ImageLayer():
         image_tform = QTransform(t[0], -t[3], -t[1], t[4], 0, 0)
 
         # convert corners to image pixel coordinates
-        h = self.image.height()
         for i in range(len(window_corners)):
             # apply inverse transform to window corners
             point = window_corners[i]
@@ -194,7 +200,7 @@ class ImageLayer():
             point[0] /= self.section.mag
             point[1] /= self.section.mag
             # adjust y-coordinate
-            point[1] = h - point[1]
+            point[1] = self.bh - point[1]
             window_corners[i] = point
         
         # get the bounding rectangle for the corners
@@ -212,9 +218,9 @@ class ImageLayer():
 
         # check if requested view is completely out of bounds
         oob = False
-        oob |= xmin >= self.image.width()
+        oob |= xmin >= self.bw
         oob |= xmax <= 0
-        oob |= ymin >= self.image.height()
+        oob |= ymin >= self.bh
         oob |= ymax <= 0
         # return blank pixmap if coords are out of bounds
         if oob:
@@ -229,21 +235,32 @@ class ImageLayer():
         if ymin < 0:
             blank_space[1] = -ymin
             ymin = 0
-        if xmax > self.image.width():
-            extra_space[0] = xmax - self.image.width()
-            xmax = self.image.width()
-        if ymax > self.image.height():
-            extra_space[1] = ymax - self.image.height()
-            ymax = self.image.height()
+        if xmax > self.bw:
+            extra_space[0] = xmax - self.bw
+            xmax = self.bw
+        if ymax > self.bh:
+            extra_space[1] = ymax - self.bh
+            ymax = self.bh
 
         # crop image and place in field
-        crop_rect = QRect(
-            round(xmin),
-            round(ymin),
-            round(xmax-xmin),
-            round(ymax-ymin)
-        )
-        im_crop = self.image.copy(crop_rect)
+        xmin, ymin, xmax, ymax = tuple(map(int, (xmin, ymin, xmax, ymax)))
+        if self.is_zarr_file:
+            self.zarr_saved = self.image[ymin:ymax, xmin:xmax]
+            im_crop = QImage(
+                self.zarr_saved.data,
+                xmax-xmin,
+                ymax-ymin,
+                self.zarr_saved.strides[0],
+                QImage.Format.Format_Grayscale8
+            )
+        else:
+            crop_rect = QRect(
+                xmin,
+                ymin,
+                xmax-xmin,
+                ymax-ymin
+            )
+            im_crop = self.image.copy(crop_rect)
 
         # make the crop the size of the screen
         im_scaled = im_crop.scaled(im_crop.width()*x_scaling, im_crop.height()*y_scaling)

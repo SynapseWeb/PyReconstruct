@@ -22,8 +22,11 @@ class ImageLayer():
         self.loadImage()
     
     def loadImage(self):
+        """Load the image."""
         src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
         self.image = QImage(src_path)
+        bw, bh = self.image.width(), self.image.height()
+        self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
     
     def setSrcDir(self, src_dir : str):
         """Set the immediate source directory and reload image.
@@ -33,7 +36,6 @@ class ImageLayer():
         """
         self.src_dir = src_dir
         self.loadImage()
-        # self._transformImage()
     
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
@@ -149,7 +151,18 @@ class ImageLayer():
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
     
-    def generateImageLayer(self, pixmap_dim, window):
+    def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+        """Generate the image layer.
+        
+            Params:
+                pixmap_dim (tuple): the w and h of the main window
+                window (list): the x, y, w, and h of the field window
+            Returns:
+                image_layer (QPixmap): the image laye
+        """
+        # save and unpack window and pixmap values
+        self.pixmap_dim = pixmap_dim
+        self.window = window
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_x, window_y, window_w, window_h = tuple(window) 
 
@@ -272,6 +285,10 @@ class ImageLayer():
             *pixmap_dim
         )
         image_layer = im_tformed.copy(image_layer_rect)
+
+        # draw the brightness and contrast
+        self._drawBrightness(image_layer)
+        self._drawContrast(image_layer)
 
         return image_layer
 

@@ -42,6 +42,7 @@ class FieldView():
         self.section_layer = SectionLayer(self.section, self.src_dir)
 
         # b section and view placeholder
+        self.b_section_number = None
         self.b_section = None
         self.b_section_layer = None
 
@@ -91,6 +92,7 @@ class FieldView():
     
     def swapABsections(self):
         """Switch the A and B sections."""
+        self.series.current_section, self.b_section_number = self.b_section_number, self.series.current_section
         self.section, self.b_section = self.b_section, self.section
         self.section_layer, self.b_section_layer = self.b_section_layer, self.section_layer
     
@@ -114,6 +116,8 @@ class FieldView():
             self.series.current_section = new_section_num
             # clear selected traces
             self.section_layer.selected_traces = []
+        # save current state
+        self.current_state = FieldState(self.section.traces, self.section.tform)
         # clear redo states
         self.redo_states = []
         # create new list for states if needed

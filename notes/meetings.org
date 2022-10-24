@@ -138,3 +138,29 @@ Let's keep the good times going!
   
    - How incorporated into SWiFT
    - 3D visualization
+* 20221019 Lab meeting
+** Version control
+** Git
+** GitHub
+** Commands
+*** What is a commit?
+*** Staging area
+*** Fetch
+*** Pull
+*** Main v. Branch
+** Lynds
+*** Get python
+- Command prompt -> "python"
+- Microsoft app store if no work
+*** Make tools folder
+*** Clone a repository
+- Go to GitHub site
+- Show readme 
+*** Interact with it
+*** Change something, push changes, and have her fetch/pull
+*** Interact again
+*** Get pyReconstruct
+*** Get Recompanion
+*** Delete test-repo through desktop GitHub
+*** Start installing Recompanion while Julian starts
+** Julian

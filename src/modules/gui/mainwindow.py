@@ -445,7 +445,7 @@ class MainWindow(QMainWindow):
             section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i > 0:
                 self.changeSection(section_numbers[section_number_i - 1])
-        elif event.key() == 16777223:  # if Del is pressed
+        elif event.key() == 16777223  or event.key() == 16777219:  # Del or Bksp pressed
             self.field.deleteSelectedTraces()
         elif event.key() == 45:  # if - is pressed
             self.field.changeBrightness(-5)

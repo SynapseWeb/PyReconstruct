@@ -1,7 +1,7 @@
 import os
 
-from PySide6.QtCore import Qt, QRectF, QPoint
-from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
+from PySide6.QtCore import Qt, QRectF, QPoint, QPointF, QRect
+from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon, QPolygonF)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.pyrecon.section import Section
@@ -19,28 +19,11 @@ class ImageLayer():
         """
         self.section = section
         self.src_dir = src_dir
-        self._transformImage()
+        self.loadImage()
     
-    def _transformImage(self, load_image=True):
-        """Apply the transform to the image."""
-        # load transform
-        t = self.section.tform
-        image_tform = QTransform(t[0], -t[3], -t[1], t[4], t[2], t[5]) # changed positions for image tform
-        if load_image:
-            # load the image
-            src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
-            base_image = QImage(src_path)
-            # get base corners
-            bw, bh = base_image.width(), base_image.height()
-            self.base_corners = [(0, 0), (0, bh), (bw, bh), (bw, 0)]
-            # apply transform
-            self.tformed_image = base_image.transformed(image_tform) # transform image
-            # in order to place the image correctly in the field...
-            self.tform_corners = self._calcTformCorners(base_image, image_tform)
-        tform_origin = self.tform_corners[0] # find the coordinates of the tformed image origin (bottom left corner)
-        x_shift = t[2] - tform_origin[0] * self.section.mag # calculate x translation for image placement in field
-        y_shift = t[5] - (self.tformed_image.height() - tform_origin[1]) * self.section.mag # calculate y translation for image placement in field
-        self.image_vector = x_shift, y_shift # store as vector
+    def loadImage(self):
+        src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
+        self.image = QImage(src_path)
     
     def setSrcDir(self, src_dir : str):
         """Set the immediate source directory and reload image.
@@ -49,7 +32,8 @@ class ImageLayer():
                 src_dir (str): the new directory for the images
         """
         self.src_dir = src_dir
-        self._transformImage()
+        self.loadImage()
+        # self._transformImage()
     
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
@@ -61,9 +45,8 @@ class ImageLayer():
                 (tuple) the four corners (starting from bottom left moving clockwise)
         """
         base_coords = base_pixmap.size() # base image dimensions
-        tform_notrans = tformNoTrans(tform) # get tform without translation
-        height_vector = tform_notrans.map(0, base_coords.height()) # create a vector for base height and transform
-        width_vector = tform_notrans.map(base_coords.width(), 0) # create a vector for base width and transform
+        height_vector = tform.map(0, base_coords.height()) # create a vector for base height and transform
+        width_vector = tform.map(base_coords.width(), 0) # create a vector for base width and transform
         # calculate coordinates for the top left corner of image
         if height_vector[0] < 0:
             tl_x = -height_vector[0]
@@ -95,17 +78,7 @@ class ImageLayer():
             Params:
                 tform (list): the transform as a list of numbers
         """
-        old_tform = self.section.tform
-        # store new transform
         self.section.tform = new_tform
-        # check if the old tform and new one differ only in translation
-        same_shape = True
-        for i in (0, 1, 3, 4):
-            if abs(old_tform[i] - new_tform[i]) > 1e-6:
-                same_shape = False
-                break
-        # if the two transformations do not have the same shape, reload image
-        self._transformImage(load_image=(not same_shape))
     
     def changeBrightness(self, change : int):
         """Change the brightness of the section.
@@ -157,6 +130,7 @@ class ImageLayer():
         painter.setPen(QPen(brightness_color, 0))
         painter.setBrush(brightness_color)
         painter.drawPolygon(brightness_poly)
+        painter.end()
     
     def _drawContrast(self, image_layer):
         """Draw the contrast on the image field.
@@ -175,82 +149,150 @@ class ImageLayer():
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
     
-    def generateImageLayer(self, pixmap_dim : tuple, window : list):
-        """Generate the view seen by the user in the main window.
-        
-            Params:
-                pixmap_dim (tuple): the w and h of the pixmap to be output
-                window (list): the viewing window in the field (x, y, w, h)
-        """
-        self.pixmap_dim = pixmap_dim
-        self.window = window
-        # get dimensions of field window and pixmap
-        window_x, window_y, window_w, window_h = tuple(window)
+    def generateImageLayer(self, pixmap_dim, window):
         pixmap_w, pixmap_h = tuple(pixmap_dim)
+        window_x, window_y, window_w, window_h = tuple(window) 
 
-        # scaling: ratio of actual image dimensions to main window dimensions (should be equal)
+        # scaling: ratio of screen pixels to actual image pixels (should be equal)
         x_scaling = pixmap_w / (window_w / self.section.mag)
         y_scaling = pixmap_h / (window_h / self.section.mag)
+        assert(abs(x_scaling - y_scaling) < 1e-6)
 
-        # create empty window
-        image_layer = QPixmap(pixmap_w, pixmap_h)
-        image_layer.fill(Qt.black)
+        # get vectors for four window corners
+        window_corners = [
+            [window_x, window_y],
+            [window_x, window_y + window_h],
+            [window_x + window_w, window_y + window_h],
+            [window_x + window_w, window_y]
+        ]
+        
+        # get transforms
+        t = self.section.tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        image_tform = QTransform(t[0], -t[3], -t[1], t[4], 0, 0)
 
-        # get the coordinates to crop the image pixmap
-        crop_left = (window_x - self.image_vector[0]) / self.section.mag
-        left_empty = -crop_left if crop_left < 0 else 0
-        crop_left = 0 if crop_left < 0 else crop_left
+        # convert corners to image pixel coordinates
+        h = self.image.height()
+        for i in range(len(window_corners)):
+            # apply inverse transform to window corners
+            point = window_corners[i]
+            point = list(point_tform.inverted()[0].map(*point))
+            # divide by image magnification
+            point[0] /= self.section.mag
+            point[1] /= self.section.mag
+            # adjust y-coordinate
+            point[1] = h - point[1]
+            window_corners[i] = point
+        
+        # get the bounding rectangle for the corners
+        xmin, ymin, xmax, ymax = getBoundingRect(window_corners)
+        
+        # calculate the shift in origin
+        origin_shift = [0, 0]
+        origin_shift[0] = window_corners[1][0] - xmin
+        origin_shift[1] = window_corners[1][1] - ymin
 
-        crop_top = (window_y - self.image_vector[1] + window_h) / self.section.mag
-        image_height = self.tformed_image.height()
-        top_empty = (crop_top - image_height) if crop_top > image_height else 0
-        crop_top = image_height if crop_top > image_height else crop_top
-        crop_top = image_height - crop_top
+        # space to fill if crop falls outside image
+        blank_space = [0, 0]
+        # space to add if crop falls outside image
+        extra_space = [0, 0]
 
-        crop_right = (window_x - self.image_vector[0] + window_w) / self.section.mag
-        image_width = self.tformed_image.width()
-        crop_right = image_width if crop_right > image_width else crop_right
+        # check if requested view is completely out of bounds
+        oob = False
+        oob |= xmin >= self.image.width()
+        oob |= xmax <= 0
+        oob |= ymin >= self.image.height()
+        oob |= ymax <= 0
+        # return blank pixmap if coords are out of bounds
+        if oob:
+            blank_pixmap = QPixmap(pixmap_w, pixmap_h)
+            blank_pixmap.fill(Qt.black)
+            return blank_pixmap
 
-        crop_bottom = (window_y - self.image_vector[1]) / self.section.mag
-        crop_bottom = 0 if crop_bottom < 0 else crop_bottom
-        crop_bottom = image_height - crop_bottom
+        # trim crop coords to be within image
+        if xmin < 0:
+            blank_space[0] = -xmin
+            xmin = 0
+        if ymin < 0:
+            blank_space[1] = -ymin
+            ymin = 0
+        if xmax > self.image.width():
+            extra_space[0] = xmax - self.image.width()
+            xmax = self.image.width()
+        if ymax > self.image.height():
+            extra_space[1] = ymax - self.image.height()
+            ymax = self.image.height()
 
-        crop_w = crop_right - crop_left
-        crop_h = crop_bottom - crop_top
+        # crop image and place in field
+        crop_rect = QRect(
+            round(xmin),
+            round(ymin),
+            round(xmax-xmin),
+            round(ymax-ymin)
+        )
+        im_crop = self.image.copy(crop_rect)
 
-        # calculate corners of the original image
-        corners = list(self.tform_corners)
-        for i in range(len(corners)):
-            p = corners[i]
-            x = p[0]*x_scaling - window_x/self.section.mag*x_scaling
-            y = p[1]*y_scaling + window_y/self.section.mag*y_scaling
-            corners[i] = QPoint(x, y)
+        # make the crop the size of the screen
+        im_scaled = im_crop.scaled(im_crop.width()*x_scaling, im_crop.height()*y_scaling)
+        blank_space[0] *= x_scaling
+        blank_space[1] *= y_scaling
+        extra_space[0] *= x_scaling
+        extra_space[1] *= y_scaling
+        origin_shift[0] *= x_scaling
+        origin_shift[1] *= y_scaling
 
-        # put the transformed image on the empty window
-        painter = QPainter(image_layer)
-        painter.drawImage(QRectF(left_empty * x_scaling, top_empty * y_scaling,
-                            crop_w * x_scaling, crop_h * y_scaling),
-                            self.tformed_image,
-                            QRectF(crop_left, crop_top, crop_w, crop_h))
+        # add blank space on each side
+        im_padded = QPixmap(
+            round(blank_space[0] + im_scaled.width() + extra_space[0]),
+            round(blank_space[1] + im_scaled.height() + extra_space[1])
+        )
+        im_padded.fill(Qt.black)
+        painter = QPainter(im_padded)
+        painter.drawImage(
+            blank_space[0],
+            blank_space[1],
+            im_scaled
+        )
         painter.end()
-        
-        # draw in brightness
-        self._drawBrightness(image_layer)
-        
-        # draw in contrast
-        self._drawContrast(image_layer)
+
+        # transform the padded image
+        im_tformed = im_padded.transformed(image_tform)
+
+        # transform the origin shift coordinates
+        origin_shift = list(image_tform.map(*origin_shift))
+        # add to top right origin coordinate for transform
+        top_left = self._calcTformCorners(im_padded, image_tform)[1]
+        origin_shift[0] += top_left[0]
+        origin_shift[1] += top_left[1]
+
+        # crop the transformed image to screen dimensions
+        image_layer_rect = QRect(
+            round(origin_shift[0]),
+            round(origin_shift[1]),
+            *pixmap_dim
+        )
+        image_layer = im_tformed.copy(image_layer_rect)
 
         return image_layer
 
-def tformNoTrans(tform : QTransform) -> QTransform:
-    """Return a transfrom without a translation component.
+def getBoundingRect(points):
+    """Get the bounding rectangle and shift in origin for a set of points.
     
-        Params:
-            tform (QTransform): the reference transform
-        Returns:
-            (QTransform) the reference transform without a translation component
-    """
-    tform_notrans = (tform.m11(), tform.m12(), tform.m21(), tform.m22(), 0, 0)
-    tform_notrans = QTransform(*tform_notrans)
-
-    return tform_notrans
+            Params:
+                points (list): a list of points
+            Returns:
+                (tuple): xmin, ymin, xmax, ymax"""
+    xmin = points[1][0]
+    xmax = points[1][0]
+    ymin = points[1][1]
+    ymax = points[1][1]
+    for point in points:
+        x, y = point
+        if x < xmin:
+            xmin = x
+        if x > xmax: xmax = x
+        if y < ymin:
+            ymin = y
+        if y > ymax: ymax = y
+    
+    return xmin, ymin, xmax, ymax

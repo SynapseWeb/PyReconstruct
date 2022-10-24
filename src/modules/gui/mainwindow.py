@@ -339,7 +339,7 @@ class MainWindow(QMainWindow):
             self.field.changeContrast(0.2)
         elif event.key() == 32: # Space
             self.field.toggleBlend()
-        print(event.key())  # developer purposes
+        # print(event.key())  # developer purposes
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""

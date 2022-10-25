@@ -22,9 +22,10 @@
 - [ ] Reorganize structure for Section and Series objects (JF)
    - [ ] Keep list of attributes? (JF)
    - [ ] FieldWidget object should operate on Section object (JF)
-- [ ] Fix import statement for dim 6
+- [ ] Fix import statements for dim 6
 - [ ] Store section traces as dicts (name: traces list)
-- [ ] Ability to move traces using arrow keys (maybe later by clicking and dragging?)
+- [ ] Move traces with arrow keys (consider clicking and dragging later)
+- [ ] Ability to close series without closing program
 
 * Investigate
 

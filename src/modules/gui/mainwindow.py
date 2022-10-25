@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
             src_path = os.path.join(self.series.getwdir(), os.path.basename(section.src))
         else:
             src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
-        if not os.path.isfile(src_path):
+        if not (os.path.isfile(src_path) or os.path.isdir(src_path)):
             self.changeSrcDir(notify=True)
 
         # create field

@@ -6,20 +6,22 @@ from modules.backend.section_layer import SectionLayer
 
 class FieldState():
 
-    def __init__(self, traces : dict, tform : list):
+    def __init__(self, traces : dict, tforms : dict):
         """Create a field state with traces and the transform"""
         self.traces = {}
         for contour_name in traces:
             self.traces[contour_name] = []
             for trace in traces[contour_name]:
                 self.traces[contour_name].append(trace.copy())
-        self.tform = tform.copy()
+        self.tforms = {}
+        for alignment_name in tforms:
+            self.tforms[alignment_name] = tforms[alignment_name].copy()
     
     def getTraces(self):
         return self.traces.copy()
     
-    def getTform(self):
-        return self.tform.copy()
+    def getTforms(self):
+        return self.tforms.copy()
 
 class FieldView():
 
@@ -78,7 +80,7 @@ class FieldView():
                 state (FieldState): the field state to restore
         """
         self.current_state = state
-        self.section_layer.changeTform(state.getTform())
+        self.section_layer.changeTform(state.getTforms()[self.series.alignment])
         self.section.traces = state.getTraces()
         self.section_layer.selected_traces = []
         self.generateView()

@@ -190,6 +190,11 @@ class Transform(object):
         for i in range(len(tform_points)):
             tform_points[i] = self.xy_forward(*tform_points[i])
         return tform_points
+    
+    def getPyreconTform(self):
+        m = self.tform()
+        tform = [m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2]]
+        return tform
 
 
 

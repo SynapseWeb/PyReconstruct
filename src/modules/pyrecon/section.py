@@ -97,6 +97,7 @@ class Section():
         d["thickness"] = self.thickness
         d["traces"] = self.traces.copy()
         for contour_name in d["traces"]:
+            d["traces"][contour_name] = d["traces"][contour_name].copy()
             for i in range(len(d["traces"][contour_name])):  # convert trace objects in trace dictionaries
                 d["traces"][contour_name][i] = d["traces"][contour_name][i].getDict()
         return d
@@ -128,12 +129,14 @@ class Section():
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
         return Section(section_fp)
-
-    
+   
     def save(self):
         """Save file into json or xml."""
-        if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series/welcome.0")):
-            return  # ignore welcome series
+        try:
+            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series/welcome.0")):
+                return  # ignore welcome series
+        except FileNotFoundError:
+            pass
 
         if self.filetype == "JSON":
             d = self.getDict()

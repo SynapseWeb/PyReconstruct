@@ -1,9 +1,12 @@
 import os
+import json
 
 from constants.blank_legacy_files import blank_series, blank_section
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+
+from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
 def xmlToJSON(original_series : Series, new_dir : str):
     """Convert a series in XML to JSON.
@@ -30,6 +33,30 @@ def xmlToJSON(original_series : Series, new_dir : str):
         os.path.basename(series.filepath)
     )
     series.save()
+
+    # search for a Reconcropper JSON file
+    series_name = os.path.basename(series.filepath)[:-4]
+    json_name = series_name + "_data.json"
+    json_fp = os.path.join(original_series.getwdir(), json_name)
+    print(json_fp)
+    # read in alignment data from json
+    if os.path.isfile(json_fp):
+        print("json file opened")
+        with open(json_fp, "r") as f:
+            json_data = json.load(f)
+        # iterate through all sections
+        for snum in series.sections:
+            section = series.loadSection(snum)
+            for item in json_data:
+                if item.startswith("LOCAL") or item.startswith("ALIGNMENT"):
+                    print("new alignments found")
+                    section_name = os.path.basename(section.filepath)
+                    xcoef = json_data[item][section_name]["xcoef"]
+                    ycoef = json_data[item][section_name]["ycoef"]
+                    leg_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef)
+                    pyrecon_tform = leg_tform.getPyreconTform()
+                    section.tforms[item] = pyrecon_tform
+            section.save()
 
 def jsonToXML(original_series : Series, new_dir : str):
     """Convert a series in JSON to XML.

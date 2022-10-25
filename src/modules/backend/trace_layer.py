@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter
 
+from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
@@ -12,14 +13,14 @@ from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
 
 class TraceLayer():
 
-    def __init__(self, section : Section, alignment : str):
+    def __init__(self, section : Section, series : Series):
         """Create a trace layer.
         
             Params:
                 traces (list): the existing trace list (from a Section object)
         """
         self.section = section
-        self.alignment = alignment
+        self.series = series
         self.selected_traces = []
         self.all_traces_hidden = False
     
@@ -37,7 +38,7 @@ class TraceLayer():
         """
         min_distance = -1
         closest_trace = None
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         for trace in self.section.tracesAsList():
             if trace.hidden:
@@ -87,7 +88,7 @@ class TraceLayer():
         else:
             pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
         new_trace = Trace(name, color, closed=closed)
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         for point in pix_trace:
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
@@ -109,7 +110,7 @@ class TraceLayer():
         # get mouse coords and convert to field coords
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # create new stamp trace
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         new_trace = Trace(trace.name, trace.color)
         for point in trace.points:
@@ -175,7 +176,7 @@ class TraceLayer():
                 return
             # collect pixel values for trace points
             traces.append([])
-            t = self.section.tforms[self.alignment]
+            t = self.section.tforms[self.series.alignment]
             point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
             for point in trace.points:
                 x, y = tuple(point)
@@ -205,7 +206,7 @@ class TraceLayer():
         color = trace.color
         trace_to_cut = []
         # establish tform
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         for point in self.selected_traces[0].points:
             x, y = tuple(point)
@@ -251,7 +252,7 @@ class TraceLayer():
                 (bool) if the trace is within the current field window view
         """
         # establish tform
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # set up painter
         painter = QPainter(trace_layer)

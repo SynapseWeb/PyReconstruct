@@ -41,7 +41,7 @@ class FieldView():
             self.src_dir = self.series.src_dir
 
         # create section view
-        self.section_layer = SectionLayer(self.section, self.src_dir, self.series.alignment)
+        self.section_layer = SectionLayer(self.section, self.series)
 
         # b section and view placeholder
         self.b_section_number = None
@@ -56,6 +56,11 @@ class FieldView():
     def reload(self):
         FieldView.__init__(self, self.series)
         self.generateView()
+    
+    def reloadImage(self):
+        self.section_layer.loadImage()
+        if self.b_section is not None:
+            self.b_section_layer.loadImage()
 
     def saveState(self):
         """Save the current traces and transform."""
@@ -113,7 +118,7 @@ class FieldView():
             # load section
             self.section = self.series.loadSection(new_section_num)
             # load section view
-            self.section_layer = SectionLayer(self.section, self.src_dir, self.series.alignment)
+            self.section_layer = SectionLayer(self.section, self.series)
             # set new current section
             self.series.current_section = new_section_num
             # clear selected traces
@@ -275,9 +280,6 @@ class FieldView():
     
     def changeAlignment(self, new_alignment):
         self.series.alignment = new_alignment
-        self.section_layer.changeAlignment(new_alignment)
-        if self.b_section_layer is not None:
-            self.b_section_layer.changeAlignment(new_alignment)
         self.generateView()
     
     

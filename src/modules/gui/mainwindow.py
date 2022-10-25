@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
 
         # open series and create field
         welcome_series = Series(assets_dir + "/welcome_series/welcome.ser")
-        self.openSeries(welcome_series)
+        self.openSeries(welcome_series, refresh_menu=False)
         self.field.generateView()
 
         # create menu and shortcuts
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
                 [
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "", self.openSeries),
-                    ("export_series_act", f"Export series to {outtype}...", "", lambda : self.exportSeries(outtype)),
+                    ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations...", "", self.importTransforms),
                     ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
                     ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
@@ -188,9 +188,9 @@ class MainWindow(QMainWindow):
             QMessageBox.Ok
         )
         if not notify:
-            self.field.reload()
+            self.field.reloadImage()
     
-    def openSeries(self, series_obj=None):
+    def openSeries(self, series_obj=None, refresh_menu=True):
         """Open an existing series and create the field.
         
             Params:
@@ -228,6 +228,15 @@ class MainWindow(QMainWindow):
         if self.obj_list is not None:
             self.obj_list.close()
             self.obj_list = None
+
+        # refresh export choice on menu
+        if refresh_menu:
+            if self.series.filetype == "XML":
+                outtype = "JSON"
+            elif self.series.filetype == "JSON":
+                outtype = "XML"
+            export_series_act = getattr(self, "export_series_act")
+            export_series_act.setText(f"Export series to {outtype}...")
     
     def newSeries(self, image_locations : list):
         """Create a new series from a set of images."""
@@ -265,7 +274,7 @@ class MainWindow(QMainWindow):
         # open series after creating
         self.openSeries(series)
     
-    def exportSeries(self, outtype : str):
+    def exportSeries(self):
         """Export the series to a given filetype.
         
             Params:
@@ -274,10 +283,10 @@ class MainWindow(QMainWindow):
         new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
         if not new_dir:
             return
-        if outtype == "XML":
-            jsonToXML(self.series, new_dir)
-        elif outtype == "JSON":
+        if self.series.filetype == "XML":
             xmlToJSON(self.series, new_dir)
+        elif self.series.filetype == "JSON":
+            jsonToXML(self.series, new_dir)
     
     def importTransforms(self):
         """Import transforms from a text file."""

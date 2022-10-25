@@ -7,12 +7,13 @@ from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, 
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.pyrecon.section import Section
+from modules.pyrecon.series import Series
 
 from modules.calc.pfconversions import fieldPointToPixmap
 
 class ImageLayer():
 
-    def __init__(self, section : Section, src_dir : str, alignment : str):
+    def __init__(self, section : Section, series : Series):
         """Create the image field.
 
             Params:
@@ -20,14 +21,16 @@ class ImageLayer():
                 src_dir (str): the immediate directory for the images
         """
         self.section = section
-        self.src_dir = src_dir
-        self.alignment = alignment
-        self.is_zarr_file = self.src_dir.endswith(".zarr")
+        self.series = series
+        self.is_zarr_file = self.series.src_dir.endswith(".zarr")
         self.loadImage()
     
     def loadImage(self):
         """Load the image."""
-        src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
+        if self.series.src_dir == "":
+            src_path = os.path.join(self.series.getwdir(), os.path.basename(self.section.src))
+        else:
+            src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
         if self.is_zarr_file:
             try:
                 self.image = zarr.open(src_path, mode="r")
@@ -51,7 +54,7 @@ class ImageLayer():
             Params:
                 src_dir (str): the new directory for the images
         """
-        self.src_dir = src_dir
+        self.series.src_dir = src_dir
         self.loadImage()
     
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
@@ -121,7 +124,7 @@ class ImageLayer():
                 image_layer (QPixmap): the pixmap to draw brightness on
         """
         # get transform
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # establish first point
         brightness_poly = QPolygon()
@@ -204,7 +207,7 @@ class ImageLayer():
         ]
         
         # get transforms
-        t = self.section.tforms[self.alignment]
+        t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         image_tform = QTransform(t[0], -t[3], -t[1], t[4], 0, 0)
 

@@ -148,7 +148,7 @@ def importZarrObjects(main_window : QMainWindow, series : Series, zarr_fp : str)
                 for trace in traces[section_num]:
                     new_trace = Trace(str(id), color_dict[id])
                     new_trace.points = trace
-                    section.traces.append(new_trace)
+                    section.traces.addTrace(new_trace)
         section.save()
         if progbar.wasCanceled():
             return

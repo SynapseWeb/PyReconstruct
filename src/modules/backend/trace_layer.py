@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter, QPolygon
+from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter
 
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
@@ -38,7 +38,7 @@ class TraceLayer():
         closest_trace = None
         t = self.section.tform
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        for trace in self.section.traces:
+        for trace in self.section.tracesAsList():
             if trace.hidden:
                 continue
             points = []
@@ -92,7 +92,7 @@ class TraceLayer():
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
             rtform_point = point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
-        self.section.traces.append(new_trace)
+        self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
@@ -115,7 +115,7 @@ class TraceLayer():
             field_point = (point[0] + field_x, point[1] + field_y)
             rtform_point = point_tform.inverted()[0].map(*field_point)  # fix the coords to image
             new_trace.add(rtform_point)
-        self.section.traces.append(new_trace)
+        self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
     def changeTraceAttributes(self):
@@ -132,12 +132,19 @@ class TraceLayer():
         attr_input = AttributeDialog(parent=self, name=name, color=color).exec_()
         if attr_input is None:
             return
+        # change object attributes
         new_name, new_color = attr_input
         for trace in self.selected_traces:
-            if new_name != "":
-                trace.name = new_name
             if new_color is not None:
                 trace.color = new_color
+            if new_name != "":
+                # move the trace in the section.traces dictionary
+                if new_name != trace.name:
+                    self.section.removeTrace(trace)
+                    trace.name = new_name
+                    self.section.addTrace(trace)
+                else:
+                    trace.name = new_name
     
     def deselectAllTraces(self):
         """Deselect all traces."""
@@ -217,17 +224,17 @@ class TraceLayer():
                 save_state (bool): whether or not to save the state after deleting
         """
         for trace in self.selected_traces:
-            self.section.traces.remove(trace)
+            self.section.removeTrace(trace)
         self.selected_traces = []
     
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
         if self.all_traces_hidden:
-            for trace in self.section.traces:
+            for trace in self.section.tracesAsList():
                 trace.setHidden(False)
             self.all_traces_hidden = False
         else:
-            for trace in self.section.traces:
+            for trace in self.section.tracesAsList():
                 trace.setHidden(True)
             self.all_traces_hidden = True
         self.selected_traces = []
@@ -288,7 +295,7 @@ class TraceLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         trace_layer = QPixmap(pixmap_w, pixmap_h)
         trace_layer.fill(Qt.transparent)
-        for trace in self.section.traces:
+        for trace in self.section.tracesAsList():
             if not trace.hidden:
                 self._drawTrace(
                     trace_layer,

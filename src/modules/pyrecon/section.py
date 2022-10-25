@@ -32,8 +32,9 @@ class Section():
             self.tform = section_data["tform"]
             self.thickness = section_data["thickness"]
             self.traces = section_data["traces"]
-            for i in range(len(self.traces)):  # convert trace dictionaries into trace objects
-                self.traces[i] = Trace.fromDict(self.traces[i])
+            for name in self.traces:
+                for i in range(len(self.traces[name])):  # convert trace dictionaries into trace objects
+                    self.traces[name][i] = Trace.fromDict(self.traces[name][i])
         
         elif self.filetype == "XML":
             self.xml_section = process_section_file(filepath)
@@ -45,9 +46,41 @@ class Section():
             self.mag = image.mag
             self.thickness = self.xml_section.thickness
             self.tform = tform
-            self.traces = []
+            self.traces = {}
             for xml_contour in self.xml_section.contours:
-                self.traces.append(Trace.fromXMLObj(xml_contour, image.transform))
+                self.addTrace(Trace.fromXMLObj(xml_contour, image.transform))
+    
+    def addTrace(self, trace : Trace):
+        """Add a trace to the trace dictionary.
+        
+            Params:
+                trace (Trace): the trace to add
+        """
+        if trace.name in self.traces:
+            self.traces[trace.name].append(trace)
+        else:
+            self.traces[trace.name] = [trace]
+    
+    def removeTrace(self, trace : Trace):
+        """Remove a trace from the trace dictionary.
+        
+            Params:
+                trace (Trace): the trace to remove from the traces dictionary
+        """
+        if trace.name in self.traces:
+            self.traces[trace.name].remove(trace)
+    
+    def tracesAsList(self) -> list[Trace]:
+        """Return the trace dictionary as a list. Does NOT copy traces.
+        
+            Returns:
+                (list): a list of traces
+        """
+        trace_list = []
+        for contour_name in self.traces:
+            for trace in self.traces[contour_name]:
+                trace_list.append(trace)
+        return trace_list
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.
@@ -63,8 +96,9 @@ class Section():
         d["tform"] = self.tform
         d["thickness"] = self.thickness
         d["traces"] = self.traces.copy()
-        for i in range(len(d["traces"])):  # convert trace objects in trace dictionaries
-            d["traces"][i] = d["traces"][i].getDict()
+        for contour_name in d["traces"]:
+            for i in range(len(d["traces"][contour_name])):  # convert trace objects in trace dictionaries
+                d["traces"][contour_name][i] = d["traces"][contour_name][i].getDict()
         return d
     
     # STATIC METHOD
@@ -88,7 +122,7 @@ class Section():
         section_data["mag"] = mag  # microns per pixel
         section_data["thickness"] = thickness  # section thickness
         section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
-        section_data["traces"] = []
+        section_data["traces"] = {}
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
@@ -115,6 +149,6 @@ class Section():
             xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
             self.xml_section.images[0].transform = xml_tform
             self.xml_section.contours = []
-            for trace in self.traces:
+            for trace in self.tracesAsList():
                 self.xml_section.contours.append(trace.getXMLObj(xml_tform))
             write_section(self.xml_section, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)

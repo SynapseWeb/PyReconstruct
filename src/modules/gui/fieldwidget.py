@@ -108,18 +108,32 @@ class FieldWidget(QWidget, FieldView):
                 find_closest_trace (bool): whether or not to display closest trace
         """
         if event is not None:
-            s = "Section: " + str(self.series.current_section) + "  |  "
+            section = "Section: " + str(self.series.current_section)
+
             x, y = event.pos().x(), event.pos().y()
             x, y = pixmapPointToField(x, y, self.pixmap_dim, self.series.window, self.section.mag)
-            s += "x = " + str("{:.4f}".format(x)) + ", "
-            s += "y = " + str("{:.4f}".format(y)) + "  |  "
-            s += "Tracing: " + '"' + self.tracing_trace.name + '"'
+            position = "x = " + str("{:.4f}".format(x)) + ", "
+            position += "y = " + str("{:.4f}".format(y))
+
+            alignment = "Alignment: " + self.series.alignment
+
+            tracing = "Tracing: " + '"' + self.tracing_trace.name + '"'
+
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
                 if closest_trace:
-                    s += "  |  Nearest trace: " + closest_trace.name
+                    ct = "Nearest trace: " + closest_trace.name 
+                else:
+                    ct = ""
+            else:
+                ct = ""
+            if ct == "":
+                self.status_list = [section, position, alignment, tracing]
+            else:
+                self.status_list = [section, position, alignment, tracing, ct]
         else:
-            s = "Section: " + str(self.series.current_section)
+            self.status_list[0] = "Section: " + str(self.series.current_section) 
+        s = "  |  ".join(self.status_list)
         self.parent_widget.statusbar.showMessage(s)
     
     def mousePressEvent(self, event):

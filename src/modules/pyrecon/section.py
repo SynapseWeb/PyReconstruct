@@ -29,7 +29,7 @@ class Section():
             self.brightness = section_data["brightness"]
             self.contrast = section_data["contrast"]
             self.mag = section_data["mag"]
-            self.tform = section_data["tform"]
+            self.tforms = section_data["tforms"]
             self.thickness = section_data["thickness"]
             self.traces = section_data["traces"]
             for name in self.traces:
@@ -39,13 +39,13 @@ class Section():
         elif self.filetype == "XML":
             self.xml_section = process_section_file(filepath)
             image = self.xml_section.images[0] # assume only one image
-            tform = list(image.transform.tform()[:2,:].reshape(6))
+            self.tforms = {}
+            self.tforms["default"] = list(image.transform.tform()[:2,:].reshape(6))
             self.src = image.src
             self.brightness = 0
             self.contrast = 0
             self.mag = image.mag
             self.thickness = self.xml_section.thickness
-            self.tform = tform
             self.traces = {}
             for xml_contour in self.xml_section.contours:
                 self.addTrace(Trace.fromXMLObj(xml_contour, image.transform))
@@ -93,7 +93,7 @@ class Section():
         d["brightness"] = self.brightness
         d["contrast"] = self.contrast
         d["mag"] = self.mag
-        d["tform"] = self.tform
+        d["tforms"] = self.tforms
         d["thickness"] = self.thickness
         d["traces"] = self.traces.copy()
         for contour_name in d["traces"]:
@@ -121,7 +121,8 @@ class Section():
         section_data["contrast"] = 0
         section_data["mag"] = mag  # microns per pixel
         section_data["thickness"] = thickness  # section thickness
-        section_data["tform"] = [1, 0, 0, 0, 1, 0]  # identity matrix default
+        section_data["tforms"] = {}  
+        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
         section_data["traces"] = {}
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
@@ -143,7 +144,7 @@ class Section():
             self.xml_section.images[0].src = self.src
             self.xml_section.images[0].mag = self.mag
             self.xml_section.thickness = self.thickness
-            t = self.tform
+            t = self.tforms["default"]
             xcoef = [t[2], t[0], t[1]]
             ycoef = [t[5], t[3], t[4]]
             xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse

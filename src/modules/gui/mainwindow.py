@@ -41,6 +41,10 @@ class MainWindow(QMainWindow):
         self.mouse_dock = None  # placeholder for mouse dock
         self.obj_list = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
+        # number defaults
+        self.smallnum = 0.01
+        self.mednum = 0.1
+        self.bignum = 1
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -97,6 +101,16 @@ class MainWindow(QMainWindow):
                 [
                     ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
                 ]
+             },
+
+            {
+                "attribute": "alignmentmenu",
+                "name": "Alignment",
+                "opts":
+                [
+                    ("newalignment_act", "New alignment", "", self.newAlignment),
+                    ("switchalignment_act", "Switch alignment", "Ctrl+Shift+A", self.switchAlignment)
+                ]
              }
         ]
 
@@ -124,7 +138,20 @@ class MainWindow(QMainWindow):
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
             ("Ctrl+G", self.gotoSection),
-            ("Ctrl+A", self.field.changeTraceAttributes)
+            ("Ctrl+A", self.field.changeTraceAttributes),
+            # translate motions
+            ("Ctrl+Left", lambda : self.translateTform("left", "small")),
+            ("Shift+Left", lambda : self.translateTform("left", "med")),
+            ("Ctrl+Shift+Left", lambda : self.translateTform("left", "big")),
+            ("Ctrl+Right", lambda : self.translateTform("right", "small")),
+            ("Shift+Right", lambda : self.translateTform("right", "med")),
+            ("Ctrl+Shift+Right", lambda : self.translateTform("right", "big")),
+            ("Ctrl+Up", lambda : self.translateTform("up", "small")),
+            ("Shift+Up", lambda : self.translateTform("up", "med")),
+            ("Ctrl+Shift+Up", lambda : self.translateTform("up", "big")),
+            ("Ctrl+Down", lambda : self.translateTform("down", "small")),
+            ("Shift+Down", lambda : self.translateTform("down", "med")),
+            ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big")),
         ]
         
         for kbd, act in shortcuts:
@@ -391,7 +418,9 @@ class MainWindow(QMainWindow):
     
     def changeTform(self):
         """Open a dialog to change the transform of a section."""
-        current_tform = " ".join([str(round(n, 2)) for n in self.field.section.tform])
+        current_tform = " ".join(
+            [str(round(n, 2)) for n in self.field.section.tforms[self.series.alignment]]
+        )
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
         if not confirmed:
@@ -402,6 +431,32 @@ class MainWindow(QMainWindow):
                 return
         except ValueError:
             return
+        self.field.changeTform(new_tform)
+    
+    def translateTform(self, direction : str, amount : str):
+        """Translate the current transform.
+        
+            Params:
+                direction (str): left, right, up, or down
+                amount (str): small, med, or big
+        """
+        if amount == "small":
+            num = self.smallnum
+        elif amount == "med":
+            num = self.mednum
+        elif amount == "big":
+            num = self.bignum
+        if direction == "left":
+            x, y = -num, 0
+        elif direction == "right":
+            x, y = num, 0
+        elif direction == "up":
+            x, y = 0, num
+        elif direction == "down":
+            x, y = 0, -num
+        new_tform = self.field.section.tforms[self.series.alignment].copy()
+        new_tform[2] += x
+        new_tform[5] += y
         self.field.changeTform(new_tform)
     
     def gotoSection(self):
@@ -415,7 +470,50 @@ class MainWindow(QMainWindow):
             self.changeSection(new_section_num)
         except ValueError:
             return
-        
+    
+    def newAlignment(self):
+        """Add a new alignment."""
+        new_alignment_name, confirmed = QInputDialog.getText(
+            self,
+            "New Alignment",
+            "Enter the name for your new alignment:"
+        )
+        if not confirmed:
+            return
+        if new_alignment_name in self.field.section.tforms:
+            QMessageBox.information(
+                self,
+                " ",
+                "This alignment already exists.",
+                QMessageBox.Ok
+            )
+            return
+        self.series.newAlignment(
+            new_alignment_name,
+            self.series.alignment
+        )
+        self.field.reload()
+        self.field.changeAlignment(new_alignment_name)
+    
+    def switchAlignment(self):
+        """Switch alignments."""
+        alignment_name, confirmed = QInputDialog.getText(
+            self,
+            "Switch Alignment",
+            "Enter the alignment name:"
+        )
+        if not confirmed:
+            return
+        if alignment_name not in self.field.section.tforms:
+            QMessageBox.information(
+                self,
+                " ",
+                "This alignment does not exist.",
+                QMessageBox.Ok
+            )
+            return
+        self.field.changeAlignment(alignment_name)
+
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         if not self.field: # do not do anything if field is not created

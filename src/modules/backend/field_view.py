@@ -41,7 +41,7 @@ class FieldView():
             self.src_dir = self.series.src_dir
 
         # create section view
-        self.section_layer = SectionLayer(self.section, self.src_dir)
+        self.section_layer = SectionLayer(self.section, self.src_dir, self.series.alignment)
 
         # b section and view placeholder
         self.b_section_number = None
@@ -49,7 +49,7 @@ class FieldView():
         self.b_section_layer = None
 
         self.undo_states = {}
-        self.current_state = FieldState(self.section.traces, self.section.tform)
+        self.current_state = FieldState(self.section.traces, self.section.tforms)
         self.undo_states[self.series.current_section] = []
         self.redo_states = []
     
@@ -63,7 +63,7 @@ class FieldView():
         state_list.append(self.current_state)
         if len(state_list) > 20:  # limit the number of undo states
             state_list.pop(0)
-        self.current_state = FieldState(self.section.traces, self.section.tform)
+        self.current_state = FieldState(self.section.traces, self.section.tforms)
         self.redo_states = []
     
     def restoreState(self, state : FieldState):
@@ -113,13 +113,13 @@ class FieldView():
             # load section
             self.section = self.series.loadSection(new_section_num)
             # load section view
-            self.section_layer = SectionLayer(self.section, self.src_dir)
+            self.section_layer = SectionLayer(self.section, self.src_dir, self.series.alignment)
             # set new current section
             self.series.current_section = new_section_num
             # clear selected traces
             self.section_layer.selected_traces = []
         # save current state
-        self.current_state = FieldState(self.section.traces, self.section.tform)
+        self.current_state = FieldState(self.section.traces, self.section.tforms)
         # clear redo states
         self.redo_states = []
         # create new list for states if needed
@@ -271,6 +271,13 @@ class FieldView():
     def changeTform(self, new_tform):
         self.section_layer.changeTform(new_tform)
         self.saveState()
+        self.generateView()
+    
+    def changeAlignment(self, new_alignment):
+        self.series.alignment = new_alignment
+        self.section_layer.changeAlignment(new_alignment)
+        if self.b_section_layer is not None:
+            self.b_section_layer.changeAlignment(new_alignment)
         self.generateView()
     
     

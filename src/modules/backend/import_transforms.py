@@ -1,6 +1,6 @@
 from modules.pyrecon.series import Series
 
-def importTransforms(series : Series, tforms_fp : str):  # MIGRATE TO BACKEND
+def importTransforms(series : Series, tforms_fp : str):
         """Import transforms from a text file.
         
             Params:

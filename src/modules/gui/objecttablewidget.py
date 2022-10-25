@@ -97,7 +97,7 @@ class ObjectTableWidget(QDockWidget):
         self.table.setGeometry(0, 20, w, h-20)
     
     def updateSectionData(self, section_num : int, section : Section):
-        objects_to_update = getObjectsToUpdate(self._objdict, section_num, section)
+        objects_to_update = getObjectsToUpdate(self._objdict, section_num, self.series, section)
         row = 0        
         for name in sorted(self._objdict.keys()):
             if self.table.item(row, 0) is None or self.table.item(row, 0).text() != name:

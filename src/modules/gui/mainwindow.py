@@ -3,8 +3,9 @@ from time import time
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QApplication,
-    QMessageBox)
+    QMessageBox, QProgressDialog)
 from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import Qt
 
 from modules.gui.objecttablewidget import ObjectTableWidget
 from modules.gui.mousedockwidget import MouseDockWidget
@@ -281,12 +282,20 @@ class MainWindow(QMainWindow):
                 outtype (str): XML or JSON
         """
         new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
+        progbar = QProgressDialog(
+            "Exporting series...",
+            "Cancel",
+            0, 100,
+            self
+        )
+        progbar.setWindowTitle("Export Series")
+        progbar.setWindowModality(Qt.WindowModal)
         if not new_dir:
             return
         if self.series.filetype == "XML":
-            xmlToJSON(self.series, new_dir)
+            xmlToJSON(self.series, new_dir, progbar=progbar)
         elif self.series.filetype == "JSON":
-            jsonToXML(self.series, new_dir)
+            jsonToXML(self.series, new_dir, progbar=progbar)
     
     def importTransforms(self):
         """Import transforms from a text file."""

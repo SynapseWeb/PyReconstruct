@@ -1,6 +1,8 @@
 import os
 import json
 
+from PySide6.QtWidgets import QProgressDialog
+
 from constants.blank_legacy_files import blank_series, blank_section
 
 from modules.pyrecon.series import Series
@@ -8,16 +10,19 @@ from modules.pyrecon.section import Section
 
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
-def xmlToJSON(original_series : Series, new_dir : str):
+def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog):
     """Convert a series in XML to JSON.
     
         Params:
             original_series (Series): the series to convert
             new_dir (str): the directory to store the new files
+            progbar: the QProgressDialog object
     """
     # load a new series
     series = Series(original_series.filepath)
     # save sections as JSON
+    progress = 0
+    final_value = len(series.sections) + 1 # plus one for extra json step
     for snum in series.sections:
         section = series.loadSection(snum)
         section.filetype = "JSON"
@@ -26,6 +31,11 @@ def xmlToJSON(original_series : Series, new_dir : str):
             os.path.basename(section.filepath)
         )
         section.save()
+        if progbar.wasCanceled():
+            return
+        else:
+            progress += 1
+            progbar.setValue(progress/final_value * 100)
     # save series as XML
     series.filetype = "JSON"
     series.filepath = os.path.join(
@@ -38,10 +48,8 @@ def xmlToJSON(original_series : Series, new_dir : str):
     series_name = os.path.basename(series.filepath)[:-4]
     json_name = series_name + "_data.json"
     json_fp = os.path.join(original_series.getwdir(), json_name)
-    print(json_fp)
     # read in alignment data from json
     if os.path.isfile(json_fp):
-        print("json file opened")
         with open(json_fp, "r") as f:
             json_data = json.load(f)
         # iterate through all sections
@@ -49,7 +57,6 @@ def xmlToJSON(original_series : Series, new_dir : str):
             section = series.loadSection(snum)
             for item in json_data:
                 if item.startswith("LOCAL") or item.startswith("ALIGNMENT"):
-                    print("new alignments found")
                     section_name = os.path.basename(section.filepath)
                     xcoef = json_data[item][section_name]["xcoef"]
                     ycoef = json_data[item][section_name]["ycoef"]
@@ -57,8 +64,10 @@ def xmlToJSON(original_series : Series, new_dir : str):
                     pyrecon_tform = leg_tform.getPyreconTform()
                     section.tforms[item] = pyrecon_tform
             section.save()
+    progress += 1
+    progbar.setValue(progress/final_value * 100)
 
-def jsonToXML(original_series : Series, new_dir : str):
+def jsonToXML(original_series : Series, new_dir : str, progbar : QProgressDialog):
     """Convert a series in JSON to XML.
     
         Params:
@@ -68,6 +77,8 @@ def jsonToXML(original_series : Series, new_dir : str):
     # reload series
     series = Series(original_series.filepath)
     # save sections as XML
+    progress = 0
+    final_value = len(series.sections)
     for snum in series.sections:
         json_section = series.loadSection(snum)
         # create a blank xml section
@@ -93,6 +104,11 @@ def jsonToXML(original_series : Series, new_dir : str):
         xml_section.tform = json_section.tform
         xml_section.traces = json_section.traces
         xml_section.save()
+        if progbar.wasCanceled():
+            return
+        else:
+            progress += 1
+            progbar.setValue(progress/final_value * 100)
     
     # save series as xml
     xml_text = blank_series

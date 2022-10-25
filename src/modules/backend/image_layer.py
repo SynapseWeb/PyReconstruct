@@ -28,12 +28,21 @@ class ImageLayer():
         """Load the image."""
         src_path = os.path.join(self.src_dir, os.path.basename(self.section.src))
         if self.is_zarr_file:
-            self.image = zarr.open(src_path, mode="r")
-            self.bh, self.bw = self.image.shape
+            try:
+                self.image = zarr.open(src_path, mode="r")
+                self.bh, self.bw = self.image.shape
+                self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
+                self.image_found = True
+            except zarr.errors.PathNotFoundError:
+                self.image_found = False
         else:
             self.image = QImage(src_path)
-            self.bw, self.bh = self.image.width(), self.image.height()
-        self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
+            if self.image.isNull():
+                self.image_found = False
+            else:
+                self.bw, self.bh = self.image.width(), self.image.height()
+                self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
+                self.image_found = True
     
     def setSrcDir(self, src_dir : str):
         """Set the immediate source directory and reload image.
@@ -181,6 +190,12 @@ class ImageLayer():
         self.window = window
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_x, window_y, window_w, window_h = tuple(window) 
+
+        # return blank if image was not found
+        if not self.image_found:
+            blank_pixmap = QPixmap(pixmap_w, pixmap_h)
+            blank_pixmap.fill(Qt.black)
+            return blank_pixmap
 
         # scaling: ratio of screen pixels to actual image pixels (should be equal)
         x_scaling = pixmap_w / (window_w / self.section.mag)

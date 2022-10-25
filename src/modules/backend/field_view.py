@@ -6,11 +6,13 @@ from modules.backend.section_layer import SectionLayer
 
 class FieldState():
 
-    def __init__(self, traces : list, tform : list):
+    def __init__(self, traces : dict, tform : list):
         """Create a field state with traces and the transform"""
-        self.traces = []
-        for trace in traces:
-            self.traces.append(trace.copy())
+        self.traces = {}
+        for contour_name in traces:
+            self.traces[contour_name] = []
+            for trace in traces[contour_name]:
+                self.traces[contour_name].append(trace.copy())
         self.tform = tform.copy()
     
     def getTraces(self):
@@ -126,23 +128,25 @@ class FieldView():
         # generate view and update status bar
         self.generateView()
     
-    def findTrace(self, trace_name : str, occurence=1):
+    def findTrace(self, trace_name : str, index=0):
         """Focus the window view on a given trace.
         
             Params:
                 trace_name (str): the name of the trace to focus on
-                occurence (int): find the nth trace on the section"""
-        count = 0
-        for trace in self.section.traces:
-            if trace.name == trace_name:
-                count += 1
-                if count == occurence:
-                    min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
-                    range_x = max_x - min_x
-                    range_y = max_y - min_y
-                    self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
-                    self.selected_traces = [trace]
-                    self.generateView(save_state=False)
+                index (int): find the nth trace on the section
+        """
+        if trace_name not in self.section.traces:
+            return
+        try:
+            trace = self.section.traces[index]
+        except IndexError:
+            return
+        min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+        range_x = max_x - min_x
+        range_y = max_y - min_y
+        self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+        self.selected_traces = [trace]
+        self.generateView(save_state=False)
     
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.

@@ -85,7 +85,7 @@ def loadSeriesData(series : Series, progbar):
     # iterate through sections, keep track of progress
     for section_num in series.sections:
         section = series.loadSection(section_num)
-        t = section.tform
+        t = section.tforms[series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # iterate through contours
         for contour_name in section.traces:
@@ -103,7 +103,7 @@ def loadSeriesData(series : Series, progbar):
     
     return objdict
 
-def getObjectsToUpdate(objdict : dict, section_num : int, section : Section):
+def getObjectsToUpdate(objdict : dict, section_num : int, series : Series, section : Section):
     """Get the objects that need to be updated on the object table.
     
         Params:
@@ -120,7 +120,7 @@ def getObjectsToUpdate(objdict : dict, section_num : int, section : Section):
         if had_existing_data:
             objects_to_update.add(name)
     # iterate through all objects and re-calculate section totals
-    t = section.tform
+    t = section.tforms[series.alignment]
     point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
     section_thickness = section.thickness
     for trace in section.tracesAsList():

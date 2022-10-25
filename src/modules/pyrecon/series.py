@@ -37,6 +37,7 @@ class Series():
             for i in range(len(self.palette_traces)):
                 self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
             self.current_trace = Trace.fromDict(series_data["current_trace"])
+            self.alignment = series_data["alignment"]
         
         elif self.filetype == "XML":
             self.xml_series = process_series_file(filepath)
@@ -58,6 +59,7 @@ class Series():
             for xml_contour in self.xml_series.contours:
                 self.palette_traces.append(Trace.fromXMLObj(xml_contour))
             self.current_trace = self.palette_traces[0]
+            self.alignment = "default"
     
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -74,6 +76,7 @@ class Series():
         for trace in self.palette_traces:
             d["palette_traces"].append(trace.getDict())
         d["current_trace"] = self.current_trace.getDict()
+        d["alignment"] = self.alignment
         return d
     
     # STATIC METHOD
@@ -98,6 +101,7 @@ class Series():
             series_data["sections"][i] = series_name + "." + str(i)
         series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
         series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["alignment"] = "default"
         series_fp = os.path.join(wdir, series_name + ".ser")
         with open(series_fp, "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
@@ -136,3 +140,12 @@ class Series():
                 section_num (int): the section number
         """
         return Section(os.path.join(self.getwdir(), self.sections[section_num]))
+    
+    def newAlignment(self, alignment_name : str, base_alignment="default"):
+        if self.filetype == "XML":
+            print("Alignments not support for XML files.")
+            print("Please export your series as JSON.")
+        for snum in self.sections:
+            section = self.loadSection(snum)
+            section.tforms[alignment_name] = section.tforms[base_alignment]
+            section.save()

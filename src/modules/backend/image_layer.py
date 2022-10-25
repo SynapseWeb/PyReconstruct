@@ -12,7 +12,7 @@ from modules.calc.pfconversions import fieldPointToPixmap
 
 class ImageLayer():
 
-    def __init__(self, section : Section, src_dir : str):
+    def __init__(self, section : Section, src_dir : str, alignment : str):
         """Create the image field.
 
             Params:
@@ -21,6 +21,7 @@ class ImageLayer():
         """
         self.section = section
         self.src_dir = src_dir
+        self.alignment = alignment
         self.is_zarr_file = self.src_dir.endswith(".zarr")
         self.loadImage()
     
@@ -89,14 +90,6 @@ class ImageLayer():
         br = (br_x, br_y)
 
         return bl, tl, tr, br
-
-    def changeTform(self, new_tform : list):
-        """Set the transform for the image.
-        
-            Params:
-                tform (list): the transform as a list of numbers
-        """
-        self.section.tform = new_tform
     
     def changeBrightness(self, change : int):
         """Change the brightness of the section.
@@ -128,7 +121,7 @@ class ImageLayer():
                 image_layer (QPixmap): the pixmap to draw brightness on
         """
         # get transform
-        t = self.section.tform
+        t = self.section.tforms[self.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # establish first point
         brightness_poly = QPolygon()
@@ -167,13 +160,13 @@ class ImageLayer():
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
     
-    def getContourBounds(self, contour_name : str):
+    def getCropContourBounds(self, contour_name : str):
         """Find the bounds for a contour in actual image pixels.
         
             Params:
                 contour_name (str): the name of the contour to find bounds for
             Returns:
-                (tuple): left, top, right, bottom values for contour
+                (tuple): left, top, right, bottom values for contour in actual image pixel coords
         """
     
     def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
@@ -211,7 +204,7 @@ class ImageLayer():
         ]
         
         # get transforms
-        t = self.section.tform
+        t = self.section.tforms[self.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         image_tform = QTransform(t[0], -t[3], -t[1], t[4], 0, 0)
 

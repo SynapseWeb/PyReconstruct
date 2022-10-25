@@ -158,6 +158,15 @@ class ImageLayer():
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
     
+    def getContourBounds(self, contour_name : str):
+        """Find the bounds for a contour in actual image pixels.
+        
+            Params:
+                contour_name (str): the name of the contour to find bounds for
+            Returns:
+                (tuple): left, top, right, bottom values for contour
+        """
+    
     def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the image layer.
         

@@ -72,12 +72,39 @@ class ObjectTableItem():
             self.data[section_num]["volume"] += trace_area * section_thickness
         else:
             self.data[section_num]["flat_area"] += trace_distance * section_thickness
+    
+    def combine(self, other):
+        """Combine two table data objects.
+        
+            Params:
+                other (ObjectTableItem): the other object to add
+            Returns:
+                (ObjectTableItem): the sum of the two table items
+        """
+        # use the name of self
+        combined = ObjectTableItem(self.name)
+        combined.data = self.data.copy()
+        # iterate through all data in other object
+        for snum in other.data:
+            if snum not in combined.data:
+                combined.data[snum] = {}
+                combined.data[snum]["count"] = other.data[snum]["count"]
+                combined.data[snum]["flat_area"] = other.data[snum]["flat_area"]
+                combined.data[snum]["volume"] = other.data[snum]["volume"]
+            else:
+                for key in combined.data[snum]:
+                    combined.data[snum][key] += other.data[snum][key]
+        return combined
+            
 
 def loadSeriesData(series : Series, progbar):
     """Load all of the data for each object in the series.
     
         Params:
-            progbar (QPorgressDialog): progress bar to update as function progresses
+            series (Series): the series object
+            progbar (QProgressDialog): progress bar to update as function progresses
+        Returns:
+            (dict): obj_name : ObjectTableItem
     """
     objdict = {}  # object name : ObjectTableItem (contains data on object)
     prog_value = 0
@@ -132,7 +159,7 @@ def getObjectsToUpdate(objdict : dict, section_num : int, series : Series, secti
         if name not in objdict:
             objdict[name] = ObjectTableItem(name)  # create new object if not already exists
         objdict[name].addTrace(points, closed, section_num, section_thickness)
-        objects_to_update.add(name)
+        objects_to_update.add(name) # add object name to set (duplicates will not be included)
     
     return objects_to_update
 

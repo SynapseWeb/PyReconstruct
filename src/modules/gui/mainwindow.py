@@ -372,7 +372,7 @@ class MainWindow(QMainWindow):
             section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
             if section_number_i > 0:
                 self.changeSection(section_numbers[section_number_i - 1])
-        elif event.key() == 16777223:  # Del
+        elif event.key() == 16777223  or event.key() == 16777219:  # Del or Bksp pressed
             self.field.deleteSelectedTraces()
         elif event.key() == 45:  # -
             self.field.changeBrightness(-5)
@@ -391,6 +391,7 @@ class MainWindow(QMainWindow):
         if not self.field:  # do not respond to mouse wheel if field is not created
             return
         section_numbers = list(self.series.sections.keys())  # get list of all section numbers
+        section_numbers.sort()  # sort section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.angleDelta().y() > 0:  # if scroll up
             if section_number_i < len(section_numbers) - 1:

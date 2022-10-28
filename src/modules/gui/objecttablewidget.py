@@ -1,26 +1,25 @@
-import orjson
 from PySide6.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QMenuBar, QProgressDialog, QWidget
-from PySide6.QtGui import QTransform
 from PySide6.QtCore import Qt
 
-from modules.recon.series import Series
-from modules.recon.section import Section
-from modules.gui.objecttableitem import ObjectTableItem
+from modules.pyrecon.series import Series
+from modules.pyrecon.section import Section
+
+from modules.backend.object_table_data import ObjectTableItem, loadSeriesData, getObjectsToUpdate
+
 from modules.calc.quantification import sigfigRound
 
 class ObjectTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, wdir : str, quantities : dict, parent : QWidget):
-        """Creat the object table dock widget.
+    def __init__(self, series : Series, quantities : dict, parent : QWidget):
+        """Create the object table dock widget.
         
             Params:
                 series (Series): the Series object
-                wdir (str): the directory containing the JSON files
                 quantities (dict): information on which calculations to include
-                parent (QWidget): the main window the dock is connected to"""
+                parent (QWidget): the main window the dock is connected to
+        """
         super().__init__(parent)
         self.series = series
-        self.wdir = wdir
         self.quantities = quantities
         self.parent_widget = parent
 
@@ -43,29 +42,42 @@ class ObjectTableWidget(QDockWidget):
 
         self.show()
     
-    def loadSeriesData(self, progbar : QProgressDialog):
-        """Load all of the data for each object in the series.
+    def setRow(self, obj_data : ObjectTableItem, row : int):
+        """Set the data for a row of the table.
         
             Params:
-                progbar (QPorgressDialog): progress bar to update as function progresses
+                object_data (ObjectTableItem): the object containing the data for the object
+                row (int): the row to enter this data into
         """
-        self._objdict = {}  # object name : ObjectTableItem (contains data on object)
-        prog_value = 0
-        final_value = len(self.series.sections)
-        for section_num in self.series.sections:
-            section = Section(self.wdir + self.series.sections[section_num])
-            t = section.tform
-            point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            for trace in section.traces:
-                points = trace.points.copy()
-                for i in range(len(points)):
-                    points[i] = point_tform.map(*points[i])  # transform the points to get accurate data
-                if trace.name not in self._objdict:
-                    self._objdict[trace.name] = ObjectTableItem(trace.name)  # create new object if not already exists
-                self._objdict[trace.name].addTrace(points, trace.closed, section_num, section.thickness)
-            prog_value += 1
-            progbar.setValue(prog_value / final_value * 100)
-            if progbar.wasCanceled(): return
+        self.table.setItem(row, 0, QTableWidgetItem(obj_data.name))
+        col = 1
+        if self.quantities["range"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getStart())))
+            col += 1
+            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getEnd())))
+            col += 1
+        if self.quantities["count"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getCount())))
+            col += 1
+        if self.quantities["flat_area"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(obj_data.getFlatArea(), 6))))
+            col += 1
+        if self.quantities["volume"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(obj_data.getVolume(), 6))))
+    
+    def getRowIndex(self, obj_name : str):
+        """Get the row index of an object in the table (or where it SHOULD be on the table).
+        
+            Parmas:
+                obj_name (str): the name of the object
+            Returns:
+                (int): the row index for that object in the table
+        """
+        for row_index in self.table.rowCount():
+            row_name = self.table.item(row_index, 0).text()
+            if obj_name <= row_name:
+                return row_index
+        return self.table.rowCount() + 1
     
     def createTable(self):
         """Create the table widget."""
@@ -73,10 +85,7 @@ class ObjectTableWidget(QDockWidget):
         progbar = QProgressDialog("Loading object data...", "Cancel", 0, 100, self.parent_widget)
         progbar.setWindowTitle("Object Data")
         progbar.setWindowModality(Qt.WindowModal)
-        self._objdict = {}
-        self.loadSeriesData(progbar)
-        if progbar.wasCanceled(): return
-
+        self._objdict = loadSeriesData(self.series, progbar)
         # create the table
         self.horizontal_headers = ["Name"]
         if self.quantities["range"]:
@@ -93,22 +102,7 @@ class ObjectTableWidget(QDockWidget):
         # load the collected data into the table
         for name in sorted(self._objdict.keys()):
             trace_obj = self._objdict[name]
-            self.table.setItem(row, 0, QTableWidgetItem(name))
-            col = 1
-            if self.quantities["range"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getStart())))
-                col += 1
-                self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getEnd())))
-                col += 1
-            if self.quantities["count"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getCount())))
-                col += 1
-            if self.quantities["flat_area"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getFlatArea(), 6))))
-                col += 1
-            if self.quantities["volume"]:
-                self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getVolume(), 6))))
-                col += 1
+            self.setRow(trace_obj, row)
             row += 1
         self.table.setShowGrid(False)  # no grid
         self.table.setAlternatingRowColors(True)  # alternate row colors
@@ -124,60 +118,38 @@ class ObjectTableWidget(QDockWidget):
         self.resize(w, h)
         self.table.setGeometry(0, 20, w, h-20)
     
-    def updateSectionData(self, section_num, section : Section):
-        objects_to_update = set()
-        for name, item in self._objdict.items():
-            had_existing_data = item.clearSectionData(section_num)
-            if had_existing_data:
-                objects_to_update.add(name)
+    def updateSectionData(self, section_num : int, section : Section):
+        """Auto-refresh the table when a section is saved.
         
-        t = section.tform
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-        section_thickness = section.thickness
-        for trace in section.traces:
-            name = trace.name
-            closed = trace.closed
-            points = trace.points.copy()
-            for i in range(len(points)):
-                points[i] = point_tform.map(*points[i])  # transform the points to get accurate data
-            if name not in self._objdict:
-                self._objdict[name] = ObjectTableItem(name)  # create new object if not already exists
-            self._objdict[name].addTrace(points, closed, section_num, section_thickness)
-            objects_to_update.add(name)
-        
+            Params:
+                secion_num (int): the section number
+                section (Section): the section object
+        """
+        # get the name of objects that need to be updated
+        objects_to_update = getObjectsToUpdate(self._objdict, section_num, self.series, section)
+        # iterate through every object
         row = 0        
         for name in sorted(self._objdict.keys()):
+            # create a new row if the name does not exist on the table
             if self.table.item(row, 0) is None or self.table.item(row, 0).text() != name:
                 self.table.insertRow(row)
+            # update the data on the table if the object was on the section
             if name in objects_to_update:
                 trace_obj = self._objdict[name]
+                # delete the object if no data is found for it
                 if trace_obj.isEmpty():
                     del self._objdict[name]
                     self.table.removeRow(row)
                     continue
-                self.table.setItem(row, 0, QTableWidgetItem(name))
-                col = 1
-                if self.quantities["range"]:
-                    self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getStart())))
-                    col += 1
-                    self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getEnd())))
-                    col += 1
-                if self.quantities["count"]:
-                    self.table.setItem(row, col, QTableWidgetItem(str(trace_obj.getCount())))
-                    col += 1
-                if self.quantities["flat_area"]:
-                    self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getFlatArea(), 6))))
-                    col += 1
-                if self.quantities["volume"]:
-                    self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(trace_obj.getVolume(), 6))))
-                    col += 1
+                # update data
+                self.setRow(trace_obj, row)
             row += 1
             
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
     
     def refresh(self):
-        """Executed when user hits refresh: reloads all table data."""
+        """Executed when user hits refresh: reloads table data."""
         self.parent_widget.saveAllData()
     
     def findFirst(self):
@@ -201,6 +173,69 @@ class ObjectTableWidget(QDockWidget):
         obj_item = self._objdict[obj_name]
         obj_section = obj_item.getEnd()
         self.parent_widget.setToObject(obj_name, obj_section)
+    
+    def deleteObject(self, series : Series, obj_name : str):
+        """Delete on object from the whole series.
+        
+            Params:
+                series (Series): the series object
+                obj_name (str): the name of the object
+        """
+        # delete the object on each section
+        for snum in series.sections:
+            section = series.loadSection(snum)
+            del(section.traces[obj_name])
+            section.save()
+        # update the table
+        row_index = self.getRowIndex(obj_name)
+        self.table.removeRow(row_index)
+        # update the data dict
+        del(self._objdict[obj_name])        
+    
+    def renameObject(self, series : Series, obj_name : str, new_obj_name : str):
+        """Rename an object in the whole series.
+        
+            Params:
+                series (Series): the series object
+                obj_name (str): the name of the object to be changed
+                new_obj_name (str): the new name for this object
+        """
+        # rename the object on each section
+        for snum in series.sections:
+            section = series.loadSection(snum)
+            for trace in section.traces[obj_name]:
+                trace.name = new_obj_name
+            # check if the new name exists in the section
+            if new_obj_name in section.traces:
+                section.traces[new_obj_name] += section.traces[obj_name]
+            else:
+                section.traces[new_obj_name] = section.traces[obj_name]
+            del(section.traces[obj_name])
+        # if new name already exists, combine the data
+        if new_obj_name in self._objdict:
+            # combine the table objects
+            combined = self._objdict[new_obj_name].combine(self._objdict[obj_name])
+            self._objdict[new_obj_name] = combined
+            # remove old object from table and data
+            old_index = self.getRowIndex(obj_name)
+            self.table.removeRow(old_index)
+            del(self._objdict[obj_name])
+            # update the data in new object
+            new_index = self.getRowIndex(new_obj_name)
+            self.setRow(combined, new_index)
+        # if the name does not exist, create a new object
+        else:
+            # rename in dictionary
+            self._objdict[new_obj_name] = self._objdict[obj_name]
+            self._objdict[new_obj_name].name = new_obj_name
+            # remove old object from table and data
+            old_index = self.getRowIndex(obj_name)
+            self.table.removeRow(old_index)
+            del(self._objdict[obj_name])
+            # add row to table
+            new_index = self.getRowIndex(obj_name)
+            self.table.insertRow(new_index)
+            self.setRow(self._objdict[new_obj_name])
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""

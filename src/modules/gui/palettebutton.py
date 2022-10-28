@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog
 from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
 from PySide6.QtCore import Qt
 
-from modules.recon.trace import Trace
+from modules.pyrecon.trace import Trace
 
 class PaletteButton(QPushButton):
 
@@ -23,7 +23,7 @@ class PaletteButton(QPushButton):
         self.scale_factor = (min(w, h) - 1) / (max_value * 2)
         self.origin = (w/2, h/2)
         painter = QPainter(self.pixmap)
-        painter.setPen(QPen(QColor(*self.trace.color), 1))
+        painter.setPen(QPen(QColor(*self.trace.color), 2))
         prev_point = self._resizePoint(trace.points[-1])
         for point in trace.points.copy():
             point = self._resizePoint(point)

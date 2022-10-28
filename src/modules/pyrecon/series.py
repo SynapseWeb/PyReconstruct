@@ -2,10 +2,13 @@ import os
 import json
 from .trace import Trace
 
-from modules.pyrecon.utils.reconstruct_reader import process_series_file
-from modules.pyrecon.utils.reconstruct_writer import write_series
+from modules.legacy_recon.utils.reconstruct_reader import process_series_file
+from modules.legacy_recon.utils.reconstruct_writer import write_series
+
+from modules.pyrecon.section import Section
 
 from constants.locations import assets_dir
+from constants.defaults import getDefaultPaletteTraces
 
 class Series():
 
@@ -28,15 +31,13 @@ class Series():
             for section_num, section_filename in series_data["sections"].items():
                 self.sections[int(section_num)] = section_filename
             self.current_section = series_data["current_section"]
-            try:
-                self.src_dir = series_data["src_dir"]
-            except KeyError:
-                self.src_dir = ""
+            self.src_dir = series_data["src_dir"]
             self.window = series_data["window"]
             self.palette_traces = series_data["palette_traces"]
             for i in range(len(self.palette_traces)):
                 self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
             self.current_trace = Trace.fromDict(series_data["current_trace"])
+            self.alignment = series_data["alignment"]
         
         elif self.filetype == "XML":
             self.xml_series = process_series_file(filepath)
@@ -58,6 +59,7 @@ class Series():
             for xml_contour in self.xml_series.contours:
                 self.palette_traces.append(Trace.fromXMLObj(xml_contour))
             self.current_trace = self.palette_traces[0]
+            self.alignment = "default"
     
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -74,7 +76,41 @@ class Series():
         for trace in self.palette_traces:
             d["palette_traces"].append(trace.getDict())
         d["current_trace"] = self.current_trace.getDict()
+        d["alignment"] = self.alignment
         return d
+    
+    # STATIC METHOD
+    def new(image_locations : list, series_name : str, mag : float, thickness : float):
+        """Create a new blank series.
+        
+            Params:
+                image_locations (list): the paths for each image
+                series_name (str): user-entered series name
+                mag (float): the microns per pixel for the series
+                thickness (float): the section thickness
+            Returns:
+                (Series): the newly created series object
+        """
+        wdir = os.path.dirname(image_locations[0])
+        series_data = {}
+        series_data["sections"] = {}  # section_number : section_filename
+        series_data["current_section"] = 0  # last section left off
+        series_data["src_dir"] = ""  # the directory of the images
+        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
+        for i in range(len(image_locations)):
+            series_data["sections"][i] = series_name + "." + str(i)
+        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
+        series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["alignment"] = "default"
+        series_fp = os.path.join(wdir, series_name + ".ser")
+        with open(series_fp, "w") as series_file:
+            series_file.write(json.dumps(series_data, indent=2))
+        
+        # create section files (.#)
+        for i in range(len(image_locations)):
+            Section.new(series_name, i, image_locations[i], mag, thickness, wdir)
+        
+        return Series(series_fp)
         
     def save(self):
         """Save file into json."""
@@ -93,3 +129,23 @@ class Series():
             for trace in self.palette_traces:
                 self.xml_series.contours.append(trace.getXMLObj())
             write_series(self.xml_series, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
+    
+    def getwdir(self):
+        return os.path.dirname(self.filepath)
+    
+    def loadSection(self, section_num : int) -> Section:
+        """Load a section object.
+        
+            Params:
+                section_num (int): the section number
+        """
+        return Section(os.path.join(self.getwdir(), self.sections[section_num]))
+    
+    def newAlignment(self, alignment_name : str, base_alignment="default"):
+        if self.filetype == "XML":
+            print("Alignments not support for XML files.")
+            print("Please export your series as JSON.")
+        for snum in self.sections:
+            section = self.loadSection(snum)
+            section.tforms[alignment_name] = section.tforms[base_alignment]
+            section.save()

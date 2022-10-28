@@ -1,8 +1,6 @@
-from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog
-from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
+from PySide6.QtWidgets import QPushButton, QColorDialog
+from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtCore import Qt
-
-from modules.recon.trace import Trace
 
 class ColorButton(QPushButton):
 

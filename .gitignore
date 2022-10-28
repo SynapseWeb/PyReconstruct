@@ -5,4 +5,5 @@ env/
 run_julian.sh
 venv/
 pyrightconfig.json
+testing/
 misc/legacy_recon_src/

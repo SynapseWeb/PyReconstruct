@@ -3,7 +3,7 @@ import os
 
 from lxml import etree
 
-from modules.pyrecon.classes import (
+from modules.legacy_recon.classes import (
     Contour, Image, Section, Series, Transform, ZContour
 )
 

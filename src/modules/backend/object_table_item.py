@@ -74,6 +74,24 @@ class ObjectTableItem():
         else:
             self.data[section_num]["flat_area"] += trace_distance * section_thickness
     
+    def removeTrace(self, trace_points : list, trace_is_closed : bool, section_num : int, section_thickness : float):
+        """Remove trace data from the object.
+        
+            Params:
+                trace_points (list): list of points
+                trace_is_closed (bool): whether or not the trace is closed
+                section_num (int): the section number the trace is on
+                section_thickness (float): the section thickness for the trace
+        """
+        self.data[section_num]["count"] -= 1
+        trace_distance = lineDistance(trace_points, closed=trace_is_closed)
+        if trace_is_closed:
+            trace_area = area(trace_points)
+            self.data[section_num]["flat_area"] -= trace_area
+            self.data[section_num]["volume"] -= trace_area * section_thickness
+        else:
+            self.data[section_num]["flat_area"] -= trace_distance * section_thickness
+    
     def combine(self, other):
         """Combine two table data objects.
         

@@ -13,6 +13,7 @@ from modules.gui.fieldwidget import FieldWidget
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
+from modules.backend.gui_functions import populateMenuBar
 
 from modules.pyrecon.series import Series
 
@@ -62,33 +63,38 @@ class MainWindow(QMainWindow):
         self.show()
 
     def createMenu(self):
-        # menu at top of window
-        self.menubar = self.menuBar()
-
+        """Create the menu for the main window."""
         if self.series.filetype == "XML":
             outtype = "JSON"
         elif self.series.filetype == "JSON":
             outtype = "XML"
 
-        menu_options = [
+        menu = [
             
             {
-                "attribute": "filemenu",
-                "name": "File",
+                "attr_name": "filemenu",
+                "text": "File",
                 "opts":
                 [
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "", self.openSeries),
                     ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations...", "", self.importTransforms),
-                    ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
-                    ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
+                    {
+                        "attr_name": "ngmenu",
+                        "text": "Neuroglancer",
+                        "opts":
+                        [
+                            ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
+                            ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
+                        ]
+                    }
                 ]
              },
 
             {
-                "attribute": "seriesmenu",
-                "name": "Series",
+                "attr_name": "seriesmenu",
+                "text": "Series",
                 "opts":
                 [
                     ("change_src_act", "Change image directory...", "", self.changeSrcDir)
@@ -96,8 +102,8 @@ class MainWindow(QMainWindow):
              },
             
             {
-                "attribute": "objectmenu",
-                "name": "Objects",
+                "attr_name": "objectmenu",
+                "text": "Objects",
                 "opts":
                 [
                     ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
@@ -105,8 +111,8 @@ class MainWindow(QMainWindow):
              },
 
             {
-                "attribute": "alignmentmenu",
-                "name": "Alignment",
+                "attr_name": "alignmentmenu",
+                "text": "Alignment",
                 "opts":
                 [
                     ("newalignment_act", "New alignment", "", self.newAlignment),
@@ -116,16 +122,8 @@ class MainWindow(QMainWindow):
         ]
 
         # Populate menu bar with menus and options
-        for menu in menu_options:
-            # Create menu
-            setattr(self, menu.get('attribute'), self.menubar.addMenu(menu.get('name')))
-            current_menu = getattr(self, menu.get('attribute'))
-            # Add menu options
-            for act, text, kbd, f in menu.get('opts'):
-                setattr(self, act, current_menu.addAction(text))
-                menu_self = getattr(self, act)
-                menu_self.setShortcut(kbd)
-                menu_self.triggered.connect(f)
+        self.menubar = self.menuBar()
+        populateMenuBar(self, self.menubar, menu)
 
     def createShortcuts(self):
         # create shortcuts

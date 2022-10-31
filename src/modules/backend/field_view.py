@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QTransform
 
 from modules.pyrecon.series import Series
 
@@ -56,7 +56,12 @@ class FieldView():
         self.redo_states = []
     
     def reload(self):
-        FieldView.__init__(self, self.series)
+        """Reload the section data (used if section files were modified)."""
+        self.section = self.series.loadSection(self.series.current_section)
+        self.section_layer.section = self.section
+        if self.b_section:
+            self.b_section = self.series.loadSection(self.b_section_number)
+            self.b_section_layer.section = self.b_section
         self.generateView()
     
     def reloadImage(self):
@@ -142,13 +147,15 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
-        if trace_name not in self.section.traces:
+        if trace_name not in self.section.traces or len(self.section.traces[trace_name]) == 0:
             return
         try:
             trace = self.section.traces[index]
         except IndexError:
             return
-        min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+        t = self.section.tforms[self.series.alignment]
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        min_x, min_y, max_x, max_y = trace.getBounds(point_tform)
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]

@@ -5,25 +5,27 @@
 
 * High-priority tasks
 
-- [X] Read XML files into series and section objects (JF)
-- [X] Attribute dialog (JF)
-- [-] Finish object list (JF)
-   - [X] Alternating row color
+** Julian
+
+- [ ] Finish object list
    - [ ] Object attributes (dialog)
    - [ ] Delete objects
    - [ ] Export as CSV (or JSON)
+- [ ] Trace list
+- [ ] Section list
+- [ ] Fix import statements for dim 6
+- [ ] Change "trace" to "contour" in json
+  
+** Michael
+
+- [ ] 3D rendering (MC)
 - [-] Start preferences widget (MC)
    - [ ] Outline preference features
    - [X] Find images feature (JF)
    - [ ] Series options
-- [ ] Trace list (JF)
-- [ ] Section list (JF)
-- [X] Stop pyReconstruct from saving changes to welcome series (MC/JF)
-- [ ] Reorganize structure for Section and Series objects (JF)
-   - [ ] Keep list of attributes? (JF)
-   - [ ] FieldWidget object should operate on Section object (JF)
-- [ ] Fix import statements for dim 6
-- [ ] Store section traces as dicts (name: traces list)
+     
+** Whoever
+
 - [ ] Move traces with arrow keys (consider clicking and dragging later)
 - [ ] Ability to close series without closing program
 

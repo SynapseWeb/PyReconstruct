@@ -19,6 +19,7 @@ class Series():
                 filepath (str): the filepath for the series JSON file
         """
         self.filepath = filepath
+
         try:
             with open(filepath, "r") as f:
                 series_data = json.load(f)

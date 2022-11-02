@@ -17,6 +17,7 @@ class Trace():
         self.closed = closed
         self.points = []
         self.hidden = False  # default to False
+        self.tags = []
 
         # extra hidden attributes for XML support
         self.comment = None
@@ -65,6 +66,14 @@ class Trace():
                 hidden (bool): whether the trace is hidden
         """
         self.hidden = hidden
+    
+    def addTag(self, tag : str):
+        """Set the tag for the trace:
+            
+            Params:
+                tag (str): the tag for the trace
+        """
+        self.tags.append(tag)
 
     def getDict(self) -> dict:
         """Return the trace data as a dictionary.
@@ -78,6 +87,7 @@ class Trace():
         d["closed"] = self.closed
         d["points"] = self.points
         d["hidden"] = self.hidden
+        d["tags"] = self.tags
         return d
     
     def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
@@ -115,7 +125,8 @@ class Trace():
         """
         new_trace = Trace(d["name"], d["color"], d["closed"])
         new_trace.points = d["points"]
-        new_trace.setHidden(d["hidden"])
+        new_trace.hidden = d["hidden"]
+        new_trace.tags = d["tags"]
         return new_trace
     
     # STATIC METHOD

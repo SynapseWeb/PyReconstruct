@@ -1,4 +1,8 @@
+from PySide6.QtGui import QTransform
+
 from modules.calc.quantification import area, lineDistance
+
+from modules.pyrecon.trace import Trace
 
 class ObjectTableItem():
 
@@ -10,6 +14,16 @@ class ObjectTableItem():
         """
         self.name = name
         self.data = {}
+        self.tags = {}
+    
+    def copy(self, new_name=None):
+        if new_name is None:
+            new_oti = ObjectTableItem(self.name)
+        else:
+            new_oti = ObjectTableItem(new_name)
+        new_oti.data = self.data.copy()
+        new_oti.tags = self.tags.copy()
+        return new_oti
     
     def getStart(self):
         if self.isEmpty():
@@ -47,11 +61,14 @@ class ObjectTableItem():
             return True
         else:
             return False
+        
+    def clearAllData(self):
+        self.data = {}
     
     def isEmpty(self):
         return not bool(self.data)
     
-    def addTrace(self, trace_points : list, trace_is_closed : bool, section_num : int, section_thickness : float):
+    def addTrace(self, trace : Trace, tform : list, section_num : int, section_thickness : float):
         """Add trace data to the existing object.
         
             Params:
@@ -60,37 +77,33 @@ class ObjectTableItem():
                 section_num (int): the section number the trace is on
                 section_thickness (float): the section thickness for the trace
         """
+        # create the section number data if not existing
         if section_num not in self.data:
             self.data[section_num] = {}
             self.data[section_num]["count"] = 0
             self.data[section_num]["flat_area"] = 0
             self.data[section_num]["volume"] = 0
         self.data[section_num]["count"] += 1
-        trace_distance = lineDistance(trace_points, closed=trace_is_closed)
-        if trace_is_closed:
+
+        # add the tag to the list
+        for tag in trace.tags:
+            if tag not in self.tags:
+                self.tags[tag] = 0
+            self.tags[tag] += 1
+
+        # transform the points
+        t = tform
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        trace_points = [point_tform.map(*p) for p in trace.points]
+
+        # calculate totals to add
+        trace_distance = lineDistance(trace_points, closed=trace.closed)
+        if trace.closed:
             trace_area = area(trace_points)
             self.data[section_num]["flat_area"] += trace_area
             self.data[section_num]["volume"] += trace_area * section_thickness
         else:
             self.data[section_num]["flat_area"] += trace_distance * section_thickness
-    
-    def removeTrace(self, trace_points : list, trace_is_closed : bool, section_num : int, section_thickness : float):
-        """Remove trace data from the object.
-        
-            Params:
-                trace_points (list): list of points
-                trace_is_closed (bool): whether or not the trace is closed
-                section_num (int): the section number the trace is on
-                section_thickness (float): the section thickness for the trace
-        """
-        self.data[section_num]["count"] -= 1
-        trace_distance = lineDistance(trace_points, closed=trace_is_closed)
-        if trace_is_closed:
-            trace_area = area(trace_points)
-            self.data[section_num]["flat_area"] -= trace_area
-            self.data[section_num]["volume"] -= trace_area * section_thickness
-        else:
-            self.data[section_num]["flat_area"] -= trace_distance * section_thickness
     
     def combine(self, other):
         """Combine two table data objects.

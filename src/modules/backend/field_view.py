@@ -150,7 +150,7 @@ class FieldView():
         if trace_name not in self.section.traces or len(self.section.traces[trace_name]) == 0:
             return
         try:
-            trace = self.section.traces[index]
+            trace = self.section.traces[trace_name][index]
         except IndexError:
             return
         t = self.section.tforms[self.series.alignment]
@@ -160,7 +160,7 @@ class FieldView():
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
         self.selected_traces = [trace]
-        self.generateView(save_state=False)
+        self.generateView()
     
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.

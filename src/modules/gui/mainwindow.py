@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (QMainWindow, QFileDialog,
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
-from modules.gui.objecttablewidget import ObjectTableWidget
+from modules.backend.object_table_manager import ObjectTableManager
+
 from modules.gui.mousedockwidget import MouseDockWidget
 from modules.gui.fieldwidget import FieldWidget
 
@@ -41,7 +42,7 @@ class MainWindow(QMainWindow):
         # misc defaults
         self.field = None  # placeholder for field
         self.mouse_dock = None  # placeholder for mouse dock
-        self.obj_list = None  # placeholder for object list
+        self.obj_list_manager = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         # number defaults
         self.smallnum = 0.01
@@ -186,8 +187,7 @@ class MainWindow(QMainWindow):
             "New image directory saved.",
             QMessageBox.Ok
         )
-        if not notify:
-            self.field.reloadImage()
+        self.field.reloadImage()
     
     def openSeries(self, series_obj=None, refresh_menu=True):
         """Open an existing series and create the field.
@@ -224,9 +224,10 @@ class MainWindow(QMainWindow):
         self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
 
-        if self.obj_list is not None:
-            self.obj_list.close()
-            self.obj_list = None
+        # close the object lists
+        if self.obj_list_manager is not None:
+            self.obj_list_manager.close()
+            self.obj_list_manager = None
 
         # refresh export choice on menu
         if refresh_menu:
@@ -408,20 +409,20 @@ class MainWindow(QMainWindow):
                 self.series.current_trace = button.trace
         self.field.section.save()
         self.series.save()
-        if self.obj_list is not None and self.obj_list.isVisible():  # update the table if present
-            self.obj_list.updateSectionData(self.series.current_section, self.field.section)
+        if self.obj_list_manager is not None:  # update the table if present
+            self.obj_list_manager.updateSection(
+                self.field.section,
+                self.series.current_section
+            )
     
     def openObjectList(self):
         """Open the object list widget."""
         self.saveAllData()
-        # current placeholder until options widget is created
-        quantities = {}
-        quantities["range"] = True
-        quantities["count"] = True
-        quantities["surface_area"] = False
-        quantities["flat_area"] = True
-        quantities["volume"] = True
-        self.obj_list = ObjectTableWidget(self.series, quantities, self)
+        # create the manager if not already
+        if self.obj_list_manager is None:
+            self.obj_list_manager = ObjectTableManager(self.series, self)
+        # create a new table
+        self.obj_list_manager.newTable()
     
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.

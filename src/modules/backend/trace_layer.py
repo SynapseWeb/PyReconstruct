@@ -66,7 +66,7 @@ class TraceLayer():
         radius = window_size / 25
         selected = self.findClosestTrace(field_x, field_y, radius=radius)
         if selected is not None:
-            if not deselect:
+            if not deselect and selected not in self.selected_traces:
                 self.selected_traces.append(selected)
                 return True
             elif deselect and selected in self.selected_traces:

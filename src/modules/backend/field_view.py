@@ -1,27 +1,10 @@
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QTransform
 
 from modules.pyrecon.series import Series
 
 from modules.backend.section_layer import SectionLayer
 
-class FieldState():
-
-    def __init__(self, traces : dict, tforms : dict):
-        """Create a field state with traces and the transform"""
-        self.traces = {}
-        for contour_name in traces:
-            self.traces[contour_name] = []
-            for trace in traces[contour_name]:
-                self.traces[contour_name].append(trace.copy())
-        self.tforms = {}
-        for alignment_name in tforms:
-            self.tforms[alignment_name] = tforms[alignment_name].copy()
-    
-    def getTraces(self):
-        return self.traces.copy()
-    
-    def getTforms(self):
-        return self.tforms.copy()
+from modules.backend.state_manager import SectionStates
 
 class FieldView():
 
@@ -35,6 +18,9 @@ class FieldView():
         # get series and current section
         self.series = series
         self.section = self.series.loadSection(self.series.current_section)
+        # load the section state
+        self.series_states = {}
+        self.series_states[self.series.current_section] = SectionStates(self.section)
 
         # get image dir
         if self.series.src_dir == "":
@@ -49,55 +35,46 @@ class FieldView():
         self.b_section_number = None
         self.b_section = None
         self.b_section_layer = None
-
-        self.undo_states = {}
-        self.current_state = FieldState(self.section.traces, self.section.tforms)
-        self.undo_states[self.series.current_section] = []
-        self.redo_states = []
     
     def reload(self):
-        FieldView.__init__(self, self.series)
+        """Reload the section data (used if section files were modified)."""
+        # reload the actual sections
+        self.section = self.series.loadSection(self.series.current_section)
+        self.section_layer.section = self.section
+        if self.b_section:
+            self.b_section = self.series.loadSection(self.b_section_number)
+            self.b_section_layer.section = self.b_section
+        # clear all the section states
+        self.series_states = {}
+        self.series_states[self.series.current_section] = SectionStates(self.section)
+        if self.b_section:
+            self.series_states[self.b_section] = SectionStates(self.b_section)
         self.generateView()
     
     def reloadImage(self):
+        """Reload the section images."""
         self.section_layer.loadImage()
         if self.b_section is not None:
             self.b_section_layer.loadImage()
 
     def saveState(self):
         """Save the current traces and transform."""
-        state_list = self.undo_states[self.series.current_section]
-        state_list.append(self.current_state)
-        if len(state_list) > 20:  # limit the number of undo states
-            state_list.pop(0)
-        self.current_state = FieldState(self.section.traces, self.section.tforms)
-        self.redo_states = []
-    
-    def restoreState(self, state : FieldState):
-        """Restore traces and transforms from a field state.
-        
-            Params:
-                state (FieldState): the field state to restore
-        """
-        self.current_state = state
-        self.section_layer.changeTform(state.getTforms()[self.series.alignment])
-        self.section.traces = state.getTraces()
-        self.section_layer.selected_traces = []
-        self.generateView()
+        section_states = self.series_states[self.series.current_section]
+        section_states.addState(self.section)
 
     def undoState(self):
         """Undo last action (switch to last state)."""
-        state_list = self.undo_states[self.series.current_section]
-        if len(state_list) >= 1:
-            self.redo_states.append(self.current_state)
-            self.restoreState(state_list.pop())
+        self.section_layer.selected_traces = []
+        section_states = self.series_states[self.series.current_section]
+        section_states.undoState(self.section)
+        self.generateView()
     
     def redoState(self):
         """Redo an undo (switch to last undid state)."""
-        state_list = self.undo_states[self.series.current_section]
-        if len(self.redo_states) >= 1:
-            state_list.append(self.current_state)
-            self.restoreState(self.redo_states.pop())
+        self.section_layer.selected_traces = []
+        section_states = self.series_states[self.series.current_section]
+        section_states.redoState(self.section)
+        self.generateView()
     
     def swapABsections(self):
         """Switch the A and B sections."""
@@ -125,13 +102,9 @@ class FieldView():
             self.series.current_section = new_section_num
             # clear selected traces
             self.section_layer.selected_traces = []
-        # save current state
-        self.current_state = FieldState(self.section.traces, self.section.tforms)
-        # clear redo states
-        self.redo_states = []
-        # create new list for states if needed
-        if new_section_num not in self.undo_states:
-            self.undo_states[new_section_num] = []
+        # create section state object if needed
+        if new_section_num not in self.series_states:
+            self.series_states[new_section_num] = SectionStates(self.section)
         # generate view and update status bar
         self.generateView()
     
@@ -142,18 +115,19 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
-        if trace_name not in self.section.traces:
+        if trace_name not in self.section.traces or len(self.section.traces[trace_name]) == 0:
             return
         try:
-            trace = self.section.traces[index]
+            trace = self.section.traces[trace_name][index]
         except IndexError:
             return
-        min_x, min_y, max_x, max_y = trace.getBounds(self.point_tform)
+        t = self.section.tforms[self.series.alignment]
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        min_x, min_y, max_x, max_y = trace.getBounds(point_tform)
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
-        self.selected_traces = [trace]
-        self.generateView(save_state=False)
+        self.generateView()
     
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.
@@ -259,7 +233,7 @@ class FieldView():
         self.generateView(generate_image=False)
     
     def toggleHideAllTraces(self):
-        self.section_layer.toggleHideAllTraces
+        self.section_layer.toggleHideAllTraces()
         self.generateView(generate_image=False)
     
     def changeTraceAttributes(self):

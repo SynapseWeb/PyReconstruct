@@ -229,7 +229,7 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         pix_x, pix_y = event.x(), event.y()
-        deselect = (event.button() == Qt.RightButton)
+        deselect = (event.buttons() == Qt.RightButton)
         self.selectTrace(pix_x, pix_y, deselect=deselect)
     
     def pointerMove(self, event):
@@ -386,7 +386,10 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        self.newTrace(self.current_trace,
+        if len(self.current_trace) <= 1:
+            return
+        self.newTrace(
+            self.current_trace,
             name=self.tracing_trace.name,
             color=self.tracing_trace.color,
             closed=closed

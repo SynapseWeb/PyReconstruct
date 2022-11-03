@@ -247,12 +247,13 @@ class ObjectTableWidget(QDockWidget):
 
         # update if it does
         row, exists_in_table = self.getRowIndex(objdata.name)
-        if objdata.isEmpty() and exists_in_table:
+        if exists_in_table and objdata.isEmpty():  # completely delete object
             self.table.removeRow(row)
-            return
-        if not exists_in_table:
+        elif exists_in_table and not objdata.isEmpty():  # update existing object
+            self.setRow(objdata, row)
+        elif not exists_in_table and not objdata.isEmpty():  # add new object
             self.table.insertRow(row)
-        self.setRow(objdata, row)
+            self.setRow(objdata, row)
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""

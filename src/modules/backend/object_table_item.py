@@ -14,7 +14,6 @@ class ObjectTableItem():
         """
         self.name = name
         self.data = {}
-        self.tags = {}
     
     def copy(self, new_name=None):
         if new_name is None:
@@ -22,7 +21,6 @@ class ObjectTableItem():
         else:
             new_oti = ObjectTableItem(new_name)
         new_oti.data = self.data.copy()
-        new_oti.tags = self.tags.copy()
         return new_oti
     
     def getStart(self):
@@ -55,6 +53,12 @@ class ObjectTableItem():
             v += self.data[n]["volume"]
         return v
     
+    def getTags(self):
+        tags = set()
+        for n in self.data:
+            tags = tags.union(self.data[n]["tags"])
+        return tags
+    
     def clearSectionData(self, n):
         if n in self.data.keys():
             del self.data[n]
@@ -83,13 +87,13 @@ class ObjectTableItem():
             self.data[section_num]["count"] = 0
             self.data[section_num]["flat_area"] = 0
             self.data[section_num]["volume"] = 0
+            self.data[section_num]["tags"] = set()
+        
+        # add to count
         self.data[section_num]["count"] += 1
 
-        # add the tag to the list
-        for tag in trace.tags:
-            if tag not in self.tags:
-                self.tags[tag] = 0
-            self.tags[tag] += 1
+        # add the tag to the set
+        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(set(trace.tags))
 
         # transform the points
         t = tform
@@ -120,10 +124,12 @@ class ObjectTableItem():
         for snum in other.data:
             if snum not in combined.data:
                 combined.data[snum] = {}
-                combined.data[snum]["count"] = other.data[snum]["count"]
-                combined.data[snum]["flat_area"] = other.data[snum]["flat_area"]
-                combined.data[snum]["volume"] = other.data[snum]["volume"]
+                for key in combined.data[snum]:
+                    combined.data[snum][key] = other.data[snum][key]
             else:
                 for key in combined.data[snum]:
-                    combined.data[snum][key] += other.data[snum][key]
+                    if type(combined.data[snum][key]) is set:
+                        combined.data[snum][key] = combined.data[snum][key].union(other.data[snum][key])
+                    else:
+                        combined.data[snum][key] += other.data[snum][key]
         return combined

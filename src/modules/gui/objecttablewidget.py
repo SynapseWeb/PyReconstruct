@@ -37,8 +37,8 @@ class ObjectTableWidget(QDockWidget):
             "flat_area" : True,
             "volume": True
         }
-        self.re_filters = [".*"]
-        self.tag_filters = []
+        self.re_filters = set([".*"])
+        self.tag_filters = set()
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -76,7 +76,15 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     ("refresh_act", "Refresh", "", self.refresh),
-                    ("refilter_act", "Regex filter...", "", self.setREFilter)
+                    {
+                        "attr_name": "filtermenu",
+                        "text": "Filter",
+                        "opts":
+                        [
+                            ("refilter_act", "Regex filter...", "", self.setREFilter),
+                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
+                        ]
+                    }
                 ]
             },
 
@@ -127,6 +135,34 @@ class ObjectTableWidget(QDockWidget):
         if self.quantities["volume"]:
             self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(obj_data.getVolume(), 6))))
     
+    def passesFilters(self, item : ObjectTableItem):
+        """Determine if an object will be displayed in the table based on existing filters.
+        
+            Params:
+                item (ObjectTableItem): the item containing the data
+        """
+        # check tags
+        object_tags = item.getTags()
+        filters_len = len(self.tag_filters)
+        if filters_len == 0:
+            passes_tags = True
+        else:
+            object_len = len(object_tags)
+            union_len = len(object_tags.union(self.tag_filters))
+            if union_len < object_len + filters_len:  # intersection exists
+                passes_tags = True
+            else:
+                passes_tags = False
+        if not passes_tags:
+            return False
+        
+        # check regex (will only be run if passes tags)
+        for re_filter in self.re_filters:
+            if bool(re.fullmatch(re_filter, item.name)):
+                return True
+        return False
+        
+    
     def createTable(self, objdict : dict):
         """Create the table widget.
         
@@ -153,10 +189,8 @@ class ObjectTableWidget(QDockWidget):
         sorted_obj_names = sorted(list(objdict.keys()))
         filtered_obj_names = []
         for name in sorted_obj_names:
-            for filter in self.re_filters:
-                if bool(re.fullmatch(filter, name)):
-                    filtered_obj_names.append(name)
-                    break
+            if self.passesFilters(objdict[name]):
+                filtered_obj_names.append(name)
 
         # create the table object
         self.table = QTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
@@ -203,14 +237,14 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 objdata (ObjectTableItem): the object containing the table data
         """
-        # check if object is in table
-        obj_in_table = False
-        for filter in self.re_filters:
-            if re.fullmatch(filter, objdata.name):
-                obj_in_table = True
-                break
-        if not obj_in_table:
+        # check if object passes filters
+        if not self.passesFilters(objdata):
+            # special case: does not pass filter anymore but exists on table
+            row, exists_in_table = self.getRowIndex(objdata.name)
+            if exists_in_table:
+                self.table.removeRow(row)
             return
+
         # update if it does
         row, exists_in_table = self.getRowIndex(objdata.name)
         if objdata.isEmpty() and exists_in_table:
@@ -246,12 +280,36 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
 
-        # get the new regex filter for the list
+        # get the new regex filter for the set
         self.re_filters = new_re_filter.split(", ")
-        if not self.re_filters:
+        if self.re_filters == [""]:
             self.re_filters = [".*"]
         for i, filter in enumerate(self.re_filters):
             self.re_filters[i] = filter.replace("#", "[0-9]")
+        self.re_filters = set(self.re_filters)
+
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
+    def setTagFilter(self):
+        """Set a new tag filter for the list."""
+        # get a new filter from the user
+        tag_filter_str = ", ".join(self.tag_filters)
+        new_tag_filter, confirmed = QInputDialog.getText(
+            self,
+            "Filter Objects",
+            "Enter the tag filter:",
+            text=tag_filter_str
+        )
+        if not confirmed:
+            return
+
+        # get the new tag filter for the list
+        self.tag_filters = new_tag_filter.split(", ")
+        if self.tag_filters == [""]:
+            self.tag_filters = set()
+        else:
+            self.tag_filters = set(self.tag_filters)
         
         # call through manager to update self
         self.manager.updateTable(self)

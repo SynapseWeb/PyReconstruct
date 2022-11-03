@@ -233,7 +233,7 @@ class FieldView():
         self.generateView(generate_image=False)
     
     def toggleHideAllTraces(self):
-        self.section_layer.toggleHideAllTraces
+        self.section_layer.toggleHideAllTraces()
         self.generateView(generate_image=False)
     
     def changeTraceAttributes(self):

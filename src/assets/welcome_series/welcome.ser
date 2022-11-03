@@ -53,7 +53,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "star",
@@ -129,7 +130,8 @@
      0.4
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "triangle",
@@ -153,7 +155,8 @@
      0.4167
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "cross",
@@ -213,7 +216,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "square",
@@ -265,7 +269,8 @@
      0.4
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "diamond",
@@ -293,7 +298,8 @@
      0.0
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "circle2",
@@ -337,7 +343,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "arrow1",
@@ -397,7 +404,8 @@
      -0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "plus",
@@ -457,7 +465,8 @@
      0.1667
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "arrow2",
@@ -497,7 +506,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "circle1",
@@ -541,7 +551,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "star",
@@ -617,7 +628,8 @@
      0.4
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "triangle",
@@ -641,7 +653,8 @@
      0.4167
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "cross",
@@ -701,7 +714,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "square",
@@ -753,7 +767,8 @@
      0.4
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "diamond",
@@ -781,7 +796,8 @@
      0.0
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "circle2",
@@ -825,7 +841,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "arrow1",
@@ -885,7 +902,8 @@
      -0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "plus",
@@ -945,7 +963,8 @@
      0.1667
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   },
   {
    "name": "arrow2",
@@ -985,7 +1004,8 @@
      0.5
     ]
    ],
-   "hidden": false
+   "hidden": false,
+   "tags": []
   }
  ],
  "current_trace": {
@@ -1030,7 +1050,8 @@
     0.5
    ]
   ],
-  "hidden": false
+  "hidden": false,
+  "tags": []
  },
  "alignment": "default"
 }

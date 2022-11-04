@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
 
         # Populate menu bar with menus and options
         self.menubar = self.menuBar()
+        self.menubar.setNativeMenuBar(False) # attach menu to the window?
         populateMenuBar(self, self.menubar, menu)
 
     def createShortcuts(self):

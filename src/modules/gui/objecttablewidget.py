@@ -26,8 +26,7 @@ class ObjectTableWidget(QDockWidget):
         self.parent_widget = parent
 
         # set desired format for widget
-        self.setFloating(True)  # not docked to the window
-        self.setAllowedAreas(Qt.NoDockWidgetArea)  # cannot be docked to the window
+        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
         self.setWindowTitle("Object List")
 
         # set defaults
@@ -56,7 +55,7 @@ class ObjectTableWidget(QDockWidget):
         h = self.parent_widget.height() - 90
         x = self.parent_widget.x() + 10
         y = self.parent_widget.y() + 90
-        self.setGeometry(x, y, w, h)
+        #self.setGeometry(x, y, w, h)
 
         # save manager object
         self.manager = manager
@@ -208,7 +207,8 @@ class ObjectTableWidget(QDockWidget):
 
         # format rows and columns
         self.table.resizeRowsToContents()
-        self.table.resizeColumnsToContents()
+        for c in range(1, self.table.columnCount()):
+            self.table.resizeColumnToContents(c)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)

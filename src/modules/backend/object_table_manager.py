@@ -61,6 +61,7 @@ class ObjectTableManager():
             self
         )
         self.tables.append(new_table)
+        self.mainwindow.addDockWidget(Qt.LeftDockWidgetArea, new_table)
     
     def updateSection(self, section : Section, section_num : int):
         """Update the data and the table for a specific section.

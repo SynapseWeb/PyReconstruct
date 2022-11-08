@@ -120,24 +120,16 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self):
-        """Open a dialog to change the name and/or color of a trace."""
-        if len(self.selected_traces) == 0:  # skip if no traces selected
-            return
-        name = self.selected_traces[0].name
-        color = self.selected_traces[0].color
-        for trace in self.selected_traces[1:]:
-            if trace.name != name:
-                name = ""
-            if trace.color != color:
-                color = None
-        attr_input = AttributeDialog(parent=self, name=name, color=color).exec_()
-        if attr_input is None:
-            return
+    def changeTraceAttributes(self, new_name : str, new_color : tuple):
+        """Change the name and/or color of a trace.
+        
+            Params:
+                new_name (str): the new name
+                new_color (tuple): the new color
+        """
         # change object attributes
-        new_name, new_color = attr_input
         for trace in self.selected_traces:
-            if new_color is not None:
+            if new_color:
                 trace.color = new_color
             if new_name != "":
                 # move the trace in the section.traces dictionary

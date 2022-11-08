@@ -12,6 +12,8 @@ from modules.calc.pfconversions import pixmapPointToField
 
 from modules.backend.field_view import FieldView
 
+from modules.gui.attributedialog import AttributeDialog
+
 class FieldWidget(QWidget, FieldView):
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
@@ -135,6 +137,25 @@ class FieldWidget(QWidget, FieldView):
             self.status_list[0] = "Section: " + str(self.series.current_section) 
         s = "  |  ".join(self.status_list)
         self.parent_widget.statusbar.showMessage(s)
+    
+    def changeTraceAttributes(self):
+        """Change the trace attributes for a given trace"""
+        if len(self.section_layer.selected_traces) == 0:  # skip if no traces selected
+            return
+        name = self.section_layer.selected_traces[0].name
+        color = self.section_layer.selected_traces[0].color
+        for trace in self.section_layer.selected_traces[1:]:
+            if trace.name != name:
+                name = ""
+            if trace.color != color:
+                color = None
+        attr_input = AttributeDialog(name=name, color=color).exec()
+        if attr_input is None:
+            return
+        self.section_layer.changeTraceAttributes(*attr_input)
+        self.saveState()
+        self.generateView(generate_image=False)
+        
     
     def mousePressEvent(self, event):
         """Called when mouse is clicked.

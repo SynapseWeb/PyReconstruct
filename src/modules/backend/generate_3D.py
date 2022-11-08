@@ -93,7 +93,7 @@ class ObjectVolume():
             else:
                 volume[z] = slice
 
-    def generateVolume(self, volume_threshold : int = 20000000, alpha : int = 100) -> tuple[gl.GLVolumeItem, tuple, tuple]:
+    def generateVolume(self, volume_threshold : int = 1e7, alpha : int = 100) -> tuple[gl.GLVolumeItem, tuple, tuple]:
         """Generate the numpy array volume.
         
             Params:

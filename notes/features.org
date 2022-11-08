@@ -8,7 +8,7 @@
 ** Julian
 
 - [ ] Object list
-   - [ ] Round to 5 decimels (not sig figs)
+   - [X] Round to 5 decimels (not sig figs)
    - [ ] Edit object attributes by right clicking
    - [ ] Add objects to object groups in attributes menu
    - [ ] Export (under "list menu") as CSV

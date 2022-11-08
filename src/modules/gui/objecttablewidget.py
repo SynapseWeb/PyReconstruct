@@ -8,8 +8,6 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar
 
-from modules.calc.quantification import sigfigRound
-
 class ObjectTableWidget(QDockWidget):
 
     def __init__(self, series : Series, objdict : dict, parent : QWidget, manager):
@@ -139,10 +137,10 @@ class ObjectTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getCount())))
             col += 1
         if self.quantities["flat_area"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(obj_data.getFlatArea(), 6))))
+            self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getFlatArea(), 5))))
             col += 1
         if self.quantities["volume"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(sigfigRound(obj_data.getVolume(), 6))))
+            self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getVolume(), 5))))
     
     def passesFilters(self, item : ObjectTableItem):
         """Determine if an object will be displayed in the table based on existing filters.

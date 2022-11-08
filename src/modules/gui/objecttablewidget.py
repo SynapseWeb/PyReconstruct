@@ -46,6 +46,7 @@ class ObjectTableWidget(QDockWidget):
         # create the table and the menu
         self.table = None
         self.createTable(objdict)
+        self.table.mouseDoubleClickEvent = self.generate3D
         self.createMenu()
 
         # set geometry
@@ -389,7 +390,7 @@ class ObjectTableWidget(QDockWidget):
         
         self.manager.renameObject(obj_name, new_obj_name)
     
-    def generate3D(self):
+    def generate3D(self, event=None):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:

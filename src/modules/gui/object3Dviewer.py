@@ -1,5 +1,3 @@
-import numpy as np
-
 import pyqtgraph.opengl as gl
 
 from modules.backend.generate_3D import ObjectVolume
@@ -28,22 +26,13 @@ class Object3DViewer(gl.GLViewWidget):
 
         # generate the volume
         obj_vol = ObjectVolume(series, obj_names)
-        volume = obj_vol.generateVolume()
-    
-        # guide lines (xyz : rgb)
-        volume[:,0,0] = [0, 0, 255, 255]
-        volume[0,:,0] = [0, 255, 0, 255]
-        volume[0,0,:] = [255, 0, 0, 255]
-
-        # create the volume object in opengl
-        v = gl.GLVolumeItem(volume)
-
-        # move the object for better user interaction
-        z, y, x, _ = volume.shape
-        v.translate(-z/2, -y/2, -x/2)
-        v.rotate(-90, 0, 1, 0)
+        vol_item, shape, offset = obj_vol.generateVolume()
+        # adjust the volume item to fit the view
+        z, y, x = shape
+        vol_item.translate(-z/2, -y/2, -x/2)
+        vol_item.rotate(-90, 0, 1, 0)
         self.opts['distance'] = max(x, y, z)
 
         # add to scene and display
-        self.addItem(v)
+        self.addItem(vol_item)
         self.show()

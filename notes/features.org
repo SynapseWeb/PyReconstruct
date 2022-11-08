@@ -9,14 +9,14 @@
 
 - [ ] Object list
    - [X] Round to 5 decimels (not sig figs)
-   - [ ] Edit object attributes by right clicking
+   - [X] Edit object attributes by right clicking
    - [ ] Add objects to object groups in attributes menu
    - [ ] Export (under "list menu") as CSV
    - [ ] Consider removing refesh
    - [ ] Edit object list variables from the object list
    - [ ] Add group variable column
    - [ ] Add tags to all traces associated with an object (don't overwrite any existing tags)
-   - [ ] Add trial 3D render to object list
+   - [X] Add trial 3D render to object list
    - [ ] Standard regexp tick boxes to filter
      
 - [ ] Move traces in field

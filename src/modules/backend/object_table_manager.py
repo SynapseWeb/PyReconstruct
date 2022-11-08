@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QProgressDialog
 from PySide6.QtCore import Qt
 
 from modules.gui.objecttablewidget import ObjectTableWidget
+from modules.gui.object3Dviewer import Object3DViewer
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
@@ -15,6 +16,7 @@ class ObjectTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+        self.object_viewer = None
         self.loadSeriesData()
 
     def loadSeriesData(self):
@@ -189,6 +191,16 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
+    
+    def generate3D(self, obj_names):
+        """Generate the 3D view for a list of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        if self.object_viewer:
+            self.object_viewer.close()
+        self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
     
     def close(self):
         """Close all tables."""

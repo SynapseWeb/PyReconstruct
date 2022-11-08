@@ -2,11 +2,11 @@ import re
 
 from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog
 from PySide6.QtCore import Qt
-from modules.backend.gui_functions import populateMenuBar
 
 from modules.pyrecon.series import Series
 
 from modules.backend.object_table_item import ObjectTableItem
+from modules.backend.gui_functions import populateMenuBar
 
 from modules.calc.quantification import sigfigRound
 
@@ -104,6 +104,15 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("delete_act", "Delete", "", self.deleteObject),
                     ("rename_act", "Rename", "", self.renameObject)
+                ]
+            },
+
+            {
+                "attr_name": "viewermenu",
+                "text": "3D",
+                "opts":
+                [
+                    ("generate_3D_act", "Generate 3D", "", self.generate3D)
                 ]
             }
         ]
@@ -322,11 +331,24 @@ class ObjectTableWidget(QDockWidget):
                 (str): the name of the object
         """
         selected_indexes = self.table.selectedIndexes()
-        if len(selected_indexes) != 1 or selected_indexes[0].column() != 0:
+        if len(selected_indexes) != 1:
             return None
         r = selected_indexes[0].row()
         obj_name = self.table.item(r, 0).text()
         return obj_name
+    
+    def getSelectedObjects(self) -> list[str]:
+        """Get the name of the objects highlighted by the user.
+        
+            Returns:
+                (list): the name of the objects
+        """
+        selected_indexes = self.table.selectedIndexes()
+        obj_names = []
+        for i in selected_indexes:
+            r = i.row()
+            obj_names.append(self.table.item(r, 0).text())
+        return obj_names
     
     def findFirst(self):
         """Focus the field on the first occurence of an object in the series."""
@@ -366,3 +388,9 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.renameObject(obj_name, new_obj_name)
+    
+    def generate3D(self):
+        """Generate a 3D view of an object"""
+        obj_names = self.getSelectedObjects()
+        if obj_names:
+            self.manager.generate3D(obj_names)

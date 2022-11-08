@@ -18,8 +18,6 @@ from modules.backend.gui_functions import populateMenuBar
 
 from modules.pyrecon.series import Series
 
-from modules.autoseg.zarrtorecon import saveZarrImages, importZarrObjects
-
 from constants.locations import assets_dir
 
 
@@ -80,16 +78,7 @@ class MainWindow(QMainWindow):
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "", self.openSeries),
                     ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations...", "", self.importTransforms),
-                    {
-                        "attr_name": "ngmenu",
-                        "text": "Neuroglancer",
-                        "opts":
-                        [
-                            ("new_from_zarr_act", "New from zarr file", "", self.newSeriesFromZarr),
-                            ("import_from_zarr_act", "Import objects from zarr...", "", self.importZarrObjects)
-                        ]
-                    }
+                    ("import_transforms_act", "Import transformations...", "", self.importTransforms)
                 ]
              },
 
@@ -307,28 +296,6 @@ class MainWindow(QMainWindow):
         importTransforms(self.series, tforms_file)
         # reload the section
         self.field.reload()
-
-    def importZarrObjects(self, zarr_fp : str):  # MIGRATE TO BACKEND
-        """Import objects from a zarr folder."""
-        self.saveAllData()
-        # get the file path
-        if not zarr_fp:
-            zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
-            if not zarr_fp:
-                return
-        importZarrObjects(self, self.series, zarr_fp)
-        self.field.reload()
-    
-    def newSeriesFromZarr(self):
-        zarr_fp = QFileDialog.getExistingDirectory(self, "Select Zarr Folder")
-        if not zarr_fp:
-            return
-        save_fp = QFileDialog.getExistingDirectory(self, "Select Folder for New Series")
-        if not save_fp:
-            return
-        image_locations = saveZarrImages(zarr_fp, save_fp)
-        self.newSeries(image_locations)
-        self.importZarrObjects(zarr_fp)
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).

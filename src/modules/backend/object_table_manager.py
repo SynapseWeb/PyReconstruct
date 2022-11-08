@@ -133,61 +133,69 @@ class ObjectTableManager():
             snum = self.objdict[obj_name].getEnd()
         self.mainwindow.setToObject(obj_name, snum)
 
-    def deleteObject(self, obj_name : str):
+    def deleteObjects(self, obj_names : list):
         """Delete an object on every section.
         
             Params:
                 series (Series): the series object
-                obj_name (str): the name of the object to delete.
+                obj_names (list): the list of names for the objects to delete
         """
-        # delete the object on every section
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            if obj_name in section.traces:
-                del(section.traces[obj_name])
-                section.save()
-        
-        # update the dictionary data and tables
-        self.objdict[obj_name].clearAllData()
-        for table in self.tables:
-            table.updateObject(self.objdict[obj_name])
+        for obj_name in obj_names:
+            # delete the object on every section
+            for snum in self.series.sections:
+                section = self.series.loadSection(snum)
+                if obj_name in section.traces:
+                    del(section.traces[obj_name])
+                    section.save()
+            # update the dictionary data and tables
+            self.objdict[obj_name].clearAllData()
+            for table in self.tables:
+                table.updateObject(self.objdict[obj_name])
         
         # update the view
         self.mainwindow.field.reload()
 
-    def renameObject(self, obj_name : str, new_obj_name : str):
-        """Rename an object on every section.
+    def modifyObjects(self, obj_names : list, new_name : str, new_color : tuple):
+        """Rename objects on every section.
         
             Params:
                 series (Series): the series object
-                obj_name (str): the name of the object to rename
+                obj_names (list): the names of the objects to rename
                 new_obj_name (str): the new name for the object
         """
-        # rename the object on every section
+        # modify the object on every section
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
-            if obj_name in section.traces:
-                for trace in section.traces[obj_name]:
-                    trace.name = new_obj_name
-                # check if the new name exists in the section
-                if new_obj_name in section.traces:
-                    section.traces[new_obj_name] += section.traces[obj_name]
-                else:
-                    section.traces[new_obj_name] = section.traces[obj_name]
-                del(section.traces[obj_name])
-                section.save()
+            for obj_name in obj_names:
+                if obj_name in section.traces:
+                    for trace in section.traces[obj_name]:
+                        if new_name:
+                            trace.name = new_name
+                        if new_color:
+                            trace.color = new_color
+                    if new_name:
+                        # check if the new name exists in the section
+                        if new_name in section.traces:
+                            section.traces[new_name] += section.traces[obj_name]
+                        else:
+                            section.traces[new_name] = section.traces[obj_name]
+                        del(section.traces[obj_name])
+                    section.save()
         
         # update the dictionary data
-        if new_obj_name in self.objdict:
-            self.objdict[new_obj_name].combine(self.objdict[obj_name])
-        else:
-            self.objdict[new_obj_name] = self.objdict[obj_name].copy(new_obj_name)
-        self.objdict[obj_name].clearAllData()
+        if new_name:
+            for obj_name in obj_names:
+                if new_name in self.objdict:
+                    self.objdict[new_name].combine(self.objdict[obj_name])
+                else:
+                    self.objdict[new_name] = self.objdict[obj_name].copy(new_name)
+                self.objdict[obj_name].clearAllData()
 
         # update the table data
         for table in self.tables:
-            table.updateObject(self.objdict[obj_name])
-            table.updateObject(self.objdict[new_obj_name])
+            for obj_name in obj_names:
+                table.updateObject(self.objdict[obj_name])
+            table.updateObject(self.objdict[new_name])
         
         # update the view
         self.mainwindow.field.reload()

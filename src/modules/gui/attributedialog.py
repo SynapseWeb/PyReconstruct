@@ -38,8 +38,8 @@ class AttributeDialog(QDialog):
 
         self.setLayout(self.vlayout)
     
-    def exec_(self):
-        confirmed = super().exec_()
+    def exec(self):
+        confirmed = super().exec()
         if confirmed:
             return self.name_input.text(), self.color_input.getColor()
         else:

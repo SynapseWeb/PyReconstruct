@@ -236,11 +236,6 @@ class FieldView():
         self.section_layer.toggleHideAllTraces()
         self.generateView(generate_image=False)
     
-    def changeTraceAttributes(self):
-        self.section_layer.changeTraceAttributes()
-        self.saveState()
-        self.generateView(generate_image=False)
-    
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
         self.generateView(generate_traces=False)

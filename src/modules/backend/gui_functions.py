@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QMenuBar, QMenu
 from PySide6.QtCore import Qt
 
-def populateMenuBar(widget : QWidget, menubar : QMenuBar, menubar_list : list):
+def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     """Create a menubar for a widget.
     
         Params:
@@ -11,7 +11,7 @@ def populateMenuBar(widget : QWidget, menubar : QMenuBar, menubar_list : list):
     """
     # populate menubar
     for menu_dict in menubar_list:
-        newMenu(widget, menubar, menu_dict)
+        newMenu(widget, menu, menu_dict)
 
 def newMenu(widget : QWidget, container, menu_dict : dict):
     """Create a menu.
@@ -48,4 +48,18 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     # set the shortcut and function
     action.setShortcut(kbd)
     action.triggered.connect(f)
+
+def populateMenu(widget : QWidget, menu : QMenu, menu_list : list):
+    """Create a menu.
+    
+        Params:
+            widget (QWidget): the widget the menu belongs to
+            menu (QMenu): the menu object to contain the list objects
+            menu_list (list): formatted list describing the menu
+    """
+    for item in menu_list:
+        if type(item) is tuple:
+            newAction(widget, menu, item)
+        if type(item) is dict:
+            newMenu(widget, menu, item)
 

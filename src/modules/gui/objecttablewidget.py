@@ -1,12 +1,14 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
 
 from modules.backend.object_table_item import ObjectTableItem
-from modules.backend.gui_functions import populateMenuBar
+from modules.backend.gui_functions import populateMenuBar, populateMenu
+
+from modules.gui.attributedialog import AttributeDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -44,8 +46,11 @@ class ObjectTableWidget(QDockWidget):
         # create the table and the menu
         self.table = None
         self.createTable(objdict)
-        self.table.mouseDoubleClickEvent = self.generate3D
         self.createMenu()
+
+        # connect table functions
+        self.table.mouseDoubleClickEvent = self.generate3D
+        self.table.contextMenuEvent = self.objectContextMenu
 
         # set geometry
         w = 20
@@ -93,25 +98,6 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("findfirst_act", "First trace", "", self.findFirst),
                     ("findlast_act", "Last trace", "", self.findLast)
-                ]
-            },
-
-            {
-                "attr_name": "modifymenu",
-                "text": "Modify",
-                "opts":
-                [
-                    ("delete_act", "Delete", "", self.deleteObject),
-                    ("rename_act", "Rename", "", self.renameObject)
-                ]
-            },
-
-            {
-                "attr_name": "viewermenu",
-                "text": "3D",
-                "opts":
-                [
-                    ("generate_3D_act", "Generate 3D", "", self.generate3D)
                 ]
             }
         ]
@@ -270,6 +256,60 @@ class ObjectTableWidget(QDockWidget):
         h = event.size().height()
         self.table.resize(w, h-20)
 
+    # RIGHT CLICK FUNCTIONS
+
+    def objectContextMenu(self, event=None):
+        """Executed when button is right-clicked: pulls up menu for user to modify objects.
+        
+            Params:
+                event: contains user input data (location of right click)
+        """
+        if len(self.table.selectedIndexes()) == 0:
+            return
+        menu_list = [
+            ("modify_act", "Modify...", "", self.modifyObjects),
+            ("generate3D_act", "Generate 3D", "", self.generate3D),
+            ("delete_act", "Delete", "", self.deleteObjects)
+        ]
+        menu = QMenu(self)
+        populateMenu(self, menu, menu_list)
+        menu.exec_(event.globalPos())
+    
+    def deleteObjects(self):
+        """Delete an object from the entire series."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        self.manager.deleteObjects(obj_names)    
+    
+    def modifyObjects(self):
+        """Rename an object in the entire series."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+
+        # ask the user for the new object name and color
+        if len(obj_names) == 1:
+            displayed_name = obj_names[0]
+        else:
+            displayed_name = ""
+        attr_input = AttributeDialog(
+            self.parent_widget,
+            displayed_name,
+            color=None
+        ).exec()
+
+        if not attr_input:
+            return
+        
+        self.manager.modifyObjects(obj_names, *attr_input)
+    
+    def generate3D(self, event=None):
+        """Generate a 3D view of an object"""
+        obj_names = self.getSelectedObjects()
+        if obj_names:
+            self.manager.generate3D(obj_names)
+
     # MENU-RELATED FUNCTIONS
 
     def refresh(self):
@@ -362,34 +402,3 @@ class ObjectTableWidget(QDockWidget):
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=False)
-    
-    def deleteObject(self):
-        """Delete an object from the entire series."""
-        obj_name = self.getSelectedObject()
-        if obj_name is None:
-            return
-        self.manager.deleteObject(obj_name)    
-    
-    def renameObject(self):
-        """Rename an object in the entire series."""
-        obj_name = self.getSelectedObject()
-        if obj_name is None:
-            return
-
-        # ask the user for the new object name
-        new_obj_name, confirmed = QInputDialog.getText(
-            self,
-            "Rename Object",
-            "Enter the new object name:",
-            text=str(obj_name)
-        )
-        if not confirmed or new_obj_name == obj_name:
-            return
-        
-        self.manager.renameObject(obj_name, new_obj_name)
-    
-    def generate3D(self, event=None):
-        """Generate a 3D view of an object"""
-        obj_names = self.getSelectedObjects()
-        if obj_names:
-            self.manager.generate3D(obj_names)

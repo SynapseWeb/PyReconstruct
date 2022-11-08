@@ -1,6 +1,6 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
@@ -79,6 +79,7 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     ("refresh_act", "Refresh", "", self.refresh),
+                    ("export_act", "Export", "", self.export),
                     {
                         "attr_name": "filtermenu",
                         "text": "Filter",
@@ -255,6 +256,32 @@ class ObjectTableWidget(QDockWidget):
         w = event.size().width()
         h = event.size().height()
         self.table.resize(w, h-20)
+    
+    def getSelectedObject(self) -> str:
+        """Get the name of the object highlighted by the user.
+        
+            Returns:
+                (str): the name of the object
+        """
+        selected_indexes = self.table.selectedIndexes()
+        if len(selected_indexes) != 1:
+            return None
+        r = selected_indexes[0].row()
+        obj_name = self.table.item(r, 0).text()
+        return obj_name
+    
+    def getSelectedObjects(self) -> list[str]:
+        """Get the name of the objects highlighted by the user.
+        
+            Returns:
+                (list): the name of the objects
+        """
+        selected_indexes = self.table.selectedIndexes()
+        obj_names = []
+        for i in selected_indexes:
+            r = i.row()
+            obj_names.append(self.table.item(r, 0).text())
+        return obj_names
 
     # RIGHT CLICK FUNCTIONS
 
@@ -316,6 +343,31 @@ class ObjectTableWidget(QDockWidget):
         """Refresh the object lists."""
         self.manager.refresh()
     
+    def export(self):
+        """Export the object list as a csv file."""
+        # get the location from the user
+        file_path, ext = QFileDialog.getSaveFileName(
+            self,
+            "Save Object List",
+            "objects.csv",
+            filter="Comma Separated Values (.csv)"
+        )
+        # unload the table into the csv file
+        csv_file = open(file_path, "w")
+        # headers first
+        items = []
+        for c in range(self.table.columnCount()):
+            items.append(self.table.horizontalHeaderItem(c).text())
+        csv_file.write(",".join(items) + "\n")
+        # object data
+        for r in range(self.table.rowCount()):
+            items = []
+            for c in range(self.table.columnCount()):
+                items.append(self.table.item(r, c).text())
+            csv_file.write(",".join(items) + "\n")
+        # close file
+        csv_file.close()        
+    
     def setREFilter(self):
         """Set a new regex filter for the list."""
         # get a new filter from the user
@@ -362,32 +414,6 @@ class ObjectTableWidget(QDockWidget):
         
         # call through manager to update self
         self.manager.updateTable(self)
-        
-    def getSelectedObject(self) -> str:
-        """Get the name of the object highlighted by the user.
-        
-            Returns:
-                (str): the name of the object
-        """
-        selected_indexes = self.table.selectedIndexes()
-        if len(selected_indexes) != 1:
-            return None
-        r = selected_indexes[0].row()
-        obj_name = self.table.item(r, 0).text()
-        return obj_name
-    
-    def getSelectedObjects(self) -> list[str]:
-        """Get the name of the objects highlighted by the user.
-        
-            Returns:
-                (list): the name of the objects
-        """
-        selected_indexes = self.table.selectedIndexes()
-        obj_names = []
-        for i in selected_indexes:
-            r = i.row()
-            obj_names.append(self.table.item(r, 0).text())
-        return obj_names
     
     def findFirst(self):
         """Focus the field on the first occurence of an object in the series."""

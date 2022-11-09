@@ -22,26 +22,48 @@ class ObjGroupDict():
             self.objects[obj] = set()
         self.objects[obj].add(group)
     
-    def getObjectGroups(self, obj = None):
+    def remove(self, group, obj):
+        """Remove items from the two-way dictionary."""
+        if group in self.groups and obj in self.groups[group]:
+            self.groups[group].remove(obj)
+        else:
+            return False
+        self.objects[obj].remove(group)
+
+        # check if anything is empty
+        if not self.groups[group]:
+            del self.groups[group]
+        if not self.objects[obj]:
+            del self.objects[obj]
+        
+        return True
+    
+    def getObjectGroups(self, obj = None) -> list:
         """Get the groups for a given object."""
-        return self.objects[obj]
+        try:
+            return self.objects[obj]
+        except KeyError:
+            return []
     
-    def getGroupObjects(self, group):
+    def getGroupObjects(self, group) -> list:
         """Get the objects for a given group."""
-        return self.groups[group]
-    
-    def getGroupDict(self):
+        try:
+            return self.groups[group]
+        except KeyError:
+            return []
+
+    def getGroupDict(self) -> dict:
         """Get a JSON serializable dictionary."""
         groups = self.groups.copy()
         for g in groups:
             groups[g] = list(groups[g])
         return groups
     
-    def getGroupList(self):
+    def getGroupList(self) -> list:
         """Get a list of groups."""
         return list(self.groups.keys())
     
-    def getObjectList(self):
+    def getObjectList(self) -> list:
         """Get a list of objects."""
         return list(self.objects.keys())
     

@@ -34,7 +34,8 @@ class ObjectTableWidget(QDockWidget):
             "range" : True,
             "count" : True,
             "flat_area" : True,
-            "volume": True
+            "volume": True,
+            "groups": True,
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -128,6 +129,11 @@ class ObjectTableWidget(QDockWidget):
             col += 1
         if self.quantities["volume"]:
             self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getVolume(), 5))))
+            col += 1
+        if self.quantities["groups"]:
+            groups = self.series.object_groups.getObjectGroups(obj_data.name)
+            groups_str = ", ".join(groups)
+            self.table.setItem(row, col, QTableWidgetItem(groups_str))
     
     def passesFilters(self, item : ObjectTableItem):
         """Determine if an object will be displayed in the table based on existing filters.
@@ -178,6 +184,8 @@ class ObjectTableWidget(QDockWidget):
             self.horizontal_headers.append("Flat Area")
         if self.quantities["volume"]:
             self.horizontal_headers.append("Volume")
+        if self.quantities["groups"]:
+            self.horizontal_headers.append("Groups")
         
         # filter the objects
         sorted_obj_names = sorted(list(objdict.keys()))
@@ -202,8 +210,10 @@ class ObjectTableWidget(QDockWidget):
 
         # format rows and columns
         self.table.resizeRowsToContents()
-        for c in range(1, self.table.columnCount()):
-            self.table.resizeColumnToContents(c)
+        for c in range(self.table.columnCount()):
+            header = self.horizontal_headers[c]
+            if not (header == "Name" or header == "Groups"):
+                self.table.resizeColumnToContents(c)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
@@ -295,7 +305,8 @@ class ObjectTableWidget(QDockWidget):
             return
         menu_list = [
             ("modify_act", "Modify...", "", self.modifyObjects),
-            ("group_act", "Add to group...", "", self.addToGroup),
+            ("addgroup_act", "Add to group...", "", self.addToGroup),
+            ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
             ("generate3D_act", "Generate 3D", "", self.generate3D),
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
@@ -346,6 +357,23 @@ class ObjectTableWidget(QDockWidget):
         
         for name in obj_names:
             self.series.object_groups.add(group=group_name, obj=name)
+            self.manager.refreshObject(name)
+    
+    def removeFromGroup(self):
+        """Remove objects from a group."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        # ask the user for the group
+        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups, new_group=False).exec()
+
+        if not confirmed:
+            return
+        
+        for name in obj_names:
+            self.series.object_groups.remove(group=group_name, obj=name)
+            self.manager.refreshObject(name)
     
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""

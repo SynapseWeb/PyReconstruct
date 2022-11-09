@@ -103,6 +103,15 @@ class ObjectTableManager():
         # update the contour on the table(s)
         for table in self.tables:
             table.updateObject(objdata)
+    
+    def refreshObject(self, obj_name : str):
+        """Refresh an object's data on the table.
+        
+            Params:
+                (obj_name): the name of the object to refresh
+        """
+        for table in self.tables:
+            table.updateObject(self.objdict[obj_name])
 
     # MENU FUNCTIONS
 

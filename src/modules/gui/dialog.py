@@ -49,7 +49,7 @@ class AttributeDialog(QDialog):
 
 class ObjectGroupDialog(QDialog):
 
-    def __init__(self, parent, objgroupdict : ObjGroupDict):
+    def __init__(self, parent, objgroupdict : ObjGroupDict, new_group=True):
         super().__init__(parent)
 
         self.setWindowTitle("Object Group")
@@ -58,13 +58,15 @@ class ObjectGroupDialog(QDialog):
         self.group_text = QLabel(self)
         self.group_text.setText("Group:")
         self.group_input = QComboBox(self)
-        self.group_input.addItems(objgroupdict.getGroupList())
+        self.group_input.addItem("")
+        self.group_input.addItems(sorted(objgroupdict.getGroupList()))
         self.group_input.resize(self.group_input.sizeHint())
-        self.newgroup_bttn = QPushButton(self, "new_group", text="New Group...")
-        self.newgroup_bttn.clicked.connect(self.newGroup)
         self.group_row.addWidget(self.group_text)
         self.group_row.addWidget(self.group_input)
-        self.group_row.addWidget(self.newgroup_bttn)
+        if new_group:
+            self.newgroup_bttn = QPushButton(self, "new_group", text="New Group...")
+            self.newgroup_bttn.clicked.connect(self.newGroup)
+            self.group_row.addWidget(self.newgroup_bttn)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonbox = QDialogButtonBox(QBtn)
@@ -84,6 +86,7 @@ class ObjectGroupDialog(QDialog):
             return
         self.group_input.addItem(new_group_name)
         self.group_input.setCurrentText(new_group_name)
+        self.group_input.resize(self.group_input.sizeHint())
         
     def exec(self):
         confirmed = super().exec()

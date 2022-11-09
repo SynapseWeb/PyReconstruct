@@ -4,6 +4,8 @@ from PySide6.QtCore import Qt
 
 from modules.pyrecon.trace import Trace
 
+from modules.backend.gui_functions import populateMenu
+
 class PaletteButton(QPushButton):
 
     def setTrace(self, trace : Trace):
@@ -52,12 +54,13 @@ class PaletteButton(QPushButton):
                 event: contains user input data (location of right click)
         """
         menu = QMenu(self)
-        name_act = menu.addAction("Edit name...")
-        name_act.triggered.connect(self.editName)
-        color_act = menu.addAction("Edit color...")
-        color_act.triggered.connect(self.editColor)
-        size_act = menu.addAction("Edit stamp size...")
-        size_act.triggered.connect(self.editSize)
+        menu_list = [
+            ("name_act", "Edit name...", "", self.editName),
+            ("color_act", "Edit color...", "", self.editColor),
+            ("size_act", "Edit stamp size...", "", self.editSize),
+            ("tags_act", "Edit tags...", "", self.editTags)
+        ]
+        populateMenu(self, menu, menu_list)
         menu.exec_(event.globalPos())
     
     def editName(self):
@@ -91,6 +94,23 @@ class PaletteButton(QPushButton):
                 self.trace.points[i] = (x, y)
             self.setTrace(self.trace)
         self.parent().paletteButtonChanged(self)
+    
+    def editTags(self):
+        """Change the tags of the trace on the palette."""
+        existing_tags = ", ".join(self.trace.tags)
+        new_tags, confirmed = QInputDialog.getText(
+            self,
+            "Edit Tags",
+            "Enter trace tags:",
+            text=existing_tags
+        )
+        if not confirmed:
+            return
+        new_tags = new_tags.split(", ")
+        if new_tags == [""]:
+            self.trace.tags = set()
+        else:
+            self.trace.tags = set(new_tags)
     
     def _resizePoint(self, point):
         x = point[0]

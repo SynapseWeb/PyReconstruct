@@ -59,6 +59,17 @@ class ObjectTableItem():
             tags = tags.union(self.data[n]["tags"])
         return tags
     
+    def addTag(self, tag, n):
+        self.data[n]["tags"].add(tag)
+    
+    def removeTag(self, tag, n):
+        if tag in self.data[n]["tags"]:
+            self.data[n]["tags"].remove(tag)
+    
+    def clearTags(self):
+        for n in self.data:
+            self.data[n]["tags"] = set()
+    
     def clearSectionData(self, n):
         if n in self.data.keys():
             del self.data[n]

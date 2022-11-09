@@ -34,6 +34,7 @@ class Trace():
         copy_trace = Trace("", [0,0,0])
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
+        copy_trace.tags = self.tags.copy()
         return copy_trace
     
     def add(self, point : tuple):

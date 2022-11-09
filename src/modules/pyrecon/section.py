@@ -58,7 +58,9 @@ class Section():
             Params:
                 trace (Trace): the trace to add
         """
-        trace.tags.add(os.getlogin())
+        # insert username as first tag
+        trace.tags = set((os.getlogin(),)).union(trace.tags)
+
         if trace.name in self.traces:
             self.traces[trace.name].append(trace)
         else:

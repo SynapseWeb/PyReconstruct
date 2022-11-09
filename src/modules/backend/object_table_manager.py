@@ -219,6 +219,58 @@ class ObjectTableManager():
             self.object_viewer.close()
         self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
     
+    def tagTraces(self, obj_names : list, tag_name : str, remove=False):
+        """Tag all the traces on a set of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+                tag_name (str): the name of the tag to add
+        """
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            section_modified = False
+            for name in obj_names:
+                if name in section.traces:
+                    for trace in section.traces[name]:
+                        if not remove:
+                            trace.tags.add(tag_name)
+                            self.objdict[trace.name].addTag(tag_name, snum)
+                            section_modified = True
+                        else:
+                            if tag_name in trace.tags:
+                                trace.tags.remove(tag_name)
+                                self.objdict[trace.name].removeTag(tag_name, snum)
+                                section_modified = True
+            if section_modified:
+                section.save()
+        
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+    
+    def removeAllTraceTags(self, obj_names : list):
+        """Remove all tags from all trace on a selected object.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            section_modified = False
+            for name in obj_names:
+                if name in section.traces:
+                    for trace in section.traces[name]:
+                        trace.tags = set()
+                        section_modified = True
+            if section_modified:
+                section.save()
+        for name in obj_names:
+            self.objdict[trace.name].clearTags()
+
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+    
     def close(self):
         """Close all tables."""
         for table in self.tables:

@@ -38,19 +38,19 @@ class ObjGroupDict():
         
         return True
     
-    def getObjectGroups(self, obj = None) -> list:
+    def getObjectGroups(self, obj = None) -> set:
         """Get the groups for a given object."""
         try:
             return self.objects[obj]
         except KeyError:
-            return []
+            return set()
     
-    def getGroupObjects(self, group) -> list:
+    def getGroupObjects(self, group) -> set:
         """Get the objects for a given group."""
         try:
             return self.groups[group]
         except KeyError:
-            return []
+            return set()
 
     def getGroupDict(self) -> dict:
         """Get a JSON serializable dictionary."""

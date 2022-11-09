@@ -10,8 +10,8 @@
 - [ ] Object list
    - [X] Round to 5 decimels (not sig figs)
    - [X] Edit object attributes by right clicking
-   - [ ] Add objects to object groups in attributes menu
-   - [ ] Export (under "list menu") as CSV
+   - [X] Add objects to object groups in attributes menu
+   - [X] Export (under "list menu") as CSV
    - [ ] Consider removing refesh
    - [ ] Edit object list variables from the object list
    - [ ] Add group variable column

@@ -5,8 +5,6 @@ from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
-from modules.gui.attributedialog import AttributeDialog
-
 from modules.backend.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap

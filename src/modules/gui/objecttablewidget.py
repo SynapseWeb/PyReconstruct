@@ -8,7 +8,7 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.attributedialog import AttributeDialog
+from modules.gui.dialog import AttributeDialog, ObjectGroupDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -295,6 +295,7 @@ class ObjectTableWidget(QDockWidget):
             return
         menu_list = [
             ("modify_act", "Modify...", "", self.modifyObjects),
+            ("group_act", "Add to group...", "", self.addToGroup),
             ("generate3D_act", "Generate 3D", "", self.generate3D),
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
@@ -310,7 +311,7 @@ class ObjectTableWidget(QDockWidget):
         self.manager.deleteObjects(obj_names)    
     
     def modifyObjects(self):
-        """Rename an object in the entire series."""
+        """Modify an object in the entire series."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
@@ -320,16 +321,31 @@ class ObjectTableWidget(QDockWidget):
             displayed_name = obj_names[0]
         else:
             displayed_name = ""
-        attr_input = AttributeDialog(
+        name, color, confirmed = AttributeDialog(
             self.parent_widget,
             displayed_name,
             color=None
         ).exec()
 
-        if not attr_input:
+        if not confirmed:
             return
         
-        self.manager.modifyObjects(obj_names, *attr_input)
+        self.manager.modifyObjects(obj_names, name, color)
+    
+    def addToGroup(self):
+        """Add objects to a group."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        # ask the user for the group
+        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups).exec()
+
+        if not confirmed:
+            return
+        
+        for name in obj_names:
+            self.series.object_groups.add(group=group_name, obj=name)
     
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""

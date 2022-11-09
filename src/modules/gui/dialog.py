@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QInputDialog, QSizePolicy
+from PySide6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QInputDialog, QCheckBox
 
 from modules.gui.colorbutton import ColorButton
 
@@ -6,7 +6,14 @@ from modules.pyrecon.obj_group_dict import ObjGroupDict
 
 class AttributeDialog(QDialog):
 
-    def __init__(self, parent, name="", color=None):
+    def __init__(self, parent : QWidget, name="", color=None):
+        """Create an attribute dialog.
+        
+            Params:
+                parent (QWidget): the parent widget
+                name (str): the default name for the dialog
+                color (tuple): the default color for the dialog
+        """
         super().__init__(parent)
 
         self.setWindowTitle("Set Attributes")
@@ -47,9 +54,17 @@ class AttributeDialog(QDialog):
         else:
             return "", (), False
 
+
 class ObjectGroupDialog(QDialog):
 
-    def __init__(self, parent, objgroupdict : ObjGroupDict, new_group=True):
+    def __init__(self, parent : QWidget, objgroupdict : ObjGroupDict, new_group=True):
+        """Create an object group dialog.
+        
+            Params:
+                parent (QWidget): the parent widget
+                objgroupdict (ObjGroupDict): object containing information on object groups
+                new_group (bool): whether or not to include new group button
+        """
         super().__init__(parent)
 
         self.setWindowTitle("Object Group")
@@ -81,6 +96,7 @@ class ObjectGroupDialog(QDialog):
         self.setLayout(self.vlayout)
     
     def newGroup(self):
+        """Add a new group to the list."""
         new_group_name, confirmed = QInputDialog.getText(self, "New Object Group", "New group name:")
         if not confirmed:
             return
@@ -97,7 +113,49 @@ class ObjectGroupDialog(QDialog):
             return "", False
 
 
+class ObjectTableColumnsDialog(QDialog):
 
+    def __init__(self, parent, columns):
+        """Create an object table column dialog.
+        
+            Params:
+                columns (dict): the existing columns and their status
+        """
+        super().__init__(parent)
 
+        self.setWindowTitle("Object Table Columns")
 
-            
+        self.title_text = QLabel(self)
+        self.title_text.setText("Object table columns:")
+
+        self.cbs = []
+        for c in columns:
+            c_cb = QCheckBox(self)
+            c_cb.setText(c)
+            c_cb.setChecked(columns[c])
+            self.cbs.append(c_cb)
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonbox = QDialogButtonBox(QBtn)
+        self.buttonbox.accepted.connect(self.accept)
+        self.buttonbox.rejected.connect(self.reject)
+
+        self.vlayout = QVBoxLayout(self)
+        self.vlayout.setSpacing(10)
+        self.vlayout.addWidget(self.title_text)
+        for c_row in self.cbs:
+            self.vlayout.addWidget(c_row)
+        self.vlayout.addWidget(self.buttonbox)
+
+        self.setLayout(self.vlayout)
+    
+    def exec(self):
+        confirmed = super().exec()
+        if confirmed:
+            columns = {}
+            for cb in self.cbs:
+                columns[cb.text()] = cb.isChecked()
+            return columns, True
+        else:
+            return {}, False
+        

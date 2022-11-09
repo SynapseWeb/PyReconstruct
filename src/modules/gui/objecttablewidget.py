@@ -8,7 +8,7 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.dialog import AttributeDialog, ObjectGroupDialog
+from modules.gui.dialog import AttributeDialog, ObjectGroupDialog, ObjectTableColumnsDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -17,8 +17,9 @@ class ObjectTableWidget(QDockWidget):
         
             Params:
                 series (Series): the Series object
-                quantities (dict): information on which calculations to include
+                objdict (dict): contains all object info for the table
                 parent (QWidget): the main window the dock is connected to
+                manager: the object table manager
         """
         # initialize the widget
         super().__init__(parent)
@@ -30,12 +31,12 @@ class ObjectTableWidget(QDockWidget):
         self.setWindowTitle("Object List")
 
         # set defaults
-        self.quantities = {
-            "range" : True,
-            "count" : True,
-            "flat_area" : True,
-            "volume": True,
-            "groups": True,
+        self.columns = {
+            "Range" : True,
+            "Count" : True,
+            "Flat area" : True,
+            "Volume": True,
+            "Groups": True,
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -81,7 +82,8 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     ("refresh_act", "Refresh", "", self.refresh),
-                    ("export_act", "Export", "", self.export),
+                    ("columns_act", "Set columns...", "", self.setColumns),
+                    ("export_act", "Export...", "", self.export),
                     {
                         "attr_name": "filtermenu",
                         "text": "Filter",
@@ -118,21 +120,21 @@ class ObjectTableWidget(QDockWidget):
         """
         self.table.setItem(row, 0, QTableWidgetItem(obj_data.name))
         col = 1
-        if self.quantities["range"]:
+        if self.columns["Range"]:
             self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getStart())))
             col += 1
             self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getEnd())))
             col += 1
-        if self.quantities["count"]:
+        if self.columns["Count"]:
             self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getCount())))
             col += 1
-        if self.quantities["flat_area"]:
+        if self.columns["Flat area"]:
             self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getFlatArea(), 5))))
             col += 1
-        if self.quantities["volume"]:
+        if self.columns["Volume"]:
             self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getVolume(), 5))))
             col += 1
-        if self.quantities["groups"]:
+        if self.columns["Groups"]:
             groups = self.series.object_groups.getObjectGroups(obj_data.name)
             groups_str = ", ".join(groups)
             self.table.setItem(row, col, QTableWidgetItem(groups_str))
@@ -166,7 +168,6 @@ class ObjectTableWidget(QDockWidget):
             if bool(re.fullmatch(re_filter, item.name)):
                 return True
         return False
-        
     
     def createTable(self, objdict : dict):
         """Create the table widget.
@@ -180,16 +181,16 @@ class ObjectTableWidget(QDockWidget):
 
         # establish table headers
         self.horizontal_headers = ["Name"]
-        if self.quantities["range"]:
+        if self.columns["Range"]:
             self.horizontal_headers.append("Start")
             self.horizontal_headers.append("End")
-        if self.quantities["count"]:
+        if self.columns["Count"]:
             self.horizontal_headers.append("Count")
-        if self.quantities["flat_area"]:
+        if self.columns["Flat area"]:
             self.horizontal_headers.append("Flat Area")
-        if self.quantities["volume"]:
+        if self.columns["Volume"]:
             self.horizontal_headers.append("Volume")
-        if self.quantities["groups"]:
+        if self.columns["Groups"]:
             self.horizontal_headers.append("Groups")
         
         # filter the objects
@@ -203,6 +204,7 @@ class ObjectTableWidget(QDockWidget):
         self.table = QTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
         # format table
+        # self.table.setWordWrap(False)
         self.table.setShowGrid(False)  # no grid
         self.table.setAlternatingRowColors(True)  # alternate row colors
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
@@ -391,6 +393,18 @@ class ObjectTableWidget(QDockWidget):
     def refresh(self):
         """Refresh the object lists."""
         self.manager.refresh()
+    
+    def setColumns(self):
+        """Set the columns to display."""
+        new_cols, confirmed = ObjectTableColumnsDialog(
+            self,
+            self.columns
+        ).exec()
+        if not confirmed:
+            return
+        self.columns = new_cols
+        
+        self.manager.updateTable(self)
     
     def export(self):
         """Export the object list as a csv file."""

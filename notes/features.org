@@ -15,7 +15,7 @@
    - [X] Consider removing refesh
    - [X] Edit object list variables from the object list
    - [X] Add group variable column
-   - [ ] Add tags to all traces associated with an object (don't overwrite any existing tags)
+   - [X] Add tags to all traces associated with an object (don't overwrite any existing tags)
    - [X] Add trial 3D render to object list
    - [ ] Standard regexp tick boxes to filter
      

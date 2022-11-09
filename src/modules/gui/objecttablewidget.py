@@ -39,6 +39,7 @@ class ObjectTableWidget(QDockWidget):
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
+        self.group_filters = set()
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -87,6 +88,7 @@ class ObjectTableWidget(QDockWidget):
                         "opts":
                         [
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
+                            ("groupfilter_act", "Group fiter...", "", self.setGroupFilter),
                             ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
                         ]
                     }
@@ -141,20 +143,23 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 item (ObjectTableItem): the item containing the data
         """
+        # check groups
+        filters_len = len(self.group_filters)
+        if filters_len != 0:
+            object_groups = self.series.object_groups.getObjectGroups(item.name)
+            groups_len = len(object_groups)
+            union_len = len(object_groups.union(self.group_filters))
+            if union_len == groups_len + filters_len:  # intersection does not exist
+                return False
+        
         # check tags
-        object_tags = item.getTags()
         filters_len = len(self.tag_filters)
-        if filters_len == 0:
-            passes_tags = True
-        else:
+        if filters_len != 0:
+            object_tags = item.getTags()
             object_len = len(object_tags)
             union_len = len(object_tags.union(self.tag_filters))
-            if union_len < object_len + filters_len:  # intersection exists
-                passes_tags = True
-            else:
-                passes_tags = False
-        if not passes_tags:
-            return False
+            if union_len == object_len + filters_len:  # intersection does not exist
+                return False
         
         # check regex (will only be run if passes tags)
         for re_filter in self.re_filters:
@@ -419,7 +424,7 @@ class ObjectTableWidget(QDockWidget):
         new_re_filter, confirmed = QInputDialog.getText(
             self,
             "Filter Objects",
-            "Enter the object filter:",
+            "Enter the object filters:",
             text=re_filter_str
         )
         if not confirmed:
@@ -436,6 +441,29 @@ class ObjectTableWidget(QDockWidget):
         # call through manager to update self
         self.manager.updateTable(self)
     
+    def setGroupFilter(self):
+        """Set a new group filter for the list."""
+        # get a new filter from the user
+        group_filter_str = ", ".join(self.group_filters)
+        new_group_filter, confirmed = QInputDialog.getText(
+            self,
+            "Filter Objects",
+            "Enter the group filters:",
+            text=group_filter_str
+        )
+        if not confirmed:
+            return
+
+        # get the new group filter for the list
+        self.group_filters = new_group_filter.split(", ")
+        if self.group_filters == [""]:
+            self.group_filters = set()
+        else:
+            self.group_filters = set(self.group_filters)
+        
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
     def setTagFilter(self):
         """Set a new tag filter for the list."""
         # get a new filter from the user
@@ -443,7 +471,7 @@ class ObjectTableWidget(QDockWidget):
         new_tag_filter, confirmed = QInputDialog.getText(
             self,
             "Filter Objects",
-            "Enter the tag filter:",
+            "Enter the tag filters:",
             text=tag_filter_str
         )
         if not confirmed:

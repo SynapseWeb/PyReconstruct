@@ -28,7 +28,7 @@
    - [ ] Include trace list index in columns
    - [ ] Tags
       - [ ] Include tags (also need to update trace attribute window)
-      - [ ] Consider always tagging new traces with =os.login()= as default
+      - [X] Consider always tagging new traces with =os.login()= as default
       - [ ] Option to change username (default to =os.login()=)
      
 - [ ] Field attribute menu

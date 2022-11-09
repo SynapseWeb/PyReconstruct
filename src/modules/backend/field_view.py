@@ -205,8 +205,8 @@ class FieldView():
         self.saveState()
         self.generateView(generate_image=False)
     
-    def newTrace(self, pix_trace, name, color, closed=True):
-        self.section_layer.newTrace(pix_trace, name, color, closed)
+    def newTrace(self, pix_trace, tracing_trace, closed=True):
+        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed)
         self.saveState()
         self.generateView(generate_image=False)
     

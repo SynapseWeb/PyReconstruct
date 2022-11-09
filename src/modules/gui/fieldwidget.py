@@ -156,7 +156,6 @@ class FieldWidget(QWidget, FieldView):
         self.saveState()
         self.generateView(generate_image=False)
         
-    
     def mousePressEvent(self, event):
         """Called when mouse is clicked.
         
@@ -411,8 +410,7 @@ class FieldWidget(QWidget, FieldView):
             return
         self.newTrace(
             self.current_trace,
-            name=self.tracing_trace.name,
-            color=self.tracing_trace.color,
+            self.tracing_trace,
             closed=closed
         )
     
@@ -445,9 +443,9 @@ class FieldWidget(QWidget, FieldView):
                 self.is_line_tracing = True
         elif event.button() == Qt.RightButton:  # complete existing trace if right mouse button
             if self.is_line_tracing:
-                self.newTrace(self.current_trace,
-                    name=self.tracing_trace.name,
-                    color=self.tracing_trace.color,
+                self.newTrace(
+                    self.current_trace,
+                    self.tracing_trace,
                     closed=closed
                 )
                 self.is_line_tracing = False
@@ -540,8 +538,16 @@ class FieldWidget(QWidget, FieldView):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             if self.mouse_mode == FieldWidget.CLOSEDLINE:
-                self.section_layer.newTrace(self.current_trace, closed=True)
+                self.section_layer.newTrace(
+                    self.current_trace,
+                    self.tracing_trace,
+                    closed=True
+                )
             elif self.mouse_mode == FieldWidget.OPENLINE:
-                self.section_layer.newTrace(self.current_trace, closed=False)
+                self.section_layer.newTrace(
+                    self.current_trace,
+                    self.tracing_trace,
+                    closed=False
+            )
             self.is_line_tracing = False
             self.generateView(generate_image=False)

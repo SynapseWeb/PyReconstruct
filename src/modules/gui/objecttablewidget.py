@@ -52,10 +52,6 @@ class ObjectTableWidget(QDockWidget):
         self.createTable(objdict)
         self.createMenu()
 
-        # connect table functions
-        self.table.mouseDoubleClickEvent = self.generate3D
-        self.table.contextMenuEvent = self.objectContextMenu
-
         # set geometry
         w = 20
         for i in range(self.table.columnCount()):
@@ -213,6 +209,10 @@ class ObjectTableWidget(QDockWidget):
         # create the table object
         self.table = QTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
+        # connect table functions
+        self.table.mouseDoubleClickEvent = self.generate3D
+        self.table.contextMenuEvent = self.objectContextMenu
+
         # format table
         # self.table.setWordWrap(False)
         self.table.setShowGrid(False)  # no grid
@@ -322,21 +322,32 @@ class ObjectTableWidget(QDockWidget):
             return
         menu_list = [
             ("modify_act", "Modify...", "", self.modifyObjects),
-            ("addgroup_act", "Add to group...", "", self.addToGroup),
-            ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
             ("generate3D_act", "Generate 3D", "", self.generate3D),
+            {
+                "attr_name" : "group_menu",
+                "text": "Group",
+                "opts":
+                [
+                    ("addgroup_act", "Add to group...", "", self.addToGroup),
+                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
+                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
+                ]
+            },
+            {
+                "attr_name" : "tag_menu",
+                "text": "Tags",
+                "opts":
+                [
+                    ("addtag_act", "Add tag...", "", self.addTag),
+                    ("removetag_act", "Remove tag...", "", self.removeTag),
+                    ("removealltags_act", "Remove all tags", "", self.removeAllTags)
+                ]
+            },
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
         menu = QMenu(self)
         populateMenu(self, menu, menu_list)
-        menu.exec_(event.globalPos())
-    
-    def deleteObjects(self):
-        """Delete an object from the entire series."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-        self.manager.deleteObjects(obj_names)    
+        menu.exec_(event.globalPos())   
     
     def modifyObjects(self):
         """Modify an object in the entire series."""
@@ -359,6 +370,12 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.modifyObjects(obj_names, name, color)
+    
+    def generate3D(self, event=None):
+        """Generate a 3D view of an object"""
+        obj_names = self.getSelectedObjects()
+        if obj_names:
+            self.manager.generate3D(obj_names)
     
     def addToGroup(self):
         """Add objects to a group."""
@@ -392,11 +409,64 @@ class ObjectTableWidget(QDockWidget):
             self.series.object_groups.remove(group=group_name, obj=name)
             self.manager.refreshObject(name)
     
-    def generate3D(self, event=None):
-        """Generate a 3D view of an object"""
+    def removeFromAllGroups(self):
+        """Remove a set of traces from all groups."""
         obj_names = self.getSelectedObjects()
-        if obj_names:
-            self.manager.generate3D(obj_names)
+        if not obj_names:
+            return
+        
+        for name in obj_names:
+            groups = self.series.object_groups.getObjectGroups(name)
+            for group in groups.copy():
+                self.series.object_groups.remove(group=group, obj=name)
+            self.manager.refreshObject(name)
+    
+    def addTag(self):
+        """Add a tag to all traces on selected objects."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        tag_name, confirmed = QInputDialog.getText(
+            self,
+            "Tag Traces",
+            "Enter the trace tag:"
+        )
+        if not confirmed:
+            return
+        
+        self.manager.tagTraces(obj_names, tag_name)
+    
+    def removeTag(self):
+        """Remove a tag from all traces on selected objects."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        tag_name, confirmed = QInputDialog.getText(
+            self,
+            "Remove Tag",
+            "Enter the tag to remove:"
+        )
+        if not confirmed:
+            return
+        
+        self.manager.tagTraces(obj_names, tag_name, remove=True)
+    
+    def removeAllTags(self):
+        """Remove all tags from all traces on selected objects."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        self.manager.removeAllTraceTags(obj_names)
+
+    def deleteObjects(self):
+        """Delete an object from the entire series."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        self.manager.deleteObjects(obj_names) 
 
     # MENU-RELATED FUNCTIONS
 

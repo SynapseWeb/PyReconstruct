@@ -12,7 +12,7 @@ from modules.calc.pfconversions import pixmapPointToField
 
 from modules.backend.field_view import FieldView
 
-from modules.gui.attributedialog import AttributeDialog
+from modules.gui.dialog import AttributeDialog
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
@@ -149,10 +149,10 @@ class FieldWidget(QWidget, FieldView):
                 name = ""
             if trace.color != color:
                 color = None
-        attr_input = AttributeDialog(name=name, color=color).exec()
-        if attr_input is None:
+        new_name, new_color, confirmed = AttributeDialog(name=name, color=color).exec()
+        if not confirmed:
             return
-        self.section_layer.changeTraceAttributes(*attr_input)
+        self.section_layer.changeTraceAttributes(new_name, new_color)
         self.saveState()
         self.generateView(generate_image=False)
         

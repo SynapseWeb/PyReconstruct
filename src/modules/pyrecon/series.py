@@ -7,6 +7,8 @@ from modules.legacy_recon.utils.reconstruct_writer import write_series
 
 from modules.pyrecon.section import Section
 
+from modules.pyrecon.obj_group_dict import ObjGroupDict
+
 from constants.locations import assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
@@ -39,6 +41,8 @@ class Series():
                 self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
             self.current_trace = Trace.fromDict(series_data["current_trace"])
             self.alignment = series_data["alignment"]
+            self.object_groups = ObjGroupDict(series_data["object_groups"])
+
         
         elif self.filetype == "XML":
             self.xml_series = process_series_file(filepath)
@@ -61,6 +65,7 @@ class Series():
                 self.palette_traces.append(Trace.fromXMLObj(xml_contour))
             self.current_trace = self.palette_traces[0]
             self.alignment = "default"
+            self.object_groups = ObjGroupDict()
     
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -78,6 +83,7 @@ class Series():
             d["palette_traces"].append(trace.getDict())
         d["current_trace"] = self.current_trace.getDict()
         d["alignment"] = self.alignment
+        d["object_groups"] = self.object_groups.getGroupDict()
         return d
     
     # STATIC METHOD
@@ -103,6 +109,8 @@ class Series():
         series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
         series_data["current_trace"] = series_data["palette_traces"][0]
         series_data["alignment"] = "default"
+        series_data["object_groups"] = ObjGroupDict()
+
         series_fp = os.path.join(wdir, series_name + ".ser")
         with open(series_fp, "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))

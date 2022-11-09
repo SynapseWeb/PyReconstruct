@@ -37,6 +37,7 @@ class ObjectTableWidget(QDockWidget):
             "Flat area" : True,
             "Volume": True,
             "Groups": True,
+            "Trace tags": False
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -138,6 +139,13 @@ class ObjectTableWidget(QDockWidget):
             groups = self.series.object_groups.getObjectGroups(obj_data.name)
             groups_str = ", ".join(groups)
             self.table.setItem(row, col, QTableWidgetItem(groups_str))
+            col += 1
+        if self.columns["Trace tags"]:
+            tags = obj_data.getTags()
+            tags_str = ", ".join(tags)
+            self.table.setItem(row, col, QTableWidgetItem(tags_str))
+            col += 1
+            
     
     def passesFilters(self, item : ObjectTableItem):
         """Determine if an object will be displayed in the table based on existing filters.
@@ -192,6 +200,8 @@ class ObjectTableWidget(QDockWidget):
             self.horizontal_headers.append("Volume")
         if self.columns["Groups"]:
             self.horizontal_headers.append("Groups")
+        if self.columns["Trace tags"]:
+            self.horizontal_headers.append("Trace Tags")
         
         # filter the objects
         sorted_obj_names = sorted(list(objdict.keys()))

@@ -12,9 +12,9 @@
    - [X] Edit object attributes by right clicking
    - [X] Add objects to object groups in attributes menu
    - [X] Export (under "list menu") as CSV
-   - [ ] Consider removing refesh
-   - [ ] Edit object list variables from the object list
-   - [ ] Add group variable column
+   - [X] Consider removing refesh
+   - [X] Edit object list variables from the object list
+   - [X] Add group variable column
    - [ ] Add tags to all traces associated with an object (don't overwrite any existing tags)
    - [X] Add trial 3D render to object list
    - [ ] Standard regexp tick boxes to filter

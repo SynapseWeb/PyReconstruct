@@ -93,7 +93,7 @@ class ObjectTableItem():
         self.data[section_num]["count"] += 1
 
         # add the tag to the set
-        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(set(trace.tags))
+        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(trace.tags)
 
         # transform the points
         t = tform

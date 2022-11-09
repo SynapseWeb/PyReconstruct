@@ -59,6 +59,17 @@ class ObjectTableItem():
             tags = tags.union(self.data[n]["tags"])
         return tags
     
+    def addTag(self, tag, n):
+        self.data[n]["tags"].add(tag)
+    
+    def removeTag(self, tag, n):
+        if tag in self.data[n]["tags"]:
+            self.data[n]["tags"].remove(tag)
+    
+    def clearTags(self):
+        for n in self.data:
+            self.data[n]["tags"] = set()
+    
     def clearSectionData(self, n):
         if n in self.data.keys():
             del self.data[n]
@@ -93,7 +104,7 @@ class ObjectTableItem():
         self.data[section_num]["count"] += 1
 
         # add the tag to the set
-        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(set(trace.tags))
+        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(trace.tags)
 
         # transform the points
         t = tform

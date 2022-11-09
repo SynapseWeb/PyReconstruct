@@ -17,7 +17,7 @@ class Trace():
         self.closed = closed
         self.points = []
         self.hidden = False  # default to False
-        self.tags = []
+        self.tags = set()
 
         # extra hidden attributes for XML support
         self.comment = None
@@ -34,6 +34,7 @@ class Trace():
         copy_trace = Trace("", [0,0,0])
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
+        copy_trace.tags = self.tags.copy()
         return copy_trace
     
     def add(self, point : tuple):
@@ -87,7 +88,7 @@ class Trace():
         d["closed"] = self.closed
         d["points"] = self.points
         d["hidden"] = self.hidden
-        d["tags"] = self.tags
+        d["tags"] = list(self.tags)
         return d
     
     def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
@@ -126,7 +127,7 @@ class Trace():
         new_trace = Trace(d["name"], d["color"], d["closed"])
         new_trace.points = d["points"]
         new_trace.hidden = d["hidden"]
-        new_trace.tags = d["tags"]
+        new_trace.tags = set(d["tags"])
         return new_trace
     
     # STATIC METHOD

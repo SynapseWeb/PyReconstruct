@@ -1053,5 +1053,6 @@
   "hidden": false,
   "tags": []
  },
- "alignment": "default"
+ "alignment": "default",
+ "object_groups": {}
 }

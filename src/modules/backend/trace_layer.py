@@ -5,8 +5,6 @@ from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
-from modules.gui.attributedialog import AttributeDialog
-
 from modules.backend.grid import getExterior, mergeTraces, reducePoints, cutTraces
 from modules.calc.quantification import getDistanceFromTrace
 from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
@@ -74,11 +72,12 @@ class TraceLayer():
                 return True
         return False
 
-    def newTrace(self, pix_trace : list, name, color, closed=True):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True):
         """Create a new trace from pixel coordinates.
         
             Params:
                 pix_trace (list): pixel coordinates for the new trace
+                base_trace (Trace): the trace containing the desired attributes
                 closed (bool): whether or not the new trace is closed
         """
         if len(pix_trace) < 1:  # do not create a new trace if there is only one point
@@ -87,13 +86,20 @@ class TraceLayer():
             pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
         else:
             pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
-        new_trace = Trace(name, color, closed=closed)
+
+        # create the new trace
+        new_trace = base_trace.copy()
+        new_trace.closed = closed
+        new_trace.points = []
+
+        # get the points
         t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
         for point in pix_trace:
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
             rtform_point = point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
+        
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
     
@@ -120,24 +126,16 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self):
-        """Open a dialog to change the name and/or color of a trace."""
-        if len(self.selected_traces) == 0:  # skip if no traces selected
-            return
-        name = self.selected_traces[0].name
-        color = self.selected_traces[0].color
-        for trace in self.selected_traces[1:]:
-            if trace.name != name:
-                name = ""
-            if trace.color != color:
-                color = None
-        attr_input = AttributeDialog(parent=self, name=name, color=color).exec_()
-        if attr_input is None:
-            return
+    def changeTraceAttributes(self, new_name : str, new_color : tuple):
+        """Change the name and/or color of a trace.
+        
+            Params:
+                new_name (str): the new name
+                new_color (tuple): the new color
+        """
         # change object attributes
-        new_name, new_color = attr_input
         for trace in self.selected_traces:
-            if new_color is not None:
+            if new_color:
                 trace.color = new_color
             if new_name != "":
                 # move the trace in the section.traces dictionary
@@ -166,7 +164,6 @@ class TraceLayer():
         traces = []
         first_trace = self.selected_traces[0]
         name = first_trace.name
-        color = first_trace.color  # use color of first trace selected
         for trace in self.selected_traces:
             if trace.closed == False:
                 print("Can only merge closed traces.")
@@ -187,7 +184,7 @@ class TraceLayer():
         # create new merged trace
         self.deleteSelectedTraces()
         for trace in merged_traces:
-            self.newTrace(trace, name=name, color=color)
+            self.newTrace(trace, first_trace)
     
     def cutTrace(self, scalpel_trace : list):
         """Cuts the selected trace along the scalpel line.
@@ -202,8 +199,6 @@ class TraceLayer():
             print("Please select only one trace to cut at a time.")
             return
         trace = self.selected_traces[0]
-        name = trace.name
-        color = trace.color
         trace_to_cut = []
         # establish tform
         t = self.section.tforms[self.series.alignment]
@@ -216,8 +211,8 @@ class TraceLayer():
         cut_traces = cutTraces(trace_to_cut, scalpel_trace)  # merge the pixel traces
         # create new traces
         self.deleteSelectedTraces()
-        for trace in cut_traces:
-            self.newTrace(trace, name=name, color=color)
+        for piece in cut_traces:
+            self.newTrace(piece, trace)
     
     def deleteSelectedTraces(self):
         """Delete selected traces.

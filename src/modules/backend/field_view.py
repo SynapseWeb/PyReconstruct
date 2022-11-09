@@ -205,8 +205,8 @@ class FieldView():
         self.saveState()
         self.generateView(generate_image=False)
     
-    def newTrace(self, pix_trace, name, color, closed=True):
-        self.section_layer.newTrace(pix_trace, name, color, closed)
+    def newTrace(self, pix_trace, tracing_trace, closed=True):
+        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed)
         self.saveState()
         self.generateView(generate_image=False)
     
@@ -234,11 +234,6 @@ class FieldView():
     
     def toggleHideAllTraces(self):
         self.section_layer.toggleHideAllTraces()
-        self.generateView(generate_image=False)
-    
-    def changeTraceAttributes(self):
-        self.section_layer.changeTraceAttributes()
-        self.saveState()
         self.generateView(generate_image=False)
     
     def changeBrightness(self, change):

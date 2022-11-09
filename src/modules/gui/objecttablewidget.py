@@ -50,7 +50,7 @@ class ObjectTableWidget(QDockWidget):
         # create the table and the menu
         self.table = None
         self.createTable(objdict)
-        self.createMenu()
+        self.createMenus()
 
         # set geometry
         w = 20
@@ -66,13 +66,10 @@ class ObjectTableWidget(QDockWidget):
 
         self.show()
     
-    def createMenu(self):
+    def createMenus(self):
         """Create the menu for the object table widget."""
-        # create the menubar object
-        self.menubar = self.main_widget.menuBar()
-        self.menubar.setNativeMenuBar(False) # attach menu to the window?
-
-        menu = [
+        # Create menubar menu
+        menubar_list = [
             {
                 "attr_name": "listmenu",
                 "text": "List",
@@ -104,9 +101,40 @@ class ObjectTableWidget(QDockWidget):
                 ]
             }
         ]
-
+        # create the menubar object
+        self.menubar = self.main_widget.menuBar()
+        self.menubar.setNativeMenuBar(False) # attach menu to the window
         # fill in the menu bar object
-        populateMenuBar(self, self.menubar, menu)
+        populateMenuBar(self, self.menubar, menubar_list)
+
+        # create the right-click menu
+        context_menu_list = [
+            ("modify_act", "Edit name and color...", "", self.modifyObjects),
+            ("generate3D_act", "Generate 3D", "", self.generate3D),
+            {
+                "attr_name" : "group_menu",
+                "text": "Group",
+                "opts":
+                [
+                    ("addgroup_act", "Add to group...", "", self.addToGroup),
+                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
+                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
+                ]
+            },
+            {
+                "attr_name" : "tag_menu",
+                "text": "Tags",
+                "opts":
+                [
+                    ("addtag_act", "Add tag...", "", self.addTag),
+                    ("removetag_act", "Remove tag...", "", self.removeTag),
+                    ("removealltags_act", "Remove all tags", "", self.removeAllTags)
+                ]
+            },
+            ("delete_act", "Delete", "", self.deleteObjects)
+        ]
+        self.context_menu = QMenu(self)
+        populateMenu(self, self.context_menu, context_menu_list)
     
     def setRow(self, obj_data : ObjectTableItem, row : int):
         """Set the data for a row of the table.
@@ -320,34 +348,7 @@ class ObjectTableWidget(QDockWidget):
         """
         if len(self.table.selectedIndexes()) == 0:
             return
-        menu_list = [
-            ("modify_act", "Modify...", "", self.modifyObjects),
-            ("generate3D_act", "Generate 3D", "", self.generate3D),
-            {
-                "attr_name" : "group_menu",
-                "text": "Group",
-                "opts":
-                [
-                    ("addgroup_act", "Add to group...", "", self.addToGroup),
-                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
-                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
-                ]
-            },
-            {
-                "attr_name" : "tag_menu",
-                "text": "Tags",
-                "opts":
-                [
-                    ("addtag_act", "Add tag...", "", self.addTag),
-                    ("removetag_act", "Remove tag...", "", self.removeTag),
-                    ("removealltags_act", "Remove all tags", "", self.removeAllTags)
-                ]
-            },
-            ("delete_act", "Delete", "", self.deleteObjects)
-        ]
-        menu = QMenu(self)
-        populateMenu(self, menu, menu_list)
-        menu.exec_(event.globalPos())   
+        self.context_menu.exec(event.globalPos())   
     
     def modifyObjects(self):
         """Modify an object in the entire series."""

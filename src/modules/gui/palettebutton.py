@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog
+from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog, QWidget
 from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
 from PySide6.QtCore import Qt
 
@@ -7,6 +7,10 @@ from modules.pyrecon.trace import Trace
 from modules.backend.gui_functions import populateMenu
 
 class PaletteButton(QPushButton):
+
+    def __init__(self, parent : QWidget, manager):
+        super().__init__(parent)
+        self.manager = manager
 
     def setTrace(self, trace : Trace):
         """Create a palette button object.
@@ -69,7 +73,7 @@ class PaletteButton(QPushButton):
         if ok:
             self.trace.name = text
             self.setTrace(self.trace)
-        self.parent().paletteButtonChanged(self)
+        self.manager.paletteButtonChanged(self)
         
     def editColor(self):
         """Change the color of the trace on the palette."""
@@ -77,7 +81,7 @@ class PaletteButton(QPushButton):
         if color.isValid():
             self.trace.color = (color.red(), color.green(), color.blue())
             self.setTrace(self.trace)
-        self.parent().paletteButtonChanged(self)
+        self.manager.paletteButtonChanged(self)
     
     def editSize(self):
         """Change the radius of the trace on the palette."""
@@ -93,7 +97,7 @@ class PaletteButton(QPushButton):
                 y = point[1] * scale_factor
                 self.trace.points[i] = (x, y)
             self.setTrace(self.trace)
-        self.parent().paletteButtonChanged(self)
+        self.manager.paletteButtonChanged(self)
     
     def editTags(self):
         """Change the tags of the trace on the palette."""

@@ -18,19 +18,19 @@ class FieldWidget(QWidget, FieldView):
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)
 
-    def __init__(self, series : Series, parent : QMainWindow):
+    def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
         
             Params:
                 series (Series): the series object
                 parent (MainWindow): the main window that contains this widget
         """
-        QWidget.__init__(self, parent)
-        self.parent_widget = parent
+        QWidget.__init__(self, mainwindow)
+        self.mainwindow = mainwindow
         self.setMouseTracking(True)
 
         # set initial geometry to match parent
-        parent_rect = self.parent_widget.geometry()
+        parent_rect = self.mainwindow.geometry()
         self.pixmap_dim = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_dim)
 
@@ -97,6 +97,9 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains data on window size
         """
+        # resize the mouse palette
+        self.mainwindow.mouse_palette.resize()
+
         w = event.size().width()
         h = event.size().height()
         self.pixmap_dim = (w, h)
@@ -136,7 +139,7 @@ class FieldWidget(QWidget, FieldView):
         else:
             self.status_list[0] = "Section: " + str(self.series.current_section) 
         s = "  |  ".join(self.status_list)
-        self.parent_widget.statusbar.showMessage(s)
+        self.mainwindow.statusbar.showMessage(s)
     
     def changeTraceAttributes(self):
         """Change the trace attributes for a given trace"""

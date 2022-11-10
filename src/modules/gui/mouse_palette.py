@@ -132,6 +132,7 @@ class MousePalette():
         b.setCheckable(True)
         b.clicked.connect(lambda : self.activatePaletteButton(pos))
         self.palette_buttons[pos] = b
+        b.show()
     
     def placeLabel(self):
         """Place the trace palette label."""
@@ -184,7 +185,9 @@ class MousePalette():
         """
         for b in self.palette_buttons:
             if b.isChecked() and b == button:
-                self.parent_widget.changeTracingTrace(button.trace)
+                self.mainwindow.changeTracingTrace(button.trace)
+                self.selected_trace = b.trace
+        self.updateLabel()
     
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -198,8 +201,9 @@ class MousePalette():
     def close(self):
         """Close all buttons"""
         for bname in self.mode_buttons:
-            button, _ = self.mode_buttons[bname]
+            button, _, __ = self.mode_buttons[bname]
             button.close()
         for pb in self.palette_buttons:
             pb.close()
+        self.label.close()
         

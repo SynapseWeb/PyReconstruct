@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
             self.field = FieldWidget(self.series, self)
             self.setCentralWidget(self.field)
 
-        # create mouse dock
+        # create mouse palette
         if self.mouse_palette: # close previous mouse dock
             self.mouse_palette.close()
         self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)

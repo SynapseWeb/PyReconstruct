@@ -77,7 +77,7 @@ class PaletteButton(QPushButton):
         
     def editColor(self):
         """Change the color of the trace on the palette."""
-        color = QColorDialog.getColor()
+        color = QColorDialog.getColor(QColor(*self.trace.color))
         if color.isValid():
             self.trace.color = (color.red(), color.green(), color.blue())
             self.setTrace(self.trace)

@@ -179,7 +179,17 @@ class FieldWidget(QWidget, FieldView):
     
     def changeTraceColor(self):
         """Change the color of the selected traces."""
-        c = QColorDialog.getColor()
+        first_color = self.section_layer.selected_traces[0].color
+        same_color = True
+        for trace in self.section_layer.selected_traces[1:]:
+            if trace.color != first_color:
+                same_color = False
+                break
+        
+        if same_color:
+            c = QColorDialog.getColor(QColor(*first_color))
+        else:
+            c = QColorDialog.getColor()
         if not c:
             return
         color = (c.red(), c.green(), c.blue())

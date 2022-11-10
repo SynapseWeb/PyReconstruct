@@ -1,7 +1,7 @@
 import os
 
 from PySide6.QtWidgets import QWidget, QMainWindow, QMessageBox, QFileDialog
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPen, QColor, QPainter
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
@@ -77,7 +77,8 @@ class FieldWidget(QWidget, FieldView):
             blend=self.blend_sections
         )
         self.field_pixmap_copy = self.field_pixmap.copy()
-        self.update()
+        if update:
+            self.update()
     
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
@@ -192,7 +193,18 @@ class FieldWidget(QWidget, FieldView):
                 self.linePress(event, closed=True)
             elif self.mouse_mode == FieldWidget.OPENLINE:
                 self.linePress(event, closed=False)
+    
+    def mouseDoubleClickEvent(self, event):
+        """Called when mouse is double-clicked."""
+        # check what was clicked
+        self.dlclick = event.buttons() == Qt.LeftButton
+        self.lclick = False
+        self.rclick = False
 
+        if self.dlclick:
+            if self.mouse_mode == FieldWidget.POINTER:
+                self.pointerPress(event)
+        
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -220,6 +232,9 @@ class FieldWidget(QWidget, FieldView):
                 self.pencilMove(event)
             elif self.mouse_mode == FieldWidget.SCALPEL:
                 self.scalpelMove(event)
+        if self.dlclick:  # only left double-click
+            if self.mouse_mode == FieldWidget.POINTER:
+                self.pointerMove(event)
         if self.lclick or self.rclick:  # any button clicked
             if self.mouse_mode == FieldWidget.POINTER:
                 self.pointerMove(event)
@@ -270,28 +285,60 @@ class FieldWidget(QWidget, FieldView):
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
 
-        Selects/deselcts the nearest trace
+        Selects/deselects the nearest trace
         
             Params:
                 event: contains mouse input data
         """
-        pix_x, pix_y = event.x(), event.y()
-        deselect = self.rclick
-        self.selectTrace(pix_x, pix_y, deselect=deselect)
+        # select or deselect
+        if self.lclick or self.rclick:
+            pix_x, pix_y = event.x(), event.y()
+            deselect = self.rclick
+            self.selectTrace(pix_x, pix_y, deselect=deselect)
+        # move selected traces
+        elif self.dlclick:
+            self.clicked_x, self.clicked_y = event.x(), event.y()
+            # get pixel points
+            self.moving_traces = []
+            for trace in self.section_layer.selected_traces:
+                moving_trace = trace.copy()
+                pix_points = self.section_layer.traceToPix(trace)
+                moving_trace.points = pix_points
+                self.moving_traces.append(moving_trace)
+            # remove the traces
+            self.section_layer.deleteSelectedTraces()
+            self.generateView(update=False)
     
     def pointerMove(self, event):
-        """Called when mouse is moved in pointer mode.
-        
-        Not implemented yet.
-        """
-        return
+        """Called when mouse is moved in pointer mode."""
+        if self.dlclick:
+            dx = event.x() - self.clicked_x
+            dy = event.y() - self.clicked_y
+            self.field_pixmap = self.field_pixmap_copy.copy()
+            # redraw the traces with translatation
+            painter = QPainter(self.field_pixmap)
+            for trace in self.moving_traces:
+                painter.setPen(QPen(QColor(*trace.color), 1))
+                plot_points = [QPoint(x+dx, y+dy) for x,y in trace.points]
+                if trace.closed:
+                    painter.drawPolygon(plot_points)
+                else:
+                    painter.drawPolyline(plot_points)
+            painter.end()
+            
+            self.update()
     
     def pointerRelease(self, event):
-        """Called when mouse is released in pointer mode.
-        
-        Not implemented yet.
-        """
-        return
+        """Called when mouse is released in pointer mode."""
+        if self.dlclick:
+            # save the traces in their final position
+            dx = event.x() - self.clicked_x
+            dy = event.y() - self.clicked_y
+            for trace in self.moving_traces:
+                pix_points = [(x+dx, y+dy) for x,y in trace.points]
+                self.section_layer.newTrace(pix_points, trace, closed=trace.closed)
+            self.generateView()
+            self.saveState()
         
     def panzoomPress(self, event):
         """Called when mouse is clicked in panzoom mode.

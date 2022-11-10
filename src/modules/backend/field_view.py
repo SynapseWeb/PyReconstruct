@@ -218,10 +218,27 @@ class FieldView():
     def findClosestTrace(self, field_x, field_y, radius=0.5):
         return self.section_layer.findClosestTrace(field_x, field_y, radius)
     
-    def selectTrace(self, pix_x, pix_y, deselect=False):
-        requires_update = self.section_layer.selectTrace(pix_x, pix_y, deselect=deselect)
-        if requires_update:
-            self.generateView(generate_image=False)
+    def selectTrace(self, trace):
+        if not trace:
+            return
+        if trace in self.section_layer.selected_traces:
+            self.section_layer.selected_traces.remove(trace)
+        else:
+            self.section_layer.selected_traces.append(trace)
+        self.generateView(generate_image=False)
+    
+    def selectTraces(self, traces):
+        traces_to_add = []
+        for trace in traces:
+            if trace not in self.section_layer.selected_traces:
+                traces_to_add.append(trace)
+        if traces_to_add:
+            self.section_layer.selected_traces += traces_to_add
+        else:
+            for trace in traces:
+                self.section_layer.selected_traces.remove(trace)
+            
+        self.generateView(generate_image=False)
     
     def deselectAllTraces(self):
         self.section_layer.deselectAllTraces()

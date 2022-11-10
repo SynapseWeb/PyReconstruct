@@ -350,28 +350,36 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # select or deselect
-        if self.lclick or self.rclick:
-            pix_x, pix_y = event.x(), event.y()
-            deselect = self.rclick
-            self.selectTrace(pix_x, pix_y, deselect=deselect)
-        # move selected traces
-        elif self.dlclick:
+        # select, deselect or move
+        if self.lclick:
+            self.is_moving_trace = False
+            self.is_selecting_traces = False
             self.clicked_x, self.clicked_y = event.x(), event.y()
-            # get pixel points
-            self.moving_traces = []
-            for trace in self.section_layer.selected_traces:
-                moving_trace = trace.copy()
-                pix_points = self.section_layer.traceToPix(trace)
-                moving_trace.points = pix_points
-                self.moving_traces.append(moving_trace)
-            # remove the traces
-            self.section_layer.deleteSelectedTraces()
-            self.generateView(update=False)
+            self.selected_trace = self.section_layer.getTrace(
+                self.clicked_x,
+                self.clicked_y
+            )
     
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
-        if self.dlclick:
+        # left button is down and user clicked on a trace
+        if self.lclick and (
+            self.is_moving_trace or 
+            self.selected_trace in self.section_layer.selected_traces
+        ): 
+            if not self.is_moving_trace:  # user has just decided to move the trace
+                self.is_moving_trace = True
+                # get pixel points
+                self.moving_traces = []
+                for trace in self.section_layer.selected_traces:
+                    moving_trace = trace.copy()
+                    pix_points = self.section_layer.traceToPix(trace)
+                    moving_trace.points = pix_points
+                    self.moving_traces.append(moving_trace)
+                # remove the traces
+                self.section_layer.deleteSelectedTraces()
+                self.generateView(update=False)
+
             dx = event.x() - self.clicked_x
             dy = event.y() - self.clicked_y
             self.field_pixmap = self.field_pixmap_copy.copy()
@@ -387,11 +395,34 @@ class FieldWidget(QWidget, FieldView):
             painter.end()
             
             self.update()
+
+        # no trace was clicked on OR user clicked on unselected trace
+        elif self.lclick:
+            if not self.is_selecting_traces:  # user just decided to group select traces
+                self.is_selecting_traces = True
+                # create list
+                self.selection_trace = [(self.clicked_x, self.clicked_y)]
+            x = event.x()
+            y = event.y()
+            self.selection_trace.append((x, y))
+            # draw the trace on the screen
+            painter = QPainter(self.field_pixmap)
+            pen = QPen(QColor(255, 255, 255), 1)
+            pen.setDashPattern([4, 4])
+            painter.setPen(pen)
+            painter.drawLine(
+                *self.selection_trace[-2],
+                *self.selection_trace[-1]
+            )
+            painter.end()
+            self.update()
     
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
-        if self.dlclick:
+        # user moved traces
+        if self.lclick and self.is_moving_trace:
             # save the traces in their final position
+            self.is_moving_trace = False
             dx = event.x() - self.clicked_x
             dy = event.y() - self.clicked_y
             for trace in self.moving_traces:
@@ -399,6 +430,16 @@ class FieldWidget(QWidget, FieldView):
                 self.section_layer.newTrace(pix_points, trace, closed=trace.closed)
             self.generateView()
             self.saveState()
+        
+        # user selected an area of traces
+        elif self.lclick and self.is_selecting_traces:
+            self.is_selecting_traces = False
+            selected_traces = self.section_layer.getTraces(self.selection_trace)
+            self.selectTraces(selected_traces)
+
+        # user single-clicked a trace
+        elif self.lclick and self.selected_trace:
+            self.selectTrace(self.selected_trace)
         
     def panzoomPress(self, event):
         """Called when mouse is clicked in panzoom mode.

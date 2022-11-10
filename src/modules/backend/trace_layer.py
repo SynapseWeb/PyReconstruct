@@ -6,7 +6,7 @@ from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
 from modules.backend.grid import getExterior, mergeTraces, reducePoints, cutTraces
-from modules.calc.quantification import getDistanceFromTrace
+from modules.calc.quantification import getDistanceFromTrace, pointInPoly
 from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
 
 class TraceLayer():
@@ -59,9 +59,7 @@ class TraceLayer():
         closest_trace = None
         t = self.section.tforms[self.series.alignment]
         point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        for trace in self.section.tracesAsList():
-            if trace.hidden:
-                continue
+        for trace in self.traces_in_view:
             points = []
             for point in trace.points:
                 x, y = point_tform.map(*point)
@@ -72,26 +70,37 @@ class TraceLayer():
                 closest_trace = trace
         return closest_trace if min_distance <= radius else None
     
-    def selectTrace(self, pix_x, pix_y, deselect=False):
-        """"Select the closest trace to the given field coordinates.
+    def getTrace(self, pix_x, pix_y) -> Trace:
+        """"Return the closest trace to the given field coordinates.
         
             Params:
                 field_x (float): the x-coord of the point in the field
                 field_y (float): the y-coord of the point in the field
+            Returns:
+                (Trace): the closest trace
         """
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # calculate radius based on window size (2% of window size)
         window_size = max(self.window[2:])
-        radius = window_size / 25
-        selected = self.findClosestTrace(field_x, field_y, radius=radius)
-        if selected is not None:
-            if not deselect and selected not in self.selected_traces:
-                self.selected_traces.append(selected)
-                return True
-            elif deselect and selected in self.selected_traces:
-                self.selected_traces.remove(selected)
-                return True
-        return False
+        radius = window_size / 100
+        return self.findClosestTrace(field_x, field_y, radius=radius)
+    
+    def getTraces(self, pix_poly : list) -> list[Trace]:
+        """"Select all traces that are at least partially in a polygon
+        
+            Params:
+                pix_poly (list): a list of screen points
+            Returns:
+                (list[Trace]): the list of traces within the polygon
+        """
+        traces_in_poly = []
+        for trace in self.traces_in_view:
+            pix_points = self.traceToPix(trace)
+            for point in pix_points:
+                if pointInPoly(*point, pix_poly):
+                    traces_in_poly.append(trace)
+                    break
+        return traces_in_poly
 
     def newTrace(self, pix_trace : list, base_trace : Trace, closed=True):
         """Create a new trace from pixel coordinates.
@@ -271,13 +280,24 @@ class TraceLayer():
             # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
+        
         # convert to screen coord points
         qpoints = self.traceToPix(trace, qpoints=True)
+
+        # check if the trace is actually in the view
+        trace_in_view = False
+        for point in qpoints:
+            if pointInPoly(point.x(), point.y(), self.screen_poly):
+                trace_in_view = True
+                break
+
         # draw trace
         if trace.closed:
             painter.drawPolygon(qpoints)
         else:
             painter.drawPolyline(qpoints)
+        
+        return trace_in_view
     
     def generateTraceLayer(self, pixmap_dim : tuple, window : list):
         """Generate the traces on a transparent background.
@@ -289,15 +309,28 @@ class TraceLayer():
         # draw all the traces
         self.window = window
         self.pixmap_dim = pixmap_dim
+        self.screen_poly = [
+            (0, 0),
+            (self.pixmap_dim[0], 0),
+            (self.pixmap_dim[0], self.pixmap_dim[1]),
+            (0, self.pixmap_dim[1])
+        ]
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         trace_layer = QPixmap(pixmap_w, pixmap_h)
         trace_layer.fill(Qt.transparent)
+
+        # draw traces (keep track of those in view)
+        self.traces_in_view = []
         for trace in self.section.tracesAsList():
             if not trace.hidden:
-                self._drawTrace(
+                trace_in_view = self._drawTrace(
                     trace_layer,
                     trace,
                 )
+                if trace_in_view:
+                    self.traces_in_view.append(trace)
+        
+        # draw highlights
         for trace in self.selected_traces:
             self._drawTrace(
                 trace_layer,

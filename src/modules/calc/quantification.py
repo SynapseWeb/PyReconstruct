@@ -103,6 +103,19 @@ def getDistanceFromTrace(x : float, y: float, trace : list, factor=1.0, absolute
     pp_test = cv2.pointPolygonTest((np.array(trace) * factor).astype(int), (x * factor, y * factor), measureDist=True)
     return abs(pp_test / factor) if absolute else pp_test / factor
 
+def pointInPoly(x : float, y: float, trace : list):
+    """Find if a point is in a given trace (uses opencv).
+    
+        Params:
+            x (float): the x-coord of the point
+            y (float): the y-coord of the point
+            trace (list): the trace to check against the point
+        Returns:
+            (bool): whether or not the point is in the trace
+    """
+    pp_test = cv2.pointPolygonTest(np.array(trace).astype(int), (x, y), measureDist=False)
+    return pp_test >= 0
+
 # source: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
 def ccw(A,B,C):
     return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])

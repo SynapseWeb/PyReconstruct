@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 
 from modules.backend.object_table_manager import ObjectTableManager
 
-from modules.gui.mousedockwidget import MouseDockWidget
+from modules.gui.mouse_palette import MousePalette
 from modules.gui.fieldwidget import FieldWidget
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
 
         # misc defaults
         self.field = None  # placeholder for field
-        self.mouse_dock = None  # placeholder for mouse dock
+        self.mouse_palette = None  # placeholder for mouse palette
         self.obj_list_manager = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         # number defaults
@@ -208,9 +208,9 @@ class MainWindow(QMainWindow):
             self.setCentralWidget(self.field)
 
         # create mouse dock
-        if self.mouse_dock is not None: # close previous mouse dock
-            self.mouse_dock.close()
-        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
+        if self.mouse_palette: # close previous mouse dock
+            self.mouse_palette.close()
+        self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
 
         # close the object lists
@@ -370,7 +370,7 @@ class MainWindow(QMainWindow):
         """Write current series and section data into JSON files."""
         # save the trace palette
         self.series.palette_traces = []
-        for button in self.mouse_dock.palette_buttons:  # get trace palette
+        for button in self.mouse_palette.palette_buttons:  # get trace palette
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace

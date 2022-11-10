@@ -58,6 +58,9 @@ class FieldWidget(QWidget, FieldView):
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.is_line_tracing = False
         self.blend_sections = False
+        self.lclick = False
+        self.rclick = False
+        self.dlclick = False
 
         self.generateView()
     
@@ -167,20 +170,29 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
+        # check what was clicked
+        self.lclick = event.buttons() == Qt.LeftButton
+        self.rclick = event.buttons() == Qt.RightButton
+        self.dlclick = False
+
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomPress(event) 
-        elif self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
-            self.pencilPress(event)
-        elif self.mouse_mode == FieldWidget.STAMP:
-            self.stampPress(event)
-        elif self.mouse_mode == FieldWidget.CLOSEDLINE:
-            self.linePress(event, closed=True)
-        elif self.mouse_mode == FieldWidget.OPENLINE:
-            self.linePress(event, closed=False)
-        elif self.mouse_mode == FieldWidget.SCALPEL:
-            self.scalpelPress(event)
+        
+        if self.lclick:  # left click only functions
+            if (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL):
+                self.pencilPress(event)
+            elif self.mouse_mode == FieldWidget.STAMP:
+                self.stampPress(event)
+            elif self.mouse_mode == FieldWidget.SCALPEL:
+                self.scalpelPress(event)
+        if self.lclick or self.rclick:  # either button clicked
+            if self.mouse_mode == FieldWidget.CLOSEDLINE:
+                self.linePress(event, closed=True)
+            elif self.mouse_mode == FieldWidget.OPENLINE:
+                self.linePress(event, closed=False)
+
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -190,22 +202,34 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        if (event.buttons() and self.mouse_mode != FieldWidget.PANZOOM) or self.is_line_tracing:
-            self.updateStatusBar(event, find_closest_trace=False)
-        elif not event.buttons():
+        # update click status
+        if not event.buttons():
+            self.lclick = False
+            self.rclick = False
+            self.dlclick = False
+        
+        # update the status bar
+        if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
+            self.updateStatusBar()
+        else:
             self.updateStatusBar(event)
-        if self.mouse_mode == FieldWidget.POINTER and event.buttons():
-            self.pointerMove(event)
-        elif self.mouse_mode == FieldWidget.PANZOOM and event.buttons():
-            self.panzoomMove(event)
-        elif (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL) and event.buttons():
-            self.pencilMove(event)
-        elif self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
-            self.lineMove(event, closed=True)
-        elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
-            self.lineMove(event, closed=False)
-        elif self.mouse_mode == FieldWidget.SCALPEL and event.buttons():
-            self.scalpelMove(event)
+        
+        # mouse functions
+        if self.lclick:  # only left button
+            if self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+                self.pencilMove(event)
+            elif self.mouse_mode == FieldWidget.SCALPEL:
+                self.scalpelMove(event)
+        if self.lclick or self.rclick:  # any button clicked
+            if self.mouse_mode == FieldWidget.POINTER:
+                self.pointerMove(event)
+            elif self.mouse_mode == FieldWidget.PANZOOM:
+                self.panzoomMove(event)
+        if not self.lclick and not self.rclick:  # no buttons clicked
+            if self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
+                self.lineMove(event, closed=True)
+            elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
+                self.lineMove(event, closed=False)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -252,7 +276,7 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         pix_x, pix_y = event.x(), event.y()
-        deselect = (event.buttons() == Qt.RightButton)
+        deselect = self.rclick
         self.selectTrace(pix_x, pix_y, deselect=deselect)
     
     def pointerMove(self, event):
@@ -289,7 +313,7 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         # if left mouse button is pressed, do panning
-        if event.buttons() == Qt.LeftButton:
+        if self.lclick:
             move_x = (event.x() - self.clicked_x)
             move_y = (event.y() - self.clicked_y)
             # move field with mouse
@@ -301,7 +325,7 @@ class FieldWidget(QWidget, FieldView):
             painter.end()
             self.update()
         # if right mouse button is pressed, do zooming
-        elif event.buttons() == Qt.RightButton:
+        elif self.rclick:
             # up and down mouse movement only
             move_y = event.y() - self.clicked_y
             zoom_factor = 1.005 ** (move_y) # 1.005 is arbitrary
@@ -331,7 +355,7 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         # set new window for panning
-        if event.button() == Qt.LeftButton:
+        if self.lclick:
             section = self.section
             x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
             y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
@@ -341,7 +365,7 @@ class FieldWidget(QWidget, FieldView):
             self.series.window[1] += move_y
             self.generateView()
         # set new window for zooming
-        elif event.button() == Qt.RightButton:
+        elif self.rclick:
             section = self.section
             x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
             y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
@@ -426,7 +450,7 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         x, y = event.x(), event.y()
-        if event.button() == Qt.LeftButton:  # begin/add to trace if left mouse button
+        if self.lclick:  # begin/add to trace if left mouse button
             if self.is_line_tracing:  # start new trace
                 self.current_trace.append((x, y))
                 self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
@@ -444,7 +468,7 @@ class FieldWidget(QWidget, FieldView):
             else:  # add to existing
                 self.current_trace = [(x, y)]
                 self.is_line_tracing = True
-        elif event.button() == Qt.RightButton:  # complete existing trace if right mouse button
+        elif self.rclick:  # complete existing trace if right mouse button
             if self.is_line_tracing:
                 self.newTrace(
                     self.current_trace,

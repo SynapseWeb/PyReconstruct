@@ -36,8 +36,8 @@
    - [ ] Consider allowing user to change trace and object attributes from that window
      
 - [ ] Tool palette
-   - [ ] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
-   - [ ] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
+   - [X] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
+   - [X] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
    - [ ] Ctrl-numbers to access trace button attributes from the field
 
 - [ ] Minor things

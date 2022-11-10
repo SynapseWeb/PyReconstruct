@@ -144,7 +144,13 @@ class MousePalette():
     def updateLabel(self):
         """Update the name of the trace palette label."""
         self.label.setText(self.selected_trace.name)
-        self.label.setTextColor(self.selected_trace.color)
+        c = self.selected_trace.color
+        self.label.setTextColor(c)
+        black_outline = c[0] + 3*c[1] + c[2] > 400
+        if black_outline:
+            self.label.setOutlineColor((0,0,0))
+        else:
+            self.label.setOutlineColor((255,255,255))
         self.placeLabel()
     
     def activateModeButton(self, bname : str):

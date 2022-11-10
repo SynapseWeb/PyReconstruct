@@ -180,19 +180,16 @@ class FieldWidget(QWidget, FieldView):
             self.pointerPress(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
             self.panzoomPress(event) 
-        
-        if self.lclick:  # left click only functions
-            if (self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL):
-                self.pencilPress(event)
-            elif self.mouse_mode == FieldWidget.STAMP:
-                self.stampPress(event)
-            elif self.mouse_mode == FieldWidget.SCALPEL:
-                self.scalpelPress(event)
-        if self.lclick or self.rclick:  # either button clicked
-            if self.mouse_mode == FieldWidget.CLOSEDLINE:
-                self.linePress(event, closed=True)
-            elif self.mouse_mode == FieldWidget.OPENLINE:
-                self.linePress(event, closed=False)
+        elif self.mouse_mode == FieldWidget.SCALPEL:
+            self.scalpelPress(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+            self.pencilPress(event)
+        elif self.mouse_mode == FieldWidget.OPENPENCIL:
+            self.pencilPress(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDLINE:
+            self.linePress(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE:
+            self.linePress(event, closed=False)
     
     def mouseDoubleClickEvent(self, event):
         """Called when mouse is double-clicked."""
@@ -201,9 +198,8 @@ class FieldWidget(QWidget, FieldView):
         self.lclick = False
         self.rclick = False
 
-        if self.dlclick:
-            if self.mouse_mode == FieldWidget.POINTER:
-                self.pointerPress(event)
+        if self.mouse_mode == FieldWidget.POINTER:
+            self.pointerPress(event)
         
 
     def mouseMoveEvent(self, event):
@@ -227,24 +223,20 @@ class FieldWidget(QWidget, FieldView):
             self.updateStatusBar(event)
         
         # mouse functions
-        if self.lclick:  # only left button
-            if self.mouse_mode == FieldWidget.OPENPENCIL or self.mouse_mode == FieldWidget.CLOSEDPENCIL:
-                self.pencilMove(event)
-            elif self.mouse_mode == FieldWidget.SCALPEL:
-                self.scalpelMove(event)
-        if self.dlclick:  # only left double-click
-            if self.mouse_mode == FieldWidget.POINTER:
+        if self.mouse_mode == FieldWidget.POINTER:
                 self.pointerMove(event)
-        if self.lclick or self.rclick:  # any button clicked
-            if self.mouse_mode == FieldWidget.POINTER:
-                self.pointerMove(event)
-            elif self.mouse_mode == FieldWidget.PANZOOM:
-                self.panzoomMove(event)
-        if not self.lclick and not self.rclick:  # no buttons clicked
-            if self.mouse_mode == FieldWidget.CLOSEDLINE and self.is_line_tracing:
-                self.lineMove(event, closed=True)
-            elif self.mouse_mode == FieldWidget.OPENLINE and self.is_line_tracing:
-                self.lineMove(event, closed=False)
+        elif self.mouse_mode == FieldWidget.PANZOOM:
+            self.panzoomMove(event)
+        elif self.mouse_mode == FieldWidget.SCALPEL:
+            self.scalpelMove(event)
+        elif self.mouse_mode == FieldWidget.OPENPENCIL:
+            self.pencilMove(event)
+        elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
+            self.pencilMove(event)
+        if self.mouse_mode == FieldWidget.CLOSEDLINE:
+            self.lineMove(event, closed=True)
+        elif self.mouse_mode == FieldWidget.OPENLINE:
+            self.lineMove(event, closed=False)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -459,18 +451,19 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # draw trace on pixmap
-        x = event.x()
-        y = event.y()
-        painter = QPainter(self.field_pixmap)
-        color = QColor(*self.tracing_trace.color)
-        painter.setPen(QPen(color, 1))
-        painter.drawLine(self.last_x, self.last_y, x, y)
-        painter.end()
-        self.current_trace.append((x, y))
-        self.last_x = x
-        self.last_y = y
-        self.update()
+        if self.lclick:
+            # draw trace on pixmap
+            x = event.x()
+            y = event.y()
+            painter = QPainter(self.field_pixmap)
+            color = QColor(*self.tracing_trace.color)
+            painter.setPen(QPen(color, 1))
+            painter.drawLine(self.last_x, self.last_y, x, y)
+            painter.end()
+            self.current_trace.append((x, y))
+            self.last_x = x
+            self.last_y = y
+            self.update()
 
     def pencilRelease(self, event, closed=True):
         """Called when mouse is released in pencil mode.
@@ -480,13 +473,14 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        if len(self.current_trace) <= 1:
-            return
-        self.newTrace(
-            self.current_trace,
-            self.tracing_trace,
-            closed=closed
-        )
+        if self.lclick:
+            if len(self.current_trace) <= 1:
+                return
+            self.newTrace(
+                self.current_trace,
+                self.tracing_trace,
+                closed=closed
+            )
     
     def linePress(self, event, closed=True):
         """Called when mouse is pressed in a line mode.
@@ -532,26 +526,27 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        x, y = event.x(), event.y()
-        self.field_pixmap = self.field_pixmap_copy.copy()
-        # draw solid lines for existing trace
-        painter = QPainter(self.field_pixmap)
-        color = QColor(*self.tracing_trace.color)
-        pen = QPen(color, 1)
-        painter.setPen(pen)
-        if closed:
-            start = 0
-        else:
-            start = 1
-        for i in range(start, len(self.current_trace)):
-            painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-        # draw dashed lines that connect to mouse pointer
-        pen.setDashPattern([2,5])
-        painter.setPen(pen)
-        painter.drawLine(*self.current_trace[-1], x, y)
-        if closed:
-            painter.drawLine(*self.current_trace[0], x, y)
-        self.update()
+        if self.is_line_tracing:
+            x, y = event.x(), event.y()
+            self.field_pixmap = self.field_pixmap_copy.copy()
+            # draw solid lines for existing trace
+            painter = QPainter(self.field_pixmap)
+            color = QColor(*self.tracing_trace.color)
+            pen = QPen(color, 1)
+            painter.setPen(pen)
+            if closed:
+                start = 0
+            else:
+                start = 1
+            for i in range(start, len(self.current_trace)):
+                painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+            # draw dashed lines that connect to mouse pointer
+            pen.setDashPattern([2,5])
+            painter.setPen(pen)
+            painter.drawLine(*self.current_trace[-1], x, y)
+            if closed:
+                painter.drawLine(*self.current_trace[0], x, y)
+            self.update()
     
     def stampPress(self, event):
         """Called when mouse is pressed in stamp mode.
@@ -585,18 +580,19 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # draw scalpel trace on pixmap
-        x = event.x()
-        y = event.y()
-        painter = QPainter(self.field_pixmap)
-        color = QColor(255,0,0)
-        painter.setPen(QPen(color, 1))
-        painter.drawLine(self.last_x, self.last_y, x, y)
-        painter.end()
-        self.scalpel_trace.append((x, y))
-        self.last_x = x
-        self.last_y = y
-        self.update()
+        if self.lclick:
+            # draw scalpel trace on pixmap
+            x = event.x()
+            y = event.y()
+            painter = QPainter(self.field_pixmap)
+            color = QColor(255,0,0)
+            painter.setPen(QPen(color, 1))
+            painter.drawLine(self.last_x, self.last_y, x, y)
+            painter.end()
+            self.scalpel_trace.append((x, y))
+            self.last_x = x
+            self.last_y = y
+            self.update()
 
     def scalpelRelease(self, event):
         """Called when mouse is released in pencil mode.
@@ -606,7 +602,8 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        self.cutTrace(self.scalpel_trace)
+        if self.lclick:
+            self.cutTrace(self.scalpel_trace)
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

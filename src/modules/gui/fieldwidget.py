@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QMainWindow, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QMainWindow, QInputDialog, QColorDialog, QMenu
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPen, QColor, QPainter
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
@@ -11,6 +11,7 @@ from modules.pyrecon.trace import Trace
 from modules.calc.pfconversions import pixmapPointToField
 
 from modules.backend.field_view import FieldView
+from modules.backend.gui_functions import populateMenu
 
 from modules.gui.dialog import AttributeDialog
 
@@ -35,6 +36,7 @@ class FieldWidget(QWidget, FieldView):
         self.setGeometry(0, 0, *self.pixmap_dim)
 
         self.createField(series)
+        self.createMenus()
 
         self.show()
     
@@ -63,6 +65,16 @@ class FieldWidget(QWidget, FieldView):
         self.dlclick = False
 
         self.generateView()
+    
+    def createMenus(self):
+        """Create the menus for the field widget."""
+        menu_list = [
+            ("editname_act", "Edit trace name...", "", self.changeTraceName),
+            ("editcolor_act", "Edit trace color...", "", self.changeTraceColor),
+            ("edittags_act", "Edit trace tags...", "", self.changeTraceTags)
+        ]
+        self.context_menu = QMenu(self)
+        populateMenu(self, self.context_menu, menu_list)
     
     def toggleBlend(self):
         self.blend_sections = not self.blend_sections
@@ -145,23 +157,58 @@ class FieldWidget(QWidget, FieldView):
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
     
-    def changeTraceAttributes(self):
-        """Change the trace attributes for a given trace"""
-        if len(self.section_layer.selected_traces) == 0:  # skip if no traces selected
-            return
-        name = self.section_layer.selected_traces[0].name
-        color = self.section_layer.selected_traces[0].color
+    def changeTraceName(self):
+        """Change the name of the selected traces."""
+        first_name = self.section_layer.selected_traces[0].name
         for trace in self.section_layer.selected_traces[1:]:
-            if trace.name != name:
-                name = ""
-            if trace.color != color:
-                color = None
-        new_name, new_color, confirmed = AttributeDialog(name=name, color=color).exec()
-        if not confirmed:
+            if trace.name != first_name:
+                first_name = ""
+                break
+
+        name, confirmed = QInputDialog.getText(
+            self,
+            "Change Trace Name",
+            "Enter the new trace name:",
+            text=first_name
+        )
+        if not confirmed or not name:
             return
-        self.section_layer.changeTraceAttributes(new_name, new_color)
+        
+        self.section_layer.changeTraceAttributes(name=name)
         self.saveState()
-        self.generateView(generate_image=False)
+    
+    def changeTraceColor(self):
+        """Change the color of the selected traces."""
+        c = QColorDialog.getColor()
+        if not c:
+            return
+        color = (c.red(), c.green(), c.blue())
+        self.section_layer.changeTraceAttributes(color=color)
+        self.generateView()
+        self.saveState()
+
+    def changeTraceTags(self):
+        """Change the tags of the selected traces."""
+        # get the existing tags
+        existing_tags = self.section_layer.selected_traces[0].tags
+        for trace in self.section_layer.selected_traces:
+            if trace.tags != existing_tags:
+                existing_tags = set()
+        existing_tags = ", ".join(existing_tags)
+
+        tags, confirmed = QInputDialog.getText(
+            self,
+            "Change Trace Tags",
+            "Enter the new tags:",
+            text=existing_tags
+        )
+        if not confirmed or not tags:
+            return
+        
+        tags = set(tags.split(", "))
+        
+        self.section_layer.changeTraceAttributes(tags=tags)
+        self.saveState()
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.
@@ -191,6 +238,18 @@ class FieldWidget(QWidget, FieldView):
         elif self.mouse_mode == FieldWidget.OPENLINE:
             self.linePress(event, closed=False)
     
+    def contextMenuEvent(self, event):
+        """Called when mouse is right-clicked."""
+        # only call menu when not line tracing
+        if self.is_line_tracing:
+            return
+        
+        # only call menu if traces are selected
+        if not self.section_layer.selected_traces:
+            return
+        
+        self.context_menu.exec(event.globalPos())
+    
     def mouseDoubleClickEvent(self, event):
         """Called when mouse is double-clicked."""
         # check what was clicked
@@ -200,7 +259,6 @@ class FieldWidget(QWidget, FieldView):
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
-        
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.

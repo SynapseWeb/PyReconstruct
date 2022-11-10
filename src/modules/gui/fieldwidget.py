@@ -406,13 +406,13 @@ class FieldWidget(QWidget, FieldView):
             y = event.y()
             self.selection_trace.append((x, y))
             # draw the trace on the screen
+            self.field_pixmap = self.field_pixmap_copy.copy()
             painter = QPainter(self.field_pixmap)
             pen = QPen(QColor(255, 255, 255), 1)
             pen.setDashPattern([4, 4])
             painter.setPen(pen)
-            painter.drawLine(
-                *self.selection_trace[-2],
-                *self.selection_trace[-1]
+            painter.drawPolygon(
+                [QPoint(*p) for p in self.selection_trace]
             )
             painter.end()
             self.update()

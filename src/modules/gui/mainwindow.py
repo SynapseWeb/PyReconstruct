@@ -127,7 +127,6 @@ class MainWindow(QMainWindow):
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
             ("Ctrl+G", self.gotoSection),
-            ("Ctrl+A", self.field.changeTraceAttributes),
             # translate motions
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),

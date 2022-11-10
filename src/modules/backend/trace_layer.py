@@ -147,25 +147,24 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self, new_name : str, new_color : tuple):
+    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None):
         """Change the name and/or color of a trace.
         
             Params:
-                new_name (str): the new name
-                new_color (tuple): the new color
+                name (str): the new name
+                color (tuple): the new color
+                tags (set): the new set of tags
         """
         # change object attributes
         for trace in self.selected_traces:
-            if new_color:
-                trace.color = new_color
-            if new_name != "":
-                # move the trace in the section.traces dictionary
-                if new_name != trace.name:
-                    self.section.removeTrace(trace)
-                    trace.name = new_name
-                    self.section.addTrace(trace)
-                else:
-                    trace.name = new_name
+            self.section.removeTrace(trace)
+            if color:
+                trace.color = color
+            if tags:
+                trace.tags = tags
+            if name:
+                trace.name = name
+            self.section.addTrace(trace)
     
     def deselectAllTraces(self):
         """Deselect all traces."""

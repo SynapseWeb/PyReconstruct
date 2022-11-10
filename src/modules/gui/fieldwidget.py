@@ -247,6 +247,8 @@ class FieldWidget(QWidget, FieldView):
             self.linePress(event, closed=True)
         elif self.mouse_mode == FieldWidget.OPENLINE:
             self.linePress(event, closed=False)
+        elif self.mouse_mode == FieldWidget.STAMP:
+            self.stampPress(event)
     
     def contextMenuEvent(self, event):
         """Called when mouse is right-clicked."""
@@ -666,8 +668,9 @@ class FieldWidget(QWidget, FieldView):
                 event: contains mouse input data
         """
         # get mouse coords and convert to field coords
-        pix_x, pix_y = event.x(), event.y()
-        self.placeStamp(pix_x, pix_y, self.tracing_trace)
+        if self.lclick:
+            pix_x, pix_y = event.x(), event.y()
+            self.placeStamp(pix_x, pix_y, self.tracing_trace)
     
     def scalpelPress(self, event):
         """Called when mouse is pressed in scalpel mode.

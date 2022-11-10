@@ -141,14 +141,26 @@ class MainWindow(QMainWindow):
             ("Shift+Down", lambda : self.translateTform("down", "med")),
             ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big")),
         ]
+
+        for kbd, act in shortcuts:
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
+    
+    def createPaletteShortcuts(self):
+        # trace palette shortcuts (1-20)
+        shortcuts = []
+        for i in range(1, 21):
+            sc_str = ""
+            if (i-1) // 10 > 0:
+                sc_str += "Shift+"
+            sc_str += str(i % 10)
+            shortcut = (
+                sc_str,
+                lambda pos=i-1 : self.mouse_palette.activatePaletteButton(pos)
+            )
+            shortcuts.append(shortcut)
         
         for kbd, act in shortcuts:
-            if type(act) is tuple:
-                sc = QShortcut(QKeySequence(kbd), self)
-                for func in act:
-                    sc.activated.connect(func)
-            else:
-                QShortcut(QKeySequence(kbd), self).activated.connect(act)
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def changeSrcDir(self, notify=False):
         """Open a series of dialogs to change the image source directory."""
@@ -211,6 +223,7 @@ class MainWindow(QMainWindow):
             self.mouse_palette.close()
         self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+        self.createPaletteShortcuts()
 
         # close the object lists
         if self.obj_list_manager is not None:

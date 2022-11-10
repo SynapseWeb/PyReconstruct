@@ -19,7 +19,7 @@
    - [X] Add trial 3D render to object list
    - [ ] Standard regexp tick boxes to filter
      
-- [ ] Move traces in field
+- [X] Move traces in field
    - [ ] Double click left and hold to move
    - [ ] Press "g" for grab (consider "s" for scaling and "r" for rotation later)
         
@@ -31,7 +31,7 @@
       - [X] Consider always tagging new traces with =os.login()= as default
       - [ ] Option to change username (default to =os.login()=)
      
-- [ ] Field attribute menu
+- [X] Field attribute menu
    - [ ] Access by right clicking trace
    - [ ] Consider allowing user to change trace and object attributes from that window
      

@@ -112,8 +112,21 @@ class MousePalette():
                 button (PaletteButton): the palette button to move
                 pos (int): its position"""
         # place the palette button in the middle of the FIELD (not mainwindow)
-        x = self.mainwindow.field.x() + (self.mainwindow.field.width() / 2) + (-5 + pos % 10) * self.pblen
-        y = self.mainwindow.height() - (-(pos//10) + 2) * self.pblen - 30
+        if pos % 10 // 5 > 0:
+            x_offset = 1
+        else:
+            x_offset = -1
+        x_offset += (-5 + pos % 10) * self.pblen
+        x = self.mainwindow.field.x() + (self.mainwindow.field.width() / 2)
+        x += x_offset
+
+        if pos//10 > 0:
+            y_offset = 1
+        else:
+            y_offset = -1
+        y_offset += -(-(pos//10) + 2) * self.pblen - 30
+        y = self.mainwindow.height()
+        y += y_offset
 
         button.setGeometry(x, y, self.pblen, self.pblen)
 

@@ -22,6 +22,27 @@ class TraceLayer():
         self.selected_traces = []
         self.all_traces_hidden = False
     
+    def traceToPix(self, trace : Trace, qpoints=False):
+        """Return the set of pixel points corresponding to a trace.
+        
+            Params:
+                trace (Trace): the trace to convert
+            Returns:
+                (list): list of pixel points
+        """
+        new_pts = []
+        t = self.section.tforms[self.series.alignment]
+        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        for point in trace.points:
+            x, y = tuple(point)
+            x, y = point_tform.map(x, y)
+            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            if qpoints:
+                new_pts.append(QPoint(x, y))
+            else:
+                new_pts.append((x, y))
+        return new_pts
+    
     def findClosestTrace(self, field_x : float, field_y : float, radius=0.5) -> Trace:
         """Find closest trace to field coordinates in a given radius.
         
@@ -172,14 +193,8 @@ class TraceLayer():
                 print("Cannot merge differently named traces.")
                 return
             # collect pixel values for trace points
-            traces.append([])
-            t = self.section.tforms[self.series.alignment]
-            point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-            for point in trace.points:
-                x, y = tuple(point)
-                x, y = point_tform.map(x, y)
-                x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-                traces[-1].append((x, y))
+            pix_points = self.traceToPix(trace)
+            traces.append(pix_points)
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # create new merged trace
         self.deleteSelectedTraces()
@@ -199,15 +214,7 @@ class TraceLayer():
             print("Please select only one trace to cut at a time.")
             return
         trace = self.selected_traces[0]
-        trace_to_cut = []
-        # establish tform
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-        for point in self.selected_traces[0].points:
-            x, y = tuple(point)
-            x, y = point_tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-            trace_to_cut.append((x, y))
+        trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, scalpel_trace)  # merge the pixel traces
         # create new traces
         self.deleteSelectedTraces()
@@ -248,7 +255,6 @@ class TraceLayer():
         """
         # establish tform
         t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
         # set up painter
         painter = QPainter(trace_layer)
         if highlight: # create dashed white line if trace is to be highlighted
@@ -266,13 +272,8 @@ class TraceLayer():
             # # end internal use
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
-        # iterate through points and convert to screen coord points
-        qpoints = []
-        for point in trace.points:
-            x, y = tuple(point)
-            x, y = point_tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-            qpoints.append(QPoint(x, y))
+        # convert to screen coord points
+        qpoints = self.traceToPix(trace, qpoints=True)
         # draw trace
         if trace.closed:
             painter.drawPolygon(qpoints)

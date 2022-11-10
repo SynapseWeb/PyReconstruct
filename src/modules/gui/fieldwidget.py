@@ -58,11 +58,11 @@ class FieldWidget(QWidget, FieldView):
 
         # establish misc defaults
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
+        self.status_list = ["Section: " + str(self.series.current_section)]
         self.is_line_tracing = False
         self.blend_sections = False
         self.lclick = False
         self.rclick = False
-        self.dlclick = False
 
         self.generateView()
     
@@ -231,7 +231,14 @@ class FieldWidget(QWidget, FieldView):
         # check what was clicked
         self.lclick = event.buttons() == Qt.LeftButton
         self.rclick = event.buttons() == Qt.RightButton
-        self.dlclick = False
+
+        # pull up right-click menu if requirements met
+        context_menu = True
+        context_menu = (self.rclick and 
+                        not self.is_line_tracing and
+                        self.section_layer.selected_traces)
+        if context_menu:           
+            self.context_menu.exec(event.globalPos())
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
@@ -249,28 +256,6 @@ class FieldWidget(QWidget, FieldView):
             self.linePress(event, closed=False)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampPress(event)
-    
-    def contextMenuEvent(self, event):
-        """Called when mouse is right-clicked."""
-        # only call menu when not line tracing
-        if self.is_line_tracing:
-            return
-        
-        # only call menu if traces are selected
-        if not self.section_layer.selected_traces:
-            return
-        
-        self.context_menu.exec(event.globalPos())
-    
-    def mouseDoubleClickEvent(self, event):
-        """Called when mouse is double-clicked."""
-        # check what was clicked
-        self.dlclick = event.buttons() == Qt.LeftButton
-        self.lclick = False
-        self.rclick = False
-
-        if self.mouse_mode == FieldWidget.POINTER:
-            self.pointerPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -284,7 +269,6 @@ class FieldWidget(QWidget, FieldView):
         if not event.buttons():
             self.lclick = False
             self.rclick = False
-            self.dlclick = False
         
         # update the status bar
         if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
@@ -603,7 +587,7 @@ class FieldWidget(QWidget, FieldView):
         """
         x, y = event.x(), event.y()
         if self.lclick:  # begin/add to trace if left mouse button
-            if self.is_line_tracing:  # start new trace
+            if self.is_line_tracing:  # continue trace
                 self.current_trace.append((x, y))
                 self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
                 painter = QPainter(self.field_pixmap)
@@ -617,17 +601,21 @@ class FieldWidget(QWidget, FieldView):
                     painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
                 painter.end()
                 self.update()
-            else:  # add to existing
+            else:  # start new trace
                 self.current_trace = [(x, y)]
                 self.is_line_tracing = True
         elif self.rclick:  # complete existing trace if right mouse button
             if self.is_line_tracing:
-                self.newTrace(
-                    self.current_trace,
-                    self.tracing_trace,
-                    closed=closed
-                )
                 self.is_line_tracing = False
+                if len(self.current_trace) > 1:
+                    self.newTrace(
+                        self.current_trace,
+                        self.tracing_trace,
+                        closed=closed
+                    )
+                else:
+                    self.field_pixmap = self.field_pixmap_copy.copy()
+                    self.update()
     
     def lineMove(self, event, closed=True):
         """Called when mouse is moved in a line mode.
@@ -658,6 +646,25 @@ class FieldWidget(QWidget, FieldView):
             if closed:
                 painter.drawLine(*self.current_trace[0], x, y)
             self.update()
+    
+    def backspace(self):
+        """Called when backspace is pressed: either delete traces or undo line trace."""
+        if self.is_line_tracing and len(self.current_trace) > 1:
+            self.current_trace.pop()
+            self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
+            painter = QPainter(self.field_pixmap)
+            color = QColor(*self.tracing_trace.color)
+            painter.setPen(QPen(color, 1))
+            if self.mouse_mode == FieldWidget.CLOSEDLINE:
+                start = 0
+            if self.mouse_mode == FieldWidget.OPENLINE:
+                start = 1
+            for i in range(start, len(self.current_trace)):
+                painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+            painter.end()
+            self.update()
+        else:
+            self.deleteSelectedTraces()
     
     def stampPress(self, event):
         """Called when mouse is pressed in stamp mode.

@@ -116,8 +116,28 @@ class MainWindow(QMainWindow):
         populateMenuBar(self, self.menubar, menu)
 
     def createShortcuts(self):
-        # create shortcuts
-        shortcuts = [
+        """Create shortcuts that are NOT included in any menus"""
+        shortcuts = []
+
+        # field actions
+        """Called when any key is pressed and user focus is on main window."""
+        if not self.field:  # do not respond to keyboard if field is not created
+            return
+        
+        shortcuts += [
+            ("PgUp", self.incrementSection),
+            ("PgDown", lambda : self.incrementSection(down=True)),
+            ("Del", self.field.deleteSelectedTraces),
+            ("Backspace", self.field.backspace),
+            ("-", lambda : self.field.changeBrightness(-5)),
+            ("=", lambda : self.field.changeBrightness(5)),
+            ("[", lambda : self.field.changeContrast(-0.2)),
+            ("]", lambda : self.field.changeContrast(0.2)),
+            (" ", self.field.toggleBlend)
+        ]
+
+        # general control shortcuts
+        shortcuts += [
             ("Ctrl+S", self.saveAllData),
             ("Ctrl+M", self.field.mergeSelectedTraces),
             ("Ctrl+D", self.field.deselectAllTraces),
@@ -126,8 +146,10 @@ class MainWindow(QMainWindow):
             ("Ctrl+Z", self.field.undoState),
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
-            ("Ctrl+G", self.gotoSection),
-            # translate motions
+            ("Ctrl+G", self.gotoSection)
+        ]
+        # domain translate motions
+        shortcuts += [
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),
             ("Ctrl+Shift+Left", lambda : self.translateTform("left", "big")),
@@ -147,7 +169,7 @@ class MainWindow(QMainWindow):
     
     def createPaletteShortcuts(self):
         # trace palette shortcuts (1-20)
-        shortcuts = []
+        trace_shortcuts = []
         for i in range(1, 21):
             sc_str = ""
             if (i-1) // 10 > 0:
@@ -157,9 +179,21 @@ class MainWindow(QMainWindow):
                 sc_str,
                 lambda pos=i-1 : self.mouse_palette.activatePaletteButton(pos)
             )
-            shortcuts.append(shortcut)
+            trace_shortcuts.append(shortcut)
         
-        for kbd, act in shortcuts:
+        # mouse mode shortcuts (F1-F8)
+        mode_shortcuts = [
+            ("F1", lambda : self.mouse_palette.activateModeButton("Pointer")),
+            ("F2", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
+            ("F3", lambda : self.mouse_palette.activateModeButton("Scalpel")),
+            ("F4", lambda : self.mouse_palette.activateModeButton("Closed Pencil")),
+            ("F5", lambda : self.mouse_palette.activateModeButton("Open Pencil")),
+            ("F6", lambda : self.mouse_palette.activateModeButton("Closed Poly")),
+            ("F7", lambda : self.mouse_palette.activateModeButton("Open Poly")),
+            ("F8", lambda : self.mouse_palette.activateModeButton("Stamp")),
+        ]
+  
+        for kbd, act in (mode_shortcuts + trace_shortcuts):
             QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def changeSrcDir(self, notify=False):
@@ -336,47 +370,27 @@ class MainWindow(QMainWindow):
         self.field.updateStatusBar()
         print("Time taken to change section:", time() - start_time, "sec")
     
-    def keyPressEvent(self, event):
-        """Called when any key is pressed and user focus is on main window."""
-        if not self.field:  # do not respond to keyboard if field is not created
-            return
-        if event.key() == 16777238:  # PgUp
-            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+    def incrementSection(self, down=False):
+        """Increment the section number by one.
+        
+            Params:
+                up (bool): the direction to move
+        """
+        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
+        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        if down:
             if section_number_i < len(section_numbers) - 1:
                 self.changeSection(section_numbers[section_number_i + 1])
-        elif event.key() == 16777239:  # PgDn
-            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        else:
             if section_number_i > 0:
-                self.changeSection(section_numbers[section_number_i - 1])
-        elif event.key() == 16777223  or event.key() == 16777219:  # Del or Bksp pressed
-            self.field.deleteSelectedTraces()
-        elif event.key() == 45:  # -
-            self.field.changeBrightness(-5)
-        elif event.key() == 61:  # +
-            self.field.changeBrightness(5)
-        elif event.key() == 91: # [
-            self.field.changeContrast(-0.2)
-        elif event.key() == 93: # ]
-            self.field.changeContrast(0.2)
-        elif event.key() == 32: # Space
-            self.field.toggleBlend()
-        # print(event.key())  # developer purposes
+                self.changeSection(section_numbers[section_number_i - 1])            
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""
-        if not self.field:  # do not respond to mouse wheel if field is not created
-            return
-        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
-        section_numbers.sort()  # sort section numbers
-        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.angleDelta().y() > 0:  # if scroll up
-            if section_number_i < len(section_numbers) - 1:
-                self.changeSection(section_numbers[section_number_i + 1])
+            self.incrementSection()
         elif event.angleDelta().y() < 0:  # if scroll down
-            if section_number_i > 0:
-                self.changeSection(section_numbers[section_number_i - 1])
+            self.incrementSection(down=True)
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""

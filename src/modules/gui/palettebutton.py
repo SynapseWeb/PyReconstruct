@@ -6,6 +6,8 @@ from modules.pyrecon.trace import Trace
 
 from modules.backend.gui_functions import populateMenu
 
+from modules.gui.dialog import PaletteTraceDialog
+
 class PaletteButton(QPushButton):
 
     def __init__(self, parent : QWidget, manager):
@@ -25,8 +27,8 @@ class PaletteButton(QPushButton):
         # draw the trace on the button
         w = self.size().width()
         h = self.size().height()
-        max_value = self.getTraceMaxValue()
-        self.scale_factor = (min(w, h) - 1) / (max_value * 2)
+        self.radius = self.getTraceMaxValue()
+        self.scale_factor = (min(w, h) - 1) / (self.radius * 2)
         self.origin = (w/2, h/2)
         painter = QPainter(self.pixmap)
         painter.setPen(QPen(QColor(*self.trace.color), 2))
@@ -67,6 +69,30 @@ class PaletteButton(QPushButton):
         populateMenu(self, menu, menu_list)
         menu.exec_(event.globalPos())
     
+    def openDialog(self):
+        """Change the attributes of a trace on the palette."""
+        new_attr, confirmed = PaletteTraceDialog(
+            self,
+            self.trace.name,
+            self.trace.color,
+            self.trace.tags,
+            self.radius
+        ).exec()
+        if not confirmed:
+            return
+        
+        name, color, tags, radius = new_attr
+        if name:
+            self.trace.name = name
+        if color:
+            self.trace.color = color
+        if tags:
+            self.trace.tags = tags
+        if radius:
+            self.radius = radius
+        self.setTrace(self.trace)
+        self.manager.paletteButtonChanged(self)
+    
     def editName(self):
         """Change the name of the trace on the palette."""
         text, ok = QInputDialog.getText(self, "Edit Trace Name", "Enter new trace name:", text=self.trace.name)
@@ -85,18 +111,25 @@ class PaletteButton(QPushButton):
     
     def editSize(self):
         """Change the radius of the trace on the palette."""
-        prev_radius = self.getTraceMaxValue()
-        new_radius, ok = QInputDialog.getDouble(self, "Edit Stamp Size", "Enter stamp radius:", value=prev_radius, minValue=0, decimals=4)
+        new_radius, ok = QInputDialog.getDouble(
+            self,
+            "Edit Stamp Size",
+            "Enter stamp radius:",
+            value=self.radius,
+            minValue=0,
+            decimals=4
+        )
         if ok:
             if new_radius == 0:
                 return
-            scale_factor = new_radius / prev_radius
+            scale_factor = new_radius / self.radius
             for i in range(len(self.trace.points)):
                 point = self.trace.points[i]
                 x = point[0] * scale_factor
                 y = point[1] * scale_factor
                 self.trace.points[i] = (x, y)
             self.setTrace(self.trace)
+            self.radius = new_radius
         self.manager.paletteButtonChanged(self)
     
     def editTags(self):

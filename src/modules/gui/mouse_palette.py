@@ -196,6 +196,15 @@ class MousePalette():
             else:
                 button.setChecked(False)
     
+    def modifyPaletteButton(self, bpos : int):
+        """Opens dialog to modify palette button.
+        
+            Params:
+                bpos (int): the position of the palette button
+        """
+        b = self.palette_buttons[bpos]
+        b.openDialog()
+    
     def paletteButtonChanged(self, button : PaletteButton):
         """Executed when user changes palette trace: ensure that tracing pencil is updated.
         

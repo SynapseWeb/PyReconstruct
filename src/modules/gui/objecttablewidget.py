@@ -8,7 +8,7 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.dialog import AttributeDialog, ObjectGroupDialog, ObjectTableColumnsDialog
+from modules.gui.dialog import ObjectGroupDialog, ObjectTableColumnsDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -386,29 +386,6 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.modifyObjects(obj_names, color=color)
-
-    
-    def modifyObjects(self):
-        """Modify an object in the entire series."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-
-        # ask the user for the new object name and color
-        if len(obj_names) == 1:
-            displayed_name = obj_names[0]
-        else:
-            displayed_name = ""
-        name, color, confirmed = AttributeDialog(
-            self.parent_widget,
-            displayed_name,
-            color=None
-        ).exec()
-
-        if not confirmed:
-            return
-        
-        self.manager.modifyObjects(obj_names, name, color)
     
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""

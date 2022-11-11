@@ -59,23 +59,13 @@ class PaletteButton(QPushButton):
             Params:
                 event: contains user input data (location of right click)
         """
-        menu = QMenu(self)
-        menu_list = [
-            ("name_act", "Edit name...", "", self.editName),
-            ("color_act", "Edit color...", "", self.editColor),
-            ("size_act", "Edit stamp size...", "", self.editSize),
-            ("tags_act", "Edit tags...", "", self.editTags)
-        ]
-        populateMenu(self, menu, menu_list)
-        menu.exec_(event.globalPos())
+        self.openDialog()
     
     def openDialog(self):
         """Change the attributes of a trace on the palette."""
         new_attr, confirmed = PaletteTraceDialog(
             self,
-            self.trace.name,
-            self.trace.color,
-            self.trace.tags,
+            self.trace,
             self.radius
         ).exec()
         if not confirmed:
@@ -92,62 +82,6 @@ class PaletteButton(QPushButton):
             self.radius = radius
         self.setTrace(self.trace)
         self.manager.paletteButtonChanged(self)
-    
-    def editName(self):
-        """Change the name of the trace on the palette."""
-        text, ok = QInputDialog.getText(self, "Edit Trace Name", "Enter new trace name:", text=self.trace.name)
-        if ok:
-            self.trace.name = text
-            self.setTrace(self.trace)
-        self.manager.paletteButtonChanged(self)
-        
-    def editColor(self):
-        """Change the color of the trace on the palette."""
-        color = QColorDialog.getColor(QColor(*self.trace.color))
-        if color.isValid():
-            self.trace.color = (color.red(), color.green(), color.blue())
-            self.setTrace(self.trace)
-        self.manager.paletteButtonChanged(self)
-    
-    def editSize(self):
-        """Change the radius of the trace on the palette."""
-        new_radius, ok = QInputDialog.getDouble(
-            self,
-            "Edit Stamp Size",
-            "Enter stamp radius:",
-            value=self.radius,
-            minValue=0,
-            decimals=4
-        )
-        if ok:
-            if new_radius == 0:
-                return
-            scale_factor = new_radius / self.radius
-            for i in range(len(self.trace.points)):
-                point = self.trace.points[i]
-                x = point[0] * scale_factor
-                y = point[1] * scale_factor
-                self.trace.points[i] = (x, y)
-            self.setTrace(self.trace)
-            self.radius = new_radius
-        self.manager.paletteButtonChanged(self)
-    
-    def editTags(self):
-        """Change the tags of the trace on the palette."""
-        existing_tags = ", ".join(self.trace.tags)
-        new_tags, confirmed = QInputDialog.getText(
-            self,
-            "Edit Tags",
-            "Enter trace tags:",
-            text=existing_tags
-        )
-        if not confirmed:
-            return
-        new_tags = new_tags.split(", ")
-        if new_tags == [""]:
-            self.trace.tags = set()
-        else:
-            self.trace.tags = set(new_tags)
     
     def _resizePoint(self, point):
         x = point[0]

@@ -14,6 +14,8 @@ from modules.calc.pfconversions import pixmapPointToField
 from modules.backend.field_view import FieldView
 from modules.backend.gui_functions import populateMenu
 
+from modules.gui.dialog import FieldTraceDialog
+
 class FieldWidget(QWidget, FieldView):
     # mouse modes
     POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP = range(6)
@@ -75,14 +77,12 @@ class FieldWidget(QWidget, FieldView):
         self.generateView()
     
     def createMenus(self):
-        """Create the menus for the field widget."""
-        menu_list = [
-            ("editname_act", "Edit trace name...", "", self.changeTraceName),
-            ("editcolor_act", "Edit trace color...", "", self.changeTraceColor),
-            ("edittags_act", "Edit trace tags...", "", self.changeTraceTags)
+        """Create the menus for the fieldwidget."""
+        trace_menu_list = [
+            ("edittrace_act", "Edit...", "", self.traceDialog)
         ]
-        self.context_menu = QMenu(self)
-        populateMenu(self, self.context_menu, menu_list)
+        self.trace_menu = QMenu(self)
+        populateMenu(self, self.trace_menu, trace_menu_list)
     
     def toggleBlend(self):
         self.blend_sections = not self.blend_sections
@@ -165,75 +165,29 @@ class FieldWidget(QWidget, FieldView):
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
     
-    def changeTraceName(self):
-        """Change the name of the selected traces."""
-        first_name = self.section_layer.selected_traces[0].name
-        for trace in self.section_layer.selected_traces[1:]:
-            if trace.name != first_name:
-                first_name = ""
-                break
-
-        name, confirmed = QInputDialog.getText(
+    def traceDialog(self):
+        """Opens dialog to edit selected traces."""
+        new_attr, confirmed = FieldTraceDialog(
             self,
-            "Change Trace Name",
-            "Enter the new trace name:",
-            text=first_name
+            self.section_layer.selected_traces,
+        ).exec()
+        if not confirmed:
+            return
+        
+        name, color, tags = new_attr
+        self.section_layer.changeTraceAttributes(
+            name=name,
+            color=color,
+            tags=tags
         )
-        if not confirmed or not name:
-            return
-        
-        self.section_layer.changeTraceAttributes(name=name)
-        self.saveState()
-    
-    def changeTraceColor(self):
-        """Change the color of the selected traces."""
-        first_color = self.section_layer.selected_traces[0].color
-        same_color = True
-        for trace in self.section_layer.selected_traces[1:]:
-            if trace.color != first_color:
-                same_color = False
-                break
-        
-        if same_color:
-            c = QColorDialog.getColor(QColor(*first_color))
-        else:
-            c = QColorDialog.getColor()
-        if not c:
-            return
-        color = (c.red(), c.green(), c.blue())
-        self.section_layer.changeTraceAttributes(color=color)
-        self.generateView()
-        self.saveState()
 
-    def changeTraceTags(self):
-        """Change the tags of the selected traces."""
-        # get the existing tags
-        existing_tags = self.section_layer.selected_traces[0].tags
-        for trace in self.section_layer.selected_traces:
-            if trace.tags != existing_tags:
-                existing_tags = set()
-        existing_tags = ", ".join(existing_tags)
-
-        tags, confirmed = QInputDialog.getText(
-            self,
-            "Change Trace Tags",
-            "Enter the new tags:",
-            text=existing_tags
-        )
-        if not confirmed or not tags:
-            return
-        
-        tags = set(tags.split(", "))
-        
-        self.section_layer.changeTraceAttributes(tags=tags)
+        self.generateView(generate_image=False)
         self.saveState()
     
-    def rightClickMenu(self, event):
-        """Called when context mennu should be pulled up."""
-        clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-        if clicked_trace in self.section_layer.selected_traces:
-            self.context_menu.exec(event.globalPos())
-    
+    def openTraceMenu(self, event):
+        """Called when traces are right-clicked."""
+        self.trace_menu.exec(event.globalPos())
+
     def event(self, event):
         """Overwritten from QWidget.event.
         
@@ -283,12 +237,13 @@ class FieldWidget(QWidget, FieldView):
             return
 
         # pull up right-click menu if requirements met
-        context_menu = True
-        context_menu = (self.rclick and 
-                        not self.is_line_tracing and
-                        self.section_layer.selected_traces)
+        context_menu = self.rclick
+        context_menu &= not self.is_line_tracing
         if context_menu:
-            self.rightClickMenu(event)   
+            clicked_trace = self.section_layer.getTrace(event.x(), event.y())
+            if clicked_trace in self.section_layer.selected_traces:
+                self.openTraceMenu(event)
+            return
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)

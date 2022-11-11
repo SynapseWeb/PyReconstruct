@@ -150,7 +150,7 @@ class MousePalette():
     def placeLabel(self):
         """Place the trace palette label."""
         self.label.resize(self.label.sizeHint())
-        x = self.mainwindow.field.width() / 2 - self.label.width() / 2
+        x = self.mainwindow.field.x() + self.mainwindow.field.width() / 2 - self.label.width() / 2
         y = self.mainwindow.height() - (2 * self.pblen) - self.label.height() - 40
         self.label.move(x, y)
 

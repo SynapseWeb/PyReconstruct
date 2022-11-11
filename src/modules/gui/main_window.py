@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt
 from modules.backend.object_table_manager import ObjectTableManager
 
 from modules.gui.mouse_palette import MousePalette
-from modules.gui.fieldwidget import FieldWidget
+from modules.gui.field_widget import FieldWidget
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms

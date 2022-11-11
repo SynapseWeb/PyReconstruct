@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QInputDialog, QCheckBox
 
-from modules.gui.colorbutton import ColorButton
+from modules.gui.color_button import ColorButton
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 from modules.pyrecon.trace import Trace

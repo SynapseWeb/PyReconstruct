@@ -4,8 +4,8 @@ from PySide6.QtWidgets import QWidget, QPushButton
 from PySide6.QtGui import QIcon, QPixmap, QFont
 from PySide6.QtCore import QSize
 
-from modules.gui.palettebutton import PaletteButton
-from modules.gui.fieldwidget import FieldWidget
+from modules.gui.palette_button import PaletteButton
+from modules.gui.field_widget import FieldWidget
 from modules.gui.outlined_label import OutlinedLabel
 
 from modules.pyrecon.trace import Trace

@@ -2,8 +2,8 @@ from PySide6.QtWidgets import QProgressDialog
 
 from PySide6.QtCore import Qt
 
-from modules.gui.objecttablewidget import ObjectTableWidget
-from modules.gui.object3Dviewer import Object3DViewer
+from modules.gui.object_table_widget import ObjectTableWidget
+from modules.gui.object_3D_viewer import Object3DViewer
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section

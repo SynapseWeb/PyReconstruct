@@ -13,8 +13,6 @@ from modules.calc.pfconversions import pixmapPointToField
 from modules.backend.field_view import FieldView
 from modules.backend.gui_functions import populateMenu
 
-from modules.gui.dialog import AttributeDialog
-
 class FieldWidget(QWidget, FieldView):
     # mouse modes
     POINTER, PANZOOM, SCALPEL, CLOSEDPENCIL, OPENPENCIL, CLOSEDLINE, OPENLINE, STAMP = range(8)

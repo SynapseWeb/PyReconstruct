@@ -4,9 +4,9 @@ from modules.gui.colorbutton import ColorButton
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
-class AttributeDialog(QDialog):
+class PaletteTraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, name="", color=None):
+    def __init__(self, parent : QWidget, name=None, color=None, tags=None, stamp_size=None):
         """Create an attribute dialog.
         
             Params:
@@ -34,6 +34,22 @@ class AttributeDialog(QDialog):
         self.color_row.addWidget(self.color_input)
         self.color_row.addStretch()
 
+        self.tags_row = QHBoxLayout()
+        self.tags_text = QLabel(self)
+        self.tags_text.setText("Tags:")
+        self.tags_input = QLineEdit(self)
+        self.tags_input.setText(", ".join(tags))
+        self.tags_row.addWidget(self.tags_text)
+        self.tags_row.addWidget(self.tags_input)
+
+        self.stamp_size_row = QHBoxLayout()
+        self.stamp_size_text = QLabel(self)
+        self.stamp_size_text.setText("Stamp size:")
+        self.stamp_size_input = QLineEdit(self)
+        self.stamp_size_input.setText(str(stamp_size))
+        self.stamp_size_row.addWidget(self.stamp_size_text)
+        self.stamp_size_row.addWidget(self.stamp_size_input)
+
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonbox = QDialogButtonBox(QBtn)
         self.buttonbox.accepted.connect(self.accept)
@@ -43,6 +59,8 @@ class AttributeDialog(QDialog):
         self.vlayout.setSpacing(10)
         self.vlayout.addLayout(self.name_row)
         self.vlayout.addLayout(self.color_row)
+        self.vlayout.addLayout(self.tags_row)
+        self.vlayout.addLayout(self.stamp_size_row)
         self.vlayout.addWidget(self.buttonbox)
 
         self.setLayout(self.vlayout)
@@ -50,9 +68,29 @@ class AttributeDialog(QDialog):
     def exec(self):
         confirmed = super().exec()
         if confirmed:
-            return self.name_input.text(), self.color_input.getColor(), True
+            name = self.name_input.text()
+            color = self.color_input.getColor()
+            tags = self.tags_input.text().split(", ")
+            if tags == [""]:
+                tags = set()
+            else:
+                tags = set(tags)
+            stamp_size = self.stamp_size_input.text()
+            try:
+                stamp_size = float(stamp_size)
+            except ValueError:
+                stamp_size = None
+            return (
+                (
+                    name,
+                    color,
+                    tags,
+                    stamp_size
+                ),
+                True
+            )
         else:
-            return "", (), False
+            return None, False
 
 
 class ObjectGroupDialog(QDialog):

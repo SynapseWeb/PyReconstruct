@@ -175,11 +175,16 @@ class MainWindow(QMainWindow):
             if (i-1) // 10 > 0:
                 sc_str += "Shift+"
             sc_str += str(i % 10)
-            shortcut = (
+            s_switch = (
                 sc_str,
                 lambda pos=i-1 : self.mouse_palette.activatePaletteButton(pos)
             )
-            trace_shortcuts.append(shortcut)
+            s_modify = (
+                "Ctrl+" + sc_str,
+                lambda pos=i-1 : self.mouse_palette.modifyPaletteButton(pos)
+            )
+            trace_shortcuts.append(s_switch)
+            trace_shortcuts.append(s_modify)
         
         # mouse mode shortcuts (F1-F8)
         mode_shortcuts = [

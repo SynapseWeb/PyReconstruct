@@ -69,7 +69,6 @@ class FieldWidget(QWidget, FieldView):
         self.blend_sections = False
         self.lclick = False
         self.rclick = False
-        self.mclick = False
 
         self.generateView()
     
@@ -138,8 +137,8 @@ class FieldWidget(QWidget, FieldView):
         if event is not None:
             section = "Section: " + str(self.series.current_section)
 
-            self.mouse_x, self.mouse_y = event.x(), event.y()
-            x, y = pixmapPointToField(self.mouse_x, self.mouse_y, self.pixmap_dim, self.series.window, self.section.mag)
+            x, y = event.pos().x(), event.pos().y()
+            x, y = pixmapPointToField(x, y, self.pixmap_dim, self.series.window, self.section.mag)
             position = "x = " + str("{:.4f}".format(x)) + ", "
             position += "y = " + str("{:.4f}".format(y))
 
@@ -232,32 +231,6 @@ class FieldWidget(QWidget, FieldView):
         clicked_trace = self.section_layer.getTrace(event.x(), event.y())
         if clicked_trace in self.section_layer.selected_traces:
             self.context_menu.exec(event.globalPos())
-    
-    def event(self, event):
-        """Overwritten from QWidget.event.
-        
-        Added to catch gestures.
-        """
-        if event.type() == QEvent.Gesture:
-            self.gestureEvent(event)
-        
-        return super().event(event)
-
-    def gestureEvent(self, event : QGestureEvent):
-        """Called when gestures are detected."""
-        g = event.gesture(Qt.PinchGesture)
-        g : QPinchGesture
-
-        if g.state() == Qt.GestureState.GestureStarted:
-            p = g.centerPoint()
-            x, y = p.x(), p.y()
-            self.clicked_x, self.clicked_y = x, y
-
-        elif g.state() == Qt.GestureState.GestureUpdated:
-            self.panzoomMove(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
-
-        elif g.state() == Qt.GestureState.GestureFinished:
-            self.panzoomRelease(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.
@@ -267,19 +240,15 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # if any finger touch
+        if self.is_gesturing: return
+        # if single finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
+            self.panzoomPress(event)
             return
 
         # check what was clicked
         self.lclick = event.buttons() == Qt.LeftButton
         self.rclick = event.buttons() == Qt.RightButton
-        self.mclick = event.buttons() == Qt.MiddleButton
-
-        # pan if middle button clicked
-        if self.mclick:
-            self.mousePanzoomPress(event)
-            return
 
         # pull up right-click menu if requirements met
         context_menu = True
@@ -292,7 +261,7 @@ class FieldWidget(QWidget, FieldView):
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
-            self.mousePanzoomPress(event) 
+            self.panzoomPress(event) 
         elif self.mouse_mode == FieldWidget.SCALPEL:
             self.scalpelPress(event)
         elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
@@ -314,20 +283,16 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # if any finger touch
+        if self.is_gesturing: return
+        # if single finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
+            self.panMove(event.x(), event.y())
             return
         
         # update click status
         if not event.buttons():
             self.lclick = False
             self.rclick = False
-            self.mclick = False
-        
-        # panzoom if middle button clicked
-        if self.mclick:
-            self.mousePanzoomMove(event)
-            return
         
         # update the status bar
         if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
@@ -339,7 +304,7 @@ class FieldWidget(QWidget, FieldView):
         if self.mouse_mode == FieldWidget.POINTER:
                 self.pointerMove(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
-            self.mousePanzoomMove(event)
+            self.panzoomMove(event)
         elif self.mouse_mode == FieldWidget.SCALPEL:
             self.scalpelMove(event)
         elif self.mouse_mode == FieldWidget.OPENPENCIL:
@@ -359,19 +324,16 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        # if any finger touch
+        if self.is_gesturing: return
+        # if single finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
-            return
-        
-        # panzoom if middle button
-        if self.mclick:
-            self.mousePanzoomRelease(event)
+            self.panRelease(event.x(), event.y())
             return
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerRelease(event)
         if self.mouse_mode == FieldWidget.PANZOOM:
-            self.mousePanzoomRelease(event)
+            self.panzoomRelease(event)
         elif self.mouse_mode == FieldWidget.CLOSEDPENCIL:
             self.pencilRelease(event, closed=True)
         elif self.mouse_mode == FieldWidget.OPENPENCIL:
@@ -494,18 +456,8 @@ class FieldWidget(QWidget, FieldView):
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:
             self.selectTrace(self.selected_trace)
-    
-    def panzoomPress(self, x, y):
-        """Initiates panning and zooming mode.
         
-            Params:
-                x: the x position of the start
-                y: the y position of the start
-        """
-        self.clicked_x = x
-        self.clicked_y = y
-        
-    def mousePanzoomPress(self, event):
+    def panzoomPress(self, event):
         """Called when mouse is clicked in panzoom mode.
         
         Saves the position of the mouse.
@@ -513,117 +465,108 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
-        self.panzoomPress(event.x(), event.y())
+        self.clicked_x = event.x()
+        self.clicked_y = event.y()
     
-    def panzoomMove(self, new_x=None, new_y=None, zoom_factor=1):
-        """Generates image output for panning and zooming.
-        
-            Params:
-                new_x: the x from panning
-                new_y: the y from panning
-                zoom_factor: the scale from zooming
-        """
-        field = self.field_pixmap_copy
-        # calculate pan
-        if new_x is not None and new_y is not None:
-            move_x = new_x - self.clicked_x
-            move_y = new_y - self.clicked_y
-        else:
-            move_x, move_y = 0, 0
+    def panMove(self, new_x, new_y):
+        move_x = new_x - self.clicked_x
+        move_y = new_y - self.clicked_y
+        # move field with mouse
+        new_field = QPixmap(*self.pixmap_dim)
+        new_field.fill(QColor(0, 0, 0))
+        painter = QPainter(new_field)
+        painter.drawPixmap(move_x, move_y, *self.pixmap_dim, self.field_pixmap_copy)
+        self.field_pixmap = new_field
+        painter.end()
+        self.update()
+    
+    def zoomMove(self, zoom_factor):
         # calculate new geometry of window based on zoom factor
-        if zoom_factor is not None:
-            xcoef = (self.clicked_x / self.pixmap_dim[0]) * 2
-            ycoef = (self.clicked_y / self.pixmap_dim[1]) * 2
-            w = self.pixmap_dim[0] * zoom_factor
-            h = self.pixmap_dim[1] * zoom_factor
-            x = (self.pixmap_dim[0] - w) / 2 * xcoef
-            y = (self.pixmap_dim[1] - h) / 2 * ycoef
-        else:
-            x, y = 0, 0
-            w, h = self.pixmap_dim
+        xcoef = (self.clicked_x / self.pixmap_dim[0]) * 2
+        ycoef = (self.clicked_y / self.pixmap_dim[1]) * 2
+        w = self.pixmap_dim[0] * zoom_factor
+        h = self.pixmap_dim[1] * zoom_factor
+        x = (self.pixmap_dim[0] - w) / 2 * xcoef
+        y = (self.pixmap_dim[1] - h) / 2 * ycoef
         # adjust field
         new_field = QPixmap(*self.pixmap_dim)
         new_field.fill(QColor(0, 0, 0))
         painter = QPainter(new_field)
-        painter.drawPixmap(move_x + x, move_y + y, w, h, field)
+        painter.drawPixmap(x, y, w, h,
+                            self.field_pixmap_copy)
         self.field_pixmap = new_field
+        painter.end()
         self.update()
 
-    def mousePanzoomMove(self, event):
+    def panzoomMove(self, event):
         """Called when mouse is moved in panzoom mode.
-    
+        
+        Generates image output for panning and zooming.
+
             Params:
                 event: contains mouse input data
         """
         # if left mouse button is pressed, do panning
-        if self.lclick or self.mclick:
-            self.panzoomMove(new_x=event.x(), new_y=event.y())
+        if self.lclick:
+            self.panMove(event.x(), event.y())
         # if right mouse button is pressed, do zooming
         elif self.rclick:
             # up and down mouse movement only
             move_y = event.y() - self.clicked_y
             zoom_factor = 1.005 ** (move_y) # 1.005 is arbitrary
-            self.panzoomMove(zoom_factor=zoom_factor)
+            self.zoomMove(zoom_factor)
         
-    def panzoomRelease(self, new_x=None, new_y=None, zoom_factor=None):
-        """Generates image output for panning and zooming.
-        
-            Params:
-                new_x: the x from panning
-                new_y: the y from panning
-                zoom_factor: the scale from zooming
-        """
+    def panRelease(self, new_x, new_y):
         section = self.section
-
-        # zoom the series window
-        if zoom_factor is not None:
-            x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
-            y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
-            # calculate pixel equivalents for window view
-            xcoef = (self.clicked_x / self.pixmap_dim[0]) * 2
-            ycoef = (self.clicked_y / self.pixmap_dim[1]) * 2
-            w = self.pixmap_dim[0] * zoom_factor
-            h = self.pixmap_dim[1] * zoom_factor
-            x = (self.pixmap_dim[0] - w) / 2 * xcoef
-            y = (self.pixmap_dim[1] - h) / 2 * ycoef
-            # convert pixel equivalents to field coordinates
-            window_x = - x  / x_scaling / zoom_factor * section.mag
-            window_y = - (self.pixmap_dim[1] - y - self.pixmap_dim[1] * zoom_factor)  / y_scaling / zoom_factor * section.mag
-            self.series.window[0] += window_x
-            self.series.window[1] += window_y
-            self.series.window[2] /= zoom_factor
-            # set limit on how far user can zoom in
-            if self.series.window[2] < section.mag:
-                self.series.window[2] = section.mag
-            self.series.window[3] /= zoom_factor
-            if self.series.window[3] < section.mag:
-                self.series.window[3] = section.mag
-            
-        # move the series window
-        if new_x is not None and new_y is not None:
-            x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
-            y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
-            move_x = -(new_x - self.clicked_x) / x_scaling * section.mag
-            move_y = (new_y - self.clicked_y) / y_scaling * section.mag
-            self.series.window[0] += move_x
-            self.series.window[1] += move_y
-        
+        x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
+        y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
+        move_x = -(new_x - self.clicked_x) / x_scaling * section.mag
+        move_y = (new_y - self.clicked_y) / y_scaling * section.mag
+        self.series.window[0] += move_x
+        self.series.window[1] += move_y
+        self.generateView()
+    
+    def zoomRelease(self, zoom_factor):
+        section = self.section
+        x_scaling = self.pixmap_dim[0] / (self.series.window[2] / section.mag)
+        y_scaling = self.pixmap_dim[1] / (self.series.window[3] / section.mag)
+        # calculate pixel equivalents for window view
+        xcoef = (self.clicked_x / self.pixmap_dim[0]) * 2
+        ycoef = (self.clicked_y / self.pixmap_dim[1]) * 2
+        w = self.pixmap_dim[0] * zoom_factor
+        h = self.pixmap_dim[1] * zoom_factor
+        x = (self.pixmap_dim[0] - w) / 2 * xcoef
+        y = (self.pixmap_dim[1] - h) / 2 * ycoef
+        # convert pixel equivalents to field coordinates
+        window_x = - x  / x_scaling / zoom_factor * section.mag 
+        window_y = - (self.pixmap_dim[1] - y - self.pixmap_dim[1] * zoom_factor)  / y_scaling / zoom_factor * section.mag
+        self.series.window[0] += window_x
+        self.series.window[1] += window_y
+        self.series.window[2] /= zoom_factor
+        # set limit on how far user can zoom in
+        if self.series.window[2] < section.mag:
+            self.series.window[2] = section.mag
+        self.series.window[3] /= zoom_factor
+        if self.series.window[3] < section.mag:
+            self.series.window[3] = section.mag
         self.generateView()
 
-    def mousePanzoomRelease(self, event):
+    def panzoomRelease(self, event):
         """Called when mouse is released in panzoom mode.
+
+        Adjusts new window view.
         
             Params:
                 event: contains mouse input data
         """
         # set new window for panning
-        if self.lclick or self.mclick:
-            self.panzoomRelease(new_x=event.x(), new_y=event.y())
+        if self.lclick:
+            self.panRelease(event.x(), event.y())
         # set new window for zooming
         elif self.rclick:
             move_y = event.y() - self.clicked_y
             zoom_factor = 1.005 ** (move_y)
-            self.panzoomRelease(zoom_factor=zoom_factor)
+            self.zoomRelease(zoom_factor)
     
     def pencilPress(self, event):
         """Called when mouse is pressed in pencil mode.
@@ -840,3 +783,28 @@ class FieldWidget(QWidget, FieldView):
             )
             self.is_line_tracing = False
             self.generateView(generate_image=False)
+    
+    def event(self, event):
+
+        if event.type() == QEvent.Gesture:
+            self.gestureEvent(event)
+            self.gesturing = True
+        
+        return super().event(event)
+
+    def gestureEvent(self, event : QGestureEvent):
+        g = event.gesture(Qt.PinchGesture)
+        g : QPinchGesture
+
+        if g.state() == Qt.GestureState.GestureStarted:
+            p = g.centerPoint()
+            x, y = p.x(), p.y()
+            self.panRelease(x, y)
+            self.clicked_x, self.clicked_y = x, y
+
+        elif g.state() == Qt.GestureState.GestureUpdated:
+            self.zoomMove(g.totalScaleFactor())
+
+        elif g.state() == Qt.GestureState.GestureFinished:
+            self.zoomRelease(g.totalScaleFactor())
+            self.is_gesturing = False

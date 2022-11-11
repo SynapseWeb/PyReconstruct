@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.mouse_palette = None  # placeholder for mouse palette
         self.obj_list_manager = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
+        self.is_zooming_in = False
         # number defaults
         self.smallnum = 0.01
         self.mednum = 0.1
@@ -392,10 +393,38 @@ class MainWindow(QMainWindow):
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""
-        if event.angleDelta().y() > 0:  # if scroll up
-            self.incrementSection()
-        elif event.angleDelta().y() < 0:  # if scroll down
-            self.incrementSection(down=True)
+        # do nothing if middle button is clicked
+        if self.field.mclick:
+            return
+        
+        modifiers = QApplication.keyboardModifiers()
+
+        if modifiers == Qt.ControlModifier:
+            if not self.is_zooming_in:
+                # check if user just started zooming in
+                self.field.panzoomPress(
+                    event.point(0).pos().x(),
+                    event.point(0).pos().y()
+                )
+                self.zoom_factor = 1
+                self.is_zooming_in = True
+
+            if event.angleDelta().y() > 0:  # if scroll up
+                self.zoom_factor *= 1.1
+            elif event.angleDelta().y() < 0:  # if scroll down
+                self.zoom_factor *= 0.9
+            self.field.panzoomMove(zoom_factor=self.zoom_factor)
+            
+        elif modifiers == Qt.NoModifier:
+            if event.angleDelta().y() > 0:  # if scroll up
+                self.incrementSection()
+            elif event.angleDelta().y() < 0:  # if scroll down
+                self.incrementSection(down=True)
+    
+    def keyReleaseEvent(self, event):
+        if self.is_zooming_in and event.key() == 16777249:
+            self.field.panzoomRelease(zoom_factor=self.zoom_factor)
+            self.is_zooming_in = False
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""

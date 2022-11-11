@@ -164,13 +164,14 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
 
-    def modifyObjects(self, obj_names : list, new_name : str, new_color : tuple):
+    def modifyObjects(self, obj_names : list, name : str = None, color : tuple = None):
         """Rename objects on every section.
         
             Params:
                 series (Series): the series object
                 obj_names (list): the names of the objects to rename
-                new_obj_name (str): the new name for the object
+                name (str): the new name for the objects
+                color (tuple): the new color for the objects
         """
         # modify the object on every section
         for snum in self.series.sections:
@@ -178,46 +179,36 @@ class ObjectTableManager():
             for obj_name in obj_names:
                 if obj_name in section.traces:
                     for trace in section.traces[obj_name]:
-                        if new_name:
-                            trace.name = new_name
-                        if new_color:
-                            trace.color = new_color
-                    if new_name:
+                        if name:
+                            trace.name = name
+                        if color:
+                            trace.color = color
+                    if name:
                         # check if the new name exists in the section
-                        if new_name in section.traces:
-                            section.traces[new_name] += section.traces[obj_name]
+                        if name in section.traces:
+                            section.traces[name] += section.traces[obj_name]
                         else:
-                            section.traces[new_name] = section.traces[obj_name]
+                            section.traces[name] = section.traces[obj_name]
                         del(section.traces[obj_name])
                     section.save()
         
         # update the dictionary data
-        if new_name:
+        if name:
             for obj_name in obj_names:
-                if new_name in self.objdict:
-                    self.objdict[new_name].combine(self.objdict[obj_name])
+                if name in self.objdict:
+                    self.objdict[name].combine(self.objdict[obj_name])
                 else:
-                    self.objdict[new_name] = self.objdict[obj_name].copy(new_name)
+                    self.objdict[name] = self.objdict[obj_name].copy(name)
                 self.objdict[obj_name].clearAllData()
 
         # update the table data
         for table in self.tables:
             for obj_name in obj_names:
                 table.updateObject(self.objdict[obj_name])
-            table.updateObject(self.objdict[new_name])
+            table.updateObject(self.objdict[name])
         
         # update the view
         self.mainwindow.field.reload()
-    
-    def generate3D(self, obj_names):
-        """Generate the 3D view for a list of objects.
-        
-            Params:
-                obj_names (list): a list of object names
-        """
-        if self.object_viewer:
-            self.object_viewer.close()
-        self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
     
     def tagTraces(self, obj_names : list, tag_name : str, remove=False):
         """Tag all the traces on a set of objects.
@@ -270,6 +261,16 @@ class ObjectTableManager():
         for table in self.tables:
             for name in obj_names:
                 table.updateObject(self.objdict[name])
+    
+    def generate3D(self, obj_names):
+        """Generate the 3D view for a list of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        if self.object_viewer:
+            self.object_viewer.close()
+        self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
     
     def close(self):
         """Close all tables."""

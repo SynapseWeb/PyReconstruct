@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 
 from modules.backend.object_table_manager import ObjectTableManager
 
-from modules.gui.mousedockwidget import MouseDockWidget
+from modules.gui.mouse_palette import MousePalette
 from modules.gui.fieldwidget import FieldWidget
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
 
         # misc defaults
         self.field = None  # placeholder for field
-        self.mouse_dock = None  # placeholder for mouse dock
+        self.mouse_palette = None  # placeholder for mouse palette
         self.obj_list_manager = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         # number defaults
@@ -116,8 +116,28 @@ class MainWindow(QMainWindow):
         populateMenuBar(self, self.menubar, menu)
 
     def createShortcuts(self):
-        # create shortcuts
-        shortcuts = [
+        """Create shortcuts that are NOT included in any menus"""
+        shortcuts = []
+
+        # field actions
+        """Called when any key is pressed and user focus is on main window."""
+        if not self.field:  # do not respond to keyboard if field is not created
+            return
+        
+        shortcuts += [
+            ("PgUp", self.incrementSection),
+            ("PgDown", lambda : self.incrementSection(down=True)),
+            ("Del", self.field.deleteSelectedTraces),
+            ("Backspace", self.field.backspace),
+            ("-", lambda : self.field.changeBrightness(-5)),
+            ("=", lambda : self.field.changeBrightness(5)),
+            ("[", lambda : self.field.changeContrast(-0.2)),
+            ("]", lambda : self.field.changeContrast(0.2)),
+            (" ", self.field.toggleBlend)
+        ]
+
+        # general control shortcuts
+        shortcuts += [
             ("Ctrl+S", self.saveAllData),
             ("Ctrl+M", self.field.mergeSelectedTraces),
             ("Ctrl+D", self.field.deselectAllTraces),
@@ -126,9 +146,10 @@ class MainWindow(QMainWindow):
             ("Ctrl+Z", self.field.undoState),
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
-            ("Ctrl+G", self.gotoSection),
-            ("Ctrl+A", self.field.changeTraceAttributes),
-            # translate motions
+            ("Ctrl+G", self.gotoSection)
+        ]
+        # domain translate motions
+        shortcuts += [
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),
             ("Ctrl+Shift+Left", lambda : self.translateTform("left", "big")),
@@ -142,14 +163,43 @@ class MainWindow(QMainWindow):
             ("Shift+Down", lambda : self.translateTform("down", "med")),
             ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big")),
         ]
-        
+
         for kbd, act in shortcuts:
-            if type(act) is tuple:
-                sc = QShortcut(QKeySequence(kbd), self)
-                for func in act:
-                    sc.activated.connect(func)
-            else:
-                QShortcut(QKeySequence(kbd), self).activated.connect(act)
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
+    
+    def createPaletteShortcuts(self):
+        # trace palette shortcuts (1-20)
+        trace_shortcuts = []
+        for i in range(1, 21):
+            sc_str = ""
+            if (i-1) // 10 > 0:
+                sc_str += "Shift+"
+            sc_str += str(i % 10)
+            s_switch = (
+                sc_str,
+                lambda pos=i-1 : self.mouse_palette.activatePaletteButton(pos)
+            )
+            s_modify = (
+                "Ctrl+" + sc_str,
+                lambda pos=i-1 : self.mouse_palette.modifyPaletteButton(pos)
+            )
+            trace_shortcuts.append(s_switch)
+            trace_shortcuts.append(s_modify)
+        
+        # mouse mode shortcuts (F1-F8)
+        mode_shortcuts = [
+            ("F1", lambda : self.mouse_palette.activateModeButton("Pointer")),
+            ("F2", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
+            ("F3", lambda : self.mouse_palette.activateModeButton("Scalpel")),
+            ("F4", lambda : self.mouse_palette.activateModeButton("Closed Pencil")),
+            ("F5", lambda : self.mouse_palette.activateModeButton("Open Pencil")),
+            ("F6", lambda : self.mouse_palette.activateModeButton("Closed Poly")),
+            ("F7", lambda : self.mouse_palette.activateModeButton("Open Poly")),
+            ("F8", lambda : self.mouse_palette.activateModeButton("Stamp")),
+        ]
+  
+        for kbd, act in (mode_shortcuts + trace_shortcuts):
+            QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def changeSrcDir(self, notify=False):
         """Open a series of dialogs to change the image source directory."""
@@ -207,11 +257,12 @@ class MainWindow(QMainWindow):
             self.field = FieldWidget(self.series, self)
             self.setCentralWidget(self.field)
 
-        # create mouse dock
-        if self.mouse_dock is not None: # close previous mouse dock
-            self.mouse_dock.close()
-        self.mouse_dock = MouseDockWidget(self.series.palette_traces, self.series.current_trace, self)
+        # create mouse palette
+        if self.mouse_palette: # close previous mouse dock
+            self.mouse_palette.close()
+        self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+        self.createPaletteShortcuts()
 
         # close the object lists
         if self.obj_list_manager is not None:
@@ -324,53 +375,33 @@ class MainWindow(QMainWindow):
         self.field.updateStatusBar()
         print("Time taken to change section:", time() - start_time, "sec")
     
-    def keyPressEvent(self, event):
-        """Called when any key is pressed and user focus is on main window."""
-        if not self.field:  # do not respond to keyboard if field is not created
-            return
-        if event.key() == 16777238:  # PgUp
-            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+    def incrementSection(self, down=False):
+        """Increment the section number by one.
+        
+            Params:
+                up (bool): the direction to move
+        """
+        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
+        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        if down:
             if section_number_i < len(section_numbers) - 1:
                 self.changeSection(section_numbers[section_number_i + 1])
-        elif event.key() == 16777239:  # PgDn
-            section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-            section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        else:
             if section_number_i > 0:
-                self.changeSection(section_numbers[section_number_i - 1])
-        elif event.key() == 16777223  or event.key() == 16777219:  # Del or Bksp pressed
-            self.field.deleteSelectedTraces()
-        elif event.key() == 45:  # -
-            self.field.changeBrightness(-5)
-        elif event.key() == 61:  # +
-            self.field.changeBrightness(5)
-        elif event.key() == 91: # [
-            self.field.changeContrast(-0.2)
-        elif event.key() == 93: # ]
-            self.field.changeContrast(0.2)
-        elif event.key() == 32: # Space
-            self.field.toggleBlend()
-        # print(event.key())  # developer purposes
+                self.changeSection(section_numbers[section_number_i - 1])            
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""
-        if not self.field:  # do not respond to mouse wheel if field is not created
-            return
-        section_numbers = list(self.series.sections.keys())  # get list of all section numbers
-        section_numbers.sort()  # sort section numbers
-        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if event.angleDelta().y() > 0:  # if scroll up
-            if section_number_i < len(section_numbers) - 1:
-                self.changeSection(section_numbers[section_number_i + 1])
+            self.incrementSection()
         elif event.angleDelta().y() < 0:  # if scroll down
-            if section_number_i > 0:
-                self.changeSection(section_numbers[section_number_i - 1])
+            self.incrementSection(down=True)
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""
         # save the trace palette
         self.series.palette_traces = []
-        for button in self.mouse_dock.palette_buttons:  # get trace palette
+        for button in self.mouse_palette.palette_buttons:  # get trace palette
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace

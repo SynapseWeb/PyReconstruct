@@ -1,6 +1,6 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog, QColorDialog
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
@@ -8,7 +8,7 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.dialog import AttributeDialog, ObjectGroupDialog, ObjectTableColumnsDialog
+from modules.gui.dialog import ObjectGroupDialog, ObjectTableColumnsDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -109,7 +109,8 @@ class ObjectTableWidget(QDockWidget):
 
         # create the right-click menu
         context_menu_list = [
-            ("modify_act", "Edit name and color...", "", self.modifyObjects),
+            ("editobjname_act", "Edit name...", "", self.editObjName),
+            ("editobjcolor_act", "Edit color...", "", self.editObjColor),
             ("generate3D_act", "Generate 3D", "", self.generate3D),
             {
                 "attr_name" : "group_menu",
@@ -170,7 +171,6 @@ class ObjectTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
             
-    
     def passesFilters(self, item : ObjectTableItem):
         """Determine if an object will be displayed in the table based on existing filters.
         
@@ -350,27 +350,42 @@ class ObjectTableWidget(QDockWidget):
             return
         self.context_menu.exec(event.globalPos())   
     
-    def modifyObjects(self):
-        """Modify an object in the entire series."""
+    def editObjName(self):
+        """Edit the name of an object in the entire series."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
 
-        # ask the user for the new object name and color
+        # ask the user for the new object name
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
         else:
             displayed_name = ""
-        name, color, confirmed = AttributeDialog(
-            self.parent_widget,
-            displayed_name,
-            color=None
-        ).exec()
-
+        name, confirmed = QInputDialog.getText(
+            self,
+            "New Object Name",
+            "Enter the new name for the object:",
+            text=displayed_name
+        )
         if not confirmed:
             return
         
-        self.manager.modifyObjects(obj_names, name, color)
+        self.manager.modifyObjects(obj_names, name=name)
+    
+    def editObjColor(self):
+        """Edit the color of an object in the entire series."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+
+        # ask the user for the new color
+        c = QColorDialog.getColor()
+        color = (c.red(), c.green(), c.blue())
+
+        if not color:
+            return
+        
+        self.manager.modifyObjects(obj_names, color=color)
     
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""

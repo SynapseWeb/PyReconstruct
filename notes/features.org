@@ -19,7 +19,7 @@
    - [X] Add trial 3D render to object list
    - [ ] Standard regexp tick boxes to filter
      
-- [ ] Move traces in field
+- [X] Move traces in field
    - [ ] Double click left and hold to move
    - [ ] Press "g" for grab (consider "s" for scaling and "r" for rotation later)
         
@@ -31,14 +31,14 @@
       - [X] Consider always tagging new traces with =os.login()= as default
       - [ ] Option to change username (default to =os.login()=)
      
-- [ ] Field attribute menu
+- [X] Field attribute menu
    - [ ] Access by right clicking trace
    - [ ] Consider allowing user to change trace and object attributes from that window
      
-- [ ] Tool palette
-   - [ ] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
-   - [ ] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
-   - [ ] Ctrl-numbers to access trace button attributes from the field
+- [X] Tool palette
+   - [X] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
+   - [X] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
+   - [X] Ctrl-numbers to access trace button attributes from the field
 
 - [ ] Minor things
    - [ ] Fix import statements for dim 6 (Did we do this?)

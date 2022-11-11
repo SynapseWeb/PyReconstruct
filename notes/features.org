@@ -128,6 +128,8 @@
 - [ ] Be able to rotate the section in z inside Reconstruct
 - [ ] Compendium of regular expressions
 
+* Cute things
+- Let user change black background color or to an image of their choosing
 * Things to consider
 
 - (Vijay) Saving points as .obj file / function to export to .obj

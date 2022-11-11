@@ -189,14 +189,12 @@ class MainWindow(QMainWindow):
         
         # mouse mode shortcuts (F1-F8)
         mode_shortcuts = [
-            ("F1", lambda : self.mouse_palette.activateModeButton("Pointer")),
-            ("F2", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
-            ("F3", lambda : self.mouse_palette.activateModeButton("Scalpel")),
-            ("F4", lambda : self.mouse_palette.activateModeButton("Closed Pencil")),
-            ("F5", lambda : self.mouse_palette.activateModeButton("Open Pencil")),
-            ("F6", lambda : self.mouse_palette.activateModeButton("Closed Poly")),
-            ("F7", lambda : self.mouse_palette.activateModeButton("Open Poly")),
-            ("F8", lambda : self.mouse_palette.activateModeButton("Stamp")),
+            ("p", lambda : self.mouse_palette.activateModeButton("Pointer")),
+            ("z", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
+            ("k", lambda : self.mouse_palette.activateModeButton("Knife")),
+            ("c", lambda : self.mouse_palette.activateModeButton("Closed Trace")),
+            ("o", lambda : self.mouse_palette.activateModeButton("Open Trace")),
+            ("s", lambda : self.mouse_palette.activateModeButton("Stamp"))
         ]
   
         for kbd, act in (mode_shortcuts + trace_shortcuts):

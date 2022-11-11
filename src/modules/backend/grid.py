@@ -8,7 +8,7 @@ class Grid():
     def __init__(self, contours, cutline=None):
         """Create a grid object."""
         self.contours = [np.array(contour) for contour in contours]
-        self.cutline = cutline  # scalpel line
+        self.cutline = cutline  # knife line
         self._generateGrid()
     
     def _generateGrid(self):
@@ -30,7 +30,7 @@ class Grid():
                 y1 -= ymin
                 x2 -= xmin
                 y2 -= ymin
-                self._drawGridLine(x1, y1, x2, y2, scalpel=True)
+                self._drawGridLine(x1, y1, x2, y2, knife=True)
         # draw the trace(s) on the grid
         for contour in self.contours:
             for i in range(len(contour)):
@@ -46,7 +46,7 @@ class Grid():
     
     # DDA algorithm
     # Source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm
-    def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int, scalpel=False):
+    def _drawGridLine(self, x0 : int, y0 : int, x1 : int, y1 : int, knife=False):
         """Draw a line on self.grid.
         
             Params:
@@ -68,7 +68,7 @@ class Grid():
         x, y = x0, y0
         h, w = self.grid.shape
         if 0 <= x < w and 0 <= y < h:
-            if scalpel:
+            if knife:
                 self.grid[y, x] -= 1
             else:
                 self.grid[y, x] = abs(self.grid[y, x]) + 1
@@ -80,7 +80,7 @@ class Grid():
             ry = round(y)
             if (rx != last_x or ry != last_y):
                 if 0 <= rx < w and 0 <= ry < h:
-                    if scalpel:
+                    if knife:
                         self.grid[ry, rx] -= 1
                     else:
                         self.grid[ry, rx] = abs(self.grid[ry, rx]) + 1

@@ -25,20 +25,18 @@ class MousePalette():
         """
         self.mainwindow = mainwindow
         
-        self.mbwidth = 125
-        self.mbheight = 30
+        self.mbwidth = 40
+        self.mbheight = 40
 
         self.pblen = 40
 
         self.mode_buttons = {}
-        self.createModeButton("Pointer", 0, FieldWidget.POINTER)
-        self.createModeButton("Pan/Zoom", 1, FieldWidget.PANZOOM)
-        self.createModeButton("Scalpel", 2, FieldWidget.SCALPEL)
-        self.createModeButton("Closed Pencil", 3, FieldWidget.CLOSEDPENCIL)
-        self.createModeButton("Open Pencil", 4, FieldWidget.OPENPENCIL)
-        self.createModeButton("Closed Poly", 5, FieldWidget.CLOSEDLINE)
-        self.createModeButton("Open Poly", 6, FieldWidget.OPENLINE)
-        self.createModeButton("Stamp", 7, FieldWidget.STAMP)
+        self.createModeButton("Pointer", "p", 0, FieldWidget.POINTER)
+        self.createModeButton("Pan/Zoom", "z", 1, FieldWidget.PANZOOM)
+        self.createModeButton("Knife", "k", 2, FieldWidget.KNIFE)
+        self.createModeButton("Closed Trace", "c", 3, FieldWidget.CLOSEDTRACE)
+        self.createModeButton("Open Trace", "o", 4, FieldWidget.OPENTRACE)
+        self.createModeButton("Stamp", "s", 5, FieldWidget.STAMP)
 
         self.palette_traces = palette_traces
         self.palette_buttons = [None] * 20
@@ -69,7 +67,7 @@ class MousePalette():
         y = 40 + (10 + self.mbheight) * pos
         button.setGeometry(x, y, self.mbwidth, self.mbheight)
     
-    def createModeButton(self, name : str, pos : int, mouse_mode : int):
+    def createModeButton(self, name : str, sc : str, pos : int, mouse_mode : int):
         """Creates a new mouse mode button.
         
             Params:
@@ -94,7 +92,8 @@ class MousePalette():
         # format the button
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.mbheight, self.mbheight))
-        b.setText(name)
+        # b.setText(name)
+        b.setToolTip(f"{name} ({sc})")
 
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default

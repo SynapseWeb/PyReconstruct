@@ -217,6 +217,12 @@ class FieldWidget(QWidget, FieldView):
         
         self.section_layer.changeTraceAttributes(tags=tags)
         self.saveState()
+    
+    def rightClickMenu(self, event):
+        """Called when context mennu should be pulled up."""
+        clicked_trace = self.section_layer.getTrace(event.x(), event.y())
+        if clicked_trace in self.section_layer.selected_traces:
+            self.context_menu.exec(event.globalPos())
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.
@@ -235,8 +241,8 @@ class FieldWidget(QWidget, FieldView):
         context_menu = (self.rclick and 
                         not self.is_line_tracing and
                         self.section_layer.selected_traces)
-        if context_menu:           
-            self.context_menu.exec(event.globalPos())
+        if context_menu:
+            self.rightClickMenu(event)   
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerPress(event)

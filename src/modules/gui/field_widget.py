@@ -73,6 +73,7 @@ class FieldWidget(QWidget, FieldView):
         self.lclick = False
         self.rclick = False
         self.mclick = False
+        self.erasing = False
 
         self.generateView()
     
@@ -225,6 +226,11 @@ class FieldWidget(QWidget, FieldView):
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
             return
+        
+        # if any eraser touch
+        elif event.pointerType() == QPointingDevice.PointerType.Eraser:
+            self.erasing = True
+            return
 
         # check what was clicked
         self.lclick = event.buttons() == Qt.LeftButton
@@ -272,11 +278,16 @@ class FieldWidget(QWidget, FieldView):
         if event.pointerType() == QPointingDevice.PointerType.Finger:
             return
         
+        # if any eraser touch
+        elif event.pointerType() == QPointingDevice.PointerType.Eraser:
+            self.eraserMove(event)
+        
         # update click status
         if not event.buttons():
             self.lclick = False
             self.rclick = False
             self.mclick = False
+            self.erasing = False
         
         # panzoom if middle button clicked
         if self.mclick:
@@ -312,6 +323,11 @@ class FieldWidget(QWidget, FieldView):
         """
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
+            return
+        
+        # if any eraser touch
+        elif event.pointerType() == QPointingDevice.PointerType.Eraser:
+            self.erasing = False
             return
         
         # panzoom if middle button
@@ -450,6 +466,15 @@ class FieldWidget(QWidget, FieldView):
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:
             self.selectTrace(self.selected_trace)
+    
+    def eraserMove(self, event):
+        """Called when the user is erasing."""
+        if not self.erasing:
+            return
+        erased = self.section_layer.eraseArea(event.x(), event.y())
+        if erased:
+            self.generateView()
+            self.saveState()
     
     def panzoomPress(self, x, y):
         """Initiates panning and zooming mode.

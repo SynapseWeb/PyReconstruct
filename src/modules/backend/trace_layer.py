@@ -239,6 +239,20 @@ class TraceLayer():
             self.section.removeTrace(trace)
         self.selected_traces = []
     
+    def eraseArea(self, pix_x, pix_y):
+        """Erase an area of the field.
+        
+            Params:
+                pix_x: the x coord for erasing
+                pix_y: the y coord for erasing
+        """
+        trace = self.getTrace(pix_x, pix_y)
+        if trace in self.selected_traces:
+            self.section.removeTrace(trace)
+            self.selected_traces.remove(trace)
+            return True
+        return False
+    
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
         if self.all_traces_hidden:

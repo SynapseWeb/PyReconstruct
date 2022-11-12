@@ -238,6 +238,7 @@ class FieldWidget(QWidget, FieldView):
 
         # pull up right-click menu if requirements met
         context_menu = self.rclick
+        context_menu &= not (self.mouse_mode == FieldWidget.PANZOOM)
         context_menu &= not self.is_line_tracing
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
@@ -316,6 +317,7 @@ class FieldWidget(QWidget, FieldView):
         # panzoom if middle button
         if self.mclick:
             self.mousePanzoomRelease(event)
+            self.mclick = False
             return
 
         if self.mouse_mode == FieldWidget.POINTER:
@@ -329,6 +331,9 @@ class FieldWidget(QWidget, FieldView):
             self.traceRelease(event)
         elif self.mouse_mode == FieldWidget.KNIFE:
             self.knifeRelease(event)
+        
+        self.lclick = False
+        self.rclick = False
     
     def setMouseMode(self, mode : int):
         """Set the mode of the mouse.
@@ -464,6 +469,8 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
+        if self.mainwindow.is_zooming_in:
+            return
         self.panzoomPress(event.x(), event.y())
     
     def panzoomMove(self, new_x=None, new_y=None, zoom_factor=1):
@@ -506,6 +513,8 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
+        if self.mainwindow.is_zooming_in:
+            return
         # if left mouse button is pressed, do panning
         if self.lclick or self.mclick:
             self.panzoomMove(new_x=event.x(), new_y=event.y())
@@ -567,6 +576,8 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 event: contains mouse input data
         """
+        if self.mainwindow.is_zooming_in:
+            return
         # set new window for panning
         if self.lclick or self.mclick:
             self.panzoomRelease(new_x=event.x(), new_y=event.y())

@@ -1,7 +1,7 @@
 import os
 
 from PySide6.QtWidgets import QWidget, QPushButton
-from PySide6.QtGui import QIcon, QPixmap, QFont
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSize
 
 from modules.gui.palette_button import PaletteButton
@@ -24,12 +24,14 @@ class MousePalette():
                 button_size (int): the size of the buttons on the dock
         """
         self.mainwindow = mainwindow
+        self.left_handed = False
         
         self.mbwidth = 40
         self.mbheight = 40
 
         self.pblen = 40
 
+        # create mode buttons
         self.mode_buttons = {}
         self.createModeButton("Pointer", "p", 0, FieldWidget.POINTER)
         self.createModeButton("Pan/Zoom", "z", 1, FieldWidget.PANZOOM)
@@ -38,6 +40,7 @@ class MousePalette():
         self.createModeButton("Open Trace", "o", 4, FieldWidget.OPENTRACE)
         self.createModeButton("Stamp", "s", 5, FieldWidget.STAMP)
 
+        # create palette buttons
         self.palette_traces = palette_traces
         self.palette_buttons = [None] * 20
         for i in range(len(palette_traces)):  # create all the palette buttons
@@ -51,10 +54,25 @@ class MousePalette():
         self.selected_mode = "pointer"
         self.selected_trace = selected_trace
 
+        # create label
         self.label = OutlinedLabel(self.mainwindow)
-        self.label.setFont(QFont("Courier New", 16, QFont.Bold))
+        font = self.label.font()
+        font.setFamily("Courier New")
+        font.setBold(True)
+        font.setPointSize(16)
+        self.label.setFont(font)
         self.updateLabel()
         self.label.show()
+
+        # create increment buttons
+        self.ibw = 90
+        self.ibh = 35
+        self.createIncrementButtons()
+    
+    def toggleHandedness(self):
+        """Toggle the position of the buttons."""
+        self.left_handed = not self.left_handed
+        self.resize()
     
     def placeModeButton(self, button : QPushButton, pos : int):
         """Place the mode button in the main window.
@@ -63,7 +81,10 @@ class MousePalette():
                 button (QPushButton): the button to place
                 pos (int): the position of the button
         """
-        x = self.mainwindow.width() - self.mbwidth - 10
+        if self.left_handed:
+            x = 10
+        else:
+            x = self.mainwindow.width() - self.mbwidth - 10
         y = 40 + (10 + self.mbheight) * pos
         button.setGeometry(x, y, self.mbwidth, self.mbheight)
     
@@ -216,6 +237,44 @@ class MousePalette():
                 self.selected_trace = b.trace
         self.updateLabel()
     
+    def placeIncrementButtons(self):
+        """Place the increment buttons on the field"""
+        if self.left_handed:
+            x = 10
+        else:
+            x = self.mainwindow.width() - self.ibw - 10
+        y = self.mainwindow.height() - (self.ibh + 15) * 2 - 20
+        self.up_bttn.setGeometry(x, y, self.ibw, self.ibh)
+        y = self.mainwindow.height() - (self.ibh + 15) - 20
+        self.down_bttn.setGeometry(x, y, self.ibw, self.ibh)
+    
+    def createIncrementButtons(self):
+        """Create the section increment buttons.
+        
+            Params:
+                w: the width of the buttons
+                h: the height of the buttons"""        
+        self.up_bttn = QPushButton(self.mainwindow)
+        self.up_bttn.setText("↑")
+        font = self.up_bttn.font()
+        font.setBold(True)
+        font.setPointSize(24)
+        self.up_bttn.setFont(font)
+        self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
+
+        self.down_bttn = QPushButton(self.mainwindow)
+        self.down_bttn.setText("↓")
+        font = self.down_bttn.font()
+        font.setBold(True)
+        font.setPointSize(24)
+        self.down_bttn.setFont(font)
+        self.down_bttn.pressed.connect(lambda : self.mainwindow.incrementSection(down=True))
+
+        self.placeIncrementButtons()
+
+        self.up_bttn.show()
+        self.down_bttn.show()
+    
     def resize(self):
         """Move the buttons to fit the main window."""
         for mbname in self.mode_buttons:
@@ -224,6 +283,7 @@ class MousePalette():
         for i, pb in enumerate(self.palette_buttons):
             self.placePaletteButton(pb, i)
         self.placeLabel()
+        self.placeIncrementButtons()
     
     def close(self):
         """Close all buttons"""
@@ -233,4 +293,6 @@ class MousePalette():
         for pb in self.palette_buttons:
             pb.close()
         self.label.close()
+        self.up_bttn.close()
+        self.down_bttn.close()
         

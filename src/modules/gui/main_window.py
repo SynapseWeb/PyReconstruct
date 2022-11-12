@@ -147,8 +147,10 @@ class MainWindow(QMainWindow):
             ("Ctrl+Z", self.field.undoState),
             ("Ctrl+Y", self.field.redoState),
             ("Ctrl+T", self.changeTform),
-            ("Ctrl+G", self.gotoSection)
+            ("Ctrl+G", self.gotoSection),
+            ("Ctrl+L", self.mouse_palette.toggleHandedness)
         ]
+
         # domain translate motions
         shortcuts += [
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
@@ -372,7 +374,7 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
-        print("Time taken to change section:", time() - start_time, "sec")
+        print(f"Time taken to change to section {section_num}:", time() - start_time, "sec")
     
     def incrementSection(self, down=False):
         """Increment the section number by one.
@@ -383,11 +385,11 @@ class MainWindow(QMainWindow):
         section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
         if down:
-            if section_number_i < len(section_numbers) - 1:
-                self.changeSection(section_numbers[section_number_i + 1])
-        else:
             if section_number_i > 0:
-                self.changeSection(section_numbers[section_number_i - 1])            
+                self.changeSection(section_numbers[section_number_i - 1])  
+        else:   
+            if section_number_i < len(section_numbers) - 1:
+                self.changeSection(section_numbers[section_number_i + 1])       
     
     def wheelEvent(self, event):
         """Called when mouse scroll is used."""

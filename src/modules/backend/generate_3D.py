@@ -157,9 +157,9 @@ class ObjectVolume():
             self.fillInSlices(volume, z_slices)
         
         # guide lines (xyz : rgb)
-        volume[:,0,0] = [0, 0, 255, 255]
-        volume[0,:,0] = [0, 255, 0, 255]
-        volume[0,0,:] = [255, 0, 0, 255]
+        # volume[:,0,0] = [0, 0, 255, 255]
+        # volume[0,:,0] = [0, 255, 0, 255]
+        # volume[0,0,:] = [255, 0, 0, 255]
 
         # create the volume item
         vol_item = gl.GLVolumeItem(volume)

@@ -7,8 +7,6 @@ from PySide6.QtWidgets import (QMainWindow, QFileDialog,
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
-from modules.backend.object_table_manager import ObjectTableManager
-
 from modules.gui.mouse_palette import MousePalette
 from modules.gui.field_widget import FieldWidget
 from modules.gui.dialog import AlignmentDialog
@@ -41,7 +39,6 @@ class MainWindow(QMainWindow):
         # misc defaults
         self.field = None  # placeholder for field
         self.mouse_palette = None  # placeholder for mouse palette
-        self.obj_list_manager = None  # placeholder for object list
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming_in = False
         # number defaults
@@ -279,11 +276,6 @@ class MainWindow(QMainWindow):
         self.changeTracingTrace(self.series.current_trace) # set the current trace
         self.createPaletteShortcuts()
 
-        # close the object lists
-        if self.obj_list_manager is not None:
-            self.obj_list_manager.close()
-            self.obj_list_manager = None
-
         # refresh export choice on menu
         if refresh_menu:
             if self.series.filetype == "XML":
@@ -466,20 +458,11 @@ class MainWindow(QMainWindow):
                 self.series.current_trace = button.trace
         self.field.section.save()
         self.series.save()
-        if self.obj_list_manager is not None:  # update the table if present
-            self.obj_list_manager.updateSection(
-                self.field.section,
-                self.series.current_section
-            )
     
     def openObjectList(self):
         """Open the object list widget."""
         self.saveAllData()
-        # create the manager if not already
-        if self.obj_list_manager is None:
-            self.obj_list_manager = ObjectTableManager(self.series, self)
-        # create a new table
-        self.obj_list_manager.newTable()
+        self.field.openObjectList()
     
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.

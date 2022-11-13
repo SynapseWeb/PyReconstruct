@@ -7,6 +7,7 @@ from modules.gui.object_3D_viewer import Object3DViewer
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.trace import Trace
 
 from modules.backend.object_table_item import ObjectTableItem
 
@@ -72,9 +73,40 @@ class ObjectTableManager():
                 section (Section): the section object
                 section_num (int): the section number
         """
-        for contour_name in section.contours_to_update:
-            self.updateContour(contour_name, section, section_num)
-        section.contours_to_update = set()
+        # add and update and added traces
+        for trace in section.added_traces:
+            self.addTrace(trace, section, section_num)
+        # refresh any removed traces
+        updated_contours = set()
+        for trace in section.removed_traces:
+            if trace.name not in updated_contours:
+                self.updateContour(trace.name, section, section_num)
+                updated_contours.add(trace.name)
+    
+    def addTrace(self, trace : Trace, section : Section, section_num : int):
+        """Add a trace to the existing object data and update the table.
+        
+            Params:
+                trace (Trace): the trace to add
+                section (Section): the section containing the trace
+                section_num (int): the section number
+        """
+        if trace.name in self.objdict:
+            objdata = self.objdict[trace.name]
+        else:
+            objdata = ObjectTableItem(trace.name)
+            self.objdict[trace.name] = objdata
+        # add trace data
+        objdata.addTrace(
+            trace,
+            section.tforms[self.series.alignment],
+            section_num,
+            section.thickness
+        )
+        # update on the tables
+        for table in self.tables:
+            table.updateObject(objdata)
+            print(objdata.name)
 
     def updateContour(self, contour_name : str, section : Section, section_num : int):
         """Update data and table for a specific contour.

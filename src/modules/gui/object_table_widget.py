@@ -53,12 +53,12 @@ class ObjectTableWidget(QDockWidget):
         self.createMenus()
 
         # set geometry
-        w = 20
-        for i in range(self.table.columnCount()):
-            w += self.table.columnWidth(i)
-        h = self.parent_widget.height() - 90
-        x = self.parent_widget.x() + 10
-        y = self.parent_widget.y() + 90
+        # w = 20
+        # for i in range(self.table.columnCount()):
+        #     w += self.table.columnWidth(i)
+        # h = self.parent_widget.height() - 90
+        # x = self.parent_widget.x() + 10
+        # y = self.parent_widget.y() + 90
         #self.setGeometry(x, y, w, h)
 
         # save manager object
@@ -263,7 +263,6 @@ class ObjectTableWidget(QDockWidget):
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
 
-
     def getRowIndex(self, obj_name : str):
         """Get the row index of an object in the table (or where it SHOULD be on the table).
         
@@ -279,7 +278,7 @@ class ObjectTableWidget(QDockWidget):
                 return row_index, True
             elif obj_name < row_name:
                 return row_index, False
-        return self.table.rowCount() + 1, False
+        return self.table.rowCount(), False
     
     def updateObject(self, objdata : ObjectTableItem):
         """Update the data for a specific object.
@@ -297,6 +296,7 @@ class ObjectTableWidget(QDockWidget):
 
         # update if it does
         row, exists_in_table = self.getRowIndex(objdata.name)
+        print(row, exists_in_table)
         if exists_in_table and objdata.isEmpty():  # completely delete object
             self.table.removeRow(row)
         elif exists_in_table and not objdata.isEmpty():  # update existing object

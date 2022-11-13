@@ -13,6 +13,7 @@ from modules.calc.pfconversions import pixmapPointToField
 
 from modules.backend.field_view import FieldView
 from modules.backend.gui_functions import populateMenu
+from modules.backend.object_table_manager import ObjectTableManager
 
 from modules.gui.dialog import FieldTraceDialog
 
@@ -74,6 +75,11 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
+        # close the tables
+        if self.obj_table_manager is not None:
+            self.obj_table_manager.close()
+            self.obj_table_manager = None
+
         self.generateView()
     
     def toggleBlend(self):
@@ -92,6 +98,13 @@ class FieldWidget(QWidget, FieldView):
         self.field_pixmap_copy = self.field_pixmap.copy()
         if update:
             self.update()
+    
+    def openObjectList(self):
+        # create the manager if not already
+        if self.obj_table_manager is None:
+            self.obj_table_manager = ObjectTableManager(self.series, self.mainwindow)
+        # create a new table
+        self.obj_table_manager.newTable()
     
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
@@ -178,11 +191,7 @@ class FieldWidget(QWidget, FieldView):
         )
 
         self.generateView(generate_image=False)
-        self.saveState()
-    
-    def openTraceMenu(self, event):
-        """Called when traces are right-clicked."""
-        
+        self.saveState()        
 
     def event(self, event):
         """Overwritten from QWidget.event.

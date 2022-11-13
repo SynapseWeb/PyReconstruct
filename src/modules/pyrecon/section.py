@@ -17,7 +17,8 @@ class Section():
                 filepath (str): the file path for the section JSON or XML file
         """
         self.filepath = filepath
-        self.contours_to_update = set()
+        self.added_traces = []
+        self.removed_traces = []
 
         try:
             with open(filepath, "r") as f:
@@ -66,7 +67,7 @@ class Section():
         else:
             self.contours[trace.name] = [trace]
         
-        self.contours_to_update.add(trace.name)
+        self.added_traces.append(trace)
     
     def removeTrace(self, trace : Trace):
         """Remove a trace from the trace dictionary.
@@ -76,8 +77,12 @@ class Section():
         """
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
-        
-        self.contours_to_update.add(trace.name)
+            self.removed_traces.append(trace)
+    
+    def clearTracking(self):
+        """Clear the added_traces and removed_traces lists."""
+        self.added_traces = []
+        self.removed_traces = []
     
     def tracesAsList(self) -> list[Trace]:
         """Return the trace dictionary as a list. Does NOT copy traces.

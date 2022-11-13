@@ -45,7 +45,6 @@ class FieldWidget(QWidget, FieldView):
         self.setGeometry(0, 0, *self.pixmap_dim)
 
         self.createField(series)
-        self.createMenus()
 
         self.show()
     
@@ -77,15 +76,8 @@ class FieldWidget(QWidget, FieldView):
 
         self.generateView()
     
-    def createMenus(self):
-        """Create the menus for the fieldwidget."""
-        trace_menu_list = [
-            ("edittrace_act", "Edit...", "", self.traceDialog)
-        ]
-        self.trace_menu = QMenu(self)
-        populateMenu(self, self.trace_menu, trace_menu_list)
-    
     def toggleBlend(self):
+        """Toggle blending sections."""
         self.blend_sections = not self.blend_sections
         self.generateView()
     
@@ -168,6 +160,9 @@ class FieldWidget(QWidget, FieldView):
     
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
+        if not self.selected_traces:
+            return
+        
         new_attr, confirmed = FieldTraceDialog(
             self,
             self.section_layer.selected_traces,
@@ -187,7 +182,7 @@ class FieldWidget(QWidget, FieldView):
     
     def openTraceMenu(self, event):
         """Called when traces are right-clicked."""
-        self.trace_menu.exec(event.globalPos())
+        
 
     def event(self, event):
         """Overwritten from QWidget.event.
@@ -249,7 +244,9 @@ class FieldWidget(QWidget, FieldView):
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
             if clicked_trace in self.section_layer.selected_traces:
-                self.openTraceMenu(event)
+                self.mainwindow.trace_menu.exec(event.globalPos())
+            else:
+                self.mainwindow.field_menu.exec(event.globalPos())
             return
 
         if self.mouse_mode == FieldWidget.POINTER:

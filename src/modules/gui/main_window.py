@@ -3,7 +3,7 @@ from time import time
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QApplication,
-    QMessageBox, QProgressDialog)
+    QMessageBox, QProgressDialog, QMenu)
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
@@ -11,10 +11,11 @@ from modules.backend.object_table_manager import ObjectTableManager
 
 from modules.gui.mouse_palette import MousePalette
 from modules.gui.field_widget import FieldWidget
+from modules.gui.dialog import AlignmentDialog
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
-from modules.backend.gui_functions import populateMenuBar
+from modules.backend.gui_functions import populateMenuBar, populateMenu
 
 from modules.pyrecon.series import Series
 
@@ -57,12 +58,13 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
         # create menu and shortcuts
-        self.createMenu()
+        self.createMenuBar()
+        self.createContextMenus()
         self.createShortcuts()
 
         self.show()
 
-    def createMenu(self):
+    def createMenuBar(self):
         """Create the menu for the main window."""
         if self.series.filetype == "XML":
             outtype = "JSON"
@@ -75,84 +77,96 @@ class MainWindow(QMainWindow):
                 "attr_name": "filemenu",
                 "text": "File",
                 "opts":
-                [
+                [   
+                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
+                    None,
                     ("new_act", "New", "Ctrl+N", self.newSeries),
-                    ("open_act", "Open", "", self.openSeries),
-                    ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations...", "", self.importTransforms)
+                    ("open_act", "Open", "Ctrl+O", self.openSeries),
+                    ("close_act", "Close", "", self.close)
                 ]
-             },
+            },
+
+            {
+                "attr_name": "editmenu",
+                "text": "Edit",
+                "opts":
+                [
+                    ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
+                    ("red_act", "Redo", "Ctrl+Y", self.field.redoState),
+                    None,
+                    ("incbr_act", "Increase brightness", "=", lambda : self.editImage(option="brightness", direction="up")),
+                    ("decbr_act", "Decrease brightness", "-", lambda : self.editImage(option="brightness", direction="down")),
+                    ("inccon_act", "Increase contrast", "]", lambda : self.editImage(option="contrast", direction="up")),
+                    ("deccon_act", "Decrease contrast", "[", lambda : self.editImage(option="contrast", direction="down"))
+                ]
+            },
 
             {
                 "attr_name": "seriesmenu",
                 "text": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Change image directory...", "", self.changeSrcDir)
+                    ("change_src_act", "Change image directory...", "", self.changeSrcDir),
+                    None,
+                    ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList),
+                    None,
+                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                    None,
+                    ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
+                    ("import_transforms_act", "Import transformations...", "", self.importTransforms),                     
                 ]
-             },
+            },
             
             {
-                "attr_name": "objectmenu",
-                "text": "Objects",
+                "attr_name": "sectionmenu",
+                "text": "Section",
                 "opts":
                 [
-                    ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList)
+                    ("nextsection_act", "Next section", "PgUp", self.incrementSection),
+                    ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
+                    None,
+                    ("goto_act", "Go to section...", "Ctrl+G", self.gotoSection),
+                    ("changetform_act", "Change transform...", "Ctrl+T", self.changeTform)
                 ]
-             },
-
-            {
-                "attr_name": "alignmentmenu",
-                "text": "Alignment",
-                "opts":
-                [
-                    ("newalignment_act", "New alignment", "", self.newAlignment),
-                    ("switchalignment_act", "Switch alignment", "Ctrl+Shift+A", self.switchAlignment)
-                ]
-             }
+            },
         ]
 
         # Populate menu bar with menus and options
         self.menubar = self.menuBar()
         populateMenuBar(self, self.menubar, menu)
+    
+    def createContextMenus(self):
+        """Create the right-click menus used in the field."""
+        field_menu_list = [
+            ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
+            ("hideall_act", "Hide all traces", "Ctrl+Shift+H", self.field.toggleHideAllTraces),
+            ("blend_act", "Blend sections", " ", self.field.toggleBlend),
+        ]
+        self.field_menu = QMenu(self)
+        populateMenu(self, self.field_menu, field_menu_list)
+
+        trace_menu_list = [
+            ("edittrace_act", "Edit...", "Ctrl+E", self.field.traceDialog),
+            ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
+            ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideSelectedTraces),
+            ("deletetraces_act", "Delete traces", "Del", self.field.deleteSelectedTraces),
+            None,
+            self.deselect_act,
+            self.hideall_act,
+            self.blend_act
+        ]
+        self.trace_menu = QMenu(self)
+        populateMenu(self, self.trace_menu, trace_menu_list)
 
     def createShortcuts(self):
-        """Create shortcuts that are NOT included in any menus"""
-        shortcuts = []
-
-        # field actions
-        """Called when any key is pressed and user focus is on main window."""
-        if not self.field:  # do not respond to keyboard if field is not created
-            return
-        
-        shortcuts += [
-            ("PgUp", self.incrementSection),
-            ("PgDown", lambda : self.incrementSection(down=True)),
-            ("Del", self.field.deleteSelectedTraces),
-            ("Backspace", self.field.backspace),
-            ("-", lambda : self.field.changeBrightness(-5)),
-            ("=", lambda : self.field.changeBrightness(5)),
-            ("[", lambda : self.field.changeContrast(-0.2)),
-            ("]", lambda : self.field.changeContrast(0.2)),
-            (" ", self.field.toggleBlend)
-        ]
-
-        # general control shortcuts
-        shortcuts += [
-            ("Ctrl+S", self.saveAllData),
-            ("Ctrl+M", self.field.mergeSelectedTraces),
-            ("Ctrl+D", self.field.deselectAllTraces),
-            ("Ctrl+H", self.field.hideSelectedTraces),
-            ("Ctrl+Shift+H", self.field.toggleHideAllTraces),
-            ("Ctrl+Z", self.field.undoState),
-            ("Ctrl+Y", self.field.redoState),
-            ("Ctrl+T", self.changeTform),
-            ("Ctrl+G", self.gotoSection),
-            ("Ctrl+L", self.mouse_palette.toggleHandedness)
-        ]
-
+        """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
-        shortcuts += [
+        shortcuts = [
+            ("Backspace", self.field.backspace),
+
+            ("Shift+L", self.mouse_palette.toggleHandedness),
+            ("Shift+T", self.mouse_palette.toggleTabletMode),
+
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),
             ("Ctrl+Shift+Left", lambda : self.translateTform("left", "big")),
@@ -164,7 +178,7 @@ class MainWindow(QMainWindow):
             ("Ctrl+Shift+Up", lambda : self.translateTform("up", "big")),
             ("Ctrl+Down", lambda : self.translateTform("down", "small")),
             ("Shift+Down", lambda : self.translateTform("down", "med")),
-            ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big")),
+            ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big"))
         ]
 
         for kbd, act in shortcuts:
@@ -349,6 +363,22 @@ class MainWindow(QMainWindow):
         # reload the section
         self.field.reload()
     
+    def editImage(self, option : str, direction : str):
+        """Edit the brightness or contrast of the image.
+        
+            Params:
+                option (str): brightness or contrast
+                direction (str): up or down
+        """
+        if option == "brightness" and direction == "up":
+            self.field.changeBrightness(5)
+        elif option == "brightness" and direction == "down":
+            self.field.changeBrightness(-5)
+        elif option == "contrast" and direction == "up":
+            self.field.changeContrast(0.2)
+        elif option == "contrast" and direction == "down":
+            self.field.changeContrast(-0.2)
+    
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).
 
@@ -516,15 +546,12 @@ class MainWindow(QMainWindow):
         except ValueError:
             return
     
-    def newAlignment(self):
-        """Add a new alignment."""
-        new_alignment_name, confirmed = QInputDialog.getText(
-            self,
-            "New Alignment",
-            "Enter the name for your new alignment:"
-        )
-        if not confirmed:
-            return
+    def newAlignment(self, new_alignment_name : str):
+        """Add a new alignment (based on existing alignment).
+        
+            Params:
+                new_alignment_name (str): the name of the new alignment
+        """
         if new_alignment_name in self.field.section.tforms:
             QMessageBox.information(
                 self,
@@ -537,26 +564,20 @@ class MainWindow(QMainWindow):
             new_alignment_name,
             self.series.alignment
         )
-        self.field.reload()
-        self.field.changeAlignment(new_alignment_name)
     
-    def switchAlignment(self):
+    def changeAlignment(self):
         """Switch alignments."""
-        alignment_name, confirmed = QInputDialog.getText(
+        alignments = list(self.field.section.tforms.keys())
+        alignment_name, confirmed = AlignmentDialog(
             self,
-            "Switch Alignment",
-            "Enter the alignment name:"
-        )
+            alignments
+        ).exec()
         if not confirmed:
             return
-        if alignment_name not in self.field.section.tforms:
-            QMessageBox.information(
-                self,
-                " ",
-                "This alignment does not exist.",
-                QMessageBox.Ok
-            )
-            return
+        
+        if alignment_name not in alignments:
+            self.newAlignment()
+
         self.field.changeAlignment(alignment_name)
 
     def closeEvent(self, event):

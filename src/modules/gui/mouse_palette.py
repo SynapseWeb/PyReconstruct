@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QPushButton
+from PySide6.QtWidgets import QWidget, QPushButton, QStyle
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSize
 
@@ -64,10 +64,27 @@ class MousePalette():
         self.updateLabel()
         self.label.show()
 
+        self.tablet_mode = False
+        self.tablet_buttons = []
+
         # create increment buttons
         self.ibw = 90
         self.ibh = 35
         self.createIncrementButtons()
+
+        # create brightness/contrast buttons
+        self.bcsize = 30
+        self.createBCButtons()
+    
+    def toggleTabletMode(self):
+        """Toggle the tablet helper buttons"""
+        if self.tablet_mode:
+            for b in self.tablet_buttons:
+                b.hide()
+        else:
+            for b in self.tablet_buttons:
+                b.show()
+        self.tablet_mode = not self.tablet_mode
     
     def toggleHandedness(self):
         """Toggle the position of the buttons."""
@@ -249,32 +266,63 @@ class MousePalette():
         self.down_bttn.setGeometry(x, y, self.ibw, self.ibh)
     
     def createIncrementButtons(self):
-        """Create the section increment buttons.
-        
-            Params:
-                w: the width of the buttons
-                h: the height of the buttons"""        
+        """Create the section increment buttons."""        
         self.up_bttn = QPushButton(self.mainwindow)
-        self.up_bttn.setText("↑")
-        font = self.up_bttn.font()
-        font.setBold(True)
-        font.setPointSize(24)
-        self.up_bttn.setFont(font)
+        up_icon = self.up_bttn.style().standardIcon(
+            QStyle.SP_TitleBarShadeButton
+        )
+        self.up_bttn.setIcon(up_icon)
         self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
 
         self.down_bttn = QPushButton(self.mainwindow)
-        self.down_bttn.setText("↓")
-        font = self.down_bttn.font()
-        font.setBold(True)
-        font.setPointSize(24)
-        self.down_bttn.setFont(font)
+        down_icon = self.up_bttn.style().standardIcon(
+            QStyle.SP_TitleBarUnshadeButton
+        )
+        self.down_bttn.setIcon(down_icon)
         self.down_bttn.pressed.connect(lambda : self.mainwindow.incrementSection(down=True))
 
         self.placeIncrementButtons()
 
-        self.up_bttn.show()
-        self.down_bttn.show()
+        self.up_bttn.hide()
+        self.down_bttn.hide()
+
+        self.tablet_buttons.append(self.up_bttn)
+        self.tablet_buttons.append(self.down_bttn)
     
+    def placeBCButtons(self):
+        """Place the brightness/contrast buttons."""
+        for i, b in enumerate(self.bc_buttons):
+            grid_position = (i%2, i//2)
+            if self.left_handed:
+                x = 10 + (self.bcsize + 10) * grid_position[0]
+            else:
+                x = self.mainwindow.width() - (10 + self.bcsize) * 2
+                x += (self.bcsize + 10) * grid_position[0]
+            y = self.mainwindow.height() - 200 - (20 + self.bcsize) * grid_position[1]
+            b.setGeometry(x, y, self.bcsize, self.bcsize)
+    
+    def createBCButtons(self):
+        """Create the brightnes/contrast buttons."""
+        self.bc_buttons = []
+        for option in ("contrast", "brightness"):
+            for direction in ("down", "up"):
+                b = QPushButton(self.mainwindow)
+                # get the icons
+                icon_fp = os.path.join(loc.img_dir, f"{option}_{direction}.png")
+                pixmap = QPixmap(icon_fp)
+                b.setIcon(QIcon(pixmap))
+                b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
+                # connect to mainwindow function
+                b.pressed.connect(lambda o=option, d=direction: self.mainwindow.editImage(o, d))
+                # set button as continuous
+                b.setAutoRepeat(True)
+                b.setAutoRepeatDelay(0)
+                # tablet mode default off
+                b.hide()
+                self.bc_buttons.append(b)
+                self.tablet_buttons.append(b)
+        self.placeBCButtons()
+
     def resize(self):
         """Move the buttons to fit the main window."""
         for mbname in self.mode_buttons:
@@ -284,6 +332,7 @@ class MousePalette():
             self.placePaletteButton(pb, i)
         self.placeLabel()
         self.placeIncrementButtons()
+        self.placeBCButtons()
     
     def close(self):
         """Close all buttons"""
@@ -293,6 +342,6 @@ class MousePalette():
         for pb in self.palette_buttons:
             pb.close()
         self.label.close()
-        self.up_bttn.close()
-        self.down_bttn.close()
+        for b in self.tablet_buttons:
+            b.close()
         

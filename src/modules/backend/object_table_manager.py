@@ -106,7 +106,6 @@ class ObjectTableManager():
         # update on the tables
         for table in self.tables:
             table.updateObject(objdata)
-            print(objdata.name)
 
     def updateContour(self, contour_name : str, section : Section, section_num : int):
         """Update data and table for a specific contour.

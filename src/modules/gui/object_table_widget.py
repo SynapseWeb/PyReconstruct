@@ -296,7 +296,6 @@ class ObjectTableWidget(QDockWidget):
 
         # update if it does
         row, exists_in_table = self.getRowIndex(objdata.name)
-        print(row, exists_in_table)
         if exists_in_table and objdata.isEmpty():  # completely delete object
             self.table.removeRow(row)
         elif exists_in_table and not objdata.isEmpty():  # update existing object

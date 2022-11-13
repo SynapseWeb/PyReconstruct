@@ -641,7 +641,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time < 0.1):
+        elif len(self.current_trace) == 1 or (time.time() - self.click_time < 0.01):
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing
@@ -845,13 +845,13 @@ class FieldWidget(QWidget, FieldView):
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
-            if self.mouse_mode == FieldWidget.CLOSEDLINE:
+            if self.mouse_mode == FieldWidget.CLOSEDTRACE:
                 self.section_layer.newTrace(
                     self.current_trace,
                     self.tracing_trace,
                     closed=True
                 )
-            elif self.mouse_mode == FieldWidget.OPENLINE:
+            elif self.mouse_mode == FieldWidget.OPENTRACE:
                 self.section_layer.newTrace(
                     self.current_trace,
                     self.tracing_trace,

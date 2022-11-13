@@ -78,6 +78,8 @@ class FieldView():
         self.section_layer.selected_traces = []
         section_states = self.series_states[self.series.current_section]
         modified_contours = section_states.undoState(self.section)
+        if modified_contours is None:
+            return
         if self.obj_table_manager:
             for contour in modified_contours:
                 self.obj_table_manager.updateContour(
@@ -92,6 +94,8 @@ class FieldView():
         self.section_layer.selected_traces = []
         section_states = self.series_states[self.series.current_section]
         modified_contours = section_states.redoState(self.section)
+        if modified_contours is None:
+            return
         if self.obj_table_manager:
             for contour in modified_contours:
                 self.obj_table_manager.updateContour(

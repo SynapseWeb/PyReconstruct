@@ -35,7 +35,7 @@ class FieldState():
 class SectionStates():
 
     def __init__(self, section : Section):
-        self.current_state = FieldState(section.traces, section.tforms)
+        self.current_state = FieldState(section.contours, section.tforms)
         self.undo_states = []
         self.redo_states = []
     
@@ -46,7 +46,7 @@ class SectionStates():
         self.undo_states.append(self.current_state)
         # set the new current state
         self.current_state = FieldState(
-            section.traces,
+            section.contours,
             section.tforms,
             section.contours_to_update
         )
@@ -68,7 +68,7 @@ class SectionStates():
         contours_to_update = set(self.current_state.getContours().keys())
 
         # restore these values in the section object
-        section.traces = restored_contours
+        section.contours = restored_contours
         section.tforms = restored_tforms
         section.contours_to_update = section.contours_to_update.union(contours_to_update)
 
@@ -83,7 +83,7 @@ class SectionStates():
         # restore the contours on the section
         state_contours = redo_state.getContours()
         for contour_name in state_contours:
-            section.traces[contour_name] = state_contours[contour_name]
+            section.contours[contour_name] = state_contours[contour_name]
         # restore the transforms
         section.tforms = redo_state.getTforms()
         # update the objects that were changed

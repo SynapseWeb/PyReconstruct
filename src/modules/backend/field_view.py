@@ -115,10 +115,10 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
-        if trace_name not in self.section.traces or len(self.section.traces[trace_name]) == 0:
+        if trace_name not in self.section.contours or len(self.section.contours[trace_name]) == 0:
             return
         try:
-            trace = self.section.traces[trace_name][index]
+            trace = self.section.contours[trace_name][index]
         except IndexError:
             return
         t = self.section.tforms[self.series.alignment]

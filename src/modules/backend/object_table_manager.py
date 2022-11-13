@@ -38,11 +38,11 @@ class ObjectTableManager():
         for section_num in self.series.sections:
             section = self.series.loadSection(section_num)
             # iterate through contours
-            for contour_name in section.traces:
+            for contour_name in section.contours:
                 if contour_name not in self.objdict:
                     self.objdict[contour_name] = ObjectTableItem(contour_name)
                 # iterate through traces
-                for trace in section.traces[contour_name]:
+                for trace in section.contours[contour_name]:
                     # add to existing data
                     self.objdict[contour_name].addTrace(
                         trace,
@@ -92,8 +92,8 @@ class ObjectTableManager():
             objdata = ObjectTableItem(contour_name)
             self.objdict[contour_name] = objdata
         # update the trace in the dictionary if exists
-        if contour_name in section.traces:
-            for trace in section.traces[contour_name]:
+        if contour_name in section.contours:
+            for trace in section.contours[contour_name]:
                 objdata.addTrace(
                     trace,
                     section.tforms[self.series.alignment],
@@ -153,8 +153,8 @@ class ObjectTableManager():
             # delete the object on every section
             for snum in self.series.sections:
                 section = self.series.loadSection(snum)
-                if obj_name in section.traces:
-                    del(section.traces[obj_name])
+                if obj_name in section.contours:
+                    del(section.contours[obj_name])
                     section.save()
             # update the dictionary data and tables
             self.objdict[obj_name].clearAllData()
@@ -177,19 +177,19 @@ class ObjectTableManager():
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
             for obj_name in obj_names:
-                if obj_name in section.traces:
-                    for trace in section.traces[obj_name]:
+                if obj_name in section.contours:
+                    for trace in section.contours[obj_name]:
                         if name:
                             trace.name = name
                         if color:
                             trace.color = color
                     if name:
                         # check if the new name exists in the section
-                        if name in section.traces:
-                            section.traces[name] += section.traces[obj_name]
+                        if name in section.contours:
+                            section.contours[name] += section.contours[obj_name]
                         else:
-                            section.traces[name] = section.traces[obj_name]
-                        del(section.traces[obj_name])
+                            section.contours[name] = section.contours[obj_name]
+                        del(section.contours[obj_name])
                     section.save()
         
         # update the dictionary data
@@ -221,8 +221,8 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             section_modified = False
             for name in obj_names:
-                if name in section.traces:
-                    for trace in section.traces[name]:
+                if name in section.contours:
+                    for trace in section.contours[name]:
                         if not remove:
                             trace.tags.add(tag_name)
                             self.objdict[trace.name].addTag(tag_name, snum)
@@ -249,8 +249,8 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             section_modified = False
             for name in obj_names:
-                if name in section.traces:
-                    for trace in section.traces[name]:
+                if name in section.contours:
+                    for trace in section.contours[name]:
                         trace.tags = set()
                         section_modified = True
             if section_modified:

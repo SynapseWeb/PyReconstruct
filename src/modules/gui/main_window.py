@@ -271,10 +271,11 @@ class MainWindow(QMainWindow):
 
         # create mouse palette
         if self.mouse_palette: # close previous mouse dock
-            self.mouse_palette.close()
-        self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
+            self.mouse_palette.reset(self.series.palette_traces, self.series.current_trace)
+        else:
+            self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
+            self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
-        self.createPaletteShortcuts()
 
         # refresh export choice on menu
         if refresh_menu:

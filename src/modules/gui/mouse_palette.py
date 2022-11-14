@@ -334,6 +334,12 @@ class MousePalette():
         self.placeIncrementButtons()
         self.placeBCButtons()
     
+    def reset(self, palette_traces : list, selected_trace : Trace):
+        """Reset the mouse palette when opening a new series."""
+        self.close()
+        self.__init__(palette_traces, selected_trace, self.mainwindow)
+
+    
     def close(self):
         """Close all buttons"""
         for bname in self.mode_buttons:

@@ -26,3 +26,5 @@ from modules.gui.main_window import MainWindow
 app = QApplication(sys.argv)
 main_window = MainWindow()
 app.exec()
+
+print("YEET")

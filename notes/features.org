@@ -28,6 +28,8 @@
       - [ ] Fix trace tags on import ("imported-20221114")
       - [ ] Option to change username (default to =os.login()=)
         
+- [ ] Select tool - only select object that are entirely surrounded by selection
+        
 - [-] Mouse palette
    - [X] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
    - [X] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)

@@ -64,9 +64,9 @@ class MainWindow(QMainWindow):
     def createMenuBar(self):
         """Create the menu for the main window."""
         if self.series.filetype == "XML":
-            outtype = "JSON"
+            outtype = "json"
         elif self.series.filetype == "JSON":
-            outtype = "XML"
+            outtype = "xml"
 
         menu = [
             
@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [   
                     ("save_act", "Save", "Ctrl+S", self.saveAllData),
-                    None,
+                    None,  # acts as divider
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
                     ("close_act", "Close", "", self.close)
@@ -103,14 +103,14 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Change image directory...", "", self.changeSrcDir),
+                    ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                     None,
-                    ("export_series_act", f"Export series to {outtype}...", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations...", "", self.importTransforms),                     
+                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
+                    ("import_transforms_act", "Import transformations", "", self.importTransforms),                     
                 ]
             },
             
@@ -122,8 +122,8 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
-                    ("goto_act", "Go to section...", "Ctrl+G", self.gotoSection),
-                    ("changetform_act", "Change transform...", "Ctrl+T", self.changeTform)
+                    ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
+                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform)
                 ]
             },
         ]

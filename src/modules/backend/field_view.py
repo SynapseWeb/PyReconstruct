@@ -3,7 +3,6 @@ from PySide6.QtGui import QPainter, QTransform
 from modules.pyrecon.series import Series
 
 from modules.backend.section_layer import SectionLayer
-
 from modules.backend.state_manager import SectionStates
 
 class FieldView():
@@ -35,6 +34,9 @@ class FieldView():
         self.b_section_number = None
         self.b_section = None
         self.b_section_layer = None
+
+        # placeholders for the table manager
+        self.obj_table_manager = None
     
     def reload(self):
         """Reload the section data (used if section files were modified)."""
@@ -58,22 +60,49 @@ class FieldView():
             self.b_section_layer.loadImage()
 
     def saveState(self):
-        """Save the current traces and transform."""
+        """Save the current traces and transform.
+        
+        ALSO updates the lists.
+        """
         section_states = self.series_states[self.series.current_section]
         section_states.addState(self.section)
+        if self.obj_table_manager:
+            self.obj_table_manager.updateSection(
+                self.section,
+                self.series.current_section
+            )
+        self.section.clearTracking()
 
     def undoState(self):
         """Undo last action (switch to last state)."""
         self.section_layer.selected_traces = []
         section_states = self.series_states[self.series.current_section]
-        section_states.undoState(self.section)
+        modified_contours = section_states.undoState(self.section)
+        if modified_contours is None:
+            return
+        if self.obj_table_manager:
+            for contour in modified_contours:
+                self.obj_table_manager.updateContour(
+                    contour,
+                    self.section,
+                    self.series.current_section
+                )
         self.generateView()
     
     def redoState(self):
         """Redo an undo (switch to last undid state)."""
         self.section_layer.selected_traces = []
         section_states = self.series_states[self.series.current_section]
-        section_states.redoState(self.section)
+        modified_contours = section_states.redoState(self.section)
+        if modified_contours is None:
+            return
+        if self.obj_table_manager:
+            for contour in modified_contours:
+                self.obj_table_manager.updateContour(
+                    contour,
+                    self.section,
+                    self.series.current_section
+                )
         self.generateView()
     
     def swapABsections(self):
@@ -115,10 +144,10 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
-        if trace_name not in self.section.traces or len(self.section.traces[trace_name]) == 0:
+        if trace_name not in self.section.contours or len(self.section.contours[trace_name]) == 0:
             return
         try:
-            trace = self.section.traces[trace_name][index]
+            trace = self.section.contours[trace_name][index]
         except IndexError:
             return
         t = self.section.tforms[self.series.alignment]

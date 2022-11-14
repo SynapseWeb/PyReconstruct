@@ -209,11 +209,11 @@ class TraceLayer():
         for trace in merged_traces:
             self.newTrace(trace, first_trace)
     
-    def cutTrace(self, scalpel_trace : list):
-        """Cuts the selected trace along the scalpel line.
+    def cutTrace(self, knife_trace : list):
+        """Cuts the selected trace along the knife line.
         
             Params:
-                scalpel_pix_points (list): the scalpel trace in pixmap points
+                knife_pix_points (list): the knife trace in pixmap points
         """
         if len(self.selected_traces) == 0:
             print("Please select traces you wish to cut.")
@@ -223,7 +223,7 @@ class TraceLayer():
             return
         trace = self.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
-        cut_traces = cutTraces(trace_to_cut, scalpel_trace)  # merge the pixel traces
+        cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
         # create new traces
         self.deleteSelectedTraces()
         for piece in cut_traces:
@@ -238,6 +238,20 @@ class TraceLayer():
         for trace in self.selected_traces:
             self.section.removeTrace(trace)
         self.selected_traces = []
+    
+    def eraseArea(self, pix_x, pix_y):
+        """Erase an area of the field.
+        
+            Params:
+                pix_x: the x coord for erasing
+                pix_y: the y coord for erasing
+        """
+        trace = self.getTrace(pix_x, pix_y)
+        if trace in self.selected_traces:
+            self.section.removeTrace(trace)
+            self.selected_traces.remove(trace)
+            return True
+        return False
     
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""

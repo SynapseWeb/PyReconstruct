@@ -2,11 +2,12 @@ from PySide6.QtWidgets import QProgressDialog
 
 from PySide6.QtCore import Qt
 
-from modules.gui.objecttablewidget import ObjectTableWidget
-from modules.gui.object3Dviewer import Object3DViewer
+from modules.gui.object_table_widget import ObjectTableWidget
+from modules.gui.object_3D_viewer import Object3DViewer
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.trace import Trace
 
 from modules.backend.object_table_item import ObjectTableItem
 
@@ -38,11 +39,11 @@ class ObjectTableManager():
         for section_num in self.series.sections:
             section = self.series.loadSection(section_num)
             # iterate through contours
-            for contour_name in section.traces:
+            for contour_name in section.contours:
                 if contour_name not in self.objdict:
                     self.objdict[contour_name] = ObjectTableItem(contour_name)
                 # iterate through traces
-                for trace in section.traces[contour_name]:
+                for trace in section.contours[contour_name]:
                     # add to existing data
                     self.objdict[contour_name].addTrace(
                         trace,
@@ -72,9 +73,39 @@ class ObjectTableManager():
                 section (Section): the section object
                 section_num (int): the section number
         """
-        for contour_name in section.contours_to_update:
-            self.updateContour(contour_name, section, section_num)
-        section.contours_to_update = set()
+        # add and update and added traces
+        for trace in section.added_traces:
+            self.addTrace(trace, section, section_num)
+        # refresh any removed traces
+        updated_contours = set()
+        for trace in section.removed_traces:
+            if trace.name not in updated_contours:
+                self.updateContour(trace.name, section, section_num)
+                updated_contours.add(trace.name)
+    
+    def addTrace(self, trace : Trace, section : Section, section_num : int):
+        """Add a trace to the existing object data and update the table.
+        
+            Params:
+                trace (Trace): the trace to add
+                section (Section): the section containing the trace
+                section_num (int): the section number
+        """
+        if trace.name in self.objdict:
+            objdata = self.objdict[trace.name]
+        else:
+            objdata = ObjectTableItem(trace.name)
+            self.objdict[trace.name] = objdata
+        # add trace data
+        objdata.addTrace(
+            trace,
+            section.tforms[self.series.alignment],
+            section_num,
+            section.thickness
+        )
+        # update on the tables
+        for table in self.tables:
+            table.updateObject(objdata)
 
     def updateContour(self, contour_name : str, section : Section, section_num : int):
         """Update data and table for a specific contour.
@@ -92,8 +123,8 @@ class ObjectTableManager():
             objdata = ObjectTableItem(contour_name)
             self.objdict[contour_name] = objdata
         # update the trace in the dictionary if exists
-        if contour_name in section.traces:
-            for trace in section.traces[contour_name]:
+        if contour_name in section.contours:
+            for trace in section.contours[contour_name]:
                 objdata.addTrace(
                     trace,
                     section.tforms[self.series.alignment],
@@ -153,8 +184,8 @@ class ObjectTableManager():
             # delete the object on every section
             for snum in self.series.sections:
                 section = self.series.loadSection(snum)
-                if obj_name in section.traces:
-                    del(section.traces[obj_name])
+                if obj_name in section.contours:
+                    del(section.contours[obj_name])
                     section.save()
             # update the dictionary data and tables
             self.objdict[obj_name].clearAllData()
@@ -177,19 +208,19 @@ class ObjectTableManager():
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
             for obj_name in obj_names:
-                if obj_name in section.traces:
-                    for trace in section.traces[obj_name]:
+                if obj_name in section.contours:
+                    for trace in section.contours[obj_name]:
                         if name:
                             trace.name = name
                         if color:
                             trace.color = color
                     if name:
                         # check if the new name exists in the section
-                        if name in section.traces:
-                            section.traces[name] += section.traces[obj_name]
+                        if name in section.contours:
+                            section.contours[name] += section.contours[obj_name]
                         else:
-                            section.traces[name] = section.traces[obj_name]
-                        del(section.traces[obj_name])
+                            section.contours[name] = section.contours[obj_name]
+                        del(section.contours[obj_name])
                     section.save()
         
         # update the dictionary data
@@ -221,8 +252,8 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             section_modified = False
             for name in obj_names:
-                if name in section.traces:
-                    for trace in section.traces[name]:
+                if name in section.contours:
+                    for trace in section.contours[name]:
                         if not remove:
                             trace.tags.add(tag_name)
                             self.objdict[trace.name].addTag(tag_name, snum)
@@ -249,8 +280,8 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             section_modified = False
             for name in obj_names:
-                if name in section.traces:
-                    for trace in section.traces[name]:
+                if name in section.contours:
+                    for trace in section.contours[name]:
                         trace.tags = set()
                         section_modified = True
             if section_modified:

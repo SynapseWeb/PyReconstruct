@@ -1,11 +1,11 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QPushButton
-from PySide6.QtGui import QIcon, QPixmap, QFont
+from PySide6.QtWidgets import QWidget, QPushButton, QStyle
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSize
 
-from modules.gui.palettebutton import PaletteButton
-from modules.gui.fieldwidget import FieldWidget
+from modules.gui.palette_button import PaletteButton
+from modules.gui.field_widget import FieldWidget
 from modules.gui.outlined_label import OutlinedLabel
 
 from modules.pyrecon.trace import Trace
@@ -24,22 +24,23 @@ class MousePalette():
                 button_size (int): the size of the buttons on the dock
         """
         self.mainwindow = mainwindow
+        self.left_handed = False
         
-        self.mbwidth = 125
-        self.mbheight = 30
+        self.mbwidth = 40
+        self.mbheight = 40
 
         self.pblen = 40
 
+        # create mode buttons
         self.mode_buttons = {}
-        self.createModeButton("Pointer", 0, FieldWidget.POINTER)
-        self.createModeButton("Pan/Zoom", 1, FieldWidget.PANZOOM)
-        self.createModeButton("Scalpel", 2, FieldWidget.SCALPEL)
-        self.createModeButton("Closed Pencil", 3, FieldWidget.CLOSEDPENCIL)
-        self.createModeButton("Open Pencil", 4, FieldWidget.OPENPENCIL)
-        self.createModeButton("Closed Poly", 5, FieldWidget.CLOSEDLINE)
-        self.createModeButton("Open Poly", 6, FieldWidget.OPENLINE)
-        self.createModeButton("Stamp", 7, FieldWidget.STAMP)
+        self.createModeButton("Pointer", "p", 0, FieldWidget.POINTER)
+        self.createModeButton("Pan/Zoom", "z", 1, FieldWidget.PANZOOM)
+        self.createModeButton("Knife", "k", 2, FieldWidget.KNIFE)
+        self.createModeButton("Closed Trace", "c", 3, FieldWidget.CLOSEDTRACE)
+        self.createModeButton("Open Trace", "o", 4, FieldWidget.OPENTRACE)
+        self.createModeButton("Stamp", "s", 5, FieldWidget.STAMP)
 
+        # create palette buttons
         self.palette_traces = palette_traces
         self.palette_buttons = [None] * 20
         for i in range(len(palette_traces)):  # create all the palette buttons
@@ -53,10 +54,42 @@ class MousePalette():
         self.selected_mode = "pointer"
         self.selected_trace = selected_trace
 
+        # create label
         self.label = OutlinedLabel(self.mainwindow)
-        self.label.setFont(QFont("Courier New", 16, QFont.Bold))
+        font = self.label.font()
+        font.setFamily("Courier New")
+        font.setBold(True)
+        font.setPointSize(16)
+        self.label.setFont(font)
         self.updateLabel()
         self.label.show()
+
+        self.tablet_mode = False
+        self.tablet_buttons = []
+
+        # create increment buttons
+        self.ibw = 90
+        self.ibh = 35
+        self.createIncrementButtons()
+
+        # create brightness/contrast buttons
+        self.bcsize = 30
+        self.createBCButtons()
+    
+    def toggleTabletMode(self):
+        """Toggle the tablet helper buttons"""
+        if self.tablet_mode:
+            for b in self.tablet_buttons:
+                b.hide()
+        else:
+            for b in self.tablet_buttons:
+                b.show()
+        self.tablet_mode = not self.tablet_mode
+    
+    def toggleHandedness(self):
+        """Toggle the position of the buttons."""
+        self.left_handed = not self.left_handed
+        self.resize()
     
     def placeModeButton(self, button : QPushButton, pos : int):
         """Place the mode button in the main window.
@@ -65,11 +98,14 @@ class MousePalette():
                 button (QPushButton): the button to place
                 pos (int): the position of the button
         """
-        x = self.mainwindow.width() - self.mbwidth - 10
+        if self.left_handed:
+            x = 10
+        else:
+            x = self.mainwindow.width() - self.mbwidth - 10
         y = 40 + (10 + self.mbheight) * pos
         button.setGeometry(x, y, self.mbwidth, self.mbheight)
     
-    def createModeButton(self, name : str, pos : int, mouse_mode : int):
+    def createModeButton(self, name : str, sc : str, pos : int, mouse_mode : int):
         """Creates a new mouse mode button.
         
             Params:
@@ -94,7 +130,8 @@ class MousePalette():
         # format the button
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.mbheight, self.mbheight))
-        b.setText(name)
+        # b.setText(name)
+        b.setToolTip(f"{name} ({sc})")
 
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default
@@ -217,6 +254,75 @@ class MousePalette():
                 self.selected_trace = b.trace
         self.updateLabel()
     
+    def placeIncrementButtons(self):
+        """Place the increment buttons on the field"""
+        if self.left_handed:
+            x = 10
+        else:
+            x = self.mainwindow.width() - self.ibw - 10
+        y = self.mainwindow.height() - (self.ibh + 15) * 2 - 20
+        self.up_bttn.setGeometry(x, y, self.ibw, self.ibh)
+        y = self.mainwindow.height() - (self.ibh + 15) - 20
+        self.down_bttn.setGeometry(x, y, self.ibw, self.ibh)
+    
+    def createIncrementButtons(self):
+        """Create the section increment buttons."""        
+        self.up_bttn = QPushButton(self.mainwindow)
+        up_icon = self.up_bttn.style().standardIcon(
+            QStyle.SP_TitleBarShadeButton
+        )
+        self.up_bttn.setIcon(up_icon)
+        self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
+
+        self.down_bttn = QPushButton(self.mainwindow)
+        down_icon = self.up_bttn.style().standardIcon(
+            QStyle.SP_TitleBarUnshadeButton
+        )
+        self.down_bttn.setIcon(down_icon)
+        self.down_bttn.pressed.connect(lambda : self.mainwindow.incrementSection(down=True))
+
+        self.placeIncrementButtons()
+
+        self.up_bttn.hide()
+        self.down_bttn.hide()
+
+        self.tablet_buttons.append(self.up_bttn)
+        self.tablet_buttons.append(self.down_bttn)
+    
+    def placeBCButtons(self):
+        """Place the brightness/contrast buttons."""
+        for i, b in enumerate(self.bc_buttons):
+            grid_position = (i%2, i//2)
+            if self.left_handed:
+                x = 10 + (self.bcsize + 10) * grid_position[0]
+            else:
+                x = self.mainwindow.width() - (10 + self.bcsize) * 2
+                x += (self.bcsize + 10) * grid_position[0]
+            y = self.mainwindow.height() - 200 - (20 + self.bcsize) * grid_position[1]
+            b.setGeometry(x, y, self.bcsize, self.bcsize)
+    
+    def createBCButtons(self):
+        """Create the brightnes/contrast buttons."""
+        self.bc_buttons = []
+        for option in ("contrast", "brightness"):
+            for direction in ("down", "up"):
+                b = QPushButton(self.mainwindow)
+                # get the icons
+                icon_fp = os.path.join(loc.img_dir, f"{option}_{direction}.png")
+                pixmap = QPixmap(icon_fp)
+                b.setIcon(QIcon(pixmap))
+                b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
+                # connect to mainwindow function
+                b.pressed.connect(lambda o=option, d=direction: self.mainwindow.editImage(o, d))
+                # set button as continuous
+                b.setAutoRepeat(True)
+                b.setAutoRepeatDelay(0)
+                # tablet mode default off
+                b.hide()
+                self.bc_buttons.append(b)
+                self.tablet_buttons.append(b)
+        self.placeBCButtons()
+
     def resize(self):
         """Move the buttons to fit the main window."""
         for mbname in self.mode_buttons:
@@ -225,6 +331,8 @@ class MousePalette():
         for i, pb in enumerate(self.palette_buttons):
             self.placePaletteButton(pb, i)
         self.placeLabel()
+        self.placeIncrementButtons()
+        self.placeBCButtons()
     
     def close(self):
         """Close all buttons"""
@@ -234,4 +342,6 @@ class MousePalette():
         for pb in self.palette_buttons:
             pb.close()
         self.label.close()
+        for b in self.tablet_buttons:
+            b.close()
         

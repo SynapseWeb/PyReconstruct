@@ -5,7 +5,7 @@ class FieldState():
     def __init__(self, contours : dict, tforms : dict, updated_contours=None):
         """Create a field state with traces and the transform"""
         self.contours = {}
-        # first state made for a section
+        # first state made for a section (or copy)
         if updated_contours is None:
             for contour_name in contours:
                 self.contours[contour_name] = []
@@ -23,6 +23,9 @@ class FieldState():
         for alignment_name in tforms:
             self.tforms[alignment_name] = tforms[alignment_name].copy()
     
+    def copy(self):
+        return FieldState(self.contours, self.tforms)
+    
     def getContours(self):
         return self.contours.copy()
     
@@ -35,7 +38,7 @@ class FieldState():
 class SectionStates():
 
     def __init__(self, section : Section):
-        self.current_state = FieldState(section.traces, section.tforms)
+        self.current_state = FieldState(section.contours, section.tforms)
         self.undo_states = []
         self.redo_states = []
     
@@ -44,37 +47,49 @@ class SectionStates():
         self.redo_states = []
         # push current state to undo states
         self.undo_states.append(self.current_state)
+        # get the names of the updated contours
+        updated_contours = (
+            set([trace.name for trace in section.added_traces]).union(
+                set([trace.name for trace in section.removed_traces])
+            )
+        )
         # set the new current state
         self.current_state = FieldState(
-            section.traces,
+            section.contours,
             section.tforms,
-            section.contours_to_update
+            updated_contours
         )
-    
-    def undoState(self, section : Section):
+        
+    def undoState(self, section : Section) -> list:
         if len(self.undo_states) == 0:
             return
-        # get the restored contours
-        # iterate backwards through undo states and add contours
-        restored_contours = {}
+        # restore the contours
+        # iterate backwards and find the last ieration of the recently changed contours
+        last_changed = self.current_state.getModifiedContours()
+        modified_contours = last_changed.copy()
         for state in reversed(self.undo_states):
             state_contours = state.getContours()
-            for contour_name in state_contours:
-                if contour_name not in restored_contours:
-                    restored_contours[contour_name] = state_contours[contour_name]
-        # get the restored transforms
-        restored_tforms = self.undo_states[-1].getTforms()
-        # get the objects that were changed
-        contours_to_update = set(self.current_state.getContours().keys())
+            for contour in last_changed.copy():
+                if contour in state_contours:
+                    section.contours[contour] = state_contours[contour]
+                    last_changed.remove(contour)
+            if not last_changed:
+                break
+        # if the contour was not found (aka it was just created)
+        if last_changed:
+            for contour in last_changed:
+                section.contours[contour] = []
 
-        # restore these values in the section object
-        section.traces = restored_contours
+        # restore the transforms
+        restored_tforms = self.undo_states[-1].getTforms()
         section.tforms = restored_tforms
-        section.contours_to_update = section.contours_to_update.union(contours_to_update)
 
         # edit the undo/redo stacks and the current state
         self.redo_states.append(self.current_state)
-        self.current_state = self.undo_states.pop()
+        self.current_state = self.undo_states.pop().copy()
+
+        # return the modified contours
+        return modified_contours
     
     def redoState(self, section : Section):
         if len(self.redo_states) == 0:
@@ -82,14 +97,15 @@ class SectionStates():
         redo_state = self.redo_states[-1]
         # restore the contours on the section
         state_contours = redo_state.getContours()
+        modified_contours = redo_state.getModifiedContours()
         for contour_name in state_contours:
-            section.traces[contour_name] = state_contours[contour_name]
+            section.contours[contour_name] = state_contours[contour_name]
         # restore the transforms
         section.tforms = redo_state.getTforms()
-        # update the objects that were changed
-        contours_to_update = set(state_contours.keys())
-        section.contours_to_update = section.contours_to_update.union(contours_to_update)
 
         # edit the undo/redo stacks and the current state
         self.undo_states.append(self.current_state)
         self.current_state = self.redo_states.pop()
+
+        # return the modified contours
+        return modified_contours

@@ -38,10 +38,10 @@ class ObjectVolume():
             for obj_name in obj_names:
                 self.obj_data[snum]["contours"][obj_name] = []
                 # check if object exists in section
-                if obj_name not in section.traces:
+                if obj_name not in section.contours:
                     continue
                 # transform points and add them to list
-                for trace in section.traces[obj_name]:
+                for trace in section.contours[obj_name]:
                     modified_points = tformPoints(
                         trace.points,
                         section.tforms[series.alignment],
@@ -157,9 +157,9 @@ class ObjectVolume():
             self.fillInSlices(volume, z_slices)
         
         # guide lines (xyz : rgb)
-        volume[:,0,0] = [0, 0, 255, 255]
-        volume[0,:,0] = [0, 255, 0, 255]
-        volume[0,0,:] = [255, 0, 0, 255]
+        # volume[:,0,0] = [0, 0, 255, 255]
+        # volume[0,:,0] = [0, 255, 0, 255]
+        # volume[0,0,:] = [255, 0, 0, 255]
 
         # create the volume item
         vol_item = gl.GLVolumeItem(volume)

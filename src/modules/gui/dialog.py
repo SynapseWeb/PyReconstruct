@@ -1,20 +1,37 @@
 from PySide6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QInputDialog, QCheckBox
 
-from modules.gui.colorbutton import ColorButton
+from modules.gui.color_button import ColorButton
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
+from modules.pyrecon.trace import Trace
 
-class PaletteTraceDialog(QDialog):
+class FieldTraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, name=None, color=None, tags=None, stamp_size=None):
+    def __init__(self, parent : QWidget, traces : list[Trace], pos=None):
         """Create an attribute dialog.
         
             Params:
                 parent (QWidget): the parent widget
-                name (str): the default name for the dialog
-                color (tuple): the default color for the dialog
+                traces (list): a list of traces
         """
         super().__init__(parent)
+
+        # move to desired position
+        if pos:
+            self.move(*pos)
+
+        # get the display values
+        trace = traces[0]
+        name = trace.name
+        color = trace.color
+        tags = trace.tags
+        for trace in traces[1:]:
+            if trace.name != name:
+                name = None
+            if trace.color != color:
+                color = None
+            if trace.tags != tags:
+                tags = None
 
         self.setWindowTitle("Set Attributes")
 
@@ -42,9 +59,82 @@ class PaletteTraceDialog(QDialog):
         self.tags_row.addWidget(self.tags_text)
         self.tags_row.addWidget(self.tags_input)
 
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonbox = QDialogButtonBox(QBtn)
+        self.buttonbox.accepted.connect(self.accept)
+        self.buttonbox.rejected.connect(self.reject)
+
+        self.vlayout = QVBoxLayout()
+        self.vlayout.setSpacing(10)
+        self.vlayout.addLayout(self.name_row)
+        self.vlayout.addLayout(self.color_row)
+        self.vlayout.addLayout(self.tags_row)
+        self.vlayout.addWidget(self.buttonbox)
+
+        self.setLayout(self.vlayout)
+    
+    def exec(self):
+        confirmed = super().exec()
+        if confirmed:
+            name = self.name_input.text()
+            color = self.color_input.getColor()
+            tags = self.tags_input.text().split(", ")
+            if tags == [""]:
+                tags = set()
+            else:
+                tags = set(tags)
+            return (
+                (
+                    name,
+                    color,
+                    tags,
+                ),
+                True
+            )
+        else:
+            return None, False
+
+class PaletteTraceDialog(QDialog):
+
+    def __init__(self, parent : QWidget, trace : Trace, stamp_size : float):
+        """Create an attribute dialog.
+        
+            Params:
+                parent (QWidget): the parent widget
+                trace (Trace): the trace to modify
+                stamp_size (float): the existing stamp size
+        """
+        super().__init__(parent)
+
+        self.setWindowTitle("Set Attributes")
+
+        self.name_row = QHBoxLayout()
+        self.name_text = QLabel(self)
+        self.name_text.setText("Name:")
+        self.name_input = QLineEdit(self)
+        self.name_input.setText(trace.name)
+        self.name_row.addWidget(self.name_text)
+        self.name_row.addWidget(self.name_input)
+
+        self.color_row = QHBoxLayout()
+        self.color_text = QLabel(self)
+        self.color_text.setText("Color:")
+        self.color_input = ColorButton(trace.color, parent)
+        self.color_row.addWidget(self.color_text)
+        self.color_row.addWidget(self.color_input)
+        self.color_row.addStretch()
+
+        self.tags_row = QHBoxLayout()
+        self.tags_text = QLabel(self)
+        self.tags_text.setText("Tags:")
+        self.tags_input = QLineEdit(self)
+        self.tags_input.setText(", ".join(trace.tags))
+        self.tags_row.addWidget(self.tags_text)
+        self.tags_row.addWidget(self.tags_input)
+
         self.stamp_size_row = QHBoxLayout()
         self.stamp_size_text = QLabel(self)
-        self.stamp_size_text.setText("Stamp size:")
+        self.stamp_size_text.setText("Stamp radius (microns):")
         self.stamp_size_input = QLineEdit(self)
         self.stamp_size_input.setText(str(stamp_size))
         self.stamp_size_row.addWidget(self.stamp_size_text)
@@ -129,6 +219,7 @@ class ObjectGroupDialog(QDialog):
         self.vlayout = QVBoxLayout()
         self.vlayout.setSpacing(10)
         self.vlayout.addLayout(self.group_row)
+        self.vlayout.addSpacing(10)
         self.vlayout.addWidget(self.buttonbox)
 
         self.setLayout(self.vlayout)
@@ -196,4 +287,61 @@ class ObjectTableColumnsDialog(QDialog):
             return columns, True
         else:
             return {}, False
+
+
+class AlignmentDialog(QDialog):
+
+    def __init__(self, parent : QWidget, alignment_names : list):
+        """Create an object group dialog.
+        
+            Params:
+                parent (QWidget): the parent widget
+                alignment_names (list): the list of alignments
+        """
+        super().__init__(parent)
+
+        self.setWindowTitle("Change Alignment")
+
+        self.align_row = QHBoxLayout()
+        self.align_text = QLabel(self)
+        self.align_text.setText("Alignment:")
+        self.align_input = QComboBox(self)
+        self.align_input.addItem("")
+        self.align_input.addItems(sorted(alignment_names))
+        self.align_input.resize(self.align_input.sizeHint())
+        self.newalign_bttn = QPushButton(self, "new_alignment", text="New Alignment...")
+        self.newalign_bttn.clicked.connect(self.newAlignment)
+        self.align_row.addWidget(self.align_text)
+        self.align_row.addWidget(self.align_input)
+        self.align_row.addWidget(self.newalign_bttn)
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonbox = QDialogButtonBox(QBtn)
+        self.buttonbox.accepted.connect(self.accept)
+        self.buttonbox.rejected.connect(self.reject)
+
+        self.vlayout = QVBoxLayout()
+        self.vlayout.setSpacing(10)
+        self.vlayout.addLayout(self.align_row)
+        self.vlayout.addSpacing(10)
+        self.vlayout.addWidget(self.buttonbox)
+
+        self.setLayout(self.vlayout)
+    
+    def newAlignment(self):
+        """Add a new alignment to the list."""
+        new_group_name, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
+        if not confirmed:
+            return
+        self.align_input.addItem(new_group_name)
+        self.align_input.setCurrentText(new_group_name)
+        self.align_input.resize(self.align_input.sizeHint())
+        
+    def exec(self):
+        confirmed = super().exec()
+        text = self.align_input.currentText()
+        if confirmed and text:
+            return self.align_input.currentText(), True
+        else:
+            return "", False
         

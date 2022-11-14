@@ -17,7 +17,8 @@ class Section():
                 filepath (str): the file path for the section JSON or XML file
         """
         self.filepath = filepath
-        self.contours_to_update = set()
+        self.added_traces = []
+        self.removed_traces = []
 
         try:
             with open(filepath, "r") as f:
@@ -33,10 +34,10 @@ class Section():
             self.mag = section_data["mag"]
             self.tforms = section_data["tforms"]
             self.thickness = section_data["thickness"]
-            self.traces = section_data["traces"]
-            for name in self.traces:
-                for i in range(len(self.traces[name])):  # convert trace dictionaries into trace objects
-                    self.traces[name][i] = Trace.fromDict(self.traces[name][i])
+            self.contours = section_data["traces"]
+            for name in self.contours:
+                for i in range(len(self.contours[name])):  # convert trace dictionaries into trace objects
+                    self.contours[name][i] = Trace.fromDict(self.contours[name][i])
         
         elif self.filetype == "XML":
             self.xml_section = process_section_file(filepath)
@@ -48,7 +49,7 @@ class Section():
             self.contrast = 0
             self.mag = image.mag
             self.thickness = self.xml_section.thickness
-            self.traces = {}
+            self.contours = {}
             for xml_contour in self.xml_section.contours:
                 self.addTrace(Trace.fromXMLObj(xml_contour, image.transform))
     
@@ -61,12 +62,12 @@ class Section():
         # insert username as first tag
         trace.tags = set((os.getlogin(),)).union(trace.tags)
 
-        if trace.name in self.traces:
-            self.traces[trace.name].append(trace)
+        if trace.name in self.contours:
+            self.contours[trace.name].append(trace)
         else:
-            self.traces[trace.name] = [trace]
+            self.contours[trace.name] = [trace]
         
-        self.contours_to_update.add(trace.name)
+        self.added_traces.append(trace)
     
     def removeTrace(self, trace : Trace):
         """Remove a trace from the trace dictionary.
@@ -74,10 +75,14 @@ class Section():
             Params:
                 trace (Trace): the trace to remove from the traces dictionary
         """
-        if trace.name in self.traces:
-            self.traces[trace.name].remove(trace)
-        
-        self.contours_to_update.add(trace.name)
+        if trace.name in self.contours:
+            self.contours[trace.name].remove(trace)
+            self.removed_traces.append(trace)
+    
+    def clearTracking(self):
+        """Clear the added_traces and removed_traces lists."""
+        self.added_traces = []
+        self.removed_traces = []
     
     def tracesAsList(self) -> list[Trace]:
         """Return the trace dictionary as a list. Does NOT copy traces.
@@ -86,8 +91,8 @@ class Section():
                 (list): a list of traces
         """
         trace_list = []
-        for contour_name in self.traces:
-            for trace in self.traces[contour_name]:
+        for contour_name in self.contours:
+            for trace in self.contours[contour_name]:
                 trace_list.append(trace)
         return trace_list
 
@@ -106,9 +111,9 @@ class Section():
         d["thickness"] = self.thickness
         d["traces"] = {}
         # special saving method for contours
-        for contour_name in self.traces:
-            if self.traces[contour_name] != []:
-                d["traces"][contour_name] = self.traces[contour_name].copy()
+        for contour_name in self.contours:
+            if self.contours[contour_name] != []:
+                d["traces"][contour_name] = self.contours[contour_name].copy()
                 for i in range(len(d["traces"][contour_name])):  # convert trace objects in trace dictionaries
                     d["traces"][contour_name][i] = d["traces"][contour_name][i].getDict()
         return d

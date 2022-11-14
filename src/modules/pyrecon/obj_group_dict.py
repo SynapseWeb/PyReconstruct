@@ -1,7 +1,7 @@
 class ObjGroupDict():
 
     def __init__(self, groups : dict = None):
-        """Create a two-way dctionary.
+        """Create a two-way dictionary.
         
         Params:
             groups (dict): an existing group dictionary to build from

@@ -96,10 +96,13 @@ class TraceLayer():
         traces_in_poly = []
         for trace in self.traces_in_view:
             pix_points = self.traceToPix(trace)
+            inside_poly = True
             for point in pix_points:
-                if pointInPoly(*point, pix_poly):
-                    traces_in_poly.append(trace)
+                if not pointInPoly(*point, pix_poly):
+                    inside_poly = False
                     break
+            if inside_poly:
+                traces_in_poly.append(trace)
         return traces_in_poly
 
     def newTrace(self, pix_trace : list, base_trace : Trace, closed=True):

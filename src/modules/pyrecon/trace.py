@@ -1,6 +1,8 @@
 from modules.legacy_recon.classes.contour import Contour as XMLContour
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
+from modules.calc.quantification import centroid, distance
+
 class Trace():
 
     def __init__(self, name : str, color : tuple, closed=True):
@@ -181,3 +183,56 @@ class Trace():
             y = [p[1] for p in tform_points]
         
         return min(x), min(y), max(x), max(y)
+    
+    def getRadius(self, tform=None):
+        """Get the distance from the centroid of the trace to its farthest point.
+        
+            Params:
+                tform: the transform to apply to the points
+        """
+        points = self.points.copy()
+        if tform:
+            points = [tform.map(*p) for p in self.points]
+        cx, cy = centroid(points)
+        r = max([distance(cx, cy, x, y) for x, y in points])
+        return r
+        
+    def centerAtOrigin(self):
+        """Centers the trace at the origin (ignores transformations)."""
+        cx, cy = centroid(self.points)
+        self.points = [(x-cx, y-cy) for x,y in self.points]
+
+    def resize(self, new_radius, tform=None):
+        """Resize a trace beased on its radius
+        
+            Params:
+                new_radius: the new radius for the trace
+                tform: the tform applied to the trace
+        """
+        points = self.points.copy()
+        if tform:
+            points = [tform.map(*p) for p in self.points]
+        
+        # calculate constants
+        cx, cy = centroid(points)
+        r = max([distance(cx, cy, x, y) for x, y in points])
+        scale_factor = new_radius / r
+
+        # center trace at origin and apply scale factor
+        points = [
+            (
+                scale_factor*(x-cx) + cx, 
+                scale_factor*(y-cy) + cy
+            )
+            for x, y in points
+        ]
+
+        # restore untransformed version
+        if tform:
+            points = [tform.inverted()[0].map(*p) for p in points]
+        
+        self.points = points
+
+
+        
+

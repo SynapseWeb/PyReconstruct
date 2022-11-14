@@ -96,7 +96,7 @@ class FieldTraceDialog(QDialog):
 
 class PaletteTraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, trace : Trace, stamp_size : float):
+    def __init__(self, parent : QWidget, trace : Trace):
         """Create an attribute dialog.
         
             Params:
@@ -136,7 +136,7 @@ class PaletteTraceDialog(QDialog):
         self.stamp_size_text = QLabel(self)
         self.stamp_size_text.setText("Stamp radius (microns):")
         self.stamp_size_input = QLineEdit(self)
-        self.stamp_size_input.setText(str(stamp_size))
+        self.stamp_size_input.setText(str(round(trace.getRadius(), 6)))
         self.stamp_size_row.addWidget(self.stamp_size_text)
         self.stamp_size_row.addWidget(self.stamp_size_input)
 

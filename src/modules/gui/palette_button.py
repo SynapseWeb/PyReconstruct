@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog, QWidget
 from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QPoint
 
 from modules.pyrecon.trace import Trace
 
@@ -27,31 +27,17 @@ class PaletteButton(QPushButton):
         # draw the trace on the button
         w = self.size().width()
         h = self.size().height()
-        self.radius = self.getTraceMaxValue()
-        self.scale_factor = (min(w, h) - 1) / (self.radius * 2)
+        radius = self.trace.getRadius()
+        self.scale_factor = (min(w, h) - 1) / radius / 2
         self.origin = (w/2, h/2)
+
         painter = QPainter(self.pixmap)
         painter.setPen(QPen(QColor(*self.trace.color), 2))
-        prev_point = self._resizePoint(trace.points[-1])
-        for point in trace.points.copy():
-            point = self._resizePoint(point)
-            painter.drawLine(*prev_point, *point)
-            prev_point = point
+        points = [QPoint(*self._resizePoint(p)) for p in trace.points]
+        painter.drawPolygon(points)
         painter.end()
+
         self.setIcon(QIcon(self.pixmap))
-    
-    def getTraceMaxValue(self) -> float:
-        """Get the max x or y value containe in the trace points (this functions as the 'radius' of the trace).
-        
-            Returns:
-                (float) the max value of the trace"""
-        max_value = 0
-        for point in self.trace.points:
-            if abs(point[0]) > max_value:
-                max_value = point[0]
-            if abs(point[1]) > max_value:
-                max_value = point[1]
-        return max_value
         
     def contextMenuEvent(self, event):
         """Executed when button is right-clicked: pulls up menu for user to edit button.
@@ -66,7 +52,6 @@ class PaletteButton(QPushButton):
         new_attr, confirmed = PaletteTraceDialog(
             self,
             self.trace,
-            self.radius
         ).exec()
         if not confirmed:
             return
@@ -79,7 +64,8 @@ class PaletteButton(QPushButton):
         if tags:
             self.trace.tags = tags
         if radius:
-            self.radius = radius
+            self.trace.resize(radius)
+            self.trace.centerAtOrigin()
         self.setTrace(self.trace)
         self.manager.paletteButtonChanged(self)
     

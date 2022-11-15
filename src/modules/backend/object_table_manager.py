@@ -1,5 +1,3 @@
-from PySide6.QtWidgets import QProgressDialog
-
 from PySide6.QtCore import Qt
 
 from modules.gui.object_table_widget import ObjectTableWidget
@@ -10,6 +8,7 @@ from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
 from modules.backend.object_table_item import ObjectTableItem
+from modules.backend.gui_functions import progbar
 
 class ObjectTableManager():
 
@@ -23,14 +22,7 @@ class ObjectTableManager():
     def loadSeriesData(self):
         """Load all of the data for each object in the series."""
         # create the progress bar
-        progbar = QProgressDialog(
-            "Loading series...",
-            "Cancel",
-            0, 100,
-            self.mainwindow
-        )
-        progbar.setWindowTitle("Load Series")
-        progbar.setWindowModality(Qt.WindowModal)
+        update, canceled = progbar("Load Series", "Loading series...")
 
         self.objdict = {}  # object name : ObjectTableItem (contains data on object)
         prog_value = 0
@@ -52,8 +44,8 @@ class ObjectTableManager():
                         section.thickness
                     )
             prog_value += 1
-            progbar.setValue(prog_value / final_value * 100)
-            if progbar.wasCanceled(): return
+            update(prog_value / final_value * 100)
+            if canceled(): return
     
     def newTable(self):
         """Create a new object list."""

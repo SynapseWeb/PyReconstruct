@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QMenuBar, QMenu
+from PySide6.QtWidgets import QWidget, QMenuBar, QMenu, QProgressDialog
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
@@ -80,5 +80,16 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     # populate menubar
     for menu_dict in menubar_list:
         newMenu(widget, menu, menu_dict)
-        
+
+def progbar(title : str, text : str):
+    """Create an easy progress dialog."""
+    progbar = QProgressDialog(
+            text,
+            "Cancel",
+            0, 100
+        )
+    progbar.setWindowTitle(title)
+    progbar.setWindowModality(Qt.WindowModal)
+    return progbar.setValue, progbar.wasCanceled
+
 

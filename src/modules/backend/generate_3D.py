@@ -7,6 +7,8 @@ import pyqtgraph.opengl as gl
 
 from modules.pyrecon.series import Series
 
+from modules.backend.gui_functions import progbar
+
 class ObjectVolume():
 
     def __init__(self, series : Series, obj_names : list[str]):
@@ -22,6 +24,12 @@ class ObjectVolume():
         # check section thickness
         self.section_thickness = None
         self.uniform_section_thickness = True
+
+        # create loading bar
+        update, canceled = progbar("3D", "Loading data...")
+        final_value = len(series.sections)
+        progress = 0
+        self.canceled = False
         
         # iterate through all the sections and gather traces
         for snum in series.sections:
@@ -50,6 +58,11 @@ class ObjectVolume():
                         "points" : modified_points,
                         "color" : trace.color
                     })
+            progress += 1
+            update(progress/final_value*100)
+            if canceled:
+                self.canceled = True
+                return
 
     def getVolumeBounds(self) -> tuple[int]:
         """Get the x, y, and z min and max values for the volume from self.objs.

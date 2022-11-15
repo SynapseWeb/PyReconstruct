@@ -34,6 +34,8 @@ class Object3DViewer(gl.GLViewWidget):
 
         # generate the volume
         obj_vol = ObjectVolume(series, obj_names)
+        if obj_vol.canceled:
+            return
         self.vol_item, shape, offset = obj_vol.generateVolume()
 
         # adjust the volume item to fit the view

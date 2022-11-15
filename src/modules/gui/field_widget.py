@@ -173,7 +173,7 @@ class FieldWidget(QWidget, FieldView):
     
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
-        if not self.selected_traces:
+        if not self.section_layer.selected_traces:
             return
         
         new_attr, confirmed = FieldTraceDialog(

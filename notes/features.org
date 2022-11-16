@@ -13,7 +13,6 @@
 - [ ] Ctrl+B
 
 - [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
-- [ ] Include trace list index in columns
 
 - [ ] Fix trace tags on import ("imported-20221114")
 - [ ] Option to change username (default to =os.getlogin()=)
@@ -23,13 +22,13 @@
 - [ ] Create contour class
 - [ ] Update object/contour/trace terminology throughout
 
-- [ ] Force JSON usage
-- [ ] Rewrite export/import XML code
-- [ ] Remove trace names in JSON
-
 - [ ] 3D Options:
    - [ ] Transparency
    - [ ] Scale cube sizing
+
+- [ ] Force JSON usage
+- [ ] Rewrite export/import XML code
+- [ ] Remove trace names in JSON
   
 ** Michael
 
@@ -172,4 +171,5 @@
 - [X] Move traces in field
 - [X] Field attribute menu
    - [X] Access by right clicking trace
+- [X] Include trace list index in columns
 

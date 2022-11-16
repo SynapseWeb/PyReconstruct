@@ -80,7 +80,9 @@ class MainWindow(QMainWindow):
                     None,  # acts as divider
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
-                    ("close_act", "Close", "", self.close)
+                    ("close_act", "Close", "", self.close),
+                    None,
+                    ("username_act", "Change username...", "", self.changeUsername)
                 ]
             },
 
@@ -253,6 +255,22 @@ class MainWindow(QMainWindow):
             QMessageBox.Ok
         )
         self.field.reloadImage()
+    
+    def changeUsername(self):
+        """Edit the login name used to track history."""
+        new_name, confirmed = QInputDialog.getText(
+            self,
+            "Change Login",
+            "Enter your desired username:",
+            text=os.getlogin()
+        )
+        if not confirmed or not new_name:
+            return
+        
+        def getlogin():
+            return new_name
+        
+        os.getlogin = getlogin
     
     def openSeries(self, series_obj=None, refresh_menu=True):
         """Open an existing series and create the field.

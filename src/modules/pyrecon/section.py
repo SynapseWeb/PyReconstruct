@@ -69,9 +69,6 @@ class Section():
             Params:
                 trace (Trace): the trace to add
         """
-        # # insert username as first tag
-        # trace.tags = set((os.getlogin(),)).union(trace.tags)
-
         if trace.name in self.contours:
             self.contours[trace.name].append(trace)
         else:

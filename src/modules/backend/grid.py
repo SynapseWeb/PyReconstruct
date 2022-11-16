@@ -181,7 +181,7 @@ class Grid():
             contours.append(new_contour.tolist())
         return contours
 
-def reducePoints(points : list, ep=0.80, iterations=1, closed=True) -> list:
+def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) -> list:
     """Reduce the number of points in a trace (uses cv2.approxPolyDP).
     
         Params:
@@ -189,14 +189,24 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True) -> list:
             ep (float): the epsilon value for the approximation
             iterations (int): the number of times the approximation is run
             closed (bool): whether or not the trace is closed
+            mag (float): magnifcation for the trace
         Returns:
             (list) the final points after the approximation
-        """
+    """
+    np_pts = np.array(points)
+    if mag:
+        np_pts *= mag
+        np_pts = np_pts.astype(np.int32)
+
     for _ in range(iterations):
-        reduced_points = cv2.approxPolyDP(np.array(points), ep, closed=closed)
+        reduced_points = cv2.approxPolyDP(np_pts, ep, closed=closed)
         # print(len(reduced_points) / len(points))
-        points = reduced_points.copy()
-    return points[:,0,:].tolist()
+    
+    if mag:
+        reduced_points = reduced_points.astype(np.float64)
+        reduced_points /= mag
+    
+    return reduced_points[:,0,:].tolist()
 
 
 def getExterior(points : list) -> list:

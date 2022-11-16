@@ -52,7 +52,7 @@ class Contour():
     
     def isEmpty(self):
         """Return True if list if empty."""
-        return bool(self.traces)
+        return not bool(self.traces)
     
     def getTraces(self):
         """Return the list of traces."""

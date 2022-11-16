@@ -1,9 +1,10 @@
 import os
 import json
 
-from PySide6.QtWidgets import QProgressDialog
-
 from constants.blank_legacy_files import blank_series, blank_section
+
+from modules.backend.gui_functions import progbar
+from modules.backend.grid import reducePoints
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
@@ -11,7 +12,7 @@ from modules.pyrecon.transform import Transform
 
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
-def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog):
+def xmlToJSON(original_series : Series, new_dir : str):
     """Convert a series in XML to JSON.
     
         Params:
@@ -19,11 +20,21 @@ def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog
             new_dir (str): the directory to store the new files
             progbar: the QProgressDialog object
     """
+    # search for a Reconcropper JSON file
+    series_name = os.path.basename(original_series.filepath)[:-4]
+    json_name = series_name + "_data.json"
+    json_fp = os.path.join(original_series.getwdir(), json_name)
+    if os.path.isfile(json_fp):
+        has_reconcropper_file = True
+    else:
+        has_reconcropper_file = False
+
     # load a new series
     series = Series(original_series.filepath)
     # save sections as JSON
+    update, canceled = progbar("Export Series", "Exporting series...")
     progress = 0
-    final_value = len(series.sections) + 1 # plus one for extra json step
+    final_value = len(series.sections) # plus one for extra json step
     for snum in series.sections:
         section = series.loadSection(snum)
         section.filetype = "JSON"
@@ -31,12 +42,23 @@ def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog
             new_dir,
             os.path.basename(section.filepath)
         )
+        # modify the traces on the section
+        for trace in section.tracesAsList():
+            trace.points = reducePoints(
+                trace.points,
+                closed=trace.closed,
+                mag=1/section.mag
+            )
+        # save the section
         section.save()
-        if progbar.wasCanceled():
+        # update the progress
+        if canceled():
             return
+        progress += 1
+        if has_reconcropper_file:
+            update(progress/final_value * 50)
         else:
-            progress += 1
-            progbar.setValue(progress/final_value * 100)
+            update(progress/final_value * 100)
     # save series as XML
     series.filetype = "JSON"
     series.filepath = os.path.join(
@@ -45,15 +67,13 @@ def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog
     )
     series.save()
 
-    # search for a Reconcropper JSON file
-    series_name = os.path.basename(series.filepath)[:-4]
-    json_name = series_name + "_data.json"
-    json_fp = os.path.join(original_series.getwdir(), json_name)
     # read in alignment data from json
-    if os.path.isfile(json_fp):
+    if has_reconcropper_file:
         with open(json_fp, "r") as f:
             json_data = json.load(f)
         # iterate through all sections
+        progress = 0
+        final_value = len(series.sections)
         for snum in series.sections:
             section = series.loadSection(snum)
             for item in json_data:
@@ -65,10 +85,13 @@ def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog
                     pyrecon_tform = leg_tform.getPyreconTform()
                     section.tforms[item] = Transform(pyrecon_tform)
             section.save()
-    progress += 1
-    progbar.setValue(progress/final_value * 100)
+            # update the progress bar
+            if canceled():
+                return
+            progress += 1
+            update(50 + progress/final_value * 50)
 
-def jsonToXML(original_series : Series, new_dir : str, progbar : QProgressDialog):
+def jsonToXML(original_series : Series, new_dir : str):
     """Convert a series in JSON to XML.
     
         Params:
@@ -78,6 +101,7 @@ def jsonToXML(original_series : Series, new_dir : str, progbar : QProgressDialog
     # reload series
     series = Series(original_series.filepath)
     # save sections as XML
+    update, canceled = progbar("Export Series", "Exporting series...")
     progress = 0
     final_value = len(series.sections)
     for snum in series.sections:
@@ -105,11 +129,10 @@ def jsonToXML(original_series : Series, new_dir : str, progbar : QProgressDialog
         xml_section.tform = json_section.tform
         xml_section.contours = json_section.contours
         xml_section.save()
-        if progbar.wasCanceled():
+        if canceled():
             return
-        else:
-            progress += 1
-            progbar.setValue(progress/final_value * 100)
+        progress += 1
+        update(progress/final_value * 100)
     
     # save series as xml
     xml_text = blank_series

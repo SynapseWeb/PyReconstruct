@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                     None,
                     ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations", "", self.importTransforms),                     
+                    ("import_transforms_act", "Import transformations", "", self.importTransforms)                   
                 ]
             },
             
@@ -361,20 +361,12 @@ class MainWindow(QMainWindow):
                 outtype (str): XML or JSON
         """
         new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
-        progbar = QProgressDialog(
-            "Exporting series...",
-            "Cancel",
-            0, 100,
-            self
-        )
-        progbar.setWindowTitle("Export Series")
-        progbar.setWindowModality(Qt.WindowModal)
         if not new_dir:
             return
         if self.series.filetype == "XML":
-            xmlToJSON(self.series, new_dir, progbar=progbar)
+            xmlToJSON(self.series, new_dir)
         elif self.series.filetype == "JSON":
-            jsonToXML(self.series, new_dir, progbar=progbar)
+            jsonToXML(self.series, new_dir)
     
     def importTransforms(self):
         """Import transforms from a text file."""

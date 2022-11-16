@@ -122,6 +122,8 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
+                    ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
+                    None,
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform)
                 ]
@@ -464,6 +466,10 @@ class MainWindow(QMainWindow):
         """Open the object list widget."""
         self.saveAllData()
         self.field.openObjectList()
+    
+    def openTraceList(self):
+        """Open the trace list widget."""
+        self.field.openTraceList()
     
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.

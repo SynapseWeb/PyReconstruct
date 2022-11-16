@@ -159,16 +159,19 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None):
-        """Change the name and/or color of a trace.
+    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, traces : list = None):
+        """Change the name and/or color of a trace or set of traces.
         
             Params:
                 name (str): the new name
                 color (tuple): the new color
                 tags (set): the new set of tags
+                traces (list): the list of traces to edit (default: selected traces)
         """
         # change object attributes
-        for trace in self.selected_traces:
+        if traces is None:
+            traces = self.selected_traces
+        for trace in traces:
             self.section.removeTrace(trace)
             if color:
                 trace.color = color
@@ -178,6 +181,20 @@ class TraceLayer():
                 trace.name = name
             self.section.addTrace(trace)
     
+    def changeTraceRadius(self, new_rad : float, traces : list = None):
+        """Change the radius of a trace or set of traces.
+        
+            Params:
+                new_rad (float): the new radius for the trace(s)
+                traces (list): the list of traces to change
+        """
+        if traces is None:
+            traces = self.selected_traces
+        for trace in traces:
+            self.section.removeTrace(trace)
+            trace.resize(new_rad)
+            self.section.addTrace(trace)
+
     def deselectAllTraces(self):
         """Deselect all traces."""
         self.selected_traces = []
@@ -232,15 +249,18 @@ class TraceLayer():
         for piece in cut_traces:
             self.newTrace(piece, trace)
     
-    def deleteSelectedTraces(self):
+    def deleteSelectedTraces(self, traces : list = None):
         """Delete selected traces.
         
             Params:
-                save_state (bool): whether or not to save the state after deleting
+                traces (list): a list of traces to delete (default is selected traces)
         """
-        for trace in self.selected_traces:
+        if traces is None:
+            traces = self.selected_traces
+            self.selected_traces = []
+
+        for trace in traces:
             self.section.removeTrace(trace)
-        self.selected_traces = []
     
     def eraseArea(self, pix_x, pix_y):
         """Erase an area of the field.

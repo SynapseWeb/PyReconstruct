@@ -14,6 +14,7 @@ from modules.calc.pfconversions import pixmapPointToField
 from modules.backend.field_view import FieldView
 from modules.backend.gui_functions import populateMenu
 from modules.backend.object_table_manager import ObjectTableManager
+from modules.backend.trace_table_manager import TraceTableManager
 
 from modules.gui.dialog import FieldTraceDialog
 
@@ -79,6 +80,9 @@ class FieldWidget(QWidget, FieldView):
         if self.obj_table_manager is not None:
             self.obj_table_manager.close()
             self.obj_table_manager = None
+        if self.trace_table_manager is not None:
+            self.trace_table_manager.close()
+            self.trace_table_manager = None
 
         self.generateView()
     
@@ -105,6 +109,17 @@ class FieldWidget(QWidget, FieldView):
             self.obj_table_manager = ObjectTableManager(self.series, self.mainwindow)
         # create a new table
         self.obj_table_manager.newTable()
+    
+    def openTraceList(self):
+        # create the manager if not already
+        if self.trace_table_manager is None:
+            self.trace_table_manager = TraceTableManager(
+                self.series,
+                self.section,
+                self.mainwindow
+            )
+        # create a new table
+        self.trace_table_manager.newTable()
     
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.

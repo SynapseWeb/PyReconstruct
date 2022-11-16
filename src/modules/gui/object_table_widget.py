@@ -8,7 +8,7 @@ from modules.pyrecon.series import Series
 from modules.backend.object_table_item import ObjectTableItem
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.dialog import ObjectGroupDialog, ObjectTableColumnsDialog
+from modules.gui.dialog import ObjectGroupDialog, TableColumnsDialog
 
 class ObjectTableWidget(QDockWidget):
 
@@ -491,7 +491,7 @@ class ObjectTableWidget(QDockWidget):
     
     def setColumns(self):
         """Set the columns to display."""
-        new_cols, confirmed = ObjectTableColumnsDialog(
+        new_cols, confirmed = TableColumnsDialog(
             self,
             self.columns
         ).exec()

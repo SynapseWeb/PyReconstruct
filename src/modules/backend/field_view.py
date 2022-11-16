@@ -37,6 +37,7 @@ class FieldView():
 
         # placeholders for the table manager
         self.obj_table_manager = None
+        self.trace_table_manager = None
     
     def reload(self):
         """Reload the section data (used if section files were modified)."""
@@ -71,6 +72,8 @@ class FieldView():
                 self.section,
                 self.series.current_section
             )
+        if self.trace_table_manager:
+            self.trace_table_manager.update()
         self.section.clearTracking()
 
     def undoState(self):
@@ -87,6 +90,8 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection()
         self.generateView()
     
     def redoState(self):
@@ -103,6 +108,8 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection()
         self.generateView()
     
     def swapABsections(self):
@@ -131,9 +138,15 @@ class FieldView():
             self.series.current_section = new_section_num
             # clear selected traces
             self.section_layer.selected_traces = []
+        
         # create section state object if needed
         if new_section_num not in self.series_states:
             self.series_states[new_section_num] = SectionStates(self.section)
+        
+        # reload trace list
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection(self.section)
+
         # generate view and update status bar
         self.generateView()
     
@@ -151,11 +164,11 @@ class FieldView():
         except IndexError:
             return
         t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
-        min_x, min_y, max_x, max_y = trace.getBounds(point_tform)
+        min_x, min_y, max_x, max_y = trace.getBounds(t)
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+        self.section_layer.selected_traces = [trace]
         self.generateView()
     
     def resizeWindow(self, pixmap_dim : tuple):

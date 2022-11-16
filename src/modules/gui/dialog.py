@@ -242,7 +242,7 @@ class ObjectGroupDialog(QDialog):
             return "", False
 
 
-class ObjectTableColumnsDialog(QDialog):
+class TableColumnsDialog(QDialog):
 
     def __init__(self, parent, columns):
         """Create an object table column dialog.
@@ -252,10 +252,10 @@ class ObjectTableColumnsDialog(QDialog):
         """
         super().__init__(parent)
 
-        self.setWindowTitle("Object Table Columns")
+        self.setWindowTitle("Table Columns")
 
         self.title_text = QLabel(self)
-        self.title_text.setText("Object table columns:")
+        self.title_text.setText("Table columns:")
 
         self.cbs = []
         for c in columns:

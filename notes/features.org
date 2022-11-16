@@ -16,7 +16,7 @@
 
 - [X] Create contour class
 - [X] Update object/contour/trace terminology throughout
-- [ ] Create/implement transform class
+- [X] Create/implement transform class
 
 - [ ] 3D Options:
    - [ ] Transparency

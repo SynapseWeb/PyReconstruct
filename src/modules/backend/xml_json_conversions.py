@@ -7,6 +7,7 @@ from constants.blank_legacy_files import blank_series, blank_section
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.transform import Transform
 
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
@@ -62,7 +63,7 @@ def xmlToJSON(original_series : Series, new_dir : str, progbar : QProgressDialog
                     ycoef = json_data[item][section_name]["ycoef"]
                     leg_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef)
                     pyrecon_tform = leg_tform.getPyreconTform()
-                    section.tforms[item] = pyrecon_tform
+                    section.tforms[item] = Transform(pyrecon_tform)
             section.save()
     progress += 1
     progbar.setValue(progress/final_value * 100)

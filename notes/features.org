@@ -7,50 +7,29 @@
 
 ** Julian
 
-- [-] Object list
-   - [X] Round to 5 decimels (not sig figs)
-   - [X] Edit object attributes by right clicking
-   - [X] Add objects to object groups in attributes menu
-   - [X] Export (under "list menu") as CSV
-   - [X] Consider removing refesh
-   - [X] Edit object list variables from the object list
-   - [X] Add group variable column
-   - [X] Add tags to all traces associated with an object (don't overwrite any existing tags)
-   - [X] Add trial 3D render to object list
-   - [ ] Standard regexp tick boxes to filter (e.g., synapses = *[_ ]c[_][0-9]+)
-     
-- [-] Trace list
-   - [ ] Export as CSV
-   - [ ] Include trace list index in columns
-   - [-] Tags
-      - [ ] Include tags (also need to update trace attribute window)
-      - [X] Consider always tagging new traces with =os.login()= as default
-      - [ ] Fix trace tags on import ("imported-20221114")
-      - [ ] Option to change username (default to =os.login()=)
-        
-- [ ] Select tool - only select object that are entirely surrounded by selection
-        
-- [-] Mouse palette
-   - [X] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
-   - [X] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
-   - [X] Ctrl-numbers to access trace button attributes from the field
-   - [ ] Fix pallet shortcuts on open series
-   - [ ] Fix stamp size and make default 0.1
-     
-- [ ] Minor things
-   - [ ] Fix import statements for dim 6 (Did we do this?)
-   - [ ] Update object/contour/trace terminology throughout
-     
-- [ ] Other things
-   - [ ] Give Michael a good reason why we can't get rid of trace names in json
-   - [ ] Think about it contour class?
+- [ ] Ctrl+C
+- [ ] Ctrl+X
+- [ ] Ctrl+V
+- [ ] Ctrl+B
 
-- [-] Move traces in field
-   - [X] Double click left and hold to move
-   - [ ] Press "g" for grab (consider "s" for scaling and "r" for rotation later)
+- [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
+- [ ] Include trace list index in columns
 
-- [X] Field attribute menu
-   - [X] Access by right clicking trace
+- [ ] Fix trace tags on import ("imported-20221114")
+- [ ] Option to change username (default to =os.getlogin()=)
+
+- [ ] Fix import statements for dim 6 (Did we do this?)
+
+- [ ] Create contour class
+- [ ] Update object/contour/trace terminology throughout
+
+- [ ] Force JSON usage
+- [ ] Rewrite export/import XML code
+- [ ] Remove trace names in JSON
+
+- [ ] 3D Options:
+   - [ ] Transparency
+   - [ ] Scale cube sizing
   
 ** Michael
 
@@ -173,4 +152,24 @@
 - [X] Add dim 6 handling for xml import (NOT TESTED YET)
 - [X] Find First function in obj list
 - [X] Find Last function in obj list
+- [X] Object list
+   - [X] Round to 5 decimels (not sig figs)
+   - [X] Edit object attributes by right clicking
+   - [X] Add objects to object groups in attributes menu
+   - [X] Export (under "list menu") as CSV
+   - [X] Consider removing refesh
+   - [X] Edit object list variables from the object list
+   - [X] Add group variable column
+   - [X] Add tags to all traces associated with an object (don't overwrite any existing tags)
+   - [X] Add trial 3D render to object list
+- [X] Select tool - only select object that are entirely surrounded by selection
+- [X] Mouse palette
+   - [X] Add keyboard shortcuts for tool (s for select, z for pan/zoom, etc.)
+   - [X] Add keyboard shorts for trace buttons (1 for first, 2 for second, etc.)
+   - [X] Ctrl-numbers to access trace button attributes from the field
+   - [X] Fix pallet shortcuts on open series
+   - [X] Fix stamp size and make default 0.1
+- [X] Move traces in field
+- [X] Field attribute menu
+   - [X] Access by right clicking trace
 

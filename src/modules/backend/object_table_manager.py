@@ -201,17 +201,19 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             for obj_name in obj_names:
                 if obj_name in section.contours:
-                    for trace in section.contours[obj_name]:
+                    contour = section.contours(obj_name)
+                    for trace in contour:
                         if name:
                             trace.name = name
                         if color:
                             trace.color = color
                     if name:
+                        contour.name = name
                         # check if the new name exists in the section
                         if name in section.contours:
-                            section.contours[name] += section.contours[obj_name]
+                            section.contours[name] += contour
                         else:
-                            section.contours[name] = section.contours[obj_name]
+                            section.contours[name] = contour
                         del(section.contours[obj_name])
                     section.save()
         

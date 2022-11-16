@@ -1,6 +1,7 @@
 import os
 import json
-from .trace import Trace
+from modules.pyrecon.contour import Contour
+from modules.pyrecon.trace import Trace
 
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 from modules.legacy_recon.utils.reconstruct_reader import process_section_file
@@ -34,10 +35,12 @@ class Section():
             self.mag = section_data["mag"]
             self.tforms = section_data["tforms"]
             self.thickness = section_data["thickness"]
-            self.contours = section_data["traces"]
+            self.contours = section_data["contours"]
             for name in self.contours:
-                for i in range(len(self.contours[name])):  # convert trace dictionaries into trace objects
-                    self.contours[name][i] = Trace.fromDict(self.contours[name][i])
+                self.contours[name] = Contour(
+                    name,
+                    [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
+                )
         
         elif self.filetype == "XML":
             self.xml_section = process_section_file(filepath)
@@ -59,13 +62,13 @@ class Section():
             Params:
                 trace (Trace): the trace to add
         """
-        # insert username as first tag
-        trace.tags = set((os.getlogin(),)).union(trace.tags)
+        # # insert username as first tag
+        # trace.tags = set((os.getlogin(),)).union(trace.tags)
 
         if trace.name in self.contours:
             self.contours[trace.name].append(trace)
         else:
-            self.contours[trace.name] = [trace]
+            self.contours[trace.name] = Contour(trace.name, [trace])
         
         self.added_traces.append(trace)
     
@@ -109,13 +112,13 @@ class Section():
         d["mag"] = self.mag
         d["tforms"] = self.tforms
         d["thickness"] = self.thickness
-        d["traces"] = {}
+        d["contours"] = {}
         # special saving method for contours
         for contour_name in self.contours:
-            if self.contours[contour_name] != []:
-                d["traces"][contour_name] = self.contours[contour_name].copy()
-                for i in range(len(d["traces"][contour_name])):  # convert trace objects in trace dictionaries
-                    d["traces"][contour_name][i] = d["traces"][contour_name][i].getDict()
+            if not self.contours[contour_name].isEmpty():
+                d["contours"][contour_name] = [
+                    trace.getDict(include_name=False) for trace in self.contours[contour_name]
+                ]
         return d
     
     # STATIC METHOD
@@ -140,7 +143,7 @@ class Section():
         section_data["thickness"] = thickness  # section thickness
         section_data["tforms"] = {}  
         section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
-        section_data["traces"] = {}
+        section_data["contours"] = {}
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))

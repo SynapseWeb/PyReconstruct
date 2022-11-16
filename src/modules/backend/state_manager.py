@@ -1,4 +1,5 @@
 from modules.pyrecon.section import Section
+from modules.pyrecon.contour import Contour
 
 class FieldState():
 
@@ -8,16 +9,11 @@ class FieldState():
         # first state made for a section (or copy)
         if updated_contours is None:
             for contour_name in contours:
-                self.contours[contour_name] = []
-                for trace in contours[contour_name]:
-                    self.contours[contour_name].append(trace.copy())
+                self.contours[contour_name] = contours[contour_name].copy()
         # added another state
         else:
             for contour_name in updated_contours:
-                self.contours[contour_name] = []
-                if contour_name in contours:
-                    for trace in contours[contour_name]:
-                        self.contours[contour_name].append(trace.copy())
+                self.contours[contour_name] = contours[contour_name].copy()
         # save tforms
         self.tforms = {}
         for alignment_name in tforms:
@@ -27,7 +23,10 @@ class FieldState():
         return FieldState(self.contours, self.tforms)
     
     def getContours(self):
-        return self.contours.copy()
+        contours = {}
+        for cname in self.contours:
+            contours[cname] = self.contours[cname].copy()
+        return contours
     
     def getModifiedContours(self):
         return set(self.contours.keys())
@@ -78,7 +77,7 @@ class SectionStates():
         # if the contour was not found (aka it was just created)
         if last_changed:
             for contour in last_changed:
-                section.contours[contour] = []
+                section.contours[contour] = Contour(contour)
 
         # restore the transforms
         restored_tforms = self.undo_states[-1].getTforms()

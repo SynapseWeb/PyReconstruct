@@ -80,14 +80,15 @@ class Trace():
         """
         self.tags.append(tag)
 
-    def getDict(self) -> dict:
+    def getDict(self, include_name=True) -> dict:
         """Return the trace data as a dictionary.
         
             Returns:
                 (dict) dictionary containing the trace data
         """
         d = {}
-        d["name"] = self.name
+        if include_name:
+            d["name"] = self.name
         d["color"] = self.color
         d["closed"] = self.closed
         d["points"] = self.points
@@ -120,15 +121,18 @@ class Trace():
         return xml_contour
     
     # STATIC METHOD
-    def fromDict(d):
+    def fromDict(d, name : str = None):
         """Create a trace object from a dictionary.
         
             Params:
                 d (dict): the dictionary contour data
+                name (str): the name of the trace
             Returns:
                 (Trace) a Trace object constructed from the dictionary data
         """
-        new_trace = Trace(d["name"], d["color"], d["closed"])
+        if not name:
+            name = d["name"]
+        new_trace = Trace(name, d["color"], d["closed"])
         new_trace.points = d["points"]
         new_trace.hidden = d["hidden"]
         new_trace.tags = set(d["tags"])

@@ -160,7 +160,7 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
-        if trace_name not in self.section.contours or len(self.section.contours[trace_name]) == 0:
+        if trace_name not in self.section.contours or self.section.contours[trace_name].isEmpty():
             return
         try:
             trace = self.section.contours[trace_name][index]
@@ -180,7 +180,7 @@ class FieldView():
             Params:
                 contour_name (str): the name of the contour to focus on
         """
-        if contour_name not in self.section.contours or len(self.section.contours[contour_name]) == 0:
+        if contour_name not in self.section.contours or self.section.contours[contour_name].isEmpty():
             return
         
         contour = self.section.contours[contour_name]
@@ -193,7 +193,7 @@ class FieldView():
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
-        self.section_layer.selected_traces = contour
+        self.section_layer.selected_traces = contour.getTraces()
         self.generateView()
     
     def resizeWindow(self, pixmap_dim : tuple):

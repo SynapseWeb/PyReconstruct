@@ -23,6 +23,19 @@ class Contour():
         """Allow the user to index the traces list."""
         return self.traces[index]
     
+    def __len__(self):
+        """Get the length of the trace list."""
+        return len(self.traces)
+    
+    def __add__(self, other):
+        """Combine contours."""
+        if self.name != other.name:
+            raise Exception("Only contours with the same name can be summed.")
+        return Contour(
+            self.name,
+            self.traces + other.traces
+        )
+    
     def append(self, trace : Trace):
         """Append a trace to the existing traces."""
         if trace.name != self.name:
@@ -36,4 +49,20 @@ class Contour():
     def index(self, trace : Trace):
         """Find the index of a trace in the list."""
         return self.traces.index(trace)
+    
+    def isEmpty(self):
+        """Return True if list if empty."""
+        return bool(self.traces)
+    
+    def getTraces(self):
+        """Return the list of traces."""
+        return self.traces
+    
+    def copy(self):
+        """Return a copy of the contour."""
+        traces = []
+        for trace in self.traces:
+            traces.append(trace.copy())
+        return Contour(self.name, traces)
+
 

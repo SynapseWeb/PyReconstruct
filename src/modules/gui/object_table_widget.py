@@ -510,6 +510,8 @@ class ObjectTableWidget(QDockWidget):
             "objects.csv",
             filter="Comma Separated Values (.csv)"
         )
+        if not file_path:
+            return
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

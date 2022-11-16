@@ -166,8 +166,8 @@ class FieldView():
             trace = self.section.contours[trace_name][index]
         except IndexError:
             return
-        t = self.section.tforms[self.series.alignment]
-        min_x, min_y, max_x, max_y = trace.getBounds(t)
+        tform = self.section.tforms[self.series.alignment]
+        min_x, min_y, max_x, max_y = trace.getBounds(tform)
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
@@ -184,8 +184,8 @@ class FieldView():
             return
         
         contour = self.section.contours[contour_name]
-        t = self.section.tforms[self.series.alignment]
-        vals = [trace.getBounds(t) for trace in contour]
+        tform = self.section.tforms[self.series.alignment]
+        vals = [trace.getBounds(tform) for trace in contour]
         min_x = min([v[0] for v in vals])
         min_y = min([v[1] for v in vals])
         max_x = max([v[2] for v in vals])

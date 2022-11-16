@@ -16,6 +16,7 @@ from modules.backend.import_transforms import importTransforms
 from modules.backend.gui_functions import populateMenuBar, populateMenu
 
 from modules.pyrecon.series import Series
+from modules.pyrecon.transform import Transform
 
 from constants.locations import assets_dir
 
@@ -495,7 +496,7 @@ class MainWindow(QMainWindow):
     def changeTform(self):
         """Open a dialog to change the transform of a section."""
         current_tform = " ".join(
-            [str(round(n, 2)) for n in self.field.section.tforms[self.series.alignment]]
+            [str(round(n, 2)) for n in self.field.section.tforms[self.series.alignment].getList()]
         )
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
@@ -507,7 +508,7 @@ class MainWindow(QMainWindow):
                 return
         except ValueError:
             return
-        self.field.changeTform(new_tform)
+        self.field.changeTform(Transform(new_tform))
     
     def translateTform(self, direction : str, amount : str):
         """Translate the current transform.
@@ -530,9 +531,10 @@ class MainWindow(QMainWindow):
             x, y = 0, num
         elif direction == "down":
             x, y = 0, -num
-        new_tform = self.field.section.tforms[self.series.alignment].copy()
+        new_tform = self.field.section.tforms[self.series.alignment].getList()
         new_tform[2] += x
         new_tform[5] += y
+        new_tform = Transform(new_tform)
         self.field.changeTform(new_tform)
     
     def gotoSection(self):

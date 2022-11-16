@@ -31,11 +31,10 @@ class TraceLayer():
                 (list): list of pixel points
         """
         new_pts = []
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        tform = self.section.tforms[self.series.alignment]
         for point in trace.points:
             x, y = tuple(point)
-            x, y = point_tform.map(x, y)
+            x, y = tform.map(x, y)
             x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             if qpoints:
                 new_pts.append(QPoint(x, y))
@@ -57,12 +56,11 @@ class TraceLayer():
         """
         min_distance = -1
         closest_trace = None
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        tform = self.section.tforms[self.series.alignment]
         for trace in self.traces_in_view:
             points = []
             for point in trace.points:
-                x, y = point_tform.map(*point)
+                x, y = tform.map(*point)
                 points.append((x,y))
             dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.section.mag)
             if closest_trace is None or dist < min_distance:
@@ -126,11 +124,10 @@ class TraceLayer():
         new_trace.points = []
 
         # get the points
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5]) # normal matrix for points
+        tform = self.section.tforms[self.series.alignment]
         for point in pix_trace:
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
-            rtform_point = point_tform.inverted()[0].map(*field_point) # apply the inverse tform to fix trace to base image
+            rtform_point = tform.map(*field_point, inverted=True) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
         
         self.section.addTrace(new_trace)
@@ -149,12 +146,11 @@ class TraceLayer():
         # get mouse coords and convert to field coords
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # create new stamp trace
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        tform = self.section.tforms[self.series.alignment]
         new_trace = Trace(trace.name, trace.color)
         for point in trace.points:
             field_point = (point[0] + field_x, point[1] + field_y)
-            rtform_point = point_tform.inverted()[0].map(*field_point)  # fix the coords to image
+            rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
@@ -286,8 +282,7 @@ class TraceLayer():
         for trace in self.selected_traces:
             trace : Trace
             trace = trace.copy()
-            t = self.section.tforms[self.series.alignment]
-            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+            tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p) for p in trace.points]
             copied_traces.append(trace)
         
@@ -300,9 +295,8 @@ class TraceLayer():
         """Called when the user presses Ctrl+V."""
         for trace in traces:
             trace = trace.copy()
-            t = self.section.tforms[self.series.alignment]
-            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            trace.points = [tform.inverted()[0].map(*p) for p in trace.points]
+            tform = self.section.tforms[self.series.alignment]
+            trace.points = [tform.map(*p, inverted=True) for p in trace.points]
             self.section.addTrace(trace)
     
     def pasteAttributes(self, traces : list[Trace]):
@@ -337,8 +331,6 @@ class TraceLayer():
             Returns:
                 (bool) if the trace is within the current field window view
         """
-        # establish tform
-        t = self.section.tforms[self.series.alignment]
         # set up painter
         painter = QPainter(trace_layer)
         if highlight: # create dashed white line if trace is to be highlighted

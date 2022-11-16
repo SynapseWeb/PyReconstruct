@@ -1,5 +1,7 @@
 from PySide6.QtGui import QTransform
 
+from modules.pyrecon.transform import Transform
+
 from modules.legacy_recon.classes.contour import Contour as XMLContour
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
@@ -169,7 +171,7 @@ class Trace():
 
         return new_trace
 
-    def getBounds(self, t=None) -> tuple:
+    def getBounds(self, tform : Transform = None) -> tuple:
         """Get the most extreme coordinates for the trace.
         
             Params:
@@ -180,27 +182,25 @@ class Trace():
                 (float) max x value
                 (float) max y value
         """
-        if t is None:
+        if tform is None:
             x = [p[0] for p in self.points]
             y = [p[1] for p in self.points]
         else:
-            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            tform_points = [tform.map(*p) for p in self.points]
+            tform_points = tform.map(self.points)
             x = [p[0] for p in tform_points]
             y = [p[1] for p in tform_points]
         
         return min(x), min(y), max(x), max(y)
     
-    def getRadius(self, t=None):
+    def getRadius(self, tform : Transform = None):
         """Get the distance from the centroid of the trace to its farthest point.
         
             Params:
                 tform: the transform to apply to the points
         """
         points = self.points.copy()
-        if t:
-            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            points = [tform.map(*p) for p in self.points]
+        if tform:
+            points = tform.map(points)
         cx, cy = centroid(points)
         r = max([distance(cx, cy, x, y) for x, y in points])
         return r
@@ -210,7 +210,7 @@ class Trace():
         cx, cy = centroid(self.points)
         self.points = [(x-cx, y-cy) for x,y in self.points]
 
-    def resize(self, new_radius, t=None):
+    def resize(self, new_radius, tform : Transform = None):
         """Resize a trace beased on its radius
         
             Params:
@@ -218,9 +218,8 @@ class Trace():
                 tform: the tform applied to the trace
         """
         points = self.points.copy()
-        if t:
-            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-            points = [tform.map(*p) for p in self.points]
+        if tform:
+            points = tform.map(points)
         
         # calculate constants
         cx, cy = centroid(points)
@@ -237,8 +236,8 @@ class Trace():
         ]
 
         # restore untransformed version
-        if t:
-            points = [tform.inverted()[0].map(*p) for p in points]
+        if tform:
+            points = tform.map(points, inverted=True)
         
         self.points = points
 

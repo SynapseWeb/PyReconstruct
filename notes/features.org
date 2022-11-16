@@ -14,15 +14,16 @@
 
 - [ ] Fix import statements for dim 6 (Did we do this?)
 
-- [ ] Create contour class
-- [ ] Update object/contour/trace terminology throughout
-- [ ] Create transform class
+- [X] Create contour class
+- [X] Update object/contour/trace terminology throughout
+- [ ] Create/implement transform class
 
 - [ ] 3D Options:
    - [ ] Transparency
    - [ ] Scale cube sizing
 
 - [ ] Force JSON usage
+- [ ] Single series file?
 - [ ] Rewrite export/import XML code
 - [ ] Remove trace names in JSON
   

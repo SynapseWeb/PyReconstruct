@@ -50,10 +50,7 @@ class ObjectVolume():
                     continue
                 # transform points and add them to list
                 for trace in section.contours[obj_name]:
-                    modified_points = tformPoints(
-                        trace.points,
-                        section.tforms[series.alignment],
-                    )
+                    modified_points = section.tforms[series.alignment].map(trace.points)
                     self.obj_data[snum]["contours"][obj_name].append({
                         "points" : modified_points,
                         "color" : trace.color
@@ -199,20 +196,3 @@ class ObjectVolume():
             (z*zs, y*ys, x*xs),
             (zmin, ymin, xmin)
         )
-
-
-
-def tformPoints(points : list, t : list) -> list[tuple[int]]:
-    """Transform a set of points.
-    
-        Params:
-            points (list): the list of points
-            t (list): the transform to apply
-        Returns:
-            (list[tuple[int]]): a list of points with the transform applied
-    """
-    point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-    new_points = []
-    for p in points:
-        new_points.append(point_tform.map(*p))
-    return new_points

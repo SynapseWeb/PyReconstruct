@@ -2,12 +2,13 @@ import os
 
 import zarr
 
-from PySide6.QtCore import Qt, QRectF, QPoint, QPointF, QRect
-from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon, QPolygonF)
+from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
-from modules.pyrecon.section import Section
 from modules.pyrecon.series import Series
+from modules.pyrecon.section import Section
+from modules.pyrecon.transform import Transform
 
 from modules.calc.pfconversions import fieldPointToPixmap
 
@@ -57,7 +58,7 @@ class ImageLayer():
         self.series.src_dir = src_dir
         self.loadImage()
     
-    def _calcTformCorners(self, base_pixmap : QPixmap, tform : QTransform) -> tuple:
+    def _calcTformCorners(self, base_pixmap : QPixmap, tform : Transform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
         
             Params:
@@ -124,13 +125,12 @@ class ImageLayer():
                 image_layer (QPixmap): the pixmap to draw brightness on
         """
         # get transform
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+        tform = self.section.tforms[self.series.alignment]
         # establish first point
         brightness_poly = QPolygon()
         for p in self.base_corners:
             x, y = [n*self.section.mag for n in p]
-            x, y = point_tform.map(x, y)
+            x, y = tform.map(x, y)
             x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             brightness_poly.append(QPoint(x, y))
         # paint to image
@@ -207,15 +207,13 @@ class ImageLayer():
         ]
         
         # get transforms
-        t = self.section.tforms[self.series.alignment]
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-        image_tform = QTransform(t[0], -t[3], -t[1], t[4], 0, 0)
+        tform = self.section.tforms[self.series.alignment]
 
         # convert corners to image pixel coordinates
         for i in range(len(window_corners)):
             # apply inverse transform to window corners
             point = window_corners[i]
-            point = list(point_tform.inverted()[0].map(*point))
+            point = list(tform.map(*point, inverted=True))
             # divide by image magnification
             point[0] /= self.section.mag
             point[1] /= self.section.mag
@@ -306,7 +304,8 @@ class ImageLayer():
         painter.end()
 
         # transform the padded image
-        im_tformed = im_padded.transformed(image_tform)
+        image_tform = tform.imageTransform()
+        im_tformed = im_padded.transformed(image_tform.getQTransform())
 
         # transform the origin shift coordinates
         origin_shift = list(image_tform.map(*origin_shift))

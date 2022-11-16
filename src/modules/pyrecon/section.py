@@ -2,6 +2,7 @@ import os
 import json
 from modules.pyrecon.contour import Contour
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.transform import Transform
 
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 from modules.legacy_recon.utils.reconstruct_reader import process_section_file
@@ -33,7 +34,11 @@ class Section():
             self.brightness = section_data["brightness"]
             self.contrast = section_data["contrast"]
             self.mag = section_data["mag"]
-            self.tforms = section_data["tforms"]
+
+            self.tforms = {}
+            for a in section_data["tforms"]:
+                self.tforms[a] = Transform(section_data["tforms"][a])
+            
             self.thickness = section_data["thickness"]
             self.contours = section_data["contours"]
             for name in self.contours:
@@ -46,7 +51,9 @@ class Section():
             self.xml_section = process_section_file(filepath)
             image = self.xml_section.images[0] # assume only one image
             self.tforms = {}
-            self.tforms["default"] = list(image.transform.tform()[:2,:].reshape(6))
+            self.tforms["default"] = Transform(
+                list(image.transform.tform()[:2,:].reshape(6))
+            )
             self.src = image.src
             self.brightness = 0
             self.contrast = 0
@@ -110,10 +117,16 @@ class Section():
         d["brightness"] = self.brightness
         d["contrast"] = self.contrast
         d["mag"] = self.mag
-        d["tforms"] = self.tforms
+
+        # save tforms
+        d["tforms"] = {}
+        for a in self.tforms:
+            d["tforms"][a] = self.tforms[a].getList()
+
         d["thickness"] = self.thickness
+
+        # save contours
         d["contours"] = {}
-        # special saving method for contours
         for contour_name in self.contours:
             if not self.contours[contour_name].isEmpty():
                 d["contours"][contour_name] = [
@@ -142,7 +155,7 @@ class Section():
         section_data["mag"] = mag  # microns per pixel
         section_data["thickness"] = thickness  # section thickness
         section_data["tforms"] = {}  
-        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
+        section_data["tforms"]["default"]= Transform([1, 0, 0, 0, 1, 0]) # identity matrix default
         section_data["contours"] = {}
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
@@ -166,7 +179,7 @@ class Section():
             self.xml_section.images[0].src = self.src
             self.xml_section.images[0].mag = self.mag
             self.xml_section.thickness = self.thickness
-            t = self.tforms["default"]
+            t = self.tforms["default"].getList()
             xcoef = [t[2], t[0], t[1]]
             ycoef = [t[5], t[3], t[4]]
             xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse

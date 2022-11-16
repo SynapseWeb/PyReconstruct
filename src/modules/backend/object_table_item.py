@@ -3,6 +3,7 @@ from PySide6.QtGui import QTransform
 from modules.calc.quantification import area, lineDistance
 
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.transform import Transform
 
 class ObjectTableItem():
 
@@ -83,7 +84,7 @@ class ObjectTableItem():
     def isEmpty(self):
         return not bool(self.data)
     
-    def addTrace(self, trace : Trace, tform : list, section_num : int, section_thickness : float):
+    def addTrace(self, trace : Trace, tform : Transform, section_num : int, section_thickness : float):
         """Add trace data to the existing object.
         
             Params:
@@ -107,9 +108,7 @@ class ObjectTableItem():
         self.data[section_num]["tags"] = self.data[section_num]["tags"].union(trace.tags)
 
         # transform the points
-        t = tform
-        point_tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
-        trace_points = [point_tform.map(*p) for p in trace.points]
+        trace_points = tform.map(trace.points)
 
         # calculate totals to add
         trace_distance = lineDistance(trace_points, closed=trace.closed)

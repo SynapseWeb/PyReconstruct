@@ -5,6 +5,7 @@ from modules.backend.trace_layer import TraceLayer
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.transform import Transform
 
 class SectionLayer(ImageLayer, TraceLayer):
 
@@ -33,7 +34,7 @@ class SectionLayer(ImageLayer, TraceLayer):
 
         return view
     
-    def changeTform(self, new_tform : list):
+    def changeTform(self, new_tform : Transform):
         """Set the transform for the image.
         
             Params:

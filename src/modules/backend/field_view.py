@@ -38,6 +38,9 @@ class FieldView():
         # placeholders for the table manager
         self.obj_table_manager = None
         self.trace_table_manager = None
+
+        # copy/paste clipholder
+        self.clipboard = []
     
     def reload(self):
         """Reload the section data (used if section files were modified)."""
@@ -333,5 +336,23 @@ class FieldView():
     def changeAlignment(self, new_alignment):
         self.series.alignment = new_alignment
         self.generateView()
+    
+    def copy(self):
+        self.clipboard = self.section_layer.getCopiedTraces()
+    
+    def cut(self):
+        self.clipboard = self.section_layer.getCopiedTraces(cut=True)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def paste(self):
+        self.section_layer.pasteTraces(self.clipboard)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def pasteAttributes(self):
+        self.section_layer.pasteAttributes(self.clipboard)
+        self.saveState()
+        self.generateView(generate_image=False)
     
     

@@ -276,6 +276,45 @@ class TraceLayer():
             return True
         return False
     
+    def getCopiedTraces(self, cut=False):
+        """Called when user presses Ctrl+C or Ctrl+X.
+        
+            Params:
+                cut (bool): whether or not to delete the traces
+        """
+        copied_traces = []
+        for trace in self.selected_traces:
+            trace : Trace
+            trace = trace.copy()
+            t = self.section.tforms[self.series.alignment]
+            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+            trace.points = [tform.map(*p) for p in trace.points]
+            copied_traces.append(trace)
+        
+        if cut:
+            self.deleteSelectedTraces()
+        
+        return copied_traces
+    
+    def pasteTraces(self, traces : list[Trace]):
+        """Called when the user presses Ctrl+V."""
+        for trace in traces:
+            trace = trace.copy()
+            t = self.section.tforms[self.series.alignment]
+            tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
+            trace.points = [tform.inverted()[0].map(*p) for p in trace.points]
+            self.section.addTrace(trace)
+    
+    def pasteAttributes(self, traces : list[Trace]):
+        """Called when the user pressed Ctrl+B."""
+        if len(traces) != 1:
+            return
+        trace = traces[0]
+
+        name, color, tags = trace.name, trace.color, trace.tags
+
+        self.changeTraceAttributes(name, color, tags)
+    
     def toggleHideAllTraces(self):
         """Hide/unhide every trace on the section."""
         if self.all_traces_hidden:

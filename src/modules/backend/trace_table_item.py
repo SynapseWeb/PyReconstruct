@@ -6,14 +6,17 @@ from modules.pyrecon.trace import Trace
 
 class TraceTableItem():
 
-    def __init__(self, trace : Trace, t : list):
+    def __init__(self, trace : Trace, t : list, index : int):
         """Create an object table item.
         
             Params:
-                name (str): the name of the trace
+                trace (Trace): the trace object for the trace
+                t (list): the list as a transform
+                index (int): the index of the trace in the contour
         """
         self.trace = trace
         self.name = trace.name
+        self.index = index
         self.closed = trace.closed
         self.tags = trace.tags
         tform = QTransform(t[0], t[3], t[1], t[4], t[2], t[5])

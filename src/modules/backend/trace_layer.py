@@ -257,7 +257,7 @@ class TraceLayer():
         """
         if traces is None:
             traces = self.selected_traces
-            self.selected_traces = []
+        self.selected_traces = []
 
         for trace in traces:
             self.section.removeTrace(trace)

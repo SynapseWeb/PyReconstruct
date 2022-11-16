@@ -23,13 +23,16 @@ class TraceTableManager():
         self.data = {}
         for c in self.section.contours:
             self.data[c] = []
+            index = 0
             for trace in self.section.contours[c]:
                 self.data[c].append(
                     TraceTableItem(
                         trace,
-                        self.section.tforms[self.series.alignment]
+                        self.section.tforms[self.series.alignment],
+                        index
                     )
                 )
+                index += 1
         # add the data to the tables
         for table in self.tables:
             table.createTable(self.data)
@@ -45,7 +48,8 @@ class TraceTableManager():
                 self.data[trace.name] = contour
             item = TraceTableItem(
                 trace,
-                self.section.tforms[self.series.alignment]
+                self.section.tforms[self.series.alignment],
+                len(contour)
             )
             contour.append(item)
             for table in self.tables:
@@ -53,10 +57,12 @@ class TraceTableManager():
         # update removed traces
         for trace in self.section.removed_traces:
             contour = self.data[trace.name]
-            for item in contour:
+            for index, item in enumerate(contour):
                 if item.isTrace(trace):
-                    self.data[trace.name].remove(item)
+                    contour.remove(item)
                     break
+            for i in range(index, len(contour)):
+                contour[i].index -= 1
             for table in self.tables:
                 table.removeItem(item)
     
@@ -119,8 +125,7 @@ class TraceTableManager():
             Params:
                 item (TraceTableItem): the item corresponding to the desired trace
         """
-        index = self.data[item.name].index(item)
-        self.mainwindow.field.findTrace(item.name, index)
+        self.mainwindow.field.findTrace(item.name, item.index)
     
     def deleteTraces(self, traces):
         self.mainwindow.field.section_layer.deleteSelectedTraces(traces)

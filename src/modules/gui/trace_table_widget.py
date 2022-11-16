@@ -63,8 +63,11 @@ class TraceTableWidget(QDockWidget):
         """
         while row > self.table.rowCount()-1:
             self.table.insertRow(self.table.rowCount())
-        self.table.setItem(row, 0, QTableWidgetItem(traceitem.name))
-        col = 1
+        col = 0
+        self.table.setItem(row, col, QTableWidgetItem(traceitem.name))
+        col += 1
+        self.table.setItem(row, col, QTableWidgetItem(str(traceitem.index)))
+        col += 1
         if self.columns["Tags"]:
             self.table.setItem(row, col, QTableWidgetItem(", ".join(traceitem.getTags())))
             col += 1
@@ -163,14 +166,14 @@ class TraceTableWidget(QDockWidget):
             Params:
                 objdata (dict): the dictionary containing the object table data objects
         """
-        self.table = QTableWidget(0, len(self.columns)+1)
+        self.table = QTableWidget(0, len(self.columns)+2)
 
         # connect table functions
         self.table.contextMenuEvent = self.traceContextMenu
         self.table.mouseDoubleClickEvent = self.findTrace
 
         # establish table headers
-        self.horizontal_headers = ["Name"]
+        self.horizontal_headers = ["Name", "Index"]
         for c in self.columns:
             if self.columns[c]:
                 self.horizontal_headers.append(c)
@@ -237,6 +240,9 @@ class TraceTableWidget(QDockWidget):
         # remove the item
         self.items.remove(del_item)
         self.table.removeRow(r)
+        while r < len(self.items) and self.items[r].name == del_item.name:
+            self.setRow(self.items[r], r)
+            r += 1
     
     def getSelectedItem(self):
         """Get the trace item that is selected by the user."""

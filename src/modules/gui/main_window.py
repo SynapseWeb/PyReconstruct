@@ -122,6 +122,7 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
+                    ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
                     ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
                     None,
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
@@ -479,7 +480,7 @@ class MainWindow(QMainWindow):
                 section_num (str): the section the object is located
         """
         self.changeSection(section_num)
-        self.field.findTrace(obj_name)
+        self.field.findContour(obj_name)
     
     def changeTform(self):
         """Open a dialog to change the transform of a section."""

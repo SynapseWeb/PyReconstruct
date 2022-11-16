@@ -171,6 +171,28 @@ class FieldView():
         self.section_layer.selected_traces = [trace]
         self.generateView()
     
+    def findContour(self, contour_name : str):
+        """Focus the window view on a given trace.
+        
+            Params:
+                contour_name (str): the name of the contour to focus on
+        """
+        if contour_name not in self.section.contours or len(self.section.contours[contour_name]) == 0:
+            return
+        
+        contour = self.section.contours[contour_name]
+        t = self.section.tforms[self.series.alignment]
+        vals = [trace.getBounds(t) for trace in contour]
+        min_x = min([v[0] for v in vals])
+        min_y = min([v[1] for v in vals])
+        max_x = max([v[2] for v in vals])
+        max_y = max([v[3] for v in vals])
+        range_x = max_x - min_x
+        range_y = max_y - min_y
+        self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+        self.section_layer.selected_traces = contour
+        self.generateView()
+    
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.
         

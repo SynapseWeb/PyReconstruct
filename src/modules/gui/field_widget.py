@@ -121,6 +121,17 @@ class FieldWidget(QWidget, FieldView):
         # create a new table
         self.trace_table_manager.newTable()
     
+    def findContourDialog(self):
+        """Open a dilog to prompt user to find contour."""
+        contour_name, confirmed = QInputDialog.getText(
+            self,
+            "Find Contour",
+            "Enter the contour name:",
+        )
+        if not confirmed:
+            return
+        self.findContour(contour_name)
+    
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
         

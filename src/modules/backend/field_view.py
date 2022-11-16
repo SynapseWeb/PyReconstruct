@@ -335,6 +335,10 @@ class FieldView():
     
     def changeAlignment(self, new_alignment):
         self.series.alignment = new_alignment
+        if self.obj_table_manager:
+            self.obj_table_manager.refresh()
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection()
         self.generateView()
     
     def copy(self):

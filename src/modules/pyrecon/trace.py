@@ -93,7 +93,10 @@ class Trace():
             d["name"] = self.name
         d["color"] = self.color
         d["closed"] = self.closed
-        d["points"] = self.points
+        d["x"], d["y"] = [], []
+        for p in self.points:
+            d["x"].append(round(p[0], 7))
+            d["y"].append(round(p[1], 7))
         d["hidden"] = self.hidden
         d["tags"] = list(self.tags)
         return d
@@ -135,7 +138,7 @@ class Trace():
         if not name:
             name = d["name"]
         new_trace = Trace(name, d["color"], d["closed"])
-        new_trace.points = d["points"]
+        new_trace.points = list(zip(d["x"], d["y"]))
         new_trace.hidden = d["hidden"]
         new_trace.tags = set(d["tags"])
         return new_trace

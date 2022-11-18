@@ -62,6 +62,7 @@ class FieldView():
         self.section_layer.loadImage()
         if self.b_section is not None:
             self.b_section_layer.loadImage()
+        self.generateView()
 
     def saveState(self):
         """Save the current traces and transform.

@@ -132,6 +132,8 @@ class ObjectTableWidget(QDockWidget):
                     ("removealltags_act", "Remove all tags", "", self.removeAllTags)
                 ]
             },
+            ("history_act", "View history", "", self.viewHistory),
+            None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
         self.context_menu = QMenu(self)
@@ -475,6 +477,14 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.removeAllTraceTags(obj_names)
+    
+    def viewHistory(self):
+        """View the history for a set of objects."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        self.manager.viewHistory(obj_names)
 
     def deleteObjects(self):
         """Delete an object from the entire series."""

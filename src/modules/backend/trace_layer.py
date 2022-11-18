@@ -103,7 +103,7 @@ class TraceLayer():
                 traces_in_poly.append(trace)
         return traces_in_poly
 
-    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -122,6 +122,11 @@ class TraceLayer():
         new_trace = base_trace.copy()
         new_trace.closed = closed
         new_trace.points = []
+        new_trace.history = []
+        # merge the history of any origin traces
+        if origin_traces:
+            for trace in origin_traces:
+                new_trace.mergeHistory(trace)
 
         # get the points
         tform = self.section.tforms[self.series.alignment]
@@ -130,7 +135,10 @@ class TraceLayer():
             rtform_point = tform.map(*field_point, inverted=True) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
         
-        self.section.addTrace(new_trace)
+        if log_message:
+            self.section.addTrace(new_trace, log_message)
+        else:
+            self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
@@ -175,7 +183,7 @@ class TraceLayer():
                 trace.tags = tags
             if name:
                 trace.name = name
-            self.section.addTrace(trace)
+            self.section.addTrace(trace, "attributes modified")
     
     def changeTraceRadius(self, new_rad : float, traces : list = None):
         """Change the radius of a trace or set of traces.
@@ -189,7 +197,7 @@ class TraceLayer():
         for trace in traces:
             self.section.removeTrace(trace)
             trace.resize(new_rad)
-            self.section.addTrace(trace)
+            self.section.addTrace(trace, "radius modified")
 
     def deselectAllTraces(self):
         """Deselect all traces."""
@@ -220,10 +228,17 @@ class TraceLayer():
             pix_points = self.traceToPix(trace)
             traces.append(pix_points)
         merged_traces = mergeTraces(traces)  # merge the pixel traces
-        # create new merged trace
+        # delete the old traces
+        origin_traces = self.selected_traces.copy()
         self.deleteSelectedTraces()
+        # create new merged trace
         for trace in merged_traces:
-            self.newTrace(trace, first_trace)
+            self.newTrace(
+                trace,
+                first_trace,
+                log_message="merged",
+                origin_traces=origin_traces
+            )
     
     def cutTrace(self, knife_trace : list):
         """Cuts the selected trace along the knife line.
@@ -240,10 +255,18 @@ class TraceLayer():
         trace = self.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
-        # create new traces
+        # delete the old traces
+        origin_traces = self.selected_traces.copy()
         self.deleteSelectedTraces()
+        # create new traces
         for piece in cut_traces:
-            self.newTrace(piece, trace)
+            # add the trace history to the piece
+            self.newTrace(
+                piece,
+                trace,
+                log_message="split with knife",
+                origin_traces=origin_traces
+            )
     
     def deleteSelectedTraces(self, traces : list = None):
         """Delete selected traces.
@@ -297,7 +320,7 @@ class TraceLayer():
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
-            self.section.addTrace(trace)
+            self.section.addTrace(trace, f"copied/pasted")
     
     def pasteAttributes(self, traces : list[Trace]):
         """Called when the user pressed Ctrl+B."""

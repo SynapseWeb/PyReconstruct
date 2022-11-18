@@ -40,7 +40,8 @@
     0.0948664
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "star",
@@ -87,7 +88,8 @@
     0.0707107
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "triangle",
@@ -108,7 +110,8 @@
     0.1
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "cross",
@@ -147,7 +150,8 @@
     0.0707107
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "square",
@@ -182,7 +186,8 @@
     0.0568051
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "diamond",
@@ -205,7 +210,8 @@
     0.0
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "circle2",
@@ -236,7 +242,8 @@
     0.0948664
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "arrow1",
@@ -275,7 +282,8 @@
     -0.0887827
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "plus",
@@ -314,7 +322,8 @@
     0.0316285
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "arrow2",
@@ -343,7 +352,8 @@
     0.0624775
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "circle1",
@@ -374,7 +384,8 @@
     0.0948664
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "star",
@@ -421,7 +432,8 @@
     0.0707107
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "triangle",
@@ -442,7 +454,8 @@
     0.1
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "cross",
@@ -481,7 +494,8 @@
     0.0707107
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "square",
@@ -516,7 +530,8 @@
     0.0568051
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "diamond",
@@ -539,7 +554,8 @@
     0.0
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "circle2",
@@ -570,7 +586,8 @@
     0.0948664
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "arrow1",
@@ -609,7 +626,8 @@
     -0.0887827
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "plus",
@@ -648,7 +666,8 @@
     0.0316285
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   },
   {
    "name": "arrow2",
@@ -677,7 +696,8 @@
     0.0624775
    ],
    "hidden": false,
-   "tags": []
+   "tags": [],
+   "history": []
   }
  ],
  "current_trace": {
@@ -709,7 +729,8 @@
    0.0948664
   ],
   "hidden": false,
-  "tags": []
+  "tags": [],
+  "history": []
  },
  "alignment": "default",
  "object_groups": {}

@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt
 
 from modules.gui.trace_table_widget import TraceTableWidget
+from modules.gui.history_widget import HistoryWidget
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
@@ -132,6 +133,20 @@ class TraceTableManager():
         self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
     
+    def viewHistory(self, traces):
+        """View the log history of a set of traces."""
+        log_history = []
+        for trace in traces:
+            for log in trace.history:
+                log_history.append((log, trace.name))
+        log_history.sort()
+        output_str = ""
+        for log, name in log_history:
+            output_str += name + " "
+            output_str += str(log) + "\n"
+        
+        HistoryWidget(self.mainwindow, output_str)
+        
     def close(self):
         """Close all tables."""
         for table in self.tables:

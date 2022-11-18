@@ -1,6 +1,5 @@
-from PySide6.QtGui import QTransform
-
 from modules.pyrecon.transform import Transform
+from modules.pyrecon.trace_log import TraceLog
 
 from modules.legacy_recon.classes.contour import Contour as XMLContour
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
@@ -24,6 +23,7 @@ class Trace():
         self.points = []
         self.hidden = False  # default to False
         self.tags = set()
+        self.history = []
 
         # extra hidden attributes for XML support
         self.comment = None
@@ -41,6 +41,7 @@ class Trace():
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
         copy_trace.tags = self.tags.copy()
+        copy_trace.history = [l.copy() for l in self.history]
         return copy_trace
     
     def add(self, point : tuple):
@@ -99,6 +100,7 @@ class Trace():
             d["y"].append(round(p[1], 7))
         d["hidden"] = self.hidden
         d["tags"] = list(self.tags)
+        d["history"] = [list(l) for l in self.history]
         return d
     
     def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
@@ -141,6 +143,7 @@ class Trace():
         new_trace.points = list(zip(d["x"], d["y"]))
         new_trace.hidden = d["hidden"]
         new_trace.tags = set(d["tags"])
+        new_trace.history = [TraceLog(l) for l in d["history"]]
         return new_trace
     
     # STATIC METHOD
@@ -243,6 +246,23 @@ class Trace():
             points = tform.map(points, inverted=True)
         
         self.points = points
+    
+    def addLog(self, message : str):
+        """Add a log to the trace history.
+        
+            Params:
+                message (str): the log message
+        """
+        self.history.append(TraceLog(message))
+    
+    def mergeHistory(self, other_trace):
+        """Merge the history of two traces."""
+        self.history += other_trace.history
+        self.history.sort()
+    
+    def isNew(self):
+        """Returns True if the trace has no existing history."""
+        return not bool(self.history)
 
 
         

@@ -2,6 +2,7 @@ from PySide6.QtCore import Qt
 
 from modules.gui.object_table_widget import ObjectTableWidget
 from modules.gui.object_3D_viewer import Object3DViewer
+from modules.gui.history_widget import HistoryWidget
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
@@ -296,6 +297,36 @@ class ObjectTableManager():
         if self.object_viewer:
             self.object_viewer.close()
         self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
+    
+    def viewHistory(self, obj_names):
+        """View the log history of a set of objects."""
+        # load all log objects from the traces
+        log_history = []
+        update, canceled = progbar("Object History", "Loading history...")
+        progress = 0
+        final_value = len(self.series.sections)
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            for name in obj_names:
+                if name in section.contours:
+                    contour = section.contours[name]
+                    for trace in contour:
+                        for log in trace.history:
+                            log_history.append((log, name, snum))
+            if canceled():
+                return
+            progress += 1
+            update(progress/final_value * 100)
+        
+        log_history.sort()
+
+        output_str = ""
+        for log, name, snum in log_history:
+            output_str += f"Section {snum} "
+            output_str += name + " "
+            output_str += str(log) + "\n"
+        
+        HistoryWidget(self.mainwindow, output_str)
     
     def close(self):
         """Close all tables."""

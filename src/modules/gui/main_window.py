@@ -3,14 +3,16 @@ from time import time
 
 from PySide6.QtWidgets import (QMainWindow, QFileDialog,
     QInputDialog, QApplication,
-    QMessageBox, QProgressDialog, QMenu)
+    QMessageBox, QMenu)
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
 from modules.gui.mouse_palette import MousePalette
 from modules.gui.field_widget import FieldWidget
 from modules.gui.dialog import AlignmentDialog
+from modules.gui.history_widget import HistoryWidget
 
+from modules.backend.gui_functions import progbar
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
 from modules.backend.gui_functions import populateMenuBar, populateMenu
@@ -114,6 +116,7 @@ class MainWindow(QMainWindow):
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList),
+                    ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                     None,
@@ -483,6 +486,33 @@ class MainWindow(QMainWindow):
                 self.series.current_trace = button.trace
         self.field.section.save()
         self.series.save()
+    
+    def viewSeriesHistory(self):
+        """View the history for the entire series."""
+        # load all log objects from the all traces
+        log_history = []
+        update, canceled = progbar("Object History", "Loading history...")
+        progress = 0
+        final_value = len(self.series.sections)
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            for trace in section.tracesAsList():
+                for log in trace.history:
+                    log_history.append((log, trace.name, snum))
+            if canceled():
+                return
+            progress += 1
+            update(progress/final_value * 100)
+        
+        log_history.sort()
+
+        output_str = ""
+        for log, name, snum in log_history:
+            output_str += f"Section {snum} "
+            output_str += name + " "
+            output_str += str(log) + "\n"
+        
+        HistoryWidget(self, output_str)
     
     def openObjectList(self):
         """Open the object list widget."""

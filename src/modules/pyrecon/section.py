@@ -61,14 +61,26 @@ class Section():
             self.thickness = self.xml_section.thickness
             self.contours = {}
             for xml_contour in self.xml_section.contours:
-                self.addTrace(Trace.fromXMLObj(xml_contour, image.transform))
+                self.addTrace(
+                    Trace.fromXMLObj(xml_contour, image.transform),
+                    log_message = "imported"
+                )
     
-    def addTrace(self, trace : Trace):
+    def addTrace(self, trace : Trace, log_message=None):
         """Add a trace to the trace dictionary.
         
             Params:
                 trace (Trace): the trace to add
         """
+        # add to the trace history
+        if log_message:
+            trace.addLog(log_message)
+        else:
+            if trace.isNew():
+                trace.addLog("created")
+            else:
+                trace.addLog("modified")
+
         if trace.name in self.contours:
             self.contours[trace.name].append(trace)
         else:

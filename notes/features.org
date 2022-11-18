@@ -7,11 +7,7 @@
 
 ** Julian
 
-- [ ] Trace history log
-
 - [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
-
-- [ ] Fix trace tags on import ("imported-20221114")
 
 - [ ] Fix import statements for dim 6 (Did we do this?)
 
@@ -174,4 +170,6 @@
 - [X] Create/implement transform class
 - [X] Remove trace names in JSON
 - [X] Option to change username (default to =os.getlogin()=)
+- [X] Trace history log
+- [X] Fix trace tags on import ("imported-20221114")
 

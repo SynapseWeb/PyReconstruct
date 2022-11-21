@@ -157,7 +157,7 @@ class TraceTableWidget(QDockWidget):
         """Format the rows and columns of the table."""
         self.table.resizeRowsToContents()
         for c in range(self.table.columnCount()):
-            header = self.horizontal_headers[c]
+            header = self.table.horizontalHeaderItem(c)
             if header != "Tags":
                 self.table.resizeColumnToContents(c)
     

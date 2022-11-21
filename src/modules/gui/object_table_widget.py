@@ -258,7 +258,7 @@ class ObjectTableWidget(QDockWidget):
         # format rows and columns
         self.table.resizeRowsToContents()
         for c in range(self.table.columnCount()):
-            header = self.horizontal_headers[c]
+            header = self.table.horizontalHeaderItem(c)
             if not (header == "Name" or header == "Groups"):
                 self.table.resizeColumnToContents(c)
 

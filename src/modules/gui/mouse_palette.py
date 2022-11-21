@@ -64,8 +64,7 @@ class MousePalette():
         self.updateLabel()
         self.label.show()
 
-        self.tablet_mode = False
-        self.tablet_buttons = []
+        self.corner_buttons = []
 
         # create increment buttons
         self.ibw = 90
@@ -75,16 +74,6 @@ class MousePalette():
         # create brightness/contrast buttons
         self.bcsize = 30
         self.createBCButtons()
-    
-    def toggleTabletMode(self):
-        """Toggle the tablet helper buttons"""
-        if self.tablet_mode:
-            for b in self.tablet_buttons:
-                b.hide()
-        else:
-            for b in self.tablet_buttons:
-                b.show()
-        self.tablet_mode = not self.tablet_mode
     
     def toggleHandedness(self):
         """Toggle the position of the buttons."""
@@ -283,11 +272,11 @@ class MousePalette():
 
         self.placeIncrementButtons()
 
-        self.up_bttn.hide()
-        self.down_bttn.hide()
+        self.up_bttn.show()
+        self.down_bttn.show()
 
-        self.tablet_buttons.append(self.up_bttn)
-        self.tablet_buttons.append(self.down_bttn)
+        self.corner_buttons.append(self.up_bttn)
+        self.corner_buttons.append(self.down_bttn)
     
     def placeBCButtons(self):
         """Place the brightness/contrast buttons."""
@@ -317,10 +306,9 @@ class MousePalette():
                 # set button as continuous
                 b.setAutoRepeat(True)
                 b.setAutoRepeatDelay(0)
-                # tablet mode default off
-                b.hide()
+                b.show()
                 self.bc_buttons.append(b)
-                self.tablet_buttons.append(b)
+                self.corner_buttons.append(b)
         self.placeBCButtons()
 
     def resize(self):
@@ -348,6 +336,6 @@ class MousePalette():
         for pb in self.palette_buttons:
             pb.close()
         self.label.close()
-        for b in self.tablet_buttons:
+        for b in self.corner_buttons:
             b.close()
         

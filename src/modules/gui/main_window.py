@@ -181,7 +181,6 @@ class MainWindow(QMainWindow):
             ("Backspace", self.field.backspace),
 
             ("Shift+L", self.mouse_palette.toggleHandedness),
-            ("Shift+T", self.mouse_palette.toggleTabletMode),
 
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),
@@ -449,12 +448,13 @@ class MainWindow(QMainWindow):
         
         modifiers = QApplication.keyboardModifiers()
 
+        # if zooming
         if modifiers == Qt.ControlModifier:
             if not self.is_zooming_in:
                 # check if user just started zooming in
                 self.field.panzoomPress(
-                    event.point(0).pos().x(),
-                    event.point(0).pos().y()
+                    event.point(0).pos().x() - self.field.x(),
+                    event.point(0).pos().y() - self.field.y(),
                 )
                 self.zoom_factor = 1
                 self.is_zooming_in = True
@@ -464,8 +464,15 @@ class MainWindow(QMainWindow):
             elif event.angleDelta().y() < 0:  # if scroll down
                 self.zoom_factor *= 0.9
             self.field.panzoomMove(zoom_factor=self.zoom_factor)
-            
+        
+        # if changing sections
         elif modifiers == Qt.NoModifier:
+            # check for the position of the mouse
+            mouse_pos = event.point(0).pos()
+            field_geom = self.field.geometry()
+            if not field_geom.contains(mouse_pos.x(), mouse_pos.y()):
+                return
+            # change the section
             if event.angleDelta().y() > 0:  # if scroll up
                 self.incrementSection()
             elif event.angleDelta().y() < 0:  # if scroll down

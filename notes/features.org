@@ -1,10 +1,37 @@
-* This week
+* Class push
 
-- Julian: Fnish object list, trace list
-- Michael: Continue options widget and investigate 3D
+- Classes start Monday Jan 9
 
+- [ ] Meet with Kristen (Wednesday or Thursday next week)
+     
+- [ ] Full protocol/manual
+   - [ ] Take a look at Reconstrcut basics and intro on Synapse web
+   - [ ] https://synapseweb.clm.utexas.edu/software-0
+   - [ ] Install / run (by OS, keep in root)
+   - [ ] Open / new series
+   - [ ] ...
+   - [ ] ...
+
+- [ ] Z traces
+
+- [ ] 3D scene improvements
+   - [ ] viewport.cpp file in source
+   - [ ] Transparency
+   - [ ] Z trace viewing
+
+- [ ] Relase to lab for debugging (no later than second week of December)
+
+- [-] Mac computers
+   - Run script (shell script - Discuss with Dusten)
+   - Virtual environment
+   - Set permissions (through command line?)
+
+- [ ] Clean up code
+
+- [ ] Would be nice to have
+   - [ ] Series options (see options heading below)
+      
 * High-priority tasks
-
 ** Julian
 
 - [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
@@ -18,7 +45,24 @@
 - [ ] Force JSON usage
    - [ ] Single series file?
    - [ ] Rewrite export/import XML code
-  
+
+- [ ] Trace list
+   - [ ] Make trace list index column not obligatory (default to off)
+   - [ ] Fix header for index columns
+     
+- [ ] Object list
+   - [ ] Hide objects 
+     
+- [ ] Trace highlighting
+   - Make line thicker, keep dotting?
+   - Change dotting color?
+   - Highlighter color?
+   - Selecting entire contour? (Think about later)
+
+- [ ] Mouse wheel and copy/past function doesn't change until next event
+
+- [ ] Add header to history for easy copy/paste exporting
+    
 ** Michael
 
 - [ ] 3D rendering (MC) (take a look at PyQt graph and OpenGl)
@@ -26,15 +70,25 @@
    - [ ] Outline preference features
    - [X] Find images feature (JF)
    - [ ] Series options
-- [ ] Investigate z-traces
-- [ ] Splash screen
+- [X] Investigate z-traces
+- [X] Splash screen
 - [ ] Section options from object list
-     
-* Front end (non-critical) changes
+  
+* Series options
+
+- Keyboard shortcuts
+- Username
+- Themes
+- Domain / trace movment sides
+- 3D rendering options
+- (Look through reconstruct series options)
+  
+* Other
+** Front end (non-critical) changes
 
 - [ ] Increase size of icons in object list
   
-* Investigate
+** Investigate
 
 - [ ] Consider using pixels instead of points
 - [X] brightness/contrast (JF)
@@ -42,18 +96,18 @@
 - [ ] extensions (MC)
 - [ ] Python console (MC)
 
-* New tools
+** New tools
 
 - [ ] Brush tool
 - [ ] Expandable (s) and grabbable (g) traces (left click = confirm, right click = cancel)
 
-* Must-do
+** Must-do
 
 - [ ] Center image on open series
 - [ ] SWiFT integration (extension?)
 - [ ] Test dim 6 XML import
 
-* Medium-priority tasks
+** Medium-priority tasks
 
 - [ ] Object exporter (json and python)
 - [ ] Reconcropper integration
@@ -80,7 +134,7 @@
    - [ ] Check box / selected?
 - [ ] Consider transformation module for upcoming transformational armaggeddon (spelling?) 
 
-* Low-priority tasks
+** Low-priority tasks
 
 - [ ] Can we "reserve" a color for seleted traces instead of making it dotted? (thiccccen)
 - [ ] In-program Python console
@@ -92,16 +146,16 @@
 - [ ] Sort object list in a variety of ways (by section number, tag, etc.)
 - [ ] Written tutorial / Quickstart tutorial
 
-* Crazy ideas
+** Crazy ideas
 
 - [ ] Be able to view 3D "building" in Blender as you're tracing
 - [ ] Export images and traces as SVG file
 - [ ] Be able to rotate the section in z inside Reconstruct
 - [ ] Compendium of regular expressions
 
-* Cute things
+** Cute things
 - Let user change black background color or to an image of their choosing
-* Things to consider
+** Things to consider
 
 - (Vijay) Saving points as .obj file / function to export to .obj
 - (Vijay) Objects pointing to an obj file instead of sections
@@ -109,7 +163,7 @@
 - Export to zarr?
 - Boolean arrays to store object data
   
-* Completed tasks
+** Completed tasks
 
 - [X] pyReconstruct to zarr exported (contours, images)
 - [X] Meet with Vijay (Neuroglancer, automation?)

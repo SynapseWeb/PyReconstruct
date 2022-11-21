@@ -51,7 +51,7 @@ class Contour():
         return self.traces.index(trace)
     
     def isEmpty(self):
-        """Return True if list if empty."""
+        """Return True if no traces associated with contour."""
         return not bool(self.traces)
     
     def getTraces(self):

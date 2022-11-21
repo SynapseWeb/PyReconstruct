@@ -21,9 +21,11 @@ class TraceLog():
         return [self.dt, self.username, self.message].__iter__()
     
     def __gt__(self, other):
+        """Sort by more recent."""
         return self.dt > other.dt
     
     def __lt__(self, other):
+        """Sort by more remote."""
         return self.dt < other.dt
     
     def copy(self):

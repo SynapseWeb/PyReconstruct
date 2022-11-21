@@ -49,15 +49,13 @@
 - [ ] Object list
    - [ ] Hide objects 
      
-- [ ] Trace highlighting
+- [X] Trace highlighting
    - Make line thicker, keep dotting?
    - Change dotting color?
    - Highlighter color?
    - Selecting entire contour? (Think about later)
 
-- [ ] Mouse wheel and copy/past function doesn't change until next event
-
-- [ ] Add header to history for easy copy/paste exporting
+- [X] Add header to history for easy copy/paste exporting
     
 ** Michael
 

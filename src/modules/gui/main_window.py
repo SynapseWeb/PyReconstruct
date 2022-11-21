@@ -513,7 +513,7 @@ class MainWindow(QMainWindow):
         
         log_history.sort()
 
-        output_str = ""
+        output_str = "Series History\n"
         for log, name, snum in log_history:
             output_str += f"Section {snum} "
             output_str += name + " "

@@ -320,7 +320,7 @@ class ObjectTableManager():
         
         log_history.sort()
 
-        output_str = ""
+        output_str = "Object history for: " + ", ".join(sorted(obj_names)) + "\n"
         for log, name, snum in log_history:
             output_str += f"Section {snum} "
             output_str += name + " "

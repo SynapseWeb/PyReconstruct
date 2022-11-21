@@ -871,17 +871,18 @@ class FieldWidget(QWidget, FieldView):
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
-            if self.mouse_mode == FieldWidget.CLOSEDTRACE:
-                self.section_layer.newTrace(
-                    self.current_trace,
-                    self.tracing_trace,
-                    closed=True
+            if len(self.current_trace) > 1:
+                if self.mouse_mode == FieldWidget.CLOSEDTRACE:
+                    self.section_layer.newTrace(
+                        self.current_trace,
+                        self.tracing_trace,
+                        closed=True
+                    )
+                elif self.mouse_mode == FieldWidget.OPENTRACE:
+                    self.section_layer.newTrace(
+                        self.current_trace,
+                        self.tracing_trace,
+                        closed=False
                 )
-            elif self.mouse_mode == FieldWidget.OPENTRACE:
-                self.section_layer.newTrace(
-                    self.current_trace,
-                    self.tracing_trace,
-                    closed=False
-            )
             self.is_line_tracing = False
             self.generateView(generate_image=False)

@@ -32,6 +32,7 @@ class TraceTableWidget(QDockWidget):
 
         # set defaults
         self.columns = {
+            "Index" : False,
             "Tags" : True,
             "Length" : True,
             "Area" : True,
@@ -66,8 +67,9 @@ class TraceTableWidget(QDockWidget):
         col = 0
         self.table.setItem(row, col, QTableWidgetItem(traceitem.name))
         col += 1
-        self.table.setItem(row, col, QTableWidgetItem(str(traceitem.index)))
-        col += 1
+        if self.columns["Index"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(traceitem.index)))
+            col += 1
         if self.columns["Tags"]:
             self.table.setItem(row, col, QTableWidgetItem(", ".join(traceitem.getTags())))
             col += 1
@@ -176,7 +178,7 @@ class TraceTableWidget(QDockWidget):
         self.table.mouseDoubleClickEvent = self.findTrace
 
         # establish table headers
-        self.horizontal_headers = ["Name", "Index"]
+        self.horizontal_headers = ["Name"]
         for c in self.columns:
             if self.columns[c]:
                 self.horizontal_headers.append(c)

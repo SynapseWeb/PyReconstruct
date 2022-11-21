@@ -42,12 +42,12 @@
    - [ ] Transparency
    - [ ] Scale cube sizing
 
-- [ ] Trace list
-   - [ ] Make trace list index column not obligatory (default to off)
-   - [ ] Fix header for index columns
+- [X] Trace list
+   - [X] Make trace list index column not obligatory (default to off)
+   - [X] Fix header for index columns
      
-- [ ] Object list
-   - [ ] Hide objects 
+- [X] Object list
+   - [X] Hide objects 
 
 - [ ] Modify object radius from right-click menu
 - [ ] Automatically resize palette traces from XML files

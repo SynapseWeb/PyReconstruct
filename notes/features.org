@@ -42,10 +42,6 @@
    - [ ] Transparency
    - [ ] Scale cube sizing
 
-- [ ] Force JSON usage
-   - [ ] Single series file?
-   - [ ] Rewrite export/import XML code
-
 - [ ] Trace list
    - [ ] Make trace list index column not obligatory (default to off)
    - [ ] Fix header for index columns

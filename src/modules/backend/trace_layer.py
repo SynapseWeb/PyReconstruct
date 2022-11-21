@@ -356,19 +356,10 @@ class TraceLayer():
         """
         # set up painter
         painter = QPainter(trace_layer)
-        if highlight: # create dashed white line if trace is to be highlighted
-            pen = QPen(QColor(255, 255, 255), 1)
-            pen.setDashPattern([2, 5])
+        if highlight:
+            pen = QPen(QColor(*trace.color), 16)
             painter.setPen(pen)
-            # # internal use: draw highlight as points
-            # painter.setPen(QPen(QColor(255, 255, 255), 5))
-            # for point in trace.points:
-            #     x, y = self.point_tform.map(*point)
-            #     x, y = self.fieldPointToPixmap(x,y)
-            #     painter.drawPoint(x,y)
-            # painter.end()
-            # return
-            # # end internal use
+            painter.setOpacity(0.2)
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
         

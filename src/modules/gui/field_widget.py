@@ -46,6 +46,9 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_dim)
 
+        self.obj_table_manager = None
+        self.trace_table_manager = None
+
         self.createField(series)
 
         self.show()
@@ -56,6 +59,14 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 series (Series): the new series to load
         """
+        # close the tables
+        if self.obj_table_manager is not None:
+            self.obj_table_manager.close()
+            self.obj_table_manager = None
+        if self.trace_table_manager is not None:
+            self.trace_table_manager.close()
+            self.trace_table_manager = None
+        
         self.series = series
         FieldView.__init__(self, series)
 
@@ -75,14 +86,6 @@ class FieldWidget(QWidget, FieldView):
         self.rclick = False
         self.mclick = False
         self.erasing = False
-
-        # close the tables
-        if self.obj_table_manager is not None:
-            self.obj_table_manager.close()
-            self.obj_table_manager = None
-        if self.trace_table_manager is not None:
-            self.trace_table_manager.close()
-            self.trace_table_manager = None
 
         self.generateView()
     

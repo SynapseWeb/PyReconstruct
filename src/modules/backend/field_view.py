@@ -258,8 +258,8 @@ class FieldView():
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
     # look up a better way to do this??
 
-    def deleteSelectedTraces(self):
-        self.section_layer.deleteSelectedTraces()
+    def deleteTraces(self, traces=None):
+        self.section_layer.deleteTraces(traces)
         self.saveState()
         self.generateView(generate_image=False)
     
@@ -312,8 +312,13 @@ class FieldView():
         self.section_layer.deselectAllTraces()
         self.generateView(generate_image=False)
     
-    def hideSelectedTraces(self):
-        self.section_layer.hideSelectedTraces()
+    def hideTraces(self, traces=None, hide=True):
+        self.section_layer.hideTraces(traces, hide)
+        self.saveState()
+        self.generateView(generate_image=False)
+    
+    def editRadius(self, new_rad, traces=None):
+        self.section_layer.changeTraceRadius(new_rad, traces)
         self.saveState()
         self.generateView(generate_image=False)
     

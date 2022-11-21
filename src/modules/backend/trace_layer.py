@@ -203,10 +203,17 @@ class TraceLayer():
         """Deselect all traces."""
         self.selected_traces = []
     
-    def hideSelectedTraces(self):
-        """Hide all selected traces."""
-        for trace in self.selected_traces:
-            trace.setHidden(True)
+    def hideTraces(self, traces : list = None, hide=True):
+        """Hide traces.
+        
+            Params:
+                traces (list): the traces to hide
+        """
+        if not traces:
+            traces = self.selected_traces
+
+        for trace in traces:
+            trace.setHidden(hide)
         self.selected_traces = []
     
     def mergeSelectedTraces(self):
@@ -230,7 +237,7 @@ class TraceLayer():
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # delete the old traces
         origin_traces = self.selected_traces.copy()
-        self.deleteSelectedTraces()
+        self.deleteTraces()
         # create new merged trace
         for trace in merged_traces:
             self.newTrace(
@@ -257,7 +264,7 @@ class TraceLayer():
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
         # delete the old traces
         origin_traces = self.selected_traces.copy()
-        self.deleteSelectedTraces()
+        self.deleteTraces()
         # create new traces
         for piece in cut_traces:
             # add the trace history to the piece
@@ -268,7 +275,7 @@ class TraceLayer():
                 origin_traces=origin_traces
             )
     
-    def deleteSelectedTraces(self, traces : list = None):
+    def deleteTraces(self, traces : list = None):
         """Delete selected traces.
         
             Params:
@@ -310,7 +317,7 @@ class TraceLayer():
             copied_traces.append(trace)
         
         if cut:
-            self.deleteSelectedTraces()
+            self.deleteTraces()
         
         return copied_traces
     

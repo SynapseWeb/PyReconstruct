@@ -236,6 +236,54 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
     
+    def hideObjects(self, obj_names, hide=True):
+        """Hide all traces of an object throughout the series."""
+        # iterate through sections and hide the traces
+        for snum in self.series.sections:
+            modified = False
+            section = self.series.loadSection(snum)
+            for name in obj_names:
+                if name in section.contours:
+                    contour = section.contours[name]
+                    for trace in contour:
+                        trace.setHidden(hide)
+                        modified = True
+            if modified:
+                section.save()
+            
+        # update the view
+        self.mainwindow.field.reload()                
+
+    def editRadius(self, obj_names, new_rad):
+        """Change the radii of all traces of an object."""
+        # delete existing trace information
+        for name in obj_names:
+            self.objdict[name] = ObjectTableItem(name)
+        
+        # iterate through all sections
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            modified = False
+            for name in obj_names:
+                if name in section.contours:
+                    contour = section.contours[name]
+                    for trace in contour:
+                        # modify the trace
+                        trace.resize(new_rad)
+                        modified = True
+                        # add trace data
+                        self.addTrace(trace, section, snum)
+            if modified:
+                section.save()
+        
+        # update the table data
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+        
+        # update the view
+        self.mainwindow.field.reload()
+    
     def tagTraces(self, obj_names : list, tag_name : str, remove=False):
         """Tag all the traces on a set of objects.
         

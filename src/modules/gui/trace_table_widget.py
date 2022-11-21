@@ -114,6 +114,8 @@ class TraceTableWidget(QDockWidget):
         # create the right-click menu
         context_menu_list = [
             ("edit_act", "Edit...", "", self.editTraces),
+            ("hide_act", "Hide", "", self.hideTraces),
+            ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
             ("changeradius_act", "Change radius...", "", self.editRadius),
             ("find_act", "Find trace", "", self.findTrace),
             ("history_act", "View history", "", self.viewHistory),
@@ -289,6 +291,15 @@ class TraceTableWidget(QDockWidget):
         self.manager.editTraces(name, color, tags, traces)
         self.manager.loadSection()
     
+    def hideTraces(self, hide=True):
+        """Hide a set of traces."""
+        items = self.getSelectedItems()
+        if items is None:
+            return
+        
+        traces = self.manager.getTraces(items)
+        self.manager.hideTraces(traces, hide)
+    
     def editRadius(self):
         """Edit the radius for a set of traces."""
         items = self.getSelectedItems()
@@ -297,7 +308,7 @@ class TraceTableWidget(QDockWidget):
         
         traces = self.manager.getTraces(items)
 
-        existing_radius = traces[0].getRadius()
+        existing_radius = str(round(traces[0].getRadius(), 7))
 
         for trace in traces[1:]:
             if abs(existing_radius - trace.getRadius()) > 1e-6:

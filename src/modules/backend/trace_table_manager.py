@@ -115,10 +115,11 @@ class TraceTableManager():
         self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
     
+    def hideTraces(self, traces, hide=True):
+        self.mainwindow.field.hideTraces(traces, hide)
+    
     def editRadius(self, new_rad, traces):
-        self.mainwindow.field.section_layer.changeTraceRadius(new_rad, traces)
-        self.mainwindow.field.saveState()
-        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.editRadius(new_rad, traces)
     
     def findTrace(self, item : TraceTableItem):
         """Find an object in the series.
@@ -129,9 +130,7 @@ class TraceTableManager():
         self.mainwindow.field.findTrace(item.name, item.index)
     
     def deleteTraces(self, traces):
-        self.mainwindow.field.section_layer.deleteSelectedTraces(traces)
-        self.mainwindow.field.saveState()
-        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.deleteTraces(traces)
     
     def viewHistory(self, traces):
         """View the log history of a set of traces."""

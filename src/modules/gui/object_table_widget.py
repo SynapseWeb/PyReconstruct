@@ -111,6 +111,9 @@ class ObjectTableWidget(QDockWidget):
         context_menu_list = [
             ("editobjname_act", "Edit name...", "", self.editObjName),
             ("editobjcolor_act", "Edit color...", "", self.editObjColor),
+            ("hideobj_act", "Hide", "", self.hideObj),
+            ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
+            ("editradius_act", "Edit radius...", "", self.editObjRadius),
             ("generate3D_act", "Generate 3D", "", self.generate3D),
             {
                 "attr_name" : "group_menu",
@@ -388,6 +391,35 @@ class ObjectTableWidget(QDockWidget):
         
         self.manager.modifyObjects(obj_names, color=color)
     
+    def hideObj(self, hide=True):
+        """Edit whether or not an object is hidden in the entire series."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        self.manager.hideObjects(obj_names, hide)
+    
+    def editObjRadius(self):
+        """Modify the radius of the trace on an entire object."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        new_rad, confirmed = QInputDialog.getText(
+            self, 
+            "Object Trace Radius",
+            "Enter the new radius:",
+        )
+        if not confirmed:
+            return
+
+        try:
+            new_rad = float(new_rad)
+        except ValueError:
+            return
+        
+        self.manager.editRadius(obj_names, new_rad)
+
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()

@@ -159,8 +159,8 @@ class MainWindow(QMainWindow):
         trace_menu_list = [
             ("edittrace_act", "Edit...", "Ctrl+E", self.field.traceDialog),
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
-            ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideSelectedTraces),
-            ("deletetraces_act", "Delete traces", "Del", self.field.deleteSelectedTraces),
+            ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
+            ("deletetraces_act", "Delete traces", "Del", self.field.deleteTraces),
             None,
             self.cut_act,
             self.copy_act,

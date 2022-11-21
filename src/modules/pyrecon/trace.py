@@ -216,7 +216,7 @@ class Trace():
         cx, cy = centroid(self.points)
         self.points = [(x-cx, y-cy) for x,y in self.points]
 
-    def resize(self, new_radius, tform : Transform = None):
+    def resize(self, new_radius):
         """Resize a trace beased on its radius
         
             Params:
@@ -224,8 +224,6 @@ class Trace():
                 tform: the tform applied to the trace
         """
         points = self.points.copy()
-        if tform:
-            points = tform.map(points)
         
         # calculate constants
         cx, cy = centroid(points)
@@ -240,11 +238,7 @@ class Trace():
             )
             for x, y in points
         ]
-
-        # restore untransformed version
-        if tform:
-            points = tform.map(points, inverted=True)
-        
+                
         self.points = points
     
     def addLog(self, message : str):

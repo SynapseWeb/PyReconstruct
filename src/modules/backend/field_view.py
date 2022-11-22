@@ -221,6 +221,21 @@ class FieldView():
                 window_h = new_h
                 window_y = new_y
             self.series.window = [window_x, window_y, window_w, window_h]
+    
+    def setScaling(self, scaling : float):
+        """Set the scaling value for the view.
+        
+            Params:
+                scaling (float): the new scaling value
+        """
+        factor = scaling / self.scaling
+        w, h = self.series.window[2], self.series.window[3]
+        new_w, new_h = w / factor, h / factor
+        self.series.window[0] += (w - new_w) / 2
+        self.series.window[1] += (h - new_h) / 2
+        self.series.window[2] = new_w
+        self.series.window[3] = new_h
+        self.generateView()
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.
@@ -232,6 +247,16 @@ class FieldView():
         """
         # resize series window to match view proportions
         self.resizeWindow(pixmap_dim)
+
+        # calculate the scaling
+        window_x, window_y, window_w, window_h = tuple(self.series.window)
+        pixmap_w, pixmap_h = tuple(pixmap_dim)
+        # scaling: ratio of screen pixels to actual image pixels (should be equal)
+        x_scaling = pixmap_w / (window_w / self.section.mag)
+        y_scaling = pixmap_h / (window_h / self.section.mag)
+        assert(abs(x_scaling - y_scaling) < 1e-6)
+        self.scaling = x_scaling
+
         # generate section view
         view = self.section_layer.generateView(
             pixmap_dim,
@@ -239,6 +264,7 @@ class FieldView():
             generate_image=generate_image,
             generate_traces=generate_traces
         )
+
         # blend b section if requested
         if blend and self.b_section is not None:
             # generate b section view

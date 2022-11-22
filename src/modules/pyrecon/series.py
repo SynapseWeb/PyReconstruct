@@ -133,7 +133,7 @@ class Series():
         
     def save(self):
         """Save file into json."""
-        if self.filepath == assets_dir + "/welcome_series/welcome.ser":
+        if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.ser")):
             return  # ignore welcome series
 
         if self.filetype == "JSON":

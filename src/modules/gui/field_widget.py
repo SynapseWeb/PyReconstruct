@@ -10,9 +10,9 @@ from modules.pyrecon.series import Series
 from modules.pyrecon.trace import Trace
 
 from modules.calc.pfconversions import pixmapPointToField
+from modules.calc.quantification import distance
 
 from modules.backend.field_view import FieldView
-from modules.backend.gui_functions import populateMenu
 from modules.backend.object_table_manager import ObjectTableManager
 from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
@@ -98,6 +98,24 @@ class FieldWidget(QWidget, FieldView):
         """Toggle blending sections."""
         self.blend_sections = not self.blend_sections
         self.generateView()
+    
+    def setViewMagnification(self):
+        """Set the scaling for the section view."""
+        new_scale, confirmed = QInputDialog.getText(
+            self,
+            "View Magnification",
+            "Enter view magnification:",
+            text=str(round(self.scaling, 6))
+        )
+        if not confirmed:
+            return
+        
+        try:
+            new_scale = float(new_scale)
+        except ValueError:
+            return
+        
+        self.setScaling(new_scale)
     
     def generateView(self, generate_image=True, generate_traces=True, update=True):
         self.field_pixmap = FieldView.generateView(
@@ -186,32 +204,39 @@ class FieldWidget(QWidget, FieldView):
                 event: contains data on mouse position
                 find_closest_trace (bool): whether or not to display closest trace
         """
-        if event is not None:
-            section = "Section: " + str(self.series.current_section)
+        self.status_list = []
 
+        # display current section
+        section = "Section: " + str(self.series.current_section)
+        self.status_list.append(section)
+
+        # display the alignment setting
+        alignment = "Alignment: " + self.series.alignment
+        self.status_list.append(alignment)
+
+        if event is not None:
+            # display mouse position in the field
             self.mouse_x, self.mouse_y = event.x(), event.y()
             x, y = pixmapPointToField(self.mouse_x, self.mouse_y, self.pixmap_dim, self.series.window, self.section.mag)
             position = "x = " + str("{:.4f}".format(x)) + ", "
             position += "y = " + str("{:.4f}".format(y))
+            self.status_list.append(position)
 
-            alignment = "Alignment: " + self.series.alignment
-
-            tracing = "Tracing: " + '"' + self.tracing_trace.name + '"'
-
+            # display the closest trace in the field
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
                 if closest_trace:
                     ct = "Nearest trace: " + closest_trace.name 
-                else:
-                    ct = ""
-            else:
-                ct = ""
-            if ct == "":
-                self.status_list = [section, position, alignment, tracing]
-            else:
-                self.status_list = [section, position, alignment, tracing, ct]
-        else:
-            self.status_list[0] = "Section: " + str(self.series.current_section) 
+                    self.status_list.append(ct)
+            
+            # display the distance between the current position and the last point if line tracing
+            if self.is_line_tracing:
+                last_x, last_y = self.current_trace[-1]
+                d = distance(last_x, last_y, self.mouse_x, self.mouse_y)
+                d = d / self.scaling * self.section.mag
+                dist = f"Distance: {round(d, 5)}"
+                self.status_list.append(dist)
+         
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
     

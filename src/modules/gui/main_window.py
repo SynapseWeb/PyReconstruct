@@ -138,7 +138,9 @@ class MainWindow(QMainWindow):
                     ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
                     None,
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
-                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform)
+                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
+                    None,
+                    ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
                 ]
             },
         ]

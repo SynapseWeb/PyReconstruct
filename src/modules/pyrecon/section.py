@@ -174,7 +174,7 @@ class Section():
     def save(self):
         """Save file into json or xml."""
         try:
-            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series/welcome.0")):
+            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
                 return  # ignore welcome series
         except FileNotFoundError:
             pass

@@ -197,6 +197,7 @@ class ImageLayer():
         x_scaling = pixmap_w / (window_w / self.section.mag)
         y_scaling = pixmap_h / (window_h / self.section.mag)
         assert(abs(x_scaling - y_scaling) < 1e-6)
+        self.scaling = x_scaling
 
         # get vectors for four window corners
         window_corners = [
@@ -281,13 +282,13 @@ class ImageLayer():
             im_crop = self.image.copy(crop_rect)
 
         # make the crop the size of the screen
-        im_scaled = im_crop.scaled(im_crop.width()*x_scaling, im_crop.height()*y_scaling)
-        blank_space[0] *= x_scaling
-        blank_space[1] *= y_scaling
-        extra_space[0] *= x_scaling
-        extra_space[1] *= y_scaling
-        origin_shift[0] *= x_scaling
-        origin_shift[1] *= y_scaling
+        im_scaled = im_crop.scaled(im_crop.width()*self.scaling, im_crop.height()*self.scaling)
+        blank_space[0] *= self.scaling
+        blank_space[1] *= self.scaling
+        extra_space[0] *= self.scaling
+        extra_space[1] *= self.scaling
+        origin_shift[0] *= self.scaling
+        origin_shift[1] *= self.scaling
 
         # add blank space on each side
         im_padded = QPixmap(

@@ -234,7 +234,7 @@ class FieldWidget(QWidget, FieldView):
                 last_x, last_y = self.current_trace[-1]
                 d = distance(last_x, last_y, self.mouse_x, self.mouse_y)
                 d = d / self.scaling * self.section.mag
-                dist = f"Distance: {round(d, 5)}"
+                dist = f"Line distance: {round(d, 5)}"
                 self.status_list.append(dist)
          
         s = "  |  ".join(self.status_list)

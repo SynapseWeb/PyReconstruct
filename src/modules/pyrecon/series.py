@@ -5,7 +5,9 @@ from .trace import Trace
 from modules.legacy_recon.utils.reconstruct_reader import process_series_file
 from modules.legacy_recon.utils.reconstruct_writer import write_series
 
+from modules.pyrecon.ztrace import Ztrace
 from modules.pyrecon.section import Section
+from modules.pyrecon.trace import Trace
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
@@ -40,6 +42,9 @@ class Series():
             for i in range(len(self.palette_traces)):
                 self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
             self.current_trace = Trace.fromDict(series_data["current_trace"])
+            self.ztraces = series_data["ztraces"]
+            for i in range(len(self.ztraces)):
+                self.ztraces[i] = Ztrace.fromDict(self.ztraces[i])
             self.alignment = series_data["alignment"]
             self.object_groups = ObjGroupDict(series_data["object_groups"])
 
@@ -64,6 +69,7 @@ class Series():
             for xml_contour in self.xml_series.contours:
                 self.palette_traces.append(Trace.fromXMLObj(xml_contour))
             self.current_trace = self.palette_traces[0]
+            self.ztraces = []  # should eventually be changed
             self.alignment = "default"
             self.object_groups = ObjGroupDict()
     
@@ -82,6 +88,9 @@ class Series():
         for trace in self.palette_traces:
             d["palette_traces"].append(trace.getDict())
         d["current_trace"] = self.current_trace.getDict()
+        d["ztraces"] = []
+        for ztrace in self.ztraces:
+            d["ztraces"].append(ztrace.getDict())
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         return d
@@ -108,6 +117,7 @@ class Series():
             series_data["sections"][i] = series_name + "." + str(i)
         series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
         series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = ObjGroupDict()
 
@@ -158,3 +168,20 @@ class Series():
             section = self.loadSection(snum)
             section.tforms[alignment_name] = section.tforms[base_alignment]
             section.save()
+    
+    def createZtrace(self, obj_name : str):
+        """Create a ztrace from an existing object in the series.
+        
+            Params:
+                obj_name (str): the name of the object to create the ztrace from
+        """
+        points = []
+        for snum in self.sections:
+            section = self.loadSection(snum)
+            if obj_name in section.contours:
+                contour = section.contours[obj_name]
+                p = (*contour.getMidpoint(), snum)
+                points.append(p)
+        self.ztraces.append(Ztrace(obj_name, points))
+
+                

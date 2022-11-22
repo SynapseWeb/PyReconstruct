@@ -160,6 +160,7 @@ class ObjectTableManager():
                 obj_name (str): the name of the object
                 first (bool): whether to find first or last object in series
         """
+        self.mainwindow.saveAllData()
         if first:
             snum = self.objdict[obj_name].getStart()
         else:
@@ -173,6 +174,7 @@ class ObjectTableManager():
                 series (Series): the series object
                 obj_names (list): the list of names for the objects to delete
         """
+        self.mainwindow.saveAllData()
         for obj_name in obj_names:
             # delete the object on every section
             for snum in self.series.sections:
@@ -197,6 +199,7 @@ class ObjectTableManager():
                 name (str): the new name for the objects
                 color (tuple): the new color for the objects
         """
+        self.mainwindow.saveAllData()
         # modify the object on every section
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
@@ -238,6 +241,7 @@ class ObjectTableManager():
     
     def hideObjects(self, obj_names, hide=True):
         """Hide all traces of an object throughout the series."""
+        self.mainwindow.saveAllData()
         # iterate through sections and hide the traces
         for snum in self.series.sections:
             modified = False
@@ -256,6 +260,7 @@ class ObjectTableManager():
 
     def editRadius(self, obj_names, new_rad):
         """Change the radii of all traces of an object."""
+        self.mainwindow.saveAllData()
         # delete existing trace information
         for name in obj_names:
             self.objdict[name] = ObjectTableItem(name)
@@ -291,6 +296,7 @@ class ObjectTableManager():
                 obj_names (list): a list of object names
                 tag_name (str): the name of the tag to add
         """
+        self.mainwindow.saveAllData()
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
             section_modified = False
@@ -319,6 +325,7 @@ class ObjectTableManager():
             Params:
                 obj_names (list): a list of object names
         """
+        self.mainwindow.saveAllData()
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
             section_modified = False
@@ -348,6 +355,7 @@ class ObjectTableManager():
     
     def viewHistory(self, obj_names):
         """View the log history of a set of objects."""
+        self.mainwindow.saveAllData()
         # load all log objects from the traces
         log_history = []
         update, canceled = progbar("Object History", "Loading history...")

@@ -164,7 +164,7 @@ class Section():
         section_data["mag"] = mag  # microns per pixel
         section_data["thickness"] = thickness  # section thickness
         section_data["tforms"] = {}  
-        section_data["tforms"]["default"]= Transform([1, 0, 0, 0, 1, 0]) # identity matrix default
+        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
         section_data["contours"] = {}
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:

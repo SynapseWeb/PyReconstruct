@@ -119,7 +119,7 @@ class Series():
         series_data["current_trace"] = series_data["palette_traces"][0]
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
-        series_data["object_groups"] = ObjGroupDict()
+        series_data["object_groups"] = {}
 
         series_fp = os.path.join(wdir, series_name + ".ser")
         with open(series_fp, "w") as series_file:

@@ -12,7 +12,7 @@
    - [ ] ...
    - [ ] ...
 
-- [ ] Z traces
+- [X] Z traces
 
 - [ ] 3D scene improvements
    - [ ] viewport.cpp file in source

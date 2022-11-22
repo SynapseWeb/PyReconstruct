@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
 
         # open series and create field
-        welcome_series = Series(assets_dir + "/welcome_series/welcome.ser")
+        welcome_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
         self.openSeries(welcome_series, refresh_menu=False)
         self.field.generateView()
 
@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
             export_series_act = getattr(self, "export_series_act")
             export_series_act.setText(f"Export series to {outtype}...")
     
-    def newSeries(self, image_locations : list):
+    def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images."""
         # get images from user
         if not image_locations:

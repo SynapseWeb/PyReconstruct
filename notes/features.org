@@ -78,6 +78,7 @@
 - Themes
 - Domain / trace movment sides
 - 3D rendering options
+- Option to change highlighting thickness
 - (Look through reconstruct series options)
   
 * Other

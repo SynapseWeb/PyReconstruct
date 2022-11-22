@@ -363,17 +363,18 @@ class TraceLayer():
         """
         # set up painter
         painter = QPainter(trace_layer)
-        if highlight:
-            pen = QPen(QColor(*trace.color), 16)
+        
+        if highlight:  # Note: Put highlighting style into users options
+            pen = QPen(QColor(*trace.color), 7)
             painter.setPen(pen)
-            painter.setOpacity(0.2)
+            painter.setOpacity(0.3)
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
         
-        # convert to screen coord points
+        # convert to screen coordinates
         qpoints = self.traceToPix(trace, qpoints=True)
 
-        # check if the trace is actually in the view
+        # check if trace in view
         trace_in_view = False
         for point in qpoints:
             if pointInPoly(point.x(), point.y(), self.screen_poly):

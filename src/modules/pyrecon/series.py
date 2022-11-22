@@ -175,8 +175,12 @@ class Series():
             Params:
                 obj_name (str): the name of the object to create the ztrace from
         """
+        for ztrace in self.ztraces:
+            if obj_name == ztrace.name:
+                self.ztraces.remove(ztrace)
+                break
         points = []
-        for snum in self.sections:
+        for snum in sorted(self.sections.keys()):
             section = self.loadSection(snum)
             if obj_name in section.contours:
                 contour = section.contours[obj_name]

@@ -17,7 +17,11 @@ class ObjectTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+
         self.object_viewer = None
+        self.opacity = 255
+        self.sc_size = 1
+
         self.loadSeriesData()
 
     def loadSeriesData(self):
@@ -205,7 +209,7 @@ class ObjectTableManager():
             section = self.series.loadSection(snum)
             for obj_name in obj_names:
                 if obj_name in section.contours:
-                    contour = section.contours(obj_name)
+                    contour = section.contours[obj_name]
                     for trace in contour:
                         if name:
                             trace.name = name
@@ -234,7 +238,8 @@ class ObjectTableManager():
         for table in self.tables:
             for obj_name in obj_names:
                 table.updateObject(self.objdict[obj_name])
-            table.updateObject(self.objdict[name])
+            if name:
+                table.updateObject(self.objdict[name])
         
         # update the view
         self.mainwindow.field.reload()
@@ -343,6 +348,12 @@ class ObjectTableManager():
             for name in obj_names:
                 table.updateObject(self.objdict[name])
     
+    def setOpacity(self, opacity):
+        self.opacity = opacity
+    
+    def setSCSize(self, size):
+        self.sc_size = size
+    
     def generate3D(self, obj_names):
         """Generate the 3D view for a list of objects.
         
@@ -351,7 +362,13 @@ class ObjectTableManager():
         """
         if self.object_viewer:
             self.object_viewer.close()
-        self.object_viewer = Object3DViewer(self.series, obj_names, self.mainwindow)
+        self.object_viewer = Object3DViewer(
+            self.series,
+            obj_names,
+            self.opacity,
+            self.sc_size,
+            self.mainwindow
+    )
     
     def viewHistory(self, obj_names):
         """View the log history of a set of objects."""

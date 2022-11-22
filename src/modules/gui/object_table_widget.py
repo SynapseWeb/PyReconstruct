@@ -90,6 +90,18 @@ class ObjectTableWidget(QDockWidget):
                     ("findfirst_act", "First trace", "", self.findFirst),
                     ("findlast_act", "Last trace", "", self.findLast)
                 ]
+            },
+
+            {
+                "attr_name": "options3D_menu",
+                "text": "3D",
+                "opts":
+                [
+                    ("generate3D_act", "Generate 3D", "", self.generate3D),
+                    None,
+                    ("opacity_act", "Edit opacity...", "", self.editOpacity),
+                    ("sc_act", "Edit scale cube size...", "", self.editSCSize)
+                ]
             }
         ]
         # create the menubar object
@@ -107,7 +119,7 @@ class ObjectTableWidget(QDockWidget):
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
             None,
-            ("generate3D_act", "Generate 3D", "", self.generate3D),
+            self.generate3D_act,
             None,
             {
                 "attr_name" : "group_menu",
@@ -515,6 +527,7 @@ class ObjectTableWidget(QDockWidget):
         self.manager.viewHistory(obj_names)
     
     def createZtrace(self):
+        """Create a ztrace from selected objects."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
@@ -655,3 +668,43 @@ class ObjectTableWidget(QDockWidget):
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=False)
+    
+    def editOpacity(self):
+        """Edit the opacity of the 3D scene."""
+        new_opacity, confirmed = QInputDialog.getText(
+            self,
+            "3D Opacity",
+            "Enter 3D opacity (0-255):",
+            text=str(self.manager.opacity)
+        )
+        if not confirmed:
+            return
+        
+        try:
+            new_opacity = int(new_opacity)
+        except ValueError:
+            return
+        
+        if new_opacity < 0 or new_opacity > 255:
+            return
+        
+        self.manager.setOpacity(new_opacity)
+    
+    def editSCSize(self):
+        """Edit the size of the 3D scale cube."""
+        new_sc_size, confirmed = QInputDialog.getText(
+            self,
+            "3D Scale Cube",
+            "Enter scale cube side length (in microns):",
+            text=str(round(self.manager.sc_size, 6))
+        )
+        if not confirmed:
+            return
+        
+        try:
+            new_sc_size = float(new_sc_size)
+        except ValueError:
+            return
+        
+        self.manager.setSCSize(new_sc_size)
+

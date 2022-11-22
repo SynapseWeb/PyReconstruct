@@ -1,43 +1,31 @@
-from modules.calc.quantification import area, lineDistance
-
-from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 from modules.pyrecon.transform import Transform
 
-class TraceTableItem():
+class ZtraceTableItem():
 
-    def __init__(self, trace : Trace, tform : Transform, index : int):
-        """Create an object table item.
+    def __init__(self, ztrace : Ztrace, tforms : dict[Transform], section_heights : dict[float]):
+        """Create a ztrace table item.
         
             Params:
-                trace (Trace): the trace object for the trace
-                t (list): the list as a transform
-                index (int): the index of the trace in the contour
+                ztrace (Ztrace): the ztrace object
+                tforms (dict): the transforms for each section number
+                section_heights (dict): the z-height of each section number
         """
-        self.trace = trace
-        self.name = trace.name
-        self.index = index
-        self.closed = trace.closed
-        self.tags = trace.tags
-        tformed_points = tform.map(trace.points)
-        self.length = lineDistance(tformed_points, closed=trace.closed)
-        if not self.closed:
-            self.area = 0
-        else:
-            self.area = area(tformed_points)
-        self.radius = trace.getRadius(tform)
+        # calculate the distance of the ztrace
+        self.ztrace = ztrace
+        self.name = ztrace.name
+        self.dist = 0
+        # establish the first point
+        s1 = ztrace.points[0][2]
+        x1, y1 = tforms[s1].map(*ztrace.points[0][:2])
+        z1 = section_heights[s1]
+        for i in range(len(ztrace.points[1:])):
+            s2 = ztrace.points[i][2]
+            x2, y2 = tforms[s2].map(*ztrace.points[i][:2])
+            z2 = section_heights[s2]
+            self.dist += ((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)**(0.5)
+            x1, y1, z1 = x2, y2, z2
     
-    def isTrace(self, trace : Trace):
-        """Compares the traces (must be the SAME PYTHON OBJECT)."""
-        return trace == self.trace
-    
-    def getTags(self):
-        return self.tags
+    def getDist(self):
+        return self.dist
 
-    def getLength(self):
-        return self.length
-    
-    def getArea(self):
-        return self.area
-    
-    def getRadius(self):
-        return self.radius

@@ -384,6 +384,11 @@ class ObjectTableManager():
         
         HistoryWidget(self.mainwindow, output_str)
     
+    def createZtrace(self, obj_names):
+        """Create ztraces from a set of objects."""
+        for name in obj_names:
+            self.series.createZtrace(name)
+    
     def close(self):
         """Close all tables."""
         for table in self.tables:

@@ -1,7 +1,7 @@
 import os
 import time
 
-from PySide6.QtWidgets import QWidget, QMainWindow, QInputDialog, QColorDialog, QMenu, QPinchGesture, QGestureEvent
+from PySide6.QtWidgets import QWidget, QMainWindow, QInputDialog, QPinchGesture, QGestureEvent
 from PySide6.QtCore import Qt, QPoint, QEvent
 from PySide6.QtGui import QPixmap, QPen, QColor, QPainter, QPointingDevice
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
@@ -14,6 +14,7 @@ from modules.calc.pfconversions import pixmapPointToField
 from modules.backend.field_view import FieldView
 from modules.backend.gui_functions import populateMenu
 from modules.backend.object_table_manager import ObjectTableManager
+from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
 
 from modules.gui.dialog import FieldTraceDialog
@@ -47,6 +48,7 @@ class FieldWidget(QWidget, FieldView):
         self.setGeometry(0, 0, *self.pixmap_dim)
 
         self.obj_table_manager = None
+        self.ztrace_table_manager = None
         self.trace_table_manager = None
 
         self.createField(series)
@@ -63,6 +65,9 @@ class FieldWidget(QWidget, FieldView):
         if self.obj_table_manager is not None:
             self.obj_table_manager.close()
             self.obj_table_manager = None
+        if self.ztrace_table_manager is not None:
+            self.ztrace_table_manager.close()
+            self.ztrace_table_manager = None
         if self.trace_table_manager is not None:
             self.trace_table_manager.close()
             self.trace_table_manager = None
@@ -112,6 +117,16 @@ class FieldWidget(QWidget, FieldView):
             self.obj_table_manager = ObjectTableManager(self.series, self.mainwindow)
         # create a new table
         self.obj_table_manager.newTable()
+    
+    def openZtraceList(self):
+        # create manager if not already
+        if self.ztrace_table_manager is None:
+            self.ztrace_table_manager = ZtraceTableManager(
+                self.series,
+                self.mainwindow
+            )
+        # create a new table
+        self.ztrace_table_manager.newTable()
     
     def openTraceList(self):
         # create the manager if not already

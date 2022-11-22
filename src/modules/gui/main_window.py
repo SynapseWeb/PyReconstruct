@@ -116,6 +116,7 @@ class MainWindow(QMainWindow):
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList),
+                    ("ztracelist_act", "Open ztrace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
@@ -525,6 +526,11 @@ class MainWindow(QMainWindow):
         """Open the object list widget."""
         self.saveAllData()
         self.field.openObjectList()
+    
+    def openZtraceList(self):
+        """Open the ztrace list widget."""
+        self.saveAllData()
+        self.field.openZtraceList()
     
     def openTraceList(self):
         """Open the trace list widget."""

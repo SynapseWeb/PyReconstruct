@@ -6,7 +6,7 @@ from modules.pyrecon.transform import Transform
 class TraceTableItem():
 
     def __init__(self, trace : Trace, tform : Transform, index : int):
-        """Create an object table item.
+        """Create a trace table item.
         
             Params:
                 trace (Trace): the trace object for the trace

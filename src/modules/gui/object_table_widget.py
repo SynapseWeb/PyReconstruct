@@ -52,15 +52,6 @@ class ObjectTableWidget(QDockWidget):
         self.createTable(objdict)
         self.createMenus()
 
-        # set geometry
-        # w = 20
-        # for i in range(self.table.columnCount()):
-        #     w += self.table.columnWidth(i)
-        # h = self.parent_widget.height() - 90
-        # x = self.parent_widget.x() + 10
-        # y = self.parent_widget.y() + 90
-        #self.setGeometry(x, y, w, h)
-
         # save manager object
         self.manager = manager
 
@@ -111,10 +102,13 @@ class ObjectTableWidget(QDockWidget):
         context_menu_list = [
             ("editobjname_act", "Edit name...", "", self.editObjName),
             ("editobjcolor_act", "Edit color...", "", self.editObjColor),
+            ("editradius_act", "Edit radius...", "", self.editObjRadius),
+            None,
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
-            ("editradius_act", "Edit radius...", "", self.editObjRadius),
+            None,
             ("generate3D_act", "Generate 3D", "", self.generate3D),
+            None,
             {
                 "attr_name" : "group_menu",
                 "text": "Group",
@@ -136,6 +130,8 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             ("history_act", "View history", "", self.viewHistory),
+            None,
+            ("ztrace_act", "Create ztrace", "", self.createZtrace),
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
@@ -517,6 +513,12 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.viewHistory(obj_names)
+    
+    def createZtrace(self):
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        self.manager.createZtrace(obj_names)
 
     def deleteObjects(self):
         """Delete an object from the entire series."""

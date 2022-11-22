@@ -1,0 +1,117 @@
+from PySide6.QtCore import Qt
+
+from modules.pyrecon.series import Series
+
+from modules.backend.ztrace_table_item import ZtraceTableItem
+
+from modules.gui.ztrace_table_widget import ZtraceTableWidget
+
+class ZtraceTableManager():
+
+    def __init__(self, series : Series, mainwindow):
+        self.tables = []
+        self.series = series
+        self.mainwindow = mainwindow
+        self.loadSeries()
+    
+    def loadSeries(self):
+        """Load the secion thicknesses and transforms from the series."""
+        # load the transforms and section heights
+        self.tforms = {}
+        self.section_heights = {}
+        height = 0
+        for snum in sorted(self.series.sections.keys()):
+            section = self.series.loadSection(snum)
+            tform = section.tforms[self.series.alignment]
+            self.tforms[snum] = tform
+            self.section_heights[snum] = height
+            height += section.thickness
+        
+        # load the ztrace data
+        self.data = {}
+        for ztrace in self.series.ztraces:
+            self.data[ztrace.name] = ZtraceTableItem(
+                ztrace,
+                self.tforms,
+                self.section_heights
+            )
+    
+    def refresh(self):
+        """Refresh the series data."""
+        self.loadSeries()
+        for table in self.tables:
+            table.createTable(self.data)
+    
+    def newTable(self):
+        """Create a new ztrace list."""
+        new_table = ZtraceTableWidget(
+            self.series,
+            self.data,
+            self.mainwindow,
+            self
+        )
+        self.tables.append(new_table)
+        self.mainwindow.addDockWidget(Qt.LeftDockWidgetArea, new_table)
+    
+    def updateTable(self, table):
+        """Update a table's data."""
+        table.createTable(self.data)
+    
+    # MENU-REALTED FUNCTIONS
+
+    def editName(self, name : str, new_name : str):
+        """Edit the name of a ztrace.
+        
+            Params:
+                name (str): the name of the ztrace to change
+                new_name (str): the new name for the trace
+        """
+        # modify the ztrace data
+        for ztrace in self.series.ztraces:
+            if ztrace.name == name:
+                ztrace.name = new_name
+                break
+        
+        # modify the tables
+        self.data[new_name] = self.data[name]
+        self.data[new_name].name = new_name
+        del(self.data[name])
+        for table in self.tables:
+            table.createTable(self.data)
+    
+    def smooth(self, names):
+        """Smooth a set of ztraces."""
+        # smooth the ztraces
+        for ztrace in self.series.ztraces:
+            if ztrace.name in names:
+                ztrace.smooth()
+                # update the table data
+                self.data[ztrace.name] = ZtraceTableItem(
+                    ztrace,
+                    self.tforms,
+                    self.section_heights
+                )
+        
+        for table in self.tables:
+            table.createTable(self.data)
+    
+    def delete(self, names):
+        """Delete a set of ztraces."""
+        for ztrace in self.series.ztraces:
+            if ztrace.name in names:
+                self.series.ztraces.remove(ztrace)
+                del(self.data[ztrace.name])
+        
+        for table in self.tables:
+            table.createTable(self.data)
+    
+    def close(self):
+        """Close all the tables."""
+        for table in self.tables:
+            table.close()
+        
+
+        
+        
+            
+

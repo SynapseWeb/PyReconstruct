@@ -68,7 +68,7 @@ class TraceTableManager():
                 table.removeItem(item)
     
     def newTable(self):
-        """Create a new object list."""
+        """Create a new trace list."""
         new_table = TraceTableWidget(
             self.series,
             self.data,

@@ -37,6 +37,7 @@ class FieldView():
 
         # placeholders for the table manager
         self.obj_table_manager = None
+        self.ztrace_table_manager = None
         self.trace_table_manager = None
 
         # copy/paste clipholder
@@ -345,6 +346,8 @@ class FieldView():
             self.obj_table_manager.refresh()
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.refresh()
         self.generateView()
     
     def copy(self):

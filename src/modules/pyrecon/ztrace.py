@@ -13,7 +13,7 @@ class Ztrace():
     def getDict(self):
         """Get a dictionary representation of the object."""
         d = {}
-        d["name"] = self.name.copy()
+        d["name"] = self.name
         d["points"] = self.points.copy()
         return d
     
@@ -22,4 +22,7 @@ class Ztrace():
         ztrace = Ztrace(d["name"])
         ztrace.points = d["points"]
         return ztrace
+    
+    def smooth(self):
+        """Smooth a ztrace."""
 

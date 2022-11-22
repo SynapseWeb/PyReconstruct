@@ -438,7 +438,7 @@ class FieldWidget(QWidget, FieldView):
                     moving_trace.points = pix_points
                     self.moving_traces.append(moving_trace)
                 # remove the traces
-                self.section_layer.deleteSelectedTraces()
+                self.section_layer.deleteTraces()
                 self.generateView(update=False)
 
             dx = event.x() - self.clicked_x
@@ -811,7 +811,7 @@ class FieldWidget(QWidget, FieldView):
             painter.end()
             self.update()
         else:
-            self.deleteSelectedTraces()
+            self.deleteTraces()
     
     def stampPress(self, event):
         """Called when mouse is pressed in stamp mode.

@@ -79,10 +79,10 @@ class MainWindow(QMainWindow):
                 "opts":
                 [   
                     ("save_act", "Save", "Ctrl+S", self.saveAllData),
-                    None,  # acts as divider
+                    None,  # None acts as menu divider
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
-                    ("close_act", "Close", "", self.close),
+                    ("close_act", "Close", "Ctrl+Q", self.close),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername)
                 ]

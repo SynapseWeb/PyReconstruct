@@ -1,4 +1,5 @@
 from modules.pyrecon.series import Series
+from modules.pyrecon.transform import Transform
 
 def importTransforms(series : Series, tforms_fp : str):
         """Import transforms from a text file.
@@ -24,11 +25,12 @@ def importTransforms(series : Series, tforms_fp : str):
             except ValueError:
                 print("Incorrect transform file format")
                 return
+        
         # set tforms
         for section_num, tform in tforms.items():
             section = series.loadSection(section_num)
             # multiply pixel translations by magnification of section
             tform[2] *= section.mag
             tform[5] *= section.mag
-            section.tform = tform
+            section.tforms[series.alignment] = Transform(tform)
             section.save()

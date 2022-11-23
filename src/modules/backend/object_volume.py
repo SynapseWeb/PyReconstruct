@@ -1,13 +1,11 @@
 import cv2
 import numpy as np
 
-from PySide6.QtGui import QTransform
-
 import pyqtgraph.opengl as gl
 
 from modules.pyrecon.series import Series
 
-from modules.backend.gui_functions import progbar
+from modules.gui.gui_functions import progbar
 
 class ObjectVolume():
 
@@ -16,7 +14,7 @@ class ObjectVolume():
         
             Params:
                 series (Series): the series object
-                obj_names (list): the list of objects to gather data for
+                obj_names (list[str]): the list of object names to gather data for
         """
         # create objects dictionary
         self.obj_data = {}
@@ -33,14 +31,17 @@ class ObjectVolume():
         
         # iterate through all the sections and gather traces
         for snum in series.sections:
+            # load the section
             self.obj_data[snum] = {}
             section = series.loadSection(snum)
-            # check section thickness
+
+            # check section thickness (is it uniform?)
             self.obj_data[snum]["thickness"] = section.thickness
             if self.section_thickness is None:
                 self.section_thickness = section.thickness
             elif abs(self.section_thickness - section.thickness) > 1e-6:
                 self.uniform_section_thickness = False
+            
             # load the object points
             self.obj_data[snum]["contours"] = {}
             for obj_name in obj_names:
@@ -55,6 +56,8 @@ class ObjectVolume():
                         "points" : modified_points,
                         "color" : trace.color
                     })
+            
+            # update the progress
             progress += 1
             update(progress/final_value*100)
             if canceled():
@@ -97,6 +100,7 @@ class ObjectVolume():
                 volume (np.ndarray): the volume to fill in
                 zmin (int): the minimum z value
         """
+        # empty slices will exist if non-uniform section thickness
         for z in range(volume.shape[0]):
             if z in z_slices:
                 slice = volume[z]
@@ -107,15 +111,14 @@ class ObjectVolume():
         """Generate the numpy array volume.
         
             Params:
-                volume_threshold (int): the max possible volume (higher number = more voxels but slower)
+                volume_threshold (int): the max possible volume (higher number = higher res, but slower)
                 alpha (int): opacity of the volume
             Returns:
                 (gl.GLVolumeItem): the volume item (scaled to micron size)
                 (size): the z, y, x size of the volume (scaled to micron size)
                 (offset): the z, y, x offset of the object (in microns)
         """
-        # two cases: uniform section thickness and non-uniform section thickness
-
+        # if section thickness is not uniform:
         # modify the object data so that section number is converted to microns
         if not self.uniform_section_thickness:
             zs_obj_data = {}

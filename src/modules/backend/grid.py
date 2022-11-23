@@ -1,27 +1,35 @@
-import numpy as np
 import cv2
+import numpy as np
 
 from modules.calc.quantification import area
 
 class Grid():
 
-    def __init__(self, contours, cutline=None):
-        """Create a grid object."""
-        self.contours = [np.array(contour) for contour in contours]
+    def __init__(self, traces, cutline=None):
+        """Create a grid object.
+        
+            Params:
+                traces (list): a list of traces, each one being a list of points
+                cutline (list): a list of points created by the knife tool
+        """
+        self.traces = [np.array(trace) for trace in traces]
         self.cutline = cutline  # knife line
         self._generateGrid()
     
     def _generateGrid(self):
-        """Draw all the contours on the grid."""
-        xvals = [contour[:,0] for contour in self.contours]
-        yvals = [contour[:,1] for contour in self.contours]
+        """Draw all the traces on the grid."""
+        # get the boundaries of the trace
+        xvals = [trace[:,0] for trace in self.traces]
+        yvals = [trace[:,1] for trace in self.traces]
         xmin = min([x.min() for x in xvals])
         ymin = min([y.min() for y in yvals])
         xmax = max([x.max() for x in xvals])
         ymax = max([y.max() for y in yvals])
+
         # create an empty grid
         self.grid = np.array(np.zeros((ymax-ymin+2, xmax-xmin+2)), dtype="int")
-        # draw cut line on the grid
+
+        # draw knife line on grid if applicable
         if self.cutline is not None:
             for i in range(1, len(self.cutline)):
                 x1, y1 = self.cutline[i-1]
@@ -31,16 +39,18 @@ class Grid():
                 x2 -= xmin
                 y2 -= ymin
                 self._drawGridLine(x1, y1, x2, y2, knife=True)
-        # draw the trace(s) on the grid
-        for contour in self.contours:
-            for i in range(len(contour)):
-                x1, y1 = contour[i-1]
-                x2, y2 = contour[i]
+        
+        # draw the trace(s) on the grid (ASSUMES CLOSED)
+        for trace in self.traces:
+            for i in range(len(trace)):
+                x1, y1 = trace[i-1]
+                x2, y2 = trace[i]
                 x1 -= xmin
                 y1 -= ymin
                 x2 -= xmin
                 y2 -= ymin
                 self._drawGridLine(x1, y1, x2, y2)
+        
         # save grid information
         self.grid_shift = xmin, ymin
     
@@ -54,6 +64,7 @@ class Grid():
                 y0 (int): y value of start point
                 x1 (int): x value of end point
                 y1 (int): y value of end point
+                knife (bool): True if the trace is a knife trace
         """
         if (x0 == x1 and y0 == y1):
             return
@@ -69,9 +80,9 @@ class Grid():
         h, w = self.grid.shape
         if 0 <= x < w and 0 <= y < h:
             if knife:
-                self.grid[y, x] -= 1
+                self.grid[y, x] -= 1  # knife traces are negative
             else:
-                self.grid[y, x] = abs(self.grid[y, x]) + 1
+                self.grid[y, x] = abs(self.grid[y, x]) + 1  # traces are positive
         last_x, last_y = x, y
         for _ in range(steps):
             x += x_increment
@@ -87,13 +98,16 @@ class Grid():
                 last_x, last_y = rx, ry
 
     def removeCuts(self):
-        """Turn grid cuts into normal lines."""
+        """Turn grid cuts into normal lines.
+        
+        Negative values within the shape are made positive.
+        """
         y_vals, x_vals = np.where(self.grid < 0) # get positions of negative numbers (cut line)
         for x, y in zip(x_vals, y_vals):
             inside = False
-            # check if the point is inside any of the contours
-            for contour in self.contours:
-                ptest = cv2.pointPolygonTest(contour,
+            # check if the point is inside any of the traces
+            for trace in self.traces:
+                ptest = cv2.pointPolygonTest(trace,
                                         (int(x + self.grid_shift[0]), int(y + self.grid_shift[1])),
                                         measureDist=False)
                 if ptest >= 0:
@@ -106,7 +120,7 @@ class Grid():
     def printGrid(self):
         """Print the grid to the console.
         
-        Mostly for debugging purposes.
+        For debugging purposes.
         """
         for r in range(len(self.grid)):
             for c in range(len(self.grid[r])):
@@ -136,56 +150,59 @@ class Grid():
             else:
                 return False
 
-    def getAnchorContour(self, contour : np.ndarray) -> np.ndarray:
-        """Get the "anchor" contour from a numpy cv2 contour.
+    def getAnchorTrace(self, trace : np.ndarray) -> np.ndarray:
+        """Get the "anchor" trace from a numpy cv2 trace.
         
         Often run after cv2.findContours is run on the grid.
         
             Params:
-                contour (np.ndarray): the contour returned by cv2.findContours
+                trace (np.ndarray): the trace returned by cv2.findContours
             Returns:
-                (np.ndarray) the anchor points of the contour
+                (np.ndarray) the anchor points of the trace
         """
-        new_contour = []
-        for point in contour:
+        new_trace = []
+        for point in trace:
             if self.isAnchorPoint(*point):
-                new_contour.append(point)
-        return np.array(new_contour)
+                new_trace.append(point)
+        return np.array(new_trace)
     
     def getExterior(self) -> list:
-        """Get the exterior of the contour(s) on the grid.
+        """Get the exterior of the trace(s) on the grid.
         
             Returns:
-                (list) the exterior of the contour(s) (also represented as lists)
+                (list) the exterior of the trace(s) (also represented as lists)
         """
-        cv_contours, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        contours = []
-        for contour in cv_contours:
-            new_contour = self.getAnchorContour(contour[:,0,:])
-            new_contour += self.grid_shift
-            contours.append(new_contour.tolist())
-        return contours
+        cv_traces, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        traces = []
+        for trace in cv_traces:
+            new_trace = self.getAnchorTrace(trace[:,0,:])
+            new_trace += self.grid_shift
+            traces.append(new_trace.tolist())
+        return traces
 
     def getInteriors(self) -> list:
-        """Get the interiors of the contours on the grid.
+        """Get the interiors of the traces on the grid.
         
             Returns:
-                (list) the interiors of the contours (also represented as lists)
+                (list) the interiors of the traces (also represented as lists)
         """
         self.removeCuts()
-        cv_contours, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        contours = []
-        for contour in cv_contours[:-1]:
-            new_contour = self.getAnchorContour(contour[:,0,:])
-            new_contour += self.grid_shift
-            contours.append(new_contour.tolist())
-        return contours
+        cv_traces, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        traces = []
+        for trace in cv_traces[:-1]:
+            new_trace = self.getAnchorTrace(trace[:,0,:])
+            new_trace += self.grid_shift
+            traces.append(new_trace.tolist())
+        return traces
+
+
+# METHODS (used to access the class functions)
 
 def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) -> list:
     """Reduce the number of points in a trace (uses cv2.approxPolyDP).
     
         Params:
-            points (list): the list of points in the contour
+            points (list): the list of points in the trace
             ep (float): the epsilon value for the approximation
             iterations (int): the number of times the approximation is run
             closed (bool): whether or not the trace is closed
@@ -208,14 +225,13 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) ->
     
     return reduced_points[:,0,:].tolist()
 
-
 def getExterior(points : list) -> list:
     """Get the exterior of a single set of points.
     
         Params:
-            points (list): points describing the contour
+            points (list): points describing the trace
         Returns:
-            (list) points describing contour exterior
+            (list) points describing trace exterior
     """
     grid = Grid([points])
     new_points = grid.getExterior()[0]

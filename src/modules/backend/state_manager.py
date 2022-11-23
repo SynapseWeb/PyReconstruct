@@ -4,7 +4,13 @@ from modules.pyrecon.contour import Contour
 class FieldState():
 
     def __init__(self, contours : dict, tforms : dict, updated_contours=None):
-        """Create a field state with traces and the transform"""
+        """Create a field state with traces and the transform.
+        
+            Params:
+                contours (dict): all the contours on a section
+                tforms (dict): the tforms for the section state
+                updated_contours: the names of the modified contours
+        """
         self.contours = {}
         # first state made for a section (or copy)
         if updated_contours is None:
@@ -37,11 +43,21 @@ class FieldState():
 class SectionStates():
 
     def __init__(self, section : Section):
+        """Create the section state manager.
+        
+            Params:
+                section (Section): the sectin object to store states for
+        """
         self.current_state = FieldState(section.contours, section.tforms)
         self.undo_states = []
         self.redo_states = []
     
     def addState(self, section : Section):
+        """Add a new undo state (called when an action is performed.
+        
+            Params:
+                section (Section): the section object
+        """
         # clear redo states
         self.redo_states = []
         # push current state to undo states
@@ -59,7 +75,14 @@ class SectionStates():
             updated_contours
         )
         
-    def undoState(self, section : Section) -> list:
+    def undoState(self, section : Section) -> set:
+        """Restore an undo state on the section.
+        
+            Params:
+                section (Section): the section to restore
+            Returns:
+                (set): the names of modified contours
+        """
         if len(self.undo_states) == 0:
             return
         # restore the contours
@@ -90,7 +113,14 @@ class SectionStates():
         # return the modified contours
         return modified_contours
     
-    def redoState(self, section : Section):
+    def redoState(self, section : Section) -> set:
+        """Restore a redo state on the section.
+        
+            Params:
+                section (Section): the section to restore
+            Returns:
+                (set): the names of modified contours
+        """
         if len(self.redo_states) == 0:
             return
         redo_state = self.redo_states[-1]

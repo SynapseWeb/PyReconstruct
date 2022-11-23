@@ -1,5 +1,3 @@
-from PySide6.QtGui import QTransform
-
 from modules.calc.quantification import area, lineDistance
 
 from modules.pyrecon.trace import Trace
@@ -8,7 +6,7 @@ from modules.pyrecon.transform import Transform
 class ObjectTableItem():
 
     def __init__(self, name : str):
-        """Create an object table item.
+        """Create an object table item (each item represents a row).
         
             Params:
                 name (str): the name of the trace
@@ -16,13 +14,40 @@ class ObjectTableItem():
         self.name = name
         self.data = {}
     
-    def copy(self, new_name=None):
-        if new_name is None:
-            new_oti = ObjectTableItem(self.name)
+    def addTrace(self, trace : Trace, tform : Transform, section_num : int, section_thickness : float):
+        """Add trace data to the existing object.
+        
+            Params:
+                trace (Trace): the trace to add
+                tform (Transform): the transform applied to the trace
+                section_num (int): the section number the trace is on
+                section_thickness (float): the section thickness for the trace
+        """
+        # create the section number data if not existing
+        if section_num not in self.data:
+            self.data[section_num] = {}
+            self.data[section_num]["count"] = 0
+            self.data[section_num]["flat_area"] = 0
+            self.data[section_num]["volume"] = 0
+            self.data[section_num]["tags"] = set()
+        
+        # add to count
+        self.data[section_num]["count"] += 1
+
+        # add the tag to the set
+        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(trace.tags)
+
+        # transform the points
+        trace_points = tform.map(trace.points)
+
+        # calculate totals to add
+        trace_distance = lineDistance(trace_points, closed=trace.closed)
+        if trace.closed:
+            trace_area = area(trace_points)
+            self.data[section_num]["flat_area"] += trace_area
+            self.data[section_num]["volume"] += trace_area * section_thickness
         else:
-            new_oti = ObjectTableItem(new_name)
-        new_oti.data = self.data.copy()
-        return new_oti
+            self.data[section_num]["flat_area"] += trace_distance * section_thickness
     
     def getStart(self):
         if self.isEmpty():
@@ -71,7 +96,12 @@ class ObjectTableItem():
         for n in self.data:
             self.data[n]["tags"] = set()
     
-    def clearSectionData(self, n):
+    def clearSectionData(self, n : int):
+        """Clear the object data for a speicified section.
+        
+            Params:
+                n (int): the section number
+        """
         if n in self.data.keys():
             del self.data[n]
             return True
@@ -83,41 +113,6 @@ class ObjectTableItem():
     
     def isEmpty(self):
         return not bool(self.data)
-    
-    def addTrace(self, trace : Trace, tform : Transform, section_num : int, section_thickness : float):
-        """Add trace data to the existing object.
-        
-            Params:
-                trace_points (list): list of points
-                trace_is_closed (bool): whether or not the trace is closed
-                section_num (int): the section number the trace is on
-                section_thickness (float): the section thickness for the trace
-        """
-        # create the section number data if not existing
-        if section_num not in self.data:
-            self.data[section_num] = {}
-            self.data[section_num]["count"] = 0
-            self.data[section_num]["flat_area"] = 0
-            self.data[section_num]["volume"] = 0
-            self.data[section_num]["tags"] = set()
-        
-        # add to count
-        self.data[section_num]["count"] += 1
-
-        # add the tag to the set
-        self.data[section_num]["tags"] = self.data[section_num]["tags"].union(trace.tags)
-
-        # transform the points
-        trace_points = tform.map(trace.points)
-
-        # calculate totals to add
-        trace_distance = lineDistance(trace_points, closed=trace.closed)
-        if trace.closed:
-            trace_area = area(trace_points)
-            self.data[section_num]["flat_area"] += trace_area
-            self.data[section_num]["volume"] += trace_area * section_thickness
-        else:
-            self.data[section_num]["flat_area"] += trace_distance * section_thickness
     
     def combine(self, other):
         """Combine two table data objects.
@@ -143,3 +138,16 @@ class ObjectTableItem():
                     else:
                         combined.data[snum][key] += other.data[snum][key]
         return combined
+    
+    def copy(self, new_name=None):
+        """Create a copy of the object table item object.
+        
+            Params:
+                new_name (str): the new name for the copy
+        """
+        if new_name is None:
+            new_oti = ObjectTableItem(self.name)
+        else:
+            new_oti = ObjectTableItem(new_name)
+        new_oti.data = self.data.copy()
+        return new_oti

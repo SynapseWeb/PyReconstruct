@@ -1,9 +1,19 @@
 import os
-
 import zarr
 
-from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import (QPixmap, QImage, QPen, QColor, QTransform, QPainter, QPolygon)
+from PySide6.QtCore import (
+    Qt,
+    QPoint,
+    QRect
+)
+from PySide6.QtGui import (
+    QPixmap, 
+    QImage, 
+    QPen, 
+    QColor, 
+    QPainter, 
+    QPolygon
+)
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
 from modules.pyrecon.series import Series
@@ -19,7 +29,7 @@ class ImageLayer():
 
             Params:
                 section (Section): the section object for the field
-                src_dir (str): the immediate directory for the images
+                series (Series): the series object
         """
         self.section = section
         self.series = series
@@ -28,10 +38,13 @@ class ImageLayer():
     
     def loadImage(self):
         """Load the image."""
-        if self.series.src_dir == "":
+        # get the image path
+        if self.series.src_dir == "":  # same folder as series if no folder saved
             src_path = os.path.join(self.series.getwdir(), os.path.basename(self.section.src))
         else:
             src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
+        
+        # if the image folder is a zarr file
         if self.is_zarr_file:
             try:
                 self.image = zarr.open(src_path, mode="r")
@@ -40,6 +53,8 @@ class ImageLayer():
                 self.image_found = True
             except zarr.errors.PathNotFoundError:
                 self.image_found = False
+        
+        # if saved as normal images
         else:
             self.image = QImage(src_path)
             if self.image.isNull():
@@ -126,15 +141,18 @@ class ImageLayer():
         """
         # get transform
         tform = self.section.tforms[self.series.alignment]
-        # establish first point
+
+        # create the brightness polygon (draws brightness as a polygon over the image)
         brightness_poly = QPolygon()
         for p in self.base_corners:
             x, y = [n*self.section.mag for n in p]
             x, y = tform.map(x, y)
             x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             brightness_poly.append(QPoint(x, y))
+        
         # paint to image
         painter = QPainter(image_layer)
+        # different modes for high and low brightness
         if self.section.brightness >= 0:
             painter.setCompositionMode(QPainter.CompositionMode_Plus)
             brightness_color = QColor(*([self.section.brightness]*3))
@@ -155,22 +173,15 @@ class ImageLayer():
         # overlay image on itself for added contrast
         painter = QPainter(image_layer)
         painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+        # draw the images n (int) times on itself
         for _ in range(int(self.section.contrast)):
             painter.drawPixmap(0, 0, image_layer)
+        # draw another transparent image
         opacity = self.section.contrast % 1
         if opacity > 0:
             painter.setOpacity(opacity)
             painter.drawPixmap(0, 0, image_layer)
         painter.end()
-    
-    def getCropContourBounds(self, contour_name : str):
-        """Find the bounds for a contour in actual image pixels.
-        
-            Params:
-                contour_name (str): the name of the contour to find bounds for
-            Returns:
-                (tuple): left, top, right, bottom values for contour in actual image pixel coords
-        """
     
     def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the image layer.
@@ -329,13 +340,14 @@ class ImageLayer():
 
         return image_layer
 
-def getBoundingRect(points):
+def getBoundingRect(points : list):
     """Get the bounding rectangle and shift in origin for a set of points.
     
             Params:
                 points (list): a list of points
             Returns:
-                (tuple): xmin, ymin, xmax, ymax"""
+                (tuple): xmin, ymin, xmax, ymax
+    """
     xmin = points[1][0]
     xmax = points[1][0]
     ymin = points[1][1]

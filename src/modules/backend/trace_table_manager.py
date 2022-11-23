@@ -11,6 +11,13 @@ from modules.backend.trace_table_item import TraceTableItem
 class TraceTableManager():
 
     def __init__(self, series : Series, section : Section, mainwindow):
+        """Create the trace table manager.
+        
+            Params:
+                series (Series): the series object
+                section (Section): the section object
+                mainwindow (MainWindow): the main window widget
+        """
         self.tables = []
         self.series = series
         self.section = section
@@ -18,7 +25,11 @@ class TraceTableManager():
         self.loadSection()
 
     def loadSection(self, section : Section = None):
-        """Load all of the data for each object in the series."""
+        """Load all of the data for each object in the series.
+        
+            Params:
+                section (Section): the section to load data for
+        """
         if section:
             self.section = section
         self.data = {}
@@ -110,15 +121,35 @@ class TraceTableManager():
         
         return traces
     
-    def editTraces(self, name, color, tags, traces):
+    def editTraces(self, name : str, color : tuple, tags : set, traces : list):
+        """Edit a set of traces.
+        
+            Params:
+                name (str): the new trace name
+                color (tuple): the new trace color
+                tags (set): the new trace tags
+                traces (list): the list of traces to modify
+        """
         self.mainwindow.field.section_layer.changeTraceAttributes(name, color, tags, traces)
         self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
     
     def hideTraces(self, traces, hide=True):
+        """Hide/unhide a set of traces.
+        
+            Params:
+                traces (list): the list of traces to hide/unhide
+                hide (bool): True if traces should be hidden
+        """
         self.mainwindow.field.hideTraces(traces, hide)
     
-    def editRadius(self, new_rad, traces):
+    def editRadius(self, new_rad : float, traces : list):
+        """Edit the radius of a set of traces
+        
+            Params:
+                new_rad (float): the new radius for the traces
+                traces (list): the list of traces to modify
+        """
         self.mainwindow.field.editRadius(new_rad, traces)
     
     def findTrace(self, item : TraceTableItem):
@@ -129,11 +160,20 @@ class TraceTableManager():
         """
         self.mainwindow.field.findTrace(item.name, item.index)
     
-    def deleteTraces(self, traces):
+    def deleteTraces(self, traces : list):
+        """Delete a set of traces.
+        
+            Params:
+                traces (list): the trace to delete
+        """
         self.mainwindow.field.deleteTraces(traces)
     
-    def viewHistory(self, traces):
-        """View the log history of a set of traces."""
+    def viewHistory(self, traces : list):
+        """View the log history of a set of traces.
+        
+            Params:
+                traces (list): the traces to view the history of
+        """
         log_history = []
         names = set()
         for trace in traces:

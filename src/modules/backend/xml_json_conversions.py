@@ -3,7 +3,7 @@ import json
 
 from constants.blank_legacy_files import blank_series, blank_section
 
-from modules.backend.gui_functions import progbar
+from modules.gui.gui_functions import progbar
 from modules.backend.grid import reducePoints
 
 from modules.pyrecon.series import Series

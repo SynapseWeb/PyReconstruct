@@ -9,6 +9,11 @@ from modules.gui.ztrace_table_widget import ZtraceTableWidget
 class ZtraceTableManager():
 
     def __init__(self, series : Series, mainwindow):
+        """Create the ztrace table manager.
+        
+            Params:
+                series (Series): the series object
+                mainwindow (MainWindow): the main window widget"""
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
@@ -53,8 +58,12 @@ class ZtraceTableManager():
         self.tables.append(new_table)
         self.mainwindow.addDockWidget(Qt.LeftDockWidgetArea, new_table)
     
-    def updateTable(self, table):
-        """Update a table's data."""
+    def updateTable(self, table : ZtraceTableWidget):
+        """Update a table's data.
+        
+            Params:
+                table: the table to update
+        """
         table.createTable(self.data)
     
     # MENU-REALTED FUNCTIONS
@@ -79,8 +88,12 @@ class ZtraceTableManager():
         for table in self.tables:
             table.createTable(self.data)
     
-    def smooth(self, names):
-        """Smooth a set of ztraces."""
+    def smooth(self, names : list):
+        """Smooth a set of ztraces.
+        
+            Params:
+                names (list): the names of the ztraces to smooth
+        """
         # smooth the ztraces
         for ztrace in self.series.ztraces:
             if ztrace.name in names:
@@ -95,8 +108,12 @@ class ZtraceTableManager():
         for table in self.tables:
             table.createTable(self.data)
     
-    def delete(self, names):
-        """Delete a set of ztraces."""
+    def delete(self, names : list):
+        """Delete a set of ztraces.
+        
+            Params:
+                names (list): the list of ztraces to delete
+        """
         for ztrace in self.series.ztraces:
             if ztrace.name in names:
                 self.series.ztraces.remove(ztrace)

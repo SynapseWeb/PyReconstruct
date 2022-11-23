@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QPoint
 
 from modules.pyrecon.trace import Trace
 
-from modules.backend.gui_functions import populateMenu
+from modules.gui.gui_functions import populateMenu
 
 from modules.gui.dialog import PaletteTraceDialog
 

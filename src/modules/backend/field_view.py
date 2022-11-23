@@ -1,6 +1,7 @@
-from PySide6.QtGui import QPainter, QTransform
+from PySide6.QtGui import QPainter
 
 from modules.pyrecon.series import Series
+from modules.pyrecon.trace import Trace
 
 from modules.backend.section_layer import SectionLayer
 from modules.backend.state_manager import SectionStates
@@ -12,7 +13,6 @@ class FieldView():
         
             Params:
                 series (Series): the series object
-                wdir (str): the working directory for the series
         """
         # get series and current section
         self.series = series
@@ -40,11 +40,11 @@ class FieldView():
         self.ztrace_table_manager = None
         self.trace_table_manager = None
 
-        # copy/paste clipholder
+        # copy/paste clipboard
         self.clipboard = []
     
     def reload(self):
-        """Reload the section data (used if section files were modified)."""
+        """Reload the section data (used if section files were modified, usually through object list)."""
         # reload the actual sections
         self.section = self.series.loadSection(self.series.current_section)
         self.section_layer.section = self.section
@@ -59,7 +59,7 @@ class FieldView():
         self.generateView()
     
     def reloadImage(self):
-        """Reload the section images."""
+        """Reload the section images (used if transform or image source is modified)."""
         self.section_layer.loadImage()
         if self.b_section is not None:
             self.b_section_layer.loadImage()
@@ -70,24 +70,36 @@ class FieldView():
         
         ALSO updates the lists.
         """
+        # save the current state
         section_states = self.series_states[self.series.current_section]
         section_states.addState(self.section)
+
+        # update the object table
         if self.obj_table_manager:
             self.obj_table_manager.updateSection(
                 self.section,
                 self.series.current_section
             )
+        
+        # update the trace table
         if self.trace_table_manager:
             self.trace_table_manager.update()
+        
+        # clear the tracked added/removed traces
         self.section.clearTracking()
 
     def undoState(self):
         """Undo last action (switch to last state)."""
+        # clear selected straces
         self.section_layer.selected_traces = []
+
+        # get the last undo state
         section_states = self.series_states[self.series.current_section]
         modified_contours = section_states.undoState(self.section)
         if modified_contours is None:
             return
+        
+        # update the object table
         if self.obj_table_manager:
             for contour in modified_contours:
                 self.obj_table_manager.updateContour(
@@ -95,17 +107,25 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+            
+        # update the trace table
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
+        
         self.generateView()
     
     def redoState(self):
         """Redo an undo (switch to last undid state)."""
+        # clear the selected traces
         self.section_layer.selected_traces = []
+
+        # get the last redo state
         section_states = self.series_states[self.series.current_section]
         modified_contours = section_states.redoState(self.section)
         if modified_contours is None:
             return
+        
+        # update the object table
         if self.obj_table_manager:
             for contour in modified_contours:
                 self.obj_table_manager.updateContour(
@@ -113,8 +133,11 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+            
+        # update the trace table
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
+        
         self.generateView()
     
     def swapABsections(self):
@@ -127,12 +150,15 @@ class FieldView():
         """Change the displayed section.
         
             Params:
-                new_section_num (int): the new section number
+                new_section_num (int): the new section number to display
         """
+        # check if requested section exists
         if new_section_num not in self.series.sections:
             return
+        
         # move current section data to b section
         self.swapABsections()
+
         # load new section if required
         if new_section_num != self.series.current_section:
             # load section
@@ -144,7 +170,7 @@ class FieldView():
             # clear selected traces
             self.section_layer.selected_traces = []
         
-        # create section state object if needed
+        # create section undo/redo state object if needed
         if new_section_num not in self.series_states:
             self.series_states[new_section_num] = SectionStates(self.section)
         
@@ -162,18 +188,24 @@ class FieldView():
                 trace_name (str): the name of the trace to focus on
                 index (int): find the nth trace on the section
         """
+        # check if the trace exists
         if trace_name not in self.section.contours or self.section.contours[trace_name].isEmpty():
             return
         try:
             trace = self.section.contours[trace_name][index]
         except IndexError:
             return
+        
+        # set the window to frame the object
         tform = self.section.tforms[self.series.alignment]
         min_x, min_y, max_x, max_y = trace.getBounds(tform)
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+
+        # set the trace as the only selected trace
         self.section_layer.selected_traces = [trace]
+
         self.generateView()
     
     def findContour(self, contour_name : str):
@@ -182,9 +214,11 @@ class FieldView():
             Params:
                 contour_name (str): the name of the contour to focus on
         """
+        # check if contour exists
         if contour_name not in self.section.contours or self.section.contours[contour_name].isEmpty():
             return
         
+        # get the bounds of the contour and set the window
         contour = self.section.contours[contour_name]
         tform = self.section.tforms[self.series.alignment]
         vals = [trace.getBounds(tform) for trace in contour]
@@ -195,27 +229,85 @@ class FieldView():
         range_x = max_x - min_x
         range_y = max_y - min_y
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+
+        # set the selected traces
         self.section_layer.selected_traces = contour.getTraces()
+
+        self.generateView()
+    
+    def selectTrace(self, trace : Trace):
+        """Select/deselect a single trace.
+        
+            Params:
+                trace (Trace): the trace to select
+        """
+        if not trace:
+            return
+        if trace in self.section_layer.selected_traces:
+            self.section_layer.selected_traces.remove(trace)
+        else:
+            self.section_layer.selected_traces.append(trace)
+
+        self.generateView(generate_image=False)
+    
+    def selectTraces(self, traces : list[Trace]):
+        """Select/deselect a set of traces.
+        
+            Params:
+                traces (list[Trace]): the traces to select
+        """
+        traces_to_add = []
+        for trace in traces:
+            if trace not in self.section_layer.selected_traces:
+                traces_to_add.append(trace)
+        if traces_to_add:
+            self.section_layer.selected_traces += traces_to_add
+        else:
+            for trace in traces:
+                self.section_layer.selected_traces.remove(trace)
+            
+        self.generateView(generate_image=False)
+    
+    def changeAlignment(self, new_alignment : str):
+        """Change the alignment setting for the series.
+        
+            Params:
+                new_alignment (str): the name of the new alignment
+        """
+        self.series.alignment = new_alignment
+
+        # refresh all of the tables
+        if self.obj_table_manager:
+            self.obj_table_manager.refresh()
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection()
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.refresh()
+        
         self.generateView()
     
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.
         
             Params:
-                pixmap_dim (tuple): the w and h of the pixmap view"""
+                pixmap_dim (tuple): the w and h of the pixmap view
+        """
         # get dimensions of field window and pixmap
-        # resize window to match proportions of current geometry
         window_x, window_y, window_w, window_h = tuple(self.series.window)
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_ratio = window_w/window_h
         pixmap_ratio = pixmap_w / pixmap_h
+
+        # resize window to match proportions of current geometry
         if abs(window_ratio - pixmap_ratio) > 1e-6:
-            if window_ratio < pixmap_ratio:  # increase the width
+            # increase the width
+            if window_ratio < pixmap_ratio: 
                 new_w = window_h * pixmap_ratio
                 new_x = window_x - (new_w - window_w) / 2
                 window_w = new_w
                 window_x = new_x
-            else: # increase the height
+            # increase the height
+            else:
                 new_h = window_w / pixmap_ratio
                 new_y = window_y - (new_h - window_h) / 2
                 window_h = new_h
@@ -228,13 +320,17 @@ class FieldView():
             Params:
                 scaling (float): the new scaling value
         """
+        # calculate the scaling factor
         factor = scaling / self.scaling
+
+        # reset the window
         w, h = self.series.window[2], self.series.window[3]
         new_w, new_h = w / factor, h / factor
         self.series.window[0] += (w - new_w) / 2
         self.series.window[1] += (h - new_h) / 2
         self.series.window[2] = new_w
         self.series.window[3] = new_h
+
         self.generateView()
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
@@ -283,7 +379,6 @@ class FieldView():
         return view
     
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
-    # look up a better way to do this??
 
     def deleteTraces(self, traces=None):
         self.section_layer.deleteTraces(traces)
@@ -312,28 +407,6 @@ class FieldView():
     
     def findClosestTrace(self, field_x, field_y, radius=0.5):
         return self.section_layer.findClosestTrace(field_x, field_y, radius)
-    
-    def selectTrace(self, trace):
-        if not trace:
-            return
-        if trace in self.section_layer.selected_traces:
-            self.section_layer.selected_traces.remove(trace)
-        else:
-            self.section_layer.selected_traces.append(trace)
-        self.generateView(generate_image=False)
-    
-    def selectTraces(self, traces):
-        traces_to_add = []
-        for trace in traces:
-            if trace not in self.section_layer.selected_traces:
-                traces_to_add.append(trace)
-        if traces_to_add:
-            self.section_layer.selected_traces += traces_to_add
-        else:
-            for trace in traces:
-                self.section_layer.selected_traces.remove(trace)
-            
-        self.generateView(generate_image=False)
     
     def deselectAllTraces(self):
         self.section_layer.deselectAllTraces()
@@ -364,16 +437,6 @@ class FieldView():
     def changeTform(self, new_tform):
         self.section_layer.changeTform(new_tform)
         self.saveState()
-        self.generateView()
-    
-    def changeAlignment(self, new_alignment):
-        self.series.alignment = new_alignment
-        if self.obj_table_manager:
-            self.obj_table_manager.refresh()
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.refresh()
         self.generateView()
     
     def copy(self):

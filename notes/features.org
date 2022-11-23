@@ -27,6 +27,10 @@
    - Set permissions (through command line?)
 
 - [ ] Clean up code
+   - [ ] Check docstrings for ALL functions
+   - [ ] Add comments where necessary
+   - [ ] Clean up import statements
+   - [ ] Module stuff?
 
 - [ ] Would be nice to have
    - [ ] Series options (see options heading below)

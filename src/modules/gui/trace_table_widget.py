@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from modules.pyrecon.series import Series
 
 from modules.backend.trace_table_item import TraceTableItem
-from modules.backend.gui_functions import populateMenuBar, populateMenu
+from modules.gui.gui_functions import populateMenuBar, populateMenu
 
 from modules.gui.dialog import TableColumnsDialog, FieldTraceDialog
 

@@ -12,10 +12,10 @@ from modules.gui.field_widget import FieldWidget
 from modules.gui.dialog import AlignmentDialog
 from modules.gui.history_widget import HistoryWidget
 
-from modules.backend.gui_functions import progbar
+from modules.gui.gui_functions import progbar
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
-from modules.backend.gui_functions import populateMenuBar, populateMenu
+from modules.gui.gui_functions import populateMenuBar, populateMenu
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform

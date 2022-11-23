@@ -110,7 +110,7 @@ def getDistanceFromTrace(x : float, y: float, trace : list, factor=1.0, absolute
     pp_test = cv2.pointPolygonTest((np.array(trace) * factor).astype(int), (x * factor, y * factor), measureDist=True)
     return abs(pp_test / factor) if absolute else pp_test / factor
 
-def pointInPoly(x : float, y: float, trace : list):
+def pointInPoly(x : float, y: float, trace : list) -> bool:
     """Find if a point is in a given trace (uses opencv).
     
         Params:

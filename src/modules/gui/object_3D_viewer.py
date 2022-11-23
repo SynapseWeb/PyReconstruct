@@ -4,7 +4,7 @@ from PySide6.QtGui import QKeySequence, QShortcut
 
 import pyqtgraph.opengl as gl
 
-from modules.backend.generate_3D import ObjectVolume
+from modules.backend.object_volume import ObjectVolume
 
 from modules.pyrecon.series import Series
 

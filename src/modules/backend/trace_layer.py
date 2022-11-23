@@ -1,13 +1,29 @@
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QPixmap, QPen, QColor, QTransform, QPainter
+from PySide6.QtGui import (
+    QPixmap,
+    QPen,
+    QColor,
+    QPainter
+)
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
-from modules.backend.grid import getExterior, mergeTraces, reducePoints, cutTraces
-from modules.calc.quantification import getDistanceFromTrace, pointInPoly
-from modules.calc.pfconversions import pixmapPointToField, fieldPointToPixmap
+from modules.backend.grid import (
+    getExterior, 
+    mergeTraces, 
+    reducePoints, 
+    cutTraces
+)
+from modules.calc.quantification import (
+    getDistanceFromTrace,
+    pointInPoly
+)
+from modules.calc.pfconversions import (
+    pixmapPointToField,
+    fieldPointToPixmap
+)
 
 class TraceLayer():
 
@@ -15,18 +31,20 @@ class TraceLayer():
         """Create a trace layer.
         
             Params:
-                traces (list): the existing trace list (from a Section object)
+                section (Section): the section object for the layer
+                series (Series): the series object
         """
         self.section = section
         self.series = series
         self.selected_traces = []
         self.all_traces_hidden = False
     
-    def traceToPix(self, trace : Trace, qpoints=False):
+    def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
         
             Params:
                 trace (Trace): the trace to convert
+                qpoints (bool): True if points should be converted QPoint
             Returns:
                 (list): list of pixel points
         """
@@ -49,7 +67,6 @@ class TraceLayer():
                 field_x (float): x coordinate of search center
                 field_y (float): y coordinate of search center
                 radius (float): 1/2 of the side length of search square
-            
             Returns:
                 (Trace) the trace closest to the center
                 None if no trace points are found within the radius
@@ -57,23 +74,26 @@ class TraceLayer():
         min_distance = -1
         closest_trace = None
         tform = self.section.tforms[self.series.alignment]
+        # only check the traces within the view
         for trace in self.traces_in_view:
             points = []
             for point in trace.points:
                 x, y = tform.map(*point)
                 points.append((x,y))
+            # find the distance of the point from each trace
             dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.section.mag)
             if closest_trace is None or dist < min_distance:
                 min_distance = dist
                 closest_trace = trace
+        
         return closest_trace if min_distance <= radius else None
     
-    def getTrace(self, pix_x, pix_y) -> Trace:
+    def getTrace(self, pix_x : float, pix_y : float) -> Trace:
         """"Return the closest trace to the given field coordinates.
         
             Params:
-                field_x (float): the x-coord of the point in the field
-                field_y (float): the y-coord of the point in the field
+                pix_x (float): the x-coord of the point in the widget
+                pix_y (float): the y-coord of the point in the widget
             Returns:
                 (Trace): the closest trace
         """
@@ -84,17 +104,22 @@ class TraceLayer():
         return self.findClosestTrace(field_x, field_y, radius=radius)
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
-        """"Select all traces that are at least partially in a polygon
+        """"Select all traces that are completely in a polygon
         
             Params:
                 pix_poly (list): a list of screen points
             Returns:
                 (list[Trace]): the list of traces within the polygon
         """
+        # convert the pix_poly into its exterior
+        pix_poly = getExterior(pix_poly)
+
         traces_in_poly = []
+        # only check traces in the view
         for trace in self.traces_in_view:
             pix_points = self.traceToPix(trace)
             inside_poly = True
+            # check if EVERY point is inside the polygon
             for point in pix_points:
                 if not pointInPoly(*point, pix_poly):
                     inside_poly = False
@@ -110,6 +135,8 @@ class TraceLayer():
                 pix_trace (list): pixel coordinates for the new trace
                 base_trace (Trace): the trace containing the desired attributes
                 closed (bool): whether or not the new trace is closed
+                log_message (str): the log message for the new trace action
+                origin_traces (list): the traces that the new trace came from (used in the cases of merging and cutting; keeps track of history)
         """
         if len(pix_trace) < 1:  # do not create a new trace if there is only one point
             return
@@ -135,6 +162,7 @@ class TraceLayer():
             rtform_point = tform.map(*field_point, inverted=True) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
         
+        # add the trace to the section and select
         if log_message:
             self.section.addTrace(new_trace, log_message)
         else:
@@ -190,7 +218,7 @@ class TraceLayer():
         
             Params:
                 new_rad (float): the new radius for the trace(s)
-                traces (list): the list of traces to change
+                traces (list): the list of traces to change (default: selected traces)
         """
         if traces is None:
             traces = self.selected_traces
@@ -208,6 +236,7 @@ class TraceLayer():
         
             Params:
                 traces (list): the traces to hide
+                hide (bool): True if traces should be hidden
         """
         if not traces:
             traces = self.selected_traces
@@ -251,7 +280,7 @@ class TraceLayer():
         """Cuts the selected trace along the knife line.
         
             Params:
-                knife_pix_points (list): the knife trace in pixmap points
+                knife_trace (list): the knife trace in pixmap points
         """
         if len(self.selected_traces) == 0:
             print("Please select traces you wish to cut.")
@@ -288,25 +317,28 @@ class TraceLayer():
         for trace in traces:
             self.section.removeTrace(trace)
     
-    def eraseArea(self, pix_x, pix_y):
+    def eraseArea(self, pix_x : int, pix_y : int):
         """Erase an area of the field.
         
             Params:
-                pix_x: the x coord for erasing
-                pix_y: the y coord for erasing
+                pix_x (int): the x coord for erasing
+                pix_y (int): the y coord for erasing
         """
         trace = self.getTrace(pix_x, pix_y)
-        if trace in self.selected_traces:
+        if trace:
             self.section.removeTrace(trace)
-            self.selected_traces.remove(trace)
+            if trace in self.selected_traces:
+                self.selected_traces.remove(trace)
             return True
         return False
     
-    def getCopiedTraces(self, cut=False):
+    def getCopiedTraces(self, cut=False) -> list:
         """Called when user presses Ctrl+C or Ctrl+X.
         
             Params:
                 cut (bool): whether or not to delete the traces
+            Returns:
+                (list): the traces to copy
         """
         copied_traces = []
         for trace in self.selected_traces:
@@ -322,12 +354,17 @@ class TraceLayer():
         return copied_traces
     
     def pasteTraces(self, traces : list[Trace]):
-        """Called when the user presses Ctrl+V."""
+        """Called when the user presses Ctrl+V.
+        
+            Params:
+                traces (list): a list of trace objects to paste
+        """
         for trace in traces:
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
             self.section.addTrace(trace, f"copied/pasted")
+            self.selected_traces.append(trace)
     
     def pasteAttributes(self, traces : list[Trace]):
         """Called when the user pressed Ctrl+B."""
@@ -389,12 +426,14 @@ class TraceLayer():
         
         return trace_in_view
     
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list):
+    def generateTraceLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the view of the window (x, y, w, h)
+            Returns:
+                (QPixmap): the pixmap with traces drawn in
         """
         # draw all the traces
         self.window = window

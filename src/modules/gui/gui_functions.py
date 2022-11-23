@@ -33,6 +33,8 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     act_name, text, kbd, f = action_tuple
     # create the action attribute
     action = container.addAction(text, f, kbd)
+    if kbd == "checkbox":
+        action.setCheckable(True)
     widget.addAction(action)
     setattr(widget, act_name, action)
 

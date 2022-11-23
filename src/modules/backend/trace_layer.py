@@ -3,7 +3,8 @@ from PySide6.QtGui import (
     QPixmap,
     QPen,
     QColor,
-    QPainter
+    QPainter,
+    QBrush
 )
 
 from modules.pyrecon.series import Series
@@ -421,6 +422,10 @@ class TraceLayer():
         # draw trace
         if trace.closed:
             painter.drawPolygon(qpoints)
+            if not highlight and self.series.fill_closed_traces and trace_in_view:
+                painter.setBrush(QBrush(QColor(*trace.color)))
+                painter.setOpacity(self.series.fill_opacity)
+                painter.drawPolygon(qpoints)
         else:
             painter.drawPolyline(qpoints)
         

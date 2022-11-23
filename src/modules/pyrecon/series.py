@@ -72,6 +72,10 @@ class Series():
             self.ztraces = []  # should eventually be changed
             self.alignment = "default"
             self.object_groups = ObjGroupDict()
+        
+        # default settings
+        self.fill_closed_traces = False
+        self.fill_opacity = 0.1
     
     def getDict(self) -> dict:
         """Convert series object into a dictionary.

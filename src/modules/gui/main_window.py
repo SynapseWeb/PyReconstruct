@@ -148,6 +148,16 @@ class MainWindow(QMainWindow):
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
                 ]
             },
+
+            {
+                "attr_name": "viewmenu",
+                "text": "View",
+                "opts":
+                [
+                    ("togglefill_act", "Fill closed traces", "checkbox", self.toggleFill),
+                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity)
+                ]
+            }
         ]
 
         # Populate menu bar with menus and options
@@ -288,6 +298,33 @@ class MainWindow(QMainWindow):
         
         os.getlogin = getlogin
     
+    def toggleFill(self):
+        """Toggle whether the selected traces should be filled."""
+        self.series.fill_closed_traces = self.togglefill_act.isChecked()
+        self.field.generateView(generate_image=False)
+    
+    def setFillOpacity(self):
+        """Set the opacity of the trace highlight."""
+        opacity, confirmed = QInputDialog.getText(
+            self,
+            "Fill Opacity",
+            "Enter fill opacity (0-1):",
+            text=str(round(self.series.fill_opacity, 3))
+        )
+        if not confirmed:
+            return
+        
+        try:
+            opacity = float(opacity)
+        except ValueError:
+            return
+        
+        if not (0 <= opacity <= 1):
+            return
+        
+        self.series.fill_opacity = opacity
+        self.field.generateView(generate_image=False)
+
     def openSeries(self, series_obj=None, refresh_menu=True):
         """Open an existing series and create the field.
         
@@ -332,8 +369,8 @@ class MainWindow(QMainWindow):
                 outtype = "JSON"
             elif self.series.filetype == "JSON":
                 outtype = "XML"
-            export_series_act = getattr(self, "export_series_act")
-            export_series_act.setText(f"Export series to {outtype}...")
+            self.export_series_act.setText(f"Export series to {outtype}...")
+            self.togglefill_act.setChecked(False)
     
     def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images.

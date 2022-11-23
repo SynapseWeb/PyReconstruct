@@ -1,16 +1,29 @@
-from PySide6.QtWidgets import QPushButton, QMenu, QInputDialog, QColorDialog, QWidget
-from PySide6.QtGui import QPainter, QPen, QColor, QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QPushButton, 
+    QWidget
+)
+from PySide6.QtGui import (
+    QPainter, 
+    QPen, 
+    QColor, 
+    QIcon, 
+    QPixmap
+)
 from PySide6.QtCore import Qt, QPoint
 
 from modules.pyrecon.trace import Trace
-
-from modules.gui.gui_functions import populateMenu
 
 from modules.gui.dialog import PaletteTraceDialog
 
 class PaletteButton(QPushButton):
 
     def __init__(self, parent : QWidget, manager):
+        """Create the palette button.
+        
+            Params:
+                parent (QWidget): the parent containing the button
+                manager: the mananger class for the button
+        """
         super().__init__(parent)
         self.manager = manager
 
@@ -40,11 +53,7 @@ class PaletteButton(QPushButton):
         self.setIcon(QIcon(self.pixmap))
         
     def contextMenuEvent(self, event):
-        """Executed when button is right-clicked: pulls up menu for user to edit button.
-        
-            Params:
-                event: contains user input data (location of right click)
-        """
+        """Executed when button is right-clicked: pulls up menu for user to edit button."""
         self.openDialog()
     
     def openDialog(self):
@@ -69,7 +78,12 @@ class PaletteButton(QPushButton):
         self.setTrace(self.trace)
         self.manager.paletteButtonChanged(self)
     
-    def _resizePoint(self, point):
+    def _resizePoint(self, point : tuple) -> tuple:
+        """Resize a point by the scale factor.
+        
+            Params:
+                point (tuple): the point to resize
+        """
         x = point[0]
         y = point[1]
         x *= self.scale_factor

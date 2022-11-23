@@ -20,8 +20,7 @@ class MousePalette():
             Params:
                 palette_traces (list): list of traces to include on palette
                 selected_trace (Trace): the trace that is selected on the palette
-                parent (QWidget): the parent widget of the dock
-                button_size (int): the size of the buttons on the dock
+                mainwindow (MainWindow): the parent main window of the dock
         """
         self.mainwindow = mainwindow
         self.left_handed = False
@@ -53,6 +52,7 @@ class MousePalette():
         
         self.selected_mode = "pointer"
         self.selected_trace = selected_trace
+        self.show_corner_buttons = True
 
         # create label
         self.label = OutlinedLabel(self.mainwindow)
@@ -99,6 +99,7 @@ class MousePalette():
         
             Params:
                 name (str): the name of the button (and PNG file)
+                sc (str): the shortcut character for the button
                 pos (int): the position of the button
                 mouse_mode (int): the mode this button is connected to
         """
@@ -136,7 +137,8 @@ class MousePalette():
         
             Params:
                 button (PaletteButton): the palette button to move
-                pos (int): its position"""
+                pos (int): its position
+        """
         # place the palette button in the middle of the FIELD (not mainwindow)
         if pos % 10 // 5 > 0:
             x_offset = 1
@@ -155,6 +157,20 @@ class MousePalette():
         y += y_offset
 
         button.setGeometry(x, y, self.pblen, self.pblen)
+    
+    def setPaletteButtonTip(self, b : PaletteButton, pos : int):
+        """Set the tool tip for a palette button.
+        
+            Params:
+                b (PaletteButton): the palette button to modify
+                pos (int): the position of the button
+        """
+        kbd = ""
+        if pos // 10 > 0:
+            kbd += "Ctrl+"
+        kbd += str((pos + 1) % 10)
+        tooltip = f"{b.trace.name} ({kbd})"
+        b.setToolTip(tooltip)
 
     def createPaletteButton(self, trace : Trace, pos : int):
         """Create a palette button on the dock.
@@ -164,11 +180,10 @@ class MousePalette():
                 pos (int): the position of the button (assumes 20 buttons)
         """
         b = PaletteButton(self.mainwindow, manager=self)
-
         self.placePaletteButton(b, pos)
-
         b.setTrace(trace)
         b.setCheckable(True)
+        self.setPaletteButtonTip(b, pos)
         b.clicked.connect(lambda : self.activatePaletteButton(pos))
         self.palette_buttons[pos] = b
         b.show()
@@ -237,10 +252,12 @@ class MousePalette():
             Params:
                 button (PaletteButton): the button that was changed
         """
-        for b in self.palette_buttons:
-            if b.isChecked() and b == button:
-                self.mainwindow.changeTracingTrace(button.trace)
-                self.selected_trace = b.trace
+        for pos, b in enumerate(self.palette_buttons):
+            if b == button:
+                self.setPaletteButtonTip(b, pos)
+                if b.isChecked():
+                    self.mainwindow.changeTracingTrace(button.trace)
+                    self.selected_trace = b.trace
         self.updateLabel()
     
     def placeIncrementButtons(self):
@@ -262,6 +279,7 @@ class MousePalette():
         )
         self.up_bttn.setIcon(up_icon)
         self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
+        self.up_bttn.setToolTip("Next section (PgUp)")
 
         self.down_bttn = QPushButton(self.mainwindow)
         down_icon = self.up_bttn.style().standardIcon(
@@ -269,6 +287,7 @@ class MousePalette():
         )
         self.down_bttn.setIcon(down_icon)
         self.down_bttn.pressed.connect(lambda : self.mainwindow.incrementSection(down=True))
+        self.down_bttn.setToolTip("Previous section (PgDown)")
 
         self.placeIncrementButtons()
 
@@ -303,6 +322,16 @@ class MousePalette():
                 b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
                 # connect to mainwindow function
                 b.pressed.connect(lambda o=option, d=direction: self.mainwindow.editImage(o, d))
+                # set the button tool tip
+                if option == "contrast" and direction == "down":
+                    tooltip = "Decrease contrast ([)"
+                elif option == "contrast" and direction == "up":
+                    tooltip = "Increase contrast (])"
+                elif option == "brightness" and direction == "down":
+                    tooltip = "Decrease brightness (-)"
+                elif option == "brightness" and direction == "up":
+                    tooltip = "Increase brightness (=)"
+                b.setToolTip(tooltip)
                 # set button as continuous
                 b.setAutoRepeat(True)
                 b.setAutoRepeatDelay(0)
@@ -310,6 +339,17 @@ class MousePalette():
                 self.bc_buttons.append(b)
                 self.corner_buttons.append(b)
         self.placeBCButtons()
+    
+    def toggleCornerButtons(self):
+        """Toggle whether the corner buttons are shown."""
+        if self.show_corner_buttons:
+            self.show_corner_buttons = False
+            for b in self.corner_buttons:
+                b.hide()
+        else:
+            self.show_corner_buttons = True
+            for b in self.corner_buttons:
+                b.show()
 
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -323,11 +363,15 @@ class MousePalette():
         self.placeBCButtons()
     
     def reset(self, palette_traces : list, selected_trace : Trace):
-        """Reset the mouse palette when opening a new series."""
+        """Reset the mouse palette when opening a new series.
+        
+            Params:
+                palette_traces (list): the new palette traces
+                selected_trace (trace): the new selected trace on the palette
+        """
         self.close()
         self.__init__(palette_traces, selected_trace, self.mainwindow)
 
-    
     def close(self):
         """Close all buttons"""
         for bname in self.mode_buttons:

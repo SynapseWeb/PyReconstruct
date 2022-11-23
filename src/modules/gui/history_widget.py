@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 class HistoryWidget(QDockWidget):
 
     def __init__(self, parent, output_str : str):
+        """Create a text widget to display history"""
         super().__init__(parent)
         self.setWindowTitle("History")
         self.setFloating(True)

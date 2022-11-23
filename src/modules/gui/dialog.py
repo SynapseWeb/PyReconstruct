@@ -1,4 +1,16 @@
-from PySide6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QInputDialog, QCheckBox
+from PySide6.QtWidgets import (
+    QWidget, 
+    QDialog, 
+    QDialogButtonBox, 
+    QHBoxLayout, 
+    QLabel, 
+    QLineEdit, 
+    QVBoxLayout, 
+    QComboBox, 
+    QPushButton, 
+    QInputDialog, 
+    QCheckBox
+)
 
 from modules.gui.color_button import ColorButton
 
@@ -13,6 +25,7 @@ class FieldTraceDialog(QDialog):
             Params:
                 parent (QWidget): the parent widget
                 traces (list): a list of traces
+                pos (tuple): the point to create the dialog
         """
         super().__init__(parent)
 
@@ -74,6 +87,7 @@ class FieldTraceDialog(QDialog):
         self.setLayout(self.vlayout)
     
     def exec(self):
+        """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
             name = self.name_input.text()
@@ -102,7 +116,6 @@ class PaletteTraceDialog(QDialog):
             Params:
                 parent (QWidget): the parent widget
                 trace (Trace): the trace to modify
-                stamp_size (float): the existing stamp size
         """
         super().__init__(parent)
 
@@ -156,6 +169,7 @@ class PaletteTraceDialog(QDialog):
         self.setLayout(self.vlayout)
     
     def exec(self):
+        """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
             name = self.name_input.text()
@@ -234,6 +248,7 @@ class ObjectGroupDialog(QDialog):
         self.group_input.resize(self.group_input.sizeHint())
         
     def exec(self):
+        """Run the dialog."""
         confirmed = super().exec()
         text = self.group_input.currentText()
         if confirmed and text:
@@ -244,10 +259,11 @@ class ObjectGroupDialog(QDialog):
 
 class TableColumnsDialog(QDialog):
 
-    def __init__(self, parent, columns):
+    def __init__(self, parent, columns : dict):
         """Create an object table column dialog.
         
             Params:
+                parent (QWidget): the parent widget for the dialog
                 columns (dict): the existing columns and their status
         """
         super().__init__(parent)
@@ -279,6 +295,7 @@ class TableColumnsDialog(QDialog):
         self.setLayout(self.vlayout)
     
     def exec(self):
+        """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
             columns = {}
@@ -338,6 +355,7 @@ class AlignmentDialog(QDialog):
         self.align_input.resize(self.align_input.sizeHint())
         
     def exec(self):
+        """Run the dialog."""
         confirmed = super().exec()
         text = self.align_input.currentText()
         if confirmed and text:

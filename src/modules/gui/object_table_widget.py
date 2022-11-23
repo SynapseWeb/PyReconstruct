@@ -1,6 +1,17 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog, QColorDialog
+from PySide6.QtWidgets import (
+    QMainWindow, 
+    QDockWidget, 
+    QTableWidget, 
+    QTableWidgetItem, 
+    QAbstractItemView, 
+    QWidget, 
+    QInputDialog, 
+    QMenu, 
+    QFileDialog, 
+    QColorDialog
+)
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
@@ -12,19 +23,19 @@ from modules.gui.dialog import ObjectGroupDialog, TableColumnsDialog
 
 class ObjectTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, objdict : dict, parent : QWidget, manager):
+    def __init__(self, series : Series, objdict : dict, mainwindow : QWidget, manager):
         """Create the object table dock widget.
         
             Params:
                 series (Series): the Series object
                 objdict (dict): contains all object info for the table
-                parent (QWidget): the main window the dock is connected to
+                mainwindow (MainWindow): the main window the dock is connected to
                 manager: the object table manager
         """
         # initialize the widget
-        super().__init__(parent)
+        super().__init__(mainwindow)
         self.series = series
-        self.parent_widget = parent
+        self.mainwindow = mainwindow
 
         # set desired format for widget
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
@@ -353,11 +364,7 @@ class ObjectTableWidget(QDockWidget):
     # RIGHT CLICK FUNCTIONS
 
     def objectContextMenu(self, event=None):
-        """Executed when button is right-clicked: pulls up menu for user to modify objects.
-        
-            Params:
-                event: contains user input data (location of right click)
-        """
+        """Executed when button is right-clicked: pulls up menu for user to modify objects."""
         if len(self.table.selectedIndexes()) == 0:
             return
         self.context_menu.exec(event.globalPos())   
@@ -400,7 +407,11 @@ class ObjectTableWidget(QDockWidget):
         self.manager.modifyObjects(obj_names, color=color)
     
     def hideObj(self, hide=True):
-        """Edit whether or not an object is hidden in the entire series."""
+        """Edit whether or not an object is hidden in the entire series.
+        
+            Params:
+                hide (bool): True if the object should be hidden
+        """
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return

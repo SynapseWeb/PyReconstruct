@@ -1,9 +1,14 @@
 import os
 from time import time
 
-from PySide6.QtWidgets import (QMainWindow, QFileDialog,
-    QInputDialog, QApplication,
-    QMessageBox, QMenu)
+from PySide6.QtWidgets import (
+    QMainWindow, 
+    QFileDialog,
+    QInputDialog, 
+    QApplication,
+    QMessageBox, 
+    QMenu
+)
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
@@ -183,6 +188,7 @@ class MainWindow(QMainWindow):
         shortcuts = [
             ("Backspace", self.field.backspace),
 
+            ("Shift+T", self.mouse_palette.toggleCornerButtons),
             ("Shift+L", self.mouse_palette.toggleHandedness),
 
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
@@ -203,6 +209,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def createPaletteShortcuts(self):
+        """Create shortcuts associate with the mouse palette."""
         # trace palette shortcuts (1-20)
         trace_shortcuts = []
         for i in range(1, 21):
@@ -235,7 +242,11 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
     def changeSrcDir(self, notify=False):
-        """Open a series of dialogs to change the image source directory."""
+        """Open a series of dialogs to change the image source directory.
+        
+            Params:
+                notify (bool): True if user is to be notified with a pop-up
+        """
         if notify:
             reply = QMessageBox.question(
                 self,
@@ -282,6 +293,7 @@ class MainWindow(QMainWindow):
         
             Params:
                 series_obj (Series): the series object (optional)
+                refresh_menu (bool): True if menu is remade
         """
         if not series_obj:  # if series is not provided
             series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
@@ -324,7 +336,11 @@ class MainWindow(QMainWindow):
             export_series_act.setText(f"Export series to {outtype}...")
     
     def newSeries(self, image_locations : list = None):
-        """Create a new series from a set of images."""
+        """Create a new series from a set of images.
+        
+            Params:
+                image_locations (list): the filpaths for the section images.
+        """
         # get images from user
         if not image_locations:
             image_locations, extensions = QFileDialog.getOpenFileNames(
@@ -360,11 +376,7 @@ class MainWindow(QMainWindow):
         self.openSeries(series)
     
     def exportSeries(self):
-        """Export the series to a given filetype.
-        
-            Params:
-                outtype (str): XML or JSON
-        """
+        """Export the series to a given filetype."""
         new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
         if not new_dir:
             return
@@ -405,6 +417,9 @@ class MainWindow(QMainWindow):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).
 
         Called when user clicks on mouse mode palette.
+
+            Params:
+                new_mode: the new mouse mode to set
         """
         self.field.setMouseMode(new_mode)
 
@@ -412,12 +427,20 @@ class MainWindow(QMainWindow):
         """Change the trace utilized by the user.
 
         Called when user clicks on trace palette.
+
+            Params:
+                trace: the new tracing trace to set
         """
         self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
-    def changeSection(self, section_num, save=True):
-        """Change the section of the field."""
+    def changeSection(self, section_num : int, save=True):
+        """Change the section of the field.
+        
+            Params:
+                section_num (int): the section number to change to
+                save (bool): saves data to files if True
+        """
         start_time = time()
         # save data
         if save:
@@ -432,7 +455,7 @@ class MainWindow(QMainWindow):
         """Increment the section number by one.
         
             Params:
-                up (bool): the direction to move
+                down (bool): the direction to move
         """
         section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
         section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
@@ -482,9 +505,12 @@ class MainWindow(QMainWindow):
                 self.incrementSection(down=True)
     
     def keyReleaseEvent(self, event):
+        """Overwritten: checks for Ctrl+Zoom."""
         if self.is_zooming_in and event.key() == 16777249:
             self.field.panzoomRelease(zoom_factor=self.zoom_factor)
             self.is_zooming_in = False
+        
+        super().keyReleaseEvent(event)
     
     def saveAllData(self):
         """Write current series and section data into JSON files."""

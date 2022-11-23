@@ -1,10 +1,24 @@
-import os
 import time
 
-from PySide6.QtWidgets import QWidget, QMainWindow, QInputDialog, QPinchGesture, QGestureEvent
-from PySide6.QtCore import Qt, QPoint, QEvent
-from PySide6.QtGui import QPixmap, QPen, QColor, QPainter, QPointingDevice
-os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
+from PySide6.QtWidgets import (
+    QWidget, 
+    QMainWindow, 
+    QInputDialog, 
+    QPinchGesture, 
+    QGestureEvent
+)
+from PySide6.QtCore import (
+    Qt, 
+    QPoint, 
+    QEvent
+)
+from PySide6.QtGui import (
+    QPixmap, 
+    QPen, 
+    QColor, 
+    QPainter, 
+    QPointingDevice
+)
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.trace import Trace
@@ -28,7 +42,7 @@ class FieldWidget(QWidget, FieldView):
         
             Params:
                 series (Series): the series object
-                parent (MainWindow): the main window that contains this widget
+                mainwindow (MainWindow): the main window that contains this widget
         """
         QWidget.__init__(self, mainwindow)
         self.mainwindow = mainwindow
@@ -40,7 +54,6 @@ class FieldWidget(QWidget, FieldView):
         for g in gestures:
             self.grabGesture(g)
         self.is_gesturing = False
-
 
         # set initial geometry to match parent
         parent_rect = self.mainwindow.geometry()
@@ -118,6 +131,13 @@ class FieldWidget(QWidget, FieldView):
         self.setScaling(new_scale)
     
     def generateView(self, generate_image=True, generate_traces=True, update=True):
+        """Generate the output view.
+        
+            Params:
+                generate_image (bool): True if image should be regenerated
+                generate_traces (bool): True if traces should be regenerated
+                update (bool): True if view widget should be updated
+        """
         self.field_pixmap = FieldView.generateView(
             self,
             self.pixmap_dim,
@@ -130,6 +150,7 @@ class FieldWidget(QWidget, FieldView):
             self.update()
     
     def openObjectList(self):
+        """Open an object list."""
         # create the manager if not already
         if self.obj_table_manager is None:
             self.obj_table_manager = ObjectTableManager(self.series, self.mainwindow)
@@ -137,6 +158,7 @@ class FieldWidget(QWidget, FieldView):
         self.obj_table_manager.newTable()
     
     def openZtraceList(self):
+        """Open a ztrace list."""
         # create manager if not already
         if self.ztrace_table_manager is None:
             self.ztrace_table_manager = ZtraceTableManager(
@@ -147,6 +169,7 @@ class FieldWidget(QWidget, FieldView):
         self.ztrace_table_manager.newTable()
     
     def openTraceList(self):
+        """Open a trace list."""
         # create the manager if not already
         if self.trace_table_manager is None:
             self.trace_table_manager = TraceTableManager(
@@ -173,9 +196,6 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget.
         Paints self.field_pixmap onto self (the widget).
-
-            Params:
-                event: unused
         """
         field_painter = QPainter(self)
         field_painter.drawPixmap(self.rect(), self.field_pixmap, self.field_pixmap.rect())
@@ -185,9 +205,6 @@ class FieldWidget(QWidget, FieldView):
         """Scale field window if main window size changes.
         
         Overwritten from QWidget Class.
-
-            Params:
-                event: contains data on window size
         """
         # resize the mouse palette
         self.mainwindow.mouse_palette.resize()
@@ -260,7 +277,24 @@ class FieldWidget(QWidget, FieldView):
         )
 
         self.generateView(generate_image=False)
-        self.saveState()        
+        self.saveState() 
+
+    def setMouseMode(self, mode : int):
+        """Set the mode of the mouse.
+        
+            Params:
+                mode (int): number corresponding to mouse mode
+        """
+        self.endPendingEvents()  # end any mouse-related pending events
+        self.mouse_mode = mode
+    
+    def setTracingTrace(self, trace : Trace):
+        """Set the trace used by the pencil/line tracing/stamp.
+        
+            Params:
+                trace (Trace): the new trace to use as refernce for further tracing
+        """
+        self.tracing_trace = trace       
 
     def event(self, event):
         """Overwritten from QWidget.event.
@@ -275,7 +309,6 @@ class FieldWidget(QWidget, FieldView):
     def gestureEvent(self, event : QGestureEvent):
         """Called when gestures are detected."""
         g = event.gesture(Qt.PinchGesture)
-        g : QPinchGesture
 
         if g.state() == Qt.GestureState.GestureStarted:
             p = g.centerPoint()
@@ -292,9 +325,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is clicked.
         
         Overwritten from QWidget class.
-
-            Params:
-                event: contains mouse input data
         """
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
@@ -345,9 +375,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is moved.
         
         Overwritten from QWidget class.
-        
-            Params:
-                event: contains mouse input data
         """
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
@@ -392,9 +419,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse button is released.
         
         Overwritten from QWidget Class.
-        
-            Params:
-                event: contains mouse input data
         """
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
@@ -426,30 +450,10 @@ class FieldWidget(QWidget, FieldView):
         self.lclick = False
         self.rclick = False
     
-    def setMouseMode(self, mode : int):
-        """Set the mode of the mouse.
-        
-            Params:
-                mode (int): number corresponding to mouse mode
-        """
-        self.endPendingEvents()  # end any mouse-related pending events
-        self.mouse_mode = mode
-    
-    def setTracingTrace(self, trace : Trace):
-        """Set the trace used by the pencil/line tracing/stamp.
-        
-            Params:
-                trace (Trace): the new trace to use as refernce for further tracing
-        """
-        self.tracing_trace = trace
-    
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
 
         Selects/deselects the nearest trace
-        
-            Params:
-                event: contains mouse input data
         """
         # select, deselect or move
         if self.lclick:
@@ -565,9 +569,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is clicked in panzoom mode.
         
         Saves the position of the mouse.
-
-            Params:
-                event: contains mouse input data
         """
         if self.mainwindow.is_zooming_in:
             return
@@ -608,11 +609,7 @@ class FieldWidget(QWidget, FieldView):
         self.update()
 
     def mousePanzoomMove(self, event):
-        """Called when mouse is moved in panzoom mode.
-    
-            Params:
-                event: contains mouse input data
-        """
+        """Called when mouse is moved in panzoom mode."""
         if self.mainwindow.is_zooming_in:
             return
         # if left mouse button is pressed, do panning
@@ -671,11 +668,7 @@ class FieldWidget(QWidget, FieldView):
         self.generateView()
 
     def mousePanzoomRelease(self, event):
-        """Called when mouse is released in panzoom mode.
-        
-            Params:
-                event: contains mouse input data
-        """
+        """Called when mouse is released in panzoom mode."""
         if self.mainwindow.is_zooming_in:
             return
         # set new window for panning
@@ -721,9 +714,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is moved in pencil mode with the left mouse button pressed.
 
         Draws continued trace on the screen.
-        
-            Params:
-                event: contains mouse input data
         """
         if self.lclick:
             # draw trace on pixmap
@@ -743,9 +733,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in pencil mode.
 
         Completes and adds trace.
-        
-            Params:
-                event: contains mouse input data
         """
         closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
         if self.lclick:
@@ -761,9 +748,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is pressed in a line mode.
         
         Begins create a line trace.
-        
-            Params:
-                event: contains mouse input data
         """
         closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
         x, y = event.x(), event.y()
@@ -790,9 +774,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is moved in a line mode.
         
         Adds dashed lines to screen connecting the mouse pointer to the existing trace.
-        
-            Params:
-                event: contains mouse input data
         """
         if self.is_line_tracing:
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
@@ -857,9 +838,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is pressed in stamp mode.
         
         Creates a stamp centered on the mouse location.
-        
-            Params:
-                event: contains mouse input data
         """
         # get mouse coords and convert to field coords
         if self.lclick:
@@ -870,9 +848,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is pressed in knife mode.
 
         Begins creating a new trace.
-        
-            Params:
-                event: contains mouse input data
         """
         self.last_x = event.x()
         self.last_y = event.y()
@@ -882,9 +857,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is moved in pencil mode with a mouse button pressed.
 
         Draws continued knife trace on the screen.
-        
-            Params:
-                event: contains mouse input data
         """
         if self.lclick:
             # draw knife trace on pixmap
@@ -904,9 +876,6 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in pencil mode.
 
         Completes and adds trace.
-        
-            Params:
-                event: contains mouse input data
         """
         if self.lclick:
             self.cutTrace(self.knife_trace)

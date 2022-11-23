@@ -1,6 +1,17 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog, QMessageBox
+from PySide6.QtWidgets import (
+    QMainWindow, 
+    QDockWidget, 
+    QTableWidget, 
+    QTableWidgetItem, 
+    QAbstractItemView, 
+    QWidget, 
+    QInputDialog, 
+    QMenu, 
+    QFileDialog, 
+    QMessageBox
+)
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
@@ -15,13 +26,13 @@ class ZtraceTableWidget(QDockWidget):
         
             Params:
                 series (Series): the series object
-                contourdict (dict): contains all trace info for the table
-                parent (QWidget): the main window the dock is connected to
+                ztracedict (dict): contains all ztrace info for the table
+                mainwindow (QWidget): the main window the dock is connected to
                 manager: the object table manager
         """
         # initialize the widget
         super().__init__(mainwindow)
-        self.parent_widget = mainwindow
+        self.mainwindow = mainwindow
         self.series = series
 
         # set desired format for widget
@@ -111,7 +122,7 @@ class ZtraceTableWidget(QDockWidget):
         """Create the table widget.
         
             Params:
-                objdata (dict): the dictionary containing the object table data objects
+                ztracedict (dict): the dictionary containing the object table data objects
         """
         self.table = QTableWidget(0, 2)
 
@@ -173,11 +184,7 @@ class ZtraceTableWidget(QDockWidget):
     # RIGHT CLICK FUNCTIONS
 
     def ztraceContextMenu(self, event=None):
-        """Executed when button is right-clicked: pulls up menu for user to modify objects.
-        
-            Params:
-                event: contains user input data (location of right click)
-        """
+        """Executed when button is right-clicked: pulls up menu for user to modify objects."""
         if len(self.table.selectedIndexes()) == 0:
             return
         self.context_menu.exec(event.globalPos())

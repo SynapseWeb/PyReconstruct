@@ -1,6 +1,16 @@
 import re
 
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTableWidget, QTableWidgetItem, QAbstractItemView, QWidget, QInputDialog, QMenu, QFileDialog
+from PySide6.QtWidgets import (
+    QMainWindow, 
+    QDockWidget, 
+    QTableWidget, 
+    QTableWidgetItem, 
+    QAbstractItemView, 
+    QWidget, 
+    QInputDialog, 
+    QMenu, 
+    QFileDialog
+)
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
@@ -12,18 +22,18 @@ from modules.gui.dialog import TableColumnsDialog, FieldTraceDialog
 
 class TraceTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, tracedict : dict, parent : QWidget, manager):
-        """Create the object table dock widget.
+    def __init__(self, series : Series, tracedict : dict, mainwindow : QWidget, manager):
+        """Create the trace table dock widget.
         
             Params:
                 series (Series): the series object
                 contourdict (dict): contains all trace info for the table
-                parent (QWidget): the main window the dock is connected to
-                manager: the object table manager
+                mainwindow (QWidget): the main window the dock is connected to
+                manager: the trace table manager
         """
         # initialize the widget
-        super().__init__(parent)
-        self.parent_widget = parent
+        super().__init__(mainwindow)
+        self.mainwindow = mainwindow
         self.series = series
 
         # set desired format for widget
@@ -61,6 +71,7 @@ class TraceTableWidget(QDockWidget):
         
             Params:
                 traceitem (TraceTableItem): the object contianing the trace table data
+                row (int): the row to modify
         """
         while row > self.table.rowCount()-1:
             self.table.insertRow(self.table.rowCount())
@@ -128,10 +139,10 @@ class TraceTableWidget(QDockWidget):
         populateMenu(self, self.context_menu, context_menu_list)
             
     def passesFilters(self, item : TraceTableItem):
-        """Determine if an object will be displayed in the table based on existing filters.
+        """Determine if a trace will be displayed in the table based on existing filters.
         
             Params:
-                item (ObjectTableItem): the item containing the data
+                item (TraceTableItem): the item containing the data
         """
         # check groups
         filters_len = len(self.group_filters)
@@ -169,7 +180,7 @@ class TraceTableWidget(QDockWidget):
         """Create the table widget.
         
             Params:
-                objdata (dict): the dictionary containing the object table data objects
+                tracedict (dict): the dictionary containing the object table data objects
         """
         self.table = QTableWidget(0, len(self.columns)+2)
 
@@ -183,7 +194,7 @@ class TraceTableWidget(QDockWidget):
             if self.columns[c]:
                 self.horizontal_headers.append(c)
         
-        # filter the objects
+        # filter the traces
         sorted_trace_names = sorted(list(tracedict.keys()))
         self.items = []
         for name in sorted_trace_names:
@@ -199,7 +210,7 @@ class TraceTableWidget(QDockWidget):
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header
         
-        # fill in object data
+        # fill in trace data
         for r, item in enumerate(self.items):
             self.setRow(item, r)
 
@@ -213,7 +224,7 @@ class TraceTableWidget(QDockWidget):
         """Add an item to the table.
         
             Params:
-                item (TraceTableItem): the item to add to the table
+                new_item (TraceTableItem): the item to add to the table
         """
         if not self.passesFilters(new_item):
             return
@@ -294,7 +305,11 @@ class TraceTableWidget(QDockWidget):
         self.manager.loadSection()
     
     def hideTraces(self, hide=True):
-        """Hide a set of traces."""
+        """Hide a set of traces.
+        
+            Params:
+                hide (bool): True if the traces should be hidden
+        """
         items = self.getSelectedItems()
         if items is None:
             return
@@ -362,11 +377,7 @@ class TraceTableWidget(QDockWidget):
         self.manager.viewHistory(traces)
     
     def traceContextMenu(self, event=None):
-        """Executed when button is right-clicked: pulls up menu for user to modify objects.
-        
-            Params:
-                event: contains user input data (location of right click)
-        """
+        """Executed when button is right-clicked: pulls up menu for user to modify traces."""
         if len(self.table.selectedIndexes()) == 0:
             return
         self.context_menu.exec(event.globalPos())

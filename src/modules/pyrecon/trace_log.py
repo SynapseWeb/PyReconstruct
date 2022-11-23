@@ -4,6 +4,13 @@ from datetime import datetime
 class TraceLog():
 
     def __init__(self, *args):
+        """Create a new trace log.
+        
+            Params:
+                (str): the message for the log
+                OR
+                (list): the dateimte, username, message for the log
+        """
         if type(args[0]) is str:
             self.message = args[0]
             self.username = os.getlogin()

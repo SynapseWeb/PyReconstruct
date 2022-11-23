@@ -15,7 +15,6 @@ class Trace():
                 name (str): the name of the trace
                 color (tuple): the color of the trace: (R, G, B) 0-255
                 closed (bool): whether or not the trace is closed
-                mode (int): the display mode of the trace (XML use)
         """
         self.name = name
         self.color = color
@@ -48,7 +47,8 @@ class Trace():
         """Add a point to the trace.
         
             Params:
-                point (tuple): a coordinate pair"""
+                point (tuple): a coordinate pair
+        """
         self.points.append(point)
     
     def isSameTrace(self, other) -> bool:
@@ -86,6 +86,8 @@ class Trace():
     def getDict(self, include_name=True) -> dict:
         """Return the trace data as a dictionary.
         
+            Params:
+                include_name (bool): True if name should be included in dict
             Returns:
                 (dict) dictionary containing the trace data
         """
@@ -202,7 +204,7 @@ class Trace():
         """Get the distance from the centroid of the trace to its farthest point.
         
             Params:
-                tform: the transform to apply to the points
+                tform (Transform): the transform to apply to the points
         """
         points = self.points.copy()
         if tform:
@@ -216,12 +218,11 @@ class Trace():
         cx, cy = centroid(self.points)
         self.points = [(x-cx, y-cy) for x,y in self.points]
 
-    def resize(self, new_radius):
+    def resize(self, new_radius : float):
         """Resize a trace beased on its radius
         
             Params:
-                new_radius: the new radius for the trace
-                tform: the tform applied to the trace
+                new_radius (float): the new radius for the trace
         """
         points = self.points.copy()
         
@@ -250,7 +251,11 @@ class Trace():
         self.history.append(TraceLog(message))
     
     def mergeHistory(self, other_trace):
-        """Merge the history of two traces."""
+        """Merge the history of two traces.
+        
+            Params:
+                other_trace (Trace): the trace to merge histories with
+        """
         self.history += other_trace.history
         self.history.sort()
     

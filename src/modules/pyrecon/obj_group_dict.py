@@ -13,8 +13,12 @@ class ObjGroupDict():
                 for obj in obj_list:
                     self.add(group, obj)
 
-    def add(self, group, obj):
-        """Add items to the two-way dictionary."""
+    def add(self, group : str, obj : str):
+        """Add items to the two-way dictionary.
+        
+            Params:
+                group (str): the group
+                obj (str): the object to add to the group"""
         if group not in self.groups:
             self.groups[group] = set()
         self.groups[group].add(obj)
@@ -22,8 +26,13 @@ class ObjGroupDict():
             self.objects[obj] = set()
         self.objects[obj].add(group)
     
-    def remove(self, group, obj):
-        """Remove items from the two-way dictionary."""
+    def remove(self, group : str, obj : str):
+        """Remove items from the two-way dictionary.
+        
+            Params:
+                group (str): the group
+                obj (str): the object to remove from the group
+        """
         if group in self.groups and obj in self.groups[group]:
             self.groups[group].remove(obj)
         else:
@@ -38,15 +47,23 @@ class ObjGroupDict():
         
         return True
     
-    def getObjectGroups(self, obj = None) -> set:
-        """Get the groups for a given object."""
+    def getObjectGroups(self, obj : str = None) -> set:
+        """Get the groups for a given object.
+        
+            Params:
+                obj (str): the object to get the groups for
+        """
         try:
             return self.objects[obj]
         except KeyError:
             return set()
     
-    def getGroupObjects(self, group) -> set:
-        """Get the objects for a given group."""
+    def getGroupObjects(self, group : str) -> set:
+        """Get the objects for a given group.
+        
+            Params:
+                group (str): the group to get objects for
+        """
         try:
             return self.groups[group]
         except KeyError:

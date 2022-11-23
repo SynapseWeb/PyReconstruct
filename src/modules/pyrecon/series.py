@@ -149,7 +149,12 @@ class Series():
                 self.xml_series.contours.append(trace.getXMLObj())
             write_series(self.xml_series, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
     
-    def getwdir(self):
+    def getwdir(self) -> str:
+        """Get the working directory of the series.
+        
+            Returns:
+                (str): the directory containing the series
+        """
         return os.path.dirname(self.filepath)
     
     def loadSection(self, section_num : int) -> Section:
@@ -161,6 +166,12 @@ class Series():
         return Section(os.path.join(self.getwdir(), self.sections[section_num]))
     
     def newAlignment(self, alignment_name : str, base_alignment="default"):
+        """Create a new alignment.
+        
+            Params:
+                alignment_name (str): the name of the new alignment
+                base_alignment (str): the name of the reference alignment for this new alignment
+        """
         if self.filetype == "XML":
             print("Alignments not support for XML files.")
             print("Please export your series as JSON.")

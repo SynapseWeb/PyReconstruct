@@ -10,15 +10,23 @@ class Ztrace():
         self.name = name
         self.points = points
     
-    def getDict(self):
-        """Get a dictionary representation of the object."""
+    def getDict(self) -> dict:
+        """Get a dictionary representation of the object.
+        
+            Returns:
+                (dict): the dictionary representation of the object
+        """
         d = {}
         d["name"] = self.name
         d["points"] = self.points.copy()
         return d
     
     def fromDict(d):
-        """Create the object from a dictionary."""
+        """Create the object from a dictionary.
+        
+            Params:
+                d (dict): the dictionary representation of the object
+        """
         ztrace = Ztrace(d["name"])
         ztrace.points = d["points"]
         return ztrace

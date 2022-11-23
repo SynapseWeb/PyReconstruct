@@ -71,6 +71,7 @@ class Section():
         
             Params:
                 trace (Trace): the trace to add
+                log_message (str): the history log message to put on the trace
         """
         # add to the trace history
         if log_message:

@@ -137,8 +137,11 @@ class Series():
         
     def save(self):
         """Save file into json."""
-        if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.ser")):
-            return  # ignore welcome series
+        try:
+            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.ser")):
+                return  # ignore welcome series
+        except FileNotFoundError:
+            pass
 
         if self.filetype == "JSON":
             d = self.getDict()

@@ -164,3 +164,12 @@ Let's keep the good times going!
 *** Delete test-repo through desktop GitHub
 *** Start installing Recompanion while Julian starts
 ** Julian
+* 20221130 KH-MC-JF Meeting
+- Copy images onto desktop
+- Start new series
+- Walk through field widget (palettes)
+- Walk through opening a series
+- Open object list
+- 3D (we know we can improve mesh)
+- Scale cube
+- z-traces

@@ -120,8 +120,8 @@ class MainWindow(QMainWindow):
                 [
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
-                    ("objectlist_act", "Open object list", "Ctrl+Shift+O", self.openObjectList),
-                    ("ztracelist_act", "Open ztrace list", "", self.openZtraceList),
+                    ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
+                    ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
@@ -386,18 +386,18 @@ class MainWindow(QMainWindow):
                 return
         # get the name of the series from user
         series_name, confirmed = QInputDialog.getText(
-            self, "Series Name", "What is the name of this series?")
+            self, "New Series", "Enter series name:")
         if not confirmed:
             return
         # get calibration (microns per pix) from user
         mag, confirmed = QInputDialog.getDouble(
-            self, "Section Calibration", "What is the calibration for this series?",
+            self, "New Series", "Enter image calibration (μm/px):",
             0.00254, minValue=0.000001, decimals=6)
         if not confirmed:
             return
         # get section thickness (microns) from user
         thickness, confirmed = QInputDialog.getDouble(
-            self, "Section Thickness", "What is the section thickness for this series?",
+            self, "New Series", "Enter section thickness (μm):",
             0.05, minValue=0.000001, decimals=6)
         if not confirmed:
             return

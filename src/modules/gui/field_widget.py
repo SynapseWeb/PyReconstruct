@@ -288,14 +288,14 @@ class FieldWidget(QWidget, FieldView):
         self.endPendingEvents()  # end any mouse-related pending events
         self.mouse_mode = mode
 
-        # # set the cursor icon
-        # if mode == FieldWidget.POINTER:
-        #     cursor = QCursor(Qt.ArrowCursor)
-        # elif mode == FieldWidget.PANZOOM:
-        #     cursor = QCursor(Qt.SizeAllCursor)
-        # elif mode == FieldWidget.OPENTRACE or mode == FieldWidget.CLOSEDTRACE or mode == FieldWidget.KNIFE:
-        #     cursor = QCursor(Qt.CrossCursor)
-        # self.setCursor(cursor)
+        # set the cursor icon
+        if mode == FieldWidget.POINTER:
+            cursor = QCursor(Qt.ArrowCursor)
+        elif mode == FieldWidget.PANZOOM:
+            cursor = QCursor(Qt.SizeAllCursor)
+        elif mode == FieldWidget.OPENTRACE or mode == FieldWidget.CLOSEDTRACE or mode == FieldWidget.KNIFE:
+            cursor = QCursor(Qt.CrossCursor)
+        self.setCursor(cursor)
     
     def setTracingTrace(self, trace : Trace):
         """Set the trace used by the pencil/line tracing/stamp.

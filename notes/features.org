@@ -2,7 +2,7 @@
 
 - Classes start Monday Jan 9
 
-- [ ] Meet with Kristen (Wednesday or Thursday next week)
+- [ ] Meet with Kristen (Wednesday)
      
 - [ ] Full protocol/manual
    - [ ] Take a look at Reconstrcut basics and intro on Synapse web
@@ -12,7 +12,9 @@
    - [ ] ...
    - [ ] ...
 
-- [X] Z traces
+- [ ] Z traces
+   - [ ] Make sure Z traces are correct
+   - [ ] Auto-refresh z-trace
 
 - [ ] 3D scene improvements
    - [ ] viewport.cpp file in source
@@ -42,6 +44,8 @@
 
 - [ ] Fix import statements for dim 6 (Did we do this?)
 
+- [ ] Access section thickness somewhere
+
 - [ ] 3D Options:
    - [ ] Transparency
    - [ ] Scale cube sizing
@@ -55,14 +59,6 @@
 
 - [ ] Modify object radius from right-click menu
 - [ ] Automatically resize palette traces from XML files
-     
-- [X] Trace highlighting
-   - Make line thicker, keep dotting?
-   - Change dotting color?
-   - Highlighter color?
-   - Selecting entire contour? (Think about later)
-
-- [X] Add header to history for easy copy/paste exporting
     
 ** Michael
 
@@ -82,7 +78,7 @@
 - Themes
 - Domain / trace movment sides
 - 3D rendering options
-- Option to change highlighting thickness
+- Option to change highlighting
 - (Look through reconstruct series options)
   
 * Other

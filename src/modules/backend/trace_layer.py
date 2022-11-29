@@ -403,9 +403,9 @@ class TraceLayer():
         painter = QPainter(trace_layer)
         
         if highlight:  # Note: Put highlighting style into users options
-            pen = QPen(QColor(*trace.color), 7)
+            pen = QPen(QColor(*trace.color), 8)
             painter.setPen(pen)
-            painter.setOpacity(0.3)
+            painter.setOpacity(0.4)
         else:
             painter.setPen(QPen(QColor(*trace.color), 1))
         

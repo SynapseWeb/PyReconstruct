@@ -1,17 +1,17 @@
 {
- "src": "welcome.tif",
+ "src": "welcome.png",
  "brightness": 0,
  "contrast": 0,
- "mag": 0.001,
+ "mag": 0.00015,
  "thickness": 0.05,
  "tforms": {
   "default": [
    1.0,
    0.0,
-   0.0,
+   0.3,
    0.0,
    1.0,
-   0.0
+   0.3
   ]
  },
  "contours": {}

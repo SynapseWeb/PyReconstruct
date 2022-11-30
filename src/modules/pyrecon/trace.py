@@ -112,7 +112,7 @@ class Trace():
             Returns:
                 (XMLContour) the trace as an xml contour object
         """
-        border_color = list(self.color.copy())
+        border_color = list(self.color)
         for i in range(len(border_color)):
             border_color[i] /= 255
         xml_contour = XMLContour(

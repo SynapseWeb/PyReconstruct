@@ -34,7 +34,7 @@ class Object3DViewer(gl.GLViewWidget):
         )
 
         # create scale sube shortcut
-        QShortcut(QKeySequence("s"), self).activated.connect(self.createScaleCube)
+        QShortcut(QKeySequence("s"), self).activated.connect(self.toggleScaleCube)
         self.sc_item = None
 
         # generate the volume
@@ -53,6 +53,10 @@ class Object3DViewer(gl.GLViewWidget):
         self.addItem(self.vol_item)
 
         self.setBackgroundColor((255, 255, 255))
+
+        self.sc_in_scene = False
+        self.createScaleCube()
+
         self.show()
 
     def createScaleCubeShortcuts(self):
@@ -111,14 +115,19 @@ class Object3DViewer(gl.GLViewWidget):
             smooth=False
         )
 
-        self.removeItem(self.vol_item)
-        self.addItem(self.sc_item)
-        self.addItem(self.vol_item) 
-
         # create the shortcuts
         self.createScaleCubeShortcuts()
-
     
+    def toggleScaleCube(self):
+        """Toggle the scale cube on the 3D scene."""
+        if self.sc_in_scene:
+            self.removeItem(self.sc_item)
+        else:
+            self.removeItem(self.vol_item)
+            self.addItem(self.sc_item)
+            self.addItem(self.vol_item) 
+        self.sc_in_scene = not self.sc_in_scene
+
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""
         self.sc_item.translate(dx, dy, dz)

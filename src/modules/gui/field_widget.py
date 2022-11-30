@@ -293,7 +293,10 @@ class FieldWidget(QWidget, FieldView):
             cursor = QCursor(Qt.ArrowCursor)
         elif mode == FieldWidget.PANZOOM:
             cursor = QCursor(Qt.SizeAllCursor)
-        elif mode == FieldWidget.OPENTRACE or mode == FieldWidget.CLOSEDTRACE or mode == FieldWidget.KNIFE:
+        elif (mode == FieldWidget.OPENTRACE or
+              mode == FieldWidget.CLOSEDTRACE or
+              mode == FieldWidget.KNIFE or
+              mode == FieldWidget.STAMP):
             cursor = QCursor(Qt.CrossCursor)
         self.setCursor(cursor)
     

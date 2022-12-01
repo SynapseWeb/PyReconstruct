@@ -58,12 +58,14 @@ class Transform(object):
     def tform(self):
         """ Return an np.array object of the forward tform.
         """
-        if self.isAffine():
-            inverted = [[self.xcoef[1], self.xcoef[2], self.xcoef[0]],
-                        [self.ycoef[1], self.ycoef[2], self.ycoef[0]],
-                        [0, 0, 1]]
-            forward = np.linalg.inv(np.array(inverted))
-            return forward
+        if not self.isAffine():
+            print("WARNING: XML transform is not affine. Truncating transform...")
+        
+        inverted = [[self.xcoef[1], self.xcoef[2], self.xcoef[0]],
+                    [self.ycoef[1], self.ycoef[2], self.ycoef[0]],
+                    [0, 0, 1]]
+        forward = np.linalg.inv(np.array(inverted))
+        return forward
     
     def isAffine(self):
         """ Returns True if the transform is affine.

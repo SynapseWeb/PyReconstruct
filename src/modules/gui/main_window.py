@@ -169,14 +169,14 @@ class MainWindow(QMainWindow):
         """Create the right-click menus used in the field."""
         field_menu_list = [
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
-            ("hideall_act", "Hide all traces", "Ctrl+Shift+H", self.field.toggleHideAllTraces),
+            ("hideall_act", "Toggle visibility of all traces", "H", self.field.toggleHideAllTraces),
             ("blend_act", "Blend sections", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
 
         trace_menu_list = [
-            ("edittrace_act", "Edit...", "Ctrl+E", self.field.traceDialog),
+            ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
             ("deletetraces_act", "Delete traces", "Del", self.field.deleteTraces),

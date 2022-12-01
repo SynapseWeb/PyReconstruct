@@ -1,17 +1,13 @@
 * Kristen requests (2022-11-30)
 
-- Control-a for attributes?
-- Fill traces
-- Hide/Unhide traces from field attributes
-- [X] Shorcut to recenter entire image (Home key?)
-- Hide / unhide everything tool (simple way to do this?) or "h"
-- Be able to quickly access shortcuts as a list
-- Open / cut tool
-- [X] What about cutting out middle pieces from traces?
+- Hide / unhide everything tool "h"
+- Fill traces (ugh)
 - Section list
+- Be able to quickly access shortcuts as a list (button or help -> shortcuts)
+- [X] Shorcut to recenter entire image (Home key?)
 - [X] Flicker
-
-- Can we get rid of console window?
+- Open / cut tool
+- NEIN: Control-a for attributes? Reason: ctrl-a universal for select all, ctrl-e for "edit" attributes
   
 * Class push
 
@@ -61,6 +57,11 @@
 
 - [ ] Fix import statements for dim 6 (Did we do this?)
 
+- [ ] GUI
+   - [ ] H to toggle trace visibility for entire series (think boolean variable for series)
+   - [ ] Visual indicator that all traces are hidden (outline field in a bright color)
+   - [ ] Ctrl-u to change section_visibiliy to True for all traces on sectionp
+
 - [ ] Access section thickness somewhere
 
 - [ ] 3D Options:
@@ -76,6 +77,11 @@
 
 - [ ] Modify object radius from right-click menu
 - [ ] Automatically resize palette traces from XML files
+
+- [ ] Section list
+   - [ ] Consider section attribute /type/ = ("Tissue", "Cal-grid", ...)
+
+- [ ] Investigate console hiding (see =misc/console_hide.txt=)
     
 ** Michael
 

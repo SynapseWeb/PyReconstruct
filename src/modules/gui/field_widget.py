@@ -144,6 +144,7 @@ class FieldWidget(QWidget, FieldView):
                 generate_traces (bool): True if traces should be regenerated
                 update (bool): True if view widget should be updated
         """
+        print("Generating view")
         self.field_pixmap = FieldView.generateView(
             self,
             self.pixmap_dim,
@@ -204,7 +205,24 @@ class FieldWidget(QWidget, FieldView):
         Paints self.field_pixmap onto self (the widget).
         """
         field_painter = QPainter(self)
+
+        # draw the field
         field_painter.drawPixmap(self.rect(), self.field_pixmap, self.field_pixmap.rect())
+
+        # add red border if trace layer is hidden
+        if self.hide_trace_layer:
+            field_painter.setPen(QPen(QColor(255, 0, 0), 8))
+            s = self.size()
+            w, h = s.width(), s.height()
+            points = [
+                (0, 0),
+                (0, h),
+                (w, h),
+                (w, 0)
+            ]
+            for i in range(len(points)):
+                field_painter.drawLine(*points[i-1], *points[i])
+
         field_painter.end()
     
     def resizeEvent(self, event):

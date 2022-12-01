@@ -19,7 +19,7 @@ class SectionLayer(ImageLayer, TraceLayer):
         ImageLayer.__init__(self, section, series)
         TraceLayer.__init__(self, section, series)
     
-    def generateView(self, pixmap_dim : tuple, window : list, generate_image=True, generate_traces=True):
+    def generateView(self, pixmap_dim : tuple, window : list, generate_image=True, generate_traces=True, hide_traces=False):
         """Generate the pixmap view for the section.
         
             Params:
@@ -28,9 +28,14 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
         """
-        # generate layers
+        # generate image
         if generate_image:
             self.image_layer = self.generateImageLayer(pixmap_dim, window)
+        
+        # if user requests traces to be hidden
+        if hide_traces:
+            return self.image_layer.copy()        
+            
         if generate_traces:
             self.trace_layer = self.generateTraceLayer(pixmap_dim, window)
         

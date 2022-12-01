@@ -38,7 +38,6 @@ class TraceLayer():
         self.section = section
         self.series = series
         self.selected_traces = []
-        self.all_traces_hidden = False
     
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
@@ -246,6 +245,11 @@ class TraceLayer():
             trace.setHidden(hide)
         self.selected_traces = []
     
+    def unhideAllTraces(self):
+        """Unhide all traces on the section."""
+        for trace in self.section.tracesAsList():
+            trace.setHidden(False)
+    
     def makeNegative(self, negative=True):
         """Make a set of traces negative."""
         traces = self.selected_traces
@@ -384,18 +388,6 @@ class TraceLayer():
         name, color, tags = trace.name, trace.color, trace.tags
 
         self.changeTraceAttributes(name, color, tags)
-    
-    def toggleHideAllTraces(self):
-        """Hide/unhide every trace on the section."""
-        if self.all_traces_hidden:
-            for trace in self.section.tracesAsList():
-                trace.setHidden(False)
-            self.all_traces_hidden = False
-        else:
-            for trace in self.section.tracesAsList():
-                trace.setHidden(True)
-            self.all_traces_hidden = True
-        self.selected_traces = []
     
     def _drawTrace(self, trace_layer : QPixmap, trace : Trace, highlight=False) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.

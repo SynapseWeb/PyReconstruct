@@ -170,6 +170,7 @@ class MainWindow(QMainWindow):
         field_menu_list = [
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
             ("hideall_act", "Toggle visibility of all traces", "H", self.field.toggleHideAllTraces),
+            ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
             ("blend_act", "Blend sections", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)

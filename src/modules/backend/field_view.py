@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QPen, QColor
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.trace import Trace
@@ -39,6 +39,9 @@ class FieldView():
         self.obj_table_manager = None
         self.ztrace_table_manager = None
         self.trace_table_manager = None
+
+        # misc defaults
+        self.hide_trace_layer = False
 
         # copy/paste clipboard
         self.clipboard = []
@@ -356,6 +359,11 @@ class FieldView():
         self.series.window[3] = new_h
 
         self.generateView()
+    
+    def toggleHideAllTraces(self):
+        """Hide the trace layer."""
+        self.hide_trace_layer = not self.hide_trace_layer
+        self.generateView(generate_image=False)
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.
@@ -382,7 +390,8 @@ class FieldView():
             pixmap_dim,
             self.series.window,
             generate_image=generate_image,
-            generate_traces=generate_traces
+            generate_traces=generate_traces,
+            hide_traces=self.hide_trace_layer
         )
 
         # blend b section if requested
@@ -392,7 +401,8 @@ class FieldView():
                 pixmap_dim,
                 self.series.window,
                 generate_image=generate_image,
-                generate_traces=generate_traces
+                generate_traces=generate_traces,
+                hide_traces=self.hide_trace_layer
             )
             # overlay a and b sections
             painter = QPainter(view)
@@ -441,6 +451,13 @@ class FieldView():
         self.saveState()
         self.generateView(generate_image=False)
     
+    def unhideAllTraces(self):
+        if self.hide_trace_layer:
+            self.hide_trace_layer = False
+        self.section_layer.unhideAllTraces()
+        self.saveState()
+        self.generateView(generate_image=False)
+    
     def makeNegative(self, negative=True):
         self.section_layer.makeNegative(negative)
         self.saveState()
@@ -448,10 +465,6 @@ class FieldView():
     def editRadius(self, new_rad, traces=None):
         self.section_layer.changeTraceRadius(new_rad, traces)
         self.saveState()
-        self.generateView(generate_image=False)
-    
-    def toggleHideAllTraces(self):
-        self.section_layer.toggleHideAllTraces()
         self.generateView(generate_image=False)
     
     def changeBrightness(self, change):

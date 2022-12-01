@@ -19,6 +19,7 @@ class Trace():
         self.name = name
         self.color = color
         self.closed = closed
+        self.negative = False
         self.points = []
         self.hidden = False  # default to False
         self.tags = set()
@@ -96,6 +97,7 @@ class Trace():
             d["name"] = self.name
         d["color"] = self.color
         d["closed"] = self.closed
+        d["negative"] = self.negative
         d["x"], d["y"] = [], []
         for p in self.points:
             d["x"].append(round(p[0], 7))
@@ -143,6 +145,7 @@ class Trace():
         if not name:
             name = d["name"]
         new_trace = Trace(name, d["color"], d["closed"])
+        new_trace.negative = d["negative"]
         new_trace.points = list(zip(d["x"], d["y"]))
         new_trace.hidden = d["hidden"]
         new_trace.mode = d["mode"]

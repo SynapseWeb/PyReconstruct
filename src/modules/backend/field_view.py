@@ -441,6 +441,10 @@ class FieldView():
         self.saveState()
         self.generateView(generate_image=False)
     
+    def makeNegative(self, negative=True):
+        self.section_layer.makeNegative(negative)
+        self.saveState()
+    
     def editRadius(self, new_rad, traces=None):
         self.section_layer.changeTraceRadius(new_rad, traces)
         self.saveState()

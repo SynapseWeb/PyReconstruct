@@ -180,6 +180,15 @@ class MainWindow(QMainWindow):
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
             ("deletetraces_act", "Delete traces", "Del", self.field.deleteTraces),
+            {
+                "attr_name": "negativemenu",
+                "text": "Negative",
+                "opts":
+                [
+                    ("makenegative_act", "Make negative", "", self.field.makeNegative),
+                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
+                ]
+            },
             None,
             self.cut_act,
             self.copy_act,

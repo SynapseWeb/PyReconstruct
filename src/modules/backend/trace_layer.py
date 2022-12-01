@@ -246,6 +246,14 @@ class TraceLayer():
             trace.setHidden(hide)
         self.selected_traces = []
     
+    def makeNegative(self, negative=True):
+        """Make a set of traces negative."""
+        traces = self.selected_traces
+        for trace in traces:
+            self.section.removeTrace(trace)
+            trace.negative = negative
+            self.section.addTrace(trace, "Made negative")
+    
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
         if len(self.selected_traces) < 2:

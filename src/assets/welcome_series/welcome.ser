@@ -19,6 +19,7 @@
     64
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -52,6 +53,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0353553,
     -0.0883883,
@@ -101,6 +103,7 @@
     128
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0818157,
     0.0818157,
@@ -124,6 +127,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0707107,
     -0.0202091,
@@ -165,6 +169,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0534515,
     0.0534515,
@@ -202,6 +207,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0,
     -0.1,
@@ -227,6 +233,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -260,6 +267,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0484259,
     0.0021048,
@@ -301,6 +309,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -342,6 +351,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0096108,
     0.0144234,
@@ -373,6 +383,7 @@
     64
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -406,6 +417,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0353553,
     -0.0883883,
@@ -455,6 +467,7 @@
     128
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0818157,
     0.0818157,
@@ -478,6 +491,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0707107,
     -0.0202091,
@@ -519,6 +533,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0534515,
     0.0534515,
@@ -556,6 +571,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0,
     -0.1,
@@ -581,6 +597,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -614,6 +631,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     0.0484259,
     0.0021048,
@@ -655,6 +673,7 @@
     0
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0948664,
     -0.0948664,
@@ -696,6 +715,7 @@
     255
    ],
    "closed": true,
+   "negative": false,
    "x": [
     -0.0096108,
     0.0144234,
@@ -728,6 +748,7 @@
    64
   ],
   "closed": true,
+  "negative": false,
   "x": [
    -0.0948664,
    -0.0948664,

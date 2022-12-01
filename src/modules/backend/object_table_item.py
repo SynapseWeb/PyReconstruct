@@ -43,9 +43,14 @@ class ObjectTableItem():
         # calculate totals to add
         trace_distance = lineDistance(trace_points, closed=trace.closed)
         if trace.closed:
+            # subtract from flat area and volume if trace is negative
+            if trace.negative:
+                coef = -1
+            else:
+                coef = 1
             trace_area = area(trace_points)
-            self.data[section_num]["flat_area"] += trace_area
-            self.data[section_num]["volume"] += trace_area * section_thickness
+            self.data[section_num]["flat_area"] += trace_area * coef
+            self.data[section_num]["volume"] += trace_area * section_thickness * coef
         else:
             self.data[section_num]["flat_area"] += trace_distance * section_thickness
     

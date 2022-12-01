@@ -54,7 +54,8 @@ class ObjectVolume():
                     modified_points = section.tforms[series.alignment].map(trace.points)
                     self.obj_data[snum]["contours"][obj_name].append({
                         "points" : modified_points,
-                        "color" : trace.color
+                        "color" : trace.color,
+                        "negative": trace.negative
                     })
             
             # update the progress
@@ -145,24 +146,44 @@ class ObjectVolume():
         if not self.uniform_section_thickness:  # keep track of z slices if not uniform
             z_slices = []
         for z in self.obj_data:
+            # get z position
+            if self.uniform_section_thickness:
+                z_slice = z - zmin
+            else:
+                z_slice = int(z*mag - zmin*mag)
+                z_slices.append(z_slice)
+            # iterate through all traces
             for contour in self.obj_data[z]["contours"]:
+                # keep track of the negative traces
+                negative_traces = []
                 for trace in self.obj_data[z]["contours"][contour]:
+                    # determine if the trace is negative or positive
+                    if trace["negative"]:
+                        negative_traces.append(trace)
+                    else:
+                        # scale and translate xy points
+                        pts = np.array(trace["points"]) * mag
+                        pts[:,0] -= xmin * mag
+                        pts[:,1] -= ymin * mag
+                        pts = pts.astype(np.int32)
+                        # plot the trace
+                        cv2.fillPoly(
+                            img=volume[z_slice],
+                            pts=[pts],
+                            color=trace["color"] + [alpha]
+                        )
+                # erase the areas with negative traces
+                for trace in negative_traces:
                     # scale and translate xy points
                     pts = np.array(trace["points"]) * mag
                     pts[:,0] -= xmin * mag
                     pts[:,1] -= ymin * mag
                     pts = pts.astype(np.int32)
-                    # get z position
-                    if self.uniform_section_thickness:
-                        z_slice = z - zmin
-                    else:
-                        z_slice = int(z*mag - zmin*mag)
-                        z_slices.append(z_slice)
                     # plot the trace
                     cv2.fillPoly(
                         img=volume[z_slice],
                         pts=[pts],
-                        color=trace["color"] + [alpha]
+                        color=[0, 0, 0, 0]
                     )
         
         # fill in the volume if non-uniform section thickness

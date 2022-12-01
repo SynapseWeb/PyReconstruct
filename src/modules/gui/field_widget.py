@@ -249,7 +249,9 @@ class FieldWidget(QWidget, FieldView):
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
                 if closest_trace:
-                    ct = "Nearest trace: " + closest_trace.name 
+                    ct = "Nearest trace: " + closest_trace.name
+                    if closest_trace.negative:
+                        ct += " (negative)"
                     self.status_list.append(ct)
             
             # display the distance between the current position and the last point if line tracing

@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
     QComboBox, 
     QPushButton, 
     QInputDialog, 
-    QCheckBox
+    QCheckBox,
+    QRadioButton
 )
 
 from modules.gui.color_button import ColorButton
@@ -17,9 +18,9 @@ from modules.gui.color_button import ColorButton
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 from modules.pyrecon.trace import Trace
 
-class FieldTraceDialog(QDialog):
+class TraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, traces : list[Trace], pos=None):
+    def __init__(self, parent : QWidget, traces : list[Trace], include_radius=False, pos=None):
         """Create an attribute dialog.
         
             Params:
@@ -33,11 +34,19 @@ class FieldTraceDialog(QDialog):
         if pos:
             self.move(*pos)
 
+        self.include_radius = include_radius
+
         # get the display values
         trace = traces[0]
         name = trace.name
         color = trace.color
         tags = trace.tags
+        mode = trace.mode
+
+        # only include radius for editing single palette traces
+        if self.include_radius:
+            assert(len(traces) == 1)
+        
         for trace in traces[1:]:
             if trace.name != name:
                 name = None
@@ -45,6 +54,8 @@ class FieldTraceDialog(QDialog):
                 color = None
             if trace.tags != tags:
                 tags = None
+            if trace.mode != mode:
+                mode = 0
 
         self.setWindowTitle("Set Attributes")
 
@@ -72,6 +83,38 @@ class FieldTraceDialog(QDialog):
         self.tags_row.addWidget(self.tags_text)
         self.tags_row.addWidget(self.tags_input)
 
+        self.mode_row = QHBoxLayout()
+        self.mode_text = QLabel(self)
+        self.mode_text.setText("Fill:")
+        self.mode_none = QRadioButton("None")
+        self.mode_transparent = QRadioButton("Transparent")
+        self.mode_solid = QRadioButton("Solid")
+        if abs(mode) == 11:
+            self.mode_none.setChecked(True)
+        elif abs(mode) == 9 or abs(mode) == 15:
+            self.mode_transparent.setChecked(True)
+        elif abs(mode) == 13:
+            self.mode_solid.setChecked(True)
+        self.mode_row.addWidget(self.mode_text)
+        self.mode_row.addWidget(self.mode_none)
+        self.mode_row.addWidget(self.mode_transparent)
+        self.mode_row.addWidget(self.mode_solid)
+
+        self.select_row = QHBoxLayout()
+        self.select_input = QCheckBox("Fill when selected")
+        if mode > 0:
+            self.select_input.setChecked(True)
+        self.select_row.addWidget(self.select_input)
+
+        if self.include_radius:
+            self.stamp_size_row = QHBoxLayout()
+            self.stamp_size_text = QLabel(self)
+            self.stamp_size_text.setText("Stamp radius (microns):")
+            self.stamp_size_input = QLineEdit(self)
+            self.stamp_size_input.setText(str(round(trace.getRadius(), 6)))
+            self.stamp_size_row.addWidget(self.stamp_size_text)
+            self.stamp_size_row.addWidget(self.stamp_size_input)
+
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonbox = QDialogButtonBox(QBtn)
         self.buttonbox.accepted.connect(self.accept)
@@ -82,6 +125,10 @@ class FieldTraceDialog(QDialog):
         self.vlayout.addLayout(self.name_row)
         self.vlayout.addLayout(self.color_row)
         self.vlayout.addLayout(self.tags_row)
+        self.vlayout.addLayout(self.mode_row)
+        self.vlayout.addLayout(self.select_row)
+        if self.include_radius:
+            self.vlayout.addLayout(self.stamp_size_row)
         self.vlayout.addWidget(self.buttonbox)
 
         self.setLayout(self.vlayout)
@@ -97,105 +144,48 @@ class FieldTraceDialog(QDialog):
                 tags = set()
             else:
                 tags = set(tags)
-            return (
-                (
-                    name,
-                    color,
-                    tags,
-                ),
-                True
-            )
-        else:
-            return None, False
+            
+            if self.mode_none.isChecked():
+                mode = 11
+            elif self.mode_transparent.isChecked():
+                mode = 9
+            elif self.mode_solid.isChecked():
+                mode = 13
+            else:
+                mode = 0
+            if not self.select_input.isChecked():
+                mode *= -1
+            
+            if self.include_radius:
+                stamp_size = self.stamp_size_input.text()
+                try:
+                    stamp_size = float(stamp_size)
+                except ValueError:
+                    stamp_size = None
+                return (
+                    (
+                        name,
+                        color,
+                        tags,
+                        mode,
+                        stamp_size
+                    ),
+                    True
+                )
 
-class PaletteTraceDialog(QDialog):
-
-    def __init__(self, parent : QWidget, trace : Trace):
-        """Create an attribute dialog.
+            else:
+                return (
+                    (
+                        name,
+                        color,
+                        tags,
+                        mode,
+                    ),
+                    True
+                )
         
-            Params:
-                parent (QWidget): the parent widget
-                trace (Trace): the trace to modify
-        """
-        super().__init__(parent)
-
-        self.setWindowTitle("Set Attributes")
-
-        self.name_row = QHBoxLayout()
-        self.name_text = QLabel(self)
-        self.name_text.setText("Name:")
-        self.name_input = QLineEdit(self)
-        self.name_input.setText(trace.name)
-        self.name_row.addWidget(self.name_text)
-        self.name_row.addWidget(self.name_input)
-
-        self.color_row = QHBoxLayout()
-        self.color_text = QLabel(self)
-        self.color_text.setText("Color:")
-        self.color_input = ColorButton(trace.color, parent)
-        self.color_row.addWidget(self.color_text)
-        self.color_row.addWidget(self.color_input)
-        self.color_row.addStretch()
-
-        self.tags_row = QHBoxLayout()
-        self.tags_text = QLabel(self)
-        self.tags_text.setText("Tags:")
-        self.tags_input = QLineEdit(self)
-        self.tags_input.setText(", ".join(trace.tags))
-        self.tags_row.addWidget(self.tags_text)
-        self.tags_row.addWidget(self.tags_input)
-
-        self.stamp_size_row = QHBoxLayout()
-        self.stamp_size_text = QLabel(self)
-        self.stamp_size_text.setText("Stamp radius (microns):")
-        self.stamp_size_input = QLineEdit(self)
-        self.stamp_size_input.setText(str(round(trace.getRadius(), 6)))
-        self.stamp_size_row.addWidget(self.stamp_size_text)
-        self.stamp_size_row.addWidget(self.stamp_size_input)
-
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
-
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.name_row)
-        self.vlayout.addLayout(self.color_row)
-        self.vlayout.addLayout(self.tags_row)
-        self.vlayout.addLayout(self.stamp_size_row)
-        self.vlayout.addWidget(self.buttonbox)
-
-        self.setLayout(self.vlayout)
-    
-    def exec(self):
-        """Run the dialog."""
-        confirmed = super().exec()
-        if confirmed:
-            name = self.name_input.text()
-            color = self.color_input.getColor()
-            tags = self.tags_input.text().split(", ")
-            if tags == [""]:
-                tags = set()
-            else:
-                tags = set(tags)
-            stamp_size = self.stamp_size_input.text()
-            try:
-                stamp_size = float(stamp_size)
-            except ValueError:
-                stamp_size = None
-            return (
-                (
-                    name,
-                    color,
-                    tags,
-                    stamp_size
-                ),
-                True
-            )
         else:
             return None, False
-
 
 class ObjectGroupDialog(QDialog):
 

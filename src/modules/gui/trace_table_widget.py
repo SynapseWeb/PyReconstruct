@@ -18,7 +18,7 @@ from modules.pyrecon.series import Series
 from modules.backend.trace_table_item import TraceTableItem
 from modules.gui.gui_functions import populateMenuBar, populateMenu
 
-from modules.gui.dialog import TableColumnsDialog, FieldTraceDialog
+from modules.gui.dialog import TableColumnsDialog, TraceDialog
 
 class TraceTableWidget(QDockWidget):
 
@@ -293,7 +293,7 @@ class TraceTableWidget(QDockWidget):
         
         traces = self.manager.getTraces(items)
         
-        new_attr, confirmed = FieldTraceDialog(
+        new_attr, confirmed = TraceDialog(
             self,
             traces
         ).exec()

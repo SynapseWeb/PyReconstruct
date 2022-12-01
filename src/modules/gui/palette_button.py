@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt, QPoint
 
 from modules.pyrecon.trace import Trace
 
-from modules.gui.dialog import PaletteTraceDialog
+from modules.gui.dialog import TraceDialog
 
 class PaletteButton(QPushButton):
 
@@ -58,20 +58,23 @@ class PaletteButton(QPushButton):
     
     def openDialog(self):
         """Change the attributes of a trace on the palette."""
-        new_attr, confirmed = PaletteTraceDialog(
+        new_attr, confirmed = TraceDialog(
             self,
-            self.trace,
+            [self.trace],
+            include_radius=True
         ).exec()
         if not confirmed:
             return
         
-        name, color, tags, radius = new_attr
+        name, color, tags, mode, radius = new_attr
         if name:
             self.trace.name = name
         if color:
             self.trace.color = color
         if tags:
             self.trace.tags = tags
+        if mode:
+            self.trace.mode = mode
         if radius:
             self.trace.resize(radius)
             self.trace.centerAtOrigin()

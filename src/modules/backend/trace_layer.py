@@ -191,7 +191,7 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, traces : list = None):
+    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, mode : int = None, traces : list = None):
         """Change the name and/or color of a trace or set of traces.
         
             Params:
@@ -211,6 +211,8 @@ class TraceLayer():
                 trace.tags = tags
             if name:
                 trace.name = name
+            if mode:
+                trace.mode = mode
             self.section.addTrace(trace, "attributes modified")
     
     def changeTraceRadius(self, new_rad : float, traces : list = None):
@@ -393,26 +395,15 @@ class TraceLayer():
 
         self.changeTraceAttributes(name, color, tags)
     
-    def _drawTrace(self, trace_layer : QPixmap, trace : Trace, highlight=False) -> bool:
+    def _drawTrace(self, trace_layer : QPixmap, trace : Trace) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         
             Params:
                 trace_layer (QPixmap): the pixmap to draw the traces
                 trace (Trace): the trace to draw on the pixmap
-                highlight (bool): whether or not the trace is being highlighted
             Returns:
                 (bool) if the trace is within the current field window view
-        """
-        # set up painter
-        painter = QPainter(trace_layer)
-        
-        if highlight:  # Note: Put highlighting style into users options
-            pen = QPen(QColor(*trace.color), 8)
-            painter.setPen(pen)
-            painter.setOpacity(0.4)
-        else:
-            painter.setPen(QPen(QColor(*trace.color), 1))
-        
+        """        
         # convert to screen coordinates
         qpoints = self.traceToPix(trace, qpoints=True)
 
@@ -422,16 +413,49 @@ class TraceLayer():
             if pointInPoly(point.x(), point.y(), self.screen_poly):
                 trace_in_view = True
                 break
+        
+        # set up painter
+        painter = QPainter(trace_layer)
+        painter.setPen(QPen(QColor(*trace.color), 1))
 
         # draw trace
         if trace.closed:
             painter.drawPolygon(qpoints)
-            if not highlight and self.series.fill_closed_traces and trace_in_view:
-                painter.setBrush(QBrush(QColor(*trace.color)))
-                painter.setOpacity(self.series.fill_opacity)
-                painter.drawPolygon(qpoints)
         else:
             painter.drawPolyline(qpoints)
+        
+        # draw highlight
+        if trace in self.selected_traces:
+            painter.setPen(QPen(QColor(*trace.color), 8))
+            painter.setOpacity(0.4)
+            if trace.closed:
+                painter.drawPolygon(qpoints)
+            else:
+                painter.drawPolyline(qpoints)
+        
+        # draw fill
+
+        # if user requested no fill
+        if not trace.closed or abs(trace.mode) == 11:
+            fill = False
+        # if fill when not selected
+        if trace.mode > 0 and trace in self.selected_traces:
+            fill = True
+        # if fill when selected
+        elif trace.mode < 0 and trace not in self.selected_traces:
+            fill = True
+        else:
+            fill = False
+        
+        if fill:
+            painter.setBrush(QBrush(QColor(*trace.color)))
+            # determine the type of fill
+            if abs(trace.mode) == 9 or abs(trace.mode) == 15:  # transparent fill
+                painter.setOpacity(self.series.fill_opacity)
+                painter.drawPolygon(qpoints)
+            elif abs(trace.mode) == 13:
+                painter.setOpacity(1)
+                painter.drawPolygon(qpoints)
         
         return trace_in_view
     
@@ -467,13 +491,6 @@ class TraceLayer():
                 )
                 if trace_in_view:
                     self.traces_in_view.append(trace)
-        
-        # draw highlights
-        for trace in self.selected_traces:
-            self._drawTrace(
-                trace_layer,
-                trace,
-                highlight=True
-            )  
+
         return trace_layer
         

@@ -79,8 +79,7 @@ class Series():
             self.object_groups = ObjGroupDict()
         
         # default settings
-        self.fill_closed_traces = False
-        self.fill_opacity = 0.1
+        self.fill_opacity = 0.2
     
     def getDict(self) -> dict:
         """Convert series object into a dictionary.

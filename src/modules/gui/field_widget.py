@@ -32,7 +32,7 @@ from modules.backend.object_table_manager import ObjectTableManager
 from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
 
-from modules.gui.dialog import FieldTraceDialog
+from modules.gui.dialog import TraceDialog
 
 from constants import locations as loc
 
@@ -289,18 +289,19 @@ class FieldWidget(QWidget, FieldView):
         if not self.section_layer.selected_traces:
             return
         
-        new_attr, confirmed = FieldTraceDialog(
+        new_attr, confirmed = TraceDialog(
             self,
             self.section_layer.selected_traces,
         ).exec()
         if not confirmed:
             return
         
-        name, color, tags = new_attr
+        name, color, tags, mode = new_attr
         self.section_layer.changeTraceAttributes(
             name=name,
             color=color,
-            tags=tags
+            tags=tags,
+            mode=mode
         )
 
         self.generateView(generate_image=False)

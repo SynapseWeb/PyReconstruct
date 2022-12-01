@@ -152,7 +152,6 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
-                    ("togglefill_act", "Fill closed traces", "checkbox", self.toggleFill),
                     ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
@@ -313,11 +312,6 @@ class MainWindow(QMainWindow):
         
         os.getlogin = getlogin
     
-    def toggleFill(self):
-        """Toggle whether the selected traces should be filled."""
-        self.series.fill_closed_traces = self.togglefill_act.isChecked()
-        self.field.generateView(generate_image=False)
-    
     def setFillOpacity(self):
         """Set the opacity of the trace highlight."""
         opacity, confirmed = QInputDialog.getText(
@@ -385,7 +379,6 @@ class MainWindow(QMainWindow):
             elif self.series.filetype == "JSON":
                 outtype = "XML"
             self.export_series_act.setText(f"Export series to {outtype}...")
-            self.togglefill_act.setChecked(False)
     
     def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images.

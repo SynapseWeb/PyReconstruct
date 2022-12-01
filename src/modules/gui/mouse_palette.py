@@ -88,7 +88,7 @@ class MousePalette():
                 pos (int): the position of the button
         """
         if self.left_handed:
-            x = 10
+            x = self.mainwindow.field.x() + 10
         else:
             x = self.mainwindow.width() - self.mbwidth - 10
         y = 40 + (10 + self.mbheight) * pos
@@ -263,7 +263,7 @@ class MousePalette():
     def placeIncrementButtons(self):
         """Place the increment buttons on the field"""
         if self.left_handed:
-            x = 10
+            x = self.mainwindow.field.x() + 10
         else:
             x = self.mainwindow.width() - self.ibw - 10
         y = self.mainwindow.height() - (self.ibh + 15) * 2 - 20
@@ -302,7 +302,7 @@ class MousePalette():
         for i, b in enumerate(self.bc_buttons):
             grid_position = (i%2, i//2)
             if self.left_handed:
-                x = 10 + (self.bcsize + 10) * grid_position[0]
+                x = self.mainwindow.field.x() + 10 + (self.bcsize + 10) * grid_position[0]
             else:
                 x = self.mainwindow.width() - (10 + self.bcsize) * 2
                 x += (self.bcsize + 10) * grid_position[0]

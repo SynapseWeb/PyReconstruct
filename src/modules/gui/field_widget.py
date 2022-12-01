@@ -1,3 +1,4 @@
+import os
 import time
 
 from PySide6.QtWidgets import (
@@ -32,6 +33,8 @@ from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
 
 from modules.gui.dialog import FieldTraceDialog
+
+from constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
@@ -211,8 +214,7 @@ class FieldWidget(QWidget, FieldView):
         # add red border if trace layer is hidden
         if self.hide_trace_layer:
             field_painter.setPen(QPen(QColor(255, 0, 0), 8))
-            s = self.size()
-            w, h = s.width(), s.height()
+            w, h = self.width(), self.height()
             points = [
                 (0, 0),
                 (0, h),
@@ -318,10 +320,18 @@ class FieldWidget(QWidget, FieldView):
             cursor = QCursor(Qt.ArrowCursor)
         elif mode == FieldWidget.PANZOOM:
             cursor = QCursor(Qt.SizeAllCursor)
+        elif mode == FieldWidget.KNIFE:
+            cursor = QCursor(
+                QPixmap(os.path.join(loc.img_dir, "knife.cur")),
+                hotX=5, hotY=5
+            )
         elif (mode == FieldWidget.OPENTRACE or
-              mode == FieldWidget.CLOSEDTRACE or
-              mode == FieldWidget.KNIFE or
-              mode == FieldWidget.STAMP):
+              mode == FieldWidget.CLOSEDTRACE):
+            cursor = QCursor(
+                QPixmap(os.path.join(loc.img_dir, "pencil.cur")),
+                hotX=5, hotY=5
+            )
+        elif mode == FieldWidget.STAMP:
             cursor = QCursor(Qt.CrossCursor)
         self.setCursor(cursor)
     

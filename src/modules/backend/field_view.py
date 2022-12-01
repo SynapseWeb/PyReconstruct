@@ -314,14 +314,14 @@ class FieldView():
                 window_y = new_y
             self.series.window = [window_x, window_y, window_w, window_h]
     
-    def setScaling(self, scaling : float):
+    def setView(self, mag : float):
         """Set the scaling value for the view.
         
             Params:
                 scaling (float): the new scaling value
         """
-        # calculate the scaling factor
-        factor = scaling / self.scaling
+        # calculate the scaling factor for the magnification
+        factor = mag * self.series.screen_mag
 
         # reset the window
         w, h = self.series.window[2], self.series.window[3]

@@ -37,6 +37,7 @@ class Series():
                 self.sections[int(section_num)] = section_filename
             self.current_section = series_data["current_section"]
             self.src_dir = series_data["src_dir"]
+            self.screen_mag = 0  # default value for screen mag (calculated when generateView is called)
             self.window = series_data["window"]
             self.palette_traces = series_data["palette_traces"]
             for i in range(len(self.palette_traces)):
@@ -64,7 +65,11 @@ class Series():
             
             self.current_section = self.xml_series.index
             self.src_dir = ""
-            self.window = list(self.xml_series.viewport[:2]) + [5, 5]
+
+            # screen magnification = microns per screen pixel
+            self.screen_mag = self.xml_series.viewport[2]
+
+            self.window = list(self.xml_series.viewport[:2]) + [1, 1]
             self.palette_traces = []
             for xml_contour in self.xml_series.contours:
                 self.palette_traces.append(Trace.fromXMLObj(xml_contour))
@@ -150,7 +155,7 @@ class Series():
         
         elif self.filetype == "XML":
             self.xml_series.index = self.current_section
-            self.xml_series.viewport = tuple(self.window[:2]) + (self.xml_series.viewport[2],)
+            self.xml_series.viewport = tuple(self.window[:2]) + (self.screen_mag,)
             self.xml_series.contours = []
             for trace in self.palette_traces:
                 self.xml_series.contours.append(trace.getXMLObj())

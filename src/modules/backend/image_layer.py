@@ -210,6 +210,9 @@ class ImageLayer():
         assert(abs(x_scaling - y_scaling) < 1e-6)
         self.scaling = x_scaling
 
+        # set the series screen mag
+        self.series.screen_mag = window_w / pixmap_w
+
         # get vectors for four window corners
         window_corners = [
             [window_x, window_y],

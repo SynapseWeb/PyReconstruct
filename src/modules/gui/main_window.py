@@ -144,8 +144,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
-                    None,
-                    ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
                 ]
             },
 
@@ -155,7 +153,9 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("togglefill_act", "Fill closed traces", "checkbox", self.toggleFill),
-                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity)
+                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
+                    None,
+                    ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
                 ]
             }
         ]

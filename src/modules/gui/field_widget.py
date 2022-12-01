@@ -105,6 +105,12 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
+        # set the window if series is XML
+        if self.series.filetype == "XML":
+            pxw, pxh, = self.pixmap_dim
+            self.series.window[2] = pxw * self.series.screen_mag
+            self.series.window[3] = pxh * self.series.screen_mag
+
         self.generateView()
     
     def toggleBlend(self):
@@ -114,21 +120,21 @@ class FieldWidget(QWidget, FieldView):
     
     def setViewMagnification(self):
         """Set the scaling for the section view."""
-        new_scale, confirmed = QInputDialog.getText(
+        new_mag, confirmed = QInputDialog.getText(
             self,
             "View Magnification",
-            "Enter view magnification:",
-            text=str(round(self.scaling, 6))
+            "Enter view magnification (pixels per micron):",
+            text=str(round(1 / self.series.screen_mag, 6))
         )
         if not confirmed:
             return
         
         try:
-            new_scale = float(new_scale)
+            new_mag = float(new_mag)
         except ValueError:
             return
         
-        self.setScaling(new_scale)
+        self.setView(new_mag)
     
     def generateView(self, generate_image=True, generate_traces=True, update=True):
         """Generate the output view.

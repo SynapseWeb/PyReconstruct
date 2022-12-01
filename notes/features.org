@@ -9,7 +9,7 @@
 - Open / cut tool
 - What about cutting out middle pieces from traces?
 - Section list
-- Flicker
+- [X] Flicker
 
 - Can we get rid of console window?
   

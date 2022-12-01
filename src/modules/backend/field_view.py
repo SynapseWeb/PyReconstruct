@@ -240,6 +240,25 @@ class FieldView():
 
         self.generateView()
     
+    def home(self):
+        """Set the view to the image."""
+        tform = self.section.tforms[self.series.alignment]
+        xvals = []
+        yvals = []
+        # get the field location of the image
+        for p in self.section_layer.base_corners:
+            x, y = [n*self.section.mag for n in p]
+            x, y = tform.map(x, y)
+            xvals.append(x)
+            yvals.append(y)
+        self.series.window = [
+            min(xvals),
+            min(yvals),
+            max(xvals) - min(xvals),
+            max(yvals) - min(yvals)
+        ]
+        self.generateView()
+    
     def selectTrace(self, trace : Trace):
         """Select/deselect a single trace.
         

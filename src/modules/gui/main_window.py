@@ -155,6 +155,7 @@ class MainWindow(QMainWindow):
                     ("togglefill_act", "Fill closed traces", "checkbox", self.toggleFill),
                     ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
+                    ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
                 ]
             }

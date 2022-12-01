@@ -101,6 +101,7 @@ class Trace():
             d["x"].append(round(p[0], 7))
             d["y"].append(round(p[1], 7))
         d["hidden"] = self.hidden
+        d["mode"] = self.mode
         d["tags"] = list(self.tags)
         d["history"] = [list(l) for l in self.history]
         return d
@@ -144,6 +145,7 @@ class Trace():
         new_trace = Trace(name, d["color"], d["closed"])
         new_trace.points = list(zip(d["x"], d["y"]))
         new_trace.hidden = d["hidden"]
+        new_trace.mode = d["mode"]
         new_trace.tags = set(d["tags"])
         new_trace.history = [TraceLog(l) for l in d["history"]]
         return new_trace

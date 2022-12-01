@@ -126,7 +126,7 @@ def jsonToXML(original_series : Series, new_dir : str):
             xml_file.write(xml_text)
         # load the xml section
         xml_section = Section(new_path)
-        xml_section.tform = json_section.tform
+        xml_section.tforms = json_section.tforms
         xml_section.contours = json_section.contours
         xml_section.save()
         if canceled():

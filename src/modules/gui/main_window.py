@@ -198,6 +198,8 @@ class MainWindow(QMainWindow):
         shortcuts = [
             ("Backspace", self.field.backspace),
 
+            ("/", self.field.flickerSections),
+
             ("Shift+T", self.mouse_palette.toggleCornerButtons),
             ("Shift+L", self.mouse_palette.toggleHandedness),
 

@@ -11,8 +11,6 @@
 - Section list
 - Flicker
 
-- fix XML window
-
 - Can we get rid of console window?
   
 * Class push

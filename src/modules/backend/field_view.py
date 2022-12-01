@@ -146,6 +146,11 @@ class FieldView():
         self.section, self.b_section = self.b_section, self.section
         self.section_layer, self.b_section_layer = self.b_section_layer, self.section_layer
     
+    def flickerSections(self):
+        """Switch between the A and B sections in the field."""
+        if self.b_section:
+            self.changeSection(self.b_section_number)
+    
     def changeSection(self, new_section_num : int):
         """Change the displayed section.
         

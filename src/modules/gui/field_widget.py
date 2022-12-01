@@ -144,7 +144,6 @@ class FieldWidget(QWidget, FieldView):
                 generate_traces (bool): True if traces should be regenerated
                 update (bool): True if view widget should be updated
         """
-        print("Generating view")
         self.field_pixmap = FieldView.generateView(
             self,
             self.pixmap_dim,

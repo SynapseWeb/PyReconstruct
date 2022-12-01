@@ -446,6 +446,10 @@ class FieldView():
         self.section_layer.deselectAllTraces()
         self.generateView(generate_image=False)
     
+    def selectAllTraces(self):
+        self.section_layer.selectAllTraces()
+        self.generateView(generate_image=False)
+    
     def hideTraces(self, traces=None, hide=True):
         self.section_layer.hideTraces(traces, hide)
         self.saveState()

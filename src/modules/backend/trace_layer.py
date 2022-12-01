@@ -231,6 +231,10 @@ class TraceLayer():
         """Deselect all traces."""
         self.selected_traces = []
     
+    def selectAllTraces(self):
+        """Select all traces."""
+        self.selected_traces = self.section.tracesAsList()
+    
     def hideTraces(self, traces : list = None, hide=True):
         """Hide traces.
         

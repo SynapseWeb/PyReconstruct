@@ -2,7 +2,7 @@
 
 - [X] Hide / unhide everything tool "h"
 - [X] Fill traces (ugh)
-- Section list
+- [X] Section list (double-ugh)
 - Be able to quickly access shortcuts as a list (button or help -> shortcuts)
 - [X] Shorcut to recenter entire image (Home key?)
 - [X] Flicker

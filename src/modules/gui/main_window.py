@@ -155,7 +155,10 @@ class MainWindow(QMainWindow):
                     ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
-                    ("viewmag_act", "View magnification...", "", self.field.setViewMagnification)
+                    ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
+                    None,
+                    ("paletteside_act", "Toggle palette side", "Shift+L", self.mouse_palette.toggleHandedness),
+                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
                 ]
             }
         ]
@@ -211,9 +214,6 @@ class MainWindow(QMainWindow):
             ("Backspace", self.field.backspace),
 
             ("/", self.field.flickerSections),
-
-            ("Shift+T", self.mouse_palette.toggleCornerButtons),
-            ("Shift+L", self.mouse_palette.toggleHandedness),
 
             ("Ctrl+Left", lambda : self.translateTform("left", "small")),
             ("Shift+Left", lambda : self.translateTform("left", "med")),

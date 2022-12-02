@@ -1,7 +1,7 @@
 * Kristen requests (2022-11-30)
 
 - [X] Hide / unhide everything tool "h"
-- Fill traces (ugh)
+- [X] Fill traces (ugh)
 - Section list
 - Be able to quickly access shortcuts as a list (button or help -> shortcuts)
 - [X] Shorcut to recenter entire image (Home key?)

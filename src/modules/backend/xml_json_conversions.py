@@ -136,14 +136,18 @@ def jsonToXML(original_series : Series, new_dir : str):
     
     # save series as xml
     xml_text = blank_series
-    xml_text.replace("[SECTION_NUM]", str(list(series.sections.keys())[0]))
+    xml_text = xml_text.replace("[SECTION_NUM]", str(series.current_section))
     new_path = os.path.join(
         new_dir,
         os.path.basename(series.filepath)
     )
     with open(new_path, "w") as xml_file:
         xml_file.write(xml_text)
-
+    # load the xml series
+    xml_series = Series(new_path)
+    xml_series.window = series.window
+    xml_series.palette_traces = series.palette_traces
+    xml_series.save()
 
 
         

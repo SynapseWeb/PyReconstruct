@@ -1,6 +1,5 @@
 import os
 import json
-from .trace import Trace
 
 from modules.legacy_recon.utils.reconstruct_reader import process_series_file
 from modules.legacy_recon.utils.reconstruct_writer import write_series

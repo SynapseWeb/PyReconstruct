@@ -209,7 +209,7 @@ class FieldWidget(QWidget, FieldView):
         field_painter = QPainter(self)
 
         # draw the field
-        field_painter.drawPixmap(self.rect(), self.field_pixmap, self.field_pixmap.rect())
+        field_painter.drawPixmap(0, 0, self.field_pixmap)
 
         # add red border if trace layer is hidden
         if self.hide_trace_layer:

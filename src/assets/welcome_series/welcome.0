@@ -3,6 +3,7 @@
  "brightness": 0,
  "contrast": 0,
  "mag": 0.00015,
+ "align_locked": false,
  "thickness": 0.05,
  "tforms": {
   "default": [

@@ -142,6 +142,7 @@ class MainWindow(QMainWindow):
                     ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
                     ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
                     None,
+                    ("sectionlist_act", "Open section list", "Ctrl+Shift+S", self.openSectionList),
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                 ]
@@ -215,18 +216,18 @@ class MainWindow(QMainWindow):
 
             ("/", self.field.flickerSections),
 
-            ("Ctrl+Left", lambda : self.translateTform("left", "small")),
-            ("Shift+Left", lambda : self.translateTform("left", "med")),
-            ("Ctrl+Shift+Left", lambda : self.translateTform("left", "big")),
-            ("Ctrl+Right", lambda : self.translateTform("right", "small")),
-            ("Shift+Right", lambda : self.translateTform("right", "med")),
-            ("Ctrl+Shift+Right", lambda : self.translateTform("right", "big")),
-            ("Ctrl+Up", lambda : self.translateTform("up", "small")),
-            ("Shift+Up", lambda : self.translateTform("up", "med")),
-            ("Ctrl+Shift+Up", lambda : self.translateTform("up", "big")),
-            ("Ctrl+Down", lambda : self.translateTform("down", "small")),
-            ("Shift+Down", lambda : self.translateTform("down", "med")),
-            ("Ctrl+Shift+Down", lambda : self.translateTform("down", "big"))
+            ("Ctrl+Left", lambda : self.translate("left", "small")),
+            ("Left", lambda : self.translate("left", "med")),
+            ("Shift+Left", lambda : self.translate("left", "big")),
+            ("Ctrl+Right", lambda : self.translate("right", "small")),
+            ("Right", lambda : self.translate("right", "med")),
+            ("Shift+Right", lambda : self.translate("right", "big")),
+            ("Ctrl+Up", lambda : self.translate("up", "small")),
+            ("Up", lambda : self.translate("up", "med")),
+            ("Shift+Up", lambda : self.translate("up", "big")),
+            ("Ctrl+Down", lambda : self.translate("down", "small")),
+            ("Down", lambda : self.translate("down", "med")),
+            ("Shift+Down", lambda : self.translate("down", "big"))
         ]
 
         for kbd, act in shortcuts:
@@ -609,6 +610,10 @@ class MainWindow(QMainWindow):
         """Open the trace list widget."""
         self.field.openTraceList()
     
+    def openSectionList(self):
+        """Open the section list widget."""
+        self.field.openSectionList()
+    
     def setToObject(self, obj_name : str, section_num : str):
         """Focus the field on an object from a specified section.
         
@@ -621,8 +626,12 @@ class MainWindow(QMainWindow):
     
     def changeTform(self):
         """Open a dialog to change the transform of a section."""
+        # check for section locked status
+        if self.field.section.align_locked:
+            return
+        
         current_tform = " ".join(
-            [str(round(n, 2)) for n in self.field.section.tforms[self.series.alignment].getList()]
+            [str(round(n, 5)) for n in self.field.section.tforms[self.series.alignment].getList()]
         )
         new_tform, confirmed = QInputDialog.getText(
             self, "New Transform", "Enter the desired section transform:", text=current_tform)
@@ -636,7 +645,7 @@ class MainWindow(QMainWindow):
             return
         self.field.changeTform(Transform(new_tform))
     
-    def translateTform(self, direction : str, amount : str):
+    def translate(self, direction : str, amount : str):
         """Translate the current transform.
         
             Params:
@@ -657,11 +666,7 @@ class MainWindow(QMainWindow):
             x, y = 0, num
         elif direction == "down":
             x, y = 0, -num
-        new_tform = self.field.section.tforms[self.series.alignment].getList()
-        new_tform[2] += x
-        new_tform[5] += y
-        new_tform = Transform(new_tform)
-        self.field.changeTform(new_tform)
+        self.field.translate(x, y)
     
     def gotoSection(self):
         """Open a dialog to jump to a specific section number."""

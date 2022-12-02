@@ -34,6 +34,7 @@ class Section():
             self.brightness = section_data["brightness"]
             self.contrast = section_data["contrast"]
             self.mag = section_data["mag"]
+            self.align_locked = section_data["align_locked"]
 
             self.tforms = {}
             for a in section_data["tforms"]:
@@ -58,6 +59,7 @@ class Section():
             self.brightness = 0
             self.contrast = 0
             self.mag = image.mag
+            self.align_locked = self.xml_section.alignLocked
             self.thickness = self.xml_section.thickness
             self.contours = {}
             for xml_contour in self.xml_section.contours:
@@ -99,6 +101,14 @@ class Section():
             self.contours[trace.name].remove(trace)
             self.removed_traces.append(trace)
     
+    def setAlignLocked(self, align_locked : bool):
+        """Set the alignment locked status of the section.
+        
+            Params:
+                align_locked (bool): the new locked status
+        """
+        self.align_locked = align_locked
+    
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
@@ -127,6 +137,7 @@ class Section():
         d["brightness"] = self.brightness
         d["contrast"] = self.contrast
         d["mag"] = self.mag
+        d["align_locked"] = self.align_locked
 
         # save tforms
         d["tforms"] = {}
@@ -163,6 +174,7 @@ class Section():
         section_data["brightness"] = 0
         section_data["contrast"] = 0
         section_data["mag"] = mag  # microns per pixel
+        section_data["align_locked"] = True
         section_data["thickness"] = thickness  # section thickness
         section_data["tforms"] = {}  
         section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
@@ -188,6 +200,7 @@ class Section():
         elif self.filetype == "XML":
             self.xml_section.images[0].src = self.src
             self.xml_section.images[0].mag = self.mag
+            self.xml_section.alignLocked = self.align_locked
             self.xml_section.thickness = self.thickness
             t = self.tforms["default"].getList()
             xcoef = [t[2], t[0], t[1]]

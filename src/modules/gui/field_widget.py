@@ -31,6 +31,7 @@ from modules.backend.field_view import FieldView
 from modules.backend.object_table_manager import ObjectTableManager
 from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
+from modules.backend.section_table_manager import SectionTableManager
 
 from modules.gui.dialog import TraceDialog
 
@@ -66,6 +67,7 @@ class FieldWidget(QWidget, FieldView):
         self.obj_table_manager = None
         self.ztrace_table_manager = None
         self.trace_table_manager = None
+        self.section_table_manager = None
 
         self.createField(series)
 
@@ -87,6 +89,9 @@ class FieldWidget(QWidget, FieldView):
         if self.trace_table_manager is not None:
             self.trace_table_manager.close()
             self.trace_table_manager = None
+        if self.section_table_manager is not None:
+            self.section_table_manager.close()
+            self.section_table_manager = None
         
         self.series = series
         FieldView.__init__(self, series)
@@ -188,6 +193,17 @@ class FieldWidget(QWidget, FieldView):
             )
         # create a new table
         self.trace_table_manager.newTable()
+    
+    def openSectionList(self):
+        """Open a section list."""
+        # create the manager is not already
+        if self.section_table_manager is None:
+            self.section_table_manager = SectionTableManager(
+                self.series,
+                self.mainwindow
+            )
+        # create a new table
+        self.section_table_manager.newTable()
     
     def findContourDialog(self):
         """Open a dilog to prompt user to find contour."""

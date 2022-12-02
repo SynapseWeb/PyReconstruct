@@ -1,6 +1,7 @@
-from PySide6.QtGui import QPainter, QPen, QColor
+from PySide6.QtGui import QPainter
 
 from modules.pyrecon.series import Series
+from modules.pyrecon.transform import Transform
 from modules.pyrecon.trace import Trace
 
 from modules.backend.section_layer import SectionLayer
@@ -39,6 +40,7 @@ class FieldView():
         self.obj_table_manager = None
         self.ztrace_table_manager = None
         self.trace_table_manager = None
+        self.section_table_manager = None
 
         # misc defaults
         self.hide_trace_layer = False
@@ -329,6 +331,32 @@ class FieldView():
         
         self.generateView()
     
+    def translateTform(self, dx : float, dy : float):
+        """Trnaslate the transform for the entire section.
+            Params:
+                dx (float): x-translate
+                dy (float): y-translate
+        """
+        new_tform = self.section.tforms[self.series.alignment].getList()
+        new_tform[2] += dx
+        new_tform[5] += dy
+        new_tform = Transform(new_tform)
+        self.changeTform(new_tform)
+    
+    def translate(self, dx : float, dy : float):
+        """Translate the transform OR the selected traces.
+        
+            Params:
+                dx (float): x-translate
+                dy (float): y-translate
+        """
+        if self.section_layer.selected_traces:
+            self.section_layer.translateTraces(dx, dy)
+            self.generateView()
+            self.saveState()
+        else:
+            self.translateTform(dx, dy)
+    
     def resizeWindow(self, pixmap_dim : tuple):
         """Convert the window to match the proportions of the pixmap.
         
@@ -521,6 +549,9 @@ class FieldView():
         self.generateView(generate_traces=False)
     
     def changeTform(self, new_tform):
+        # check for section locked status
+        if self.section.align_locked:
+            return
         self.section_layer.changeTform(new_tform)
         self.saveState()
         self.generateView()

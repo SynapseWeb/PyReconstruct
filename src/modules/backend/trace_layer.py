@@ -395,6 +395,28 @@ class TraceLayer():
 
         self.changeTraceAttributes(name, color, tags)
     
+    def translateTraces(self, dx : float, dy : float):
+        """Translate the selected traces.
+        
+            Params:
+                dx (float): x-translate
+                dy (float): y-translate
+        """
+        tform = self.section.tforms[self.series.alignment]
+        for trace in self.selected_traces:
+            self.section.removeTrace(trace)
+            for i, p in enumerate(trace.points):
+                # apply forward transform
+                x, y = tform.map(*p)
+                # apply translate
+                x += dx
+                y += dy
+                # apply reverse transform
+                x, y = tform.map(x, y, inverted=True)
+                # replace point
+                trace.points[i] = (x, y)
+            self.section.addTrace(trace)
+    
     def _drawTrace(self, trace_layer : QPixmap, trace : Trace) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         

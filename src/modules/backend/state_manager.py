@@ -83,24 +83,30 @@ class SectionStates():
             Returns:
                 (set): the names of modified contours
         """
+        # if there are not undo states
         if len(self.undo_states) == 0:
             return
-        # restore the contours
-        # iterate backwards and find the last ieration of the recently changed contours
-        last_changed = self.current_state.getModifiedContours()
-        modified_contours = last_changed.copy()
-        for state in reversed(self.undo_states):
-            state_contours = state.getContours()
-            for contour in last_changed.copy():
-                if contour in state_contours:
-                    section.contours[contour] = state_contours[contour]
-                    last_changed.remove(contour)
-            if not last_changed:
-                break
-        # if the contour was not found (aka it was just created)
-        if last_changed:
-            for contour in last_changed:
-                section.contours[contour] = Contour(contour)
+        # if only one undo state exists
+        elif len(self.undo_states) == 1:
+            modified_contours = self.current_state.getModifiedContours()
+            section.contours = self.undo_states[0].getContours()
+        # if there are multiple undo states
+        else:
+            # iterate backwards and find the last ieration of the recently changed contours
+            last_changed = self.current_state.getModifiedContours()
+            modified_contours = last_changed.copy()
+            for state in reversed(self.undo_states):
+                state_contours = state.getContours()
+                for contour in last_changed.copy():
+                    if contour in state_contours:
+                        section.contours[contour] = state_contours[contour]
+                        last_changed.remove(contour)
+                if not last_changed:
+                    break
+            # if the contour was not found (aka it was just created)
+            if last_changed:
+                for contour in last_changed:
+                    section.contours[contour] = Contour(contour)
 
         # restore the transforms
         restored_tforms = self.undo_states[-1].getTforms()

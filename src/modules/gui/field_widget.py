@@ -98,6 +98,7 @@ class FieldWidget(QWidget, FieldView):
 
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER
+        self.setCursor(QCursor(Qt.ArrowCursor))
 
         # ensure that the first section is found
         if self.series.current_section not in self.series.sections:

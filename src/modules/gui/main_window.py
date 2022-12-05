@@ -196,15 +196,18 @@ class MainWindow(QMainWindow):
                 ]
             },
             None,
+            self.undo_act,
+            self.redo_act,
+            None,
             self.cut_act,
             self.copy_act,
             self.paste_act,
             self.pasteattributes_act,
-            None,
-            self.deselect_act,
-            self.selectall_act,
-            self.hideall_act,
-            self.blend_act
+            # None,
+            # self.deselect_act,
+            # self.selectall_act,
+            # self.hideall_act,
+            # self.blend_act
         ]
         self.trace_menu = QMenu(self)
         populateMenu(self, self.trace_menu, trace_menu_list)

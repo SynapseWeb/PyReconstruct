@@ -15,6 +15,8 @@
 
 - Will use volume Joseph
 
+- [ ] Make stock warning function
+
 - [ ] Meet with Kristen (Wednesday)
      
 - [ ] Full protocol/manual
@@ -56,6 +58,8 @@
 - [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
 
 - [X] Fix import statements for dim 6 (Did we do this?)
+
+- [ ] Show all toggling with green (?) outline ("a")
 
 - [X] GUI
    - [X] H to toggle trace visibility for entire series (think boolean variable for series)

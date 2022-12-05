@@ -13,7 +13,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from modules.gui.gui_functions import populateMenuBar, populateMenu
+from modules.gui.gui_functions import (
+    populateMenuBar,
+    populateMenu,
+    noUndoWarning
+)
 
 class SectionTableWidget(QDockWidget):
 
@@ -194,6 +198,9 @@ class SectionTableWidget(QDockWidget):
         """Delete the sections selected by the user."""
         section_numbers = self.getSelectedSections()
         if not section_numbers:
+            return
+        
+        if not noUndoWarning(self):
             return
         
         self.manager.deleteSections(section_numbers)

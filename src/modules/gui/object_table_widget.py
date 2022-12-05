@@ -17,7 +17,11 @@ from PySide6.QtCore import Qt
 from modules.pyrecon.series import Series
 
 from modules.backend.object_table_item import ObjectTableItem
-from modules.gui.gui_functions import populateMenuBar, populateMenu
+from modules.gui.gui_functions import (
+    populateMenuBar,
+    populateMenu,
+    noUndoWarning
+)
 
 from modules.gui.dialog import ObjectGroupDialog, TableColumnsDialog
 
@@ -389,6 +393,9 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        if not noUndoWarning(self):
+            return
+        
         self.manager.modifyObjects(obj_names, name=name)
     
     def editObjColor(self):
@@ -402,6 +409,9 @@ class ObjectTableWidget(QDockWidget):
         color = (c.red(), c.green(), c.blue())
 
         if not color:
+            return
+        
+        if not noUndoWarning(self):
             return
         
         self.manager.modifyObjects(obj_names, color=color)
@@ -435,6 +445,9 @@ class ObjectTableWidget(QDockWidget):
         try:
             new_rad = float(new_rad)
         except ValueError:
+            return
+        
+        if not noUndoWarning(self):
             return
         
         self.manager.editRadius(obj_names, new_rad)
@@ -549,6 +562,10 @@ class ObjectTableWidget(QDockWidget):
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
+        
+        if not noUndoWarning(self):
+            return
+        
         self.manager.deleteObjects(obj_names) 
 
     # MENU-RELATED FUNCTIONS

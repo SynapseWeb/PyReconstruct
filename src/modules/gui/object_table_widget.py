@@ -437,6 +437,9 @@ class ObjectTableWidget(QDockWidget):
         except ValueError:
             return
         
+        if new_rad == 0:
+            return
+        
         self.manager.editRadius(obj_names, new_rad)
 
     def generate3D(self, event=None):

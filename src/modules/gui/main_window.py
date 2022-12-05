@@ -87,12 +87,13 @@ class MainWindow(QMainWindow):
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveAllData),
-                    ("close_act", "Close", "Ctrl+Q", self.close),
                     None,
                     ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
-                    ("username_act", "Change username...", "", self.changeUsername)
+                    ("username_act", "Change username...", "", self.changeUsername),
+                    None,
+                    ("quit_act", "Quit", "Ctrl+Q", self.close),
                 ]
             },
 
@@ -102,7 +103,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
-                    ("red_act", "Redo", "Ctrl+Y", self.field.redoState),
+                    ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.field.copy),
@@ -153,7 +154,7 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
-                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
+                    ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
@@ -410,13 +411,9 @@ class MainWindow(QMainWindow):
             0.05, minValue=0.000001, decimals=6)
         if not confirmed:
             return
-        # store directory to folder with images
-        first_image = image_locations[0]
-        if "/" in first_image:
-            self.wdir = first_image[:first_image.rfind("/")+1]
         
         # create new series
-        series = Series.new(image_locations, series_name, mag, thickness)
+        series = Series.new(sorted(image_locations), series_name, mag, thickness)
     
         # open series after creating
         self.openSeries(series)

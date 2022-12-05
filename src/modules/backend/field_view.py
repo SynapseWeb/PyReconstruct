@@ -255,6 +255,10 @@ class FieldView():
     
     def home(self):
         """Set the view to the image."""
+        # check is an image has been loaded
+        if not self.section_layer.image_found:
+            return
+        
         tform = self.section.tforms[self.series.alignment]
         xvals = []
         yvals = []

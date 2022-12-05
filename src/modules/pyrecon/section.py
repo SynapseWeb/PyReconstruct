@@ -21,6 +21,7 @@ class Section():
         self.filepath = filepath
         self.added_traces = []
         self.removed_traces = []
+        self.modified_traces = []
 
         try:
             with open(filepath, "r") as f:
@@ -113,6 +114,7 @@ class Section():
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
         self.removed_traces = []
+        self.modified_traces = []
     
     def tracesAsList(self) -> list[Trace]:
         """Return the trace dictionary as a list. Does NOT copy traces.

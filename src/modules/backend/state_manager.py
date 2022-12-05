@@ -65,7 +65,9 @@ class SectionStates():
         # get the names of the updated contours
         updated_contours = (
             set([trace.name for trace in section.added_traces]).union(
-                set([trace.name for trace in section.removed_traces])
+                set([trace.name for trace in section.removed_traces]).union(
+                    set([trace.name for trace in section.modified_traces])
+                )
             )
         )
         # set the new current state

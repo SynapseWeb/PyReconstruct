@@ -249,12 +249,17 @@ class TraceLayer():
 
         for trace in traces:
             trace.setHidden(hide)
+            self.section.modified_traces.append(trace)
+        
         self.selected_traces = []
     
     def unhideAllTraces(self):
         """Unhide all traces on the section."""
         for trace in self.section.tracesAsList():
-            trace.setHidden(False)
+            hidden = trace.hidden
+            if hidden:
+                trace.setHidden(False)
+                self.section.modified_traces.append(trace)
     
     def makeNegative(self, negative=True):
         """Make a set of traces negative."""

@@ -83,11 +83,14 @@ class MainWindow(QMainWindow):
                 "text": "File",
                 "opts":
                 [   
-                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
-                    None,  # None acts as menu divider
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
+                    None,  # None acts as menu divider
+                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
                     ("close_act", "Close", "Ctrl+Q", self.close),
+                    None,
+                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
+                    ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername)
                 ]
@@ -124,10 +127,7 @@ class MainWindow(QMainWindow):
                     ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
-                    None,
-                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations", "", self.importTransforms)                   
+                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment)                 
                 ]
             },
             
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
             ("hideall_act", "Toggle visibility of all traces", "H", self.field.toggleHideAllTraces),
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
-            ("blend_act", "Blend sections", " ", self.field.toggleBlend),
+            ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)

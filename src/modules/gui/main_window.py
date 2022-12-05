@@ -140,9 +140,9 @@ class MainWindow(QMainWindow):
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
                     ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
-                    ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
+                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
                     None,
-                    ("sectionlist_act", "Open section list", "Ctrl+Shift+S", self.openSectionList),
+                    ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                 ]
@@ -153,12 +153,12 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
-                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
+                    ("highlightopacity_act", "Fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     None,
-                    ("paletteside_act", "Toggle palette side", "Shift+L", self.mouse_palette.toggleHandedness),
+                    ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
                 ]
             }

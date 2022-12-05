@@ -15,6 +15,8 @@
 
 - Will use volume Joseph
 
+- [ ] Make stock warning function
+
 - [ ] Meet with Kristen (Wednesday)
      
 - [ ] Full protocol/manual
@@ -57,12 +59,14 @@
 
 - [X] Fix import statements for dim 6 (Did we do this?)
 
+- [ ] Show all toggling with green (?) outline ("a")
+
 - [X] GUI
    - [X] H to toggle trace visibility for entire series (think boolean variable for series)
    - [X] Visual indicator that all traces are hidden (outline field in a bright color)
    - [X] Ctrl-u to change section_visibiliy to True for all traces on sectionp
 
-- [ ] Access section thickness somewhere
+- [X] Access section thickness somewhere
 
 - [X] 3D Options:
    - [X] Transparency

@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
             ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
-            ("deletetraces_act", "Delete traces", "Del", self.field.deleteTraces),
+            ("deletetraces_act", "Delete traces", "Del", self.field.backspace),
             {
                 "attr_name": "negativemenu",
                 "text": "Negative",

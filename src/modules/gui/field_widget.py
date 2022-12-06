@@ -275,7 +275,6 @@ class FieldWidget(QWidget, FieldView):
 
         if event is not None:
             # display mouse position in the field
-            self.mouse_x, self.mouse_y = event.x(), event.y()
             x, y = pixmapPointToField(self.mouse_x, self.mouse_y, self.pixmap_dim, self.series.window, self.section.mag)
             position = "x = " + str("{:.4f}".format(x)) + ", "
             position += "y = " + str("{:.4f}".format(y))
@@ -391,6 +390,9 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        self.mouse_x = event.x()
+        self.mouse_y = event.y()
+
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
             return
@@ -441,6 +443,10 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        # keep track of position
+        self.mouse_x = event.x()
+        self.mouse_y = event.y()
+
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
             return
@@ -877,10 +883,9 @@ class FieldWidget(QWidget, FieldView):
             else:
                 self.field_pixmap = self.field_pixmap_copy.copy()
                 self.update()
-
     
     def backspace(self):
-        """Called when backspace is pressed: either delete traces or undo line trace."""
+        """Called when backspace OR Del is pressed: either delete traces or undo line trace."""
         if self.is_line_tracing and len(self.current_trace) > 1:
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
             self.current_trace.pop()
@@ -888,13 +893,26 @@ class FieldWidget(QWidget, FieldView):
             painter = QPainter(self.field_pixmap)
             color = QColor(*self.tracing_trace.color)
             painter.setPen(QPen(color, 1))
+            # redraw the polygon/polyline
             if closed:
                 start = 0
             else:
                 start = 1
             for i in range(start, len(self.current_trace)):
                 painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+            # redraw the dotted line
+            pen = painter.pen()
+            pen.setDashPattern([2,5])
+            painter.setPen(pen)
+            x, y = self.mouse_x, self.mouse_y
+            painter.drawLine(*self.current_trace[-1], x, y)
+            if closed:
+                painter.drawLine(*self.current_trace[0], x, y)                
             painter.end()
+            self.update()
+        elif len(self.current_trace) == 1:
+            self.is_line_tracing = False
+            self.field_pixmap = self.field_pixmap_copy
             self.update()
         else:
             self.deleteTraces()

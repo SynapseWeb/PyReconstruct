@@ -1,0 +1,108 @@
+File stuff
+	- Creating a new series:
+		○ User selects images
+		○ Name of series
+		○ Section thickness
+		○ Magnification
+	- File Structure:
+		○ Series and section files
+		○ Images
+	- Opening a series
+		○ Select a ser file
+	- Saving a series
+		○ Autosaved as sections are changed
+		○ Ctrl+S
+		○ Backing up is suggested
+
+Mouse tools
+	- Pointer tool (p)
+		○ Left click to select/deselect traces
+		○ Drag left click on trace to drag trace
+		○ Drag left click not on trace to select multiple
+		○ Right click to see options
+	- Panzoom (z)
+		○ Left click pan, right click zoom
+		○ Also pan with wheel click and zoom with ctrl+wheel NO MATTER THE MOUSE MODE
+	- Knife (k)
+		○ Divides a single selected trace
+		○ Chunks that are too small (less than 1% of original area) are deleted
+		○ Can only cut one trace at a time, must be a selected trace
+	- Closed trace (c)
+		○ Click to create a closed polygon
+		○ Drag to draw a closed polygon
+	- Open trace (o)
+		○ Similar to closed trace but does not closed the polygon
+	- Stamp (s)
+		○ Create a trace the shape of the palette button
+
+Trace Palette
+	- The name, color, and tags of the button will be applied to traced traces
+	- The shape of the button ONLY matters for stamping
+	- Right click to modify the palette trace (name, color, tags, radius)
+	- Numbers access palette traces
+		○ Shift+Number for second row
+		○ Combine number or shift+number with ctrl to modify (like with right-click)
+
+Other Mouse/Keyboard Functions
+	- Move up and down sections by scrolling, PgUp/PgDown, or the buttons in the bottom corner
+	- Ctrl+M Merge traces
+	- Ctrl+D Deselect all traces
+	- Ctrl+F Find all instances of a trace on the section
+	- Ctrl+C Copy a traces or traces
+	- Ctrl+X Cut a trace or traces
+	- Ctrl+V Paste
+	- Ctrl+B Apply clipboard attributes to selected traces
+	- Ctrl+G Go to a specific section number
+	- Ctrl+T Manually set the transformation for the section
+	- Ctrl+H Hide the selected traces
+	- Ctrl+Q Quit
+	- Ctrl+O Open a series
+	- Ctrl+N Create a new series
+	- Ctrl+Shift+O Open an object table
+	- Ctrl+Shift+T Open a trace table
+	- Ctrl+Shift+H Hide or Unhide all traces on the section
+	- Ctrl+Shift+A Change the alignment for the series
+
+Alignments:
+	- Series are set to the default alignment
+	- User can create and name new alignments
+	- Any new transforms (imported or manual) will be saved to the current alignment
+
+Object List:
+	- Views all objects through the series
+	- Only needs to load once -- refreshes as the user traces
+	- Can be filtered by groups, tags, or regex
+	- Right click allows user to modify the object (name, color, tags, groups, trace radii)
+	- Generate 3D
+		○ Can be done through the menubar, right-click, or double-click
+		○ Press s on the 3D scene to add the scale cube
+		○ User can edit scale cube size and 3D opacity from object list menu
+	- User can create a ztrace from an object
+
+Trace List:
+	- Allows user to view and edit traces
+	- Traces of the same name are shown in order of creation
+	- Double-click to set the field view to the trace
+
+Ztrace list:
+	- Views ztraces
+	- Does NOT auto-refresh if a new ztrace is create while this list is open; must refresh
+	- User can smooth z-traces
+
+XML and JSON:
+	- The program can open and edit on XML files, but some data will be lost (object groups, trace tags)
+		○ Will also be slower
+	- User can export the series as JSON or XML
+	- Highly suggested to work in JSON
+	- Exporting a reconcropped XML series:
+		○ Set the series to the global series using reconcropper
+		○ Open the series in PyReconstruct and import
+		○ Alignments will be imported:
+			§ A "LOCAL_" tag will be put on crop alingments names
+			§ An "ALIGNMENT_" tag will be put on alignments without a crop
+
+Trace History:
+	- A trcae history is recorded as the user creates and edits traces
+	- These history logs will be tagged with the user's OS username
+		○ Can be modified through the file menu
+	- The user can view the history through the trace/object lists or in the Series menubar

@@ -2,7 +2,8 @@ from PySide6.QtWidgets import (
     QWidget,
     QMenuBar,
     QMenu,
-    QProgressDialog
+    QProgressDialog,
+    QMessageBox
 )
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
@@ -98,5 +99,17 @@ def progbar(title : str, text : str):
     progbar.setWindowTitle(title)
     progbar.setWindowModality(Qt.WindowModal)
     return progbar.setValue, progbar.wasCanceled
+
+def noUndoWarning(parent):
+    """Inform the user of an action that can't be undone."""
+    response = QMessageBox.warning(
+        parent,
+        "",
+        "WARNING: This action cannot be undone.",
+        QMessageBox.Ok,
+        QMessageBox.Cancel
+    )
+    return response == QMessageBox.Ok
+
 
 

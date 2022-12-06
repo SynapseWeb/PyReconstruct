@@ -83,13 +83,17 @@ class MainWindow(QMainWindow):
                 "text": "File",
                 "opts":
                 [   
-                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
-                    None,  # None acts as menu divider
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
-                    ("close_act", "Close", "Ctrl+Q", self.close),
+                    None,  # None acts as menu divider
+                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
                     None,
-                    ("username_act", "Change username...", "", self.changeUsername)
+                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
+                    ("import_transforms_act", "Import transformations", "", self.importTransforms),
+                    None,
+                    ("username_act", "Change username...", "", self.changeUsername),
+                    None,
+                    ("quit_act", "Quit", "Ctrl+Q", self.close),
                 ]
             },
 
@@ -99,7 +103,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
-                    ("red_act", "Redo", "Ctrl+Y", self.field.redoState),
+                    ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.field.copy),
@@ -124,10 +128,7 @@ class MainWindow(QMainWindow):
                     ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
-                    None,
-                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
-                    ("import_transforms_act", "Import transformations", "", self.importTransforms)                   
+                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment)                 
                 ]
             },
             
@@ -140,9 +141,9 @@ class MainWindow(QMainWindow):
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
                     ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
-                    ("tracelist_act", "Open trace list", "Ctrl+Shift+T", self.openTraceList),
+                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
                     None,
-                    ("sectionlist_act", "Open section list", "Ctrl+Shift+S", self.openSectionList),
+                    ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                 ]
@@ -153,12 +154,12 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
-                    ("highlightopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
+                    ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     None,
-                    ("paletteside_act", "Toggle palette side", "Shift+L", self.mouse_palette.toggleHandedness),
+                    ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
                 ]
             }
@@ -175,7 +176,7 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
             ("hideall_act", "Toggle visibility of all traces", "H", self.field.toggleHideAllTraces),
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
-            ("blend_act", "Blend sections", " ", self.field.toggleBlend),
+            ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
@@ -184,7 +185,7 @@ class MainWindow(QMainWindow):
             ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
-            ("deletetraces_act", "Delete traces", "Del", self.field.deleteTraces),
+            ("deletetraces_act", "Delete traces", "Del", self.field.backspace),
             {
                 "attr_name": "negativemenu",
                 "text": "Negative",
@@ -195,15 +196,18 @@ class MainWindow(QMainWindow):
                 ]
             },
             None,
+            self.undo_act,
+            self.redo_act,
+            None,
             self.cut_act,
             self.copy_act,
             self.paste_act,
             self.pasteattributes_act,
-            None,
-            self.deselect_act,
-            self.selectall_act,
-            self.hideall_act,
-            self.blend_act
+            # None,
+            # self.deselect_act,
+            # self.selectall_act,
+            # self.hideall_act,
+            # self.blend_act
         ]
         self.trace_menu = QMenu(self)
         populateMenu(self, self.trace_menu, trace_menu_list)
@@ -410,13 +414,9 @@ class MainWindow(QMainWindow):
             0.05, minValue=0.000001, decimals=6)
         if not confirmed:
             return
-        # store directory to folder with images
-        first_image = image_locations[0]
-        if "/" in first_image:
-            self.wdir = first_image[:first_image.rfind("/")+1]
         
         # create new series
-        series = Series.new(image_locations, series_name, mag, thickness)
+        series = Series.new(sorted(image_locations), series_name, mag, thickness)
     
         # open series after creating
         self.openSeries(series)

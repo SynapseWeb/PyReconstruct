@@ -170,8 +170,11 @@ class Voxels(Object3D):
                 self.smax-self.smin + 1,
                 4
             ),
-            dtype=np.uint8
+            dtype=np.ubyte
         )
+
+        print(volume.shape)
+        print(volume.dtype)
 
         for trace, snum, closed, color in zip(
             self.traces,

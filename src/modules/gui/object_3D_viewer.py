@@ -39,7 +39,7 @@ class Object3DViewer(gl.GLViewWidget):
                 varying vec3 normal;
                 void main() {
                     vec4 color = gl_Color;
-                    float s = pow(normal.x*normal.x + normal.y*normal.y, 2) / 3;
+                    float s = pow(normal.x*normal.x + normal.y*normal.y, 4) / 2.5;
                     color.x = color.x - s * color.x;
                     color.y = color.y - s * color.y;
                     color.z = color.z - s * color.z;
@@ -48,10 +48,36 @@ class Object3DViewer(gl.GLViewWidget):
             """)
         ]))
 
+        gl.shaders.ShaderProgram('shaded', [   
+            gl.shaders.VertexShader("""
+                varying vec3 normal;
+                void main() {
+                    // compute here for use in fragment shader
+                    normal = normalize(gl_NormalMatrix * gl_Normal);
+                    gl_FrontColor = gl_Color;
+                    gl_BackColor = gl_Color;
+                    gl_Position = ftransform();
+                }
+            """),
+            gl.shaders.FragmentShader("""
+                varying vec3 normal;
+                void main() {
+                    float p = dot(normal, normalize(vec3(1.0, -1.0, -1.0)));
+                    p = p < 0. ? 0. : p * 0.3;
+                    vec4 color = gl_Color;
+                    color.x = color.x * (0.7 + p);
+                    color.y = color.y * (0.7 + p);
+                    color.z = color.z * (0.7 + p);
+                    gl_FragColor = color;
+                }
+            """)
+        ]),
+
         self.series = series
         self.opacity = opacity
         self.sc_size = sc_size
         self.obj_set = set(obj_names)
+        self.closed = False
 
         self.setWindowTitle("3D Object Viewer")
         self.setGeometry(
@@ -182,22 +208,6 @@ class Object3DViewer(gl.GLViewWidget):
     
     def toggleScaleCube(self):
         """Toggle the scale cube on the 3D scene."""
-
-        # sphere = gl.MeshData.sphere(rows=10, cols=10, radius=1)
-        # m1 = gl.GLMeshItem(
-        #     meshdata=sphere,
-        #     smooth=True,
-        #     color=(1, 0, 0, 1),
-        #     shader="edgeDarken",
-        #     glOptions="opaque",
-        # )
-        # m1.translate(
-        #     self.center.x(),
-        #     self.center.y(),
-        #     self.center.z()
-        # )
-        # self.addItem(m1)
-
         if self.sc_in_scene:
             self.removeItem(self.sc_item)
         else:
@@ -207,3 +217,9 @@ class Object3DViewer(gl.GLViewWidget):
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""
         self.sc_item.translate(dx, dy, dz)
+    
+    def closeEvent(self, event):
+        """Executed when closed."""
+        self.closed = True
+        super().closeEvent(event)
+

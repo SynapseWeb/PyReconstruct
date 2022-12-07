@@ -47,6 +47,7 @@ class Series():
                 self.ztraces[i] = Ztrace.fromDict(self.ztraces[i])
             self.alignment = series_data["alignment"]
             self.object_groups = ObjGroupDict(series_data["object_groups"])
+            self.object_3D_modes = series_data["object_3D_modes"]
 
         
         elif self.filetype == "XML":
@@ -76,6 +77,7 @@ class Series():
             self.ztraces = []  # should eventually be changed
             self.alignment = "default"
             self.object_groups = ObjGroupDict()
+            self.object_3D_modes = {}
         
         # default settings
         self.fill_opacity = 0.2
@@ -100,6 +102,7 @@ class Series():
             d["ztraces"].append(ztrace.getDict())
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
+        d["object_3D_modes"] = self.object_3D_modes
         return d
     
     # STATIC METHOD
@@ -127,6 +130,7 @@ class Series():
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
+        series_data["object_3D_modes"] = {}
 
         series_fp = os.path.join(wdir, series_name + ".ser")
         with open(series_fp, "w") as series_file:

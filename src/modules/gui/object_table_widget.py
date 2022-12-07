@@ -705,14 +705,14 @@ class ObjectTableWidget(QDockWidget):
         new_opacity, confirmed = QInputDialog.getText(
             self,
             "3D Opacity",
-            "Enter 3D opacity (0-255):",
+            "Enter 3D opacity (0-1):",
             text=str(self.manager.opacity)
         )
         if not confirmed:
             return
         
         try:
-            new_opacity = int(new_opacity)
+            new_opacity = float(new_opacity)
         except ValueError:
             return
         

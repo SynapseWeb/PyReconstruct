@@ -87,7 +87,7 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
 
             # use pyvista to generate the faces
             pdata = PolyData(np.array(points))
-            surf = pdata.delaunay_3d(alpha=0.1).extract_surface()
+            surf = pdata.delaunay_3d(alpha=100).extract_surface()            
 
             # import pyvista as pv
             # pl = pv.Plotter(shape=(1, 2))

@@ -51,7 +51,7 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
                     if type(obj_data[obj_name]) is Voxels:
-                        obj_data[obj_name].addTrace(trace, z, section.thickness, tform)
+                        obj_data[obj_name].addTrace(trace, snum, z, section.thickness, tform)
                     else:
                         obj_data[obj_name].addTrace(trace, z, tform)
         

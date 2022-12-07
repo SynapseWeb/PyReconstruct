@@ -103,7 +103,6 @@ class Spheres(Object3D):
             self.radii
         ):
             sphere = gl.MeshData.sphere(rows=6, cols=6, radius=radius)
-            gl.MeshData.
             item = gl.GLMeshItem(
                 meshdata=sphere,
                 smooth=True,
@@ -121,102 +120,88 @@ class Voxels(Object3D):
     def __init__(self, name):
         """Create a voxels object."""
         super().__init__(name)
-        self.z_extremes = {}
-
-
-        self.zs = []
-        self.slabs = {}
-        self.thicknesses = {}
+        self.traces = []
+        self.snums = []
+        self.closed = []
+        self.colors = []
+        self.sts = {}  # section thicknesses
+        self.smin = None
+        self.smax = None
     
-    def addToExtremes(self, x, y, z):
+    def addToExtremes(self, x, y, z, snum):
         super().addToExtremes(x, y, z)
-        if z in self.z_extremes:
-            e = self.z_extremes[z]
-            if x < e[0]: e[0] = x
-            if x > e[1]: e[1] = x
-            if y < e[2]: e[2] = y
-            if y > e[3]: e[3] = y
-        else:
-            self.z_extremes[z] = [x, x, y, y]
+        if self.smin is None or snum < self.smin:
+            self.smin = snum
+        if self.smax is None or snum > self.smax:
+            self.smax = snum
     
-    def addTrace(self, trace : Trace, z : float, thickness : float, tform : Transform = None):
+    def addTrace(self, trace : Trace, snum : int, z : float, thickness : float, tform : Transform = None):
         """Add a trace to the voxels data."""
-        z = round(z, 6)
-        self.zs.append(z)
-
         poly = []
         for pt in trace.points:
             if tform:
                 x, y = tform.map(*pt)
             else:
                 x, y = pt
-            poly.append((x, y))
-            self.addToExtremes(x, y, z)
-        
-        if z not in self.slabs:
-            self.slabs[z] = []
-        
-        self.slabs[z].append((
-            poly,
-            trace.color,
-            trace.negative
-        ))
-            
-        self.thicknesses[z] = thickness
+            poly.append((x, y, snum))
+            self.addToExtremes(x, y, z, snum)
+        self.traces.append(poly)
+
+        self.snums.append(snum)
+
+        self.closed.append(trace.closed)
+
+        self.colors.append(trace.color)
+
+        self.sts[snum] = thickness
 
     def generate3D(self, mag : float, alpha=1):
         """Genrate the opengl volume."""
-        slabs = []
-        for z in self.zs:
-            thickness = self.thicknesses[z]
+        # get the average section thickness
+        # ASSUMES ALL SECTIONS HAVE RELATIVELY SIMILAR THICKNESS
+        avg_thickness = sum(list(self.sts.values())) / len(self.sts)
 
-            # create the section slab
-            xmin, xmax, ymin, ymax = tuple(self.z_extremes[z])
-            slab = np.zeros(
-                (int((xmax-xmin) / mag) + 1, int((ymax-ymin) / mag) + 1, 1, 4),
-                dtype=np.int32
-            )
+        xmin, xmax, ymin, ymax, zmin, zmax = tuple(self.extremes)
 
-            # separate the positive and negative traces
-            positives = []
-            negatives = []
-            for poly, color, negative in self.slabs[z]:
-                if negative:
-                    negatives.append(poly)
-                else:
-                    positives.append((poly, color))
-            
-            # add the positive traces
-            for poly, color in positives:
-                points = np.array(poly)
-                points[:,0] -= xmin
-                points[:,1] -= ymin
-                points /= mag
-                points = points.astype(np.int32)
+        volume = np.zeros(
+            (
+                int((xmax-xmin) / mag) + 1,
+                int((ymax-ymin) / mag) + 1,
+                self.smax-self.smin + 1,
+                4
+            ),
+            dtype=np.uint8
+        )
+
+        for trace, snum, closed, color in zip(
+            self.traces,
+            self.snums,
+            self.closed,
+            self.colors
+        ):
+            pts = np.array(trace)
+            pts[:,0] -= xmin
+            pts[:,1] -= ymin
+            pts /= mag
+            pts = pts.astype(np.int32)
+
+            if closed:
                 cv2.fillPoly(
-                    slab[:,:,0],
-                    pts=[points],
-                    color=(*color, alpha*255)
+                    img=volume[:,:,snum],
+                    pts=[pts],
+                    color=(*color, int(alpha*255))
+                )
+            else:
+                cv2.polylines(
+                    img=volume[:,:,snum],
+                    pts=[pts],
+                    isClosed=False,
+                    color=(*color, int(alpha*255))
                 )
             
-            # add the negative trace
-            for poly in negatives:
-                points = np.array(poly)
-                points[:,0] -= xmin
-                points[:,1] -= ymin
-                points /= mag
-                points = points.astype(np.int32)
-                cv2.fillPoly(
-                    slab[:,:,0],
-                    pts=[points],
-                    color=(0, 0, 0, 0)
-                )
-            
-            item = gl.GLVolumeItem(slab)
+        item = gl.GLVolumeItem(volume)
 
-            item.scale(mag, mag, thickness)
-            item.translate(xmin, ymin, z)
-
-            slabs.append(item)
+        item.scale(mag, mag, avg_thickness)
+        item.translate(xmin, ymin, zmin)
         
-        return slabs
+        return item

@@ -79,10 +79,10 @@
 - [X] Object list
    - [X] Hide objects 
 
-- [ ] Modify object radius from right-click menu
-- [ ] Automatically resize palette traces from XML files
+- [X] Modify object radius from right-click menu
+- [X] Automatically resize palette traces from XML files
 
-- [ ] Section list
+- [-] Section list
    - [ ] Consider section attribute /type/ = ("Tissue", "Cal-grid", ...)
 
 - [ ] Investigate console hiding (see =misc/console_hide.txt=)

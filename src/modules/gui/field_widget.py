@@ -114,12 +114,6 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
-        # set the window if series is XML
-        if self.series.filetype == "XML":
-            pxw, pxh, = self.pixmap_dim
-            self.series.window[2] = pxw * self.series.screen_mag
-            self.series.window[3] = pxh * self.series.screen_mag
-
         self.generateView()
     
     def toggleBlend(self):

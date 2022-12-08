@@ -4,10 +4,6 @@ from modules.pyrecon.contour import Contour
 from modules.pyrecon.trace import Trace
 from modules.pyrecon.transform import Transform
 
-from modules.legacy_recon.classes.transform import Transform as XMLTransform
-from modules.legacy_recon.utils.reconstruct_reader import process_section_file
-from modules.legacy_recon.utils.reconstruct_writer import write_section
-
 from constants.locations import assets_dir
 
 class Section():
@@ -16,7 +12,7 @@ class Section():
         """Load the section file.
         
             Params:
-                filepath (str): the file path for the section JSON or XML file
+                filepath (str): the file path for the section JSON file
         """
         self.filepath = filepath
         self.added_traces = []
@@ -26,48 +22,27 @@ class Section():
         try:
             with open(filepath, "r") as f:
                 section_data = json.load(f)
-            self.filetype = "JSON"
         except json.decoder.JSONDecodeError:
-            self.filetype = "XML"
+            print("Invalid JSON file")
+            raise json.decoder.JSONDecodeError
         
-        if self.filetype == "JSON":
-            self.src = section_data["src"]
-            self.brightness = section_data["brightness"]
-            self.contrast = section_data["contrast"]
-            self.mag = section_data["mag"]
-            self.align_locked = section_data["align_locked"]
+        self.src = section_data["src"]
+        self.brightness = section_data["brightness"]
+        self.contrast = section_data["contrast"]
+        self.mag = section_data["mag"]
+        self.align_locked = section_data["align_locked"]
 
-            self.tforms = {}
-            for a in section_data["tforms"]:
-                self.tforms[a] = Transform(section_data["tforms"][a])
-            
-            self.thickness = section_data["thickness"]
-            self.contours = section_data["contours"]
-            for name in self.contours:
-                self.contours[name] = Contour(
-                    name,
-                    [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
-                )
+        self.tforms = {}
+        for a in section_data["tforms"]:
+            self.tforms[a] = Transform(section_data["tforms"][a])
         
-        elif self.filetype == "XML":
-            self.xml_section = process_section_file(filepath)
-            image = self.xml_section.images[0] # assume only one image
-            self.tforms = {}
-            self.tforms["default"] = Transform(
-                list(image.transform.tform()[:2,:].reshape(6))
+        self.thickness = section_data["thickness"]
+        self.contours = section_data["contours"]
+        for name in self.contours:
+            self.contours[name] = Contour(
+                name,
+                [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
             )
-            self.src = image.src
-            self.brightness = 0
-            self.contrast = 0
-            self.mag = image.mag
-            self.align_locked = self.xml_section.alignLocked
-            self.thickness = self.xml_section.thickness
-            self.contours = {}
-            for xml_contour in self.xml_section.contours:
-                self.addTrace(
-                    Trace.fromXMLObj(xml_contour, image.transform),
-                    log_message = "imported"
-                )
     
     def addTrace(self, trace : Trace, log_message=None):
         """Add a trace to the trace dictionary.
@@ -187,29 +162,13 @@ class Section():
         return Section(section_fp)
    
     def save(self):
-        """Save file into json or xml."""
+        """Save file into json."""
         try:
             if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
                 return  # ignore welcome series
         except FileNotFoundError:
             pass
-
-        if self.filetype == "JSON":
-            d = self.getDict()
-            with open(self.filepath, "w") as f:
-                f.write(json.dumps(d, indent=1))
-        
-        elif self.filetype == "XML":
-            self.xml_section.images[0].src = self.src
-            self.xml_section.images[0].mag = self.mag
-            self.xml_section.alignLocked = self.align_locked
-            self.xml_section.thickness = self.thickness
-            t = self.tforms["default"].getList()
-            xcoef = [t[2], t[0], t[1]]
-            ycoef = [t[5], t[3], t[4]]
-            xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
-            self.xml_section.images[0].transform = xml_tform
-            self.xml_section.contours = []
-            for trace in self.tracesAsList():
-                self.xml_section.contours.append(trace.getXMLObj(xml_tform))
-            write_section(self.xml_section, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
+    
+        d = self.getDict()
+        with open(self.filepath, "w") as f:
+            f.write(json.dumps(d, indent=1))

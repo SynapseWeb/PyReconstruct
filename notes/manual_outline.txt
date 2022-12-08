@@ -1,3 +1,12 @@
+Window layout:
+
+{Picture of the main window and all areas highlighted}
+
+Quickstart guide:
+
+{Get up with a new series and tracing}
+
+
 File stuff
 	- Creating a new series:
 		○ User selects images

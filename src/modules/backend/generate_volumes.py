@@ -1,14 +1,6 @@
-import numpy as np
-
-import pyqtgraph.opengl as gl
-
-from pyvista.core.pointset import PolyData, UnstructuredGrid
-
-from modules.backend.objects_3D import Voxels, Surface, Spheres
+from modules.backend.objects_3D import Surface, Spheres
 
 from modules.pyrecon.series import Series
-
-from modules.calc.quantification import centroid
 
 def generateVolumes(series : Series, obj_names : list, alpha : float):
     """Generate the volume items for a set of objects.
@@ -28,14 +20,12 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
     for obj_name in obj_names:
         if obj_name in series.object_3D_modes:
             mode = series.object_3D_modes[obj_name]
-            if mode == "voxels":
-                obj_data[obj_name] = Voxels(obj_name)
-            elif mode == "surface":
+            if mode == "surface":
                 obj_data[obj_name] = Surface(obj_name)
             elif mode == "spheres":
                 obj_data[obj_name] = Spheres(obj_name)
         else:
-            obj_data[obj_name] = Voxels(obj_name)
+            obj_data[obj_name] = Surface(obj_name)
 
     # iterate through all sections and gather points (and colors)
     z = 0
@@ -50,24 +40,18 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
             if obj_name in section.contours:
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
-                    if type(obj_data[obj_name]) is Voxels:
-                        obj_data[obj_name].addTrace(trace, snum, z, section.thickness, tform)
-                    else:
-                        obj_data[obj_name].addTrace(trace, z, tform)
+                    obj_data[obj_name].addTrace(trace, z, tform)
         
         z += section.thickness
 
     # iterate through all objects and create 3D meshes
     items = []
     extremes = []
-    avg_mag = sum(mags) / len(mags)
 
     for obj_name, obj_3D in obj_data.items():
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
-        if type(obj_3D) is Voxels:
-            items += obj_3D.generate3D(avg_mag * 16, alpha)
-        elif type(obj_3D) is Surface:
+        if type(obj_3D) is Surface:
             items.append(obj_3D.generate3D(alpha))
         elif type(obj_3D) is Spheres:
             items += (obj_3D.generate3D(alpha))

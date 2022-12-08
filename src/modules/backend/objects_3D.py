@@ -1,5 +1,3 @@
-import cv2
-
 import numpy as np
 
 import pyqtgraph.opengl as gl
@@ -54,7 +52,7 @@ class Surface(Object3D):
         """Generate the opengl mesh."""
         # use pyvista to generate the faces
         pdata = PolyData(np.array(self.point_cloud))
-        surf = pdata.delaunay_3d(alpha=0.1).extract_surface()
+        surf = pdata.delaunay_3d(alpha=0.1, progress_bar=True).extract_surface()
         
         # extract face data
         verts = surf.points
@@ -114,97 +112,3 @@ class Spheres(Object3D):
             items.append(item)
         
         return items
-
-class Voxels(Object3D):
-
-    def __init__(self, name):
-        """Create a voxels object."""
-        super().__init__(name)
-        self.traces = []
-        self.snums = []
-        self.closed = []
-        self.colors = []
-        self.sts = {}  # section thicknesses
-        self.smin = None
-        self.smax = None
-    
-    def addToExtremes(self, x, y, z, snum):
-        super().addToExtremes(x, y, z)
-        if self.smin is None or snum < self.smin:
-            self.smin = snum
-        if self.smax is None or snum > self.smax:
-            self.smax = snum
-    
-    def addTrace(self, trace : Trace, snum : int, z : float, thickness : float, tform : Transform = None):
-        """Add a trace to the voxels data."""
-        poly = []
-        for pt in trace.points:
-            if tform:
-                x, y = tform.map(*pt)
-            else:
-                x, y = pt
-            poly.append((x, y, snum))
-            self.addToExtremes(x, y, z, snum)
-        self.traces.append(poly)
-
-        self.snums.append(snum)
-
-        self.closed.append(trace.closed)
-
-        self.colors.append(trace.color)
-
-        self.sts[snum] = thickness
-
-    def generate3D(self, mag : float, alpha=1):
-        """Genrate the opengl volume."""
-        # get the average section thickness
-        # ASSUMES ALL SECTIONS HAVE RELATIVELY SIMILAR THICKNESS
-        avg_thickness = sum(list(self.sts.values())) / len(self.sts)
-
-        xmin, xmax, ymin, ymax, zmin, zmax = tuple(self.extremes)
-
-        volume = np.zeros(
-            (
-                int((xmax-xmin) / mag) + 1,
-                int((ymax-ymin) / mag) + 1,
-                self.smax-self.smin + 1,
-                4
-            ),
-            dtype=np.ubyte
-        )
-
-        print(volume.shape)
-        print(volume.dtype)
-
-        for trace, snum, closed, color in zip(
-            self.traces,
-            self.snums,
-            self.closed,
-            self.colors
-        ):
-            pts = np.array(trace)
-            pts[:,0] -= xmin
-            pts[:,1] -= ymin
-            pts /= mag
-            pts = pts.astype(np.int32)
-
-            if closed:
-                cv2.fillPoly(
-                    img=volume[:,:,snum],
-                    pts=[pts],
-                    color=(*color, int(alpha*255))
-                )
-            else:
-                cv2.polylines(
-                    img=volume[:,:,snum],
-                    pts=[pts],
-                    isClosed=False,
-                    color=(*color, int(alpha*255))
-                )
-            
-        item = gl.GLVolumeItem(volume)
-
-        item.scale(mag, mag, avg_thickness)
-        item.translate(xmin, ymin, zmin)
-        
-        return item

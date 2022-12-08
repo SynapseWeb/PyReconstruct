@@ -114,7 +114,7 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("generate3D_act", "Generate 3D", "", self.generate3D),
                     None,
-                    ("opacity_act", "Edit opacity...", "", self.editOpacity),
+                    ("opacity_act", "Edit 3D opacity...", "", self.editOpacity),
                     ("sc_act", "Edit scale cube size...", "", self.editSCSize)
                 ]
             }
@@ -134,7 +134,14 @@ class ObjectTableWidget(QDockWidget):
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
             None,
-            self.generate3D_act,
+            {
+                "attr_name": "menu_3D",
+                "text": "3D",
+                "opts":
+                [
+                    self.generate3D_act,
+                ]
+            },
             None,
             {
                 "attr_name" : "group_menu",

@@ -48,31 +48,6 @@ class Object3DViewer(gl.GLViewWidget):
             """)
         ]))
 
-        gl.shaders.ShaderProgram('shaded', [   
-            gl.shaders.VertexShader("""
-                varying vec3 normal;
-                void main() {
-                    // compute here for use in fragment shader
-                    normal = normalize(gl_NormalMatrix * gl_Normal);
-                    gl_FrontColor = gl_Color;
-                    gl_BackColor = gl_Color;
-                    gl_Position = ftransform();
-                }
-            """),
-            gl.shaders.FragmentShader("""
-                varying vec3 normal;
-                void main() {
-                    float p = dot(normal, normalize(vec3(1.0, -1.0, -1.0)));
-                    p = p < 0. ? 0. : p * 0.3;
-                    vec4 color = gl_Color;
-                    color.x = color.x * (0.7 + p);
-                    color.y = color.y * (0.7 + p);
-                    color.z = color.z * (0.7 + p);
-                    gl_FragColor = color;
-                }
-            """)
-        ]),
-
         self.series = series
         self.opacity = opacity
         self.sc_size = sc_size
@@ -104,10 +79,12 @@ class Object3DViewer(gl.GLViewWidget):
         xavg = (extremes[0] + extremes[1]) / 2
         yavg = (extremes[2] + extremes[3]) / 2
         zavg = (extremes[4] + extremes[5]) / 2
+
+        diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
         self.center = Vector(xavg, yavg, zavg)
         self.setCameraPosition(
             pos=self.center,
-            distance=max(extremes)
+            distance=max(diffs)*2
         )
 
         self.setBackgroundColor((255, 255, 255))

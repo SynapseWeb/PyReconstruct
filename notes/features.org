@@ -15,7 +15,7 @@
 
 - Will use volume Joseph
 
-- [ ] Make stock warning function
+- [X] Make stock warning function
 
 - [ ] Meet with Kristen (Wednesday)
      
@@ -36,7 +36,7 @@
    - [ ] Transparency
    - [ ] Z trace viewing
 
-- [ ] Relase to lab for debugging (no later than second week of December)
+- [ ] Release to lab for debugging (no later than second week of December)
 
 - [-] Mac computers
    - Run script (shell script - Discuss with Dusten)

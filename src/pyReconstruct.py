@@ -24,5 +24,5 @@ from modules.gui.main_window import MainWindow
 
 # create and run applications
 app = QApplication(sys.argv)
-main_window = MainWindow()
+main_window = MainWindow(sys.argv)
 app.exec()

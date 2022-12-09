@@ -230,37 +230,6 @@ def jsonToXML(original_series : Series, new_dir : str):
     xml_series.palette_traces = series.palette_traces
     xml_series.save()
 
-
-# # open series
-# elif self.filetype == "XML":
-#     self.xml_series = process_series_file(filepath)
-
-#     # get each of the section filenames
-#     self.sections = {}
-#     series_file = os.path.basename(filepath)
-#     series_name = series_file[:series_file.rfind(".")]
-#     series_dir = os.path.dirname(filepath)
-#     for filename in os.listdir(series_dir):
-#         ext = filename[filename.rfind(".")+1:]
-#         if ext.isnumeric() and filename.startswith(series_name):
-#             self.sections[int(ext)] = filename
-    
-#     self.current_section = self.xml_series.index
-#     self.src_dir = ""
-
-#     # screen magnification = microns per screen pixel
-#     self.screen_mag = self.xml_series.viewport[2]
-
-#     self.window = list(self.xml_series.viewport[:2]) + [1, 1]
-#     self.palette_traces = []
-#     for xml_contour in self.xml_series.contours:
-#         self.palette_traces.append(Trace.fromXMLObj(xml_contour))
-#     self.current_trace = self.palette_traces[0]
-#     self.ztraces = []  # should eventually be changed
-#     self.alignment = "default"
-#     self.object_groups = ObjGroupDict()
-#     self.object_3D_modes = {}
-
 # # save series
 # elif self.filetype == "XML":
 #     self.xml_series.index = self.current_section
@@ -269,27 +238,6 @@ def jsonToXML(original_series : Series, new_dir : str):
 #     for trace in self.palette_traces:
 #         self.xml_series.contours.append(trace.getXMLObj())
 #     write_series(self.xml_series, directory=os.path.dirname(self.filepath), outpath=self.filepath, overwrite=True)
-
-# # open section
-# elif self.filetype == "XML":
-#     self.xml_section = process_section_file(filepath)
-#     image = self.xml_section.images[0] # assume only one image
-#     self.tforms = {}
-#     self.tforms["default"] = Transform(
-#         list(image.transform.tform()[:2,:].reshape(6))
-#     )
-#     self.src = image.src
-#     self.brightness = 0
-#     self.contrast = 0
-#     self.mag = image.mag
-#     self.align_locked = self.xml_section.alignLocked
-#     self.thickness = self.xml_section.thickness
-#     self.contours = {}
-#     for xml_contour in self.xml_section.contours:
-#         self.addTrace(
-#             Trace.fromXMLObj(xml_contour, image.transform),
-#             log_message = "imported"
-#         )
 
 # # save section
 # elif self.filetype == "XML":

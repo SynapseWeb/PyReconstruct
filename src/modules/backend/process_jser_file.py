@@ -36,7 +36,9 @@ def openJserFile(fp : str):
         progress += 1
         update(progress/final_value * 100)
         
-    return Series(series_fp)
+    series = Series(series_fp)
+    series.jser_fp = fp
+    return series
 
 def saveJserFile(save_fp : str, close=False):
     """Save the jser file."""
@@ -70,8 +72,9 @@ def saveJserFile(save_fp : str, close=False):
     update(100)
 
 def clearBackendSeries():
-    for f in os.listdir(backend_series_dir):
-        os.remove(os.path.join(backend_series_dir, f))
+    if os.path.isdir(backend_series_dir):
+        for f in os.listdir(backend_series_dir):
+            os.remove(os.path.join(backend_series_dir, f))
 
 def backendSeriesIsEmpty():
     return not bool(os.listdir(backend_series_dir))

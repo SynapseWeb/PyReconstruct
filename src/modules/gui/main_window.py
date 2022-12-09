@@ -43,7 +43,7 @@ from constants.locations import assets_dir, backend_series_dir
 
 class MainWindow(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, argv):
         """Constructs the skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
         self.setWindowTitle("pyReconstruct")
@@ -73,18 +73,19 @@ class MainWindow(QMainWindow):
 
         # open series and create field
         # check for existing series (if crashed previously)
-        if backendSeriesIsEmpty():
-            open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
-        else:
-            if unsavedNotify(self):
-                for filename in os.listdir(backend_series_dir):
+        if not backendSeriesIsEmpty() and unsavedNotify(self):
+            for filename in os.listdir(backend_series_dir):
                     if filename.endswith(".ser"):
                         open_series = Series(os.path.join(backend_series_dir, filename))
                         open_series.modified = True
                         break
+        else:
+            clearBackendSeries()
+            # open the series requested from command line
+            if len(argv) > 1:
+                open_series = openJserFile(argv[1])
             else:
                 open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
-                clearBackendSeries()
 
             
         self.openSeries(open_series)
@@ -366,15 +367,13 @@ class MainWindow(QMainWindow):
             # save the current series
             if self.series:
                 self.saveToJser(notify=True, close=True)
-                
+
             new_series = None
             while not new_series:
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
                 new_series = openJserFile(jser_fp)
-            
             self.series = new_series
-            self.series.jser_fp = jser_fp
         else:
             self.series = series_obj
         

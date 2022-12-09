@@ -62,6 +62,8 @@ class FieldView():
         if self.b_section:
             self.series_states[self.b_section] = SectionStates(self.b_section)
         self.generateView()
+        # notify that the series has been modified
+        self.series.modified = True
     
     def reloadImage(self):
         """Reload the section images (used if transform or image source is modified)."""
@@ -92,6 +94,9 @@ class FieldView():
         
         # clear the tracked added/removed traces
         self.section.clearTracking()
+
+        # notify that the series has been edited
+        self.series.modified = True
 
     def undoState(self):
         """Undo last action (switch to last state)."""

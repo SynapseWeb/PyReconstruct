@@ -114,12 +114,6 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
-        # set the window if series is XML
-        if self.series.filetype == "XML":
-            pxw, pxh, = self.pixmap_dim
-            self.series.window[2] = pxw * self.series.screen_mag
-            self.series.window[3] = pxh * self.series.screen_mag
-
         self.generateView()
     
     def toggleBlend(self):
@@ -377,13 +371,13 @@ class FieldWidget(QWidget, FieldView):
         if g.state() == Qt.GestureState.GestureStarted:
             p = g.centerPoint()
             x, y = p.x(), p.y()
-            self.clicked_x, self.clicked_y = x, y
+            self.clicked_x, self.clicked_y = x - self.x(), y
 
         elif g.state() == Qt.GestureState.GestureUpdated:
-            self.panzoomMove(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
+            self.panzoomMove(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
 
         elif g.state() == Qt.GestureState.GestureFinished:
-            self.panzoomRelease(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
+            self.panzoomRelease(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.

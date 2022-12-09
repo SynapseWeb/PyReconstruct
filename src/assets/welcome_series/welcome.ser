@@ -776,5 +776,7 @@
  },
  "ztraces": [],
  "alignment": "default",
- "object_groups": {}
+ "object_groups": {},
+ "object_3D_modes": {},
+ "backup_dir": ""
 }

@@ -114,7 +114,7 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("generate3D_act", "Generate 3D", "", self.generate3D),
                     None,
-                    ("opacity_act", "Edit opacity...", "", self.editOpacity),
+                    ("opacity_act", "Edit 3D opacity...", "", self.editOpacity),
                     ("sc_act", "Edit scale cube size...", "", self.editSCSize)
                 ]
             }
@@ -134,7 +134,14 @@ class ObjectTableWidget(QDockWidget):
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
             None,
-            self.generate3D_act,
+            {
+                "attr_name": "menu_3D",
+                "text": "3D",
+                "opts":
+                [
+                    self.generate3D_act,
+                ]
+            },
             None,
             {
                 "attr_name" : "group_menu",
@@ -447,6 +454,9 @@ class ObjectTableWidget(QDockWidget):
         except ValueError:
             return
         
+        if new_rad == 0:
+            return
+        
         if not noUndoWarning(self):
             return
         
@@ -702,14 +712,14 @@ class ObjectTableWidget(QDockWidget):
         new_opacity, confirmed = QInputDialog.getText(
             self,
             "3D Opacity",
-            "Enter 3D opacity (0-255):",
+            "Enter 3D opacity (0-1):",
             text=str(self.manager.opacity)
         )
         if not confirmed:
             return
         
         try:
-            new_opacity = int(new_opacity)
+            new_opacity = float(new_opacity)
         except ValueError:
             return
         

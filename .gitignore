@@ -7,3 +7,4 @@ venv/
 pyrightconfig.json
 testing/
 misc/legacy_recon_src/
+backend_series/

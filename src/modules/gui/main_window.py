@@ -113,6 +113,7 @@ class MainWindow(QMainWindow):
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
                     None,
                     ("fromxml_act", "New from XML files...", "", self.newFromXML),
+                    ("exportxml_act", "Export to XML files...", "", self.exportToXML),
                     None,
                     # ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
@@ -479,6 +480,24 @@ class MainWindow(QMainWindow):
 
         # open the series
         self.openSeries(series)
+    
+    def exportToXML(self):
+        """Export the current series to XML."""
+        # save the current data
+        self.saveAllData()
+
+        # get the new xml series filepath from the user
+        file_path, ext = QFileDialog.getSaveFileName(
+            self,
+            "Export Series",
+            f"{self.series.name}.ser",
+            filter="XML Series (*.ser)",
+        )
+        if not file_path:
+            return False
+        
+        # convert the series
+        jsonToXML(self.series, os.path.dirname(file_path))
     
     def exportSeries(self):
         """Export the series to a given filetype."""

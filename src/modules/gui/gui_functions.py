@@ -143,7 +143,7 @@ def getSaveLocation(parent, series):
         parent,
         "Save Series",
         f"{series.name}.jser",
-        filter="JSON Series (.jser)"
+        filter="JSON Series (*.jser)"
     )
     if not file_path:
         return False

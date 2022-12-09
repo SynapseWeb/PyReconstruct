@@ -1,3 +1,5 @@
+chmod -x update.command
+chmod -x pyReconstruct.command
 cd ..
 echo Creating virtual environment...
 python3 -m venv env

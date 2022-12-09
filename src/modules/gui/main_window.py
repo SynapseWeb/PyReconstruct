@@ -111,6 +111,8 @@ class MainWindow(QMainWindow):
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
                     None,
+                    ("fromxml_act", "New from XML files...", "", self.newFromXML),
+                    None,
                     # ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
@@ -312,17 +314,9 @@ class MainWindow(QMainWindow):
         new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
         if not new_src_dir:
             return
-        if os.path.samefile(new_src_dir, self.series.getwdir()):
-            self.series.src_dir = ""
-        else:
-            self.series.src_dir = new_src_dir
-        QMessageBox.information(
-            self,
-            "Image Directory",
-            "New image directory saved.",
-            QMessageBox.Ok
-        )
-        self.field.reloadImage()
+        self.series.src_dir = new_src_dir
+        if self.field:
+            self.field.reloadImage()
     
     def changeUsername(self):
         """Edit the login name used to track history."""
@@ -368,11 +362,11 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
-        # save the current series
-        if self.series:
-            self.saveToJser(notify=True, close=True)
-
         if not series_obj:  # if series is not provided
+            # save the current series
+            if self.series:
+                self.saveToJser(notify=True, close=True)
+                
             new_series = None
             while not new_series:
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
@@ -391,21 +385,21 @@ class MainWindow(QMainWindow):
             self.series.src_dir,
             os.path.basename(section.src)
         )
-        images_found = os.path.isfile(src_path)
+        images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
         # check series location second (welcome series case)
         if not images_found:
             src_path = os.path.join(
                 self.series.getwdir(),
                 os.path.basename(section.src)
             )
-            images_found = os.path.isfile(src_path)
+            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
         # check jser directory last
         if not images_found:
             src_path = os.path.join(
                 os.path.dirname(self.series.jser_fp),
                 os.path.basename(section.src)
             )
-            images_found = os.path.isfile(src_path)
+            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
         
         if not images_found:
             self.changeSrcDir(notify=True)
@@ -465,6 +459,26 @@ class MainWindow(QMainWindow):
         series.modified = True
     
         # open series after creating
+        self.openSeries(series)
+    
+    def newFromXML(self):
+        """Create a new series from a set of XML files."""
+        # save and clear the existing backend series
+        self.saveToJser(notify=True, close=True)
+
+        # get xml series filepath from the user
+        series_fp, ext = QFileDialog.getOpenFileName(self, "Select XML Series", filter="*.ser")
+        if series_fp == "": return  # exit function if user does not provide series
+
+        # convert the series
+        series = xmlToJSON(os.path.dirname(series_fp))
+        if not series:
+            return
+
+        # flag to save
+        series.modified = True
+
+        # open the series
         self.openSeries(series)
     
     def exportSeries(self):

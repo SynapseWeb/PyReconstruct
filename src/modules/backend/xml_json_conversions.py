@@ -2,94 +2,175 @@ import os
 import json
 
 from constants.blank_legacy_files import blank_series, blank_section
+from constants.locations import backend_series_dir
 
 from modules.gui.gui_functions import progbar
+
 from modules.backend.grid import reducePoints
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.transform import Transform
+from modules.pyrecon.trace import Trace
 
+from modules.legacy_recon.utils.reconstruct_reader import process_series_file, process_section_file
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
-def xmlToJSON(original_series : Series, new_dir : str):
+def xmlToJSON(xml_dir : str) -> Series:
     """Convert a series in XML to JSON.
     
         Params:
-            original_series (Series): the series to convert
-            new_dir (str): the directory to store the new files
-            progbar: the QProgressDialog object
+            xml_dir (str): the directory for the xml series
     """
-    # search for a Reconcropper JSON file
-    series_name = os.path.basename(original_series.filepath)[:-4]
-    json_name = series_name + "_data.json"
-    json_fp = os.path.join(original_series.getwdir(), json_name)
-    if os.path.isfile(json_fp):
-        has_reconcropper_file = True
-    else:
-        has_reconcropper_file = False
+    # gather the series and section filepaths
+    series_fp = ""
+    section_fps = []
+    json_fp = ""
+    for f in os.listdir(xml_dir):
+        if f.endswith(".ser"):
+            series_fp = os.path.join(xml_dir, f)
+        elif f.endswith(".json"):
+            json_fp = os.path.join(xml_dir, f)
+        elif f[f.rfind(".")+1:].isnumeric():
+            section_fps.append(os.path.join(xml_dir, f))
 
-    # load a new series
-    series = Series(original_series.filepath)
-    # save sections as JSON
-    update, canceled = progbar("Export Series", "Exporting series...")
-    progress = 0
-    final_value = len(series.sections) # plus one for extra json step
-    for snum in series.sections:
-        section = series.loadSection(snum)
-        section.filetype = "JSON"
-        section.filepath = os.path.join(
-            new_dir,
-            os.path.basename(section.filepath)
-        )
-        # modify the traces on the section
-        for trace in section.tracesAsList():
-            trace.points = reducePoints(
-                trace.points,
-                closed=trace.closed,
-                mag=1/section.mag
-            )
-        # save the section
-        section.save()
-        # update the progress
-        if canceled():
-            return
-        progress += 1
-        if has_reconcropper_file:
-            update(progress/final_value * 50)
-        else:
-            update(progress/final_value * 100)
-    # save series as XML
-    series.filetype = "JSON"
-    series.filepath = os.path.join(
-        new_dir,
-        os.path.basename(series.filepath)
+    # set up progress
+    update, canceled = progbar(
+        "XML Series",
+        "Converting series..."
     )
-    series.save()
+    progress = 0
+    final_value = len(section_fps) + 1
+    if json_fp: final_value += 1
+    
+    # convert the series file
+    json_series_fp = seriesXMLToJSON(series_fp, section_fps)
+    if canceled(): return
+    progress += 1
+    update(progress/final_value * 100)
 
-    # read in alignment data from json
-    if has_reconcropper_file:
-        with open(json_fp, "r") as f:
-            json_data = json.load(f)
-        # iterate through all sections
-        progress = 0
-        final_value = len(series.sections)
-        for snum in series.sections:
-            section = series.loadSection(snum)
-            for item in json_data:
-                if item.startswith("LOCAL") or item.startswith("ALIGNMENT"):
-                    section_name = os.path.basename(section.filepath)
-                    xcoef = json_data[item][section_name]["xcoef"]
-                    ycoef = json_data[item][section_name]["ycoef"]
-                    leg_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef)
-                    pyrecon_tform = leg_tform.getPyreconTform()
-                    section.tforms[item] = Transform(pyrecon_tform)
-            section.save()
-            # update the progress bar
-            if canceled():
-                return
-            progress += 1
-            update(50 + progress/final_value * 50)
+    # get the reconcropper data
+    if json_fp:
+        alignment_dict = getReconcropperData(json_fp)
+    else:
+        alignment_dict = None
+    if canceled(): return
+    progress += 1
+    update(progress/final_value * 100)
+
+    # convert the section files
+    for section_fp in section_fps:
+        sectionXMLtoJSON(section_fp, alignment_dict)
+        if canceled(): return
+        progress += 1
+        update(progress/final_value * 100)
+    
+    # open and return the series file
+    return Series(json_series_fp)
+
+def seriesXMLToJSON(series_fp, section_fps):
+    # grab the series file
+    xml_series = process_series_file(series_fp)
+    # create an empty JSON series
+    series_dict = Series.getEmptyDict()
+
+    # get the current section
+    series_dict["current_section"] = xml_series.index
+
+    # get the view window
+    series_dict["window"] = list(xml_series.viewport[:2]) + [1, 1]
+
+    # get the section names
+    series_dict["sections"] = {}
+    for section_fp in section_fps:
+        section_fname = os.path.basename(section_fp)
+        section_num = int(section_fname[section_fname.rfind(".")+1:])
+        series_dict["sections"][section_num] = section_fname
+    
+    # import the palette
+    series_dict["palette_traces"] = []
+    for xml_contour in xml_series.contours:
+        series_dict["palette_traces"].append(Trace.dictFromXMLObj(xml_contour, hist=False))
+    
+    # IMPLEMENT THIS EVENTAULLY: ztraces
+    series_dict["ztraces"] = ""
+
+    # get the series filename and save
+    fname = os.path.basename(series_fp)
+    json_series_fp = os.path.join(backend_series_dir, fname)
+    with open(json_series_fp, "w") as f:
+        json.dump(series_dict, f)
+    return json_series_fp
+
+def getReconcropperData(json_fp):
+    with open(json_fp, "r") as f:
+        json_data = json.load(f)
+    
+    alignment_dict = {}
+
+    for item in json_data:
+        if item.startswith("LOCAL") or item.startswith("ALIGNMENT") or item == "GLOBAL":
+            for section_name in json_data[item]:
+                # get the transform data
+                xcoef = json_data[item][section_name]["xcoef"]
+                ycoef = json_data[item][section_name]["ycoef"]
+                leg_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef)
+                tform_list = leg_tform.getTformList()
+
+                # store the transform data
+                aname = "default" if item == "GLOBAL" else item
+                if section_name not in alignment_dict:
+                    alignment_dict[section_name] = {}
+                alignment_dict[section_name][aname] = tform_list
+                
+    
+    return alignment_dict
+
+def sectionXMLtoJSON(section_fp, alignment_dict=None):
+    # grab the section file
+    xml_section = process_section_file(section_fp)
+    fname = os.path.basename(section_fp)
+
+    # get an empty section dict
+    section_dict = Section.getEmptyDict()
+
+    # get image data
+    image = xml_section.images[0] # assume only one image
+    section_dict["src"] = image.src
+    section_dict["mag"] = image.mag
+
+    # get thickness
+    section_dict["thickness"] = xml_section.thickness
+
+    # get transform data
+    if alignment_dict:
+        section_dict["tforms"] = alignment_dict[fname]
+        tform = Transform(section_dict["tforms"]["default"])
+    else:
+        tform = Transform(
+            list(image.transform.tform()[:2,:].reshape(6))
+        )
+        section_dict["tforms"]["default"] = tform.getList()
+    section_dict["align_locked"] = xml_section.alignLocked
+
+    # get trace/contour data
+    contours = section_dict["contours"]  # for ease of access
+    for xml_contour in xml_section.contours:
+        trace = Trace.dictFromXMLObj(xml_contour, tform)
+        if xml_contour.name in contours:
+            contours[xml_contour.name].append(trace)
+        else:
+            contours[xml_contour.name] = [trace]
+    
+    # save the section
+    with open(os.path.join(backend_series_dir, fname), "w") as f:
+        json.dump(section_dict, f)
+
+
+
+
+
+
 
 def jsonToXML(original_series : Series, new_dir : str):
     """Convert a series in JSON to XML.

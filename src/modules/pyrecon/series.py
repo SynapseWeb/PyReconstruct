@@ -21,12 +21,8 @@ class Series():
         self.filepath = filepath
         self.name = os.path.basename(self.filepath)[:-4]
 
-        try:
-            with open(filepath, "r") as f:
-                series_data = json.load(f)
-        except json.decoder.JSONDecodeError:
-            print("Invalid JSON file")
-            raise json.decoder.JSONDecodeError
+        with open(filepath, "r") as f:
+            series_data = json.load(f)
 
         self.jser_fp = ""
         self.modified = False
@@ -76,6 +72,22 @@ class Series():
         return d
     
     # STATIC METHOD
+    def getEmptyDict():
+        """Get an empty dictionary for a series object."""
+        series_data = {}
+        series_data["sections"] = {}  # section_number : section_filename
+        series_data["current_section"] = 0  # last section left off
+        series_data["src_dir"] = ""  # the directory of the images
+        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
+        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
+        series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["ztraces"] = []
+        series_data["alignment"] = "default"
+        series_data["object_groups"] = {}
+        series_data["object_3D_modes"] = {}
+        return series_data
+    
+    # STATIC METHOD
     def new(image_locations : list, series_name : str, mag : float, thickness : float):
         """Create a new blank series.
         
@@ -88,19 +100,11 @@ class Series():
                 (Series): the newly created series object
         """
         wdir = os.path.dirname(image_locations[0])
-        series_data = {}
-        series_data["sections"] = {}  # section_number : section_filename
-        series_data["current_section"] = 0  # last section left off
+        series_data = Series.getEmptyDict()
+
         series_data["src_dir"] = wdir  # the directory of the images
-        series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
         for i in range(len(image_locations)):
             series_data["sections"][i] = series_name + "." + str(i)
-        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
-        series_data["current_trace"] = series_data["palette_traces"][0]
-        series_data["ztraces"] = []
-        series_data["alignment"] = "default"
-        series_data["object_groups"] = {}
-        series_data["object_3D_modes"] = {}
 
         series_fp = os.path.join(backend_series_dir, series_name + ".ser")
         with open(series_fp, "w") as series_file:

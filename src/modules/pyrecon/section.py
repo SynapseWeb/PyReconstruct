@@ -19,12 +19,8 @@ class Section():
         self.removed_traces = []
         self.modified_traces = []
 
-        try:
-            with open(filepath, "r") as f:
-                section_data = json.load(f)
-        except json.decoder.JSONDecodeError:
-            print("Invalid JSON file")
-            raise json.decoder.JSONDecodeError
+        with open(filepath, "r") as f:
+            section_data = json.load(f)
         
         self.src = section_data["src"]
         self.brightness = section_data["brightness"]
@@ -132,6 +128,19 @@ class Section():
                 ]
         return d
     
+    def getEmptyDict():
+        section_data = {}
+        section_data["src"] = ""  # image location
+        section_data["brightness"] = 0
+        section_data["contrast"] = 0
+        section_data["mag"] = 0.00254  # microns per pixel
+        section_data["align_locked"] = True
+        section_data["thickness"] = 0.05  # section thickness
+        section_data["tforms"] = {}  
+        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
+        section_data["contours"] = {}
+        return section_data
+    
     # STATIC METHOD
     def new(series_name : str, snum : int, image_location : str, mag : float, thickness : float, wdir : str):
         """Create a new blank section file.
@@ -146,16 +155,11 @@ class Section():
             Returns:
                 (Section): the newly created section object
         """
-        section_data = {}
+        section_data = Section.getEmptyDict()
         section_data["src"] = os.path.basename(image_location)  # image location
-        section_data["brightness"] = 0
-        section_data["contrast"] = 0
         section_data["mag"] = mag  # microns per pixel
-        section_data["align_locked"] = True
         section_data["thickness"] = thickness  # section thickness
-        section_data["tforms"] = {}  
-        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
-        section_data["contours"] = {}
+
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))

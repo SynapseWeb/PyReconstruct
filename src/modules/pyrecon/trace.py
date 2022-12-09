@@ -26,10 +26,7 @@ class Trace():
         self.history = []
 
         # extra hidden attributes for XML support
-        self.comment = None
-        self.simplified = None
         self.mode = 11
-        self.fill = tuple([c / 255 for c in self.color])
     
     def copy(self):
         """Create a copy of the trace object.
@@ -120,13 +117,13 @@ class Trace():
             border_color[i] /= 255
         xml_contour = XMLContour(
             name = self.name,
-            comment = self.comment,
+            comment = "",
             hidden = self.hidden,
             closed = self.closed,
-            simplified = self.simplified,
+            simplified = False,
             mode = self.mode,
             border = border_color,
-            fill = self.fill,
+            fill = border_color,
             points = self.points,
             transform = xml_image_tform
         )
@@ -154,7 +151,7 @@ class Trace():
         return new_trace
     
     # STATIC METHOD
-    def fromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None):
+    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, hist=True):
         """Create a trace from an xml contour object.
         
             Params:
@@ -171,18 +168,16 @@ class Trace():
         points = xml_trace.points.copy()
         if xml_trace.transform is not None:
             points = xml_trace.transform.transformPoints(xml_trace.points)
-        if xml_image_tform is not None:
-            points = xml_image_tform.inverseTransformPoints(points)
+        if tform is not None:
+            points = tform.map(points, inverted=True)
         new_trace = Trace(name, color, closed)
         new_trace.points = points
-
-        # store extra attributes for traces from xml files
-        new_trace.comment = xml_trace.comment
-        new_trace.simplified = xml_trace.simplified
         new_trace.mode = xml_trace.mode
-        new_trace.fill = xml_trace.fill
 
-        return new_trace
+        if hist:
+            new_trace.addLog("Imported")
+
+        return new_trace.getDict()
 
     def getBounds(self, tform : Transform = None) -> tuple:
         """Get the most extreme coordinates for the trace.

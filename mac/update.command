@@ -1,3 +1,4 @@
+cd "$(dirname "$0")"
 cd ..
 echo Updating dependencies...
 source env/Scripts/activate

@@ -1,5 +1,6 @@
-chmod -x update.command
-chmod -x pyReconstruct.command
+cd "$(dirname "$0")"
+chmod u+x update.command
+chmod u+x PyReconstruct.command
 cd ..
 echo Creating virtual environment...
 python3 -m venv env

@@ -2,7 +2,7 @@
 import re
 import os
 
-# from lxml import etree
+from lxml import etree
 
 from modules.legacy_recon.classes import (
     Contour, Image, Section, Series, Transform, ZContour

@@ -1,3 +1,4 @@
+sudo port install git
 git clone https://github.com/SynapseWeb/PyReconstruct.git
 cd PyReconstruct/windows
 chmod +x install.command

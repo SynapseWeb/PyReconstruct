@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 
 from constants.locations import backend_series_dir
 
@@ -40,7 +41,7 @@ def openJserFile(fp : str):
     series.jser_fp = fp
     return series
 
-def saveJserFile(save_fp : str, close=False):
+def saveJserFile(save_fp : str, backup_dir : str, close=False):
     """Save the jser file."""
     jser_data = {}
 
@@ -63,12 +64,30 @@ def saveJserFile(save_fp : str, close=False):
         update(progress/final_value * 100)
         progress += 1
     
+    save_str = json.dumps(jser_data)
+
     with open(save_fp, "w") as f:
-        json.dump(jser_data, f)
+        f.write(save_str)
+    
+    # backup the series if requested
+    if backup_dir and os.path.isdir(backup_dir):
+        # get the file name
+        fn = os.path.basename(save_fp)
+        # create the new file name
+        t = datetime.now()
+        dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
+        fn = fn[:fn.rfind(".")] + "_" + dt + fn[fn.rfind("."):]
+        # save the file
+        backup_fp = os.path.join(
+            backup_dir,
+            fn
+        )
+        with open(backup_fp, "w") as f:
+            f.write(save_str)
     
     if close:
         clearBackendSeries()
-    
+
     update(100)
 
 def clearBackendSeries():

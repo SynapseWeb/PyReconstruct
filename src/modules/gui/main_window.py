@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QMessageBox, 
     QMenu
 )
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QKeySequence, QShortcut, QAction
 from PySide6.QtCore import Qt
 
 from modules.gui.mouse_palette import MousePalette
@@ -88,11 +88,12 @@ class MainWindow(QMainWindow):
                 open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
 
             
-        self.openSeries(open_series)
+        self.openSeries(open_series, update_menu_bar=False)
         self.field.generateView()
 
         # create menu and shortcuts
         self.createMenuBar()
+        self.updateMenuBar()
         self.createContextMenus()
         self.createShortcuts()
 
@@ -112,6 +113,7 @@ class MainWindow(QMainWindow):
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
+                    ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
                     None,
                     ("fromxml_act", "New from XML files...", "", self.newFromXML),
                     ("exportxml_act", "Export to XML files...", "", self.exportToXML),
@@ -196,6 +198,11 @@ class MainWindow(QMainWindow):
         # Populate menu bar with menus and options
         self.menubar = self.menuBar()
         populateMenuBar(self, self.menubar, menu)
+    
+    def updateMenuBar(self):
+        """Update the menubar with new series information."""
+        # set check actions
+        self.backup_act.setChecked(bool(self.series.backup_dir))
     
     def createContextMenus(self):
         """Create the right-click menus used in the field."""
@@ -359,7 +366,7 @@ class MainWindow(QMainWindow):
         self.series.fill_opacity = opacity
         self.field.generateView(generate_image=False)
 
-    def openSeries(self, series_obj=None):
+    def openSeries(self, series_obj=None, update_menu_bar=True):
         """Open an existing series and create the field.
         
             Params:
@@ -421,6 +428,10 @@ class MainWindow(QMainWindow):
             self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+
+        # update the menubar actions if requested
+        if update_menu_bar:
+            self.updateMenuBar()
     
     def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images.
@@ -679,7 +690,7 @@ class MainWindow(QMainWindow):
             if not confirmed:
                 return
         
-        saveJserFile(self.series.jser_fp, close=close)
+        saveJserFile(self.series.jser_fp, self.series.backup_dir, close=close)
 
         # set the series to unmodified
         self.series.modified = False
@@ -692,10 +703,27 @@ class MainWindow(QMainWindow):
             return
         
         # save the file
-        saveJserFile(self.series.jser_fp)
+        saveJserFile(self.series.jser_fp, self.series.backup_dir)
 
         # set the series to unmodified
         self.series.modified = False
+    
+    def autoBackup(self):
+        """Set up the auto-backup functionality for the series."""
+        # user checked the option
+        if self.backup_act.isChecked():
+            # prompt the user to find a folder to store backups
+            new_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select folder to contain backup files"
+            )
+            if not new_dir:
+                self.backup_act.setChecked(False)
+                return
+            self.series.backup_dir = new_dir
+        # user unchecked the option
+        else:
+            self.series.backup_dir = ""
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

@@ -44,6 +44,7 @@ class Series():
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
+        self.backup_dir = series_data["backup_dir"]
 
         # default settings
         self.fill_opacity = 0.2
@@ -69,6 +70,7 @@ class Series():
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
+        d["backup_dir"] = self.backup_dir
         return d
     
     # STATIC METHOD
@@ -85,6 +87,7 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
+        series_data["backup_dir"] = ""
         return series_data
     
     # STATIC METHOD

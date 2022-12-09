@@ -2,9 +2,10 @@ import os
 import json
 
 from constants.blank_legacy_files import blank_series, blank_section
-from constants.locations import backend_series_dir
 
 from modules.gui.gui_functions import progbar
+
+from modules.backend.process_jser_file import createHiddenDir
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
@@ -32,6 +33,11 @@ def xmlToJSON(xml_dir : str) -> Series:
             json_fp = os.path.join(xml_dir, f)
         elif f[f.rfind(".")+1:].isnumeric():
             section_fps.append(os.path.join(xml_dir, f))
+    
+    # create the hidden folder containing the JSON files
+    sname = os.path.basename(series_fp)
+    sname = sname[:sname.rfind(".")]
+    hidden_dir = createHiddenDir(xml_dir, sname)
 
     # set up progress
     update, canceled = progbar(
@@ -43,7 +49,7 @@ def xmlToJSON(xml_dir : str) -> Series:
     if json_fp: final_value += 1
     
     # convert the series file
-    json_series_fp = seriesXMLToJSON(series_fp, section_fps)
+    json_series_fp = seriesXMLToJSON(series_fp, section_fps, hidden_dir)
     if canceled(): return
     progress += 1
     update(progress/final_value * 100)
@@ -59,7 +65,7 @@ def xmlToJSON(xml_dir : str) -> Series:
 
     # convert the section files
     for section_fp in section_fps:
-        sectionXMLtoJSON(section_fp, alignment_dict)
+        sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
         if canceled(): return
         progress += 1
         update(progress/final_value * 100)
@@ -67,7 +73,7 @@ def xmlToJSON(xml_dir : str) -> Series:
     # open and return the series file
     return Series(json_series_fp)
 
-def seriesXMLToJSON(series_fp, section_fps):
+def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     # grab the series file
     xml_series = process_series_file(series_fp)
     # create an empty JSON series
@@ -96,7 +102,7 @@ def seriesXMLToJSON(series_fp, section_fps):
 
     # get the series filename and save
     fname = os.path.basename(series_fp)
-    json_series_fp = os.path.join(backend_series_dir, fname)
+    json_series_fp = os.path.join(hidden_dir, fname)
     with open(json_series_fp, "w") as f:
         json.dump(series_dict, f)
     return json_series_fp
@@ -125,7 +131,7 @@ def getReconcropperData(json_fp):
     
     return alignment_dict
 
-def sectionXMLtoJSON(section_fp, alignment_dict=None):
+def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     # grab the section file
     xml_section = process_section_file(section_fp)
     fname = os.path.basename(section_fp)
@@ -162,7 +168,7 @@ def sectionXMLtoJSON(section_fp, alignment_dict=None):
             contours[xml_contour.name] = [trace]
     
     # save the section
-    with open(os.path.join(backend_series_dir, fname), "w") as f:
+    with open(os.path.join(hidden_dir, fname), "w") as f:
         json.dump(section_dict, f)
 
 def jsonToXML(series : Series, new_dir : str):

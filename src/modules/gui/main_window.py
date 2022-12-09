@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QMessageBox, 
     QMenu
 )
-from PySide6.QtGui import QKeySequence, QShortcut, QAction
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtCore import Qt
 
 from modules.gui.mouse_palette import MousePalette
@@ -31,14 +31,13 @@ from modules.backend.import_transforms import importTransforms
 from modules.backend.process_jser_file import (
     openJserFile,
     saveJserFile,
-    backendSeriesIsEmpty,
-    clearBackendSeries
+    clearHiddenSeries
 )
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform
 
-from constants.locations import assets_dir, backend_series_dir
+from constants.locations import assets_dir
 
 
 class MainWindow(QMainWindow):
@@ -71,24 +70,13 @@ class MainWindow(QMainWindow):
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
 
-        # open series and create field
-        # check for existing series (if crashed previously)
-        if not backendSeriesIsEmpty() and unsavedNotify(self):
-            for filename in os.listdir(backend_series_dir):
-                    if filename.endswith(".ser"):
-                        open_series = Series(os.path.join(backend_series_dir, filename))
-                        open_series.modified = True
-                        break
+        # open the series requested from command line
+        if len(argv) > 1:
+            self.openSeries(jser_fp=argv[1], update_menu_bar=False)
         else:
-            clearBackendSeries()
-            # open the series requested from command line
-            if len(argv) > 1:
-                open_series = openJserFile(argv[1])
-            else:
-                open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
-
-            
-        self.openSeries(open_series, update_menu_bar=False)
+            open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
+            self.openSeries(open_series, update_menu_bar=False)
+        
         self.field.generateView()
 
         # create menu and shortcuts
@@ -366,7 +354,7 @@ class MainWindow(QMainWindow):
         self.series.fill_opacity = opacity
         self.field.generateView(generate_image=False)
 
-    def openSeries(self, series_obj=None, update_menu_bar=True):
+    def openSeries(self, series_obj=None, jser_fp=None, update_menu_bar=True):
         """Open an existing series and create the field.
         
             Params:
@@ -377,12 +365,46 @@ class MainWindow(QMainWindow):
             if self.series:
                 self.saveToJser(notify=True, close=True)
 
+            # get the new series
             new_series = None
-            while not new_series:
+            if not jser_fp:
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
+
+            # check for a hidden series folder
+            sdir = os.path.dirname(jser_fp)
+            sname = os.path.basename(jser_fp)
+            sname = sname[:sname.rfind(".")]
+            hidden_series_dir = os.path.join(sdir, f".{sname}")
+
+            if os.path.isdir(hidden_series_dir):
+                # find the series file
+                new_series_fp = ""
+                for f in os.listdir(hidden_series_dir):
+                    if f.endswith(".ser"):
+                        new_series_fp = os.path.join(hidden_series_dir, f)
+                        break
+                
+                # if a series file has been found
+                if new_series_fp:
+                    # ask the user if they want to open the unsaved series
+                    open_unsaved = unsavedNotify(self)
+                    if open_unsaved:
+                        new_series = Series(new_series_fp)
+                        new_series.jser_fp = jser_fp
+                    else:
+                        # remove the folder if not needed
+                        for f in os.listdir(hidden_series_dir):
+                            os.remove(f)
+                        os.rmdir(hidden_series_dir)
+            
+            # open the JSER file if no unsaved series was opened
+            if not new_series:
                 new_series = openJserFile(jser_fp)
+
             self.series = new_series
+
+        # series has already been provided by other function
         else:
             self.series = series_obj
         
@@ -681,7 +703,7 @@ class MainWindow(QMainWindow):
         
         # check if the user is closing and the series was not modified
         if close and not self.series.modified:
-            clearBackendSeries()
+            clearHiddenSeries(self.series)
             return
 
         # get the save filepath if needed
@@ -690,7 +712,7 @@ class MainWindow(QMainWindow):
             if not confirmed:
                 return
         
-        saveJserFile(self.series.jser_fp, self.series.backup_dir, close=close)
+        saveJserFile(self.series, close=close)
 
         # set the series to unmodified
         self.series.modified = False
@@ -703,7 +725,7 @@ class MainWindow(QMainWindow):
             return
         
         # save the file
-        saveJserFile(self.series.jser_fp, self.series.backup_dir)
+        saveJserFile(self.series)
 
         # set the series to unmodified
         self.series.modified = False

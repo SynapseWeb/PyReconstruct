@@ -7,7 +7,7 @@ from modules.pyrecon.trace import Trace
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
-from constants.locations import assets_dir, backend_series_dir
+from constants.locations import createHiddenDir, assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
 class Series():
@@ -25,6 +25,7 @@ class Series():
             series_data = json.load(f)
 
         self.jser_fp = ""
+        self.hidden_dir = os.path.dirname(self.filepath)
         self.modified = False
 
         self.sections = {}  # section number : section file
@@ -103,19 +104,20 @@ class Series():
                 (Series): the newly created series object
         """
         wdir = os.path.dirname(image_locations[0])
+        hidden_dir = createHiddenDir(wdir, series_name)
         series_data = Series.getEmptyDict()
 
         series_data["src_dir"] = wdir  # the directory of the images
         for i in range(len(image_locations)):
             series_data["sections"][i] = series_name + "." + str(i)
 
-        series_fp = os.path.join(backend_series_dir, series_name + ".ser")
+        series_fp = os.path.join(hidden_dir, series_name + ".ser")
         with open(series_fp, "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
         # create section files (.#)
         for i in range(len(image_locations)):
-            Section.new(series_name, i, image_locations[i], mag, thickness, backend_series_dir)
+            Section.new(series_name, i, image_locations[i], mag, thickness, hidden_dir)
         
         return Series(series_fp)
     

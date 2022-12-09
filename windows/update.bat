@@ -1,5 +1,8 @@
 @echo off
 cd ..
+echo Updating repository...
+git fetch
+git pull
 echo Updating dependencies...
 call env\Scripts\activate
 @timeout /t 1 /nobreak > nul

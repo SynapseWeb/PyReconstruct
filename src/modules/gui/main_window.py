@@ -111,6 +111,7 @@ class MainWindow(QMainWindow):
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
+                    ("saveas_act", "Save as...", "", self.saveAsToJser),
                     None,
                     ("fromxml_act", "New from XML files...", "", self.newFromXML),
                     ("exportxml_act", "Export to XML files...", "", self.exportToXML),
@@ -679,6 +680,19 @@ class MainWindow(QMainWindow):
                 return
         
         saveJserFile(self.series.jser_fp, close=close)
+
+        # set the series to unmodified
+        self.series.modified = False
+    
+    def saveAsToJser(self):
+        """Prompt the user to find a save location."""
+        # get location from user
+        confirmed = getSaveLocation(self, self.series)
+        if not confirmed:
+            return
+        
+        # save the file
+        saveJserFile(self.series.jser_fp)
 
         # set the series to unmodified
         self.series.modified = False

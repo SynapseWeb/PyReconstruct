@@ -113,6 +113,7 @@ class TraceLayer():
         """
         if len(pix_poly) < 3:
             return
+        
         # convert the pix_poly into its exterior
         pix_poly = getExterior(pix_poly)
 

@@ -368,6 +368,8 @@ class FieldWidget(QWidget, FieldView):
         """Called when gestures are detected."""
         g = event.gesture(Qt.PinchGesture)
 
+        print("yayeet")
+
         if g.state() == Qt.GestureState.GestureStarted:
             p = g.centerPoint()
             x, y = p.x(), p.y()

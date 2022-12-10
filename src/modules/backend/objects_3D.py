@@ -64,7 +64,7 @@ class Surface(Object3D):
                 vertexes=verts,
                 faces=faces,
                 color=(*self.color, alpha),
-                shader="edgeDarken",
+                shader="edgeHighlight",
                 glOptions="translucent",
                 smooth=True
         )

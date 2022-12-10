@@ -111,6 +111,8 @@ class TraceLayer():
             Returns:
                 (list[Trace]): the list of traces within the polygon
         """
+        if len(pix_poly) < 3:
+            return
         # convert the pix_poly into its exterior
         pix_poly = getExterior(pix_poly)
 

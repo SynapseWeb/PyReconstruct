@@ -234,9 +234,13 @@ def getExterior(points : list) -> list:
             (list) points describing trace exterior
     """
     grid = Grid([points])
-    new_points = grid.getExterior()[0]
-    new_points = reducePoints(new_points)
-    return new_points
+    exteriors = grid.getExterior()
+    if exteriors:
+        new_points = grid.getExterior()[0]
+        new_points = reducePoints(new_points)
+        return new_points
+    else:
+        return []
 
 def mergeTraces(trace_list : list) -> list:
     """Get the exterior(s) of a set of traces.

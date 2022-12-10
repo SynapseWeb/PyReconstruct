@@ -65,6 +65,8 @@ def saveJserFile(series : Series, close=False):
     final_value = len(filenames)
 
     for filename in filenames:
+        if "." not in filename:  # skip the timer file
+            continue
         fp = os.path.join(series.hidden_dir, filename)
         with open(fp, "r") as f:
             filedata = json.load(f)

@@ -437,13 +437,13 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        print(event.pointerType())
         # keep track of position
         self.mouse_x = event.x()
         self.mouse_y = event.y()
 
         # if any finger touch
         if event.pointerType() == QPointingDevice.PointerType.Finger:
-            print("oof")
             return
         
         # if any eraser touch

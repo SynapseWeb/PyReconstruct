@@ -369,6 +369,7 @@ class FieldWidget(QWidget, FieldView):
         g = event.gesture(Qt.PinchGesture)
 
         if g.state() == Qt.GestureState.GestureStarted:
+            self.is_gesturing = True
             p = g.centerPoint()
             x, y = p.x(), p.y()
             self.clicked_x, self.clicked_y = x - self.x(), y
@@ -377,6 +378,7 @@ class FieldWidget(QWidget, FieldView):
             self.panzoomMove(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
 
         elif g.state() == Qt.GestureState.GestureFinished:
+            self.is_gesturing = False
             self.panzoomRelease(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
         
     def mousePressEvent(self, event):
@@ -388,7 +390,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_y = event.y()
 
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -437,13 +439,12 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
-        print(event.pointerType())
         # keep track of position
         self.mouse_x = event.x()
         self.mouse_y = event.y()
 
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -487,7 +488,7 @@ class FieldWidget(QWidget, FieldView):
         Overwritten from QWidget Class.
         """
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -606,7 +607,8 @@ class FieldWidget(QWidget, FieldView):
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
             selected_traces = self.section_layer.getTraces(self.selection_trace)
-            self.selectTraces(selected_traces)
+            if selected_traces:
+                self.selectTraces(selected_traces)
 
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:

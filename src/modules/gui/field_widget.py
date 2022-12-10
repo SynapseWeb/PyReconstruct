@@ -609,6 +609,9 @@ class FieldWidget(QWidget, FieldView):
             selected_traces = self.section_layer.getTraces(self.selection_trace)
             if selected_traces:
                 self.selectTraces(selected_traces)
+            else:
+                self.field_pixmap = self.field_pixmap_copy.copy()
+                self.update()
 
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:

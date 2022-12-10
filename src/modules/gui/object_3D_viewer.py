@@ -24,6 +24,7 @@ class Object3DViewer(gl.GLViewWidget):
         super().__init__()
 
         # custom shader: colors get darker near the edges
+
         gl.shaders.Shaders.append(gl.shaders.ShaderProgram('edgeDarken', [
             gl.shaders.VertexShader("""
                 varying vec3 normal;
@@ -39,7 +40,7 @@ class Object3DViewer(gl.GLViewWidget):
                 varying vec3 normal;
                 void main() {
                     vec4 color = gl_Color;
-                    float s = pow(normal.x*normal.x + normal.y*normal.y, 3) / 2;
+                    float s = pow(normal.x*normal.x + normal.y*normal.y, 3.0) / 2.0;
                     color.x = color.x - s * color.x;
                     color.y = color.y - s * color.y;
                     color.z = color.z - s * color.z;

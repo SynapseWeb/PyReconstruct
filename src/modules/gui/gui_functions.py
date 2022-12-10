@@ -130,7 +130,7 @@ def unsavedNotify(parent):
     response = QMessageBox.question(
         parent,
         "Unsaved Series",
-        "An unsaved series has been found.\nWould you like to open it?",
+        "An unsaved version of this series has been found.\nWould you like to open it?",
         QMessageBox.Yes,
         QMessageBox.No
     )

@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         # misc defaults
         self.series = None
         self.field = None  # placeholder for field
+        self.menubar = None
         self.mouse_palette = None  # placeholder for mouse palette
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming_in = False
@@ -183,8 +184,12 @@ class MainWindow(QMainWindow):
             }
         ]
 
+        if self.menubar:
+            self.menubar.close()
+
         # Populate menu bar with menus and options
         self.menubar = self.menuBar()
+        self.menubar.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar, menu)
     
     def updateMenuBar(self):
@@ -395,7 +400,7 @@ class MainWindow(QMainWindow):
                     else:
                         # remove the folder if not needed
                         for f in os.listdir(hidden_series_dir):
-                            os.remove(f)
+                            os.remove(os.path.join(hidden_series_dir, f))
                         os.rmdir(hidden_series_dir)
             
             # open the JSER file if no unsaved series was opened

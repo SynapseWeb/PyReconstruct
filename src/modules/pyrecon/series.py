@@ -10,6 +10,9 @@ from modules.pyrecon.obj_group_dict import ObjGroupDict
 from constants.locations import createHiddenDir, assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
+from time import time
+from PySide6.QtCore import QTimer
+
 class Series():
 
     def __init__(self, filepath : str):
@@ -129,7 +132,6 @@ class Series():
             else:
                 return False
         except FileNotFoundError:
-            print("yeet")
             return False
         
     def save(self):

@@ -1,5 +1,5 @@
 import os
-from time import time
+import time
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -383,13 +383,27 @@ class MainWindow(QMainWindow):
             hidden_series_dir = os.path.join(sdir, f".{sname}")
 
             if os.path.isdir(hidden_series_dir):
-                # find the series file
+                # find the series and timer files
                 new_series_fp = ""
                 for f in os.listdir(hidden_series_dir):
                     if f.endswith(".ser"):
                         new_series_fp = os.path.join(hidden_series_dir, f)
-                        break
-                
+                    # check if the series is currently being modified
+                    if "." not in f:
+                        current_time = round(time.time())
+                        time_diff = current_time - int(f)
+                        if time_diff <= 7:  # the series is currently being operated on
+                            QMessageBox.information(
+                                self,
+                                "Series In Use",
+                                "This series is already open in another window.",
+                                QMessageBox.Ok
+                            )
+                            if not self.series:
+                                exit()
+                            else:
+                                return
+
                 # if a series file has been found
                 if new_series_fp:
                     # ask the user if they want to open the unsaved series
@@ -604,7 +618,7 @@ class MainWindow(QMainWindow):
                 section_num (int): the section number to change to
                 save (bool): saves data to files if True
         """
-        start_time = time()
+        start_time = time.time()
         # save data
         if save:
             self.saveAllData()
@@ -612,7 +626,7 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
-        print(f"Time taken to change to section {section_num}:", time() - start_time, "sec")
+        print(f"Time taken to change to section {section_num}:", time.time() - start_time, "sec")
     
     def incrementSection(self, down=False):
         """Increment the section number by one.

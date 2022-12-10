@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import (
     Qt, 
     QPoint, 
-    QEvent
+    QEvent,
+    QTimer
 )
 from PySide6.QtGui import (
     QPixmap, 
@@ -79,6 +80,7 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 series (Series): the new series to load
         """
+        
         # close the tables
         if self.obj_table_manager is not None:
             self.obj_table_manager.close()
@@ -114,7 +116,21 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
+        # set up the timer
+        if not self.series.isWelcomeSeries():
+            self.time = str(round(time.time()))
+            open(os.path.join(self.series.getwdir(), self.time), "w").close()
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.markTime)
+            self.timer.start(5000)
+
         self.generateView()
+
+    def markTime(self):
+        """Keep track of the time on the series file."""
+        os.remove(os.path.join(self.series.getwdir(), self.time))
+        self.time = str(round(time.time()))
+        open(os.path.join(self.series.getwdir(), self.time), "w").close()
     
     def toggleBlend(self):
         """Toggle blending sections."""

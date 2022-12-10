@@ -39,7 +39,7 @@ class Object3DViewer(gl.GLViewWidget):
                 varying vec3 normal;
                 void main() {
                     vec4 color = gl_Color;
-                    double s = pow(normal.x*normal.x + normal.y*normal.y, 3) / 2;
+                    float s = pow(normal.x*normal.x + normal.y*normal.y, 3) / 2;
                     color.x = color.x - s * color.x;
                     color.y = color.y - s * color.y;
                     color.z = color.z - s * color.z;

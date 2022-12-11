@@ -73,8 +73,8 @@ If you don't want to hassle with installing dependencies manually, we have writt
 
 This script will download and save dependencies in an =env= directory in the root of the repository. It will not save files anywhere else on your machine.
 
-1. Open the repository through Windows Explorer
-2. Find and open the =windows= directory.
+1. Open the PyReconstruct repository through Windows Explorer. (This is the location you entered for /local path/ when cloning the repository. If you don't remember where this is, in the GitHub Desktop app, there is a "Show in Explorer" button in the middle of the window.) 
+2. Open the =windows= subdirectory.
 3. Double-click on =install.bat=.
 4. A console window will open and downloading will start automatically.
 5. Wait until dependencies have been installed. (This might take several minutes.)

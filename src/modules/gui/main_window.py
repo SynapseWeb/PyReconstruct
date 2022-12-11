@@ -1,5 +1,5 @@
 import os
-from time import time
+import time
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -16,11 +16,23 @@ from modules.gui.mouse_palette import MousePalette
 from modules.gui.field_widget import FieldWidget
 from modules.gui.dialog import AlignmentDialog
 from modules.gui.history_widget import HistoryWidget
-
 from modules.gui.gui_functions import progbar
+from modules.gui.gui_functions import (
+    progbar,
+    populateMenuBar,
+    populateMenu,
+    saveNotify,
+    unsavedNotify,
+    getSaveLocation
+)
+
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
 from modules.backend.import_transforms import importTransforms
-from modules.gui.gui_functions import populateMenuBar, populateMenu
+from modules.backend.process_jser_file import (
+    openJserFile,
+    saveJserFile,
+    clearHiddenSeries
+)
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform
@@ -30,7 +42,7 @@ from constants.locations import assets_dir
 
 class MainWindow(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, argv):
         """Constructs the skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
         self.setWindowTitle("pyReconstruct")
@@ -45,7 +57,9 @@ class MainWindow(QMainWindow):
         self.setGeometry(x, y, w, h)
 
         # misc defaults
+        self.series = None
         self.field = None  # placeholder for field
+        self.menubar = None
         self.mouse_palette = None  # placeholder for mouse palette
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming_in = False
@@ -57,13 +71,18 @@ class MainWindow(QMainWindow):
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
 
-        # open series and create field
-        welcome_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
-        self.openSeries(welcome_series, refresh_menu=False)
+        # open the series requested from command line
+        if len(argv) > 1:
+            self.openSeries(jser_fp=argv[1], update_menu_bar=False)
+        else:
+            open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
+            self.openSeries(open_series, update_menu_bar=False)
+        
         self.field.generateView()
 
         # create menu and shortcuts
         self.createMenuBar()
+        self.updateMenuBar()
         self.createContextMenus()
         self.createShortcuts()
 
@@ -71,11 +90,6 @@ class MainWindow(QMainWindow):
 
     def createMenuBar(self):
         """Create the menu for the main window."""
-        if self.series.filetype == "XML":
-            outtype = "json"
-        elif self.series.filetype == "JSON":
-            outtype = "xml"
-
         menu = [
             
             {
@@ -86,9 +100,14 @@ class MainWindow(QMainWindow):
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
                     None,  # None acts as menu divider
-                    ("save_act", "Save", "Ctrl+S", self.saveAllData),
+                    ("save_act", "Save", "Ctrl+S", self.saveToJser),
+                    ("saveas_act", "Save as...", "", self.saveAsToJser),
+                    ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
                     None,
-                    ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
+                    ("fromxml_act", "New from XML files...", "", self.newFromXML),
+                    ("exportxml_act", "Export to XML files...", "", self.exportToXML),
+                    None,
+                    # ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
@@ -165,9 +184,18 @@ class MainWindow(QMainWindow):
             }
         ]
 
+        if self.menubar:
+            self.menubar.close()
+
         # Populate menu bar with menus and options
         self.menubar = self.menuBar()
+        self.menubar.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar, menu)
+    
+    def updateMenuBar(self):
+        """Update the menubar with new series information."""
+        # set check actions
+        self.backup_act.setChecked(bool(self.series.backup_dir))
     
     def createContextMenus(self):
         """Create the right-click menus used in the field."""
@@ -289,17 +317,9 @@ class MainWindow(QMainWindow):
         new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
         if not new_src_dir:
             return
-        if os.path.samefile(new_src_dir, self.series.getwdir()):
-            self.series.src_dir = ""
-        else:
-            self.series.src_dir = new_src_dir
-        QMessageBox.information(
-            self,
-            "Image Directory",
-            "New image directory saved.",
-            QMessageBox.Ok
-        )
-        self.field.reloadImage()
+        self.series.src_dir = new_src_dir
+        if self.field:
+            self.field.reloadImage()
     
     def changeUsername(self):
         """Edit the login name used to track history."""
@@ -339,28 +359,101 @@ class MainWindow(QMainWindow):
         self.series.fill_opacity = opacity
         self.field.generateView(generate_image=False)
 
-    def openSeries(self, series_obj=None, refresh_menu=True):
+    def openSeries(self, series_obj=None, jser_fp=None, update_menu_bar=True):
         """Open an existing series and create the field.
         
             Params:
                 series_obj (Series): the series object (optional)
-                refresh_menu (bool): True if menu is remade
         """
         if not series_obj:  # if series is not provided
-            series_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.ser")
-            if series_fp == "": return  # exit function if user does not provide series
-            self.series = Series(series_fp)  # load series data into Series object
+            # save the current series
+            if self.series:
+                self.saveToJser(notify=True, close=True)
+
+            # get the new series
+            new_series = None
+            if not jser_fp:
+                jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+                if jser_fp == "": return  # exit function if user does not provide series
+
+            # check for a hidden series folder
+            sdir = os.path.dirname(jser_fp)
+            sname = os.path.basename(jser_fp)
+            sname = sname[:sname.rfind(".")]
+            hidden_series_dir = os.path.join(sdir, f".{sname}")
+
+            if os.path.isdir(hidden_series_dir):
+                # find the series and timer files
+                new_series_fp = ""
+                for f in os.listdir(hidden_series_dir):
+                    if f.endswith(".ser"):
+                        new_series_fp = os.path.join(hidden_series_dir, f)
+                    # check if the series is currently being modified
+                    if "." not in f:
+                        current_time = round(time.time())
+                        time_diff = current_time - int(f)
+                        if time_diff <= 7:  # the series is currently being operated on
+                            QMessageBox.information(
+                                self,
+                                "Series In Use",
+                                "This series is already open in another window.",
+                                QMessageBox.Ok
+                            )
+                            if not self.series:
+                                exit()
+                            else:
+                                return
+
+                # if a series file has been found
+                if new_series_fp:
+                    # ask the user if they want to open the unsaved series
+                    open_unsaved = unsavedNotify(self)
+                    if open_unsaved:
+                        new_series = Series(new_series_fp)
+                        new_series.jser_fp = jser_fp
+                    else:
+                        # remove the folder if not needed
+                        for f in os.listdir(hidden_series_dir):
+                            os.remove(os.path.join(hidden_series_dir, f))
+                        os.rmdir(hidden_series_dir)
+            
+            # open the JSER file if no unsaved series was opened
+            if not new_series:
+                new_series = openJserFile(jser_fp)
+
+            self.series = new_series
+
+        # series has already been provided by other function
         else:
             self.series = series_obj
         
         # ensure that images are found
+        # check saved directory first
         section = self.series.loadSection(self.series.current_section)
-        if self.series.src_dir == "":
-            src_path = os.path.join(self.series.getwdir(), os.path.basename(section.src))
-        else:
-            src_path = os.path.join(self.series.src_dir, os.path.basename(section.src))
-        if not (os.path.isfile(src_path) or os.path.isdir(src_path)):
+        src_path = os.path.join(
+            self.series.src_dir,
+            os.path.basename(section.src)
+        )
+        images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
+        # check series location second (welcome series case)
+        if not images_found:
+            src_path = os.path.join(
+                self.series.getwdir(),
+                os.path.basename(section.src)
+            )
+            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
+        # check jser directory last
+        if not images_found:
+            src_path = os.path.join(
+                os.path.dirname(self.series.jser_fp),
+                os.path.basename(section.src)
+            )
+            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
+        
+        if not images_found:
             self.changeSrcDir(notify=True)
+        else:
+            self.series.src_dir = os.path.dirname(src_path)
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -377,13 +470,9 @@ class MainWindow(QMainWindow):
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
 
-        # refresh export choice on menu
-        if refresh_menu:
-            if self.series.filetype == "XML":
-                outtype = "JSON"
-            elif self.series.filetype == "JSON":
-                outtype = "XML"
-            self.export_series_act.setText(f"Export series to {outtype}...")
+        # update the menubar actions if requested
+        if update_menu_bar:
+            self.updateMenuBar()
     
     def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images.
@@ -415,11 +504,53 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         
+        # save and clear the existing backend series
+        self.saveToJser(notify=True, close=True)
+        
         # create new series
         series = Series.new(sorted(image_locations), series_name, mag, thickness)
+        series.modified = True
     
         # open series after creating
         self.openSeries(series)
+    
+    def newFromXML(self):
+        """Create a new series from a set of XML files."""
+        # save and clear the existing backend series
+        self.saveToJser(notify=True, close=True)
+
+        # get xml series filepath from the user
+        series_fp, ext = QFileDialog.getOpenFileName(self, "Select XML Series", filter="*.ser")
+        if series_fp == "": return  # exit function if user does not provide series
+
+        # convert the series
+        series = xmlToJSON(os.path.dirname(series_fp))
+        if not series:
+            return
+
+        # flag to save
+        series.modified = True
+
+        # open the series
+        self.openSeries(series)
+    
+    def exportToXML(self):
+        """Export the current series to XML."""
+        # save the current data
+        self.saveAllData()
+
+        # get the new xml series filepath from the user
+        file_path, ext = QFileDialog.getSaveFileName(
+            self,
+            "Export Series",
+            f"{self.series.name}.ser",
+            filter="XML Series (*.ser)",
+        )
+        if not file_path:
+            return False
+        
+        # convert the series
+        jsonToXML(self.series, os.path.dirname(file_path))
     
     def exportSeries(self):
         """Export the series to a given filetype."""
@@ -487,7 +618,7 @@ class MainWindow(QMainWindow):
                 section_num (int): the section number to change to
                 save (bool): saves data to files if True
         """
-        start_time = time()
+        start_time = time.time()
         # save data
         if save:
             self.saveAllData()
@@ -495,7 +626,7 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
-        print(f"Time taken to change to section {section_num}:", time() - start_time, "sec")
+        print(f"Time taken to change to section {section_num}:", time.time() - start_time, "sec")
     
     def incrementSection(self, down=False):
         """Increment the section number by one.
@@ -559,7 +690,7 @@ class MainWindow(QMainWindow):
         super().keyReleaseEvent(event)
     
     def saveAllData(self):
-        """Write current series and section data into JSON files."""
+        """Write current series and section data into backend JSON files."""
         # save the trace palette
         self.series.palette_traces = []
         for button in self.mouse_palette.palette_buttons:  # get trace palette
@@ -568,6 +699,72 @@ class MainWindow(QMainWindow):
                 self.series.current_trace = button.trace
         self.field.section.save()
         self.series.save()
+    
+    def saveToJser(self, notify=False, close=False):
+        """Save all data to JSER file.
+        
+        Params:
+            save_data (bool): True if series and section files in backend should be save
+            close (bool): Deletes backend series if True
+        """
+        # check for wlecome series
+        if self.series.isWelcomeSeries():
+            return
+        
+        # save the series data
+        self.saveAllData()
+        
+        # notify the user and check if series was modified
+        if notify and self.series.modified:
+            save = saveNotify(self)
+            if not save:
+                return
+        
+        # check if the user is closing and the series was not modified
+        if close and not self.series.modified:
+            clearHiddenSeries(self.series)
+            return
+
+        # get the save filepath if needed
+        if not self.series.jser_fp:
+            confirmed = getSaveLocation(self, self.series)
+            if not confirmed:
+                return
+        
+        saveJserFile(self.series, close=close)
+
+        # set the series to unmodified
+        self.series.modified = False
+    
+    def saveAsToJser(self):
+        """Prompt the user to find a save location."""
+        # get location from user
+        confirmed = getSaveLocation(self, self.series)
+        if not confirmed:
+            return
+        
+        # save the file
+        saveJserFile(self.series)
+
+        # set the series to unmodified
+        self.series.modified = False
+    
+    def autoBackup(self):
+        """Set up the auto-backup functionality for the series."""
+        # user checked the option
+        if self.backup_act.isChecked():
+            # prompt the user to find a folder to store backups
+            new_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select folder to contain backup files"
+            )
+            if not new_dir:
+                self.backup_act.setChecked(False)
+                return
+            self.series.backup_dir = new_dir
+        # user unchecked the option
+        else:
+            self.series.backup_dir = ""
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""
@@ -716,8 +913,5 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
-        if not self.field: # do not do anything if field is not created
-            event.accept()
-            return
-        self.saveAllData()
+        self.saveToJser(notify=True, close=True)
         event.accept()

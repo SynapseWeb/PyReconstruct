@@ -111,6 +111,9 @@ class TraceLayer():
             Returns:
                 (list[Trace]): the list of traces within the polygon
         """
+        if len(pix_poly) < 3:
+            return
+        
         # convert the pix_poly into its exterior
         pix_poly = getExterior(pix_poly)
 
@@ -475,6 +478,7 @@ class TraceLayer():
             fill = False
         
         if fill:
+            painter.setPen(QPen(QColor(*trace.color), 1))
             painter.setBrush(QBrush(QColor(*trace.color)))
             # determine the type of fill
             if abs(trace.mode) == 9 or abs(trace.mode) == 15:  # transparent fill

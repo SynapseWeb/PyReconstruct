@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import (
     Qt, 
     QPoint, 
-    QEvent
+    QEvent,
+    QTimer
 )
 from PySide6.QtGui import (
     QPixmap, 
@@ -79,6 +80,7 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 series (Series): the new series to load
         """
+        
         # close the tables
         if self.obj_table_manager is not None:
             self.obj_table_manager.close()
@@ -114,13 +116,21 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.erasing = False
 
-        # set the window if series is XML
-        if self.series.filetype == "XML":
-            pxw, pxh, = self.pixmap_dim
-            self.series.window[2] = pxw * self.series.screen_mag
-            self.series.window[3] = pxh * self.series.screen_mag
+        # set up the timer
+        if not self.series.isWelcomeSeries():
+            self.time = str(round(time.time()))
+            open(os.path.join(self.series.getwdir(), self.time), "w").close()
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.markTime)
+            self.timer.start(5000)
 
         self.generateView()
+
+    def markTime(self):
+        """Keep track of the time on the series file."""
+        os.remove(os.path.join(self.series.getwdir(), self.time))
+        self.time = str(round(time.time()))
+        open(os.path.join(self.series.getwdir(), self.time), "w").close()
     
     def toggleBlend(self):
         """Toggle blending sections."""
@@ -375,15 +385,17 @@ class FieldWidget(QWidget, FieldView):
         g = event.gesture(Qt.PinchGesture)
 
         if g.state() == Qt.GestureState.GestureStarted:
+            self.is_gesturing = True
             p = g.centerPoint()
             x, y = p.x(), p.y()
-            self.clicked_x, self.clicked_y = x, y
+            self.clicked_x, self.clicked_y = x - self.x(), y
 
         elif g.state() == Qt.GestureState.GestureUpdated:
-            self.panzoomMove(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
+            self.panzoomMove(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
 
         elif g.state() == Qt.GestureState.GestureFinished:
-            self.panzoomRelease(g.centerPoint().x(), g.centerPoint().y(), g.totalScaleFactor())
+            self.is_gesturing = False
+            self.panzoomRelease(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.
@@ -394,7 +406,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_y = event.y()
 
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -448,7 +460,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_y = event.y()
 
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -492,7 +504,7 @@ class FieldWidget(QWidget, FieldView):
         Overwritten from QWidget Class.
         """
         # if any finger touch
-        if event.pointerType() == QPointingDevice.PointerType.Finger:
+        if self.is_gesturing:
             return
         
         # if any eraser touch
@@ -611,7 +623,11 @@ class FieldWidget(QWidget, FieldView):
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
             selected_traces = self.section_layer.getTraces(self.selection_trace)
-            self.selectTraces(selected_traces)
+            if selected_traces:
+                self.selectTraces(selected_traces)
+            else:
+                self.field_pixmap = self.field_pixmap_copy.copy()
+                self.update()
 
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:

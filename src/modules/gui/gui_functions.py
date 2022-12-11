@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QMenuBar,
     QMenu,
     QProgressDialog,
-    QMessageBox
+    QMessageBox,
+    QFileDialog
 )
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
@@ -89,15 +90,18 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     for menu_dict in menubar_list:
         newMenu(widget, menu, menu_dict)
 
-def progbar(title : str, text : str):
+def progbar(title : str, text : str, cancel=True):
     """Create an easy progress dialog."""
     progbar = QProgressDialog(
             text,
             "Cancel",
             0, 100
         )
+    progbar.setMinimumDuration(0)
     progbar.setWindowTitle(title)
     progbar.setWindowModality(Qt.WindowModal)
+    if not cancel:
+        progbar.setCancelButton(None)
     return progbar.setValue, progbar.wasCanceled
 
 def noUndoWarning(parent):
@@ -110,6 +114,42 @@ def noUndoWarning(parent):
         QMessageBox.Cancel
     )
     return response == QMessageBox.Ok
+
+def saveNotify(parent):
+    response = QMessageBox.question(
+        parent,
+        "Exit",
+        "This series has been modified.\nWould you like save before exiting?",
+        QMessageBox.Yes,
+        QMessageBox.No
+    )
+
+    return response == QMessageBox.Yes
+
+def unsavedNotify(parent):
+    response = QMessageBox.question(
+        parent,
+        "Unsaved Series",
+        "An unsaved version of this series has been found.\nWould you like to open it?",
+        QMessageBox.Yes,
+        QMessageBox.No
+    )
+
+    return response == QMessageBox.Yes
+
+def getSaveLocation(parent, series):
+    # prompt user to pick a location to save the jser file
+    file_path, ext = QFileDialog.getSaveFileName(
+        parent,
+        "Save Series",
+        f"{series.name}.jser",
+        filter="JSON Series (*.jser)"
+    )
+    if not file_path:
+        return False
+    
+    series.jser_fp = file_path
+    return True
 
 
 

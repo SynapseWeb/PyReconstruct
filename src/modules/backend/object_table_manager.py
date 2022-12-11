@@ -25,7 +25,7 @@ class ObjectTableManager():
         self.mainwindow = mainwindow
 
         self.object_viewer = None
-        self.opacity = 255
+        self.opacity = 1
         self.sc_size = 1
 
         self.loadSeriesData()
@@ -391,15 +391,16 @@ class ObjectTableManager():
             Params:
                 obj_names (list): a list of object names
         """
-        if self.object_viewer:
-            self.object_viewer.close()
-        self.object_viewer = Object3DViewer(
-            self.series,
-            obj_names,
-            self.opacity,
-            self.sc_size,
-            self.mainwindow
-    )
+        if self.object_viewer and not self.object_viewer.closed:
+            self.object_viewer.addObjects(obj_names)
+        else:
+            self.object_viewer = Object3DViewer(
+                self.series,
+                obj_names,
+                self.opacity,
+                self.sc_size,
+                self.mainwindow
+            )
     
     def viewHistory(self, obj_names : list):
         """View the log history of a set of objects.

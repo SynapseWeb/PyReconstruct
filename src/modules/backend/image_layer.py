@@ -39,10 +39,7 @@ class ImageLayer():
     def loadImage(self):
         """Load the image."""
         # get the image path
-        if self.series.src_dir == "":  # same folder as series if no folder saved
-            src_path = os.path.join(self.series.getwdir(), os.path.basename(self.section.src))
-        else:
-            src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
+        src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
         
         # if the image folder is a zarr file
         if self.is_zarr_file:

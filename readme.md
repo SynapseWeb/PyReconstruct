@@ -1,26 +1,26 @@
 
 # Table of Contents
 
-1.  [PyReconstruct](#org257dae0)
-2.  [Installation](#org1970777)
-    1.  [Checking your version of Python](#orgac3b0d1)
-    2.  [Cloning this repository](#org58330a5)
-    3.  [Installing dependencies](#org518235b)
-    4.  [Updating](#org9d7c292)
-    5.  [Uninstalling](#orgfa39544)
-3.  [Getting started](#org461f01a)
-    1.  [Launching PyReconstruct](#org91a554a)
-    2.  [The main window](#orge4b23c7)
-    3.  [Starting a new series](#org3fac136)
-    4.  [Movements](#orgbb56c71)
-    5.  [Your first object](#org6b445b2)
-    6.  [Exiting](#org63a0d6d)
-4.  [Other information](#orgba5b005)
-    1.  [Repository structure](#org8ef73af)
+1.  [PyReconstruct](#org4124ab0)
+2.  [Installation](#orgc74aa46)
+    1.  [Checking your version of Python](#orgb6eaeeb)
+    2.  [Cloning this repository](#org3f9d640)
+    3.  [Installing dependencies](#org9a732af)
+    4.  [Updating](#orgfe6c30d)
+    5.  [Uninstalling](#orgcf52bc7)
+3.  [Getting started](#orgc77047a)
+    1.  [Launching PyReconstruct](#org9e99a30)
+    2.  [The main window](#org865f790)
+    3.  [Starting a new series](#orga3e4997)
+    4.  [Movements](#org847a6fc)
+    5.  [Your first object](#org15945a9)
+    6.  [Exiting](#org05c114e)
+4.  [Other information](#org0b71187)
+    1.  [Repository structure](#org02e3c36)
 
 
 
-<a id="org257dae0"></a>
+<a id="org4124ab0"></a>
 
 # PyReconstruct
 
@@ -29,7 +29,7 @@ PyReconstruct is an actively maintained, updated, and extensible version of **RE
 Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, to access PyReconstruct you will need to download the code through this GitHub repository. We have worked hard to make this process as painless as possible.
 
 
-<a id="org1970777"></a>
+<a id="orgc74aa46"></a>
 
 # Installation
 
@@ -42,7 +42,7 @@ Installing PyReconstruct is a 3-step process:
 (Do not fret, Windows users! We have written scripts that automate the process of installing dependencies.)
 
 
-<a id="orgac3b0d1"></a>
+<a id="orgb6eaeeb"></a>
 
 ## Checking your version of Python
 
@@ -53,7 +53,7 @@ The above command will output which version of Python you are running. You shoul
 Once downloaded, you can restart the command prompt and re-run `python --version` to see if you have successfully installed Python.
 
 
-<a id="org58330a5"></a>
+<a id="org3f9d640"></a>
 
 ## Cloning this repository
 
@@ -66,7 +66,7 @@ Cloning can be done through git's command line interface or through GitHub's exc
 
 1.  Download and install GitHub's desktop application [here](https://desktop.github.com/).
 
-2.  Open the GitHub Desktop after installing.
+2.  Open the GitHub Desktop application after installing.
 
     ![img](./manual/img/github-desktop-1.png)
 
@@ -96,7 +96,7 @@ Cloning the repository via `git` is even simpler if you're comfortable using the
 2.  Clone the respository: `git clone https://www.github.com/SynapseWeb/PyReconstruct /destination/path/to/a/new/local/repo`
 
 
-<a id="org518235b"></a>
+<a id="org9a732af"></a>
 
 ## Installing dependencies
 
@@ -109,8 +109,8 @@ If you don't want to hassle with installing dependencies manually, we have writt
 
 This script will download and save dependencies in an `env` directory in the root of the repository. It will not save files anywhere else on your machine.
 
-1.  Open the repository through Windows Explorer
-2.  Find and open the `windows` directory.
+1.  Open the PyReconstruct repository through Windows Explorer. (This is the location you entered for *local path* when cloning the repository. If you don't remember where this is, in the GitHub Desktop app, there is a "Show in Explorer" button in the middle of the window.)
+2.  Open the `windows` subdirectory.
 3.  Double-click on `install.bat`.
 4.  A console window will open and downloading will start automatically.
 5.  Wait until dependencies have been installed. (This might take several minutes.)
@@ -131,7 +131,7 @@ Here is an example of installing dependencies in a newly created virtual environ
 4.  Install dependencies: `pip install -r src/requirements.txt`
 
 
-<a id="org9d7c292"></a>
+<a id="orgfe6c30d"></a>
 
 ## Updating
 
@@ -164,19 +164,19 @@ We are in the process of making many changes to PyReconstruct and having a way t
 (If there are conflicts and you'd like to reset everything to the most up-to-date version of the repository, you can hard reset from the remote main branch: `git fetch --all && git reset --hard origin/main`. Be thee forewarned, however: This will destroy any changes you've made to the local repository.)
 
 
-<a id="orgfa39544"></a>
+<a id="orgcf52bc7"></a>
 
 ## Uninstalling
 
 If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct repository on your local machine. (If you cloned the repository through GitHub Desktop, you can also delete it there.)
 
 
-<a id="org461f01a"></a>
+<a id="orgc77047a"></a>
 
 # Getting started
 
 
-<a id="org91a554a"></a>
+<a id="org9e99a30"></a>
 
 ## Launching PyReconstruct
 
@@ -190,10 +190,10 @@ You can right-click on this file and make a shortcut, which can be place anywher
 
 ### Manually
 
-Refer above for instructions on manually installing dependencies. If you are using a virtual environment, activate it and run the following command in a terminal: `python src/pyReconstruct.py`
+If you are installing PyReconstruct manually, refer to the instructions above that outline dependency installation. If you are using a virtual environment, activate it and run the following command: `python src/pyReconstruct.py`
 
 
-<a id="orge4b23c7"></a>
+<a id="org865f790"></a>
 
 ## The main window
 
@@ -204,7 +204,7 @@ When you first open PyReconstruct, you will see a welcome image over a black fie
 
 ### Tools palette
 
-There are 6 tools available in the **tools palette** (each can be accessed by clicking or pressing a keyboard shortcut):
+There are 6 tools available in the **tools palette** located on the right side of the main window. Each tool can be accessed by clicking or through a keyboard shortcut:
 
 1.  Pointer / select (`P`)
 2.  Pan / Zoom (`Z`)
@@ -220,12 +220,14 @@ Hovering over each tool reveals its name and shortcut.
 
 ### Trace palette
 
-Trace attributes can be quickly accessed through the **trace palette**, a set of 20 user-defined attributes at the bottom of the main window. Each can be changed by right-clicking and editing the attributes. The name of the currently selected trace attributes appears above the trace palette.
+Trace attributes can be quickly accessed through the **trace palette**, a set of 20 user-defined attributes at the bottom of the main window. Each trace palette item can be changed by right-clicking and editing its attributes. The name of the currently selected trace attributes appears above the trace palette.
 
-Trace palette items can be accessed by clicking or by pressing a number on the keyboard. `1` will select the first palette item, `Shift-1` will select the eleventh, and so on. 
+To make a trace palette item active, left-click on it or press a number on the keyboard. (`1` through `0` will select each of items 1-10. `Shift-1` through `Shift-0` will select items 11-20.)
+
+(Note: You can also edit a trace items attributes quickly, by pressing `Ctrl` + the item's corresponding number. For example, `Ctrl-1` will open the edit attributes menu for the first trace item. `Ctrl-Shift-1` will open the trace attributes for the eleventh item.)
 
 
-<a id="org3fac136"></a>
+<a id="orga3e4997"></a>
 
 ## Starting a new series
 
@@ -235,7 +237,7 @@ The only requirement to start a new series is a set of images which can be in a 
 
 1.  Place your images in a folder somewhere on your local machine.
 2.  Open PyReconstruct.
-3.  To start a new series, in the menu bar `File` → `New` or simply press `Ctrl-N`.
+3.  To start a new series, in the menu bar `File` → `New` or simply `Ctrl-N`.
 4.  Select the images you would like to include in your series.
 5.  Enter a series name.
 6.  Enter a calibration value (default = 0.00254 μm/px).
@@ -243,7 +245,7 @@ The only requirement to start a new series is a set of images which can be in a 
 8.  Center the view by pressing `Home`.
 
 
-<a id="orgbb56c71"></a>
+<a id="org847a6fc"></a>
 
 ## Movements
 
@@ -262,11 +264,11 @@ We'd like to minimize the amount of time a user spends moving the cursor to the 
 **Moving to another section** can also be done in several ways.
 
 1.  Scrolling the mouse wheel.
-2.  Pressing `Ctrl-G` ("G" for "go to"), which will prompt you for a section number.
+2.  `Ctrl-G` ("G" for "go to"), which will prompt you for a section number.
 3.  In the menu bar, `Section` → `Go to section`.
 
 
-<a id="org6b445b2"></a>
+<a id="org15945a9"></a>
 
 ## Your first object
 
@@ -293,7 +295,7 @@ When you're done tracing, the trace will be selected, which is visually cued by 
 
 ### Editing a trace's attributes
 
-With the trace selected, right-click on it. This will open a menu with options. Clicking on `edit trace attributes` will allow you to change the attributes of all selected traces. You can also access the attributes of all traces selected on a section by pressing `Ctrl-E` ("E" for "edit").
+With the trace selected, right-click on it. This will open a menu with options. Clicking on `edit trace attributes` will allow you to change the attributes of all selected traces. You can also access the attributes of all traces selected on a section with `Ctrl-E` ("E" for "edit").
 
 
 ### Moving the trace
@@ -308,19 +310,19 @@ In PyReconstruct, you can also left-click and drag selected traces around the fi
 Undo an action with `Ctrl-Z` and redo the action with `Ctrl-Y`.
 
 
-<a id="org63a0d6d"></a>
+<a id="org05c114e"></a>
 
 ## Exiting
 
-Exiting PyReconstruct can be done through `File` -> `Quit` or by pressing `Ctrl-Q`. All changes to the series will be saved automatically.
+Exiting PyReconstruct can be done through `File` → `Quit` or `Ctrl-Q`. All changes to the series will be saved automatically.
 
 
-<a id="orgba5b005"></a>
+<a id="org0b71187"></a>
 
 # Other information
 
 
-<a id="org8ef73af"></a>
+<a id="org02e3c36"></a>
 
 ## Repository structure
 

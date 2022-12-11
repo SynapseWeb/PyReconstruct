@@ -35,7 +35,7 @@ Cloning can be done through git's command line interface or through GitHub's exc
 
 **** Download and install GitHub's desktop application [[https://desktop.github.com/][here]].
    
-****  Open the GitHub Desktop after installing.
+****  Open the GitHub Desktop application after installing.
 
 [[./manual/img/github-desktop-1.png]]
 
@@ -137,7 +137,7 @@ You can right-click on this file and make a shortcut, which can be place anywher
 
 *** Manually
 
-Refer above for instructions on manually installing dependencies. If you are using a virtual environment, activate it and run the following command in a terminal: =python src/pyReconstruct.py=
+If you are installing PyReconstruct manually, refer to the instructions above to install dependencies. If you are using a virtual environment, activate it and run the following command in a terminal: =python src/pyReconstruct.py=
 
 ** The main window
 

@@ -1,48 +1,62 @@
 
 # Table of Contents
 
-1.  [PyReconstruct](#org4124ab0)
-2.  [Installation](#orgc74aa46)
-    1.  [Checking your version of Python](#orgb6eaeeb)
-    2.  [Cloning this repository](#org3f9d640)
-    3.  [Installing dependencies](#org9a732af)
-    4.  [Updating](#orgfe6c30d)
-    5.  [Uninstalling](#orgcf52bc7)
-3.  [Getting started](#orgc77047a)
-    1.  [Launching PyReconstruct](#org9e99a30)
-    2.  [The main window](#org865f790)
-    3.  [Starting a new series](#orga3e4997)
-    4.  [Movements](#org847a6fc)
-    5.  [Your first object](#org15945a9)
-    6.  [Exiting](#org05c114e)
-4.  [Other information](#org0b71187)
-    1.  [Repository structure](#org02e3c36)
+1.  [PyReconstruct](#org725a4dd)
+2.  [Submitting bug reports and feature requests](#org8087796)
+3.  [Installation](#org8e1296b)
+    1.  [Checking your version of Python](#orgb978182)
+    2.  [Cloning this repository](#org297f669)
+    3.  [Installing dependencies](#org48f17b3)
+    4.  [Updating](#org72a1847)
+    5.  [Uninstalling](#org6c88a66)
+4.  [Getting started](#orgf4fd8ec)
+    1.  [Launching PyReconstruct](#org7af3fde)
+    2.  [The main window](#org3c7bf4e)
+    3.  [Starting a new series](#org8e54baf)
+    4.  [Movements](#org42ed0c6)
+    5.  [Your first object](#org4da2692)
+    6.  [Exiting](#org9c3e4bf)
+5.  [Other information](#org780c5ba)
+    1.  [Repository structure](#org42547a8)
 
 
 
-<a id="org4124ab0"></a>
+<a id="org725a4dd"></a>
 
 # PyReconstruct
 
-PyReconstruct is an actively maintained, updated, and extensible version of **RECONSTRUCT** written entirely in Python. We are currently alpha-testing this program, but we are more than happy to make it available now.
+PyReconstruct is an actively maintained, extensible version of **RECONSTRUCT** written entirely in Python. We are currently in alpha testing, but we are happy to make the program available now.
 
-Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, to access PyReconstruct you will need to download the code through this GitHub repository. We have worked hard to make this process as painless as possible.
+Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, you can download the source code through this GitHub repository. Instructions on installing and running PyReconstruct follow below.
 
 
-<a id="orgc74aa46"></a>
+<a id="org8087796"></a>
+
+# Submitting bug reports and feature requests
+
+PyReconstruct is hot off the presses and inevitably there will be bugs.
+
+If you notice a problem, would like to suggest a feature, or have ideas on improving our documentation, click on `Issues` at the top of this page and then `New Issue`.
+
+![img](./manual/img/issues.png)
+
+We appreciate the help!
+
+
+<a id="org8e1296b"></a>
 
 # Installation
 
-Installing PyReconstruct is a 3-step process:
+PyReconstruct can be installed on just about any major operating system (Windows, MacOS, and many Linux distributions). Installing PyReconstruct is a 3-step process:
 
 1.  Make sure you have Python 3.9 or higher.
 2.  Clone the repository to your local machine.
-3.  Install dependencies required to run PyReconstruct.
+3.  Install PyReconstruct's dependencies.
 
 (Do not fret, Windows users! We have written scripts that automate the process of installing dependencies.)
 
 
-<a id="orgb6eaeeb"></a>
+<a id="orgb978182"></a>
 
 ## Checking your version of Python
 
@@ -53,7 +67,7 @@ The above command will output which version of Python you are running. You shoul
 Once downloaded, you can restart the command prompt and re-run `python --version` to see if you have successfully installed Python.
 
 
-<a id="org3f9d640"></a>
+<a id="org297f669"></a>
 
 ## Cloning this repository
 
@@ -96,7 +110,7 @@ Cloning the repository via `git` is even simpler if you're comfortable using the
 2.  Clone the respository: `git clone https://www.github.com/SynapseWeb/PyReconstruct /destination/path/to/a/new/local/repo`
 
 
-<a id="org9a732af"></a>
+<a id="org48f17b3"></a>
 
 ## Installing dependencies
 
@@ -131,7 +145,7 @@ Here is an example of installing dependencies in a newly created virtual environ
 4.  Install dependencies: `pip install -r src/requirements.txt`
 
 
-<a id="orgfe6c30d"></a>
+<a id="org72a1847"></a>
 
 ## Updating
 
@@ -164,19 +178,19 @@ We are in the process of making many changes to PyReconstruct and having a way t
 (If there are conflicts and you'd like to reset everything to the most up-to-date version of the repository, you can hard reset from the remote main branch: `git fetch --all && git reset --hard origin/main`. Be thee forewarned, however: This will destroy any changes you've made to the local repository.)
 
 
-<a id="orgcf52bc7"></a>
+<a id="org6c88a66"></a>
 
 ## Uninstalling
 
 If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct repository on your local machine. (If you cloned the repository through GitHub Desktop, you can also delete it there.)
 
 
-<a id="orgc77047a"></a>
+<a id="orgf4fd8ec"></a>
 
 # Getting started
 
 
-<a id="org9e99a30"></a>
+<a id="org7af3fde"></a>
 
 ## Launching PyReconstruct
 
@@ -193,7 +207,7 @@ You can right-click on this file and make a shortcut, which can be place anywher
 If you are installing PyReconstruct manually, refer to the instructions above that outline dependency installation. If you are using a virtual environment, activate it and run the following command: `python src/pyReconstruct.py`
 
 
-<a id="org865f790"></a>
+<a id="org3c7bf4e"></a>
 
 ## The main window
 
@@ -227,7 +241,7 @@ To make a trace palette item active, left-click on it or press a number on the k
 (Note: You can also edit a trace items attributes quickly, by pressing `Ctrl` + the item's corresponding number. For example, `Ctrl-1` will open the edit attributes menu for the first trace item. `Ctrl-Shift-1` will open the trace attributes for the eleventh item.)
 
 
-<a id="orga3e4997"></a>
+<a id="org8e54baf"></a>
 
 ## Starting a new series
 
@@ -245,7 +259,7 @@ The only requirement to start a new series is a set of images which can be in a 
 8.  Center the view by pressing `Home`.
 
 
-<a id="org847a6fc"></a>
+<a id="org42ed0c6"></a>
 
 ## Movements
 
@@ -268,7 +282,7 @@ We'd like to minimize the amount of time a user spends moving the cursor to the 
 3.  In the menu bar, `Section` → `Go to section`.
 
 
-<a id="org15945a9"></a>
+<a id="org4da2692"></a>
 
 ## Your first object
 
@@ -310,19 +324,19 @@ In PyReconstruct, you can also left-click and drag selected traces around the fi
 Undo an action with `Ctrl-Z` and redo the action with `Ctrl-Y`.
 
 
-<a id="org05c114e"></a>
+<a id="org9c3e4bf"></a>
 
 ## Exiting
 
 Exiting PyReconstruct can be done through `File` → `Quit` or `Ctrl-Q`. All changes to the series will be saved automatically.
 
 
-<a id="org0b71187"></a>
+<a id="org780c5ba"></a>
 
 # Other information
 
 
-<a id="org02e3c36"></a>
+<a id="org42547a8"></a>
 
 ## Repository structure
 

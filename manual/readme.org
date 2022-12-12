@@ -4,17 +4,27 @@
 
 * PyReconstruct
 
-PyReconstruct is an actively maintained, updated, and extensible version of *RECONSTRUCT* written entirely in Python. We are currently alpha-testing this program, but we are more than happy to make it available now.
+PyReconstruct is an actively maintained, extensible version of *RECONSTRUCT* written entirely in Python. We are currently in alpha testing, but we are happy to make the program available now.
 
-Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, to access PyReconstruct you will need to download the code through this GitHub repository. We have worked hard to make this process as painless as possible.
+Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, you can download the source code through this GitHub repository. Instructions on installing and running PyReconstruct follow below.
+
+* Submitting bug reports and feature requests
+
+PyReconstruct is hot off the presses and inevitably there will be bugs.
+
+If you notice a problem, would like to suggest a feature, or have ideas on improving our documentation, click on =Issues= at the top of this page and then =New Issue=.
+
+[[./manual/img/issues.png]]
+
+We appreciate the help!
 
 * Installation
 
-Installing PyReconstruct is a 3-step process:
+PyReconstruct can be installed on just about any major operating system (Windows, MacOS, and many Linux distributions). Installing PyReconstruct is a 3-step process:
 
 1. Make sure you have Python 3.9 or higher.
 2. Clone the repository to your local machine.
-3. Install dependencies required to run PyReconstruct.
+3. Install PyReconstruct's dependencies.
 
 (Do not fret, Windows users! We have written scripts that automate the process of installing dependencies.)
 

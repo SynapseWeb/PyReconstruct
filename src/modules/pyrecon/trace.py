@@ -173,8 +173,9 @@ class Trace():
         if tform is not None:
             points = tform.map(points, inverted=True)
         new_trace = Trace(name, color, closed)
+        new_trace.points = points
         # new_trace.points = reducePoints(points)
-        new_trace.resize(0.1)
+        # new_trace.resize(0.1)
         new_trace.mode = xml_trace.mode
 
         if hist:

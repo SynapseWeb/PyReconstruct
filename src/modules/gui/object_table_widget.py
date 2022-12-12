@@ -23,7 +23,11 @@ from modules.gui.gui_functions import (
     noUndoWarning
 )
 
-from modules.gui.dialog import ObjectGroupDialog, TableColumnsDialog
+from modules.gui.dialog import (
+    ObjectGroupDialog,
+    TableColumnsDialog,
+    Object3DDialog
+)
 
 class ObjectTableWidget(QDockWidget):
 
@@ -140,6 +144,7 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     self.generate3D_act,
+                    ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
             },
             None,
@@ -466,8 +471,8 @@ class ObjectTableWidget(QDockWidget):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.manager.generate3D(obj_names)
-    
+            self.manager.generate3D(obj_names)  
+
     def addToGroup(self):
         """Add objects to a group."""
         obj_names = self.getSelectedObjects()
@@ -745,4 +750,47 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.setSCSize(new_sc_size)
+    
+    def edit3D(self):
+        """Edit the 3D options for an object or set of objects."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        # check for object names and opacities
+        if obj_names[0] in self.series.object_3D_modes:
+            type_3D, opacity = self.series.object_3D_modes[obj_names[0]]
+        else:
+            type_3D, opacity= "surface", 1
+        for name in obj_names[1:]:
+            if name in self.series.object_3D_modes:
+                new_type, new_opacity = self.series.object_3D_modes[name]
+            else:
+                new_type = "surface", 1
+            if type_3D != new_type:
+                type_3D = None
+            if opacity != new_opacity:
+                opacity = None
+
+        settings, confirmed = Object3DDialog(
+            self,
+            type3D=type_3D,
+            opacity=opacity
+        ).exec()
+        if not confirmed:
+            return
+        
+        new_type, new_opacity = settings
+
+        # set the series settings
+        for name in obj_names:
+            if name in self.series.object_3D_modes:
+                obj_settings = list(self.series.object_3D_modes[name])
+            else:
+                obj_settings = ["surface", 1]
+            if new_type:
+                obj_settings[0] = new_type
+            if new_opacity:
+                obj_settings[1] = new_opacity
+            self.series.object_3D_modes[name] = tuple(obj_settings)
 

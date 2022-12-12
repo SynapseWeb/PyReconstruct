@@ -19,13 +19,13 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
     obj_data = {}
     for obj_name in obj_names:
         if obj_name in series.object_3D_modes:
-            mode = series.object_3D_modes[obj_name]
-            if mode == "surface":
-                obj_data[obj_name] = Surface(obj_name)
-            elif mode == "spheres":
-                obj_data[obj_name] = Spheres(obj_name)
+            mode, opacity = series.object_3D_modes[obj_name]
         else:
-            obj_data[obj_name] = Surface(obj_name)
+            mode, opacity = "surface", 1
+        if mode == "surface":
+            obj_data[obj_name] = (Surface(obj_name), opacity)
+        elif mode == "spheres":
+            obj_data[obj_name] = (Spheres(obj_name), opacity)
 
     # iterate through all sections and gather points (and colors)
     z = 0
@@ -40,7 +40,7 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
             if obj_name in section.contours:
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
-                    obj_data[obj_name].addTrace(trace, z, tform)
+                    obj_data[obj_name][0].addTrace(trace, z, tform)
         
         z += section.thickness
 
@@ -48,13 +48,13 @@ def generateVolumes(series : Series, obj_names : list, alpha : float):
     items = []
     extremes = []
 
-    for obj_name, obj_3D in obj_data.items():
+    for obj_name, (obj_3D, opacity) in obj_data.items():
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
-            items.append(obj_3D.generate3D(alpha))
+            items.append(obj_3D.generate3D(opacity))
         elif type(obj_3D) is Spheres:
-            items += (obj_3D.generate3D(alpha))
+            items += (obj_3D.generate3D(opacity))
 
     return (
         items,

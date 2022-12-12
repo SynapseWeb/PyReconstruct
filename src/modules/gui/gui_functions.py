@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget,
+    QLabel,
     QMenuBar,
     QMenu,
     QProgressDialog,

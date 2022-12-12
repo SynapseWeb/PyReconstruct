@@ -1,8 +1,8 @@
 import os
 
 from PySide6.QtWidgets import QWidget, QPushButton, QStyle
-from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
+from PySide6.QtCore import QSize, QRect
 
 from modules.gui.palette_button import PaletteButton
 from modules.gui.field_widget import FieldWidget
@@ -80,11 +80,11 @@ class MousePalette():
         self.left_handed = not self.left_handed
         self.resize()
     
-    def placeModeButton(self, button : QPushButton, pos : int):
+    def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
         
             Params:
-                button (QPushButton): the button to place
+                button (ScreenButton): the button to place
                 pos (int): the position of the button
         """
         if self.left_handed:
@@ -103,7 +103,7 @@ class MousePalette():
                 pos (int): the position of the button
                 mouse_mode (int): the mode this button is connected to
         """
-        b = QPushButton(self.mainwindow)
+        b = ScreenButton(self.mainwindow)
 
         # filter name to get filename
         stripped_name = name
@@ -273,7 +273,7 @@ class MousePalette():
     
     def createIncrementButtons(self):
         """Create the section increment buttons."""        
-        self.up_bttn = QPushButton(self.mainwindow)
+        self.up_bttn = ScreenButton(self.mainwindow)
         up_icon = self.up_bttn.style().standardIcon(
             QStyle.SP_TitleBarShadeButton
         )
@@ -281,7 +281,7 @@ class MousePalette():
         self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
         self.up_bttn.setToolTip("Next section (PgUp)")
 
-        self.down_bttn = QPushButton(self.mainwindow)
+        self.down_bttn = ScreenButton(self.mainwindow)
         down_icon = self.up_bttn.style().standardIcon(
             QStyle.SP_TitleBarUnshadeButton
         )
@@ -314,7 +314,7 @@ class MousePalette():
         self.bc_buttons = []
         for option in ("contrast", "brightness"):
             for direction in ("down", "up"):
-                b = QPushButton(self.mainwindow)
+                b = ScreenButton(self.mainwindow)
                 # get the icons
                 icon_fp = os.path.join(loc.img_dir, f"{option}_{direction}.png")
                 pixmap = QPixmap(icon_fp)
@@ -382,4 +382,16 @@ class MousePalette():
         self.label.close()
         for b in self.corner_buttons:
             b.close()
+
+class ScreenButton(QPushButton):
+
+    def paintEvent(self, event):
+        """Add a border to selected buttons."""
+        super().paintEvent(event)
+        if self.isChecked():
+            painter = QPainter(self)
+            painter.setPen(QPen(QColor(255, 255, 0), 8))
+            painter.setOpacity(0.5)
+            w, h = self.width(), self.height()
+            painter.drawRect(QRect(0, 0, w, h))
         

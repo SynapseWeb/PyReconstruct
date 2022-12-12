@@ -95,7 +95,10 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     # import the palette
     series_dict["palette_traces"] = []
     for xml_contour in xml_series.contours:
-        series_dict["palette_traces"].append(Trace.dictFromXMLObj(xml_contour, hist=False))
+        series_dict["palette_traces"].append(Trace.dictFromXMLObj(
+            xml_contour,
+            palette=True
+        ))
     
     # IMPLEMENT THIS EVENTAULLY: ztraces
     series_dict["ztraces"] = []
@@ -161,7 +164,11 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     # get trace/contour data
     contours = section_dict["contours"]  # for ease of access
     for xml_contour in xml_section.contours:
-        trace = Trace.dictFromXMLObj(xml_contour, tform)
+        trace = Trace.dictFromXMLObj(
+            xml_contour,
+            tform,
+            section_dict["mag"]
+        )
         if xml_contour.name in contours:
             contours[xml_contour.name].append(trace)
         else:

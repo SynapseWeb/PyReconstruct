@@ -153,7 +153,7 @@ class Trace():
         return new_trace
     
     # STATIC METHOD
-    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, palette=False):
+    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, section_mag=None, palette=False):
         """Create a trace from an xml contour object.
         
             Params:
@@ -162,27 +162,35 @@ class Trace():
             Returns:
                 (Trace) the trace object
         """
+        # get basic attributes
         name = xml_trace.name
         color = list(xml_trace.border)
         for i in range(len(color)):
             color[i] = int(color[i] * 255)
         closed = xml_trace.closed
         points = xml_trace.points.copy()
+        new_trace = Trace(name, color, closed)
+
+        # get the transform
         if xml_trace.transform is not None:
             points = xml_trace.transform.transformPoints(xml_trace.points)
         if tform is not None:
             points = tform.map(points, inverted=True)
-        new_trace = Trace(name, color, closed)
-        new_trace.points = points
-        # new_trace.points = reducePoints(points)
+        
+        # get the points
+        if section_mag:
+            new_trace.points = reducePoints(
+                points,
+                closed=new_trace.closed,
+                mag=2/section_mag
+            )
+        else:
+            new_trace.points = points
         new_trace.mode = xml_trace.mode
 
-        if palette:
-            new_trace.resize(0.1)
-        else:
+        if not palette:
             new_trace.addLog("Imported")
         
-
         return new_trace.getDict()
 
     def getBounds(self, tform : Transform = None) -> tuple:

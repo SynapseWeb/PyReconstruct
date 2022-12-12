@@ -416,6 +416,12 @@ class MainWindow(QMainWindow):
                         for f in os.listdir(hidden_series_dir):
                             os.remove(os.path.join(hidden_series_dir, f))
                         os.rmdir(hidden_series_dir)
+                else:
+                    # remove the folder if no series file detected
+                    for f in os.listdir(hidden_series_dir):
+                        os.remove(os.path.join(hidden_series_dir, f))
+                    os.rmdir(hidden_series_dir)
+
             
             # open the JSER file if no unsaved series was opened
             if not new_series:

@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import (
     QWidget,
-    QLabel,
     QMenuBar,
     QMenu,
     QProgressDialog,
@@ -151,6 +150,3 @@ def getSaveLocation(parent, series):
     
     series.jser_fp = file_path
     return True
-
-
-

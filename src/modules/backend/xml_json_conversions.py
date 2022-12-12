@@ -98,7 +98,7 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
         series_dict["palette_traces"].append(Trace.dictFromXMLObj(xml_contour, hist=False))
     
     # IMPLEMENT THIS EVENTAULLY: ztraces
-    series_dict["ztraces"] = ""
+    series_dict["ztraces"] = []
 
     # get the series filename and save
     fname = os.path.basename(series_fp)

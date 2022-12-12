@@ -153,7 +153,7 @@ class Trace():
         return new_trace
     
     # STATIC METHOD
-    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, hist=True):
+    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, palette=False):
         """Create a trace from an xml contour object.
         
             Params:
@@ -175,11 +175,13 @@ class Trace():
         new_trace = Trace(name, color, closed)
         new_trace.points = points
         # new_trace.points = reducePoints(points)
-        # new_trace.resize(0.1)
         new_trace.mode = xml_trace.mode
 
-        if hist:
+        if palette:
+            new_trace.resize(0.1)
+        else:
             new_trace.addLog("Imported")
+        
 
         return new_trace.getDict()
 

@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
     def __init__(self, argv):
         """Constructs the skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
-        self.setWindowTitle("pyReconstruct")
+        self.setWindowTitle("PyReconstruct")
 
         # set the main window to be slightly less than the size of the monitor
         screen = QApplication.primaryScreen()

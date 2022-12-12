@@ -38,6 +38,7 @@ class TraceLayer():
         self.section = section
         self.series = series
         self.selected_traces = []
+        self.traces_in_view = []
     
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.

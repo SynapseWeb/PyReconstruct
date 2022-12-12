@@ -618,7 +618,6 @@ class MainWindow(QMainWindow):
                 section_num (int): the section number to change to
                 save (bool): saves data to files if True
         """
-        start_time = time.time()
         # save data
         if save:
             self.saveAllData()
@@ -626,7 +625,6 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
-        print(f"Time taken to change to section {section_num}:", time.time() - start_time, "sec")
     
     def incrementSection(self, down=False):
         """Increment the section number by one.

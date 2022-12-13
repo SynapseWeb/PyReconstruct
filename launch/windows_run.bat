@@ -1,6 +1,9 @@
 @echo off
 cd /D "%~dp0"
 cd ..
+echo Checking for updates...
+git fetch
+git pull
 if exist env\Scripts\activate (
     call env\Scripts\activate
 ) else (

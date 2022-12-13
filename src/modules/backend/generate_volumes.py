@@ -2,7 +2,7 @@ from modules.backend.objects_3D import Surface, Spheres
 
 from modules.pyrecon.series import Series
 
-def generateVolumes(series : Series, obj_names : list, alpha : float):
+def generateVolumes(series : Series, obj_names : list):
     """Generate the volume items for a set of objects.
     
         Params:

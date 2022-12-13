@@ -25,8 +25,6 @@ class ObjectTableManager():
         self.mainwindow = mainwindow
 
         self.object_viewer = None
-        self.opacity = 1
-        self.sc_size = 1
 
         self.loadSeriesData()
 
@@ -391,12 +389,6 @@ class ObjectTableManager():
         
         self.series.modified = True  # flag series as modified
     
-    def setOpacity(self, opacity):
-        self.opacity = opacity
-    
-    def setSCSize(self, size):
-        self.sc_size = size
-    
     def generate3D(self, obj_names):
         """Generate the 3D view for a list of objects.
         
@@ -409,8 +401,6 @@ class ObjectTableManager():
             self.object_viewer = Object3DViewer(
                 self.series,
                 obj_names,
-                self.opacity,
-                self.sc_size,
                 self.mainwindow
             )
     

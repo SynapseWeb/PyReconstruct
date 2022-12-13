@@ -109,18 +109,6 @@ class ObjectTableWidget(QDockWidget):
                     ("findfirst_act", "First trace", "", self.findFirst),
                     ("findlast_act", "Last trace", "", self.findLast)
                 ]
-            },
-
-            {
-                "attr_name": "options3D_menu",
-                "text": "3D",
-                "opts":
-                [
-                    ("generate3D_act", "Generate 3D", "", self.generate3D),
-                    None,
-                    ("opacity_act", "Edit 3D opacity...", "", self.editOpacity),
-                    ("sc_act", "Edit scale cube size...", "", self.editSCSize)
-                ]
             }
         ]
         # create the menubar object
@@ -143,7 +131,7 @@ class ObjectTableWidget(QDockWidget):
                 "text": "3D",
                 "opts":
                 [
-                    self.generate3D_act,
+                    ("generate3D_act", "Generate 3D", "", self.generate3D),
                     ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
             },
@@ -711,45 +699,6 @@ class ObjectTableWidget(QDockWidget):
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=False)
-    
-    def editOpacity(self):
-        """Edit the opacity of the 3D scene."""
-        new_opacity, confirmed = QInputDialog.getText(
-            self,
-            "3D Opacity",
-            "Enter 3D opacity (0-1):",
-            text=str(self.manager.opacity)
-        )
-        if not confirmed:
-            return
-        
-        try:
-            new_opacity = float(new_opacity)
-        except ValueError:
-            return
-        
-        if new_opacity < 0 or new_opacity > 255:
-            return
-        
-        self.manager.setOpacity(new_opacity)
-    
-    def editSCSize(self):
-        """Edit the size of the 3D scale cube."""
-        new_sc_size, confirmed = QInputDialog.getText(
-            self,
-            "3D Scale Cube",
-            "Enter scale cube side length (in microns):",
-            text=str(round(self.manager.sc_size, 6))
-        )
-        if not confirmed:
-            return
-        
-        try:
-            new_sc_size = float(new_sc_size)
-        except ValueError:
-            return
-        
-        self.manager.setSCSize(new_sc_size)
     
     def edit3D(self):
         """Edit the 3D options for an object or set of objects."""

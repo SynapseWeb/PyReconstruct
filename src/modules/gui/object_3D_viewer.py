@@ -1,5 +1,6 @@
 import numpy as np
 
+from PySide6.QtWidgets import QInputDialog, QMenu
 from PySide6.QtGui import QKeySequence, QShortcut
 
 import pyqtgraph.opengl as gl
@@ -9,9 +10,11 @@ from modules.backend.generate_volumes import generateVolumes
 
 from modules.pyrecon.series import Series
 
+from modules.gui.gui_functions import populateMenu
+
 class Object3DViewer(gl.GLViewWidget):
 
-    def __init__(self, series : Series, obj_names : list, opacity : int, sc_size : float, mainwindow):
+    def __init__(self, series : Series, obj_names : list, mainwindow):
         """Create the 3D View.
             
             Params:
@@ -50,8 +53,7 @@ class Object3DViewer(gl.GLViewWidget):
         ]))
 
         self.series = series
-        self.opacity = opacity
-        self.sc_size = sc_size
+        self.sc_side_len = 1
         self.obj_set = set(obj_names)
         self.closed = False
 
@@ -63,14 +65,10 @@ class Object3DViewer(gl.GLViewWidget):
             mainwindow.height()-40
         )
 
-        # create scale sube shortcut
-        QShortcut(QKeySequence("s"), self).activated.connect(self.toggleScaleCube)
-
         # get the items
         items, extremes = generateVolumes(
             self.series,
             obj_names,
-            self.opacity
         )
         # add the items to the scene
         for item in items:
@@ -93,7 +91,18 @@ class Object3DViewer(gl.GLViewWidget):
         self.sc_in_scene = False
         self.createScaleCube()
 
+        self.createContextMenu()
+
         self.show()
+    
+    def createContextMenu(self):
+        """Create the context menu for the 3D scene."""
+        context_menu_list = [
+            ("togglesc_act", "Toggle scale cube", "S", self.toggleScaleCube),
+            ("editscsize_act", "Edit scale cube size...", "", self.editSCSize)
+        ]
+        self.context_menu = QMenu(self)
+        populateMenu(self, self.context_menu, context_menu_list)
     
     def addObjects(self, obj_names):
         """Add objects to the existing scene.
@@ -110,7 +119,6 @@ class Object3DViewer(gl.GLViewWidget):
         items, extremes = generateVolumes(
             self.series,
             obj_names,
-            self.opacity
         )
 
         for item in items:
@@ -144,7 +152,7 @@ class Object3DViewer(gl.GLViewWidget):
                 [ 0, 1, 1]
             ],
             dtype=float
-        ) * self.sc_size
+        )
 
         faces_box = np.array([
             [0, 1, 2],
@@ -163,7 +171,7 @@ class Object3DViewer(gl.GLViewWidget):
 
         colors_box = []
         for i in range(1, 7):
-            c = i/10+0.1
+            c = i/10+0.05
             for _ in range(2):
                 colors_box.append([c,c,c,1])
         colors_box = np.array(colors_box)
@@ -184,6 +192,10 @@ class Object3DViewer(gl.GLViewWidget):
         # create the shortcuts
         self.createScaleCubeShortcuts()
     
+    def contextMenuEvent(self, event):
+        """Execute the context menu when user right clicks."""
+        self.context_menu.exec(event.globalPos())
+    
     def toggleScaleCube(self):
         """Toggle the scale cube on the 3D scene."""
         if self.sc_in_scene:
@@ -191,6 +203,25 @@ class Object3DViewer(gl.GLViewWidget):
         else:
             self.addItem(self.sc_item)
         self.sc_in_scene = not self.sc_in_scene
+    
+    def editSCSize(self):
+        """Modify the size of the scale cube."""
+        new_side_len, confirmed = QInputDialog.getText(
+            self,
+            "Scale Cube Size",
+            "Enter the scale cube side length (in µm):"
+        )
+        if not confirmed:
+            return
+
+        try:
+            new_side_len = float(new_side_len)
+        except ValueError:
+            return
+        
+        scale = new_side_len / self.sc_side_len
+        self.sc_item.scale(scale, scale, scale)
+        self.sc_side_len = new_side_len
 
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""

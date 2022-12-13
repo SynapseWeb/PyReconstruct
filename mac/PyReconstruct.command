@@ -1,6 +1,6 @@
 cd "$(dirname "$0")"
 cd ..
-FILE=/env/bin/activate
+FILE=env/bin/activate
 if [ -f "$FILE" ]; then
     source env/bin/activate
 else 

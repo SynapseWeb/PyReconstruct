@@ -1,10 +1,12 @@
 import os
 import json
+import shutil
 from datetime import datetime
 
 from constants.locations import createHiddenDir
 
 from modules.pyrecon.series import Series
+from modules.pyrecon.section import Section
 
 from modules.gui.gui_functions import progbar
 
@@ -108,6 +110,31 @@ def clearHiddenSeries(series : Series):
         for f in os.listdir(series.hidden_dir):
             os.remove(os.path.join(series.hidden_dir, f))
         os.rmdir(series.hidden_dir)
+
+def moveHiddenDir(series : Series, section : Section, b_section : Section):
+    """Move the hidden directory to the jser folder."""
+    jser_dir = os.path.dirname(series.jser_fp)
+    hidden_dir = os.path.dirname(series.filepath)
+    new_hidden_dir = os.path.join(jser_dir, os.path.basename(hidden_dir))
+    shutil.move(hidden_dir, new_hidden_dir)
+
+    # change the filepaths for the series and section files
+    series.hidden_dir = new_hidden_dir
+    series.filepath = os.path.join(
+        new_hidden_dir,
+        os.path.basename(series.filepath)
+    )
+    section.filepath = os.path.join(
+        new_hidden_dir,
+        os.path.basename(section.filepath)
+    )
+    if b_section:
+        b_section.filepath = os.path.join(
+            new_hidden_dir,
+            os.path.basename(b_section.filepath)
+        )
+
+
 
 
 

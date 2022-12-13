@@ -47,7 +47,7 @@ class PaletteButton(QPushButton):
         if abs(self.trace.mode) != 11:
             painter.setBrush(QBrush(QColor(*self.trace.color)))
         if abs(self.trace.mode) == 9 or abs(self.trace.mode) == 15:
-            painter.setOpacity(0.5)
+            painter.setOpacity(0.3)
         painter.drawPolygon(points)
 
         # highlight the button if selected

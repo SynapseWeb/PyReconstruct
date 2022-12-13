@@ -23,7 +23,7 @@ from modules.gui.gui_functions import (
     populateMenu,
     saveNotify,
     unsavedNotify,
-    getSaveLocation
+    getSaveLocation,
 )
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
@@ -31,7 +31,8 @@ from modules.backend.import_transforms import importTransforms
 from modules.backend.process_jser_file import (
     openJserFile,
     saveJserFile,
-    clearHiddenSeries
+    clearHiddenSeries,
+    moveHiddenDir
 )
 
 from modules.pyrecon.series import Series
@@ -729,16 +730,13 @@ class MainWindow(QMainWindow):
             clearHiddenSeries(self.series)
             return
 
-        # get the save filepath if needed
+        # run save as if there is no jser filepath
         if not self.series.jser_fp:
-            confirmed = getSaveLocation(self, self.series)
-            if not confirmed:
-                return
-        
-        saveJserFile(self.series, close=close)
-
-        # set the series to unmodified
-        self.series.modified = False
+            self.saveAsToJser()
+        else:        
+            saveJserFile(self.series, close=close)
+            # set the series to unmodified
+            self.series.modified = False
     
     def saveAsToJser(self):
         """Prompt the user to find a save location."""
@@ -746,6 +744,13 @@ class MainWindow(QMainWindow):
         confirmed = getSaveLocation(self, self.series)
         if not confirmed:
             return
+        
+        # move the working hidden folder to the new jser directory
+        moveHiddenDir(
+            self.series,
+            self.field.section,
+            self.field.b_section
+        )
         
         # save the file
         saveJserFile(self.series)

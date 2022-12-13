@@ -732,13 +732,13 @@ class MainWindow(QMainWindow):
 
         # run save as if there is no jser filepath
         if not self.series.jser_fp:
-            self.saveAsToJser()
+            self.saveAsToJser(close=close)
         else:        
             saveJserFile(self.series, close=close)
             # set the series to unmodified
             self.series.modified = False
     
-    def saveAsToJser(self):
+    def saveAsToJser(self, close=False):
         """Prompt the user to find a save location."""
         # get location from user
         confirmed = getSaveLocation(self, self.series)
@@ -753,7 +753,7 @@ class MainWindow(QMainWindow):
         )
         
         # save the file
-        saveJserFile(self.series)
+        saveJserFile(self.series, close=close)
 
         # set the series to unmodified
         self.series.modified = False

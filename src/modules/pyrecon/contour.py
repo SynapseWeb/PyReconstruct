@@ -2,7 +2,7 @@ from modules.pyrecon.trace import Trace
 
 class Contour():
 
-    def __init__(self, name : str, traces : list = []):
+    def __init__(self, name : str, traces : list = None):
         """Create a contour object.
         
             Params:
@@ -10,10 +10,13 @@ class Contour():
                 traces (list): the existing list of traces
         """
         self.name = name
-        for trace in traces:
-            if trace.name != name:
-                raise Exception("Trace name does not match contour name")
-        self.traces = traces
+        if traces:
+            for trace in traces:
+                if trace.name != name:
+                    raise Exception("Trace name does not match contour name")
+            self.traces = traces
+        else:
+            self.traces = []
     
     def __iter__(self):
         """Return the iterator object for the traces list"""

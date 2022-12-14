@@ -65,10 +65,14 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_dim)
 
+        # table defaults
         self.obj_table_manager = None
         self.ztrace_table_manager = None
         self.trace_table_manager = None
         self.section_table_manager = None
+
+        # misc defaults
+        self.current_trace = []
 
         self.createField(series)
 
@@ -250,6 +254,26 @@ class FieldWidget(QWidget, FieldView):
             ]
             for i in range(len(points)):
                 field_painter.drawLine(*points[i-1], *points[i])
+
+        # draw solid lines for existing trace
+        if self.current_trace:
+            closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing)
+            color = QColor(*self.tracing_trace.color)
+            pen = QPen(color, 1)
+            field_painter.setPen(pen)
+            if closed:
+                start = 0
+            else:
+                start = 1
+            for i in range(start, len(self.current_trace)):
+                field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+            # draw dashed lines that connect to mouse pointer
+            if self.is_line_tracing:
+                pen.setDashPattern([2,5])
+                field_painter.setPen(pen)
+                field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
+                if closed:
+                    field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
 
         field_painter.end()
     
@@ -796,7 +820,7 @@ class FieldWidget(QWidget, FieldView):
     def traceMove(self, event):
         """Called when mouse is moved in trace mode."""
         if self.is_line_tracing:
-            self.lineMove(event)
+            self.update()
         else:
             self.pencilMove(event)
     
@@ -822,11 +846,6 @@ class FieldWidget(QWidget, FieldView):
             # draw trace on pixmap
             x = event.x()
             y = event.y()
-            painter = QPainter(self.field_pixmap)
-            color = QColor(*self.tracing_trace.color)
-            painter.setPen(QPen(color, 1))
-            painter.drawLine(self.last_x, self.last_y, x, y)
-            painter.end()
             self.current_trace.append((x, y))
             self.last_x = x
             self.last_y = y
@@ -846,60 +865,49 @@ class FieldWidget(QWidget, FieldView):
                 self.tracing_trace,
                 closed=closed
             )
+            self.current_trace = []
     
     def linePress(self, event):
         """Called when mouse is pressed in a line mode.
         
         Begins create a line trace.
         """
-        closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
         x, y = event.x(), event.y()
         if self.lclick:  # begin/add to trace if left mouse button
             if self.is_line_tracing:  # continue trace
                 self.current_trace.append((x, y))
-                self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
-                painter = QPainter(self.field_pixmap)
-                color = QColor(*self.tracing_trace.color)
-                painter.setPen(QPen(color, 1))
-                if closed:
-                    start = 0
-                else:
-                    start = 1
-                for i in range(start, len(self.current_trace)):
-                    painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-                painter.end()
                 self.update()
             else:  # start new trace
                 self.current_trace = [(x, y)]
                 self.is_line_tracing = True
     
-    def lineMove(self, event):
-        """Called when mouse is moved in a line mode.
+    # def lineMove(self, event):
+    #     """Called when mouse is moved in a line mode.
         
-        Adds dashed lines to screen connecting the mouse pointer to the existing trace.
-        """
-        if self.is_line_tracing:
-            closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
-            x, y = event.x(), event.y()
-            self.field_pixmap = self.field_pixmap_copy.copy()
-            # draw solid lines for existing trace
-            painter = QPainter(self.field_pixmap)
-            color = QColor(*self.tracing_trace.color)
-            pen = QPen(color, 1)
-            painter.setPen(pen)
-            if closed:
-                start = 0
-            else:
-                start = 1
-            for i in range(start, len(self.current_trace)):
-                painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-            # draw dashed lines that connect to mouse pointer
-            pen.setDashPattern([2,5])
-            painter.setPen(pen)
-            painter.drawLine(*self.current_trace[-1], x, y)
-            if closed:
-                painter.drawLine(*self.current_trace[0], x, y)
-            self.update()
+    #     Adds dashed lines to screen connecting the mouse pointer to the existing trace.
+    #     """
+    #     if self.is_line_tracing:
+    #         closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
+    #         x, y = event.x(), event.y()
+    #         self.field_pixmap = self.field_pixmap_copy.copy()
+    #         # draw solid lines for existing trace
+    #         painter = QPainter(self.field_pixmap)
+    #         color = QColor(*self.tracing_trace.color)
+    #         pen = QPen(color, 1)
+    #         painter.setPen(pen)
+    #         if closed:
+    #             start = 0
+    #         else:
+    #             start = 1
+    #         for i in range(start, len(self.current_trace)):
+    #             painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+    #         # draw dashed lines that connect to mouse pointer
+    #         pen.setDashPattern([2,5])
+    #         painter.setPen(pen)
+    #         painter.drawLine(*self.current_trace[-1], x, y)
+    #         if closed:
+    #             painter.drawLine(*self.current_trace[0], x, y)
+    #         self.update()
     
     def lineRelease(self, event):
         """Called when mouse is released in line mode."""
@@ -912,6 +920,7 @@ class FieldWidget(QWidget, FieldView):
                     self.tracing_trace,
                     closed=closed
                 )
+                self.current_trace = []
             else:
                 self.field_pixmap = self.field_pixmap_copy.copy()
                 self.update()
@@ -919,32 +928,10 @@ class FieldWidget(QWidget, FieldView):
     def backspace(self):
         """Called when backspace OR Del is pressed: either delete traces or undo line trace."""
         if self.is_line_tracing and len(self.current_trace) > 1:
-            closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
             self.current_trace.pop()
-            self.field_pixmap = self.field_pixmap_copy.copy()  # operate on original pixmap
-            painter = QPainter(self.field_pixmap)
-            color = QColor(*self.tracing_trace.color)
-            painter.setPen(QPen(color, 1))
-            # redraw the polygon/polyline
-            if closed:
-                start = 0
-            else:
-                start = 1
-            for i in range(start, len(self.current_trace)):
-                painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-            # redraw the dotted line
-            pen = painter.pen()
-            pen.setDashPattern([2,5])
-            painter.setPen(pen)
-            x, y = self.mouse_x, self.mouse_y
-            painter.drawLine(*self.current_trace[-1], x, y)
-            if closed:
-                painter.drawLine(*self.current_trace[0], x, y)                
-            painter.end()
             self.update()
         elif len(self.current_trace) == 1:
             self.is_line_tracing = False
-            self.field_pixmap = self.field_pixmap_copy
             self.update()
         else:
             self.deleteTraces()

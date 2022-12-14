@@ -117,7 +117,7 @@ def getReconcropperData(json_fp):
     alignment_dict = {}
 
     for item in json_data:
-        if item.startswith("LOCAL") or item.startswith("ALIGNMENT") or item == "GLOBAL":
+        if item.startswith("LOCAL") or item.startswith("ALIGNMENT"):
             for section_name in json_data[item]:
                 # get the transform data
                 xcoef = json_data[item][section_name]["xcoef"]
@@ -126,12 +126,11 @@ def getReconcropperData(json_fp):
                 tform_list = leg_tform.getTformList()
 
                 # store the transform data
-                aname = "default" if item == "GLOBAL" else item
+                aname = item
                 if section_name not in alignment_dict:
                     alignment_dict[section_name] = {}
                 alignment_dict[section_name][aname] = tform_list
                 
-    
     return alignment_dict
 
 def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
@@ -151,14 +150,16 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     section_dict["thickness"] = xml_section.thickness
 
     # get transform data
+    section_dict["tforms"] = {}
     if alignment_dict:
         section_dict["tforms"] = alignment_dict[fname]
-        tform = Transform(section_dict["tforms"]["default"])
     else:
-        tform = Transform(
-            list(image.transform.tform()[:2,:].reshape(6))
-        )
-        section_dict["tforms"]["default"] = tform.getList()
+        section_dict["tforms"] = {}
+
+    tform = Transform(
+        list(image.transform.tform()[:2,:].reshape(6))
+    )
+    section_dict["tforms"]["default"] = tform.getList()
     section_dict["align_locked"] = xml_section.alignLocked
 
     # get trace/contour data

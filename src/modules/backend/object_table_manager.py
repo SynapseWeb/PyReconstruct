@@ -157,6 +157,7 @@ class ObjectTableManager():
 
     def refresh(self):
         """Reload all of the section data."""
+        self.mainwindow.saveAllData()
         self.loadSeriesData()
         for table in self.tables:
             table.createTable(self.objdict)

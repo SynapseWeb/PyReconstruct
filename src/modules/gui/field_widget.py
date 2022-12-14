@@ -405,12 +405,18 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_x = event.x()
         self.mouse_y = event.y()
 
+        # ignore ALL finger touch for windows
+        if os.name == "nt":
+            if event.pointerType() == QPointingDevice.PointerType.Finger:
+                return
+
+
         # if any finger touch
         if self.is_gesturing:
             return
         
         # if any eraser touch
-        elif event.pointerType() == QPointingDevice.PointerType.Eraser:
+        if event.pointerType() == QPointingDevice.PointerType.Eraser:
             self.erasing = True
             return
 
@@ -459,6 +465,11 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_x = event.x()
         self.mouse_y = event.y()
 
+        # ignore ALL finger touch for windows
+        if os.name == "nt":
+            if event.pointerType() == QPointingDevice.PointerType.Finger:
+                return
+
         # if any finger touch
         if self.is_gesturing:
             return
@@ -503,6 +514,11 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget Class.
         """
+        # ignore ALL finger touch for windows
+        if os.name == "nt":
+            if event.pointerType() == QPointingDevice.PointerType.Finger:
+                return
+        
         # if any finger touch
         if self.is_gesturing:
             return

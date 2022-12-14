@@ -56,7 +56,7 @@ class Contour():
     
     def getTraces(self):
         """Return the list of traces."""
-        return self.traces
+        return self.traces.copy()
     
     def copy(self):
         """Return a copy of the contour."""

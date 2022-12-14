@@ -167,7 +167,7 @@ class MousePalette():
         """
         kbd = ""
         if pos // 10 > 0:
-            kbd += "Ctrl+"
+            kbd += "Shift+"
         kbd += str((pos + 1) % 10)
         tooltip = f"{b.trace.name} ({kbd})"
         b.setToolTip(tooltip)

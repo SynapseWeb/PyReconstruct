@@ -97,7 +97,7 @@ def progbar(title : str, text : str, cancel=True):
             "Cancel",
             0, 100
         )
-    progbar.setMinimumDuration(0)
+    progbar.setMinimumDuration(1500)
     progbar.setWindowTitle(title)
     progbar.setWindowModality(Qt.WindowModal)
     if not cancel:

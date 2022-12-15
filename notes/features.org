@@ -55,20 +55,20 @@
 
 - [X] Dim 6 transformations (retro-reconstruct before truncating and importing)
 
-- [ ] Modes (change to strings, e.g., "none", "filled", etc.)
+- [X] Modes (change to strings, e.g., "none", "filled", etc.)
 
 - [ ] Selected objects from the inside
    - [ ] Consider adding selected object list to field opposite trace palette
 
 - [ ] Add asterisk to title if unsaved
 
-- [ ] Object list
-   - [ ] Right click on objec and access trace attribute menu
+- [X] Object list
+   - [X] Right click on objec and access trace attribute menu
 
 - [ ] Section list
    - [ ] Consider section attribute /type/ = ("Tissue", "Cal-grid", ...)
 
-- [ ] Save notification - increase time out so user has a chance to read message
+- [X] Save notification - increase time out so user has a chance to read message
 
 - [ ] Brightness / Contrast
 
@@ -78,7 +78,7 @@
      
 - [ ] Show all toggling with green (?) outline ("a")
 
-- [ ] Zoom when control pressed to mouse position (don't lift ctrl)
+- [X] Zoom when control pressed to mouse position (don't lift ctrl)
 
 - [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
 

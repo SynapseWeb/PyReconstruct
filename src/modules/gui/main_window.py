@@ -659,11 +659,13 @@ class MainWindow(QMainWindow):
 
         # if zooming
         if modifiers == Qt.ControlModifier:
+            pos = event.point(0).pos()
+            x, y = pos.x(), pos.y()
             if not self.is_zooming_in:
                 # check if user just started zooming in
                 self.field.panzoomPress(
-                    event.point(0).pos().x() - self.field.x(),
-                    event.point(0).pos().y() - self.field.y(),
+                    x - self.field.x(),
+                    y - self.field.y(),
                 )
                 self.zoom_factor = 1
                 self.is_zooming_in = True
@@ -672,7 +674,7 @@ class MainWindow(QMainWindow):
                 self.zoom_factor *= 1.1
             elif event.angleDelta().y() < 0:  # if scroll down
                 self.zoom_factor *= 0.9
-            self.field.panzoomMove(zoom_factor=self.zoom_factor)
+            self.field.panzoomMove(x, y, self.zoom_factor)
         
         # if changing sections
         elif modifiers == Qt.NoModifier:

@@ -167,7 +167,7 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     for xml_contour in xml_section.contours:
         trace = Trace.dictFromXMLObj(
             xml_contour,
-            tform,
+            image.transform,
             section_dict["mag"]
         )
         if xml_contour.name in contours:

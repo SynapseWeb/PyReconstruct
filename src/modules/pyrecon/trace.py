@@ -153,7 +153,7 @@ class Trace():
         return new_trace
     
     # STATIC METHOD
-    def dictFromXMLObj(xml_trace : XMLContour, tform : Transform = None, section_mag=None, palette=False):
+    def dictFromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None, section_mag=None, palette=False):
         """Create a trace from an xml contour object.
         
             Params:
@@ -174,8 +174,8 @@ class Trace():
         # get the transform
         if xml_trace.transform is not None:
             points = xml_trace.transform.transformPoints(xml_trace.points)
-        if tform is not None:
-            points = tform.map(points, inverted=True)
+        if xml_image_tform is not None:
+            points = xml_image_tform.inverseTransformPoints(points)
         
         # get the points
         if section_mag:

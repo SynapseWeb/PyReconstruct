@@ -16,8 +16,6 @@
 - Will use volume Joseph
 
 - [X] Make stock warning function
-
-- [ ] Meet with Kristen (Wednesday)
      
 - [ ] Full protocol/manual
    - [ ] Take a look at Reconstrcut basics and intro on Synapse web
@@ -55,35 +53,32 @@
 * High-priority tasks
 ** Julian
 
-- [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
+- [ ] Dim 6 transformations (retro-reconstruct before truncating and importing)
 
-- [X] Fix import statements for dim 6 (Did we do this?)
+- [ ] Modes (change to strings, e.g., "none", "filled", etc.)
 
-- [ ] Show all toggling with green (?) outline ("a")
+- [ ] Selected objects from the inside
+   - [ ] Consider adding selected object list to field opposite trace palette
 
-- [X] GUI
-   - [X] H to toggle trace visibility for entire series (think boolean variable for series)
-   - [X] Visual indicator that all traces are hidden (outline field in a bright color)
-   - [X] Ctrl-u to change section_visibiliy to True for all traces on sectionp
-
-- [X] Access section thickness somewhere
-
-- [X] 3D Options:
-   - [X] Transparency
-   - [X] Scale cube sizing
-
-- [X] Trace list
-   - [X] Make trace list index column not obligatory (default to off)
-   - [X] Fix header for index columns
-     
-- [X] Object list
-   - [X] Hide objects 
-
-- [X] Modify object radius from right-click menu
-- [X] Automatically resize palette traces from XML files
+- [ ] Object list
+   - [ ] Right click on objec and access trace attribute menu
 
 - [ ] Section list
    - [ ] Consider section attribute /type/ = ("Tissue", "Cal-grid", ...)
+
+- [ ] Save notification - increase time out so user has a chance to read message
+
+- [ ] Brightness / Contrast
+
+   - [ ] Edit from section list (right click -> edit brightness / contrast)
+   - [ ] Apply one sections brightness / contrast to all other sections
+   - [ ] Make bright / con changes less dramatic
+     
+- [ ] Show all toggling with green (?) outline ("a")
+
+- [ ] Zoom when control pressed to mouse position (don't lift ctrl)
+
+- [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
 
 - [ ] Investigate console hiding (see =misc/console_hide.txt=)
 

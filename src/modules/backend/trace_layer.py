@@ -74,6 +74,8 @@ class TraceLayer():
         """
         min_distance = -1
         closest_trace = None
+        min_interior_distance = -1
+        closest_trace_interior = None
         tform = self.section.tforms[self.series.alignment]
         # only check the traces within the view
         for trace in self.traces_in_view:
@@ -81,13 +83,29 @@ class TraceLayer():
             for point in trace.points:
                 x, y = tform.map(*point)
                 points.append((x,y))
+            
             # find the distance of the point from each trace
-            dist = getDistanceFromTrace(field_x, field_y, points, factor=1/self.section.mag)
-            if closest_trace is None or dist < min_distance:
-                min_distance = dist
+            dist = getDistanceFromTrace(
+                field_x,
+                field_y,
+                points,
+                factor=1/self.section.mag,
+                absolute=False
+            )
+            if closest_trace is None or abs(dist) < min_distance:
+                min_distance = abs(dist)
                 closest_trace = trace
+            
+            # check if the point is inside any filled trace
+            if (
+                trace.fill_mode[0] != "none" and
+                dist > 0 and 
+                (closest_trace_interior is None or dist < min_interior_distance)
+            ):
+                min_interior_distance = dist
+                closest_trace_interior = trace
         
-        return closest_trace if min_distance <= radius else None
+        return closest_trace if min_distance <= radius else closest_trace_interior
     
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
         """"Return the closest trace to the given field coordinates.

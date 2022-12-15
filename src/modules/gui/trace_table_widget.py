@@ -300,8 +300,8 @@ class TraceTableWidget(QDockWidget):
         if not confirmed:
             return
         
-        name, color, tags = new_attr
-        self.manager.editTraces(name, color, tags, traces)
+        name, color, tags, mode = new_attr
+        self.manager.editTraces(name, color, tags, mode, traces)
         self.manager.loadSection()
     
     def hideTraces(self, hide=True):

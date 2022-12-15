@@ -208,7 +208,7 @@ class ObjectTableManager():
 
         self.series.modified = True  # flag series as modified
 
-    def modifyObjects(self, obj_names : list, name : str = None, color : tuple = None):
+    def editAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None):
         """Rename objects on every section.
         
             Params:
@@ -218,35 +218,23 @@ class ObjectTableManager():
                 color (tuple): the new color for the objects
         """
         self.mainwindow.saveAllData()
+        # delete existing trace information
+        for obj_name in obj_names:
+            self.objdict[obj_name] = ObjectTableItem(obj_name)
+        
         # modify the object on every section
         for snum in self.series.sections:
             section = self.series.loadSection(snum)
+            traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:
-                    contour = section.contours[obj_name]
-                    for trace in contour:
-                        if name:
-                            trace.name = name
-                        if color:
-                            trace.color = color
-                    if name:
-                        contour.name = name
-                        # check if the new name exists in the section
-                        if name in section.contours:
-                            section.contours[name] += contour
-                        else:
-                            section.contours[name] = contour
-                        del(section.contours[obj_name])
-                    section.save()
-        
-        # update the dictionary data
-        if name:
-            for obj_name in obj_names:
-                if name in self.objdict:
-                    self.objdict[name].combine(self.objdict[obj_name])
-                else:
-                    self.objdict[name] = self.objdict[obj_name].copy(name)
-                self.objdict[obj_name].clearAllData()
+                    traces += section.contours[obj_name].getTraces()
+            if traces:
+                section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True)
+                # add trace data to table data
+                for trace in traces:
+                    self.addTrace(trace, section, snum)
+                section.save()
 
         # update the table data
         for table in self.tables:
@@ -258,8 +246,79 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
 
+        self.series.modified = True  # flag series as modified         
+
+    def editRadius(self, obj_names : list, new_rad : float):
+        """Change the radii of all traces of an object.
+        
+            Params:
+                obj_names (list): the names of objects to modify
+                new_rad (float): the new radius for the traces of the object
+        """
+        self.mainwindow.saveAllData()
+        # delete existing trace information
+        for name in obj_names:
+            self.objdict[name] = ObjectTableItem(name)
+        
+        # iterate through all sections
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            traces = []
+            for name in obj_names:
+                if name in section.contours:
+                    traces += section.contours[name].getTraces()
+            if traces:
+                section.editTraceRadius(traces, new_rad)
+                # add trace data to table data
+                for trace in traces:
+                    self.addTrace(trace, section, snum)
+                section.save()
+        
+        # update the table data
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+        
+        # update the view
+        self.mainwindow.field.reload()
+
         self.series.modified = True  # flag series as modified
     
+    def removeAllTraceTags(self, obj_names : list):
+        """Remove all tags from all trace on a selected object.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        self.mainwindow.saveAllData()
+
+        # iterate through all the sections
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            traces = []
+            for obj_name in obj_names:
+                if obj_name in section.contours:
+                    traces += section.contours[obj_name].getTraces()
+            if traces:
+                section.editTraceAttributes(
+                    traces,
+                    name=None,
+                    color=None,
+                    tags=set(),
+                    mode=None, 
+                )
+                section.save()
+
+        # modify the dictionary data
+        for name in obj_names:
+            self.objdict[name].clearTags()
+
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+        
+        self.series.modified = True  # flag series as modified
+
     def hideObjects(self, obj_names : list, hide=True):
         """Hide all traces of an object throughout the series.
         
@@ -284,111 +343,7 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
 
-        self.series.modified = True  # flag series as modified           
-
-    def editRadius(self, obj_names : list, new_rad : float):
-        """Change the radii of all traces of an object.
-        
-            Params:
-                obj_names (list): the names of objects to modify
-                new_rad (float): the new radius for the traces of the object
-        """
-        self.mainwindow.saveAllData()
-        # delete existing trace information
-        for name in obj_names:
-            self.objdict[name] = ObjectTableItem(name)
-        
-        # iterate through all sections
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            modified = False
-            for name in obj_names:
-                if name in section.contours:
-                    contour = section.contours[name]
-                    for trace in contour:
-                        # modify the trace
-                        trace.resize(new_rad)
-                        modified = True
-                        # add trace data
-                        self.addTrace(trace, section, snum)
-            if modified:
-                section.save()
-        
-        # update the table data
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
-        
-        # update the view
-        self.mainwindow.field.reload()
-
-        self.series.modified = True  # flag series as modified
-    
-    def tagTraces(self, obj_names : list, tag_name : str, remove=False):
-        """Tag all the traces on a set of objects.
-        
-            Params:
-                obj_names (list): a list of object names
-                tag_name (str): the name of the tag to add
-                remove (bool): True if the tag_name should be remove from the object traces
-        """
-        self.mainwindow.saveAllData()
-
-        # iterate through all sections
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            section_modified = False
-            for name in obj_names:
-                if name in section.contours:
-                    for trace in section.contours[name]:
-                        # add or remove tag to each trace
-                        if not remove:
-                            trace.tags.add(tag_name)
-                            self.objdict[trace.name].addTag(tag_name, snum)
-                            section_modified = True
-                        else:
-                            if tag_name in trace.tags:
-                                trace.tags.remove(tag_name)
-                                self.objdict[trace.name].removeTag(tag_name, snum)
-                                section_modified = True
-            if section_modified:
-                section.save()
-        
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
-        
-        self.series.modified = True  # flag series as modified
-    
-    def removeAllTraceTags(self, obj_names : list):
-        """Remove all tags from all trace on a selected object.
-        
-            Params:
-                obj_names (list): a list of object names
-        """
-        self.mainwindow.saveAllData()
-
-        # iterate through all sections
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            section_modified = False
-            for name in obj_names:
-                if name in section.contours:
-                    # clear tags on all object traces
-                    for trace in section.contours[name]:
-                        trace.tags = set()
-                        section_modified = True
-            if section_modified:
-                section.save()
-        # modify the dictionary data
-        for name in obj_names:
-            self.objdict[trace.name].clearTags()
-
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
-        
-        self.series.modified = True  # flag series as modified
+        self.series.modified = True  # flag series as modified  
     
     def generate3D(self, obj_names):
         """Generate the 3D view for a list of objects.

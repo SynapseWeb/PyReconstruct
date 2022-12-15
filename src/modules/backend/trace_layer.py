@@ -195,50 +195,6 @@ class TraceLayer():
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
-        
-    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, traces : list = None):
-        """Change the name and/or color of a trace or set of traces.
-        
-            Params:
-                name (str): the new name
-                color (tuple): the new color
-                tags (set): the new set of tags
-                mode (tuple): the new fill mode for the traces
-                traces (list): the list of traces to edit (default: selected traces)
-        """
-        # change object attributes
-        if traces is None:
-            traces = self.selected_traces
-        for trace in traces:
-            self.section.removeTrace(trace)
-            if name:
-                trace.name = name
-            if color:
-                trace.color = color
-            if tags:
-                trace.tags = tags
-            fill_mode = list(trace.fill_mode)
-            style, condition = mode
-            if style:
-                fill_mode[0] = style
-            if condition:
-                fill_mode[1] = condition
-            trace.fill_mode = tuple(fill_mode)
-            self.section.addTrace(trace, "attributes modified")
-    
-    def changeTraceRadius(self, new_rad : float, traces : list = None):
-        """Change the radius of a trace or set of traces.
-        
-            Params:
-                new_rad (float): the new radius for the trace(s)
-                traces (list): the list of traces to change (default: selected traces)
-        """
-        if traces is None:
-            traces = self.selected_traces
-        for trace in traces:
-            self.section.removeTrace(trace)
-            trace.resize(new_rad)
-            self.section.addTrace(trace, "radius modified")
 
     def deselectAllTraces(self):
         """Deselect all traces."""

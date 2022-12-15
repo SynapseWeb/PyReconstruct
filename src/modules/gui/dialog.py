@@ -59,7 +59,7 @@ class TraceDialog(QDialog):
                 if trace.color != color:
                     color = None
                 if trace.tags != tags:
-                    tags = None
+                    tags = set()
                 if trace.fill_mode[0] != fill_style:
                     fill_style = None
                 if trace.fill_mode[1] != fill_condition:
@@ -68,7 +68,7 @@ class TraceDialog(QDialog):
             if not name:
                 name = "*"
             color = None
-            tags = None
+            tags = set()
             fill_style = None
             fill_condition = None
 
@@ -100,14 +100,10 @@ class TraceDialog(QDialog):
 
         self.condition_row = QHBoxLayout()
         self.condition_input = QCheckBox("Fill when selected")
-        if fill_condition:
-            if fill_condition == "selected":
-                self.condition_input.setChecked(True)
-            else:
-                self.condition_input.setChecked(False)
+        if fill_condition == "selected":
+            self.condition_input.setChecked(True)
         else:
-            self.condition_input.setTristate(True)
-            self.condition_input.setCheckState(Qt.PartiallyChecked)
+            self.condition_input.setChecked(False)
         self.condition_row.addWidget(self.condition_input)
 
         self.style_row = QHBoxLayout()
@@ -200,13 +196,11 @@ class TraceDialog(QDialog):
                     style = "solid"
                 else:
                     style = None
-                state = self.condition_input.checkState()
-                if state == Qt.Checked:
+                    condition = None
+                if self.condition_input.isChecked():
                     condition = "selected"
-                elif state == Qt.Unchecked:
-                    condition = "unselected"
                 else:
-                    condition = None  
+                    condition = "unselected"
             retlist.append((style, condition))
 
             # radius

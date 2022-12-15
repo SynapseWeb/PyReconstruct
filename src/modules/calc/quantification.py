@@ -40,12 +40,12 @@ def centroid(pts : list) -> tuple:
         for i in range(len(pts) - 1):
             sx += (x[i] + x[i+1])*(x[i]*y[i+1] - x[i+1]*y[i])
             sy += (y[i] + y[i+1])*(x[i]*y[i+1] - x[i+1]*y[i])
-        return (round(sx/(6*a), 5), round(sy/(6*a), 5))
+        return (round(sx/(6*a), 6), round(sy/(6*a), 6))
     # if area is 0: return average of points
     else:
         x_avg = sum([p[0] for p in pts])/len(pts)
         y_avg = sum([p[1] for p in pts])/len(pts)
-        return round(x_avg, 5), round(y_avg, 5)
+        return round(x_avg, 6), round(y_avg, 6)
 
 def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     """Calculate Euclidean distance between two points in 2D space.

@@ -9,8 +9,7 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog, 
-    QColorDialog
+    QFileDialog
 )
 from PySide6.QtCore import Qt
 
@@ -26,7 +25,8 @@ from modules.gui.gui_functions import (
 from modules.gui.dialog import (
     ObjectGroupDialog,
     TableColumnsDialog,
-    Object3DDialog
+    Object3DDialog,
+    TraceDialog
 )
 
 class ObjectTableWidget(QDockWidget):
@@ -119,9 +119,8 @@ class ObjectTableWidget(QDockWidget):
 
         # create the right-click menu
         context_menu_list = [
-            ("editobjname_act", "Edit name...", "", self.editObjName),
-            ("editobjcolor_act", "Edit color...", "", self.editObjColor),
-            ("editradius_act", "Edit radius...", "", self.editObjRadius),
+            ("editattribtues_act", "Edit attributes...", "", self.editAttributes),
+            ("editradius_act", "Edit radius...", "", self.editRadius),
             None,
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
@@ -146,16 +145,9 @@ class ObjectTableWidget(QDockWidget):
                     ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
                 ]
             },
-            {
-                "attr_name" : "tag_menu",
-                "text": "Tags",
-                "opts":
-                [
-                    ("addtag_act", "Add tag...", "", self.addTag),
-                    ("removetag_act", "Remove tag...", "", self.removeTag),
-                    ("removealltags_act", "Remove all tags", "", self.removeAllTags)
-                ]
-            },
+            None,
+            ("removealltags_act", "Remove all tags", "", self.removeAllTags),
+            None,
             ("history_act", "View history", "", self.viewHistory),
             None,
             ("ztrace_act", "Create ztrace", "", self.createZtrace),
@@ -260,7 +252,7 @@ class ObjectTableWidget(QDockWidget):
         sorted_obj_names = sorted(list(objdict.keys()))
         filtered_obj_names = []
         for name in sorted_obj_names:
-            if self.passesFilters(objdict[name]):
+            if self.passesFilters(objdict[name]) and not objdict[name].isEmpty():
                 filtered_obj_names.append(name)
 
         # create the table object
@@ -374,7 +366,7 @@ class ObjectTableWidget(QDockWidget):
             return
         self.context_menu.exec(event.globalPos())   
     
-    def editObjName(self):
+    def editAttributes(self):
         """Edit the name of an object in the entire series."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
@@ -384,52 +376,16 @@ class ObjectTableWidget(QDockWidget):
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
         else:
-            displayed_name = ""
-        name, confirmed = QInputDialog.getText(
-            self,
-            "New Object Name",
-            "Enter the new name for the object:",
-            text=displayed_name
-        )
+            displayed_name = None
+        
+        new_attr, confirmed = TraceDialog(self, name=displayed_name).exec()
+
         if not confirmed:
             return
         
-        if not noUndoWarning(self):
-            return
-        
-        self.manager.modifyObjects(obj_names, name=name)
+        self.manager.editAttributes(obj_names, *new_attr)
     
-    def editObjColor(self):
-        """Edit the color of an object in the entire series."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-
-        # ask the user for the new color
-        c = QColorDialog.getColor()
-        color = (c.red(), c.green(), c.blue())
-
-        if not color:
-            return
-        
-        if not noUndoWarning(self):
-            return
-        
-        self.manager.modifyObjects(obj_names, color=color)
-    
-    def hideObj(self, hide=True):
-        """Edit whether or not an object is hidden in the entire series.
-        
-            Params:
-                hide (bool): True if the object should be hidden
-        """
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-        
-        self.manager.hideObjects(obj_names, hide)
-    
-    def editObjRadius(self):
+    def editRadius(self):
         """Modify the radius of the trace on an entire object."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
@@ -455,6 +411,18 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.editRadius(obj_names, new_rad)
+    
+    def hideObj(self, hide=True):
+        """Edit whether or not an object is hidden in the entire series.
+        
+            Params:
+                hide (bool): True if the object should be hidden
+        """
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        self.manager.hideObjects(obj_names, hide)
 
     def generate3D(self, event=None):
         """Generate a 3D view of an object"""
@@ -505,38 +473,6 @@ class ObjectTableWidget(QDockWidget):
             for group in groups.copy():
                 self.series.object_groups.remove(group=group, obj=name)
             self.manager.refreshObject(name)
-    
-    def addTag(self):
-        """Add a tag to all traces on selected objects."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-        
-        tag_name, confirmed = QInputDialog.getText(
-            self,
-            "Tag Traces",
-            "Enter the trace tag:"
-        )
-        if not confirmed:
-            return
-        
-        self.manager.tagTraces(obj_names, tag_name)
-    
-    def removeTag(self):
-        """Remove a tag from all traces on selected objects."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-        
-        tag_name, confirmed = QInputDialog.getText(
-            self,
-            "Remove Tag",
-            "Enter the tag to remove:"
-        )
-        if not confirmed:
-            return
-        
-        self.manager.tagTraces(obj_names, tag_name, remove=True)
     
     def removeAllTags(self):
         """Remove all tags from all traces on selected objects."""

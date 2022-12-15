@@ -347,7 +347,8 @@ class FieldWidget(QWidget, FieldView):
             return
         
         name, color, tags, mode = new_attr
-        self.section_layer.changeTraceAttributes(
+        self.section_layer.section.editTraceAttributes(
+            traces=self.section_layer.selected_traces,
             name=name,
             color=color,
             tags=tags,

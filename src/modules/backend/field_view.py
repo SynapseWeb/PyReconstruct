@@ -544,11 +544,6 @@ class FieldView():
         self.section_layer.makeNegative(negative)
         self.saveState()
     
-    def editRadius(self, new_rad, traces=None):
-        self.section_layer.changeTraceRadius(new_rad, traces)
-        self.saveState()
-        self.generateView(generate_image=False)
-    
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
         self.generateView(generate_traces=False)

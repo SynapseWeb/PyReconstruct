@@ -121,16 +121,17 @@ class TraceTableManager():
         
         return traces
     
-    def editTraces(self, name : str, color : tuple, tags : set, traces : list):
+    def editTraces(self, name : str, color : tuple, tags : set, mode : tuple, traces : list):
         """Edit a set of traces.
         
             Params:
                 name (str): the new trace name
                 color (tuple): the new trace color
                 tags (set): the new trace tags
+                mode (tuple): the fill mode for the traces
                 traces (list): the list of traces to modify
         """
-        self.mainwindow.field.section_layer.changeTraceAttributes(name, color, tags, traces)
+        self.mainwindow.field.section_layer.section.editTraceAttributes(traces, name, color, tags, mode)
         self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
     
@@ -150,7 +151,7 @@ class TraceTableManager():
                 new_rad (float): the new radius for the traces
                 traces (list): the list of traces to modify
         """
-        self.mainwindow.field.editRadius(new_rad, traces)
+        self.mainwindow.field.section.editTraceRadius(traces, new_rad)
     
     def findTrace(self, item : TraceTableItem):
         """Find an object in the series.

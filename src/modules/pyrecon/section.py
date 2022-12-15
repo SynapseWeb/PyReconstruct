@@ -176,3 +176,50 @@ class Section():
         d = self.getDict()
         with open(self.filepath, "w") as f:
             f.write(json.dumps(d, indent=1))
+    
+    # MODIFYING TRACES
+    
+    def editTraceAttributes(self, traces : list[Trace], name : str, color : tuple, tags : set, mode : tuple, add_tags=False):
+        """Change the name and/or color of a trace or set of traces.
+        
+            Params:
+                traces (list): the list of traces to modify
+                name (str): the new name
+                color (tuple): the new color
+                tags (set): the new set of tags
+                mode (tuple): the new fill mode for the traces
+                add_tags (bool): True if tags should be added (rather than replaced)
+        """
+        for trace in traces:
+            self.removeTrace(trace)
+            if name is not None:
+                trace.name = name
+            if color is not None:
+                trace.color = color
+            if tags is not None:
+                if add_tags:
+                    for tag in tags:
+                        trace.tags.add(tag)
+                else:
+                    trace.tags = tags
+            fill_mode = list(trace.fill_mode)
+            style, condition = mode
+            if style is not None:
+                fill_mode[0] = style
+            if condition is not None:
+                fill_mode[1] = condition
+            trace.fill_mode = tuple(fill_mode)
+            self.addTrace(trace, "attributes modified")
+    
+    def editTraceRadius(self, traces : list[Trace], new_rad : float):
+        """Change the radius of a trace or set of traces.
+        
+            Params:
+                traces (list): the list of traces to change
+                new_rad (float): the new radius for the trace(s)
+        """
+        for trace in traces:
+            self.removeTrace(trace)
+            trace.resize(new_rad)
+            self.addTrace(trace, "radius modified")
+

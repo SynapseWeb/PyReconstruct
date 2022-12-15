@@ -3,10 +3,15 @@ from pathlib import Path
 
 def createHiddenDir(jser_dir, series_name):
     """Create a hidden folder to contain the individual section and series files."""    
-    # create and hide the folder
     hidden_dir = os.path.join(jser_dir, f".{series_name}")
+    # check if the folder exists, delete if it does
+    if os.path.isdir(hidden_dir):
+        for f in os.listdir(hidden_dir):
+            os.remove(os.path.join(hidden_dir, f))
+        os.rmdir(hidden_dir)
+    # create the folder
     os.mkdir(hidden_dir)
-    if os.name == "nt":
+    if os.name == "nt":  # manually hide if windows
         import subprocess
         subprocess.check_call(["attrib", "+H", hidden_dir])
     

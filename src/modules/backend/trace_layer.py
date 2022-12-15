@@ -196,13 +196,14 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.selected_traces.append(new_trace)
         
-    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, mode : int = None, traces : list = None):
+    def changeTraceAttributes(self, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, traces : list = None):
         """Change the name and/or color of a trace or set of traces.
         
             Params:
                 name (str): the new name
                 color (tuple): the new color
                 tags (set): the new set of tags
+                mode (tuple): the new fill mode for the traces
                 traces (list): the list of traces to edit (default: selected traces)
         """
         # change object attributes
@@ -210,14 +211,19 @@ class TraceLayer():
             traces = self.selected_traces
         for trace in traces:
             self.section.removeTrace(trace)
+            if name:
+                trace.name = name
             if color:
                 trace.color = color
             if tags:
                 trace.tags = tags
-            if name:
-                trace.name = name
-            if mode:
-                trace.mode = mode
+            fill_mode = list(trace.fill_mode)
+            style, condition = mode
+            if style:
+                fill_mode[0] = style
+            if condition:
+                fill_mode[1] = condition
+            trace.fill_mode = tuple(fill_mode)
             self.section.addTrace(trace, "attributes modified")
     
     def changeTraceRadius(self, new_rad : float, traces : list = None):
@@ -465,30 +471,23 @@ class TraceLayer():
             else:
                 painter.drawPolyline(qpoints)
         
-        # draw fill
+        # determine if user requested fill
+        if (
+            (trace.fill_mode[0] != "none") and
+            ((trace.fill_mode[1] == "selected") == (trace in self.selected_traces))
+        ): fill = True
+        else: fill = False
 
-        # if user requested no fill
-        if not trace.closed or abs(trace.mode) == 11:
-            fill = False
-        # if fill when not selected
-        if trace.mode > 0 and trace in self.selected_traces:
-            fill = True
-        # if fill when selected
-        elif trace.mode < 0 and trace not in self.selected_traces:
-            fill = True
-        else:
-            fill = False
-        
+        # fill in shape if requested
         if fill:
             painter.setPen(QPen(QColor(*trace.color), 1))
             painter.setBrush(QBrush(QColor(*trace.color)))
             # determine the type of fill
-            if abs(trace.mode) == 9 or abs(trace.mode) == 15:  # transparent fill
+            if trace.fill_mode[0] == "transparent":  # transparent fill
                 painter.setOpacity(self.series.fill_opacity)
-                painter.drawPolygon(qpoints)
-            elif abs(trace.mode) == 13:
+            elif trace.fill_mode[0] == "solid":  # solid
                 painter.setOpacity(1)
-                painter.drawPolygon(qpoints)
+            painter.drawPolygon(qpoints)
         
         return trace_in_view
     

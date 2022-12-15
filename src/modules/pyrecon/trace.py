@@ -26,9 +26,7 @@ class Trace():
         self.hidden = False  # default to False
         self.tags = set()
         self.history = []
-
-        # extra hidden attributes for XML support
-        self.mode = 11
+        self.fill_mode = ("none", "none")
     
     def copy(self):
         """Create a copy of the trace object.
@@ -102,7 +100,7 @@ class Trace():
             d["x"].append(round(p[0], 7))
             d["y"].append(round(p[1], 7))
         d["hidden"] = self.hidden
-        d["mode"] = self.mode
+        d["mode"] = self.fill_mode
         d["tags"] = list(self.tags)
         d["history"] = [list(l) for l in self.history]
         return d
@@ -117,13 +115,25 @@ class Trace():
         border_color = list(self.color)
         for i in range(len(border_color)):
             border_color[i] /= 255
+
+        # get the fill mode
+        if self.fill_mode[0] == "none":
+            mode = 11
+        else:
+            if self.fill_mode[0] == "transparent":
+                mode = 9
+            elif self.fill_mode[0] == "solid":
+                mode = 13
+            if self.fill_mode[1] == "unselected":
+                mode *= -1
+
         xml_contour = XMLContour(
             name = self.name,
             comment = "",
             hidden = self.hidden,
             closed = self.closed,
             simplified = False,
-            mode = self.mode,
+            mode = convertMode(self.fill_mode),
             border = border_color,
             fill = border_color,
             points = self.points,
@@ -147,7 +157,7 @@ class Trace():
         new_trace.negative = d["negative"]
         new_trace.points = list(zip(d["x"], d["y"]))
         new_trace.hidden = d["hidden"]
-        new_trace.mode = d["mode"]
+        new_trace.fill_mode = d["mode"]
         new_trace.tags = set(d["tags"])
         new_trace.history = [TraceLog(l) for l in d["history"]]
         return new_trace
@@ -186,7 +196,7 @@ class Trace():
             )
         else:
             new_trace.points = points
-        new_trace.mode = xml_trace.mode
+        new_trace.fill_mode = convertMode(xml_trace.mode)
 
         if not palette:
             new_trace.addLog("Imported")
@@ -276,6 +286,34 @@ class Trace():
     def isNew(self):
         """Returns True if the trace has no existing history."""
         return not bool(self.history)
+
+def convertMode(arg):
+    """Translate between Reconstruct and PyReconstruct fill modes."""
+    if type(arg) is int:
+        fill_mode = [None, None]
+        if abs(arg) == 11:
+            fill_mode = ("none", "none")
+        else:
+            if abs(arg) == 13:
+                fill_mode[0] = "solid"
+            elif abs(arg) == 9 or abs(arg) == 15:
+                fill_mode[0] = "transparent"
+            if arg < 0:
+                fill_mode[1] = "unselected"
+            else:
+                fill_mode[1] = "selected"
+        return fill_mode
+    elif type(arg) is tuple:
+        if arg == "none":
+            mode = 11
+        else:
+            if arg[0] == "transparent":
+                mode = 9
+            elif arg[0] == "solid":
+                mode = 13
+            if arg[1] == "unselected":
+                mode *= -1
+        return mode
 
 
         

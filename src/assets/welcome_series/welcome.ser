@@ -3,11 +3,11 @@
   "0": "welcome.0"
  },
  "current_section": 0,
- "src_dir": "",
+ "src_dir": "C:\\Users\\jfalco\\Documents\\KHLabWorkspace\\repos\\pyReconstruct\\src\\assets\\welcome_series",
  "window": [
+  -0.3665906499429875,
   0,
-  0,
-  1,
+  1.733181299885975,
   1
  ],
  "palette_traces": [
@@ -41,7 +41,10 @@
     0.0948664
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -91,7 +94,10 @@
     0.0707107
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -115,7 +121,10 @@
     0.1
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -157,7 +166,10 @@
     0.0707107
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -195,7 +207,10 @@
     0.0568051
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -221,7 +236,10 @@
     0.0
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -255,7 +273,10 @@
     0.0948664
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -297,7 +318,10 @@
     -0.0887827
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -339,7 +363,10 @@
     0.0316285
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -371,7 +398,10 @@
     0.0624775
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -405,7 +435,10 @@
     0.0948664
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -455,7 +488,10 @@
     0.0707107
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -479,7 +515,10 @@
     0.1
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -521,7 +560,10 @@
     0.0707107
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -559,7 +601,10 @@
     0.0568051
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -585,7 +630,10 @@
     0.0
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -619,7 +667,10 @@
     0.0948664
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -661,7 +712,10 @@
     -0.0887827
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -703,7 +757,10 @@
     0.0316285
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   },
@@ -735,7 +792,10 @@
     0.0624775
    ],
    "hidden": false,
-   "mode": 11,
+   "mode": [
+    "none",
+    "none"
+   ],
    "tags": [],
    "history": []
   }
@@ -770,7 +830,10 @@
    0.0948664
   ],
   "hidden": false,
-  "mode": 11,
+  "mode": [
+   "none",
+   "none"
+  ],
   "tags": [],
   "history": []
  },

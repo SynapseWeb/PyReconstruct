@@ -44,9 +44,9 @@ class PaletteButton(QPushButton):
         painter.drawPolygon(points)
 
         # draw fill if needed
-        if abs(self.trace.mode) != 11:
+        if self.trace.fill_mode[0] != "none":
             painter.setBrush(QBrush(QColor(*self.trace.color)))
-        if abs(self.trace.mode) == 9 or abs(self.trace.mode) == 15:
+        if self.trace.fill_mode[0] == "transparent":
             painter.setOpacity(0.3)
         painter.drawPolygon(points)
 
@@ -91,8 +91,13 @@ class PaletteButton(QPushButton):
             self.trace.color = color
         if tags:
             self.trace.tags = tags
-        if mode:
-            self.trace.mode = mode
+        fill_mode = list(self.trace.fill_mode)
+        style, condition = mode
+        if style:
+            fill_mode[0] = style
+        if condition:
+            fill_mode[1] = condition
+        self.trace.fill_mode = tuple(fill_mode)
         if radius:
             self.trace.resize(radius)
             self.trace.centerAtOrigin()

@@ -411,6 +411,7 @@ class MainWindow(QMainWindow):
                     open_unsaved = unsavedNotify(self)
                     if open_unsaved:
                         new_series = Series(new_series_fp)
+                        new_series.modified = True
                         new_series.jser_fp = jser_fp
                     else:
                         # remove the folder if not needed
@@ -712,12 +713,12 @@ class MainWindow(QMainWindow):
             save_data (bool): True if series and section files in backend should be save
             close (bool): Deletes backend series if True
         """
+        # save the series data
+        self.saveAllData()
+
         # check for wlecome series
         if self.series.isWelcomeSeries():
             return
-        
-        # save the series data
-        self.saveAllData()
         
         # notify the user and check if series was modified
         if notify and self.series.modified:

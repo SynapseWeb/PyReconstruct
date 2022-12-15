@@ -12,15 +12,17 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QRadioButton
 )
+from PySide6.QtCore import Qt
 
 from modules.gui.color_button import ColorButton
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 from modules.pyrecon.trace import Trace
 
+
 class TraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, traces : list[Trace], include_radius=False, pos=None):
+    def __init__(self, parent : QWidget, traces : list[Trace]=[], name=None, include_radius=False, pos=None):
         """Create an attribute dialog.
         
             Params:
@@ -36,26 +38,39 @@ class TraceDialog(QDialog):
 
         self.include_radius = include_radius
 
-        # get the display values
-        trace = traces[0]
-        name = trace.name
-        color = trace.color
-        tags = trace.tags
-        mode = trace.mode
+        # get the display values if traces have been provided
+        if traces:
+            trace = traces[0]
+            name = trace.name
+            color = trace.color
+            tags = trace.tags
+            fill_style, fill_condition = trace.fill_mode
 
-        # only include radius for editing single palette traces
-        if self.include_radius:
-            assert(len(traces) == 1)
-        
-        for trace in traces[1:]:
-            if trace.name != name:
-                name = None
-            if trace.color != color:
-                color = None
-            if trace.tags != tags:
-                tags = None
-            if trace.mode != mode:
-                mode = 0
+            # keep track of the traces passed
+            self.traces = traces
+
+            # only include radius for editing single palette traces
+            if self.include_radius:
+                assert(len(traces) == 1)
+            
+            for trace in traces[1:]:
+                if trace.name != name:
+                    name = "*"
+                if trace.color != color:
+                    color = None
+                if trace.tags != tags:
+                    tags = None
+                if trace.fill_mode[0] != fill_style:
+                    fill_style = None
+                if trace.fill_mode[1] != fill_condition:
+                    fill_condition = None
+        else:
+            if not name:
+                name = "*"
+            color = None
+            tags = None
+            fill_style = None
+            fill_condition = None
 
         self.setWindowTitle("Set Attributes")
 
@@ -83,28 +98,39 @@ class TraceDialog(QDialog):
         self.tags_row.addWidget(self.tags_text)
         self.tags_row.addWidget(self.tags_input)
 
-        self.mode_row = QHBoxLayout()
-        self.mode_text = QLabel(self)
-        self.mode_text.setText("Fill:")
-        self.mode_none = QRadioButton("None")
-        self.mode_transparent = QRadioButton("Transparent")
-        self.mode_solid = QRadioButton("Solid")
-        if abs(mode) == 11:
-            self.mode_none.setChecked(True)
-        elif abs(mode) == 9 or abs(mode) == 15:
-            self.mode_transparent.setChecked(True)
-        elif abs(mode) == 13:
-            self.mode_solid.setChecked(True)
-        self.mode_row.addWidget(self.mode_text)
-        self.mode_row.addWidget(self.mode_none)
-        self.mode_row.addWidget(self.mode_transparent)
-        self.mode_row.addWidget(self.mode_solid)
+        self.condition_row = QHBoxLayout()
+        self.condition_input = QCheckBox("Fill when selected")
+        if fill_condition:
+            if fill_condition == "selected":
+                self.condition_input.setChecked(True)
+            else:
+                self.condition_input.setChecked(False)
+        else:
+            self.condition_input.setTristate(True)
+            self.condition_input.setCheckState(Qt.PartiallyChecked)
+        self.condition_row.addWidget(self.condition_input)
 
-        self.select_row = QHBoxLayout()
-        self.select_input = QCheckBox("Fill when selected")
-        if mode > 0:
-            self.select_input.setChecked(True)
-        self.select_row.addWidget(self.select_input)
+        self.style_row = QHBoxLayout()
+        self.style_text = QLabel(self)
+        self.style_text.setText("Fill:")
+        self.style_none = QRadioButton("None")
+        self.style_none.toggled.connect(self.checkDisplayCondition)
+        self.style_transparent = QRadioButton("Transparent")
+        self.style_transparent.toggled.connect(self.checkDisplayCondition)
+        self.style_solid = QRadioButton("Solid")
+        self.style_solid.toggled.connect(self.checkDisplayCondition)
+        if fill_style == "none":
+            self.style_none.setChecked(True)
+        elif fill_style == "transparent":
+            self.style_transparent.setChecked(True)
+        elif fill_style == "solid":
+            self.style_solid.setChecked(True)
+        else:
+            self.checkDisplayCondition()
+        self.style_row.addWidget(self.style_text)
+        self.style_row.addWidget(self.style_none)
+        self.style_row.addWidget(self.style_transparent)
+        self.style_row.addWidget(self.style_solid)
 
         if self.include_radius:
             self.stamp_size_row = QHBoxLayout()
@@ -125,65 +151,76 @@ class TraceDialog(QDialog):
         self.vlayout.addLayout(self.name_row)
         self.vlayout.addLayout(self.color_row)
         self.vlayout.addLayout(self.tags_row)
-        self.vlayout.addLayout(self.mode_row)
-        self.vlayout.addLayout(self.select_row)
+        self.vlayout.addLayout(self.style_row)
+        self.vlayout.addLayout(self.condition_row)
         if self.include_radius:
             self.vlayout.addLayout(self.stamp_size_row)
         self.vlayout.addWidget(self.buttonbox)
 
         self.setLayout(self.vlayout)
     
+    def checkDisplayCondition(self):
+        """Determine whether the "fill when selected" checkbox should be displayed."""
+        if self.style_transparent.isChecked() or self.style_solid.isChecked():
+            self.condition_input.show()
+        else:
+            self.condition_input.hide()
+    
     def exec(self):
         """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
+            retlist = []
+
+            # name
             name = self.name_input.text()
+            if name == "*" or name == "":
+                name = None
+            retlist.append(name)
+
             color = self.color_input.getColor()
+            retlist.append(color)
+
+            # color
             tags = self.tags_input.text().split(", ")
             if tags == [""]:
-                tags = set()
+                tags = None
             else:
                 tags = set(tags)
+            retlist.append(tags)
             
-            if self.mode_none.isChecked():
-                mode = 11
-            elif self.mode_transparent.isChecked():
-                mode = 9
-            elif self.mode_solid.isChecked():
-                mode = 13
+            # fill mode
+            if self.style_none.isChecked():
+                style = "none"
+                condition = "none"
             else:
-                mode = 0
-            if not self.select_input.isChecked():
-                mode *= -1
-            
+                if self.style_transparent.isChecked():
+                    style = "transparent"
+                elif self.style_solid.isChecked():
+                    style = "solid"
+                else:
+                    style = None
+                state = self.condition_input.checkState()
+                if state == Qt.Checked:
+                    condition = "selected"
+                elif state == Qt.Unchecked:
+                    condition = "unselected"
+                else:
+                    condition = None  
+            retlist.append((style, condition))
+
+            # radius
             if self.include_radius:
                 stamp_size = self.stamp_size_input.text()
                 try:
                     stamp_size = float(stamp_size)
                 except ValueError:
                     stamp_size = None
-                return (
-                    (
-                        name,
-                        color,
-                        tags,
-                        mode,
-                        stamp_size
-                    ),
-                    True
-                )
-
-            else:
-                return (
-                    (
-                        name,
-                        color,
-                        tags,
-                        mode,
-                    ),
-                    True
-                )
+                retlist.append(stamp_size)
+            
+            return tuple(retlist), True
         
+        # user pressed cancel
         else:
             return None, False
 

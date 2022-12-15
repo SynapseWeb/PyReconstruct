@@ -53,12 +53,14 @@
 * High-priority tasks
 ** Julian
 
-- [ ] Dim 6 transformations (retro-reconstruct before truncating and importing)
+- [X] Dim 6 transformations (retro-reconstruct before truncating and importing)
 
 - [ ] Modes (change to strings, e.g., "none", "filled", etc.)
 
 - [ ] Selected objects from the inside
    - [ ] Consider adding selected object list to field opposite trace palette
+
+- [ ] Add asterisk to title if unsaved
 
 - [ ] Object list
    - [ ] Right click on objec and access trace attribute menu

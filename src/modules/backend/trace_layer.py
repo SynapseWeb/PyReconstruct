@@ -187,7 +187,8 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # create new stamp trace
         tform = self.section.tforms[self.series.alignment]
-        new_trace = Trace(trace.name, trace.color)
+        new_trace = trace.copy()
+        new_trace.points = []
         for point in trace.points:
             field_point = (point[0] + field_x, point[1] + field_y)
             rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image

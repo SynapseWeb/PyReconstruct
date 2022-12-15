@@ -54,7 +54,7 @@ class PaletteButton(QPushButton):
         if self.isChecked():
             painter.setPen(QPen(QColor(255, 255, 0), 8))
             painter.setBrush(QBrush())
-            painter.setOpacity(0.5)
+            painter.setOpacity(0.3)
             w, h = self.width(), self.height()
             painter.drawRect(QRect(0, 0, w, h))
 

@@ -198,6 +198,7 @@ class ObjectTableWidget(QDockWidget):
             tags_str = ", ".join(tags)
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
+        self.table.resizeRowToContents(row)
             
     def passesFilters(self, item : ObjectTableItem):
         """Determine if an object will be displayed in the table based on existing filters.

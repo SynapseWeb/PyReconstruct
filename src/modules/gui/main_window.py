@@ -9,7 +9,13 @@ from PySide6.QtWidgets import (
     QMessageBox, 
     QMenu
 )
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import (
+    QKeySequence,
+    QShortcut,
+    QPixmap,
+    QColor,
+    QPainter
+)
 from PySide6.QtCore import Qt
 
 from modules.gui.mouse_palette import MousePalette
@@ -38,7 +44,7 @@ from modules.backend.process_jser_file import (
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform
 
-from constants.locations import assets_dir
+from constants.locations import assets_dir, img_dir
 
 
 class MainWindow(QMainWindow):
@@ -47,6 +53,10 @@ class MainWindow(QMainWindow):
         """Constructs the skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
         self.setWindowTitle("PyReconstruct")
+
+        # set the window icon
+        pix = QPixmap(os.path.join(img_dir, "PyReconstruct.ico"))
+        self.setWindowIcon(pix)
 
         # set the main window to be slightly less than the size of the monitor
         screen = QApplication.primaryScreen()

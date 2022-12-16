@@ -52,9 +52,9 @@ class PaletteButton(QPushButton):
 
         # highlight the button if selected
         if self.isChecked():
-            painter.setPen(QPen(QColor(255, 255, 0), 8))
+            painter.setPen(QPen(QColor(255, 255, 0), 2))
             painter.setBrush(QBrush())
-            painter.setOpacity(0.3)
+            painter.setOpacity(1)
             w, h = self.width(), self.height()
             painter.drawRect(QRect(0, 0, w, h))
 

@@ -205,8 +205,7 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
-
-        self.series.modified = True  # flag series as modified
+        self.mainwindow.seriesModified(True)
 
     def editAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None):
         """Rename objects on every section.
@@ -245,8 +244,7 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
-
-        self.series.modified = True  # flag series as modified         
+        self.mainwindow.seriesModified(True)      
 
     def editRadius(self, obj_names : list, new_rad : float):
         """Change the radii of all traces of an object.
@@ -281,8 +279,7 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
-
-        self.series.modified = True  # flag series as modified
+        self.mainwindow.seriesModified(True)
     
     def removeAllTraceTags(self, obj_names : list):
         """Remove all tags from all trace on a selected object.
@@ -316,8 +313,10 @@ class ObjectTableManager():
         for table in self.tables:
             for name in obj_names:
                 table.updateObject(self.objdict[name])
-        
-        self.series.modified = True  # flag series as modified
+
+        # update the view
+        self.mainwindow.field.reload()        
+        self.mainwindow.seriesModified(True)
 
     def hideObjects(self, obj_names : list, hide=True):
         """Hide all traces of an object throughout the series.
@@ -342,8 +341,7 @@ class ObjectTableManager():
             
         # update the view
         self.mainwindow.field.reload()
-
-        self.series.modified = True  # flag series as modified  
+        self.mainwindow.seriesModified(True)
     
     def generate3D(self, obj_names):
         """Generate the 3D view for a list of objects.
@@ -380,8 +378,7 @@ class ObjectTableManager():
                 obj_settings[1] = new_opacity
             self.series.object_3D_modes[name] = tuple(obj_settings)
         
-        self.series.modified = True  # flag series as modified
-
+        self.mainwindow.seriesModified(True)
     
     def viewHistory(self, obj_names : list):
         """View the log history of a set of objects.
@@ -430,7 +427,7 @@ class ObjectTableManager():
         for name in obj_names:
             self.series.createZtrace(name)
         
-        self.series.modified = True  # flag series as modified
+        self.mainwindow.seriesModified(True)
     
     def close(self):
         """Close all tables."""

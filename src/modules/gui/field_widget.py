@@ -698,7 +698,7 @@ class FieldWidget(QWidget, FieldView):
         
         Saves the position of the mouse.
         """
-        if self.mainwindow.is_zooming_in:
+        if self.mainwindow.is_zooming:
             return
         self.panzoomPress(event.x(), event.y())
     
@@ -738,7 +738,7 @@ class FieldWidget(QWidget, FieldView):
 
     def mousePanzoomMove(self, event):
         """Called when mouse is moved in panzoom mode."""
-        if self.mainwindow.is_zooming_in:
+        if self.mainwindow.is_zooming:
             return
         # if left mouse button is pressed, do panning
         if self.lclick or self.mclick:
@@ -797,7 +797,7 @@ class FieldWidget(QWidget, FieldView):
 
     def mousePanzoomRelease(self, event):
         """Called when mouse is released in panzoom mode."""
-        if self.mainwindow.is_zooming_in:
+        if self.mainwindow.is_zooming:
             return
         # set new window for panning
         if self.lclick or self.mclick:

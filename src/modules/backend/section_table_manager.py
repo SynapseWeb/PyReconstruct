@@ -68,10 +68,12 @@ class SectionTableManager():
             thickness, old_lock = self.data[snum]
             self.data[snum] = thickness, lock
         
+        # update the field
         self.mainwindow.field.reload()
-        self.updateTables()
+        self.mainwindow.seriesModified(True)
 
-        self.series.modified = True  # flag series as modified
+        # update the tables
+        self.updateTables()
 
     def editThickness(self, section_numbers : list[int], thickness : float):
         """Set the section thickness for a set of sections.
@@ -95,7 +97,7 @@ class SectionTableManager():
         if self.mainwindow.field.obj_table_manager:
             self.mainwindow.field.obj_table_manager.refresh()
         
-        self.series.modified = True  # flag series as modified
+        self.mainwindow.seriesModified(True)
     
     def deleteSections(self, section_numbers : list[int]):
         """Delete a set of sections.
@@ -113,7 +115,7 @@ class SectionTableManager():
         
         self.updateTables()
 
-        self.series.modified = True  # flag series as modified
+        self.mainwindow.seriesModified(True)
             
     def findSection(self, section_number : int):
         """Focus the view on a specific section.

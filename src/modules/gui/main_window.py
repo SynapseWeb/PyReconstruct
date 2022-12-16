@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         self.menubar = None
         self.mouse_palette = None  # placeholder for mouse palette
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
-        self.is_zooming_in = False
+        self.is_zooming = False
         # number defaults
         self.smallnum = 0.01
         self.mednum = 0.1
@@ -462,6 +462,9 @@ class MainWindow(QMainWindow):
             self.changeSrcDir(notify=True)
         else:
             self.series.src_dir = os.path.dirname(src_path)
+        
+        # set the title of the main window
+        self.seriesModified(self.series.modified)
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -570,6 +573,19 @@ class MainWindow(QMainWindow):
         elif self.series.filetype == "JSON":
             jsonToXML(self.series, new_dir)
     
+    def seriesModified(self, modified=True):
+        """Change the title of the window reflect modifications."""
+        # check for welcome series
+        if self.series.isWelcomeSeries():
+            self.setWindowTitle("PyReconstruct")
+            return
+        
+        if modified:
+            self.setWindowTitle(self.series.name + "*")
+        else:
+            self.setWindowTitle(self.series.name)
+        self.series.modified = modified
+    
     def importTransforms(self):
         """Import transforms from a text file."""
         self.saveAllData()
@@ -659,22 +675,20 @@ class MainWindow(QMainWindow):
 
         # if zooming
         if modifiers == Qt.ControlModifier:
-            pos = event.point(0).pos()
-            x, y = pos.x(), pos.y()
-            if not self.is_zooming_in:
+            field_cursor = self.field.cursor()
+            pos = field_cursor.pos()
+            x, y = pos.x() - self.field.x(), pos.y() - self.field.y()
+            if not self.is_zooming:
                 # check if user just started zooming in
-                self.field.panzoomPress(
-                    x - self.field.x(),
-                    y - self.field.y(),
-                )
+                self.field.panzoomPress(x, y)
                 self.zoom_factor = 1
-                self.is_zooming_in = True
+                self.is_zooming = True
 
             if event.angleDelta().y() > 0:  # if scroll up
                 self.zoom_factor *= 1.1
             elif event.angleDelta().y() < 0:  # if scroll down
                 self.zoom_factor *= 0.9
-            self.field.panzoomMove(x, y, self.zoom_factor)
+            self.field.panzoomMove(zoom_factor=self.zoom_factor)
         
         # if changing sections
         elif modifiers == Qt.NoModifier:
@@ -691,9 +705,9 @@ class MainWindow(QMainWindow):
     
     def keyReleaseEvent(self, event):
         """Overwritten: checks for Ctrl+Zoom."""
-        if self.is_zooming_in and event.key() == 16777249:
+        if self.is_zooming and event.key() == 16777249:
             self.field.panzoomRelease(zoom_factor=self.zoom_factor)
-            self.is_zooming_in = False
+            self.is_zooming = False
         
         super().keyReleaseEvent(event)
     
@@ -738,8 +752,9 @@ class MainWindow(QMainWindow):
             self.saveAsToJser(close=close)
         else:        
             saveJserFile(self.series, close=close)
-            # set the series to unmodified
-            self.series.modified = False
+        
+        # set the series to unmodified
+        self.seriesModified(False)
     
     def saveAsToJser(self, close=False):
         """Prompt the user to find a save location."""
@@ -757,9 +772,6 @@ class MainWindow(QMainWindow):
         
         # save the file
         saveJserFile(self.series, close=close)
-
-        # set the series to unmodified
-        self.series.modified = False
     
     def autoBackup(self):
         """Set up the auto-backup functionality for the series."""

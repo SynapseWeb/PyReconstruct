@@ -61,7 +61,7 @@
 
 - [ ] Consider adding selected object list to field opposite trace palette
 
-- [ ] Add asterisk to title if unsaved
+- [X] Add asterisk to title if unsaved
 
 - [X] Object list
    - [X] Right click on objec and access trace attribute menu

@@ -386,12 +386,12 @@ class MousePalette():
 class ScreenButton(QPushButton):
 
     def paintEvent(self, event):
-        """Add a border to selected buttons."""
+        """Add a highlighting border to selected buttons."""
         super().paintEvent(event)
         if self.isChecked():
             painter = QPainter(self)
-            painter.setPen(QPen(QColor(255, 255, 0), 8))
-            painter.setOpacity(0.5)
+            painter.setPen(QPen(QColor(255, 255, 0), 2))
+            painter.setOpacity(1)
             w, h = self.width(), self.height()
             painter.drawRect(QRect(0, 0, w, h))
         

@@ -8,7 +8,7 @@ if [ -f "$FILE" ]; then
     source env/bin/activate
 else 
     echo Creating virtual environment...
-    python3 -m venv env
+    python3.10 -m venv env
     source env/bin/activate
 fi
 echo Checking dependencies...

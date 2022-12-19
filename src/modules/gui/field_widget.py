@@ -424,16 +424,21 @@ class FieldWidget(QWidget, FieldView):
 
         if g.state() == Qt.GestureState.GestureStarted:
             self.is_gesturing = True
-            p = g.centerPoint()
+            p = self.mapFromGlobal(g.centerPoint())
             x, y = p.x(), p.y()
-            self.clicked_x, self.clicked_y = x - self.x(), y
+            self.clicked_x = x
+            self.clicked_y = y
 
         elif g.state() == Qt.GestureState.GestureUpdated:
-            self.panzoomMove(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
+            p = self.mapFromGlobal(g.centerPoint())
+            x, y = p.x(), p.y()
+            self.panzoomMove(x, y, g.totalScaleFactor())
 
         elif g.state() == Qt.GestureState.GestureFinished:
             self.is_gesturing = False
-            self.panzoomRelease(g.centerPoint().x() - self.x(), g.centerPoint().y(), g.totalScaleFactor())
+            p = self.mapFromGlobal(g.centerPoint())
+            x, y = p.x(), p.y()
+            self.panzoomRelease(x, y, g.totalScaleFactor())
         
     def mousePressEvent(self, event):
         """Called when mouse is clicked.

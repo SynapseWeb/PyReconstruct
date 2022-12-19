@@ -685,8 +685,8 @@ class MainWindow(QMainWindow):
         # if zooming
         if modifiers == Qt.ControlModifier:
             field_cursor = self.field.cursor()
-            pos = field_cursor.pos()
-            x, y = pos.x() - self.field.x(), pos.y() - self.field.y()
+            p = self.field.mapFromGlobal(field_cursor.pos())
+            x, y = p.x(), p.y()
             if not self.is_zooming:
                 # check if user just started zooming in
                 self.field.panzoomPress(x, y)

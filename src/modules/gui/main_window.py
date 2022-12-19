@@ -12,9 +12,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import (
     QKeySequence,
     QShortcut,
-    QPixmap,
-    QColor,
-    QPainter
+    QPixmap
 )
 from PySide6.QtCore import Qt
 
@@ -617,13 +615,13 @@ class MainWindow(QMainWindow):
                 direction (str): up or down
         """
         if option == "brightness" and direction == "up":
-            self.field.changeBrightness(5)
+            self.field.changeBrightness(2)
         elif option == "brightness" and direction == "down":
-            self.field.changeBrightness(-5)
+            self.field.changeBrightness(-2)
         elif option == "contrast" and direction == "up":
-            self.field.changeContrast(0.2)
+            self.field.changeContrast(0.1)
         elif option == "contrast" and direction == "down":
-            self.field.changeContrast(-0.2)
+            self.field.changeContrast(-0.1)
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).

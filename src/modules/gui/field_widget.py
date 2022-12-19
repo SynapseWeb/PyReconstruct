@@ -521,6 +521,11 @@ class FieldWidget(QWidget, FieldView):
         elif event.pointerType() == QPointingDevice.PointerType.Eraser:
             self.eraserMove(event)
         
+        # check if user is zooming with the mouse wheel
+        if self.mainwindow.is_zooming:
+            self.panzoomRelease(zoom_factor=self.mainwindow.zoom_factor)
+            self.mainwindow.is_zooming = False
+        
         # update click status
         if not event.buttons():
             self.lclick = False

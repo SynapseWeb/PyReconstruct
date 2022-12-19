@@ -254,6 +254,19 @@ class FieldWidget(QWidget, FieldView):
             ]
             for i in range(len(points)):
                 field_painter.drawLine(*points[i-1], *points[i])
+        
+        # add green border if all traces are being shown
+        if self.show_all_traces:
+            field_painter.setPen(QPen(QColor(0, 255, 0), 8))
+            w, h = self.width(), self.height()
+            points = [
+                (0, 0),
+                (0, h),
+                (w, h),
+                (w, 0)
+            ]
+            for i in range(len(points)):
+                field_painter.drawLine(*points[i-1], *points[i])
 
         # draw solid lines for existing trace
         if self.current_trace:

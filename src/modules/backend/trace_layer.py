@@ -465,12 +465,13 @@ class TraceLayer():
         
         return trace_in_view
     
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+    def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False) -> QPixmap:
         """Generate the traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the view of the window (x, y, w, h)
+                show_all_traces (bool): True if all traces are displayed regardless of hidden status
             Returns:
                 (QPixmap): the pixmap with traces drawn in
         """
@@ -490,13 +491,17 @@ class TraceLayer():
         # draw traces (keep track of those in view)
         self.traces_in_view = []
         for trace in self.section.tracesAsList():
-            if not trace.hidden:
+            if show_all_traces or not trace.hidden:
                 trace_in_view = self._drawTrace(
                     trace_layer,
-                    trace,
+                    trace
                 )
                 if trace_in_view:
                     self.traces_in_view.append(trace)
+            else:
+                # remove the trace from selected traces if it is not being shown
+                if trace in self.selected_traces:
+                    self.selected_traces.remove(trace)
 
         return trace_layer
         

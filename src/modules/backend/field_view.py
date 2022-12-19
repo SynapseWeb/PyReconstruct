@@ -44,6 +44,7 @@ class FieldView():
 
         # misc defaults
         self.hide_trace_layer = False
+        self.show_all_traces = False
 
         # copy/paste clipboard
         self.clipboard = []
@@ -416,6 +417,15 @@ class FieldView():
     def toggleHideAllTraces(self):
         """Hide the trace layer."""
         self.hide_trace_layer = not self.hide_trace_layer
+        if self.hide_trace_layer:
+            self.show_all_traces = False
+        self.generateView(generate_image=False)
+    
+    def toggleShowAllTraces(self):
+        """Toggle show all traces regardless of hiding status."""
+        self.show_all_traces = not self.show_all_traces
+        if self.show_all_traces:
+            self.hide_trace_layer = False
         self.generateView(generate_image=False)
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
@@ -444,7 +454,8 @@ class FieldView():
             self.series.window,
             generate_image=generate_image,
             generate_traces=generate_traces,
-            hide_traces=self.hide_trace_layer
+            hide_traces=self.hide_trace_layer,
+            show_all_traces=self.show_all_traces
         )
 
         # blend b section if requested

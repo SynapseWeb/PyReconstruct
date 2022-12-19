@@ -19,7 +19,15 @@ class SectionLayer(ImageLayer, TraceLayer):
         ImageLayer.__init__(self, section, series)
         TraceLayer.__init__(self, section, series)
     
-    def generateView(self, pixmap_dim : tuple, window : list, generate_image=True, generate_traces=True, hide_traces=False):
+    def generateView(
+        self,
+        pixmap_dim : tuple,
+        window : list,
+        generate_image=True,
+        generate_traces=True,
+        hide_traces=False,
+        show_all_traces=False
+        ):
         """Generate the pixmap view for the section.
         
             Params:
@@ -37,7 +45,7 @@ class SectionLayer(ImageLayer, TraceLayer):
             return self.image_layer.copy()        
             
         if generate_traces:
-            self.trace_layer = self.generateTraceLayer(pixmap_dim, window)
+            self.trace_layer = self.generateTraceLayer(pixmap_dim, window, show_all_traces)
         
         # combine pixmaps
         view = self.image_layer.copy()

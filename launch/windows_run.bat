@@ -8,7 +8,7 @@ if exist env\Scripts\activate (
     call env\Scripts\activate
 ) else (
     echo Creating virtual environment...
-    START /B /WAIT cmd /c python3.10 -m venv env
+    START /B /WAIT cmd /c python -m venv env
     call env\Scripts\activate
     @timeout /t 1 /nobreak > nul
 )

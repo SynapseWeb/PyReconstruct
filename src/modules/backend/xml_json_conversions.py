@@ -99,6 +99,7 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
             xml_contour,
             palette=True
         ))
+    series_dict["current_trace"] = series_dict["palette_traces"][0]
     
     # IMPLEMENT THIS EVENTAULLY: ztraces
     series_dict["ztraces"] = []

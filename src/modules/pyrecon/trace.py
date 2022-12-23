@@ -116,17 +116,6 @@ class Trace():
         for i in range(len(border_color)):
             border_color[i] /= 255
 
-        # get the fill mode
-        if self.fill_mode[0] == "none":
-            mode = 11
-        else:
-            if self.fill_mode[0] == "transparent":
-                mode = 9
-            elif self.fill_mode[0] == "solid":
-                mode = 13
-            if self.fill_mode[1] == "unselected":
-                mode *= -1
-
         xml_contour = XMLContour(
             name = self.name,
             comment = "",
@@ -302,9 +291,9 @@ def convertMode(arg):
                 fill_mode[1] = "unselected"
             else:
                 fill_mode[1] = "selected"
-        return fill_mode
-    elif type(arg) is tuple:
-        if arg == "none":
+        return tuple(fill_mode)
+    elif type(arg) is tuple or type(arg) is list:
+        if arg[0] == "none":
             mode = 11
         else:
             if arg[0] == "transparent":

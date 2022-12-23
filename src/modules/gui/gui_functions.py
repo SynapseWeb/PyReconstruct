@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
+progbar_parent = None
+
 def newMenu(widget : QWidget, container, menu_dict : dict):
     """Create a menu.
     
@@ -95,7 +97,8 @@ def progbar(title : str, text : str, cancel=True):
     progbar = QProgressDialog(
             text,
             "Cancel",
-            0, 100
+            0, 100,
+            progbar_parent
         )
     progbar.setMinimumDuration(1500)
     progbar.setWindowTitle(title)
@@ -103,6 +106,11 @@ def progbar(title : str, text : str, cancel=True):
     if not cancel:
         progbar.setCancelButton(None)
     return progbar.setValue, progbar.wasCanceled
+
+def setProgbarParent(parent):
+    """Set the parent of the progress bar."""
+    global progbar_parent
+    progbar_parent = parent
 
 def noUndoWarning(parent):
     """Inform the user of an action that can't be undone."""

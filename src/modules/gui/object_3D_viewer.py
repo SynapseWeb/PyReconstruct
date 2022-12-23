@@ -1,6 +1,6 @@
 import numpy as np
 
-from PySide6.QtWidgets import QInputDialog, QMenu
+from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog
 from PySide6.QtGui import QKeySequence, QShortcut
 
 import pyqtgraph.opengl as gl
@@ -59,10 +59,10 @@ class Object3DViewer(gl.GLViewWidget):
 
         self.setWindowTitle("3D Object Viewer")
         self.setGeometry(
-            mainwindow.x()+20,
-            mainwindow.y()+20,
-            mainwindow.width()-40,
-            mainwindow.height()-40
+            mainwindow.x()+60,
+            mainwindow.y()+60,
+            mainwindow.width()-120,
+            mainwindow.height()-120
         )
 
         # get the items
@@ -99,7 +99,8 @@ class Object3DViewer(gl.GLViewWidget):
         """Create the context menu for the 3D scene."""
         context_menu_list = [
             ("togglesc_act", "Toggle scale cube", "S", self.toggleScaleCube),
-            ("editscsize_act", "Edit scale cube size...", "", self.editSCSize)
+            ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
+            ("background_act", "Set background color...", "", self.editBackgroundColor)
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
@@ -222,6 +223,12 @@ class Object3DViewer(gl.GLViewWidget):
         scale = new_side_len / self.sc_side_len
         self.sc_item.scale(scale, scale, scale)
         self.sc_side_len = new_side_len
+    
+    def editBackgroundColor(self):
+        """Edit the background color of the 3D scene."""
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.setBackgroundColor((color.red(), color.green(), color.blue()))
 
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""

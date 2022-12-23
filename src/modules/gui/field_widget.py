@@ -132,9 +132,15 @@ class FieldWidget(QWidget, FieldView):
 
     def markTime(self):
         """Keep track of the time on the series file."""
-        os.remove(os.path.join(self.series.getwdir(), self.time))
-        self.time = str(round(time.time()))
-        open(os.path.join(self.series.getwdir(), self.time), "w").close()
+        try:
+            for f in os.listdir(self.series.getwdir()):
+                if "." not in f and f.isnumeric():
+                    os.remove(os.path.join(self.series.getwdir(), f))
+                    break
+            self.time = str(round(time.time()))
+            open(os.path.join(self.series.getwdir(), self.time), "w").close()
+        except FileNotFoundError:
+            pass
     
     def toggleBlend(self):
         """Toggle blending sections."""

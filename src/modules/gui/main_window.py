@@ -28,6 +28,7 @@ from modules.gui.gui_functions import (
     saveNotify,
     unsavedNotify,
     getSaveLocation,
+    setProgbarParent
 )
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
@@ -95,6 +96,9 @@ class MainWindow(QMainWindow):
         self.createContextMenus()
         self.createShortcuts()
 
+        # set the main window as the parent of the progress bar
+        setProgbarParent(self)
+
         self.show()
 
     def createMenuBar(self):
@@ -113,10 +117,9 @@ class MainWindow(QMainWindow):
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
                     ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
                     None,
-                    ("fromxml_act", "New from XML files...", "", self.newFromXML),
-                    ("exportxml_act", "Export to XML files...", "", self.exportToXML),
+                    ("fromxml_act", "New from XML series...", "", self.newFromXML),
+                    ("exportxml_act", "Export as XML series...", "", self.exportToXML),
                     None,
-                    # ("export_series_act", f"Export to {outtype}", "", self.exportSeries),
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),

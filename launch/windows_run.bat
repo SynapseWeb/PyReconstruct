@@ -15,6 +15,7 @@ if exist env\Scripts\activate (
 echo Checking dependencies...
 START /B /WAIT cmd /c pip install -r src/requirements.txt
 echo Starting PyReconstruct...
+echo Do NOT close this window while using PyReconstruct!
 START /B /WAIT cmd /c python src/pyReconstruct.py %1
 call deactivate
 echo Press enter to exit.

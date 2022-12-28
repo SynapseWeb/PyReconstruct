@@ -1,4 +1,5 @@
-* Kristen requests (2022-11-30)
+* Kristen meetings
+** Requests 2022-11-30
 
 - [X] Hide / unhide everything tool "h"
 - [X] Fill traces (ugh)
@@ -8,6 +9,17 @@
 - [X] Flicker
 - Open / cut tool
 - NEIN: Control-a for attributes? Reason: ctrl-a universal for select all, ctrl-e for "edit" attributes
+  
+** Kristen things to bring up
+
+- Object list
+- 3D
+  
+** Class stuff
+
+- Keep stamps for p06, p07, p08
+- Keep d03 shaft (purple dendrite)
+- Zoom on Wednesday the Jan 4th (1-3 PM?)
   
 * Class push
 
@@ -53,32 +65,25 @@
 * High-priority tasks
 ** Julian
 
-- [X] Dim 6 transformations (retro-reconstruct before truncating and importing)
-
-- [X] Modes (change to strings, e.g., "none", "filled", etc.)
-
-- [X] Selected objects from the inside
+- [ ] Updated "truncating transform" warning to also indicate section number
 
 - [ ] Consider adding selected object list to field opposite trace palette
 
-- [X] Add asterisk to title if unsaved
+- [ ] 3D Scene
+   - [ ] Add background color changes
 
-- [X] Object list
-   - [X] Right click on objec and access trace attribute menu
-
-- [X] Save notification - increase time out so user has a chance to read message
+- [ ] Domain transformations
+   - [ ] Rotation of domains
+   - [ ] Propagate tool
+   - [ ] Backlash-C
 
 - [ ] Brightness / Contrast
 
+   - [ ] Make bright / con changes less dramatic (finer control)
    - [ ] Edit from section list (right click -> edit brightness / contrast)
    - [ ] Apply one sections brightness / contrast to all other sections
-   - [ ] Make bright / con changes less dramatic
      
-- [ ] Show all toggling with green (?) outline ("a")
-
-- [X] Zoom when control pressed to mouse position (don't lift ctrl)
-
-- [ ] Standard regexp tick boxes to filter lists(e.g., synapses = *[_ ]c[_][0-9]+)
+- [ ] Standard regexp tick boxes to filter lists (e.g., synapses = *[_ ]c[_][0-9]+)
 
 - [ ] Section list
    - [ ] Consider section attribute /type/ = ("Tissue", "Cal-grid", ...)

@@ -49,7 +49,7 @@ We appreciate the help!
 
 PyReconstruct can be installed on just about any major operating system (Windows, MacOS, and many Linux distributions). Installing PyReconstruct is a 3-step process:
 
-1.  Make sure you have Python 3.9 or higher.
+1.  Make sure you have Python 3.9 or 3.10.
 2.  Clone the repository to your local machine.
 3.  Install PyReconstruct's dependencies.
 
@@ -60,11 +60,35 @@ PyReconstruct can be installed on just about any major operating system (Windows
 
 ## Checking your version of Python
 
-To check which version of Python you currently have, run the command `python --version` in a terminal. (In Windows, this can be down by clicking `START` and searching for `command prompt`. In the command prompt window, type `python --version` and press enter.)
+To check which version of Python you currently have, run the command `python --version` in a terminal. (To open a terminal in Windows, this can be done by clicking `START` and searching for `command prompt`. In Mac, this can be done by searching for the Terminal app).
 
-The above command will output which version of Python you are running. You should be running Python 3.9 or higher for PyReconstruct. If there is an error (likely means Python is not installed) or if you need to upgrade, search for and download Python. (In Windows, this can be done in the Microsoft App Store.)
+The above command will output which version of Python you are running. You should be running Python 3.9 or 3.10 for PyReconstruct. If there is an error (likely means Python is not installed), or if you need to upgrade, you should install/re-install Python.
+
+
+### Windows
+
+To download Python for Windows, this can be done in the Microsoft App Store [here](https://apps.microsoft.com/store/detail/python-310/9PJPW5LDXLZ5).
+
+
+### Mac
+
+To download Python for Mac, this can be done [here](https://www.python.org/downloads/release/python-3109/). Scroll to the bottom of the page and find the macOS installer.
 
 Once downloaded, you can restart the command prompt and re-run `python --version` to see if you have successfully installed Python.
+
+
+## Installing git
+
+
+### Windows
+
+If you do not already have git installed, it can be downloaded [here](https://git-scm.com/download/win). The 64-bit installer is highly suggested.
+
+### Mac
+
+For Mac computers, git should be downloaded through Xcode, which can be found [here](https://apps.apple.com/us/app/xcode/id497799835?mt=12).
+
+You should install Xcode **even if you already have git installed**. It is required for installing dependencies later in this setup.
 
 
 <a id="orgfe29638"></a>
@@ -73,32 +97,18 @@ Once downloaded, you can restart the command prompt and re-run `python --version
 
 *Cloning* is similar to copying the code in a repository onto your local machine. However, unlike copying the code directly, a clone remains "linked" to the repository hosted on GitHub, and any changes we make remotely can be easily and quickly incorporated into your cloned copy.
 
-Cloning can be done through git's command line interface or through GitHub's excellent desktop application. You can clone the repository anywhere you like on your machine.
+Cloning can be done through through install scripts or through git's command line interface. You can clone the repository anywhere you like on your machine.
 
 
-### GitHub Desktop
+### Install Scripts
 
-1.  Download and install GitHub's desktop application [here](https://desktop.github.com/).
+If you have not already been provided the install script, it can be found in `lauch/install`.
 
-2.  Open the GitHub Desktop application after installing.
+Place the install script in the folder that will contain the PyReconstruct source code.
 
-    ![img](./manual/img/github-desktop-1.png)
+For Mac users, you must enable the install script. To do this, first copy the location of the install script. Then, open the Terminal app and run the following line: `chmod u+x [the file location you copied earlier]` (ex. `chmod u+x Desktop/PyReconstruct/mac_install_PyReconstruct.command`). This will allow you to run the install script.
 
-3.  `File` → `Clone repository`.
-
-    ![img](./manual/img/github-desktop-2.png)
-
-4.  Click on `URL`.
-
-    ![img](./manual/img/github-desktop-3.png)
-
-5.  Insert `SynapseWeb/PyReconstruct` and a `destination folder` where the repo will be stored on your local machine. Then click `Clone`.
-
-    ![img](./manual/img/github-desktop-4.png)
-
-6.  The PyReconstruct repository will be downloaded onto your local machine.
-
-    You can move the folder wherever you'd like after cloning the repository. Keep in mind, however, that you will need to update the location in the GitHub Desktop application in order to update the repository.
+For both Windows and Mac users, run the install script by double-clicking on the file.
 
 
 ### Command line
@@ -114,21 +124,26 @@ Cloning the repository via `git` is even simpler if you're comfortable using the
 
 ## Launching PyReconstruct the first time
 
-PyReconstruct depends (hence, "dependencies") on other Python packages to run. These packages can be downloaded manually if you prefer managing them yourself or can be checked for and installed if necessary through automated scripts.
+PyReconstruct depends (hence, "dependencies") on other Python packages to run. Installing and checking dependencies is done automatically, but they can be downloaded manually if you prefer managing them yourself.
+
+
+### Mac
+
+For Mac users, some dependencies require Xcode to be installed. Xcode can be downloaded [here](https://apps.apple.com/us/app/xcode/id497799835?mt=12).
 
 
 ### Automated installation
 
-If you don't want to hassle with installing dependencies manually, we have written convenience scripts that do this for you before launching PyReconstruct.
+If you don't want to hassle with installing dependencies manually, we have written convenience scripts that do this.
 
-1.  Open the PyReconstruct repository. (This is the location you entered for *local path* when cloning the repository. If you don't remember where this is, in the GitHub Desktop app, click on the `Show in Explorer` button in the middle of the window.)
+1.  Open the PyReconstruct repository. (This is the location where the original install script was stored).
 2.  Open the `launch` subdirectory.
-3.  Double-click on your operating system's launch script (e.g., `windows_run.bat` or `mac_run.app`).
-4.  A console window will open and installation will be begin if necessary.
+3.  Double-click on your operating system's launch script (e.g., `windows_run.bat` or `mac_run.command`).
+4.  A console window will open and installation will begin if necessary.
 5.  Wait until dependencies have been installed. (This might take several minutes.)
 6.  After installation, PyReconstruct will be opened.
-7.  Any time you'd like to run PyReconstruct, you can reopen the launch script. (If changes have been made to the dependencies, they will be automatically downloaded before the application is opened.)
-8.  Make a shortcut of the launch file and place it anywhere on your computer you'd like. (Note: Only move the shortcut and not the launch script itself.)
+7.  Any time you'd like to run PyReconstruct, you can reopen the launch script (this script will automatically check for any updates and download them automatically).
+8.  Make a shortcut/alias of the launch file and place it anywhere on your computer you'd like. (Note: Only move the shortcut and not the launch script itself.)
 
 
 ### Manual installation
@@ -153,22 +168,7 @@ Launch the application by running the following: `python src/pyReconstruct.py`
 
 We are in the process of making many changes to PyReconstruct and having a way to easily update the program on your local machine is crucial. Like cloning the repository, incorporating the newest changes on your local machine can be done using git's command line interface or through the GitHub Desktop application. In either case, changes hosted in this GitHub repository will be reflected in your local clone.
 
-
-### GitHub Desktop
-
-1.  Open the GitHub Desktop application.
-
-2.  Make sure you're in the correct repository.
-    
-    ![img](./manual/img/github-desktop-5.png)
-
-3.  Fetch changes from the remote by clicking on `Fetch origin`.
-
-![img](./manual/img/github-desktop-6.png)
-
-1.  Pull changes into your local repository by clicking on `Pull origin`.
-    
-    ![img](./manual/img/github-desktop-7.png)
+Updates are automatically installed when running the `windows_run.bat` or `mac_run.command` files. However, you can update your repo manually using the command line.
 
 
 ### Git command line interface
@@ -184,7 +184,7 @@ We are in the process of making many changes to PyReconstruct and having a way t
 
 ## Uninstalling
 
-If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct repository on your local machine. (If you cloned the repository through GitHub Desktop, you can also delete it there.)
+If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct repository on your local machine.
 
 
 <a id="org7077643"></a>
@@ -201,7 +201,7 @@ If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct
 
 If you followed the steps above to automatically install dependencies, start PyReconstruct by clicking on your operating system's launch script in the `launch` subdirectory of your local repository.
 
-You can right-click on this file and make a shortcut, which can be place anywhere on your machine. (Do not move the actual launch script itself, only the shortcut.)
+You can right-click on this file and make a shortcut/alias, which can be place anywhere on your machine. (Do not move the actual launch script itself, only the shortcut.)
 
 
 ### After manual installation
@@ -280,6 +280,8 @@ We'd like to minimize the amount of time a user spends moving the cursor to the 
     -   Panning: Hold down `middle mouse button` and move cursor.
     -   Zooming: Press and hold `Ctrl` while scrolling the mouse wheel.
 
+3.  For touchscreen computers, use two fingers to pan and zoom (in any tool mode).
+
 **Moving to another section** can also be done in several ways.
 
 1.  Scrolling the mouse wheel.
@@ -301,6 +303,13 @@ We'd like to minimize the amount of time a user spends moving the cursor to the 
 5.  Press and hold the `left mouse button` while tracing the outline of an object.
 6.  Release the `left mouse button` to finish the trace.
 7.  To draw a polygon, click multiple points along an object and finish by right-clicking.
+
+There are three different tools to create traces:
+1.  Closed Trace (c): this tool will create a closed polygon (keeping only the exterior)
+2.  Open Trace (o): this tool will create an open polyline
+3.  Stamp (s): this tool will create a trace the shape of the trace displayed on the palette. The created trace is centered on the mouse, and its size can be changed by modifying its radius through the trace palette.
+
+The Knife tool (k) can be used to trim traces. This can only be done on **one selected trace** at a time.
 
 Remember, you can pan and zoom while tracing without changing to the pan/zoom tool. 
 
@@ -367,7 +376,7 @@ This GitHub repository is structured to be easily understandable. All source fil
 <tbody>
 <tr>
 <td class="org-left">Script to launch PyReconstruct</td>
-<td class="org-left">src/pyReconstruct.py</td>
+<td class="org-left">src/PyReconstruct.py</td>
 </tr>
 
 

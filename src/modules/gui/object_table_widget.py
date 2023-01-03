@@ -106,8 +106,8 @@ class ObjectTableWidget(QDockWidget):
                 "text": "Find",
                 "opts":
                 [
-                    ("findfirst_act", "First trace", "", self.findFirst),
-                    ("findlast_act", "Last trace", "", self.findLast)
+                    ("findfirst_act", "First", "", self.findFirst),
+                    ("findlast_act", "Last", "", self.findLast)
                 ]
             }
         ]
@@ -121,6 +121,7 @@ class ObjectTableWidget(QDockWidget):
         context_menu_list = [
             ("editattribtues_act", "Edit attributes...", "", self.editAttributes),
             ("editradius_act", "Edit radius...", "", self.editRadius),
+            ("removealltags_act", "Remove all tags", "", self.removeAllTags),
             None,
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
@@ -146,11 +147,9 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             None,
-            ("removealltags_act", "Remove all tags", "", self.removeAllTags),
-            None,
             ("history_act", "View history", "", self.viewHistory),
-            None,
-            ("ztrace_act", "Create ztrace", "", self.createZtrace),
+            # None,
+            # ("ztrace_act", "Create ztrace", "", self.createZtrace),
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]

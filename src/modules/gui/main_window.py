@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                    ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
+                    # ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment)                 
@@ -171,12 +171,12 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
-                    ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
-                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
-                    None,
                     ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
                     ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
+                    None,
+                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
+                    ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
                 ]
             },
 

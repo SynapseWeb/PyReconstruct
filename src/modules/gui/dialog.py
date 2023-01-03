@@ -439,6 +439,8 @@ class Object3DDialog(QDialog):
             except ValueError:
                 opacity = None
             return (type3D, opacity), confirmed
+        else:
+            return None, None
 
 
         

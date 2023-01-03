@@ -127,10 +127,12 @@ class TraceTableWidget(QDockWidget):
         # create the right-click menu
         context_menu_list = [
             ("edit_act", "Edit...", "", self.editTraces),
+            ("changeradius_act", "Change radius...", "", self.editRadius),
+            None,
             ("hide_act", "Hide", "", self.hideTraces),
             ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
-            ("changeradius_act", "Change radius...", "", self.editRadius),
-            ("find_act", "Find trace", "", self.findTrace),
+            None,
+            ("find_act", "Find", "", self.findTrace),
             ("history_act", "View history", "", self.viewHistory),
             None,
             ("delete_act", "Delete", "", self.deleteTraces)
@@ -182,12 +184,6 @@ class TraceTableWidget(QDockWidget):
             Params:
                 tracedict (dict): the dictionary containing the object table data objects
         """
-        self.table = QTableWidget(0, len(self.columns)+2)
-
-        # connect table functions
-        self.table.contextMenuEvent = self.traceContextMenu
-        self.table.mouseDoubleClickEvent = self.findTrace
-
         # establish table headers
         self.horizontal_headers = ["Name"]
         for c in self.columns:
@@ -201,6 +197,13 @@ class TraceTableWidget(QDockWidget):
             for item in tracedict[name]:
                 if self.passesFilters(item):
                     self.items.append(item)
+
+        # create the table
+        self.table = QTableWidget(0, len(self.horizontal_headers))
+
+        # connect table functions
+        self.table.contextMenuEvent = self.traceContextMenu
+        self.table.mouseDoubleClickEvent = self.findTrace
 
         # format table
         self.table.setWordWrap(False)

@@ -1,6 +1,6 @@
 @echo off
 cd /D "%~dp0"
-cd ..
+cd ../..
 echo Checking for updates...
 git fetch
 git pull
@@ -16,7 +16,7 @@ echo Checking dependencies...
 START /B /WAIT cmd /c pip install -r src/requirements.txt
 echo Starting PyReconstruct...
 echo Do NOT close this window while using PyReconstruct!
-START /B /WAIT cmd /c python src/pyReconstruct.py %1
+START /B /WAIT cmd /c python src/PyReconstruct.py %1
 call deactivate
 echo Press enter to exit.
 pause>nul

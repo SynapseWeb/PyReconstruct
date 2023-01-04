@@ -1,4 +1,0 @@
-* Mac
-- Mouse dock does not minimize
-- "Choose .ser file" and "Choose json output dir" does not show up when opening
-- Find first and find last buttons do not exist

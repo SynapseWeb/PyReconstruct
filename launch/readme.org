@@ -1,0 +1,1 @@
+In the =launch= directory, you will find scripts for installing and running PyReconstruct. These scripts mostly automate the steps involved. Before you have used these scripts, you will need to have installed =git= on your local machine. See the quickstart guide for me information.

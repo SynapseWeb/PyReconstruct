@@ -13,4 +13,4 @@ fi
 
 source env/bin/activate
 pip install -r src/requirements.txt
-python src/pyReconstruct.py
+python src/PyReconstruct.py

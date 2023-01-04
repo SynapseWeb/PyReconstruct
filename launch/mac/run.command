@@ -1,5 +1,5 @@
 cd "$(dirname "$0")"
-cd ..
+cd ../..
 echo Checking for updates...
 git fetch
 git pull
@@ -8,10 +8,11 @@ if [ -f "$FILE" ]; then
     source env/bin/activate
 else 
     echo Creating virtual environment...
-    python3 -m venv env
+    python3.10 -m venv env
     source env/bin/activate
 fi
 echo Checking dependencies...
 python3 -m pip install -r src/requirements.txt
 echo Starting PyReconstruct...
-python3 src/pyReconstruct.py $1
+echo Do NOT close this window while using PyReconstruct!
+python3 src/PyReconstruct.py $1

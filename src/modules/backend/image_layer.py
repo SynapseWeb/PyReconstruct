@@ -1,5 +1,5 @@
 import os
-# import zarr
+import zarr
 
 from PySide6.QtCore import (
     Qt,

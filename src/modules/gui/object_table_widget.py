@@ -651,7 +651,7 @@ class ObjectTableWidget(QDockWidget):
             if name in self.series.object_3D_modes:
                 new_type, new_opacity = self.series.object_3D_modes[name]
             else:
-                new_type = "surface", 1
+                new_type, new_opacity = "surface", 1
             if type_3D != new_type:
                 type_3D = None
             if opacity != new_opacity:

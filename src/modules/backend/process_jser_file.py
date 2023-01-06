@@ -33,15 +33,26 @@ def openJserFile(fp : str):
     sname = os.path.basename(fp)
     sname = sname[:sname.rfind(".")]
     hidden_dir = createHiddenDir(sdir, sname)
+
+    sections = {}
     
     # iterate through json data
     for filename in jser_data:
         filedata = jser_data[filename]
+
+        # ensure that filenames match the jser filename
+        filename = sname + filename[filename.rfind("."):]
+
         backend_fp = os.path.join(hidden_dir, filename)
         with open(backend_fp, "w") as f:
             json.dump(filedata, f)
+        
         if filename.endswith(".ser"):
             series_fp = backend_fp
+        else:
+            # gather the section numbers and section filenames
+            snum = int(filename[filename.rfind(".")+1:])
+            sections[snum] = filename
         
         if canceled():
             return None
@@ -49,7 +60,9 @@ def openJserFile(fp : str):
         update(progress/final_value * 100)
         
     series = Series(series_fp)
+    series.sections = sections
     series.jser_fp = fp
+    
     return series
 
 def saveJserFile(series : Series, close=False):

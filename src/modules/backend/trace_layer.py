@@ -381,9 +381,15 @@ class TraceLayer():
             return
         trace = traces[0]
 
-        name, color, tags = trace.name, trace.color, trace.tags
+        name, color, tags, mode = trace.name, trace.color, trace.tags, trace.fill_mode
 
-        self.changeTraceAttributes(name, color, tags)
+        self.section.editTraceAttributes(
+            traces=self.selected_traces,
+            name=name,
+            color=color,
+            tags=tags,
+            mode=mode
+        )
     
     def translateTraces(self, dx : float, dy : float):
         """Translate the selected traces.

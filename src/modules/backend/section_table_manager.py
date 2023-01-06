@@ -1,11 +1,10 @@
+import os
+
 from PySide6.QtCore import Qt
 
 from modules.gui.section_table_widget import SectionTableWidget
-from modules.gui.history_widget import HistoryWidget
 
 from modules.pyrecon.series import Series
-
-from modules.backend.trace_table_item import TraceTableItem
 
 class SectionTableManager():
 
@@ -106,6 +105,10 @@ class SectionTableManager():
                 section_numbers (list): the list of sections to delete
         """
         for snum in section_numbers:
+            # delete the file
+            filename = self.series.sections[snum]
+            os.remove(os.path.join(self.series.getwdir(), filename))
+            # delete link to file
             del(self.series.sections[snum])
             del(self.data[snum])
         

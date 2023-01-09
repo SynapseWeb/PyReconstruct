@@ -12,14 +12,14 @@ if [ -f "$FILE" ]; then
     source ./env/bin/activate
 else 
     echo "Creating virtual environment..."
-    python3 -m venv env
+    python -m venv env
     source ./env/bin/activate
 fi
 
 echo "Checking dependencies..."
-python3 -m pip install -r ./src/requirements.txt
+python -m pip install -r ./src/requirements.txt
 
 echo "Starting PyReconstruct..."
 echo "Do NOT close this window while using PyReconstruct!"
 
-python3 ./src/PyReconstruct.py
+python ./src/PyReconstruct.py

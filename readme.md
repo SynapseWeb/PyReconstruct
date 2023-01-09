@@ -80,6 +80,8 @@ Installing `git` it is very simple.
 
 -   Mac: `git` can be found [here](https://git-scm.com/download/mac).
 
+For both platforms, accept all the defaults for installing git.
+
 
 <a id="cloning-this-repository"></a>
 

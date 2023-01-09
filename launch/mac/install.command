@@ -1,4 +1,22 @@
-echo Installing PyReconstruct...
-cd "$(dirname "$0")"
-git clone https://github.com/SynapseWeb/PyReconstruct.git
-chmod u+x PyReconstruct/launch/mac/run.command
+#!bin/bash
+
+echo "Installing PyReconstruct..."
+
+# Change dir to install script dir
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd $SCRIPT_DIR
+
+# Git clone repo
+git clone https://github.com/SynapseWeb/PyReconstruct
+cd ./PyReconstruct
+
+# Change permissions to launch scripts
+chmod u+x ./launch/mac/run.command
+
+# Make virtual environment and install dependencies
+python3 -m venv env
+source ./env/bin/activate
+pip install -r ./src/requirements.txt
+deactivate
+
+echo "Installation complete. Please close this window."

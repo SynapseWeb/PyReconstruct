@@ -16,8 +16,7 @@
     3.  [Starting a new series](#starting-a-new-series)
     4.  [Movements](#movements)
     5.  [Your first object](#your-first-object)
-    6.  [Object List](#object-list)
-    7.  [Exiting](#exiting)
+    6.  [Exiting](#exiting)
 
 
 
@@ -79,7 +78,7 @@ Installing `git` it is very simple.
 
 -   Windows: `git` can be downloaded [here](https://git-scm.com/download/win). (On most modern computers, use the 64-bit installer.)
 
--   Mac: `git` comes packaged with `Xcode`, which can be found [here](https://apps.apple.com/us/app/xcode/id497799835?mt=12). **Even if you already have git installed, make sure Xcode is installed**. (`Xcode` is required for installing dependencies needed by PyReconstruct.)
+-   Mac: `git` can be found [here](https://git-scm.com/download/mac).
 
 
 <a id="cloning-this-repository"></a>
@@ -99,11 +98,11 @@ Cloning can be done through through automated install scripts or through `git`'s
 
 -   Mac users must explicitly give the user permission to execute this script.
     
-    To do this, right-click and copy the install script. Then, open the Terminal app and run the following command:
+    To do this, right-click and copy the path of the install script. Then, open the Terminal app and run the following command:
     
-    `chmod u+x <paste install script here>`
-
-    (Pasting the install script in the terminal will paste its path; for example, `chmod u+x Desktop/PyReconstruct/install.command`.)
+    `chmod u+x <path to install script>`
+    
+    (For example, `chmod u+x Desktop/PyReconstruct/launch/mac/install.command`.)
 
 -   For both Windows and Mac users, run the install script by double-clicking on the file.
 
@@ -132,13 +131,11 @@ If you don't want to hassle with installing dependencies manually, we have writt
 
 4.  A console window will open and installation will begin if necessary.
 
-5.  Wait until dependencies have been installed. (This might take several minutes.)
+5.  After installation, PyReconstruct will open.
 
-6.  After installation, PyReconstruct will open.
+6.  Any time you'd like to run PyReconstruct, you can reopen the launch script. (This script will automatically check for any updates and download them.)
 
-7.  Any time you'd like to run PyReconstruct, you can reopen the launch script. (This script will automatically check for any updates and download them.)
-
-8.  Make a shortcut/alias of the `run` script and place it anywhere on your computer you'd like. (Note: Only move the shortcut and not the launch script itself.)
+7.  Make a shortcut/alias of the `run` script and place it anywhere on your computer you'd like. (Note: Only move the shortcut and not the launch script itself.)
 
 
 ### Manual installation
@@ -354,21 +351,6 @@ In PyReconstruct, you can also left-click and drag selected traces around the fi
 ### Undo / redo
 
 Undo an action with `Ctrl-Z` and redo the action with `Ctrl-Y`.
-
-
-<a id="object-list"></a>
-
-## Object List
-
-An "object" is all the traces in a series with the same name.
-
-The object list is an important way to access objects and view their 3D reconstructions. It can by accessed through Series > Object list.
-
-In the object list, you can find the first or last contour of an object through Find > First/Last. This is useful for finding objects within a large series.
-
-You can edit the attributes of an object or set of objects by selecting and right-clicking. Please note that changes will affect ALL traces associated with the object. Actions performed through the object list CANNOT be undone with Edit > Undo or Ctrl+Z.
-
-To generate a 3D reconstruction, select the objects you wish to viualize, right click, and go to 3D > Generate 3D (you can also double click the object(s) in the list).
 
 
 <a id="exiting"></a>

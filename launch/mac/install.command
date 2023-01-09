@@ -1,5 +1,3 @@
-#!bin/bash
-
 echo "Installing PyReconstruct..."
 
 # Change dir to install script dir

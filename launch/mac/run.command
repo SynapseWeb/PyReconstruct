@@ -3,8 +3,8 @@ cd $SCRIPT_DIR/../..
 
 echo "Checking for updates..."
 
-git fetch
-git pull
+git fetch --all
+git reset --hard origin/main
 
 FILE=env/bin/activate
 

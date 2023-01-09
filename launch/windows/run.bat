@@ -2,8 +2,8 @@
 cd /D "%~dp0"
 cd ../..
 echo Checking for updates...
-git fetch
-git pull
+git fetch --all
+git reset --hard origin/main
 if exist env\Scripts\activate (
     call env\Scripts\activate
 ) else (

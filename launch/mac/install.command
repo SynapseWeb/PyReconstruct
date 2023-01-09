@@ -11,7 +11,6 @@ git clone https://github.com/SynapseWeb/PyReconstruct
 
 # Switch to neu466g branch
 cd ./PyReconstruct
-git checkout neu466g
 
 # Change permissions to launch scripts
 chmod u+x ./launch/mac/run.command

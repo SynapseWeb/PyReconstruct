@@ -8,13 +8,15 @@ cd $SCRIPT_DIR
 
 # Git clone repo
 git clone https://github.com/SynapseWeb/PyReconstruct
+
+# Switch to neu466g branch
 cd ./PyReconstruct
 
 # Change permissions to launch scripts
 chmod u+x ./launch/mac/run.command
 
 # Make virtual environment and install dependencies
-python3 -m venv env
+python -m venv env
 source ./env/bin/activate
 pip install -r ./src/requirements.txt
 deactivate

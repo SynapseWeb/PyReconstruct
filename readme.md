@@ -63,7 +63,7 @@ To check which version of Python you currently have, run the command `python --v
 
 If there is an error (which likely means Python is not installed) or if you need to upgrade, you should install/re-install Python.
 
--   Windows: Python can be downloaded [here](https://apps.microsoft.com/store/detail/python-310/9PJPW5LDXLZ5) in the Microsoft app store.
+-   Windows: Python can be downloaded [here](https://apps.microsoft.com/store/detail/python-310/9PJPW5LDXLZ5) in the Microsoft app store. Be sure to download Python 3.10. (During installation, if prompted, add Python to Path by clicking the checkbox.)
 
 -   Mac: Python can be downloaded [here](https://www.python.org/downloads/release/python-3109/). Scroll to the bottom of the page and find the macOS installer.
 
@@ -78,7 +78,7 @@ Installing `git` it is very simple.
 
 -   Windows: `git` can be downloaded [here](https://git-scm.com/download/win). (On most modern computers, use the 64-bit installer.)
 
--   Mac: `git` can be found [here](https://git-scm.com/download/mac).
+-   Mac: `git` can be found [here](https://git-scm.com/download/mac). We recommend using the binary installer.
 
 For both platforms, accept all the defaults for installing git.
 

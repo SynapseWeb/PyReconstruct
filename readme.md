@@ -80,8 +80,6 @@ Installing `git` it is very simple.
 
 -   Mac: `git` can be found [here](https://git-scm.com/download/mac). We recommend using the binary installer.
 
-For both platforms, accept all the defaults for installing git.
-
 
 <a id="cloning-this-repository"></a>
 
@@ -92,7 +90,7 @@ For both platforms, accept all the defaults for installing git.
 Cloning can be done through through automated install scripts or through `git`'s command line interface. You can clone the repository anywhere you like on your machine.
 
 
-### Install scripts (automated install)
+### Automated installation
 
 (If you have not already been provided an install script, it can be found in your operating system's folder under the `launch` directory.)
 
@@ -104,7 +102,7 @@ Cloning can be done through through automated install scripts or through `git`'s
     
     `chmod u+x <path to install script>`
     
-    (For example, `chmod u+x Desktop/PyReconstruct/launch/mac/install.command`.)
+    (For example, `chmod u+x Desktop/install.command`.)
 
 -   For both Windows and Mac users, run the install script by double-clicking on the file.
 

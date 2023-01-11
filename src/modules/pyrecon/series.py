@@ -186,5 +186,15 @@ class Series():
                 p = (*contour.getMidpoint(), snum)
                 points.append(p)
         self.ztraces.append(Ztrace(obj_name, points))
-
-                
+    
+    def rename(self, new_name : str):
+        """Rename the series.
+        
+            Params:
+                new_name (str): the new name for the series
+        """
+        old_name = self.name
+        for snum in self.sections:
+            sname = self.sections[snum]
+            self.sections[snum] = sname.replace(old_name, new_name)
+        self.name = new_name

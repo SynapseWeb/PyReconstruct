@@ -412,6 +412,7 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 trace (Trace): the new trace to use as refernce for further tracing
         """
+        self.endPendingEvents()
         self.tracing_trace = trace       
 
     def event(self, event):
@@ -1029,4 +1030,5 @@ class FieldWidget(QWidget, FieldView):
                         closed=False
                 )
             self.is_line_tracing = False
+            self.current_trace = []
             self.generateView(generate_image=False)

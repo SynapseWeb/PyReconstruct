@@ -124,30 +124,56 @@ def clearHiddenSeries(series : Series):
             os.remove(os.path.join(series.hidden_dir, f))
         os.rmdir(series.hidden_dir)
 
-def moveHiddenDir(series : Series, section : Section, b_section : Section):
-    """Move the hidden directory to the jser folder."""
-    jser_dir = os.path.dirname(series.jser_fp)
-    hidden_dir = os.path.dirname(series.filepath)
-    new_hidden_dir = os.path.join(jser_dir, os.path.basename(hidden_dir))
-    shutil.move(hidden_dir, new_hidden_dir)
+def moveSeries(new_jser_fp : str, series : Series, section : Section, b_section : Section):
+    """Move/rename the series to its jser filepath.
+    
+        Params:
+            new_jser_fp (str): the new location for the series
+            series (Series): the series object
+            section (Section): the section file being used
+            b_section (Section): the secondary section file being used
+        """
+    # move/rename the hidden directory
+    old_name = series.name
+    new_name = os.path.basename(new_jser_fp)
+    new_name = new_name[:new_name.rfind(".")]
+    old_hidden_dir = os.path.dirname(series.filepath)
+    new_hidden_dir = os.path.join(
+        os.path.dirname(new_jser_fp),
+        "." + new_name
+    )
+    shutil.move(old_hidden_dir, new_hidden_dir)
+
+    # manually hide dir if windows
+    if os.name == "nt":
+        import subprocess
+        subprocess.check_call(["attrib", "+H", new_hidden_dir])
+
+    # rename all of the files
+    for f in os.listdir(new_hidden_dir):
+        if old_name in f:
+            new_f = f.replace(old_name, new_name)
+            os.rename(
+                os.path.join(new_hidden_dir, f),
+                os.path.join(new_hidden_dir, new_f)
+            )
+    
+    # rename the series
+    series.rename(new_name)
 
     # change the filepaths for the series and section files
+    series.jser_fp = new_jser_fp
     series.hidden_dir = new_hidden_dir
     series.filepath = os.path.join(
         new_hidden_dir,
-        os.path.basename(series.filepath)
+        os.path.basename(series.filepath).replace(old_name, new_name)
     )
     section.filepath = os.path.join(
         new_hidden_dir,
-        os.path.basename(section.filepath)
+        os.path.basename(section.filepath).replace(old_name, new_name)
     )
     if b_section:
         b_section.filepath = os.path.join(
             new_hidden_dir,
-            os.path.basename(b_section.filepath)
+            os.path.basename(b_section.filepath).replace(old_name, new_name)
         )
-
-
-
-
-

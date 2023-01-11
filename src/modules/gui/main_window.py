@@ -37,7 +37,7 @@ from modules.backend.process_jser_file import (
     openJserFile,
     saveJserFile,
     clearHiddenSeries,
-    moveHiddenDir
+    moveSeries
 )
 
 from modules.pyrecon.series import Series
@@ -770,13 +770,21 @@ class MainWindow(QMainWindow):
     
     def saveAsToJser(self, close=False):
         """Prompt the user to find a save location."""
+        # save the series data
+        self.saveAllData()
+
+        # check for wlecome series
+        if self.series.isWelcomeSeries():
+            return
+
         # get location from user
-        confirmed = getSaveLocation(self, self.series)
+        new_jser_fp, confirmed = getSaveLocation(self, self.series)
         if not confirmed:
             return
         
         # move the working hidden folder to the new jser directory
-        moveHiddenDir(
+        moveSeries(
+            new_jser_fp,
             self.series,
             self.field.section,
             self.field.b_section
@@ -784,6 +792,9 @@ class MainWindow(QMainWindow):
         
         # save the file
         saveJserFile(self.series, close=close)
+
+        # set the series to unmodified
+        self.seriesModified(False)
     
     def autoBackup(self):
         """Set up the auto-backup functionality for the series."""

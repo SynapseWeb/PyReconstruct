@@ -28,6 +28,11 @@ PyReconstruct is an actively maintained, extensible version of **RECONSTRUCT** w
 
 Because PyReconstruct is undergoing rapid changes, we are not yet ready to provide a single executable file. For the time being, you can download the source code through this GitHub repository. Instructions on installing and running PyReconstruct follow below.
 
+If you have any questions, please do not hesitate to send us a message:
+
+-   Julian Falco: julian.falco@utexas.edu
+-   Michael Chirillo: m.chirillo@utexas.edu
+
 
 <a id="submitting-bug-reports-and-feature-requests"></a>
 

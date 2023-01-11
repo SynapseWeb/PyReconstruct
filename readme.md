@@ -80,6 +80,8 @@ Installing `git` it is very simple.
 
 -   Mac: `git` can be found [here](https://git-scm.com/download/mac). We recommend using the binary installer.
 
+During installation, you can accept all defaults or customize the installation as you see fit.
+
 
 <a id="cloning-this-repository"></a>
 
@@ -276,6 +278,8 @@ The only requirement to start a new series is a set of images which can be in a 
 
 We'd like to minimize the amount of time a user spends moving the cursor to and from the tool and trace palettes while tracing. In many cases, keyboard shortcuts allow the user to access options quickly. We have also taken advantage of the fact that most modern mice have multiple buttons.
 
+**Centering the image** can be done by pressing the `Home` key.
+
 **Moving around the image** (panning and zooming) can be done in several ways.
 
 1.  Selecting the pan/zoom tool (accessed in the tool palette or by pressing `Z`):
@@ -294,6 +298,11 @@ We'd like to minimize the amount of time a user spends moving the cursor to and 
 2.  `Ctrl-G` ("G" for "go to"), which will prompt you for a section number.
 3.  In the menu bar, `Section` → `Go to section`.
 
+**Trace visibility** can be toggled.
+
+1.  `H` will hide all traces. Pressing `H` again will unhide traces. (A red outline indicates the hide trace option is turned on. You can scroll through the series while traces are hidden.)
+2.  `A` will show all traces. Pressing `A` again will toggle this. (A green outline indicates the all traces feature is turned on.)
+
 
 <a id="your-first-object"></a>
 
@@ -302,7 +311,7 @@ We'd like to minimize the amount of time a user spends moving the cursor to and 
 
 ### Tracing an object
 
-1.  Select a trace palette item by click on it or pressing a number.
+1.  Select a trace palette item by clicking on it or pressing a number.
 
 2.  Right-click on it to edit its attributes.
 
@@ -310,7 +319,7 @@ We'd like to minimize the amount of time a user spends moving the cursor to and 
 
 4.  To trace a closed object, select the closed trace tool in the tool palette (or press `C` for "closed").
 
-5.  Press and hold the `left mouse button` while tracing the outline of an object.
+5.  Press and hold the `left mouse button` while tracing the contour of an object.
 
 6.  Release the `left mouse button` to finish the trace.
 
@@ -329,6 +338,11 @@ The Knife tool (`K`) can be used to trim traces. This can only be done on **one 
 Remember, you can pan and zoom while tracing without changing to the pan/zoom tool.
 
 Note: Legacy Reconstruct had separate polygon and pencil tools, which in PyReconstruct have been collapsed into a single tool. To draw a polygon, simply click points while tracing. To draw using the pencil, simply click and hold while tracing. These actions also work for open traces.
+
+
+### Merging traces
+
+Multiple traces with the same name can be merged into a single trace by pressing `Ctrl-M`.
 
 
 ### Selecting / deselecting the object

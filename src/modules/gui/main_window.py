@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
         shortcuts = [
             ("Backspace", self.field.backspace),
 
-            ("/", self.field.flickerSections),
+            ("/", self.flickerSections),
 
             ("Ctrl+Left", lambda : self.translate("left", "small")),
             ("Left", lambda : self.translate("left", "med")),
@@ -661,6 +661,10 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
+    
+    def flickerSections(self):
+        """Switch between the current and b sections."""
+        self.changeSection(self.field.b_section_number, save=False)
     
     def incrementSection(self, down=False):
         """Increment the section number by one.

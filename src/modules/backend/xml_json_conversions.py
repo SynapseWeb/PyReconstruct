@@ -245,7 +245,7 @@ def sectionJSONtoXML(series : Series, snum : int, new_dir : str):
     xml_section.images[0].mag = section.mag
     xml_section.alignLocked = section.align_locked
     xml_section.thickness = section.thickness
-    t = section.tforms["default"].getList()
+    t = section.tforms[series.alignment].getList()
     xcoef = [t[2], t[0], t[1]]
     ycoef = [t[5], t[3], t[4]]
     xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse

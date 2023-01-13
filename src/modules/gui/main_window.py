@@ -954,7 +954,7 @@ class MainWindow(QMainWindow):
             return
         
         if alignment_name not in alignments:
-            self.newAlignment()
+            self.newAlignment(alignment_name)
 
         self.field.changeAlignment(alignment_name)
 

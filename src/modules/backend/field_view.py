@@ -330,6 +330,8 @@ class FieldView():
                 new_alignment (str): the name of the new alignment
         """
         self.series.alignment = new_alignment
+        
+        self.reload()
 
         # refresh all of the tables
         if self.obj_table_manager:
@@ -338,8 +340,6 @@ class FieldView():
             self.trace_table_manager.loadSection()
         if self.ztrace_table_manager:
             self.ztrace_table_manager.refresh()
-        
-        self.generateView()
     
     def translateTform(self, dx : float, dy : float):
         """Trnaslate the transform for the entire section.

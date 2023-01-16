@@ -3,6 +3,8 @@
 import math
 import cv2
 import numpy as np
+from itertools import combinations
+from modules.pyrecon.transform import Transform
 
 def area(pts : list) -> float:
     """Find the area of a closed contour.
@@ -144,3 +146,22 @@ def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
         if linesIntersect(p1, p2, p3, p4):
             return True
     return False
+
+def estimateLinearTform(pts1, pts2):
+    """Estimate the transform that converts pts1 to pts2."""
+    combs = tuple(combinations(range(len(pts1)), 3))
+    sum_mat = np.array([[0,0,0], [0,0,0]], dtype=np.float64)
+    for c in combs:
+        trip1 = np.array(
+            [pts1[i] for i in c],
+            dtype=np.float32
+        )
+        trip2 = np.array(
+            [pts2[i] for i in c],
+            dtype=np.float32
+        )
+        sum_mat += cv2.getAffineTransform(trip1, trip2)
+    avg_mat = sum_mat / len(combs)
+    tform = Transform(avg_mat.reshape(1,6).tolist()[0])
+
+    return tform

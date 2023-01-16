@@ -7,6 +7,8 @@ from modules.pyrecon.trace import Trace
 from modules.backend.section_layer import SectionLayer
 from modules.backend.state_manager import SectionStates
 
+from modules.calc.quantification import centroid, estimateLinearTform
+
 class FieldView():
 
     def __init__(self, series : Series):
@@ -422,6 +424,34 @@ class FieldView():
         if self.show_all_traces:
             self.hide_trace_layer = False
         self.generateView(generate_image=False)
+    
+    def linearAlign(self):
+        """Modify the linear transformation using points from the selected trace.
+        """
+        # change this
+        contour_name = self.section_layer.selected_traces[0].name
+        # gather points from each section
+        centsA = []
+        for trace in self.section.contours[contour_name]:
+            centsA.append(centroid(trace.points))
+        
+        centsB = []
+        tformB = self.b_section.tforms[self.series.alignment]
+        for trace in self.b_section.contours[contour_name]:
+            pts = tformB.map(trace.points)
+            centsB.append(centroid(pts))
+        
+        # check if number of traces match
+        if len(centsA) != len(centsB):
+            return
+        elif len(centsA) < 3:
+            return
+        
+        # calculate the tform
+        a2b_tform = estimateLinearTform(centsA, centsB)
+
+        # change the transform
+        self.changeTform(a2b_tform)
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.

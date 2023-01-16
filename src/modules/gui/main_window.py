@@ -177,6 +177,8 @@ class MainWindow(QMainWindow):
                     None,
                     ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
                     ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
+                    None,
+                    ("linearalign_act", "Align linear", "", self.field.linearAlign)
                 ]
             },
 

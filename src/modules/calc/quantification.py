@@ -12,6 +12,9 @@ def area(pts : list) -> float:
         Returns:
             (float) the area of the closed contour
     """
+    if len(pts) <= 2:
+        return 0
+    
     if pts[0] != pts[-1]:
         pts = pts + pts[:1]
     x = [ c[0] for c in pts ]
@@ -70,6 +73,9 @@ def lineDistance(pts : list, closed=True) -> float:
         Return:
             (float) the length of the contour
     """
+    if len(pts) <= 1:
+        return 0
+    
     # x and y represent a list of x- and y-coordinates.
     x = [ c[0] for c in pts ]
     y = [ c[1] for c in pts ]

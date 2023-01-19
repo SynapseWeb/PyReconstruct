@@ -349,6 +349,8 @@ class ObjectTableManager():
             Params:
                 obj_names (list): a list of object names
         """
+        self.mainwindow.saveAllData()
+        
         if self.object_viewer and not self.object_viewer.closed:
             self.object_viewer.addObjects(obj_names)
         else:
@@ -366,6 +368,8 @@ class ObjectTableManager():
                 new_type (str): the 3D type for the objects
                 new_opacity (float): the opacity for the 3D objects
         """
+        self.mainwindow.saveAllData()
+
         # set the series settings
         for name in obj_names:
             if name in self.series.object_3D_modes:
@@ -424,6 +428,8 @@ class ObjectTableManager():
             Params:
                 obj_names (list): the objects to create ztraces for
         """
+        self.mainwindow.saveAllData()
+
         for name in obj_names:
             self.series.createZtrace(name)
         

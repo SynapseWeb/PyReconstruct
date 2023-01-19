@@ -59,6 +59,8 @@ class SectionTableManager():
                 section_numbers (list): the list of section numbers to modify
                 lock (bool): True if sections should be locked
         """
+        self.mainwindow.saveAllData()
+
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             section.align_locked = lock
@@ -81,6 +83,8 @@ class SectionTableManager():
                 section_numbers (list): the list of section numbers to modify
                 thickness (float): the new thickness to set for the sections
         """
+        self.mainwindow.saveAllData()
+
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             section.thickness = thickness
@@ -104,6 +108,8 @@ class SectionTableManager():
             Params:
                 section_numbers (list): the list of sections to delete
         """
+        self.mainwindow.saveAllData()
+        
         for snum in section_numbers:
             # delete the file
             filename = self.series.sections[snum]

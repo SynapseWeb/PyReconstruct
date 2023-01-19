@@ -65,6 +65,10 @@ class FieldView():
         if self.b_section:
             self.series_states[self.b_section] = SectionStates(self.b_section)
         self.generateView()
+        # clear the selected traces
+        self.section_layer.selected_traces = []
+        if self.b_section:
+            self.b_section_layer.selected_traces = []
         # notify that the series has been modified
         self.mainwindow.seriesModified(True)
     
@@ -428,24 +432,36 @@ class FieldView():
     def linearAlign(self):
         """Modify the linear transformation using points from the selected trace.
         """
-        # change this
-        contour_name = self.section_layer.selected_traces[0].name
+        if not self.b_section:
+            return
+        
+        # gather traces
+        a_traces = self.section_layer.selected_traces.copy()
+        b_traces = self.b_section_layer.selected_traces.copy()
+
+        # check number of selected traces
+        alen = len(a_traces)
+        blen = len(b_traces)
+        if alen != blen or alen < 3:
+            return
+        contour_name = a_traces[0].name
+
+        # check that all traces have same name
+        for trace in (a_traces + b_traces):
+            if trace.name != contour_name:
+                return
+
         # gather points from each section
         centsA = []
         for trace in self.section.contours[contour_name]:
-            centsA.append(centroid(trace.points))
-        
+            if trace in a_traces:
+                centsA.append(centroid(trace.points))
         centsB = []
         tformB = self.b_section.tforms[self.series.alignment]
         for trace in self.b_section.contours[contour_name]:
-            pts = tformB.map(trace.points)
-            centsB.append(centroid(pts))
-        
-        # check if number of traces match
-        if len(centsA) != len(centsB):
-            return
-        elif len(centsA) < 3:
-            return
+            if trace in b_traces:
+                pts = tformB.map(trace.points)
+                centsB.append(centroid(pts))
         
         # calculate the tform
         a2b_tform = estimateLinearTform(centsA, centsB)

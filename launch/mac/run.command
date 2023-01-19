@@ -6,6 +6,9 @@ echo "Checking for updates..."
 git fetch --all
 git reset --hard origin/main
 
+# Reset file permissions
+chmod u+x launch/mac/run.command
+
 FILE=env/bin/activate
 
 if [ -f "$FILE" ]; then

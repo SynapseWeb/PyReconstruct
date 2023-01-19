@@ -280,7 +280,7 @@ def extract_series_attributes(node):
         "type3Dobject": int(node.get("type3Dobject")),
         "first3Dsection": int(node.get("first3Dsection")),
         "last3Dsection": int(node.get("last3Dsection")),
-        "max3Dconnection": int(node.get("max3Dconnection")),
+        "max3Dconnection": float(node.get("max3Dconnection")),
         "upper3Dfaces": str_to_bool(node.get("upper3Dfaces")),
         "lower3Dfaces": str_to_bool(node.get("lower3Dfaces")),
         "faceNormals": str_to_bool(node.get("faceNormals")),

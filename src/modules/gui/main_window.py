@@ -654,6 +654,8 @@ class MainWindow(QMainWindow):
                 section_num (int): the section number to change to
                 save (bool): saves data to files if True
         """
+        # end the field pending events
+        self.field.endPendingEvents()
         # save data
         if save:
             self.saveAllData()

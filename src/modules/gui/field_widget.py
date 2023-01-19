@@ -1015,7 +1015,7 @@ class FieldWidget(QWidget, FieldView):
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
-        if self.is_line_tracing:
+        if self.is_line_tracing or self.current_trace:
             if len(self.current_trace) > 1:
                 if self.mouse_mode == FieldWidget.CLOSEDTRACE:
                     self.section_layer.newTrace(

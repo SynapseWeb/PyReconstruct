@@ -20,6 +20,18 @@ class Transform():
         t = self.tform
         return QTransform(t[0], t[3], t[1], t[4], t[2], t[5])
     
+    # STATIC METHOD
+    def fromQTransform(qtform : QTransform):
+        """Get a Transform object from a QTransform object."""
+        return Transform([
+            qtform.m11(),
+            qtform.m21(),
+            qtform.m31(),
+            qtform.m12(),
+            qtform.m22(),
+            qtform.m32()
+        ])
+    
     def imageTransform(self):
         """Get the transform object as it should apply to images.
         
@@ -56,7 +68,7 @@ class Transform():
             Returns:
                 (list): the six-number transform
         """
-        return self.tform
+        return self.tform.copy()
     
     def inverted(self):
         """Return the inverted transform.
@@ -67,15 +79,14 @@ class Transform():
         t, invertible = self.qtform.inverted()
         if not invertible:
             raise Exception("Matrix is not invertible")
-        return Transform([
-            t.m11(),
-            t.m21(),
-            t.m31(),
-            t.m12(),
-            t.m22(),
-            t.m32()
-        ])
+        return Transform.fromQTransform(t)
     
     def copy(self):
         return Transform(self.tform.copy())
+    
+    def __mul__(self, other):
+        """Compose two transforms."""
+        q_composed = self.getQTransform() * other.getQTransform()
+        return Transform.fromQTransform(q_composed)
+
 

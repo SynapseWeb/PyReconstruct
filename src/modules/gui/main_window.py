@@ -159,7 +159,19 @@ class MainWindow(QMainWindow):
                     # ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment)                 
+                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                    {
+                        "attr_name": "propogatemenu",
+                        "text": "Propogate transform",
+                        "opts":
+                        [
+                            ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
+                            ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
+                            None,
+                            ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
+                            ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                        ]
+                    }               
                 ]
             },
             

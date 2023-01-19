@@ -44,9 +44,14 @@ class FieldView():
         self.trace_table_manager = None
         self.section_table_manager = None
 
-        # misc defaults
+        # hide/show defaults
         self.hide_trace_layer = False
         self.show_all_traces = False
+
+        # propogate tform defaults
+        self.propogate_tform = False
+        self.stored_tform = Transform([1,0,0,0,1,0])
+        self.propogated_sections = []
 
         # copy/paste clipboard
         self.clipboard = []
@@ -64,11 +69,12 @@ class FieldView():
         self.series_states[self.series.current_section] = SectionStates(self.section)
         if self.b_section:
             self.series_states[self.b_section] = SectionStates(self.b_section)
-        self.generateView()
         # clear the selected traces
         self.section_layer.selected_traces = []
         if self.b_section:
             self.b_section_layer.selected_traces = []
+        
+        self.generateView()
         # notify that the series has been modified
         self.mainwindow.seriesModified(True)
     
@@ -165,6 +171,41 @@ class FieldView():
         
         self.generateView()
     
+    def setPropogationMode(self, propogate : bool):
+        """Set the propogation mode.
+        
+            Params:
+                propogate (bool): whether to begin or finish propogating
+        """
+        self.propogate_tform = propogate
+        if self.propogate_tform:
+            self.stored_tform = Transform([1,0,0,0,1,0])
+            self.propogated_sections = [self.series.current_section]
+        
+    def propogateTo(self, to_end : bool = True):
+        """Propogate the stored transform to the start/end of series.
+        
+            Params:
+                to_end (bool): True propogates to the end, False propogates to beginning
+        """
+        # save the current section
+        self.section.save()
+        
+        for snum in self.series.sections:
+            modify_section = (
+                (to_end and snum > self.series.current_section)
+                or
+                (not to_end and snum < self.series.current_section)
+            )
+            if modify_section:
+                section = self.series.loadSection(snum)
+                new_tform = self.stored_tform * section.tforms[self.series.alignment]
+                section.tforms[self.series.alignment] = new_tform
+                section.save()
+                self.propogated_sections.append(snum)
+        
+        self.reload()
+    
     def swapABsections(self):
         """Switch the A and B sections."""
         self.series.current_section, self.b_section_number = self.b_section_number, self.series.current_section
@@ -202,6 +243,13 @@ class FieldView():
         # reload trace list
         if self.trace_table_manager:
             self.trace_table_manager.loadSection(self.section)
+        
+        # propogate transform if requested
+        if self.propogate_tform and new_section_num not in self.propogated_sections:
+            current_tform = self.section.tforms[self.series.alignment]
+            new_tform = self.stored_tform * current_tform
+            self.section_layer.changeTform(new_tform)
+            self.propogated_sections.append(new_section_num)
 
         # generate view and update status bar
         self.generateView()
@@ -331,6 +379,9 @@ class FieldView():
                 new_alignment (str): the name of the new alignment
         """
         self.series.alignment = new_alignment
+
+        # turn off propogation
+        self.setPropogationMode(False)
         
         self.reload()
 
@@ -608,6 +659,13 @@ class FieldView():
         # check for section locked status
         if self.section.align_locked:
             return
+
+        # check if propogating
+        if self.propogate_tform:
+            current_tform = self.section_layer.section.tforms[self.series.alignment]
+            dtform = new_tform * current_tform.inverted()
+            self.stored_tform = dtform * self.stored_tform
+
         self.section_layer.changeTform(new_tform)
         self.saveState()
         self.generateView()

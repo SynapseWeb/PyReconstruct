@@ -7,7 +7,11 @@ from modules.pyrecon.trace import Trace
 from modules.backend.section_layer import SectionLayer
 from modules.backend.state_manager import SectionStates
 
-from modules.calc.quantification import centroid, estimateLinearTform
+from modules.calc.quantification import (
+    centroid,
+    estimateLinearTform,
+    lineDistance
+)
 
 class FieldView():
 
@@ -519,6 +523,34 @@ class FieldView():
 
         # change the transform
         self.changeTform(a2b_tform)
+    
+    def calibrateMag(self, trace_lengths : dict):
+        """Calibrate the pixel mag based on the lengths of given traces.
+
+            Params:
+                trace_lengths (dict): the lengths of the selected traces (name: length)
+        """
+        # get an average scaling factor across the selected traces
+        sum_scaling = 0
+        for trace in self.section_layer.selected_traces:
+            # get the length of the trace with the given transform
+            tform = self.section.tforms[self.series.alignment]
+            d = lineDistance(tform.map(trace.points), closed=False)
+            # scaling = expected / actual
+            sum_scaling += trace_lengths[trace.name] / d
+        
+        # calculate new mag
+        avg_scaling = sum_scaling / len(self.section_layer.selected_traces)
+        new_mag = self.section.mag * avg_scaling
+
+        # apply new mag to every section
+        for snum in self.series.sections:
+            section = self.series.loadSection(snum)
+            section.setMag(new_mag)
+            section.save()
+        
+        # reload the field
+        self.reload()
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.

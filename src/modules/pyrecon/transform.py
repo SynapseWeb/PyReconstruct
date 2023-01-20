@@ -88,5 +88,15 @@ class Transform():
         """Compose two transforms."""
         q_composed = self.getQTransform() * other.getQTransform()
         return Transform.fromQTransform(q_composed)
+    
+    def magScale(self, prev_mag : float, new_mag : float):
+        """Scale the transform to magnification changes.
+        
+            Params:
+                prev_mag (float): the previous magnification
+                new_mag (float): the new magnification
+        """
+        self.tform[2] *= new_mag / prev_mag
+        self.tform[5] *= new_mag / prev_mag
 
 

@@ -255,6 +255,19 @@ class Trace():
                 
         self.points = points
     
+    def magScale(self, prev_mag : float, new_mag : float):
+        """Scale the trace to magnification changes.
+        
+            Params:
+                prev_mag (float): the previous magnification
+                new_mag (float): the new magnification
+        """
+        for i, p in enumerate(self.points):
+            x, y = p
+            x *= new_mag / prev_mag
+            y *= new_mag / prev_mag
+            self.points[i] = (x, y)
+    
     def addLog(self, message : str):
         """Add a log to the trace history.
         

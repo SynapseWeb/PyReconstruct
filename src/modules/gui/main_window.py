@@ -171,7 +171,9 @@ class MainWindow(QMainWindow):
                             ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
                             ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
                         ]
-                    }               
+                    },
+                    None,
+                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag)           
                 ]
             },
             
@@ -977,7 +979,35 @@ class MainWindow(QMainWindow):
             self.newAlignment(alignment_name)
 
         self.field.changeAlignment(alignment_name)
-
+    
+    def calibrateMag(self):
+        """Calibrate the pixel size for the series."""
+        self.saveAllData()
+        
+        # gather trace names
+        names = []
+        for trace in self.field.section_layer.selected_traces:
+            if trace.name not in names:
+                names.append(trace.name)
+        
+        # prompt user for length of each trace name
+        trace_lengths = {}
+        for name in names:
+            d, confirmed = QInputDialog.getText(
+                self,
+                "Trace Length",
+                f'Length of "{name}"'
+            )
+            if not confirmed:
+                return
+            try:
+                d = float(d)
+            except ValueError:
+                return
+            trace_lengths[name] = d
+        
+        self.field.calibrateMag(trace_lengths)
+            
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         self.saveToJser(notify=True, close=True)

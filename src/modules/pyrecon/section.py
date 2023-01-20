@@ -222,4 +222,19 @@ class Section():
             self.removeTrace(trace)
             trace.resize(new_rad)
             self.addTrace(trace, "radius modified")
-
+    
+    def setMag(self, new_mag : float):
+        """Set the magnification for the section.
+        
+            Params:
+                new_mag (float): the new magnification for the section
+        """
+        # modify the translation component of the transformation
+        for tform in self.tforms.values():
+            tform.magScale(self.mag, new_mag)
+        
+        # modify the traces
+        for trace in self.tracesAsList():
+            trace.magScale(self.mag, new_mag)
+        
+        self.mag = new_mag

@@ -80,7 +80,7 @@ class Object3DViewer(gl.GLViewWidget):
         zavg = (extremes[4] + extremes[5]) / 2
 
         diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
-        self.center = Vector(xavg, yavg, zavg)
+        self.center = Vector(zavg, yavg, xavg)
         self.setCameraPosition(
             pos=self.center,
             distance=max(diffs)*2
@@ -129,12 +129,12 @@ class Object3DViewer(gl.GLViewWidget):
         """Create the shortcuts for the 3D scene."""
         shortcuts = [
             # ("s", self.scaleCubeSize),
-            ("Left", lambda : self.moveScaleCube(-0.1, 0, 0)),
-            ("Right", lambda : self.moveScaleCube(0.1, 0, 0)),
+            ("Left", lambda : self.moveScaleCube(0, 0, -0.1)),
+            ("Right", lambda : self.moveScaleCube(0, 0, 0.1)),
             ("Up", lambda : self.moveScaleCube(0, 0.1, 0)),
             ("Down", lambda : self.moveScaleCube(0, -0.1, 0)),
-            ("Ctrl+Up", lambda : self.moveScaleCube(0, 0, 0.1)),
-            ("Ctrl+Down", lambda : self.moveScaleCube(0, 0, -0.1))
+            ("Ctrl+Up", lambda : self.moveScaleCube(0.1, 0, 0)),
+            ("Ctrl+Down", lambda : self.moveScaleCube(-0.1, 0, 0))
         ]
         for kbd, act in shortcuts:
             QShortcut(QKeySequence(kbd), self).activated.connect(act)

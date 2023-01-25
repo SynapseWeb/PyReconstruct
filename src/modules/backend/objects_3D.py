@@ -2,7 +2,8 @@ import numpy as np
 
 import pyqtgraph.opengl as gl
 
-from pyvista.core.pointset import PolyData
+from skimage.draw import polygon
+import trimesh
 
 from modules.calc.quantification import centroid
 
@@ -15,17 +16,17 @@ class Object3D():
         self.name = name
         self.extremes = []  # xmin, xmax, ymin, ymax, zmin, zmax
     
-    def addToExtremes(self, x, y, z):
+    def addToExtremes(self, x, y, s):
         """Keep track of the extreme values."""
         if not self.extremes:
-            self.extremes = [x, x, y, y, z, z]
+            self.extremes = [x, x, y, y, s, s]
         else:
             if x < self.extremes[0]: self.extremes[0] = x
             if x > self.extremes[1]: self.extremes[1] = x
             if y < self.extremes[2]: self.extremes[2] = y
             if y > self.extremes[3]: self.extremes[3] = y
-            if z < self.extremes[4]: self.extremes[4] = z
-            if z > self.extremes[5]: self.extremes[5] = z
+            if s < self.extremes[4]: self.extremes[4] = s
+            if s > self.extremes[5]: self.extremes[5] = s
 
 class Surface(Object3D):
 
@@ -33,43 +34,88 @@ class Surface(Object3D):
         """Create a 3D Surface object."""
         super().__init__(name)
         self.color = None
-        self.point_cloud = []
+        self.traces = {}
     
-    def addTrace(self, trace : Trace, z : float, tform : Transform = None):
+    def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
         """Add a trace to the surface data."""
-        if not self.color:
+        if self.color is None:
             self.color = tuple([c/255 for c in trace.color])
         
+        if snum not in self.traces:
+            self.traces[snum] = []
+        
+        pts = []
         for pt in trace.points:
             if tform:
                 x, y = tform.map(*pt)
             else:
                 x, y = pt
-            self.point_cloud.append((x, y, z))
-            self.addToExtremes(x, y, z)
-    
-    def generate3D(self, alpha=1):
-        """Generate the opengl mesh."""
-        # use pyvista to generate the faces
-        pdata = PolyData(np.array(self.point_cloud))
-        surf = pdata.delaunay_3d(alpha=0.1, progress_bar=True).extract_surface()
+            self.addToExtremes(x, y, snum)
+            pts.append((x, y))
         
-        # extract face data
-        verts = surf.points
-        faces = surf.faces.reshape((int(surf.faces.shape[0]/4), 4))
-        faces = faces[:, 1:]
+        self.traces[snum].append(pts)
+    
+    def generate3D(self, section_mag, section_thickness, alpha=1):
+        """Generate the numpy array volumes.
+        """
+        # set mag to four times average sections mag
+        mag = section_mag * 8
 
-        # create object
+        # calculate the dimensions of the volume
+        xmin, xmax, ymin, ymax, smin, smax = tuple(self.extremes)
+        vshape = (
+            smax-smin+1,
+            round((ymax-ymin)/mag)+1,
+            round((xmax-xmin)/mag)+1
+        )
+    
+        # create the numpy volume
+        volume = np.zeros(vshape, dtype=bool)
+
+        # add the traces to the volume
+        for snum, trace_list in self.traces.items():
+            for trace in trace_list:
+                x_values = []
+                y_values = []
+                for x, y in trace:
+                    x_values.append(round((x-xmin) / mag))
+                    y_values.append(round((y-ymin) / mag))
+                y_pos, x_pos = polygon(
+                    np.array(y_values),
+                    np.array(x_values)
+                )
+                volume[snum - smin, y_pos, x_pos] = True
+
+        # generate and smooth the trimesh
+        tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)
+        # trimesh.smoothing.filter_humphrey(tm)
+        trimesh.smoothing.filter_laplacian(tm)
+
+        faces = tm.faces
+        verts = tm.vertices
+
+        # modify the vertex locations
+        verts[:,1:] *= mag
+        verts[:,2] += xmin
+        verts[:,1] += ymin
+        verts[:,0] += smin
+        verts[:,0] *= section_thickness
+
+        # get the color
+        color = self.color + (alpha,)
+
+        # create the gl mesh object
         item = gl.GLMeshItem(
                 vertexes=verts,
                 faces=faces,
-                color=(*self.color, alpha),
+                color=color,
                 shader="edgeDarken",
                 glOptions="translucent",
-                smooth=True
+                smooth=True,
         )
 
         return item
+
 
 class Spheres(Object3D):
 
@@ -80,19 +126,19 @@ class Spheres(Object3D):
         self.centroids = []
         self.radii = []
     
-    def addTrace(self, trace : Trace, z : float, tform : Transform = None):
+    def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
         """Add a trace to the spheres data."""
         self.colors.append(tuple([c/255 for c in trace.color]))
 
         x, y = centroid(trace.points)
         if tform:
             x, y = tform.map(x, y)
-        self.centroids.append((x, y, z))
-        self.addToExtremes(x, y, z)
+        self.centroids.append((x, y, snum))
+        self.addToExtremes(x, y, snum)
 
         self.radii.append(trace.getRadius(tform))
     
-    def generate3D(self, alpha=1):
+    def generate3D(self, section_thickness : float, alpha=1):
         """Generate the opengl meshes for the spheres."""
         items = []
         for color, point, radius in zip(
@@ -108,7 +154,9 @@ class Spheres(Object3D):
                 shader="edgeDarken",
                 glOptions="translucent",
             )
-            item.translate(*point)
+            x, y, s = point
+            z = s * section_thickness
+            item.translate(z, y, x)
             items.append(item)
         
         return items

@@ -29,19 +29,25 @@ class Series():
         self.modified = False
 
         self.sections = {}  # section number : section file
+
         for section_num, section_filename in series_data["sections"].items():
             self.sections[int(section_num)] = section_filename
+
         self.current_section = series_data["current_section"]
         self.src_dir = series_data["src_dir"]
-        self.screen_mag = 0  # default value for screen mag (calculated when generateView is called)
+        self.screen_mag = 0  # default value for screen mag (will be calculated when generateView called)
         self.window = series_data["window"]
         self.palette_traces = series_data["palette_traces"]
+
         for i in range(len(self.palette_traces)):
             self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
+
         self.current_trace = Trace.fromDict(series_data["current_trace"])
         self.ztraces = series_data["ztraces"]
+
         for i in range(len(self.ztraces)):
             self.ztraces[i] = Ztrace.fromDict(self.ztraces[i])
+
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
@@ -57,27 +63,34 @@ class Series():
                 (dict) all of the compiled section data
         """
         d = {}
+        
         d["sections"] = self.sections
         d["current_section"] = self.current_section
         d["src_dir"] = self.src_dir
         d["window"] = self.window
         d["palette_traces"] = []
+        
         for trace in self.palette_traces:
             d["palette_traces"].append(trace.getDict())
+            
         d["current_trace"] = self.current_trace.getDict()
         d["ztraces"] = []
+        
         for ztrace in self.ztraces:
             d["ztraces"].append(ztrace.getDict())
+            
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
         d["backup_dir"] = self.backup_dir
+        
         return d
     
     # STATIC METHOD
     def getEmptyDict():
         """Get an empty dictionary for a series object."""
         series_data = {}
+        
         series_data["sections"] = {}  # section_number : section_filename
         series_data["current_section"] = 0  # last section left off
         series_data["src_dir"] = ""  # the directory of the images
@@ -89,6 +102,7 @@ class Series():
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
         series_data["backup_dir"] = ""
+        
         return series_data
     
     # STATIC METHOD
@@ -128,6 +142,7 @@ class Series():
                 return True
             else:
                 return False
+            
         except FileNotFoundError:
             return False
         

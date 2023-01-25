@@ -766,14 +766,14 @@ class MainWindow(QMainWindow):
         # save the series data
         self.saveAllData()
 
-        # check for wlecome series
+        # if welcome series -> close without saving
         if self.series.isWelcomeSeries():
             return
         
         # notify the user and check if series was modified
         if notify and self.series.modified:
-            save = saveNotify(self)
-            if not save:
+            if not saveNotify(self):
+                clearHiddenSeries(self.series)
                 return
         
         # check if the user is closing and the series was not modified

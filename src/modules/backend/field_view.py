@@ -544,8 +544,9 @@ class FieldView():
         new_mag = self.section.mag * avg_scaling
 
         # apply new mag to every section
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
+        for snum, section in self.series.enumerateSections(
+            message="Changing series magnification..."
+        ):
             section.setMag(new_mag)
             section.save()
         

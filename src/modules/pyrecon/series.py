@@ -10,6 +10,8 @@ from modules.pyrecon.obj_group_dict import ObjGroupDict
 from constants.locations import createHiddenDir, assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
+from modules.gui.gui_functions import progbar
+
 class Series():
 
     def __init__(self, filepath : str):
@@ -156,6 +158,10 @@ class Series():
         """
         return Section(os.path.join(self.getwdir(), self.sections[section_num]))
     
+    def enumerateSections(self, show_progress=True, message="Loading series data..."):
+        """Allow iteration through the sections."""
+        return SeriesIterator(self, show_progress, message)
+    
     def newAlignment(self, alignment_name : str, base_alignment="default"):
         """Create a new alignment.
         
@@ -198,3 +204,43 @@ class Series():
             sname = self.sections[snum]
             self.sections[snum] = sname.replace(old_name, new_name)
         self.name = new_name
+
+
+class SeriesIterator():
+
+    def __init__(self, series : Series, show_progress : bool, message : str):
+        """Create the series iterator object.
+        
+            Params:
+                series (Series): the series object
+                show_progress (bool): show progress dialog if True
+        """
+        self.series = series
+        self.show_progress = show_progress
+        self.message = message
+    
+    def __iter__(self):
+        """Allow the user to iterate through the sections."""
+        self.section_numbers = sorted(list(self.series.sections.keys()))
+        self.sni = 0
+        if self.show_progress:
+            self.update, canceled = progbar(
+                title=" ",
+                text=self.message,
+                cancel=False
+            )
+        return self
+    
+    def __next__(self):
+        """Return the next section."""
+        if self.sni < len(self.section_numbers):
+            if self.show_progress:
+                self.update(self.sni / len(self.section_numbers) * 100)
+            snum = self.section_numbers[self.sni]
+            section = self.series.loadSection(snum)
+            self.sni += 1
+            return snum, section
+        else:
+            if self.show_progress:
+                self.update(self.sni / len(self.section_numbers) * 100)
+            raise StopIteration

@@ -203,12 +203,13 @@ class Section():
                 else:
                     trace.tags = tags
             fill_mode = list(trace.fill_mode)
-            style, condition = mode
-            if style is not None:
-                fill_mode[0] = style
-            if condition is not None:
-                fill_mode[1] = condition
-            trace.fill_mode = tuple(fill_mode)
+            if mode is not None:
+                style, condition = mode
+                if style is not None:
+                    fill_mode[0] = style
+                if condition is not None:
+                    fill_mode[1] = condition
+                trace.fill_mode = tuple(fill_mode)
             self.addTrace(trace, "attributes modified")
     
     def editTraceRadius(self, traces : list[Trace], new_rad : float):

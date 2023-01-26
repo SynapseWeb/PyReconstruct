@@ -395,15 +395,15 @@ class MainWindow(QMainWindow):
                 series_obj (Series): the series object (optional)
         """
         if not series_obj:  # if series is not provided
-            # save the current series
-            if self.series:
-                self.saveToJser(notify=True, close=True)
-
             # get the new series
             new_series = None
             if not jser_fp:
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
+            
+            # save the current series
+            if self.series:
+                self.saveToJser(notify=True, close=True)
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)

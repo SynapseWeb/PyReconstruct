@@ -31,9 +31,7 @@ def generateVolumes(series : Series, obj_names : list):
     mags = []
     thicknesses = []
 
-    for snum in sorted(series.sections.keys()):
-        section = series.loadSection(snum)
-
+    for snum, section in series.enumerateSections(show_progress=False):
         # ASSUME SOMEWHAT UNIFORM THICKNESS
         thicknesses.append(section.thickness)
         mags.append(section.mag)

@@ -9,7 +9,6 @@ from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 
 from modules.backend.object_table_item import ObjectTableItem
-from modules.gui.gui_functions import progbar
 
 class ObjectTableManager():
 
@@ -30,15 +29,10 @@ class ObjectTableManager():
 
     def loadSeriesData(self):
         """Load all of the data for each object in the series."""
-        # create the progress bar
-        update, canceled = progbar("Load Series", "Loading series...")
 
         self.objdict = {}  # object name : ObjectTableItem (contains data on object)
-        prog_value = 0
-        final_value = len(self.series.sections)
 
-        for section_num in self.series.sections:
-            section = self.series.loadSection(section_num)
+        for snum, section in self.series.enumerateSections():
             # iterate through contours
             for contour_name in section.contours:
                 if contour_name not in self.objdict:
@@ -49,14 +43,9 @@ class ObjectTableManager():
                     self.objdict[contour_name].addTrace(
                         trace,
                         section.tforms[self.series.alignment],
-                        section_num,
+                        snum,
                         section.thickness
                     )
-                
-            # update progress bar
-            prog_value += 1
-            update(prog_value / final_value * 100)
-            if canceled(): return
     
     def newTable(self):
         """Create a new object list widget."""
@@ -193,8 +182,9 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
         for obj_name in obj_names:
             # delete the object on every section
-            for snum in self.series.sections:
-                section = self.series.loadSection(snum)
+            for snum, section in self.series.enumerateSections(
+                message="Deleting object(s)..."
+            ):
                 if obj_name in section.contours:
                     del(section.contours[obj_name])
                     section.save()
@@ -222,8 +212,9 @@ class ObjectTableManager():
             self.objdict[obj_name] = ObjectTableItem(obj_name)
         
         # modify the object on every section
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
+        for snum, section in self.series.enumerateSections(
+            message="Modifying object(s)..."
+        ):
             traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:
@@ -259,8 +250,9 @@ class ObjectTableManager():
             self.objdict[name] = ObjectTableItem(name)
         
         # iterate through all sections
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
+        for snum, section in self.series.enumerateSections(
+            message="Modifying radii..."
+        ):
             traces = []
             for name in obj_names:
                 if name in section.contours:
@@ -290,8 +282,9 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
 
         # iterate through all the sections
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
+        for snum, section in self.series.enumerateSections(
+            message="Removing trace tags..."
+        ):
             traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:
@@ -327,9 +320,10 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         # iterate through sections and hide the traces
-        for snum in self.series.sections:
+        for snum, section in self.series.enumerateSections(
+            message="Hiding object(s)..." if hide else "Unhiding object(s)..."
+        ):
             modified = False
-            section = self.series.loadSection(snum)
             for name in obj_names:
                 if name in section.contours:
                     contour = section.contours[name]
@@ -394,21 +388,15 @@ class ObjectTableManager():
 
         # load all log objects from the traces
         log_history = []
-        update, canceled = progbar("Object History", "Loading history...")
-        progress = 0
-        final_value = len(self.series.sections)
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
+        for snum, section in self.series.enumerateSections(
+            message="Loading history..."
+        ):
             for name in obj_names:
                 if name in section.contours:
                     contour = section.contours[name]
                     for trace in contour:
                         for log in trace.history:
                             log_history.append((log, name, snum))
-            if canceled():
-                return
-            progress += 1
-            update(progress/final_value * 100)
         
         # sort the log history by datetime
         log_history.sort()

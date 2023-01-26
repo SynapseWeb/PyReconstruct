@@ -766,7 +766,7 @@ class MainWindow(QMainWindow):
         # save the series data
         self.saveAllData()
 
-        # check for welcome series
+        # if welcome series -> close without saving
         if self.series.isWelcomeSeries():
             return
         
@@ -774,6 +774,7 @@ class MainWindow(QMainWindow):
         if notify and self.series.modified:
             save = saveNotify()
             if save == "no":
+                clearHiddenSeries(self.series)
                 return
             elif save == "cancel":
                 return "cancel"

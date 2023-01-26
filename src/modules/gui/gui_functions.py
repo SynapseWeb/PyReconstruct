@@ -143,7 +143,7 @@ def saveNotify():
             QMessageBox.Cancel
         )
     )
-    print(response)
+    
     if response == QMessageBox.Yes:
         return "yes"
     elif response == QMessageBox.No:

@@ -200,7 +200,7 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
-        if not noUndoWarning(self):
+        if not noUndoWarning():
             return
         
         self.manager.deleteSections(section_numbers)

@@ -25,6 +25,7 @@ from modules.calc.pfconversions import (
     pixmapPointToField,
     fieldPointToPixmap
 )
+from modules.gui.gui_functions import notify
 
 class TraceLayer():
 
@@ -257,17 +258,17 @@ class TraceLayer():
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
         if len(self.selected_traces) < 2:
-            print("Cannot merge fewer than two traces.")
+            notify("Cannot merge fewer than two traces.")
             return
         traces = []
         first_trace = self.selected_traces[0]
         name = first_trace.name
         for trace in self.selected_traces:
             if trace.closed == False:
-                print("Can only merge closed traces.")
+                notify("Only closed traces can be merged.")
                 return
             if trace.name != name:
-                print("Cannot merge differently named traces.")
+                notify("Cannot merge traces with different names.")
                 return
             # collect pixel values for trace points
             pix_points = self.traceToPix(trace)
@@ -292,10 +293,10 @@ class TraceLayer():
                 knife_trace (list): the knife trace in pixmap points
         """
         if len(self.selected_traces) == 0:
-            print("Please select traces you wish to cut.")
+            notify("Please select trace you wish to cut.")
             return
         elif len(self.selected_traces) > 1:
-            print("Please select only one trace to cut at a time.")
+            notify("Please select only one trace to cut at a time.")
             return
         trace = self.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
@@ -321,6 +322,10 @@ class TraceLayer():
         """
         if traces is None:
             traces = self.selected_traces
+        
+        if len(traces) == 0:
+            notify("Please select the traces you wish to delete.")
+
         self.selected_traces = []
 
         for trace in traces:

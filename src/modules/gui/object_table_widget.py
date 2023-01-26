@@ -382,6 +382,10 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        # confirm with user
+        if not noUndoWarning():
+            return
+        
         self.manager.editAttributes(obj_names, *new_attr)
     
     def editRadius(self):
@@ -406,7 +410,7 @@ class ObjectTableWidget(QDockWidget):
         if new_rad == 0:
             return
         
-        if not noUndoWarning(self):
+        if not noUndoWarning():
             return
         
         self.manager.editRadius(obj_names, new_rad)
@@ -419,6 +423,10 @@ class ObjectTableWidget(QDockWidget):
         """
         obj_names = self.getSelectedObjects()
         if not obj_names:
+            return
+        
+        # confirm with user
+        if not noUndoWarning():
             return
         
         self.manager.hideObjects(obj_names, hide)
@@ -478,6 +486,10 @@ class ObjectTableWidget(QDockWidget):
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
+
+        # confirm with user
+        if not noUndoWarning():
+            return
         
         self.manager.removeAllTraceTags(obj_names)
     
@@ -502,7 +514,7 @@ class ObjectTableWidget(QDockWidget):
         if not obj_names:
             return
         
-        if not noUndoWarning(self):
+        if not noUndoWarning():
             return
         
         self.manager.deleteObjects(obj_names) 

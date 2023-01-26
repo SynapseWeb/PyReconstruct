@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
-progbar_parent = None
+mainwindow = None
 
 def newMenu(widget : QWidget, container, menu_dict : dict):
     """Create a menu.
@@ -98,7 +98,7 @@ def progbar(title : str, text : str, cancel=True):
             text,
             "Cancel",
             0, 100,
-            progbar_parent
+            mainwindow
         )
     progbar.setMinimumDuration(1500)
     progbar.setWindowTitle(title)
@@ -107,15 +107,24 @@ def progbar(title : str, text : str, cancel=True):
         progbar.setCancelButton(None)
     return progbar.setValue, progbar.wasCanceled
 
-def setProgbarParent(parent):
-    """Set the parent of the progress bar."""
-    global progbar_parent
-    progbar_parent = parent
+def setMainWindow(mw):
+    """Set the main window for the gui functions."""
+    global mainwindow
+    mainwindow = mw
 
-def noUndoWarning(parent):
+def notify(message):
+    """Notify the user."""
+    QMessageBox.information(
+        mainwindow,
+        "Notify",
+        message,
+        QMessageBox.Ok
+    )
+
+def noUndoWarning():
     """Inform the user of an action that can't be undone."""
     response = QMessageBox.warning(
-        parent,
+        mainwindow,
         "",
         "WARNING: This action cannot be undone.",
         QMessageBox.Ok,
@@ -123,9 +132,9 @@ def noUndoWarning(parent):
     )
     return response == QMessageBox.Ok
 
-def saveNotify(parent):
+def saveNotify():
     response = QMessageBox.question(
-        parent,
+        mainwindow,
         "Exit",
         "This series has been modified.\nWould you like save before exiting?",
         QMessageBox.Yes,
@@ -134,9 +143,9 @@ def saveNotify(parent):
 
     return response == QMessageBox.Yes
 
-def unsavedNotify(parent):
+def unsavedNotify():
     response = QMessageBox.question(
-        parent,
+        mainwindow,
         "Unsaved Series",
         "An unsaved version of this series has been found.\nWould you like to open it?",
         QMessageBox.Yes,
@@ -145,10 +154,10 @@ def unsavedNotify(parent):
 
     return response == QMessageBox.Yes
 
-def getSaveLocation(parent, series):
+def getSaveLocation(series):
     # prompt user to pick a location to save the jser file
     file_path, ext = QFileDialog.getSaveFileName(
-        parent,
+        mainwindow,
         "Save Series",
         f"{series.name}.jser",
         filter="JSON Series (*.jser)"

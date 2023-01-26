@@ -20,7 +20,6 @@ from modules.gui.mouse_palette import MousePalette
 from modules.gui.field_widget import FieldWidget
 from modules.gui.dialog import AlignmentDialog
 from modules.gui.history_widget import HistoryWidget
-from modules.gui.gui_functions import progbar
 from modules.gui.gui_functions import (
     progbar,
     populateMenuBar,
@@ -28,7 +27,7 @@ from modules.gui.gui_functions import (
     saveNotify,
     unsavedNotify,
     getSaveLocation,
-    setProgbarParent
+    setMainWindow
 )
 
 from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
@@ -97,7 +96,7 @@ class MainWindow(QMainWindow):
         self.createShortcuts()
 
         # set the main window as the parent of the progress bar
-        setProgbarParent(self)
+        setMainWindow(self)
 
         self.show()
 
@@ -436,7 +435,7 @@ class MainWindow(QMainWindow):
                 # if a series file has been found
                 if new_series_fp:
                     # ask the user if they want to open the unsaved series
-                    open_unsaved = unsavedNotify(self)
+                    open_unsaved = unsavedNotify()
                     if open_unsaved:
                         new_series = Series(new_series_fp)
                         new_series.modified = True
@@ -772,7 +771,7 @@ class MainWindow(QMainWindow):
         
         # notify the user and check if series was modified
         if notify and self.series.modified:
-            save = saveNotify(self)
+            save = saveNotify()
             if not save:
                 return
         
@@ -800,7 +799,7 @@ class MainWindow(QMainWindow):
             return
 
         # get location from user
-        new_jser_fp, confirmed = getSaveLocation(self, self.series)
+        new_jser_fp, confirmed = getSaveLocation(self.series)
         if not confirmed:
             return
         

@@ -258,17 +258,17 @@ class TraceLayer():
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
         if len(self.selected_traces) < 2:
-            notify("Cannot merge fewer than two traces.")
+            notify("Please select two or more traces to merge.")
             return
         traces = []
         first_trace = self.selected_traces[0]
         name = first_trace.name
         for trace in self.selected_traces:
             if trace.closed == False:
-                notify("Only closed traces can be merged.")
+                notify("Please merge only closed traces.")
                 return
             if trace.name != name:
-                notify("Cannot merge traces with different names.")
+                notify("Please merge traces with the same name.")
                 return
             # collect pixel values for trace points
             pix_points = self.traceToPix(trace)
@@ -293,7 +293,7 @@ class TraceLayer():
                 knife_trace (list): the knife trace in pixmap points
         """
         if len(self.selected_traces) == 0:
-            notify("Please select trace you wish to cut.")
+            notify("Please select the trace you wish to cut.")
             return
         elif len(self.selected_traces) > 1:
             notify("Please select only one trace to cut at a time.")

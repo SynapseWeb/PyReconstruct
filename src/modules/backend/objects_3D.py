@@ -64,9 +64,9 @@ class Surface(Object3D):
         # calculate the dimensions of the volume
         xmin, xmax, ymin, ymax, smin, smax = tuple(self.extremes)
         vshape = (
-            smax-smin+1,
+            round((xmax-xmin)/mag)+1,
             round((ymax-ymin)/mag)+1,
-            round((xmax-xmin)/mag)+1
+            smax-smin+1
         )
     
         # create the numpy volume
@@ -80,11 +80,11 @@ class Surface(Object3D):
                 for x, y in trace:
                     x_values.append(round((x-xmin) / mag))
                     y_values.append(round((y-ymin) / mag))
-                y_pos, x_pos = polygon(
-                    np.array(y_values),
-                    np.array(x_values)
+                x_pos, y_pos = polygon(
+                    np.array(x_values),
+                    np.array(y_values)
                 )
-                volume[snum - smin, y_pos, x_pos] = True
+                volume[x_pos, y_pos, snum - smin] = True
 
         # generate and smooth the trimesh
         tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)
@@ -95,11 +95,11 @@ class Surface(Object3D):
         verts = tm.vertices
 
         # modify the vertex locations
-        verts[:,1:] *= mag
-        verts[:,2] += xmin
+        verts[:,:2] *= mag
+        verts[:,0] += xmin
         verts[:,1] += ymin
-        verts[:,0] += smin
-        verts[:,0] *= section_thickness
+        verts[:,2] += smin
+        verts[:,2] *= section_thickness
 
         # get the color
         color = self.color + (alpha,)

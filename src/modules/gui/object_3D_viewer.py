@@ -43,7 +43,7 @@ class Object3DViewer(gl.GLViewWidget):
                 varying vec3 normal;
                 void main() {
                     vec4 color = gl_Color;
-                    float s = pow(normal.x*normal.x + normal.y*normal.y, 3.0) / 2.0;
+                    float s = pow(normal.x*normal.x + normal.y*normal.y, 1.5) / 1.5;
                     color.x = color.x - s * color.x;
                     color.y = color.y - s * color.y;
                     color.z = color.z - s * color.z;
@@ -80,7 +80,7 @@ class Object3DViewer(gl.GLViewWidget):
         zavg = (extremes[4] + extremes[5]) / 2
 
         diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
-        self.center = Vector(zavg, yavg, xavg)
+        self.center = Vector(xavg, yavg, zavg)
         self.setCameraPosition(
             pos=self.center,
             distance=max(diffs)*2
@@ -129,12 +129,12 @@ class Object3DViewer(gl.GLViewWidget):
         """Create the shortcuts for the 3D scene."""
         shortcuts = [
             # ("s", self.scaleCubeSize),
-            ("Left", lambda : self.moveScaleCube(0, 0, -0.1)),
-            ("Right", lambda : self.moveScaleCube(0, 0, 0.1)),
+            ("Left", lambda : self.moveScaleCube(-0.1, 0, 0)),
+            ("Right", lambda : self.moveScaleCube(0.1, 0, 0)),
             ("Up", lambda : self.moveScaleCube(0, 0.1, 0)),
             ("Down", lambda : self.moveScaleCube(0, -0.1, 0)),
-            ("Ctrl+Up", lambda : self.moveScaleCube(0.1, 0, 0)),
-            ("Ctrl+Down", lambda : self.moveScaleCube(-0.1, 0, 0))
+            ("Ctrl+Up", lambda : self.moveScaleCube(0, 0, 0.1)),
+            ("Ctrl+Down", lambda : self.moveScaleCube(0, 0, -0.1))
         ]
         for kbd, act in shortcuts:
             QShortcut(QKeySequence(kbd), self).activated.connect(act)

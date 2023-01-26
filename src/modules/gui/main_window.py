@@ -766,15 +766,17 @@ class MainWindow(QMainWindow):
         # save the series data
         self.saveAllData()
 
-        # check for wlecome series
+        # check for welcome series
         if self.series.isWelcomeSeries():
             return
         
         # notify the user and check if series was modified
         if notify and self.series.modified:
             save = saveNotify()
-            if not save:
+            if save == "no":
                 return
+            elif save == "cancel":
+                return "cancel"
         
         # check if the user is closing and the series was not modified
         if close and not self.series.modified:
@@ -1013,5 +1015,11 @@ class MainWindow(QMainWindow):
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
-        self.saveToJser(notify=True, close=True)
+        if self.series.options["autosave"]:
+            self.saveToJser(close=True)
+        else:
+            response = self.saveToJser(notify=True, close=True)
+            if response == "cancel":
+                event.ignore()
+                return
         event.accept()

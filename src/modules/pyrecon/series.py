@@ -55,10 +55,16 @@ class Series():
         self.fill_opacity = 0.2
 
         # ADDED SINCE JAN 25TH
+
+        self.options = series_data["options"]
     
     # STATIC METHOD
     def updateJSON(series_data):
         """Add missing attributes to the series JSON."""
+        empty_series = Series.getEmptyDict()
+        for key in empty_series:
+            if key not in series_data:
+                series_data[key] = empty_series[key]
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -84,6 +90,7 @@ class Series():
         d["backup_dir"] = self.backup_dir
 
         # ADDED SINCE JAN 25TH
+        d["options"] = self.options
 
         return d
     
@@ -104,6 +111,12 @@ class Series():
         series_data["backup_dir"] = ""
 
         # ADDED SINCE JAN 25TH
+
+        series_data["options"] = {}
+
+        options = series_data["options"]
+        options["autosave"] = False
+        options["3D_smoothing"] = "laplacian"
 
         return series_data
     

@@ -49,11 +49,10 @@ class Section():
     # STATIC METHOD
     def updateJSON(section_data):
         """Add missing attributes to section JSON."""
-
-        # ADDED SINCE JAN 25TH
-
-        if "calgrid" not in section_data:
-            section_data["calgrid"] = False
+        empty_section = Section.getEmptyDict()
+        for key in empty_section:
+            if key not in section_data:
+                section_data[key] = empty_section[key]
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.

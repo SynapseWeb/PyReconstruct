@@ -53,9 +53,17 @@ def generateVolumes(series : Series, obj_names : list):
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
-            items.append(obj_3D.generate3D(avg_mag, avg_thickness, opacity))
+            items.append(obj_3D.generate3D(
+                avg_mag,
+                avg_thickness,
+                opacity,
+                series.options["3D_smoothing"]
+            ))
         elif type(obj_3D) is Spheres:
-            items += (obj_3D.generate3D(avg_thickness, opacity))
+            items += (obj_3D.generate3D(
+                avg_thickness,
+                opacity
+            ))
     
     # convert snum extremes to z extremes
     extremes[4] *= avg_thickness

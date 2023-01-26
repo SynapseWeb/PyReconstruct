@@ -137,11 +137,19 @@ def saveNotify():
         mainwindow,
         "Exit",
         "This series has been modified.\nWould you like save before exiting?",
-        QMessageBox.Yes,
-        QMessageBox.No
+        buttons=(
+            QMessageBox.Yes |
+            QMessageBox.No |
+            QMessageBox.Cancel
+        )
     )
-
-    return response == QMessageBox.Yes
+    print(response)
+    if response == QMessageBox.Yes:
+        return "yes"
+    elif response == QMessageBox.No:
+        return "no"
+    else:
+        return "cancel"
 
 def unsavedNotify():
     response = QMessageBox.question(

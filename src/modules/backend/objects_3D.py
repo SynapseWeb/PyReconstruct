@@ -55,7 +55,7 @@ class Surface(Object3D):
         
         self.traces[snum].append(pts)
     
-    def generate3D(self, section_mag, section_thickness, alpha=1):
+    def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
         """Generate the numpy array volumes.
         """
         # set mag to four times average sections mag
@@ -88,8 +88,10 @@ class Surface(Object3D):
 
         # generate and smooth the trimesh
         tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)
-        # trimesh.smoothing.filter_humphrey(tm)
-        trimesh.smoothing.filter_laplacian(tm)
+        if smoothing == "humphrey":
+            trimesh.smoothing.filter_humphrey(tm)
+        elif smoothing == "laplacian":
+            trimesh.smoothing.filter_laplacian(tm)
 
         faces = tm.faces
         verts = tm.vertices

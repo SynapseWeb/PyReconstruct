@@ -114,8 +114,10 @@ class SectionTableWidget(QDockWidget):
         # fill in section data
         r = 0
         for snum in sorted(sectiondict.keys()):
-            self.table.setItem(r, 0, QTableWidgetItem(str(snum)))
-            thickness, locked = sectiondict[snum]
+            thickness, locked, calgrid = sectiondict[snum]
+            self.table.setItem(r, 0, QTableWidgetItem(
+                str(snum) + (" (calgrid)" if calgrid else "")
+            ))
             self.table.setItem(r, 1, QTableWidgetItem(str(round(thickness, 5))))
             if locked:
                 locked_str = "Locked"

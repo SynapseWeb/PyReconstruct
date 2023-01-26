@@ -23,9 +23,15 @@ class SectionTableManager():
     def loadSections(self):
         """Load all of the data for each section in the series."""
         self.data = {}
-        for snum in self.series.sections:
+        for snum, section in self.series.enumerateSections(
+            message="Loading section data..."
+        ):
             section = self.series.loadSection(snum)
-            self.data[snum] = (section.thickness, section.align_locked)
+            self.data[snum] = (
+                section.thickness,
+                section.align_locked,
+                section.calgrid
+            )
 
         # add the data to the tables
         for table in self.tables:

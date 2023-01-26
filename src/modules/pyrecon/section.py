@@ -22,6 +22,8 @@ class Section():
         with open(filepath, "r") as f:
             section_data = json.load(f)
         
+        Section.updateJSON(section_data)  # update any missing attributes
+        
         self.src = section_data["src"]
         self.brightness = section_data["brightness"]
         self.contrast = section_data["contrast"]
@@ -39,6 +41,84 @@ class Section():
                 name,
                 [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
             )
+        
+        # ADDED SINCE JAN 25TH
+
+        self.calgrid = section_data["calgrid"]
+    
+    # STATIC METHOD
+    def updateJSON(section_data):
+        """Add missing attributes to section JSON."""
+
+        # ADDED SINCE JAN 25TH
+
+        if "calgrid" not in section_data:
+            section_data["calgrid"] = False
+
+    def getDict(self) -> dict:
+        """Convert section object into a dictionary.
+        
+            Returns:
+                (dict) all of the compiled section data
+        """
+        d = {}
+        d["src"] = self.src
+        d["brightness"] = self.brightness
+        d["contrast"] = self.contrast
+        d["mag"] = self.mag
+        d["align_locked"] = self.align_locked
+
+        # save tforms
+        d["tforms"] = {}
+        for a in self.tforms:
+            d["tforms"][a] = self.tforms[a].getList()
+
+        d["thickness"] = self.thickness
+
+        # save contours
+        d["contours"] = {}
+        for contour_name in self.contours:
+            if not self.contours[contour_name].isEmpty():
+                d["contours"][contour_name] = [
+                    trace.getDict(include_name=False) for trace in self.contours[contour_name]
+                ]
+        
+        # ADDED SINCE JAN 25TH
+
+        d["calgrid"] = self.calgrid
+
+        return d
+    
+    # STATIC METHOD
+    def getEmptyDict():
+        section_data = {}
+        section_data["src"] = ""  # image location
+        section_data["brightness"] = 0
+        section_data["contrast"] = 0
+        section_data["mag"] = 0.00254  # microns per pixel
+        section_data["align_locked"] = True
+        section_data["thickness"] = 0.05  # section thickness
+        section_data["tforms"] = {}  
+        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
+        section_data["contours"] = {}
+
+        # ADDED SINCE JAN 25TH
+
+        section_data["calgrid"] = False
+
+        return section_data
+    
+    def tracesAsList(self) -> list[Trace]:
+        """Return the trace dictionary as a list. Does NOT copy traces.
+        
+            Returns:
+                (list): a list of traces
+        """
+        trace_list = []
+        for contour_name in self.contours:
+            for trace in self.contours[contour_name]:
+                trace_list.append(trace)
+        return trace_list
     
     def addTrace(self, trace : Trace, log_message=None):
         """Add a trace to the trace dictionary.
@@ -86,60 +166,6 @@ class Section():
         self.added_traces = []
         self.removed_traces = []
         self.modified_traces = []
-    
-    def tracesAsList(self) -> list[Trace]:
-        """Return the trace dictionary as a list. Does NOT copy traces.
-        
-            Returns:
-                (list): a list of traces
-        """
-        trace_list = []
-        for contour_name in self.contours:
-            for trace in self.contours[contour_name]:
-                trace_list.append(trace)
-        return trace_list
-
-    def getDict(self) -> dict:
-        """Convert section object into a dictionary.
-        
-            Returns:
-                (dict) all of the compiled section data
-        """
-        d = {}
-        d["src"] = self.src
-        d["brightness"] = self.brightness
-        d["contrast"] = self.contrast
-        d["mag"] = self.mag
-        d["align_locked"] = self.align_locked
-
-        # save tforms
-        d["tforms"] = {}
-        for a in self.tforms:
-            d["tforms"][a] = self.tforms[a].getList()
-
-        d["thickness"] = self.thickness
-
-        # save contours
-        d["contours"] = {}
-        for contour_name in self.contours:
-            if not self.contours[contour_name].isEmpty():
-                d["contours"][contour_name] = [
-                    trace.getDict(include_name=False) for trace in self.contours[contour_name]
-                ]
-        return d
-    
-    def getEmptyDict():
-        section_data = {}
-        section_data["src"] = ""  # image location
-        section_data["brightness"] = 0
-        section_data["contrast"] = 0
-        section_data["mag"] = 0.00254  # microns per pixel
-        section_data["align_locked"] = True
-        section_data["thickness"] = 0.05  # section thickness
-        section_data["tforms"] = {}  
-        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
-        section_data["contours"] = {}
-        return section_data
     
     # STATIC METHOD
     def new(series_name : str, snum : int, image_location : str, mag : float, thickness : float, wdir : str):

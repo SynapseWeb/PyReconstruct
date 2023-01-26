@@ -26,6 +26,8 @@ class Series():
         with open(filepath, "r") as f:
             series_data = json.load(f)
 
+        Series.updateJSON(series_data)
+
         self.jser_fp = ""
         self.hidden_dir = os.path.dirname(self.filepath)
         self.modified = False
@@ -51,7 +53,13 @@ class Series():
 
         # default settings
         self.fill_opacity = 0.2
+
+        # ADDED SINCE JAN 25TH
     
+    # STATIC METHOD
+    def updateJSON(series_data):
+        """Add missing attributes to the series JSON."""
+
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
         
@@ -74,6 +82,9 @@ class Series():
         d["object_groups"] = self.object_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
         d["backup_dir"] = self.backup_dir
+
+        # ADDED SINCE JAN 25TH
+
         return d
     
     # STATIC METHOD
@@ -91,6 +102,9 @@ class Series():
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
         series_data["backup_dir"] = ""
+
+        # ADDED SINCE JAN 25TH
+
         return series_data
     
     # STATIC METHOD

@@ -24,6 +24,7 @@ from modules.gui.gui_functions import (
     progbar,
     populateMenuBar,
     populateMenu,
+    notify,
     saveNotify,
     unsavedNotify,
     getSaveLocation,
@@ -989,13 +990,16 @@ class MainWindow(QMainWindow):
             if trace.name not in names:
                 names.append(trace.name)
         
+        if len(names) == 0:
+            notify("Please select traces for calibration.")
+        
         # prompt user for length of each trace name
         trace_lengths = {}
         for name in names:
             d, confirmed = QInputDialog.getText(
                 self,
                 "Trace Length",
-                f'Length of "{name}"'
+                f'Length of "{name}" in microns:'
             )
             if not confirmed:
                 return

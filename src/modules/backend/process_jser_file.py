@@ -42,17 +42,19 @@ def openJserFile(fp : str):
 
         # ensure that filenames match the jser filename
         filename = sname + filename[filename.rfind("."):]
-
         backend_fp = os.path.join(hidden_dir, filename)
-        with open(backend_fp, "w") as f:
-            json.dump(filedata, f)
-        
+
         if filename.endswith(".ser"):
+            Series.updateJSON(filedata)  # update any missing attributes
             series_fp = backend_fp
         else:
+            Section.updateJSON(filedata)  # update any missing attributes
             # gather the section numbers and section filenames
             snum = int(filename[filename.rfind(".")+1:])
             sections[snum] = filename
+
+        with open(backend_fp, "w") as f:
+            json.dump(filedata, f)
         
         if canceled():
             return None

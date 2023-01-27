@@ -226,7 +226,6 @@ class Section():
             self.contours[trace.name] = Contour(trace.name, [trace])
         
         self.added_traces.append(trace)
-        self.selected_traces.append(trace)
     
     def removeTrace(self, trace : Trace):
         """Remove a trace from the trace dictionary.

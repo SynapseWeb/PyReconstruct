@@ -42,7 +42,9 @@ class Surface(Object3D):
             self.color = tuple([c/255 for c in trace.color])
         
         if snum not in self.traces:
-            self.traces[snum] = []
+            self.traces[snum] = {}
+            self.traces[snum]["pos"] = []
+            self.traces[snum]["neg"] = []
         
         pts = []
         for pt in trace.points:
@@ -53,7 +55,10 @@ class Surface(Object3D):
             self.addToExtremes(x, y, snum)
             pts.append((x, y))
         
-        self.traces[snum].append(pts)
+        if trace.negative:
+            self.traces[snum]["neg"].append(pts)
+        else:
+            self.traces[snum]["pos"].append(pts)
     
     def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
         """Generate the numpy array volumes.
@@ -73,8 +78,8 @@ class Surface(Object3D):
         volume = np.zeros(vshape, dtype=bool)
 
         # add the traces to the volume
-        for snum, trace_list in self.traces.items():
-            for trace in trace_list:
+        for snum, trace_lists in self.traces.items():
+            for trace in trace_lists["pos"]:
                 x_values = []
                 y_values = []
                 for x, y in trace:
@@ -85,6 +90,18 @@ class Surface(Object3D):
                     np.array(y_values)
                 )
                 volume[x_pos, y_pos, snum - smin] = True
+            # subtract out the negative traces
+            for trace in trace_lists["neg"]:
+                x_values = []
+                y_values = []
+                for x, y in trace:
+                    x_values.append(round((x-xmin) / mag))
+                    y_values.append(round((y-ymin) / mag))
+                x_pos, y_pos = polygon(
+                    np.array(x_values),
+                    np.array(y_values)
+                )
+                volume[x_pos, y_pos, snum - smin] = False
 
         # generate and smooth the trimesh
         tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)

@@ -149,6 +149,7 @@ class TraceLayer():
             self.section.addTrace(new_trace, log_message)
         else:
             self.section.addTrace(new_trace)
+        self.section.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
         """Called when mouse is pressed in stamp mode.
@@ -171,6 +172,7 @@ class TraceLayer():
             rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
+        self.section.selected_traces.append(new_trace)
     
     def mergeSelectedTraces(self):
         """Merge all selected traces."""

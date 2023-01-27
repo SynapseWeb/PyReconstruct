@@ -73,10 +73,6 @@ class MainWindow(QMainWindow):
         self.mouse_palette = None  # placeholder for mouse palette
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
-        # number defaults
-        self.smallnum = 0.01
-        self.mednum = 0.1
-        self.bignum = 1
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -922,11 +918,11 @@ class MainWindow(QMainWindow):
                 amount (str): small, med, or big
         """
         if amount == "small":
-            num = self.smallnum
+            num = self.series.options["small_dist"]
         elif amount == "med":
-            num = self.mednum
+            num = self.series.options["med_dist"]
         elif amount == "big":
-            num = self.bignum
+            num = self.series.options["big_dist"]
         if direction == "left":
             x, y = -num, 0
         elif direction == "right":

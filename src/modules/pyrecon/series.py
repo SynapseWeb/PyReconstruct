@@ -129,6 +129,9 @@ class Series():
         options = series_data["options"]
         options["autosave"] = False
         options["3D_smoothing"] = "laplacian"
+        options["small_dist"] = 0.01
+        options["med_dist"] = 0.1
+        options["big_dist"] = 1
 
         return series_data
     

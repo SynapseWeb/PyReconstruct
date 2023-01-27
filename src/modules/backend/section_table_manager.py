@@ -26,12 +26,13 @@ class SectionTableManager():
         for snum, section in self.series.enumerateSections(
             message="Loading section data..."
         ):
-            section = self.series.loadSection(snum)
-            self.data[snum] = (
-                section.thickness,
-                section.align_locked,
-                section.calgrid
-            )
+            self.data[snum] = {
+                "thickness": section.thickness,
+                "align_locked": section.align_locked,
+                "calgrid": section.calgrid,
+                "brightness": section.brightness,
+                "contrast": section.contrast
+            }
 
         # add the data to the tables
         for table in self.tables:
@@ -58,6 +59,22 @@ class SectionTableManager():
         for table in self.tables:
             table.createTable(self.data)
     
+    def updateSection(self, section):
+        """Update the data for a section.
+        
+            Params:
+                section (Section): the section with data to update
+        """
+        self.data[section.n] = {
+            "thickness": section.thickness,
+            "align_locked": section.align_locked,
+            "calgrid": section.calgrid,
+            "brightness": section.brightness,
+            "contrast": section.contrast
+        }
+        for table in self.tables:
+            table.updateSection(section.n, self.data[section.n])
+    
     def lockSections(self, section_numbers : list[int], lock : bool):
         """Lock or unlock a set of sections.
         
@@ -72,8 +89,7 @@ class SectionTableManager():
             section.align_locked = lock
             section.save()
             # update the table data
-            thickness, old_lock = self.data[snum]
-            self.data[snum] = thickness, lock
+            self.data[snum]["align_locked"] = lock
         
         # update the field
         self.mainwindow.field.reload()
@@ -81,6 +97,47 @@ class SectionTableManager():
 
         # update the tables
         self.updateTables()
+
+    def setBC(self, section_numbers : list[int], b : int, c : int):
+        """Set the brightness and contrast for a set of sections.
+        
+            Params:
+                section_numbers (list): the list of section numbers to set
+                b (int): the brightness to set
+                c (int): the contrast to set
+        """
+        self.mainwindow.saveAllData()
+
+        for snum in section_numbers:
+            section = self.series.loadSection(snum)
+            if b is not None:
+                section.brightness = b
+            if c is not None:
+                section.contrast = c
+            section.save()
+            # update table data
+            self.data[snum]["brightness"] = b
+            self.data[snum]["contrast"] = c
+        
+        # update the field
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+
+        # update the tables
+        self.updateTables()
+    
+    def matchBC(self, section_numbers : list[int]):
+        """Match the brightness and contrast of a set of sections to the current section.
+        
+            Params:
+                section_numbers (list): the sections to modify
+        """
+        b = self.data[self.series.current_section]["brightness"]
+        c = self.data[self.series.current_section]["contrast"]
+        self.setBC(section_numbers, b, c)
+
+
+
 
     def editThickness(self, section_numbers : list[int], thickness : float):
         """Set the section thickness for a set of sections.
@@ -96,8 +153,7 @@ class SectionTableManager():
             section.thickness = thickness
             section.save()
             # update the table data
-            old_thickness, lock = self.data[snum]
-            self.data[snum] = thickness, lock
+            self.data[snum]["thickness"] = thickness
         
         self.mainwindow.field.reload()
         self.updateTables()

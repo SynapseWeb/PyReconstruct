@@ -18,7 +18,6 @@ from modules.backend.grid import (
     cutTraces
 )
 from modules.calc.quantification import (
-    getDistanceFromTrace,
     pointInPoly
 )
 from modules.calc.pfconversions import (
@@ -194,7 +193,7 @@ class TraceLayer():
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # delete the old traces
         origin_traces = self.section.selected_traces.copy()
-        self.deleteTraces()
+        self.section.deleteTraces()
         # create new merged trace
         for trace in merged_traces:
             self.newTrace(
@@ -221,7 +220,7 @@ class TraceLayer():
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
         # delete the old traces
         origin_traces = self.section.selected_traces.copy()
-        self.deleteTraces()
+        self.section.deleteTraces()
         # create new traces
         for piece in cut_traces:
             # add the trace history to the piece
@@ -263,7 +262,7 @@ class TraceLayer():
             copied_traces.append(trace)
         
         if cut:
-            self.deleteTraces()
+            self.section.deleteTraces()
         
         return copied_traces
     

@@ -630,13 +630,13 @@ class MainWindow(QMainWindow):
                 direction (str): up or down
         """
         if option == "brightness" and direction == "up":
-            self.field.changeBrightness(2)
+            self.field.changeBrightness(1)
         elif option == "brightness" and direction == "down":
-            self.field.changeBrightness(-2)
+            self.field.changeBrightness(-1)
         elif option == "contrast" and direction == "up":
-            self.field.changeContrast(0.1)
+            self.field.changeContrast(2)
         elif option == "contrast" and direction == "down":
-            self.field.changeContrast(-0.1)
+            self.field.changeContrast(-2)
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).
@@ -877,6 +877,7 @@ class MainWindow(QMainWindow):
     
     def openSectionList(self):
         """Open the section list widget."""
+        self.saveAllData()
         self.field.openSectionList()
     
     def setToObject(self, obj_name : str, section_num : str):

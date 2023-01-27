@@ -67,6 +67,11 @@ class Section():
         for key in empty_section:
             if key not in section_data:
                 section_data[key] = empty_section[key]
+        
+        # modify brightness/contrast
+        if abs(section_data["brightness"]) > 100:
+            section_data["brightness"] = 0
+        section_data["contrast"] = int(section_data["contrast"])
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.
@@ -378,7 +383,7 @@ class Section():
                 traces (list): a list of traces to delete (default is selected traces)
         """
         if traces is None:
-            traces = self.selected_traces
+            traces = self.selected_traces.copy()
 
         for trace in traces:
             self.removeTrace(trace)

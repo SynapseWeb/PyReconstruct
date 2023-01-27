@@ -18,6 +18,9 @@ from modules.gui.gui_functions import (
     populateMenu,
     noUndoWarning
 )
+from modules.gui.dialog import (
+    BCDialog
+)
 
 class SectionTableWidget(QDockWidget):
 
@@ -76,6 +79,15 @@ class SectionTableWidget(QDockWidget):
             ("lock_act", "Lock sections", "", self.lockSections),
             ("unlock_act", "Unlock sections", "", lambda : self.lockSections(False)),
             None,
+            {
+                "attr_name": "bcmenu",
+                "text": "Brightness/contrast",
+                "opts":
+                [
+                    ("setbc_act", "Set brightness/contrast", "", self.setBC),
+                    ("matchbc_act", "Match brightness/contrast to current section", "", self.matchBC)
+                ]
+            },
             ("thickness_act", "Edit thickness...", "", self.editThickness),
             None,
             ("delete_act", "Delete", "", self.deleteSections)
@@ -88,6 +100,30 @@ class SectionTableWidget(QDockWidget):
         self.table.resizeRowsToContents()
         self.table.resizeColumnsToContents()
     
+    def setRow(self, r : int, snum : int, section_data : dict):
+        """Set the data for a row.
+        
+            Params:
+                r (int): the row index
+                snum (int): the section number
+                section_data (dict): the data for the section
+        """
+        self.table.setItem(r, 0, QTableWidgetItem(
+            str(snum) + (" (calgrid)" if section_data["calgrid"] else "")
+        ))
+        self.table.setItem(r, 1, QTableWidgetItem(
+            str(round(section_data["thickness"], 5))
+        ))
+        self.table.setItem(r, 2, QTableWidgetItem(
+            "Locked" if section_data["align_locked"] else "Unlocked"
+        ))
+        self.table.setItem(r, 3, QTableWidgetItem(
+            str(section_data["brightness"])
+        ))
+        self.table.setItem(r, 4, QTableWidgetItem(
+            str(section_data["contrast"])
+        ))
+    
     def createTable(self, sectiondict : dict):
         """Create the table widget.
         
@@ -95,14 +131,14 @@ class SectionTableWidget(QDockWidget):
                 sectiondict (dict): section number : (thickness, locked)
         """
         self.sectiondict = sectiondict
-        self.table = QTableWidget(len(sectiondict), 3)
+        self.table = QTableWidget(len(sectiondict), 5)
 
         # connect table functions
         self.table.contextMenuEvent = self.sectionContextMenu
         self.table.mouseDoubleClickEvent = self.findSection
 
         # establish table headers
-        self.horizontal_headers = ["Section", "Thickness", "Locked"]
+        self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast"]
 
         # format table
         self.table.setShowGrid(False)  # no grid
@@ -114,22 +150,29 @@ class SectionTableWidget(QDockWidget):
         # fill in section data
         r = 0
         for snum in sorted(sectiondict.keys()):
-            thickness, locked, calgrid = sectiondict[snum]
-            self.table.setItem(r, 0, QTableWidgetItem(
-                str(snum) + (" (calgrid)" if calgrid else "")
-            ))
-            self.table.setItem(r, 1, QTableWidgetItem(str(round(thickness, 5))))
-            if locked:
-                locked_str = "Locked"
-            else:
-                locked_str = "Unlocked"
-            self.table.setItem(r, 2, QTableWidgetItem(str(locked_str)))
+            self.setRow(r, snum, sectiondict[snum])
             r += 1
 
         self.format()
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
+    
+    def updateSection(self, snum : int, section_data : dict):
+        """Update the tables for a single section.
+        
+            Params:
+                snum (int): the section number to update
+                sectiondict (dict): the data for the section
+        """
+
+        # iterate through rows to find section number
+        for r in range(self.table.rowCount()):
+            t = self.table.item(r, 0).text()
+            t = t.split()[0]
+            if int(t) == snum:
+                self.setRow(r, snum, section_data)
+
     
     def getSelectedSection(self):
         """Get the section that is selected by the user."""
@@ -162,6 +205,27 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         self.manager.lockSections(section_numbers, lock)
+    
+    def setBC(self):
+        """Set the brightness/contrast for a set of sections."""
+        section_numbers = self.getSelectedSections()
+        if not section_numbers:
+            return
+        
+        (b, c), confirmed = BCDialog(self).exec()
+        if not confirmed:
+            return
+        
+        if b is not None and c is not None:
+            self.manager.setBC(section_numbers, b, c)
+    
+    def matchBC(self):
+        """Match the brightness/contrast of the selected sections with the current section."""
+        section_numbers = self.getSelectedSections()
+        if not section_numbers:
+            return
+        
+        self.manager.matchBC(section_numbers)
     
     def editThickness(self):
         """Modify the section thickness for a set of sections."""

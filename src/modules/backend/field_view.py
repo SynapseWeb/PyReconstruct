@@ -213,7 +213,8 @@ class FieldView():
         """Switch the A and B sections."""
         self.section, self.b_section = self.b_section, self.section
         self.section_layer, self.b_section_layer = self.b_section_layer, self.section_layer
-        self.series.current_section = self.section.n
+        if self.section is not None:
+            self.series.current_section = self.section.n
     
     def changeSection(self, new_section_num : int):
         """Change the displayed section.
@@ -416,7 +417,7 @@ class FieldView():
                 dy (float): y-translate
         """
         if self.section.selected_traces:
-            self.section_layer.translateTraces(dx, dy)
+            self.section.translateTraces(dx, dy)
             self.generateView()
             self.saveState()
         else:
@@ -681,10 +682,16 @@ class FieldView():
     
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
+        if self.section_table_manager:
+            self.section_table_manager.updateSection(self.section)
+        self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
     def changeContrast(self, change):
         self.section_layer.changeContrast(change)
+        if self.section_table_manager:
+            self.section_table_manager.updateSection(self.section)
+        self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
     def changeTform(self, new_tform):

@@ -114,21 +114,21 @@ class ImageLayer():
                 change (int): the degree to which brightness is changed
         """
         self.section.brightness += change
-        if self.section.brightness > 255:
-            self.section.brightness = 255
-        elif self.section.brightness < -255:
-            self.section.brightness = -255
+        if self.section.brightness > 100:
+            self.section.brightness = 100
+        elif self.section.brightness < -100:
+            self.section.brightness = -100
     
-    def changeContrast(self, change : float):
+    def changeContrast(self, change : int):
         """Change the contrast of the section.
         
             Params:
                 change (float): the degree to which brightness is changed"""
-        self.section.contrast = round(self.section.contrast + change, 1)
-        if self.section.contrast > 4:
-            self.section.contrast = 4
-        elif self.section.contrast < 0:
-            self.section.contrast = 0
+        self.section.contrast += change
+        if self.section.contrast > 100:
+            self.section.contrast = 100
+        elif self.section.contrast < -100:
+            self.section.contrast = -100
     
     def _drawBrightness(self, image_layer):
         """Draw the brightness on the image field.
@@ -136,29 +136,19 @@ class ImageLayer():
             Params:
                 image_layer (QPixmap): the pixmap to draw brightness on
         """
-        # get transform
-        tform = self.section.tforms[self.series.alignment]
-
-        # create the brightness polygon (draws brightness as a polygon over the image)
-        brightness_poly = QPolygon()
-        for p in self.base_corners:
-            x, y = [n*self.section.mag for n in p]
-            x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-            brightness_poly.append(QPoint(x, y))
-        
         # paint to image
         painter = QPainter(image_layer)
+        rgb = round(self.section.brightness * 255/100)
         # different modes for high and low brightness
         if self.section.brightness >= 0:
             painter.setCompositionMode(QPainter.CompositionMode_Plus)
-            brightness_color = QColor(*([self.section.brightness]*3))
+            brightness_color = QColor(*([rgb]*3))
         else:
             painter.setCompositionMode(QPainter.CompositionMode_Multiply)
-            brightness_color = QColor(*([255+self.section.brightness]*3))
+            brightness_color = QColor(*([255+rgb]*3))
         painter.setPen(QPen(brightness_color, 0))
         painter.setBrush(brightness_color)
-        painter.drawPolygon(brightness_poly)
+        painter.drawPolygon(self.bc_poly)
         painter.end()
     
     def _drawContrast(self, image_layer):
@@ -167,19 +157,30 @@ class ImageLayer():
             Params:
                 image_layer (QPixmap): the pixmap to draw contrast on
         """
-        # overlay image on itself for added contrast
         painter = QPainter(image_layer)
-        painter.setCompositionMode(QPainter.CompositionMode_Overlay)
-        # draw the images n (int) times on itself
-        for _ in range(int(self.section.contrast)):
-            painter.drawPixmap(0, 0, image_layer)
-        # draw another transparent image
-        opacity = self.section.contrast % 1
-        if opacity > 0:
+
+        if self.section.contrast >= 0:
+            overlays = self.section.contrast / 20
+            # overlay image on itself for added contrast
+            painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+            # draw the images n (int) times on itself
+            for _ in range(int(overlays)):
+                painter.drawPixmap(0, 0, image_layer)
+            # draw another transparent image
+            opacity = overlays % 1
+            if opacity > 0:
+                painter.setOpacity(opacity)
+                painter.drawPixmap(0, 0, image_layer)
+        else:
+            # overlay gray on image for decreased contrast
+            opacity = abs(self.section.contrast) / 100
             painter.setOpacity(opacity)
-            painter.drawPixmap(0, 0, image_layer)
+            gray = QColor(128, 128, 128)
+            painter.setPen(QPen(gray, 0))
+            painter.setBrush(gray)
+            painter.drawPolygon(self.bc_poly)
         painter.end()
-    
+
     def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the image layer.
         
@@ -334,9 +335,16 @@ class ImageLayer():
         )
         image_layer = im_tformed.copy(image_layer_rect)
 
+        # create the brightness/contrast polygon (draws as a polygon over the image)
+        self.bc_poly = QPolygon()
+        for p in self.base_corners:
+            x, y = [n*self.section.mag for n in p]
+            x, y = tform.map(x, y)
+            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            self.bc_poly.append(QPoint(x, y))
         # draw the brightness and contrast
-        self._drawBrightness(image_layer)
         self._drawContrast(image_layer)
+        self._drawBrightness(image_layer)
 
         return image_layer
 

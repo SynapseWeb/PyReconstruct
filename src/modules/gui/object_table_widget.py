@@ -425,10 +425,6 @@ class ObjectTableWidget(QDockWidget):
         if not obj_names:
             return
         
-        # confirm with user
-        if not noUndoWarning():
-            return
-        
         self.manager.hideObjects(obj_names, hide)
 
     def generate3D(self, event=None):

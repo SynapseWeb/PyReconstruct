@@ -216,6 +216,8 @@ class Series():
             section = self.loadSection(snum)
             section.tforms[alignment_name] = section.tforms[base_alignment]
             section.save()
+        
+        self.modified = True
     
     def createZtrace(self, obj_name : str):
         """Create a ztrace from an existing object in the series.
@@ -235,6 +237,9 @@ class Series():
                 p = (*contour.getMidpoint(), snum)
                 points.append(p)
         self.ztraces.append(Ztrace(obj_name, points))
+
+        self.modified = True
+        
     
     def rename(self, new_name : str):
         """Rename the series.
@@ -247,6 +252,126 @@ class Series():
             sname = self.sections[snum]
             self.sections[snum] = sname.replace(old_name, new_name)
         self.name = new_name
+    
+    def deleteObjects(self, obj_names : list):
+        """Delete object(s) from the series.
+        
+            Params:
+                obj_names (list): the objects to delete
+        """
+        for snum, section in self.enumerateSections(
+            message="Deleting object(s)..."
+        ):
+            modified = False
+            for obj_name in obj_names:
+                if obj_name in section.contours:
+                    del(section.contours[obj_name])
+                    modified = True
+            
+            if modified:
+                section.save()
+        
+        self.modified = True
+    
+    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, addTrace=None):
+        """Edit the attributes of objects on every section.
+        
+            Params:
+                series (Series): the series object
+                obj_names (list): the names of the objects to rename
+                name (str): the new name for the objects
+                color (tuple): the new color for the objects
+                addTrace (function): for object table updating purposes
+        """
+        # modify the object on every section
+        for snum, section in self.enumerateSections(
+            message="Modifying object(s)..."
+        ):
+            traces = []
+            for obj_name in obj_names:
+                if obj_name in section.contours:
+                    traces += section.contours[obj_name].getTraces()
+            if traces:
+                section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True)
+                # add trace data to table data
+                if addTrace:
+                    for trace in traces:
+                        addTrace(trace, section, snum)
+                section.save()
+        
+        self.modified = True
+    
+    def editObjectRadius(self, obj_names : list, new_rad : float, addTrace=None):
+        """Change the radii of all traces of an object.
+        
+            Params:
+                obj_names (list): the names of objects to modify
+                new_rad (float): the new radius for the traces of the object
+                addTrace (function): for object table updating purposes
+        """
+        for snum, section in self.enumerateSections(
+            message="Modifying radii..."
+        ):
+            traces = []
+            for name in obj_names:
+                if name in section.contours:
+                    traces += section.contours[name].getTraces()
+            if traces:
+                section.editTraceRadius(traces, new_rad)
+                # add trace data to table data
+                if addTrace:
+                    for trace in traces:
+                        addTrace(trace, section, snum)
+                section.save()
+        
+        self.modified = True
+    
+    def removeAllTraceTags(self, obj_names : list):
+        """Remove all tags from all traces on a set of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        for snum, section in self.enumerateSections(
+            message="Removing trace tags..."
+        ):
+            traces = []
+            for obj_name in obj_names:
+                if obj_name in section.contours:
+                    traces += section.contours[obj_name].getTraces()
+            if traces:
+                section.editTraceAttributes(
+                    traces,
+                    name=None,
+                    color=None,
+                    tags=set(),
+                    mode=None, 
+                )
+                section.save()
+
+        self.modified = True
+    
+    def hideObjects(self, obj_names : list, hide=True):
+        """Hide all traces of a set of objects throughout the series.
+        
+            Params:
+                obj_names (list): the names of objects to hide
+                hide (bool): True if object should be hidden
+        """
+        for snum, section in self.enumerateSections(
+            message="Hiding object(s)..." if hide else "Unhiding object(s)..."
+        ):
+            modified = False
+            for name in obj_names:
+                if name in section.contours:
+                    contour = section.contours[name]
+                    for trace in contour:
+                        trace.setHidden(hide)
+                        modified = True
+            if modified:
+                section.save()
+        
+        self.modified = True
 
 
 class SeriesIterator():

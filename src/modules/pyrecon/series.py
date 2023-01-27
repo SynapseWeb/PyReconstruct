@@ -199,7 +199,7 @@ class Series():
             Params:
                 section_num (int): the section number
         """
-        return Section(os.path.join(self.getwdir(), self.sections[section_num]))
+        return Section(section_num, self)
     
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
         """Allow iteration through the sections."""

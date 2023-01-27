@@ -38,7 +38,6 @@ class TraceLayer():
         """
         self.section = section
         self.series = series
-        self.selected_traces = []
         self.traces_in_view = []
     
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
@@ -62,52 +61,6 @@ class TraceLayer():
                 new_pts.append((x, y))
         return new_pts
     
-    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5) -> Trace:
-        """Find closest trace to field coordinates in a given radius.
-        
-            Params:
-                field_x (float): x coordinate of search center
-                field_y (float): y coordinate of search center
-                radius (float): 1/2 of the side length of search square
-            Returns:
-                (Trace) the trace closest to the center
-                None if no trace points are found within the radius
-        """
-        min_distance = -1
-        closest_trace = None
-        min_interior_distance = -1
-        closest_trace_interior = None
-        tform = self.section.tforms[self.series.alignment]
-        # only check the traces within the view
-        for trace in self.traces_in_view:
-            points = []
-            for point in trace.points:
-                x, y = tform.map(*point)
-                points.append((x,y))
-            
-            # find the distance of the point from each trace
-            dist = getDistanceFromTrace(
-                field_x,
-                field_y,
-                points,
-                factor=1/self.section.mag,
-                absolute=False
-            )
-            if closest_trace is None or abs(dist) < min_distance:
-                min_distance = abs(dist)
-                closest_trace = trace
-            
-            # check if the point is inside any filled trace
-            if (
-                trace.fill_mode[0] != "none" and
-                dist > 0 and 
-                (closest_trace_interior is None or dist < min_interior_distance)
-            ):
-                min_interior_distance = dist
-                closest_trace_interior = trace
-        
-        return closest_trace if min_distance <= radius else closest_trace_interior
-    
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
         """"Return the closest trace to the given field coordinates.
         
@@ -118,10 +71,17 @@ class TraceLayer():
                 (Trace): the closest trace
         """
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+
         # calculate radius based on window size (2% of window size)
         window_size = max(self.window[2:])
         radius = window_size / 100
-        return self.findClosestTrace(field_x, field_y, radius=radius)
+
+        return self.section.findClosestTrace(
+            field_x,
+            field_y,
+            radius=radius,
+            traces_in_view=self.traces_in_view
+        )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
         """"Select all traces that are completely in a polygon
@@ -190,7 +150,6 @@ class TraceLayer():
             self.section.addTrace(new_trace, log_message)
         else:
             self.section.addTrace(new_trace)
-        self.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
         """Called when mouse is pressed in stamp mode.
@@ -213,57 +172,16 @@ class TraceLayer():
             rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
-        self.selected_traces.append(new_trace)
-
-    def deselectAllTraces(self):
-        """Deselect all traces."""
-        self.selected_traces = []
-    
-    def selectAllTraces(self):
-        """Select all traces."""
-        self.selected_traces = self.section.tracesAsList()
-    
-    def hideTraces(self, traces : list = None, hide=True):
-        """Hide traces.
-        
-            Params:
-                traces (list): the traces to hide
-                hide (bool): True if traces should be hidden
-        """
-        if not traces:
-            traces = self.selected_traces
-
-        for trace in traces:
-            trace.setHidden(hide)
-            self.section.modified_traces.append(trace)
-        
-        self.selected_traces = []
-    
-    def unhideAllTraces(self):
-        """Unhide all traces on the section."""
-        for trace in self.section.tracesAsList():
-            hidden = trace.hidden
-            if hidden:
-                trace.setHidden(False)
-                self.section.modified_traces.append(trace)
-    
-    def makeNegative(self, negative=True):
-        """Make a set of traces negative."""
-        traces = self.selected_traces
-        for trace in traces:
-            self.section.removeTrace(trace)
-            trace.negative = negative
-            self.section.addTrace(trace, "Made negative")
     
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
-        if len(self.selected_traces) < 2:
+        if len(self.section.selected_traces) < 2:
             notify("Please select two or more traces to merge.")
             return
         traces = []
-        first_trace = self.selected_traces[0]
+        first_trace = self.section.selected_traces[0]
         name = first_trace.name
-        for trace in self.selected_traces:
+        for trace in self.section.selected_traces:
             if trace.closed == False:
                 notify("Please merge only closed traces.")
                 return
@@ -275,7 +193,7 @@ class TraceLayer():
             traces.append(pix_points)
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # delete the old traces
-        origin_traces = self.selected_traces.copy()
+        origin_traces = self.section.selected_traces.copy()
         self.deleteTraces()
         # create new merged trace
         for trace in merged_traces:
@@ -292,17 +210,17 @@ class TraceLayer():
             Params:
                 knife_trace (list): the knife trace in pixmap points
         """
-        if len(self.selected_traces) == 0:
+        if len(self.section.selected_traces) == 0:
             notify("Please select the trace you wish to cut.")
             return
-        elif len(self.selected_traces) > 1:
+        elif len(self.section.selected_traces) > 1:
             notify("Please select only one trace to cut at a time.")
             return
-        trace = self.selected_traces[0]
+        trace = self.section.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
         # delete the old traces
-        origin_traces = self.selected_traces.copy()
+        origin_traces = self.section.selected_traces.copy()
         self.deleteTraces()
         # create new traces
         for piece in cut_traces:
@@ -314,23 +232,6 @@ class TraceLayer():
                 origin_traces=origin_traces
             )
     
-    def deleteTraces(self, traces : list = None):
-        """Delete selected traces.
-        
-            Params:
-                traces (list): a list of traces to delete (default is selected traces)
-        """
-        if traces is None:
-            traces = self.selected_traces
-        
-        if len(traces) == 0:
-            notify("Please select the traces you wish to delete.")
-
-        self.selected_traces = []
-
-        for trace in traces:
-            self.section.removeTrace(trace)
-    
     def eraseArea(self, pix_x : int, pix_y : int):
         """Erase an area of the field.
         
@@ -341,8 +242,8 @@ class TraceLayer():
         trace = self.getTrace(pix_x, pix_y)
         if trace:
             self.section.removeTrace(trace)
-            if trace in self.selected_traces:
-                self.selected_traces.remove(trace)
+            if trace in self.section.selected_traces:
+                self.section.selected_traces.remove(trace)
             return True
         return False
     
@@ -355,8 +256,7 @@ class TraceLayer():
                 (list): the traces to copy
         """
         copied_traces = []
-        for trace in self.selected_traces:
-            trace : Trace
+        for trace in self.section.selected_traces:
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p) for p in trace.points]
@@ -378,7 +278,7 @@ class TraceLayer():
             tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
             self.section.addTrace(trace, f"copied/pasted")
-            self.selected_traces.append(trace)
+            self.section.selected_traces.append(trace)
     
     def pasteAttributes(self, traces : list[Trace]):
         """Called when the user pressed Ctrl+B."""
@@ -389,34 +289,12 @@ class TraceLayer():
         name, color, tags, mode = trace.name, trace.color, trace.tags, trace.fill_mode
 
         self.section.editTraceAttributes(
-            traces=self.selected_traces,
+            traces=self.section.selected_traces,
             name=name,
             color=color,
             tags=tags,
             mode=mode
         )
-    
-    def translateTraces(self, dx : float, dy : float):
-        """Translate the selected traces.
-        
-            Params:
-                dx (float): x-translate
-                dy (float): y-translate
-        """
-        tform = self.section.tforms[self.series.alignment]
-        for trace in self.selected_traces:
-            self.section.removeTrace(trace)
-            for i, p in enumerate(trace.points):
-                # apply forward transform
-                x, y = tform.map(*p)
-                # apply translate
-                x += dx
-                y += dy
-                # apply reverse transform
-                x, y = tform.map(x, y, inverted=True)
-                # replace point
-                trace.points[i] = (x, y)
-            self.section.addTrace(trace)
     
     def _drawTrace(self, trace_layer : QPixmap, trace : Trace) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
@@ -448,7 +326,7 @@ class TraceLayer():
             painter.drawPolyline(qpoints)
         
         # draw highlight
-        if trace in self.selected_traces:
+        if trace in self.section.selected_traces:
             painter.setPen(QPen(QColor(*trace.color), 8))
             painter.setOpacity(0.4)
             if trace.closed:
@@ -459,7 +337,7 @@ class TraceLayer():
         # determine if user requested fill
         if (
             (trace.fill_mode[0] != "none") and
-            ((trace.fill_mode[1] == "selected") == (trace in self.selected_traces))
+            ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
         ): fill = True
         else: fill = False
 
@@ -511,8 +389,8 @@ class TraceLayer():
                     self.traces_in_view.append(trace)
             else:
                 # remove the trace from selected traces if it is not being shown
-                if trace in self.selected_traces:
-                    self.selected_traces.remove(trace)
+                if trace in self.section.selected_traces:
+                    self.section.selected_traces.remove(trace)
 
         return trace_layer
         

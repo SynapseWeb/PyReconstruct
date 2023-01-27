@@ -355,19 +355,19 @@ class FieldWidget(QWidget, FieldView):
     
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
-        if not self.section_layer.selected_traces:
+        if not self.section.selected_traces:
             return
         
         new_attr, confirmed = TraceDialog(
             self,
-            self.section_layer.selected_traces,
+            self.section.selected_traces,
         ).exec()
         if not confirmed:
             return
         
         name, color, tags, mode = new_attr
         self.section_layer.section.editTraceAttributes(
-            traces=self.section_layer.selected_traces,
+            traces=self.section.selected_traces,
             name=name,
             color=color,
             tags=tags,
@@ -486,7 +486,7 @@ class FieldWidget(QWidget, FieldView):
         context_menu &= not self.is_line_tracing
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-            if clicked_trace in self.section_layer.selected_traces:
+            if clicked_trace in self.section.selected_traces:
                 self.mainwindow.trace_menu.exec(event.globalPos())
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
@@ -624,13 +624,13 @@ class FieldWidget(QWidget, FieldView):
         # left button is down and user clicked on a trace
         if self.lclick and (
             self.is_moving_trace or 
-            self.selected_trace in self.section_layer.selected_traces
+            self.selected_trace in self.section.selected_traces
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
                 # get pixel points
                 self.moving_traces = []
-                for trace in self.section_layer.selected_traces:
+                for trace in self.section.selected_traces:
                     moving_trace = trace.copy()
                     pix_points = self.section_layer.traceToPix(trace)
                     moving_trace.points = pix_points

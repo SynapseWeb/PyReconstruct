@@ -131,7 +131,7 @@ class TraceTableManager():
                 mode (tuple): the fill mode for the traces
                 traces (list): the list of traces to modify
         """
-        self.mainwindow.field.section_layer.section.editTraceAttributes(traces, name, color, tags, mode)
+        self.mainwindow.field.section.editTraceAttributes(traces, name, color, tags, mode)
         self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
     
@@ -142,7 +142,9 @@ class TraceTableManager():
                 traces (list): the list of traces to hide/unhide
                 hide (bool): True if traces should be hidden
         """
-        self.mainwindow.field.hideTraces(traces, hide)
+        self.mainwindow.field.section.hideTraces(traces, hide)
+        self.mainwindow.field.saveState()
+        self.mainwindow.field.generateView(generate_image=False)
     
     def editRadius(self, new_rad : float, traces : list):
         """Edit the radius of a set of traces
@@ -152,6 +154,8 @@ class TraceTableManager():
                 traces (list): the list of traces to modify
         """
         self.mainwindow.field.section.editTraceRadius(traces, new_rad)
+        self.mainwindow.field.saveState()
+        self.mainwindow.field.generateView(generate_image=False)
     
     def findTrace(self, item : TraceTableItem):
         """Find an object in the series.
@@ -167,7 +171,9 @@ class TraceTableManager():
             Params:
                 traces (list): the trace to delete
         """
-        self.mainwindow.field.deleteTraces(traces)
+        self.mainwindow.field.section.deleteTraces(traces)
+        self.mainwindow.field.saveState()
+        self.mainwindow.field.generateView(generate_image=False)
     
     def viewHistory(self, traces : list):
         """View the log history of a set of traces.

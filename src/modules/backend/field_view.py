@@ -38,7 +38,6 @@ class FieldView():
         self.section_layer = SectionLayer(self.section, self.series)
 
         # b section and view placeholder
-        self.b_section_number = None
         self.b_section = None
         self.b_section_layer = None
 
@@ -66,7 +65,7 @@ class FieldView():
         self.section = self.series.loadSection(self.series.current_section)
         self.section_layer.section = self.section
         if self.b_section:
-            self.b_section = self.series.loadSection(self.b_section_number)
+            self.b_section = self.series.loadSection(self.b_section.n)
             self.b_section_layer.section = self.b_section
         # clear all the section states
         self.series_states = {}
@@ -74,9 +73,9 @@ class FieldView():
         if self.b_section:
             self.series_states[self.b_section] = SectionStates(self.b_section)
         # clear the selected traces
-        self.section_layer.selected_traces = []
+        self.section.selected_traces = []
         if self.b_section:
-            self.b_section_layer.selected_traces = []
+            self.b_section.selected_traces = []
         
         self.generateView()
         # notify that the series has been modified
@@ -122,7 +121,7 @@ class FieldView():
             return
         
         # clear selected straces
-        self.section_layer.selected_traces = []
+        self.section.selected_traces = []
 
         # get the last undo state
         section_states = self.series_states[self.series.current_section]
@@ -152,7 +151,7 @@ class FieldView():
             return
         
         # clear the selected traces
-        self.section_layer.selected_traces = []
+        self.section.selected_traces = []
 
         # get the last redo state
         section_states = self.series_states[self.series.current_section]
@@ -212,9 +211,9 @@ class FieldView():
     
     def swapABsections(self):
         """Switch the A and B sections."""
-        self.series.current_section, self.b_section_number = self.b_section_number, self.series.current_section
         self.section, self.b_section = self.b_section, self.section
         self.section_layer, self.b_section_layer = self.b_section_layer, self.section_layer
+        self.series.current_section = self.section.n
     
     def changeSection(self, new_section_num : int):
         """Change the displayed section.
@@ -238,7 +237,7 @@ class FieldView():
             # set new current section
             self.series.current_section = new_section_num
             # clear selected traces
-            self.section_layer.selected_traces = []
+            self.section.selected_traces = []
         
         # create section undo/redo state object if needed
         if new_section_num not in self.series_states:
@@ -281,7 +280,7 @@ class FieldView():
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
 
         # set the trace as the only selected trace
-        self.section_layer.selected_traces = [trace]
+        self.section.selected_traces = [trace]
 
         self.generateView()
     
@@ -308,7 +307,7 @@ class FieldView():
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
 
         # set the selected traces
-        self.section_layer.selected_traces = contour.getTraces()
+        self.section.selected_traces = contour.getTraces()
 
         self.generateView()
     
@@ -347,10 +346,10 @@ class FieldView():
         
         if not trace:
             return
-        if trace in self.section_layer.selected_traces:
-            self.section_layer.selected_traces.remove(trace)
+        if trace in self.section.selected_traces:
+            self.section.selected_traces.remove(trace)
         else:
-            self.section_layer.selected_traces.append(trace)
+            self.section.selected_traces.append(trace)
 
         self.generateView(generate_image=False)
     
@@ -366,13 +365,13 @@ class FieldView():
         
         traces_to_add = []
         for trace in traces:
-            if trace not in self.section_layer.selected_traces:
+            if trace not in self.section.selected_traces:
                 traces_to_add.append(trace)
         if traces_to_add:
-            self.section_layer.selected_traces += traces_to_add
+            self.section.selected_traces += traces_to_add
         else:
             for trace in traces:
-                self.section_layer.selected_traces.remove(trace)
+                self.section.selected_traces.remove(trace)
             
         self.generateView(generate_image=False)
     
@@ -416,7 +415,7 @@ class FieldView():
                 dx (float): x-translate
                 dy (float): y-translate
         """
-        if self.section_layer.selected_traces:
+        if self.section.selected_traces:
             self.section_layer.translateTraces(dx, dy)
             self.generateView()
             self.saveState()
@@ -491,8 +490,8 @@ class FieldView():
             return
         
         # gather traces
-        a_traces = self.section_layer.selected_traces.copy()
-        b_traces = self.b_section_layer.selected_traces.copy()
+        a_traces = self.section.selected_traces.copy()
+        b_traces = self.b_section.selected_traces.copy()
 
         # check number of selected traces
         alen = len(a_traces)
@@ -532,7 +531,7 @@ class FieldView():
         """
         # get an average scaling factor across the selected traces
         sum_scaling = 0
-        for trace in self.section_layer.selected_traces:
+        for trace in self.section.selected_traces:
             # get the length of the trace with the given transform
             tform = self.section.tforms[self.series.alignment]
             d = lineDistance(tform.map(trace.points), closed=False)
@@ -540,7 +539,7 @@ class FieldView():
             sum_scaling += trace_lengths[trace.name] / d
         
         # calculate new mag
-        avg_scaling = sum_scaling / len(self.section_layer.selected_traces)
+        avg_scaling = sum_scaling / len(self.section.selected_traces)
         new_mag = self.section.mag * avg_scaling
 
         # apply new mag to every section
@@ -607,7 +606,7 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section_layer.deleteTraces(traces)
+        self.section.deleteTraces(traces)
         self.saveState()
         self.generateView(generate_image=False)
     
@@ -645,39 +644,39 @@ class FieldView():
         self.generateView(generate_image=False)
     
     def findClosestTrace(self, field_x, field_y, radius=0.5):
-        return self.section_layer.findClosestTrace(field_x, field_y, radius)
+        return self.section.findClosestTrace(field_x, field_y, radius)
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section_layer.deselectAllTraces()
+        self.section.deselectAllTraces()
         self.generateView(generate_image=False)
     
     def selectAllTraces(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section_layer.selectAllTraces()
+        self.section.selectAllTraces()
         self.generateView(generate_image=False)
     
     def hideTraces(self, traces=None, hide=True):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section_layer.hideTraces(traces, hide)
+        self.section.hideTraces(traces, hide)
         self.saveState()
         self.generateView(generate_image=False)
     
     def unhideAllTraces(self):
         if self.hide_trace_layer:
             self.hide_trace_layer = False
-        self.section_layer.unhideAllTraces()
+        self.section.unhideAllTraces()
         self.saveState()
         self.generateView(generate_image=False)
     
     def makeNegative(self, negative=True):
-        self.section_layer.makeNegative(negative)
+        self.section.makeNegative(negative)
         self.saveState()
     
     def changeBrightness(self, change):

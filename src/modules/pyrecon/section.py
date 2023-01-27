@@ -1,25 +1,39 @@
 import os
 import json
+
 from modules.pyrecon.contour import Contour
 from modules.pyrecon.trace import Trace
 from modules.pyrecon.transform import Transform
 
+from modules.calc.quantification import (
+    getDistanceFromTrace,
+)
+
 from constants.locations import assets_dir
+
 
 class Section():
 
-    def __init__(self, filepath : str):
+    def __init__(self, n : int, series):
         """Load the section file.
         
             Params:
-                filepath (str): the file path for the section JSON file
+                n (int): the section number
+                series (Series): the series that contains the section
         """
-        self.filepath = filepath
+        self.n = n
+        self.series = series
+        self.filepath = os.path.join(
+            self.series.getwdir(),
+            self.series.sections[n]
+        )
+
+        self.selected_traces = []
         self.added_traces = []
         self.removed_traces = []
         self.modified_traces = []
 
-        with open(filepath, "r") as f:
+        with open(self.filepath, "r") as f:
             section_data = json.load(f)
         
         Section.updateJSON(section_data)  # update any missing attributes
@@ -107,65 +121,6 @@ class Section():
 
         return section_data
     
-    def tracesAsList(self) -> list[Trace]:
-        """Return the trace dictionary as a list. Does NOT copy traces.
-        
-            Returns:
-                (list): a list of traces
-        """
-        trace_list = []
-        for contour_name in self.contours:
-            for trace in self.contours[contour_name]:
-                trace_list.append(trace)
-        return trace_list
-    
-    def addTrace(self, trace : Trace, log_message=None):
-        """Add a trace to the trace dictionary.
-        
-            Params:
-                trace (Trace): the trace to add
-                log_message (str): the history log message to put on the trace
-        """
-        # add to the trace history
-        if log_message:
-            trace.addLog(log_message)
-        else:
-            if trace.isNew():
-                trace.addLog("created")
-            else:
-                trace.addLog("modified")
-
-        if trace.name in self.contours:
-            self.contours[trace.name].append(trace)
-        else:
-            self.contours[trace.name] = Contour(trace.name, [trace])
-        
-        self.added_traces.append(trace)
-    
-    def removeTrace(self, trace : Trace):
-        """Remove a trace from the trace dictionary.
-        
-            Params:
-                trace (Trace): the trace to remove from the traces dictionary
-        """
-        if trace.name in self.contours:
-            self.contours[trace.name].remove(trace)
-            self.removed_traces.append(trace)
-    
-    def setAlignLocked(self, align_locked : bool):
-        """Set the alignment locked status of the section.
-        
-            Params:
-                align_locked (bool): the new locked status
-        """
-        self.align_locked = align_locked
-    
-    def clearTracking(self):
-        """Clear the added_traces and removed_traces lists."""
-        self.added_traces = []
-        self.removed_traces = []
-        self.modified_traces = []
-    
     # STATIC METHOD
     def new(series_name : str, snum : int, image_location : str, mag : float, thickness : float, wdir : str):
         """Create a new blank section file.
@@ -202,8 +157,82 @@ class Section():
         with open(self.filepath, "w") as f:
             f.write(json.dumps(d, indent=1))
     
-    # MODIFYING TRACES
+    def tracesAsList(self) -> list[Trace]:
+        """Return the trace dictionary as a list. Does NOT copy traces.
+        
+            Returns:
+                (list): a list of traces
+        """
+        trace_list = []
+        for contour_name in self.contours:
+            for trace in self.contours[contour_name]:
+                trace_list.append(trace)
+        return trace_list
     
+    def setAlignLocked(self, align_locked : bool):
+        """Set the alignment locked status of the section.
+        
+            Params:
+                align_locked (bool): the new locked status
+        """
+        self.align_locked = align_locked
+    
+    def clearTracking(self):
+        """Clear the added_traces and removed_traces lists."""
+        self.added_traces = []
+        self.removed_traces = []
+        self.modified_traces = []
+    
+    def setMag(self, new_mag : float):
+        """Set the magnification for the section.
+        
+            Params:
+                new_mag (float): the new magnification for the section
+        """
+        # modify the translation component of the transformation
+        for tform in self.tforms.values():
+            tform.magScale(self.mag, new_mag)
+        
+        # modify the traces
+        for trace in self.tracesAsList():
+            trace.magScale(self.mag, new_mag)
+        
+        self.mag = new_mag
+    
+    def addTrace(self, trace : Trace, log_message=None):
+        """Add a trace to the trace dictionary.
+        
+            Params:
+                trace (Trace): the trace to add
+                log_message (str): the history log message to put on the trace
+        """
+        # add to the trace history
+        if log_message:
+            trace.addLog(log_message)
+        else:
+            if trace.isNew():
+                trace.addLog("created")
+            else:
+                trace.addLog("modified")
+
+        if trace.name in self.contours:
+            self.contours[trace.name].append(trace)
+        else:
+            self.contours[trace.name] = Contour(trace.name, [trace])
+        
+        self.added_traces.append(trace)
+        self.selected_traces.append(trace)
+    
+    def removeTrace(self, trace : Trace):
+        """Remove a trace from the trace dictionary.
+        
+            Params:
+                trace (Trace): the trace to remove from the traces dictionary
+        """
+        if trace.name in self.contours:
+            self.contours[trace.name].remove(trace)
+            self.removed_traces.append(trace)
+
     def editTraceAttributes(self, traces : list[Trace], name : str, color : tuple, tags : set, mode : tuple, add_tags=False):
         """Change the name and/or color of a trace or set of traces.
         
@@ -249,18 +278,131 @@ class Section():
             trace.resize(new_rad)
             self.addTrace(trace, "radius modified")
     
-    def setMag(self, new_mag : float):
-        """Set the magnification for the section.
+    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5, traces_in_view : list[Trace] = None) -> Trace:
+        """Find closest trace to field coordinates in a given radius.
         
             Params:
-                new_mag (float): the new magnification for the section
+                field_x (float): x coordinate of search center
+                field_y (float): y coordinate of search center
+                radius (float): 1/2 of the side length of search square
+            Returns:
+                (Trace) the trace closest to the center
+                None if no trace points are found within the radius
         """
-        # modify the translation component of the transformation
-        for tform in self.tforms.values():
-            tform.magScale(self.mag, new_mag)
+        min_distance = -1
+        closest_trace = None
+        min_interior_distance = -1
+        closest_trace_interior = None
+        tform = self.tforms[self.series.alignment]
+
+        # only check the traces within the view if provided
+        if traces_in_view:
+            traces = traces_in_view
+        else:
+            traces = self.tracesAsList()
         
-        # modify the traces
+        # iterate through all traces to get closest
+        for trace in traces:
+            points = []
+            for point in trace.points:
+                x, y = tform.map(*point)
+                points.append((x,y))
+            
+            # find the distance of the point from each trace
+            dist = getDistanceFromTrace(
+                field_x,
+                field_y,
+                points,
+                factor=1/self.mag,
+                absolute=False
+            )
+            if closest_trace is None or abs(dist) < min_distance:
+                min_distance = abs(dist)
+                closest_trace = trace
+            
+            # check if the point is inside any filled trace
+            if (
+                trace.fill_mode[0] != "none" and
+                dist > 0 and 
+                (closest_trace_interior is None or dist < min_interior_distance)
+            ):
+                min_interior_distance = dist
+                closest_trace_interior = trace
+        
+        return closest_trace if min_distance <= radius else closest_trace_interior
+    
+    def deselectAllTraces(self):
+        """Deselect all traces."""
+        self.selected_traces = []
+    
+    def selectAllTraces(self):
+        """Select all traces."""
+        self.selected_traces = self.tracesAsList()
+    
+    def hideTraces(self, traces : list = None, hide=True):
+        """Hide traces.
+        
+            Params:
+                traces (list): the traces to hide
+                hide (bool): True if traces should be hidden
+        """
+        if not traces:
+            traces = self.selected_traces
+
+        for trace in traces:
+            trace.setHidden(hide)
+            self.modified_traces.append(trace)
+        
+        self.selected_traces = []
+    
+    def unhideAllTraces(self):
+        """Unhide all traces on the section."""
         for trace in self.tracesAsList():
-            trace.magScale(self.mag, new_mag)
+            hidden = trace.hidden
+            if hidden:
+                trace.setHidden(False)
+                self.modified_traces.append(trace)
+    
+    def makeNegative(self, negative=True):
+        """Make a set of traces negative."""
+        traces = self.selected_traces
+        for trace in traces:
+            self.removeTrace(trace)
+            trace.negative = negative
+            self.addTrace(trace, "made negative")
+    
+    def deleteTraces(self, traces : list = None):
+        """Delete selected traces.
         
-        self.mag = new_mag
+            Params:
+                traces (list): a list of traces to delete (default is selected traces)
+        """
+        if traces is None:
+            traces = self.selected_traces
+
+        for trace in traces:
+            self.removeTrace(trace)
+            if trace in self.selected_traces:
+                self.selected_traces.remove(trace)
+    
+    def translateTraces(self, dx : float, dy : float):
+        """Translate the selected traces.
+        
+            Params:
+                dx (float): x-translate
+                dy (float): y-translate
+        """
+        tform = self.tforms[self.series.alignment]
+        for trace in self.selected_traces:
+            self.removeTrace(trace)
+            for i, p in enumerate(trace.points):
+                # apply forward transform
+                x, y = tform.map(*p)
+                # apply translate
+                x += dx
+                y += dy
+                # apply reverse transform
+                x, y = tform.map(x, y, inverted=True)
+                # replace point
+                trace.points[i] = (x, y)
+            self.addTrace(trace, log_message="translated")

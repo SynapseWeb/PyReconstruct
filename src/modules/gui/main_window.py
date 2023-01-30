@@ -390,16 +390,16 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
-        if not series_obj:  # if series is not provided
+        if not series_obj:  # if series is not provided            
             # get the new series
             new_series = None
             if not jser_fp:
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
             
-            # save the current series
-            if self.series:
-                self.saveToJser(notify=True, close=True)
+            response = self.saveToJser(notify=True)
+            if response == "cancel":
+                return
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)
@@ -452,6 +452,16 @@ class MainWindow(QMainWindow):
             # open the JSER file if no unsaved series was opened
             if not new_series:
                 new_series = openJserFile(jser_fp)
+                # user pressed cancel
+                if new_series is None:
+                    if self.series is None:
+                        exit()
+                    else:
+                        return
+            
+            # clear the current series
+            if self.series and not self.series.isWelcomeSeries():
+                clearHiddenSeries(self.series)
 
             self.series = new_series
 
@@ -770,7 +780,8 @@ class MainWindow(QMainWindow):
         if notify and self.series.modified:
             save = saveNotify()
             if save == "no":
-                clearHiddenSeries(self.series)
+                if close:
+                    clearHiddenSeries(self.series)
                 return
             elif save == "cancel":
                 return "cancel"

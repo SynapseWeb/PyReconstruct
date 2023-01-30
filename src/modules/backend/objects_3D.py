@@ -133,7 +133,7 @@ class Surface(Object3D):
                 smooth=True,
         )
 
-        return item
+        return tm.volume, item
 
 
 class Spheres(Object3D):
@@ -175,7 +175,8 @@ class Spheres(Object3D):
             )
             x, y, s = point
             z = s * section_thickness
+            volume = 4/3 * np.pi * radius**3
             item.translate(z, y, x)
-            items.append(item)
+            items.append((volume, item))
         
         return items

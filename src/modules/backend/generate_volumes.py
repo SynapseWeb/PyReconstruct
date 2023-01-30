@@ -65,6 +65,10 @@ def generateVolumes(series : Series, obj_names : list):
                 opacity
             ))
     
+    # sort the items by volume
+    items.sort()
+    items = [i[1] for i in items]
+    
     # convert snum extremes to z extremes
     extremes[4] *= avg_thickness
     extremes[5] *= avg_thickness

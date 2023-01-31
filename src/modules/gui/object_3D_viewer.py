@@ -66,12 +66,13 @@ class Object3DViewer(gl.GLViewWidget):
         )
 
         # get the items
-        items, extremes = generateVolumes(
+        self.vol_items, extremes = generateVolumes(
             self.series,
             obj_names,
         )
-        # add the items to the scene
-        for item in items:
+        # sort by volume and add the items to the scene
+        self.vol_items.sort()
+        for v, item in self.vol_items:
             self.addItem(item)
         
         # center the camera view        
@@ -117,14 +118,21 @@ class Object3DViewer(gl.GLViewWidget):
             return
         self.obj_set = self.obj_set.union(obj_names)
 
-        items, extremes = generateVolumes(
+        new_vol_items, e = generateVolumes(
             self.series,
             obj_names,
         )
 
-        for item in items:
+        # remove existing objects from scene
+        for v, item in self.vol_items:
+            self.removeItem(item)
+        
+        # add all objects to scene
+        self.vol_items += new_vol_items
+        self.vol_items.sort()
+        for v, item in self.vol_items:
             self.addItem(item)
-
+        
     def createScaleCubeShortcuts(self):
         """Create the shortcuts for the 3D scene."""
         shortcuts = [

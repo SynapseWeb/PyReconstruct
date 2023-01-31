@@ -44,7 +44,7 @@ def generateVolumes(series : Series, obj_names : list):
                     obj_data[obj_name][0].addTrace(trace, snum, tform)
 
     # iterate through all objects and create 3D meshes
-    items = []
+    vol_items = []
     extremes = []
     avg_mag = sum(mags) / len(mags)
     avg_thickness = sum(thicknesses) / len(thicknesses)
@@ -53,28 +53,24 @@ def generateVolumes(series : Series, obj_names : list):
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
-            items.append(obj_3D.generate3D(
+            vol_items.append(obj_3D.generate3D(
                 avg_mag,
                 avg_thickness,
                 opacity,
                 series.options["3D_smoothing"]
             ))
         elif type(obj_3D) is Spheres:
-            items += (obj_3D.generate3D(
+            vol_items += (obj_3D.generate3D(
                 avg_thickness,
                 opacity
             ))
-    
-    # sort the items by volume
-    items.sort()
-    items = [i[1] for i in items]
     
     # convert snum extremes to z extremes
     extremes[4] *= avg_thickness
     extremes[5] *= avg_thickness
 
     return (
-        items,
+        vol_items,
         tuple(extremes)
     )
 

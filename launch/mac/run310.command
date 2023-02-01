@@ -7,7 +7,7 @@ git fetch --all
 git reset --hard origin/main
 
 # Reset file permissions
-chmod u+x launch/mac/run.command
+chmod u+x launch/mac/run310.command
 
 FILE=env/bin/activate
 

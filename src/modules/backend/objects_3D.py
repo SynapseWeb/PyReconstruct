@@ -63,10 +63,11 @@ class Surface(Object3D):
     def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
         """Generate the numpy array volumes.
         """
-        # set mag to four times average sections mag
+        # set mag to arbitrary x times average sections mag
+        # (note: affects "voxel resolution")
         mag = section_mag * 8
 
-        # calculate the dimensions of the volume
+        # calculate the dimensions of bounding box for empty array
         xmin, xmax, ymin, ymax, smin, smax = tuple(self.extremes)
         vshape = (
             round((xmax-xmin)/mag)+1,
@@ -74,7 +75,7 @@ class Surface(Object3D):
             smax-smin+1
         )
     
-        # create the numpy volume
+        # create empty numpy volume
         volume = np.zeros(vshape, dtype=bool)
 
         # add the traces to the volume
@@ -103,8 +104,10 @@ class Surface(Object3D):
                 )
                 volume[x_pos, y_pos, snum - smin] = False
 
-        # generate and smooth the trimesh
+        # generate trimesh
         tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)
+
+        # smooth trimesh
         if smoothing == "humphrey":
             trimesh.smoothing.filter_humphrey(tm)
         elif smoothing == "laplacian":
@@ -113,17 +116,18 @@ class Surface(Object3D):
         faces = tm.faces
         verts = tm.vertices
 
-        # modify the vertex locations
+        # provide real vertex locations
+        # (i.e., normalize to real world dimensions)
         verts[:,:2] *= mag
         verts[:,0] += xmin
         verts[:,1] += ymin
         verts[:,2] += smin
         verts[:,2] *= section_thickness
 
-        # get the color
+        # get color
         color = self.color + (alpha,)
 
-        # create the gl mesh object
+        # convert to opengl mesh object for pyqtgraph
         item = gl.GLMeshItem(
                 vertexes=verts,
                 faces=faces,
@@ -133,6 +137,7 @@ class Surface(Object3D):
                 smooth=True,
         )
 
+        # provide volumes in order to draw opaque items
         return tm.volume, item
 
 

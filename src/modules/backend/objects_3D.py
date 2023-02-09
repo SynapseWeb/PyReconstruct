@@ -181,7 +181,7 @@ class Spheres(Object3D):
             x, y, s = point
             z = s * section_thickness
             volume = 4/3 * np.pi * radius**3
-            item.translate(z, y, x)
+            item.translate(x, y, z)
             items.append((volume, item))
         
         return items

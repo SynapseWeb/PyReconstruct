@@ -63,15 +63,14 @@ class Surface(Object3D):
     def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
         """Generate the numpy array volumes.
         """
-        # set mag to arbitrary x times average sections mag
-        # (note: affects "voxel resolution")
-        mag = section_mag * 8
+        # set voxel resolution to arbitrary x times average sections mag
+        vres = section_mag * 8
 
         # calculate the dimensions of bounding box for empty array
         xmin, xmax, ymin, ymax, smin, smax = tuple(self.extremes)
         vshape = (
-            round((xmax-xmin)/mag)+1,
-            round((ymax-ymin)/mag)+1,
+            round((xmax-xmin)/vres)+1,
+            round((ymax-ymin)/vres)+1,
             smax-smin+1
         )
     
@@ -84,8 +83,8 @@ class Surface(Object3D):
                 x_values = []
                 y_values = []
                 for x, y in trace:
-                    x_values.append(round((x-xmin) / mag))
-                    y_values.append(round((y-ymin) / mag))
+                    x_values.append(round((x-xmin) / vres))
+                    y_values.append(round((y-ymin) / vres))
                 x_pos, y_pos = polygon(
                     np.array(x_values),
                     np.array(y_values)
@@ -96,8 +95,8 @@ class Surface(Object3D):
                 x_values = []
                 y_values = []
                 for x, y in trace:
-                    x_values.append(round((x-xmin) / mag))
-                    y_values.append(round((y-ymin) / mag))
+                    x_values.append(round((x-xmin) / vres))
+                    y_values.append(round((y-ymin) / vres))
                 x_pos, y_pos = polygon(
                     np.array(x_values),
                     np.array(y_values)
@@ -118,11 +117,17 @@ class Surface(Object3D):
 
         # provide real vertex locations
         # (i.e., normalize to real world dimensions)
-        verts[:,:2] *= mag
+        verts[:,:2] *= vres
         verts[:,0] += xmin
         verts[:,1] += ymin
         verts[:,2] += smin
         verts[:,2] *= section_thickness
+        
+        # export trimesh
+        export_fp = 'export.obj'
+        tm.export(export_fp)
+        print('Object exported to', export_fp, 'with smoothing =', smoothing)
+        print('Volume =', tm.volume)
 
         # get color
         color = self.color + (alpha,)
@@ -137,7 +142,7 @@ class Surface(Object3D):
                 smooth=True,
         )
 
-        # provide volumes in order to draw opaque items
+        # provide volumes to draw opaque items in proper order
         return tm.volume, item
 
 

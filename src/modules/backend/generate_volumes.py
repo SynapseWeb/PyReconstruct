@@ -69,6 +69,8 @@ def generateVolumes(series : Series, obj_names : list):
     extremes[4] *= avg_thickness
     extremes[5] *= avg_thickness
 
+    # return list tuples (volume, opengl objects)
+    # return global bounding box to set view
     return (
         vol_items,
         tuple(extremes)

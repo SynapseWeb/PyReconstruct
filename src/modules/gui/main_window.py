@@ -688,7 +688,8 @@ class MainWindow(QMainWindow):
     
     def flickerSections(self):
         """Switch between the current and b sections."""
-        self.changeSection(self.field.b_section_number, save=False)
+        if self.field.b_section:
+            self.changeSection(self.field.b_section.n, save=False)
     
     def incrementSection(self, down=False):
         """Increment the section number by one.

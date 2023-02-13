@@ -123,11 +123,11 @@ class Surface(Object3D):
         verts[:,2] += smin
         verts[:,2] *= section_thickness
         
-        # export trimesh
-        export_fp = 'export.obj'
-        tm.export(export_fp)
-        print('Object exported to', export_fp, 'with smoothing =', smoothing)
-        print('Volume =', tm.volume)
+        # # export trimesh
+        # export_fp = 'export.obj'
+        # tm.export(export_fp)
+        # print('Object exported to', export_fp, 'with smoothing =', smoothing)
+        # print('Volume =', tm.volume) 
 
         # get color
         color = self.color + (alpha,)

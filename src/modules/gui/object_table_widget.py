@@ -148,8 +148,9 @@ class ObjectTableWidget(QDockWidget):
             },
             None,
             ("history_act", "View history", "", self.viewHistory),
-            # None,
-            # ("ztrace_act", "Create ztrace", "", self.createZtrace),
+            None,
+            ("csztrace_act", "Create cross-sectioned ztrace", "", self.createZtrace),
+            ("atztrace_act", "Create ztrace from each traces", "", lambda : self.createZtrace(cross_sectioned=False)),
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
@@ -497,12 +498,12 @@ class ObjectTableWidget(QDockWidget):
         
         self.manager.viewHistory(obj_names)
     
-    def createZtrace(self):
+    def createZtrace(self, cross_sectioned=True):
         """Create a ztrace from selected objects."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
-        self.manager.createZtrace(obj_names)
+        self.manager.createZtrace(obj_names, cross_sectioned)
 
     def deleteObjects(self):
         """Delete an object from the entire series."""

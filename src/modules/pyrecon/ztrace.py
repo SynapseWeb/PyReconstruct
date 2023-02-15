@@ -1,13 +1,17 @@
+from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
+
 class Ztrace():
 
-    def __init__(self, name : str, points : list = []):
+    def __init__(self, name : str, color : tuple, points : list = []):
         """Create a new ztrace.
         
             Params:
                 name (str): the name of the ztrace
+                color (tuple): the display color of the ztrace
                 points (list): the points for the trace (x, y, section)
         """
         self.name = name
+        self.color = color
         self.points = points
     
     def getDict(self) -> dict:
@@ -18,8 +22,29 @@ class Ztrace():
         """
         d = {}
         d["name"] = self.name
+        d["color"] = self.color
         d["points"] = self.points.copy()
         return d
+    
+    # STATIC METHOD
+    def dictFromXMLObj(xml_ztrace : XMLZContour):
+        """Create a trace from an xml contour object.
+        
+            Params:
+                xml_trace (XMLContour): the xml contour object
+                xml_image_tform (XMLTransform): the xml image transform object
+            Returns:
+                (Trace) the trace object
+        """
+        # get basic attributes
+        name = xml_ztrace.name
+        color = list(xml_ztrace.border)
+        for i in range(len(color)):
+            color[i] = int(color[i] * 255)
+        new_ztrace = Ztrace(name, color)
+        new_ztrace.points = xml_ztrace.points.copy()
+        
+        return new_ztrace.getDict()
     
     def fromDict(d):
         """Create the object from a dictionary.
@@ -27,7 +52,7 @@ class Ztrace():
             Params:
                 d (dict): the dictionary representation of the object
         """
-        ztrace = Ztrace(d["name"])
+        ztrace = Ztrace(d["name"], d["color"])
         ztrace.points = d["points"]
         return ztrace
     
@@ -97,3 +122,44 @@ class Ztrace():
             print(f'old: {save_point_old} new: {self.points[i]}')
 
         return None
+    
+    def getSectionData(self, snum : int):
+        """Get all the ztrace points on a section.
+        
+            Params:
+                snum (int): the section number
+            Returns:
+                (list): list of points
+                (list): list of lines between points
+        """
+        pts = []
+        lines = []
+        for i, pt in enumerate(self.points):
+            # add point to list
+            if pt[2] == snum:
+                pts.append(pt[:2])
+            
+            # check for lines to draw
+            if i > 0:
+                prev_pt = self.points[i-1]
+                if prev_pt[2] <= pt[2]:
+                    p1, p2 = prev_pt, pt
+                else:
+                    p2, p1 = prev_pt, pt 
+                if p1[2] <= snum <= p2[2]:
+                    segments = p2[2] - p1[2] + 1
+                    x_inc = (p2[0] - p1[0]) / segments
+                    y_inc = (p2[1] - p1[1]) / segments
+                    segment_i = snum - p1[2]
+                    lines.append((
+                        (
+                            p1[0] + segment_i*x_inc,
+                            p1[1] + segment_i*y_inc
+                        ),
+                        (
+                            p1[0] + (segment_i+1)*x_inc,
+                            p1[1] + (segment_i+1)*y_inc
+                        )
+                    ))
+        
+        return pts, lines

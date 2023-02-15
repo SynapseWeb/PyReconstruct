@@ -71,6 +71,14 @@ class Series():
         for key in empty_series:
             if key not in series_data:
                 series_data[key] = empty_series[key]
+        for key in empty_series["options"]:
+            if key not in series_data["options"]:
+                series_data["options"][key] = empty_series["options"][key]
+        
+        # check the ztraces
+        for ztrace in series_data["ztraces"]:
+            if "color" not in ztrace:
+                ztrace["color"] = (255, 255, 0)
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -90,8 +98,8 @@ class Series():
             d["palette_traces"].append(trace.getDict())
             
         d["current_trace"] = self.current_trace.getDict()
+
         d["ztraces"] = []
-        
         for ztrace in self.ztraces:
             d["ztraces"].append(ztrace.getDict())
             
@@ -132,6 +140,7 @@ class Series():
         options["small_dist"] = 0.01
         options["med_dist"] = 0.1
         options["big_dist"] = 1
+        options["show_ztraces"] = True
 
         return series_data
     
@@ -219,24 +228,49 @@ class Series():
         
         self.modified = True
     
-    def createZtrace(self, obj_name : str):
+    def createZtrace(self, obj_name : str, cross_sectioned=True):
         """Create a ztrace from an existing object in the series.
         
             Params:
                 obj_name (str): the name of the object to create the ztrace from
+                cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
         """
         for ztrace in self.ztraces:
             if obj_name == ztrace.name:
                 self.ztraces.remove(ztrace)
                 break
-        points = []
-        for snum in sorted(self.sections.keys()):
-            section = self.loadSection(snum)
-            if obj_name in section.contours:
-                contour = section.contours[obj_name]
-                p = (*contour.getMidpoint(), snum)
-                points.append(p)
-        self.ztraces.append(Ztrace(obj_name, points))
+        color = None
+        # if cross-sectioned object, make one point per section
+        if cross_sectioned:
+            points = []
+            for snum, section in self.enumerateSections(
+                show_progress=False
+            ):
+                if obj_name in section.contours:
+                    if not color: color = section.contours[0].color
+                    contour = section.contours[obj_name]
+                    p = (*contour.getMidpoint(), snum)
+                    points.append(p)
+        # if not cross-sectioned, make points by trace history
+        else:
+            dt_points = []
+            for snum, section in self.enumerateSections(
+                show_progress=False
+            ):
+                if obj_name in section.contours:
+                    contour = section.contours[obj_name]
+                    for trace in contour:
+                        if not color: color = trace.color
+                        # get the trace creation datetime
+                        dt = trace.history[0].dt
+                        # get the midpoint
+                        p = (*trace.getMidpoint(), snum)
+                        dt_points.append((dt, p))
+            # sort the points by datetime
+            dt_points.sort()
+            points = [dtp[1] for dtp in dt_points]
+        
+        self.ztraces.append(Ztrace(obj_name, color, points))
 
         self.modified = True
         

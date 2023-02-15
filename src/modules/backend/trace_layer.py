@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QPoint
+from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
     QPixmap,
     QPen,
@@ -10,6 +10,7 @@ from PySide6.QtGui import (
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 
 from modules.backend.grid import (
     getExterior, 
@@ -39,6 +40,28 @@ class TraceLayer():
         self.series = series
         self.traces_in_view = []
     
+    def pointToPix(self, pt : tuple, qpoint=False) -> tuple:
+        """Return the pixel point corresponding to a field point.
+        
+            Params:
+                pt (tuple): the trace to convert
+                qpoints (bool): True if points should be converted QPoint
+            Returns:
+                (tuple): the pixel point
+        """
+        tform = self.section.tforms[self.series.alignment]
+        x, y = tuple(pt)
+        x, y = tform.map(x, y)
+        x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+
+        if qpoint:
+            new_pt = QPoint(x, y)
+        else:
+            new_pt = (x, y)
+        
+        return new_pt
+
+    
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
         
@@ -49,15 +72,8 @@ class TraceLayer():
                 (list): list of pixel points
         """
         new_pts = []
-        tform = self.section.tforms[self.series.alignment]
         for point in trace.points:
-            x, y = tuple(point)
-            x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-            if qpoints:
-                new_pts.append(QPoint(x, y))
-            else:
-                new_pts.append((x, y))
+            new_pts.append(self.pointToPix(point, qpoint=qpoints))
         return new_pts
     
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
@@ -355,6 +371,38 @@ class TraceLayer():
         
         return trace_in_view
     
+    def _drawZtrace(self, trace_layer : QPixmap, ztrace : Ztrace):
+        """Draw points on the current trace layer.
+        
+            Params:
+                trace_layer (QPixmap): the pixmap to draw the point
+                points (list): the list of points to draw
+        """
+        points, lines = ztrace.getSectionData(self.section.n)
+        # convert to screen coordinates
+        qpoints = []
+        for pt in points:
+            qpoints.append(self.pointToPix(pt, qpoint=True))
+        qlines = []
+        for l in lines:
+            qp1 = self.pointToPix(l[0], qpoint=True)
+            qp2 = self.pointToPix(l[1], qpoint=True)
+            qlines.append(QLine(qp1, qp2))
+        
+        # set up painter
+        painter = QPainter(trace_layer)
+        painter.setPen(QPen(QColor(*ztrace.color), 6))
+
+        # draw points and lines
+        painter.drawPoints(qpoints)
+        painter.setPen(QPen(QColor(*ztrace.color), 1))
+        painter.drawLines(qlines)
+        painter.end()
+
+        # draw lines
+        painter.drawLines
+
+    
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False) -> QPixmap:
         """Generate the traces on a transparent background.
         
@@ -365,7 +413,6 @@ class TraceLayer():
             Returns:
                 (QPixmap): the pixmap with traces drawn in
         """
-        # draw all the traces
         self.window = window
         self.pixmap_dim = pixmap_dim
         self.screen_poly = [
@@ -392,6 +439,12 @@ class TraceLayer():
                 # remove the trace from selected traces if it is not being shown
                 if trace in self.section.selected_traces:
                     self.section.selected_traces.remove(trace)
+        
+        # draw ztraces
+        if self.series.options["show_ztraces"]:
+            for ztrace in self.series.ztraces:
+                self._drawZtrace(trace_layer, ztrace)
+                
 
         return trace_layer
         

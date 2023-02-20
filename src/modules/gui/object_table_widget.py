@@ -149,8 +149,15 @@ class ObjectTableWidget(QDockWidget):
             None,
             ("history_act", "View history", "", self.viewHistory),
             None,
-            ("csztrace_act", "Create cross-sectioned ztrace", "", self.createZtrace),
-            ("atztrace_act", "Create ztrace from each traces", "", lambda : self.createZtrace(cross_sectioned=False)),
+            {
+                "attr_name": "ztrace_menu",
+                "text": "Ztrace",
+                "opts":
+                [
+                    ("csztrace_act", "Create cross-sectioned ztrace", "", self.createZtrace),
+                    ("atztrace_act", "Create ztrace from each traces", "", lambda : self.createZtrace(cross_sectioned=False)),
+                ]
+            },
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]

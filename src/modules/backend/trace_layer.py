@@ -40,18 +40,20 @@ class TraceLayer():
         self.series = series
         self.traces_in_view = []
     
-    def pointToPix(self, pt : tuple, qpoint=False) -> tuple:
+    def pointToPix(self, pt : tuple, apply_tform=True, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.
         
             Params:
                 pt (tuple): the trace to convert
+                apply_tform (bool): true if section transform should be applied to the point
                 qpoints (bool): True if points should be converted QPoint
             Returns:
                 (tuple): the pixel point
         """
-        tform = self.section.tforms[self.series.alignment]
         x, y = tuple(pt)
-        x, y = tform.map(x, y)
+        if apply_tform:
+            tform = self.section.tforms[self.series.alignment]
+            x, y = tform.map(x, y)
         x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
 
         if qpoint:
@@ -378,15 +380,27 @@ class TraceLayer():
                 trace_layer (QPixmap): the pixmap to draw the point
                 points (list): the list of points to draw
         """
-        points, lines = ztrace.getSectionData(self.section.n)
+        points, lines = ztrace.getSectionData(self.series, self.section)
         # convert to screen coordinates
         qpoints = []
         for pt in points:
-            qpoints.append(self.pointToPix(pt, qpoint=True))
+            qpoints.append(self.pointToPix(
+                pt,
+                apply_tform=False,
+                qpoint=True
+            ))
         qlines = []
-        for l in lines:
-            qp1 = self.pointToPix(l[0], qpoint=True)
-            qp2 = self.pointToPix(l[1], qpoint=True)
+        for p1, p2 in lines:
+            qp1 = self.pointToPix(
+                p1[:2],
+                apply_tform=False,
+                qpoint=True
+            )
+            qp2 = self.pointToPix(
+                p2[:2],
+                apply_tform=False,
+                qpoint=True
+            )
             qlines.append(QLine(qp1, qp2))
         
         # set up painter

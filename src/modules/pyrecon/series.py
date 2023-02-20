@@ -57,6 +57,11 @@ class Series():
         self.object_3D_modes = series_data["object_3D_modes"]
         self.backup_dir = series_data["backup_dir"]
 
+        # keep track of transforms, mags, and section thicknesses
+        self.section_tforms = {}
+        self.section_mags = {}
+        self.section_thicknesses = {}
+
         # default settings
         self.fill_opacity = 0.2
 
@@ -208,7 +213,12 @@ class Series():
             Params:
                 section_num (int): the section number
         """
-        return Section(section_num, self)
+        section = Section(section_num, self)
+        # update transform data
+        self.section_tforms[section.n] = section.tforms
+        self.section_mags[section.n] = section.mag
+        self.section_thicknesses[section.n] = section.thickness
+        return section
     
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
         """Allow iteration through the sections."""
@@ -247,7 +257,7 @@ class Series():
                 show_progress=False
             ):
                 if obj_name in section.contours:
-                    if not color: color = section.contours[0].color
+                    if not color: color = section.contours[obj_name][0].color
                     contour = section.contours[obj_name]
                     p = (*contour.getMidpoint(), snum)
                     points.append(p)

@@ -56,13 +56,66 @@ class Ztrace():
         ztrace.points = d["points"]
         return ztrace
     
+    def getSectionData(self, series, section):
+        """Get all the ztrace points on a section.
+        
+            Params:
+                series (Series): the series object
+                section (Section): the main section object
+            Returns:
+                (list): list of points
+                (list): list of lines between points
+        """
+        # transform all points to field coordinates
+        tformed_pts = []
+        for pt in self.points:
+            x, y, snum = pt
+            if pt[2] == section.n:
+                tform = section.tforms[series.alignment]
+            else:
+                tform = series.section_tforms[pt[2]][series.alignment]
+            x, y = tform.map(x, y)
+            tformed_pts.append((x, y, snum))
+        
+        pts = []
+        lines = []
+        for i, pt in enumerate(tformed_pts):
+            # add point to list if on section
+            if pt[2] == section.n:
+                pts.append(pt[:2])
+            
+            # check for lines to draw
+            if i > 0:
+                prev_pt = tformed_pts[i-1]
+                if prev_pt[2] <= pt[2]:
+                    p1, p2 = prev_pt, pt
+                else:
+                    p2, p1 = prev_pt, pt 
+                if p1[2] <= section.n <= p2[2]:
+                    segments = p2[2] - p1[2] + 1
+                    x_inc = (p2[0] - p1[0]) / segments
+                    y_inc = (p2[1] - p1[1]) / segments
+                    segment_i = section.n - p1[2]
+                    lines.append((
+                        (
+                            p1[0] + segment_i*x_inc,
+                            p1[1] + segment_i*y_inc
+                        ),
+                        (
+                            p1[0] + (segment_i+1)*x_inc,
+                            p1[1] + (segment_i+1)*y_inc
+                        )
+                    ))
+        
+        return pts, lines
+
     def smooth(self, smooth=10):
-        """Smooth a ztrace."""
+        """Smooth z-trace (based on legacy Reconstruct algorithm)."""
 
         x = [None] * smooth
         y = [None] * smooth
 
-        points = [[p[0], p[1]] for p in self.points]
+        points = [[c[0], c[1], c[2]] for c in self.points]
 
         pt_idx = 0
         p = points[pt_idx]
@@ -114,52 +167,4 @@ class Ztrace():
             xMA += (x[smooth-1] - old_x) / smooth
             yMA += (y[smooth-1] - old_y) / smooth
 
-        # Update self.points
-        for i, p in enumerate(points):
-            save_point_old = self.points[i]
-            current_sec = self.points[i][2]
-            self.points[i] = (p[0], p[1], current_sec)
-            print(f'old: {save_point_old} new: {self.points[i]}')
-
-        return None
-    
-    def getSectionData(self, snum : int):
-        """Get all the ztrace points on a section.
-        
-            Params:
-                snum (int): the section number
-            Returns:
-                (list): list of points
-                (list): list of lines between points
-        """
-        pts = []
-        lines = []
-        for i, pt in enumerate(self.points):
-            # add point to list
-            if pt[2] == snum:
-                pts.append(pt[:2])
-            
-            # check for lines to draw
-            if i > 0:
-                prev_pt = self.points[i-1]
-                if prev_pt[2] <= pt[2]:
-                    p1, p2 = prev_pt, pt
-                else:
-                    p2, p1 = prev_pt, pt 
-                if p1[2] <= snum <= p2[2]:
-                    segments = p2[2] - p1[2] + 1
-                    x_inc = (p2[0] - p1[0]) / segments
-                    y_inc = (p2[1] - p1[1]) / segments
-                    segment_i = snum - p1[2]
-                    lines.append((
-                        (
-                            p1[0] + segment_i*x_inc,
-                            p1[1] + segment_i*y_inc
-                        ),
-                        (
-                            p1[0] + (segment_i+1)*x_inc,
-                            p1[1] + (segment_i+1)*y_inc
-                        )
-                    ))
-        
-        return pts, lines
+        self.points = [(c[0], c[1], c[2]) for c in points]

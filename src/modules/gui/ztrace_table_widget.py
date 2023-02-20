@@ -96,6 +96,9 @@ class ZtraceTableWidget(QDockWidget):
         context_menu_list = [
             ("editname_act", "Edit name...", "", self.editName),
             ("smooth_act", "Smooth", "", self.smooth),
+            None,
+            ("addto3D_act", "Add to 3D scene", "", self.addTo3D),
+            None,
             ("delete_act", "Delete", "", self.delete)
         ]
         self.context_menu = QMenu(self)
@@ -128,6 +131,7 @@ class ZtraceTableWidget(QDockWidget):
 
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu
+        self.table.mouseDoubleClickEvent = self.addTo3D
 
         # establish table headers
         self.horizontal_headers = ["Name", "Distance"]
@@ -221,6 +225,14 @@ class ZtraceTableWidget(QDockWidget):
             return
         
         self.manager.smooth(names)
+    
+    def addTo3D(self, event=None):
+        """Add the ztrace to the 3D scene."""
+        names = self.getSelectedNames()
+        if not names:
+            return
+        
+        self.manager.addTo3D(names)
     
     def delete(self):
         """Delete a set of ztraces."""

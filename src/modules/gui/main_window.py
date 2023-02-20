@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                    # ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
+                    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),

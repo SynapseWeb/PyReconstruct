@@ -107,7 +107,19 @@ class ZtraceTableManager():
         
         for table in self.tables:
             table.createTable(self.data)
-    
+        
+    def addTo3D(self, names : list):
+        """Add a set of ztraces to the 3D scene."""
+        # access the object viewer object
+        obj_table_manager = self.mainwindow.field.obj_table_manager
+        if not obj_table_manager:
+            return
+        object_viewer = obj_table_manager.object_viewer
+        if not object_viewer:
+            return
+        
+        object_viewer.addZtraces(names)
+
     def delete(self, names : list):
         """Delete a set of ztraces.
         

@@ -7,6 +7,7 @@ from constants.locations import createHiddenDir
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.transform import Transform
 
 from modules.gui.gui_functions import progbar
 
@@ -35,6 +36,7 @@ def openJserFile(fp : str):
     hidden_dir = createHiddenDir(sdir, sname)
 
     sections = {}
+    section_tforms = {}
     
     # iterate through json data
     for filename in jser_data:
@@ -49,10 +51,17 @@ def openJserFile(fp : str):
             series_fp = backend_fp
         else:
             Section.updateJSON(filedata)  # update any missing attributes
+
             # gather the section numbers and section filenames
             snum = int(filename[filename.rfind(".")+1:])
             sections[snum] = filename
 
+            # get transform data for the section
+            tforms = {}
+            for a in filedata["tforms"]:
+                tforms[a] = Transform(filedata["tforms"][a])
+            section_tforms[snum] = tforms
+            
         with open(backend_fp, "w") as f:
             json.dump(filedata, f)
         
@@ -60,9 +69,11 @@ def openJserFile(fp : str):
             return None
         progress += 1
         update(progress/final_value * 100)
-        
+    
+    # create and update the series
     series = Series(series_fp)
     series.sections = sections
+    series.section_tforms = section_tforms
     series.jser_fp = fp
     
     return series

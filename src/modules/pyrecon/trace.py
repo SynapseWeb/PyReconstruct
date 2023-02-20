@@ -132,6 +132,9 @@ class Trace():
         )
 
         if legacy_format:
+
+            # get scaling to modify the radius of the trace (for palette traces)
+            r_scaling = getLegacyRadius(self) / self.getRadius()
             
             xml_text = blank_palette_contour
 
@@ -143,7 +146,8 @@ class Trace():
 
             xml_points = ''
             for pt in xml_contour.points:
-                formatted_point = f'{pt[0]} {pt[1]}, '
+                x, y = pt[0] * r_scaling, pt[1] * r_scaling  # modify radius for palette trace
+                formatted_point = f'{x} {y}, '
                 xml_points += formatted_point
             
             xml_text = xml_text.replace("[NAME]", xml_contour.name)
@@ -345,6 +349,48 @@ def convertMode(arg):
             if arg[1] == "unselected":
                 mode *= -1
         return mode
+
+def getLegacyRadius(trace : Trace):
+    """Get the legacy radius for a palette trace."""
+    legacy_radii = {
+        "circle": 6.324555320336759,
+        "star": 5.656854249492381,
+        "triangle": 7.333333,
+        "cross": 9.899494936611665,
+        "square": 14.485601376004034,
+        "diamond": 7,
+        "curved_arrow": 12.952950706944307,
+        "plus": 12.649110640673518,
+        "straight_arrow": 16.646921637347848
+    }
+    l = len(trace.points)
+    if l == 3:
+        trace_type = "triangle"
+    elif l == 4:
+        trace_type = "diamond"
+    elif l == 7:
+        trace_type = "straight_arrow"
+    elif l == 8:
+        trace_type = "circle"
+    elif l == 10:
+        trace_type = "square"
+    elif l == 16:
+        trace_type = "star"
+    elif l == 12:
+        # three possibilities for length 12
+        x, y = trace.points[0]
+        if x < 0 and y > 0:
+            if abs(abs(x) - abs(y) < 1e-6):
+                trace_type = "cross"
+            else:
+                trace_type = "plus"
+        else:
+            trace_type = "curved_arrow"
+    else:
+        return 8
+    
+    return legacy_radii[trace_type]
+        
 
 
         

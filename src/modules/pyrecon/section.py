@@ -154,7 +154,6 @@ class Section():
         section_fp = os.path.join(wdir, series_name + "." + str(snum))
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
-        return Section(section_fp)
    
     def save(self):
         """Save file into json."""

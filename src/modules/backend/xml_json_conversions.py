@@ -1,7 +1,7 @@
 import os
 import json
 
-from constants.blank_legacy_files import blank_series, blank_section
+from constants.blank_legacy_files import blank_series, blank_section, blank_series_no_contours
 
 from modules.gui.gui_functions import progbar
 
@@ -209,8 +209,15 @@ def jsonToXML(series : Series, new_dir : str):
 
 def seriesJSONtoXML(series : Series, new_dir : str):
     # create the blank series and replace text as needed
-    xml_text = blank_series
+    xml_text = blank_series_no_contours
     xml_text = xml_text.replace("[SECTION_NUM]", str(series.current_section))
+
+    xml_palette = []
+    for trace in series.palette_traces:
+        xml_palette.append(trace.getXMLObj(legacy_format=True))
+    all_contours = '\n'.join(xml_palette)
+
+    xml_text = xml_text.replace("[CONTOURS]", all_contours)
 
     # create the series file
     series_fp = os.path.join(new_dir, series.name + ".ser")

@@ -8,6 +8,8 @@ from modules.legacy_recon.classes.transform import Transform as XMLTransform
 
 from modules.calc.quantification import centroid, distance
 
+from constants.blank_legacy_files import blank_palette_contour
+
 class Trace():
 
     def __init__(self, name : str, color : tuple, closed=True):
@@ -105,12 +107,12 @@ class Trace():
         d["history"] = [list(l) for l in self.history]
         return d
     
-    def getXMLObj(self, xml_image_tform : XMLTransform = None) -> XMLContour:
+    def getXMLObj(self, xml_image_tform : XMLTransform = None, legacy_format : bool = False):
         """Returns the trace data as an XML object.
             Params:
                 xml_image_tform (XMLTransform): the xml image transform object
             Returns:
-                (XMLContour) the trace as an xml contour object
+                (XMLContour) the trace as an xml contour object or (Str)
         """
         border_color = list(self.color)
         for i in range(len(border_color)):
@@ -128,7 +130,34 @@ class Trace():
             points = self.points,
             transform = xml_image_tform
         )
-        return xml_contour
+
+        if legacy_format:
+            
+            xml_text = blank_palette_contour
+
+            border = list(map(lambda x: round(x, 3), xml_contour.border))
+            border = f'{border[0]} {border[1]} {border[2]}'
+
+            fill = list(map(lambda x: round(x, 3), xml_contour.fill))
+            fill = f'{fill[0]} {fill[1]} {fill[2]}'
+
+            xml_points = ''
+            for pt in xml_contour.points:
+                formatted_point = f'{pt[0]} {pt[1]}, '
+                xml_points += formatted_point
+            
+            xml_text = xml_text.replace("[NAME]", xml_contour.name)
+            xml_text = xml_text.replace("[CLOSED]", str(xml_contour.closed))
+            xml_text = xml_text.replace("[BORDER]", border)
+            xml_text = xml_text.replace("[FILL]", fill)
+            xml_text = xml_text.replace("[MODE]", str(xml_contour.mode))
+            xml_text = xml_text.replace("[POINTS]", xml_points)
+            
+            return xml_text
+        
+        else:
+            
+            return xml_contour
     
     # STATIC METHOD
     def fromDict(d, name : str = None):

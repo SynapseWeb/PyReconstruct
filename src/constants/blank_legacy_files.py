@@ -360,3 +360,128 @@ points="0 12,
     12 12,
     "/>
 </Series>"""
+
+blank_series_no_contours = """<?xml version="1.0"?>
+<!DOCTYPE Series SYSTEM "series.dtd">
+<Series index="[SECTION_NUM]" viewport="0 0 0.00254"
+    units="microns"
+    autoSaveSeries="true"
+    autoSaveSection="true"
+    warnSaveSection="true"
+    beepDeleting="true"
+    beepPaging="true"
+    hideTraces="false"
+    unhideTraces="false"
+    hideDomains="false"
+    unhideDomains="false"
+    useAbsolutePaths="false"
+    defaultThickness="0.05"
+    zMidSection="false"
+    thumbWidth="128"
+    thumbHeight="96"
+    fitThumbSections="false"
+    firstThumbSection="1"
+    lastThumbSection="2147483647"
+    skipSections="1"
+    displayThumbContours="true"
+    useFlipbookStyle="false"
+    flipRate="5"
+    useProxies="true"
+    widthUseProxies="2048"
+    heightUseProxies="1536"
+    scaleProxies="0.25"
+    significantDigits="6"
+    defaultBorder="1.000 0.000 1.000"
+    defaultFill="1.000 0.000 1.000"
+    defaultMode="9"
+    defaultName="domain$+"
+    defaultComment=""
+    listSectionThickness="true"
+    listDomainSource="true"
+    listDomainPixelsize="true"
+    listDomainLength="false"
+    listDomainArea="false"
+    listDomainMidpoint="false"
+    listTraceComment="true"
+    listTraceLength="false"
+    listTraceArea="true"
+    listTraceCentroid="false"
+    listTraceExtent="false"
+    listTraceZ="false"
+    listTraceThickness="false"
+    listObjectRange="true"
+    listObjectCount="true"
+    listObjectSurfarea="false"
+    listObjectFlatarea="false"
+    listObjectVolume="false"
+    listZTraceNote="true"
+    listZTraceRange="true"
+    listZTraceLength="true"
+    borderColors="0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            "
+    fillColors="0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            0.000 0.000 0.000,
+            "
+    offset3D="0 0 0"
+    type3Dobject="0"
+    first3Dsection="1"
+    last3Dsection="2147483647"
+    max3Dconnection="-1"
+    upper3Dfaces="true"
+    lower3Dfaces="true"
+    faceNormals="false"
+    vertexNormals="true"
+    facets3D="8"
+    dim3D="-1 -1 -1"
+    gridType="0"
+    gridSize="1 1"
+    gridDistance="1 1"
+    gridNumber="1 1"
+    hueStopWhen="3"
+    hueStopValue="50"
+    satStopWhen="3"
+    satStopValue="50"
+    brightStopWhen="0"
+    brightStopValue="100"
+    tracesStopWhen="false"
+    areaStopPercent="999"
+    areaStopSize="0"
+    ContourMaskWidth="0"
+    smoothingLength="7"
+    mvmtIncrement="0.022 1 1 1.01 1.01 0.02 0.02 0.001 0.001"
+    ctrlIncrement="0.0044 0.01 0.01 1.002 1.002 0.004 0.004 0.0002 0.0002"
+    shiftIncrement="0.11 100 100 1.05 1.05 0.1 0.1 0.005 0.005"
+    >
+[CONTOURS]
+</Series>"""
+
+blank_palette_contour = """<Contour name="[NAME]" closed="true" border="[BORDER]" fill="[FILL]" mode="[MODE]" points="[POINTS] "/>"""

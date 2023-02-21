@@ -36,7 +36,6 @@ def openJserFile(fp : str):
     hidden_dir = createHiddenDir(sdir, sname)
 
     sections = {}
-    section_tforms = {}
     
     # iterate through json data
     for filename in jser_data:
@@ -55,12 +54,6 @@ def openJserFile(fp : str):
             # gather the section numbers and section filenames
             snum = int(filename[filename.rfind(".")+1:])
             sections[snum] = filename
-
-            # get transform data for the section
-            tforms = {}
-            for a in filedata["tforms"]:
-                tforms[a] = Transform(filedata["tforms"][a])
-            section_tforms[snum] = tforms
             
         with open(backend_fp, "w") as f:
             json.dump(filedata, f)
@@ -72,8 +65,8 @@ def openJserFile(fp : str):
     
     # create and update the series
     series = Series(series_fp)
+    # load collected data into object
     series.sections = sections
-    series.section_tforms = section_tforms
     series.jser_fp = fp
     
     return series

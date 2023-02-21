@@ -109,13 +109,23 @@ class Ztrace():
         
         return pts, lines
 
-    def smooth(self, smooth=10):
-        """Smooth z-trace (based on legacy Reconstruct algorithm)."""
-
+    def smooth(self, series, smooth=10):
+        """Smooth z-trace (based on legacy Reconstruct algorithm).
+        
+            Params:
+                series (Series): the series object (contains transform data)
+                smooth (int): the smoothing factor
+        """
+        # transform the points
+        points = []
+        for pt in self.points:
+            x, y, snum = pt
+            tform = series.section_tforms[snum][series.alignment]
+            x, y = tform.map(x, y)
+            points.append([x, y, snum])
+        
         x = [None] * smooth
         y = [None] * smooth
-
-        points = [[c[0], c[1], c[2]] for c in self.points]
 
         pt_idx = 0
         p = points[pt_idx]
@@ -166,5 +176,11 @@ class Ztrace():
                 
             xMA += (x[smooth-1] - old_x) / smooth
             yMA += (y[smooth-1] - old_y) / smooth
-
-        self.points = [(c[0], c[1], c[2]) for c in points]
+        
+        # reverse-transform the points
+        self.points = []
+        for pt in points:
+            x, y, snum = pt
+            tform = series.section_tforms[snum][series.alignment]
+            x, y = tform.map(x, y, inverted=True)
+            self.points.append((x, y, snum))

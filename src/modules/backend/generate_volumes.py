@@ -128,8 +128,7 @@ def generate3DZtraces(series : Series, ztrace_names : list):
         ztrace_items.append(
             gl.GLLinePlotItem(
                 pos=points,
-                color = [0,0,0,1],
-                # color=[c/255 for c in ztrace.color]+[1],
+                color=[c/255 for c in ztrace.color]+[1],
                 width=2,
                 glOptions="translucent"
             )

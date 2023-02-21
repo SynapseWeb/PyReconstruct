@@ -4,6 +4,7 @@ import json
 from modules.pyrecon.ztrace import Ztrace
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.transform import Transform
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
@@ -68,6 +69,26 @@ class Series():
         # ADDED SINCE JAN 25TH
 
         self.options = series_data["options"]
+
+        # gather thickness, mag, and tforms for each section
+        self.gatherSectionData()
+    
+    def gatherSectionData(self):
+        """Get the mag, thickness, and transforms from each section."""
+        # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
+        for n, section in self.sections.items():
+            filepath = os.path.join(
+                self.getwdir(),
+                section
+            )
+            with open(filepath, "r") as f:
+                section_json = json.load(f)
+            self.section_thicknesses[n] = section_json["thickness"]
+            self.section_mags[n] = section_json["mag"]
+            tforms = {}
+            for a in section_json["tforms"]:
+                tforms[a] = Transform(section_json["tforms"][a])
+            self.section_tforms[n] = tforms
     
     # STATIC METHOD
     def updateJSON(series_data):
@@ -262,6 +283,7 @@ class Series():
                     p = (*contour.getMidpoint(), snum)
                     points.append(p)
         # if not cross-sectioned, make points by trace history
+        # each trace gets its own point, ztrace points are in chronological order
         else:
             dt_points = []
             for snum, section in self.enumerateSections(

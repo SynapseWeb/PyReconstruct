@@ -68,25 +68,34 @@ class ZtraceTableManager():
     
     # MENU-REALTED FUNCTIONS
 
-    def editName(self, name : str, new_name : str):
+    def editAttributes(self, name : str, new_name : str, new_color : tuple):
         """Edit the name of a ztrace.
         
             Params:
                 name (str): the name of the ztrace to change
                 new_name (str): the new name for the trace
+                new_color (tuple): the new color for the trace
         """
         # modify the ztrace data
         for ztrace in self.series.ztraces:
             if ztrace.name == name:
-                ztrace.name = new_name
+                if new_name:
+                    ztrace.name = new_name
+                if new_color:
+                    ztrace.color = new_color
                 break
         
         # modify the tables
-        self.data[new_name] = self.data[name]
-        self.data[new_name].name = new_name
-        del(self.data[name])
-        for table in self.tables:
-            table.createTable(self.data)
+        if new_name and new_name != name:
+            self.data[new_name] = self.data[name]
+            self.data[new_name].name = new_name
+            del(self.data[name])
+            for table in self.tables:
+                table.createTable(self.data)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def smooth(self, names : list):
         """Smooth a set of ztraces.
@@ -97,7 +106,7 @@ class ZtraceTableManager():
         # smooth the ztraces
         for ztrace in self.series.ztraces:
             if ztrace.name in names:
-                ztrace.smooth()
+                ztrace.smooth(self.series)
                 # update the table data
                 self.data[ztrace.name] = ZtraceTableItem(
                     ztrace,
@@ -107,6 +116,10 @@ class ZtraceTableManager():
         
         for table in self.tables:
             table.createTable(self.data)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
         
     def addTo3D(self, names : list):
         """Add a set of ztraces to the 3D scene."""
@@ -133,6 +146,10 @@ class ZtraceTableManager():
         
         for table in self.tables:
             table.createTable(self.data)
+
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def close(self):
         """Close all the tables."""

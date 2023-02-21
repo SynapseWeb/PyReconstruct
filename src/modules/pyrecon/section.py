@@ -7,6 +7,7 @@ from modules.pyrecon.transform import Transform
 
 from modules.calc.quantification import (
     getDistanceFromTrace,
+    distance
 )
 
 from constants.locations import assets_dir
@@ -29,6 +30,10 @@ class Section():
         )
 
         self.selected_traces = []
+        self.selected_ztraces = []
+
+        self.temp_hide = []
+
         self.added_traces = []
         self.removed_traces = []
         self.modified_traces = []
@@ -339,11 +344,22 @@ class Section():
                 min_interior_distance = dist
                 closest_trace_interior = trace
         
+        # check for ztrace points close by
+        for ztrace in self.series.ztraces.values():
+            for i, pt in enumerate(ztrace.points):
+                if pt[2] == self.n:
+                    x, y = tform.map(*pt[:2])
+                    dist = distance(field_x, field_y, x, y)
+                    if closest_trace is None or dist < min_distance:
+                        min_distance = dist
+                        closest_trace = (ztrace, i)
+        
         return closest_trace if min_distance <= radius else closest_trace_interior
     
     def deselectAllTraces(self):
         """Deselect all traces."""
         self.selected_traces = []
+        self.selected_ztraces = []
     
     def selectAllTraces(self):
         """Select all traces."""
@@ -381,19 +397,27 @@ class Section():
             trace.negative = negative
             self.addTrace(trace, "made negative")
     
-    def deleteTraces(self, traces : list = None):
+    def deleteTraces(self, traces : list = None, ztraces_i : list = None):
         """Delete selected traces.
         
             Params:
                 traces (list): a list of traces to delete (default is selected traces)
+                ztraces (list): a list of ztrace, index pair points to delete
         """
         if traces is None:
             traces = self.selected_traces.copy()
+        if ztraces_i is None:
+            ztraces_i = self.selected_ztraces.copy()
 
         for trace in traces:
             self.removeTrace(trace)
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
+        for ztrace_i in ztraces_i:
+            ztrace, i = ztrace_i
+            del(ztrace.points[i])
+            if ztrace_i in self.selected_ztraces:
+                self.selected_ztraces.remove(ztrace_i)
     
     def translateTraces(self, dx : float, dy : float):
         """Translate the selected traces.
@@ -416,3 +440,14 @@ class Section():
                 # replace point
                 trace.points[i] = (x, y)
             self.addTrace(trace, log_message="translated")
+        for ztrace, i in self.selected_ztraces:
+            x, y, snum = ztrace.points[i]
+            # apply forward tform
+            x, y = tform.map(x, y)
+            # apply translate
+            x += dx
+            y += dy
+            # apply reverse transform
+            x, y = tform.map(x, y, inverted=True)
+            # replace point
+            ztrace.points[i] = (x, y, snum)

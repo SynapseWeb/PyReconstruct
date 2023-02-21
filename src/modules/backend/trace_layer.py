@@ -62,7 +62,6 @@ class TraceLayer():
             new_pt = (x, y)
         
         return new_pt
-
     
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
@@ -126,7 +125,17 @@ class TraceLayer():
                     break
             if inside_poly:
                 traces_in_poly.append(trace)
-        return traces_in_poly
+        
+        ztraces_in_poly = []
+        for ztrace in self.series.ztraces.values():
+            # check if point is inside polygon
+            for i, (x, y, snum) in enumerate(ztrace.points):
+                if snum == self.section.n:
+                    pix_point = self.pointToPix((x, y))
+                    if pointInPoly(*pix_point, pix_poly):
+                        ztraces_in_poly.append((ztrace, i))
+
+        return traces_in_poly, ztraces_in_poly
 
     def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
         """Create a new trace from pixel coordinates.
@@ -412,11 +421,38 @@ class TraceLayer():
         painter.setPen(QPen(QColor(*ztrace.color), 1))
         painter.drawLines(qlines)
         painter.end()
-
-        # draw lines
-        painter.drawLines
-
     
+    def _drawZtraceHighlights(self, trace_layer : QPixmap):
+        """Draw highlighted points on the current trace layer.
+        
+            Params:
+                trace_layer (QPixmap): the pixmap to draw the points
+        """
+        points = []
+        colors = []
+        for ztrace, i in self.section.selected_ztraces:
+            if ztrace not in self.section.temp_hide:
+                points.append(ztrace.points[i][:2])
+                colors.append(ztrace.color)
+
+        # convert to screen coordinates
+        qpoints = []
+        for pt in points:
+            qpoints.append(self.pointToPix(
+                pt,
+                qpoint=True
+            ))
+        
+        # set up painter
+        painter = QPainter(trace_layer)
+        painter.setOpacity(self.series.fill_opacity)
+
+        # draw points
+        for qpoint, color in zip(qpoints, colors):
+            painter.setPen(QPen(QColor(*color), 15))
+            painter.drawPoint(qpoint)
+        painter.end()
+   
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False) -> QPixmap:
         """Generate the traces on a transparent background.
         
@@ -442,22 +478,27 @@ class TraceLayer():
         # draw traces (keep track of those in view)
         self.traces_in_view = []
         for trace in self.section.tracesAsList():
-            if show_all_traces or not trace.hidden:
+            if (
+                trace not in self.section.temp_hide and
+                (show_all_traces or not trace.hidden)
+            ):
                 trace_in_view = self._drawTrace(
                     trace_layer,
                     trace
                 )
                 if trace_in_view:
                     self.traces_in_view.append(trace)
-            else:
-                # remove the trace from selected traces if it is not being shown
-                if trace in self.section.selected_traces:
-                    self.section.selected_traces.remove(trace)
+            # else:
+            #     # remove the trace from selected traces if it is not being shown
+            #     if trace in self.section.selected_traces:
+            #         self.section.selected_traces.remove(trace)
         
         # draw ztraces
         if self.series.options["show_ztraces"]:
             for ztrace in self.series.ztraces.values():
-                self._drawZtrace(trace_layer, ztrace)
+                if ztrace not in self.section.temp_hide:
+                    self._drawZtrace(trace_layer, ztrace)
+        self._drawZtraceHighlights(trace_layer)
                 
 
         return trace_layer

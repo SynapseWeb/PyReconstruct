@@ -3,6 +3,7 @@ from PySide6.QtGui import QPainter
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 
 from modules.backend.section_layer import SectionLayer
 from modules.backend.state_manager import SectionStates
@@ -354,7 +355,25 @@ class FieldView():
 
         self.generateView(generate_image=False)
     
-    def selectTraces(self, traces : list[Trace]):
+    def selectZtrace(self, ztrace_i : tuple):
+        """Select/deselect a single ztrace point.
+        
+            Params:
+                ztrace_i (tuple): the ztrace, index of point selected
+        """
+        # disbale if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        
+        # check if ztrace point has been selected
+        if ztrace_i in self.section.selected_ztraces:
+            self.section.selected_ztraces.remove(ztrace_i)
+        else:
+            self.section.selected_ztraces.append(ztrace_i)
+        
+        self.generateView(generate_image=False)            
+    
+    def selectTraces(self, traces : list[Trace], ztraces_i : list):
         """Select/deselect a set of traces.
         
             Params:
@@ -363,16 +382,13 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        
-        traces_to_add = []
+
         for trace in traces:
             if trace not in self.section.selected_traces:
-                traces_to_add.append(trace)
-        if traces_to_add:
-            self.section.selected_traces += traces_to_add
-        else:
-            for trace in traces:
-                self.section.selected_traces.remove(trace)
+                self.section.selected_traces.append(trace)
+        for ztrace_i in ztraces_i:
+            if ztrace_i not in self.section.selected_ztraces:
+                self.section.selected_ztraces.append(ztrace_i)
             
         self.generateView(generate_image=False)
     
@@ -416,7 +432,7 @@ class FieldView():
                 dx (float): x-translate
                 dy (float): y-translate
         """
-        if self.section.selected_traces:
+        if self.section.selected_traces or self.section.selected_ztraces:
             self.section.translateTraces(dx, dy)
             self.generateView()
             self.saveState()

@@ -203,9 +203,10 @@ class ZtraceTableWidget(QDockWidget):
             notify("Please modify one ztrace at a time.")
             return
         name = names[0]
-        for ztrace in self.series.ztraces:
-            if ztrace.name == name:
-                break
+
+        if name not in self.series.ztraces:
+            return
+        ztrace = self.series.ztraces[name]
 
         attributes, confirmed = ZtraceDialog(
             self,

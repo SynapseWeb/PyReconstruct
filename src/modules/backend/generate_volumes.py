@@ -105,9 +105,8 @@ def generate3DZtraces(series : Series, ztrace_names : list):
     """
     # get the ztraces of interest
     ztraces = []
-    for ztrace in series.ztraces:
-        if ztrace.name in ztrace_names:
-            ztraces.append(ztrace)
+    for name in ztrace_names:
+        ztraces.append(series.ztraces[name])
     
     # ASSUME UNIFORM SECTION THICKNESS
     avg_thickness = 0

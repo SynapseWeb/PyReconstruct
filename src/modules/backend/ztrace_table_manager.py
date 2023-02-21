@@ -34,8 +34,8 @@ class ZtraceTableManager():
         
         # load the ztrace data
         self.data = {}
-        for ztrace in self.series.ztraces:
-            self.data[ztrace.name] = ZtraceTableItem(
+        for name, ztrace in self.series.ztraces.items():
+            self.data[name] = ZtraceTableItem(
                 ztrace,
                 self.tforms,
                 self.section_heights
@@ -77,13 +77,14 @@ class ZtraceTableManager():
                 new_color (tuple): the new color for the trace
         """
         # modify the ztrace data
-        for ztrace in self.series.ztraces:
-            if ztrace.name == name:
-                if new_name:
-                    ztrace.name = new_name
-                if new_color:
-                    ztrace.color = new_color
-                break
+        ztrace = self.series.ztraces[name]
+        if new_name:
+            ztrace.name = new_name
+            if new_name != name:
+                del(self.series.ztraces[name])
+                self.series.ztraces[new_name] = ztrace
+        if new_color:
+            ztrace.color = new_color
         
         # modify the tables
         if new_name and new_name != name:
@@ -104,15 +105,15 @@ class ZtraceTableManager():
                 names (list): the names of the ztraces to smooth
         """
         # smooth the ztraces
-        for ztrace in self.series.ztraces:
-            if ztrace.name in names:
-                ztrace.smooth(self.series)
-                # update the table data
-                self.data[ztrace.name] = ZtraceTableItem(
-                    ztrace,
-                    self.tforms,
-                    self.section_heights
-                )
+        for name in names:
+            ztrace = self.series.ztraces[name]
+            ztrace.smooth(self.series)
+            # update the table data
+            self.data[ztrace.name] = ZtraceTableItem(
+                ztrace,
+                self.tforms,
+                self.section_heights
+            )
         
         for table in self.tables:
             table.createTable(self.data)
@@ -139,10 +140,9 @@ class ZtraceTableManager():
             Params:
                 names (list): the list of ztraces to delete
         """
-        for ztrace in self.series.ztraces:
-            if ztrace.name in names:
-                self.series.ztraces.remove(ztrace)
-                del(self.data[ztrace.name])
+        for name in names:
+            del(self.series.ztraces[name])
+            del(self.data[name])
         
         for table in self.tables:
             table.createTable(self.data)

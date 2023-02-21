@@ -21,7 +21,6 @@ class Ztrace():
                 (dict): the dictionary representation of the object
         """
         d = {}
-        d["name"] = self.name
         d["color"] = self.color
         d["points"] = self.points.copy()
         return d
@@ -46,14 +45,14 @@ class Ztrace():
         
         return new_ztrace.getDict()
     
-    def fromDict(d):
+    # STATIC METHOD
+    def fromDict(name, d):
         """Create the object from a dictionary.
         
             Params:
                 d (dict): the dictionary representation of the object
         """
-        ztrace = Ztrace(d["name"], d["color"])
-        ztrace.points = d["points"]
+        ztrace = Ztrace(name, d["color"], d["points"])
         return ztrace
     
     def getSectionData(self, series, section):

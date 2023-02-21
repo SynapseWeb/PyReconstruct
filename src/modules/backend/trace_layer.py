@@ -456,7 +456,7 @@ class TraceLayer():
         
         # draw ztraces
         if self.series.options["show_ztraces"]:
-            for ztrace in self.series.ztraces:
+            for ztrace in self.series.ztraces.values():
                 self._drawZtrace(trace_layer, ztrace)
                 
 

@@ -78,7 +78,7 @@ def xmlToJSON(xml_dir : str) -> Series:
     series = Series(json_series_fp)
 
     # modify the ztraces
-    for ztrace in series.ztraces:
+    for ztrace in series.ztraces.values():
         for i, point in enumerate(ztrace.points):
             x, y, snum = point
             new_point = (
@@ -120,13 +120,10 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     series_dict["current_trace"] = series_dict["palette_traces"][0]
     
     # import ztraces
-    series_dict["ztraces"] = []
+    series_dict["ztraces"] = {}
     for xml_zcontour in xml_series.zcontours:
-        series_dict["ztraces"].append(
-            Ztrace.dictFromXMLObj(
-                xml_zcontour
-            )
-        )
+        series_dict["ztraces"][xml_zcontour.name] = Ztrace.dictFromXMLObj(xml_zcontour)
+
 
     # get the series filename and save
     fname = os.path.basename(series_fp)

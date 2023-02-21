@@ -48,10 +48,10 @@ class Series():
             self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
 
         self.current_trace = Trace.fromDict(series_data["current_trace"])
-        self.ztraces = series_data["ztraces"]
 
-        for i in range(len(self.ztraces)):
-            self.ztraces[i] = Ztrace.fromDict(self.ztraces[i])
+        self.ztraces = series_data["ztraces"]
+        for name in self.ztraces:
+            self.ztraces[name] = Ztrace.fromDict(name, self.ztraces[name])
 
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
@@ -102,9 +102,18 @@ class Series():
                 series_data["options"][key] = empty_series["options"][key]
         
         # check the ztraces
-        for ztrace in series_data["ztraces"]:
-            if "color" not in ztrace:
-                ztrace["color"] = (255, 255, 0)
+        if type(series_data["ztraces"]) is list:
+            ztraces_dict = {}
+            for ztrace in series_data["ztraces"]:
+                # check for missing color attribute
+                if "color" not in ztrace:
+                    ztrace["color"] = (255, 255, 0)
+                # convert to dictionary format
+                name = ztrace["name"]
+                ztraces_dict[name] = {}
+                del(ztrace["name"])
+                ztraces_dict[name] = ztrace
+            series_data["ztraces"] = ztraces_dict
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -125,9 +134,9 @@ class Series():
             
         d["current_trace"] = self.current_trace.getDict()
 
-        d["ztraces"] = []
-        for ztrace in self.ztraces:
-            d["ztraces"].append(ztrace.getDict())
+        d["ztraces"] = {}
+        for name in self.ztraces:
+            d["ztraces"][name] = self.ztraces[name].getDict()
             
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
@@ -266,10 +275,10 @@ class Series():
                 obj_name (str): the name of the object to create the ztrace from
                 cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
         """
-        for ztrace in self.ztraces:
-            if obj_name == ztrace.name:
-                self.ztraces.remove(ztrace)
-                break
+        # delete an existing ztrace with the same name
+        if obj_name in self.ztraces:
+            del(self.ztraces[obj_name])
+
         color = None
         # if cross-sectioned object, make one point per section
         if cross_sectioned:
@@ -302,7 +311,7 @@ class Series():
             dt_points.sort()
             points = [dtp[1] for dtp in dt_points]
         
-        self.ztraces.append(Ztrace(obj_name, color, points))
+        self.ztraces[obj_name] = Ztrace(obj_name, color, points)
 
         self.modified = True
         

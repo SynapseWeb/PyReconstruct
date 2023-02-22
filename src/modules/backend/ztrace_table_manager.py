@@ -113,16 +113,25 @@ class ZtraceTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
     
-    def smooth(self, names : list):
+    def smooth(self, names : list, smooth : int, newztrace : bool):
         """Smooth a set of ztraces.
         
             Params:
                 names (list): the names of the ztraces to smooth
+                smooth (int): the smoothing factor
+                newztrace (bool): False if ztrace should be overwritten
         """
         # smooth the ztraces
         for name in names:
-            ztrace = self.series.ztraces[name]
-            ztrace.smooth(self.series)
+            # create a new ztrace if requested
+            if newztrace:
+                ztrace = self.series.ztraces[name].copy()
+                new_name = f"{ztrace.name}_smooth{smooth}"
+                ztrace.name = new_name
+                self.series.ztraces[new_name] = ztrace
+            else:
+                ztrace = self.series.ztraces[name]
+            ztrace.smooth(self.series, smooth)
             # update the table data
             self.data[ztrace.name] = ZtraceTableItem(
                 ztrace,

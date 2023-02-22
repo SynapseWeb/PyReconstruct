@@ -9,16 +9,16 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog, 
-    QMessageBox
+    QFileDialog
 )
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
 
 from modules.backend.ztrace_table_item import ZtraceTableItem
+
 from modules.gui.gui_functions import populateMenuBar, populateMenu, notify
-from modules.gui.dialog import ZtraceDialog
+from modules.gui.dialog import ZtraceDialog, SmoothZtraceDialog
 
 class ZtraceTableWidget(QDockWidget):
 
@@ -231,7 +231,13 @@ class ZtraceTableWidget(QDockWidget):
         if not names:
             return
         
-        self.manager.smooth(names)
+        response, confirmed = SmoothZtraceDialog(self).exec()
+        if not confirmed:
+            return
+        
+        smooth, newztrace = response
+        
+        self.manager.smooth(names, smooth, newztrace)
     
     def addTo3D(self, event=None):
         """Add the ztrace to the 3D scene."""

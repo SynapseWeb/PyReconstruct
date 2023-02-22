@@ -14,6 +14,14 @@ class Ztrace():
         self.color = color
         self.points = points
     
+    def copy(self):
+        """Return a copy of the ztrace object."""
+        return Ztrace(
+            self.name,
+            self.color,
+            self.points.copy()
+        )
+    
     def getDict(self) -> dict:
         """Get a dictionary representation of the object.
         

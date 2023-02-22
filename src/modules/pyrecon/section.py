@@ -451,3 +451,5 @@ class Section():
             x, y = tform.map(x, y, inverted=True)
             # replace point
             ztrace.points[i] = (x, y, snum)
+            # keep track of modified ztrace
+            self.series.modified_ztraces.append(ztrace.name)

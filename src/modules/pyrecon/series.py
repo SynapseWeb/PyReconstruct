@@ -65,6 +65,7 @@ class Series():
 
         # default settings
         self.fill_opacity = 0.2
+        self.modified_ztraces = []
 
         # ADDED SINCE JAN 25TH
 

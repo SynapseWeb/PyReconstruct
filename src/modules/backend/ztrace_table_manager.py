@@ -20,17 +20,16 @@ class ZtraceTableManager():
         self.loadSeries()
     
     def loadSeries(self):
-        """Load the secion thicknesses and transforms from the series."""
+        """Load the section thicknesses and transforms from the series."""
         # load the transforms and section heights
         self.tforms = {}
         self.section_heights = {}
         height = 0
         for snum in sorted(self.series.sections.keys()):
-            section = self.series.loadSection(snum)
-            tform = section.tforms[self.series.alignment]
+            tform = self.series.section_tforms[snum][self.series.alignment]
             self.tforms[snum] = tform
             self.section_heights[snum] = height
-            height += section.thickness
+            height += self.series.section_thicknesses[snum]
         
         # load the ztrace data
         self.data = {}
@@ -45,7 +44,7 @@ class ZtraceTableManager():
         """Refresh the series data."""
         self.loadSeries()
         for table in self.tables:
-            table.createTable(self.data)
+            self.updateTable(table)
     
     def newTable(self):
         """Create a new ztrace list."""
@@ -66,6 +65,22 @@ class ZtraceTableManager():
         """
         table.createTable(self.data)
     
+    def updateZtraces(self, ztrace_names : list):
+        """Update the data for a set of ztraces.
+        
+            Params:
+                ztrace_names (str): the names of the ztraces to update
+        """
+        # load the ztrace data
+        for name in ztrace_names:
+            self.data[name] = ZtraceTableItem(
+                self.series.ztraces[name],
+                self.tforms,
+                self.section_heights
+            )
+        for table in self.tables:
+            self.updateTable(table)
+
     # MENU-REALTED FUNCTIONS
 
     def editAttributes(self, name : str, new_name : str, new_color : tuple):

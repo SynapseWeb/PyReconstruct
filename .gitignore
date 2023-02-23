@@ -9,3 +9,4 @@ testing/
 misc/legacy_recon_src/
 backend_series/
 .DS_Store
+run_julian.bat

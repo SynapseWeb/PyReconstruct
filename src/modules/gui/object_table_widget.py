@@ -151,11 +151,11 @@ class ObjectTableWidget(QDockWidget):
             None,
             {
                 "attr_name": "ztrace_menu",
-                "text": "Ztrace",
+                "text": "Create ztrace",
                 "opts":
                 [
-                    ("csztrace_act", "Create cross-sectioned ztrace", "", self.createZtrace),
-                    ("atztrace_act", "Create ztrace from each traces", "", lambda : self.createZtrace(cross_sectioned=False)),
+                    ("csztrace_act", "On contour midpoints", "", self.createZtrace),
+                    ("atztrace_act", "From trace history", "", lambda : self.createZtrace(cross_sectioned=False)),
                 ]
             },
             None,

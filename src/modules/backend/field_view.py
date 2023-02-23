@@ -132,9 +132,10 @@ class FieldView():
 
         # get the last undo state
         section_states = self.series_states[self.series.current_section]
-        modified_contours, modified_ztraces = section_states.undoState(self.section, self.series)
-        if modified_contours is None:
+        modified_data = section_states.undoState(self.section, self.series)
+        if modified_data is None:
             return
+        modified_contours, modified_ztraces = modified_data
         
         # update the object table
         if self.obj_table_manager:
@@ -166,9 +167,10 @@ class FieldView():
 
         # get the last redo state
         section_states = self.series_states[self.series.current_section]
-        modified_contours, modified_ztraces = section_states.redoState(self.section, self.series)
-        if modified_contours is None:
+        modified_data = section_states.redoState(self.section, self.series)
+        if modified_data is None:
             return
+        modified_contours, modified_ztraces = modified_data
         
         # update the object table
         if self.obj_table_manager:
@@ -421,6 +423,8 @@ class FieldView():
         # refresh all of the tables
         if self.obj_table_manager:
             self.obj_table_manager.refresh()
+        else:
+            self.series.gatherSectionData()
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
         if self.ztrace_table_manager:
@@ -504,6 +508,10 @@ class FieldView():
         self.hide_trace_layer = not self.hide_trace_layer
         if self.hide_trace_layer:
             self.show_all_traces = False
+            # remove hidden traces that were selected
+            for trace in self.section.selected_traces:
+                if trace.hidden:
+                    self.section.selected_traces.remove(trace)
         self.generateView(generate_image=False)
     
     def toggleShowAllTraces(self):
@@ -511,6 +519,11 @@ class FieldView():
         self.show_all_traces = not self.show_all_traces
         if self.show_all_traces:
             self.hide_trace_layer = False
+        # remove hidden traces that were selected
+        else:
+            for trace in self.section.selected_traces:
+                if trace.hidden:
+                    self.section.selected_traces.remove(trace)
         self.generateView(generate_image=False)
     
     def linearAlign(self):

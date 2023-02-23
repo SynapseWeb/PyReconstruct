@@ -147,7 +147,7 @@ class TraceLayer():
                 log_message (str): the log message for the new trace action
                 origin_traces (list): the traces that the new trace came from (used in the cases of merging and cutting; keeps track of history)
         """
-        if len(pix_trace) < 1:  # do not create a new trace if there is only one point
+        if len(pix_trace) < 2:  # do not create a new trace if there is only one point
             return
         if closed:
             pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)

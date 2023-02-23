@@ -179,16 +179,21 @@ class SectionTableWidget(QDockWidget):
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) != 1:
             return
-        return int(self.table.item(selected_indeces[0].row(), 0).text())
+        text = self.table.item(selected_indeces[0].row(), 0).text()
+        n = int(text.split()[0])  # check for calgrid text
+        return n
     
     def getSelectedSections(self):
         """Get the trace items that iare selected by the user."""
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
             return
-        return [
-            int(self.table.item(i.row(), 0).text()) for i in selected_indeces
-        ]    
+        n_list = []
+        for i in selected_indeces:
+            text = self.table.item(i.row(), 0).text()
+            n = int(text.split()[0])
+            n_list.append(n)
+        return n_list
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""

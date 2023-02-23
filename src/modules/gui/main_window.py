@@ -226,16 +226,20 @@ class MainWindow(QMainWindow):
         field_menu_list = [
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
-            ("hideall_act", "Toggle hide all traces", "H", self.field.toggleHideAllTraces),
-            ("showall_act", "Toggle show all traces", "A", self.field.toggleShowAllTraces),
+            None,
+            ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
+            ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
+            None,
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
-            ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
+            None,
+            ("blend_act", "Toggle blend", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
 
         trace_menu_list = [
             ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
+            None,
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
             ("deletetraces_act", "Delete traces", "Del", self.field.backspace),
@@ -397,9 +401,11 @@ class MainWindow(QMainWindow):
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
             
-            response = self.saveToJser(notify=True)
-            if response == "cancel":
-                return
+            # user has opened an existing series
+            if self.series:
+                response = self.saveToJser(notify=True)
+                if response == "cancel":
+                    return
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)

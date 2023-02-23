@@ -78,11 +78,20 @@ class Section():
             section_data["brightness"] = 0
         section_data["contrast"] = int(section_data["contrast"])
 
-        # modify traces and delete name
+        empty_contours = []
         for cname in section_data["contours"]:
             for trace in section_data["contours"][cname]:
+                # check for empty traces
+                if len(trace["x"]) < 2:
+                    section_data["contours"][cname].remove(trace)
+                # modify traces and delete name
                 if "name" in trace:
                     del(trace["name"])
+            # check for empty contours
+            if len(section_data["contours"][cname]) == 0:
+                empty_contours.append(cname)
+        for cname in empty_contours:
+            del(section_data["contours"][cname])
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.

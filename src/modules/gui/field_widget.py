@@ -461,6 +461,7 @@ class FieldWidget(QWidget, FieldView):
         """
         self.mouse_x = event.x()
         self.mouse_y = event.y()
+        self.click_time = time.time()
 
         # ignore ALL finger touch for windows
         if os.name == "nt":
@@ -629,7 +630,7 @@ class FieldWidget(QWidget, FieldView):
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
         # left button is down and user clicked on a trace
-        if self.lclick and (
+        if self.lclick and time.time() - self.click_time > 0.3 and (
             self.is_moving_trace or 
             self.selected_trace in self.section.selected_traces or
             self.selected_trace in self.section.selected_ztraces
@@ -703,8 +704,19 @@ class FieldWidget(QWidget, FieldView):
     
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
+        # user single-clicked a trace
+        if ((time.time() - self.click_time <= 0.3) and 
+        self.lclick and self.selected_trace
+        ):
+            # if user selected a normal trace
+            if type(self.selected_trace) is Trace:
+                self.selectTrace(self.selected_trace)
+            # if user selected a ztrace
+            elif type(self.selected_trace)is tuple:
+                self.selectZtrace(self.selected_trace)
+        
         # user moved traces
-        if self.lclick and self.is_moving_trace:
+        elif self.lclick and self.is_moving_trace:
             # unhide the traces
             self.section.temp_hide = []
             # save the traces in their final position
@@ -719,20 +731,11 @@ class FieldWidget(QWidget, FieldView):
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
             selected_traces, selected_ztraces = self.section_layer.getTraces(self.selection_trace)
-            if selected_traces:
+            if selected_traces or selected_ztraces:
                 self.selectTraces(selected_traces, selected_ztraces)
             else:
                 self.field_pixmap = self.field_pixmap_copy.copy()
                 self.update()
-
-        # user single-clicked a trace
-        elif self.lclick and self.selected_trace:
-            # if user selected a normal trace
-            if type(self.selected_trace) is Trace:
-                self.selectTrace(self.selected_trace)
-            # if user selected a ztrace
-            else:
-                self.selectZtrace(self.selected_trace)
     
     def eraserMove(self, event):
         """Called when the user is erasing."""
@@ -873,7 +876,6 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.linePress(event)
         else:
-            self.click_time = time.time()
             self.last_x = event.x()
             self.last_y = event.y()
             self.current_trace = [(self.last_x, self.last_y)]
@@ -891,7 +893,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time < 0.01):
+        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= 0.3):
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing

@@ -280,7 +280,8 @@ class Series():
             del(self.ztraces[obj_name])
 
         color = None
-        # if cross-sectioned object, make one point per section
+        
+        # if cross-sectioned object (if create on midpoints), make one point per section
         if cross_sectioned:
             points = []
             for snum, section in self.enumerateSections(
@@ -291,8 +292,9 @@ class Series():
                     contour = section.contours[obj_name]
                     p = (*contour.getMidpoint(), snum)
                     points.append(p)
-        # if not cross-sectioned, make points by trace history
-        # each trace gets its own point, ztrace points are in chronological order
+                    
+        # otherwise, make points by trace history
+        # each trace gets its own point, ztrace points are in chronological order based on trace history
         else:
             dt_points = []
             for snum, section in self.enumerateSections(

@@ -3,6 +3,7 @@ from PySide6.QtGui import QPainter
 from modules.pyrecon.series import Series
 from modules.pyrecon.transform import Transform
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 
 from modules.backend.section_layer import SectionLayer
 from modules.backend.state_manager import SectionStates
@@ -26,7 +27,7 @@ class FieldView():
         self.section = self.series.loadSection(self.series.current_section)
         # load the section state
         self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section)
+        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
 
         # get image dir
         if self.series.src_dir == "":
@@ -69,9 +70,9 @@ class FieldView():
             self.b_section_layer.section = self.b_section
         # clear all the section states
         self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section)
+        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
         if self.b_section:
-            self.series_states[self.b_section] = SectionStates(self.b_section)
+            self.series_states[self.b_section] = SectionStates(self.b_section, self.series)
         # clear the selected traces
         self.section.selected_traces = []
         if self.b_section:
@@ -95,7 +96,7 @@ class FieldView():
         """
         # save the current state
         section_states = self.series_states[self.series.current_section]
-        section_states.addState(self.section)
+        section_states.addState(self.section, self.series)
 
         # update the object table
         if self.obj_table_manager:
@@ -108,8 +109,13 @@ class FieldView():
         if self.trace_table_manager:
             self.trace_table_manager.update()
         
+        # update the ztrace table
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.updateZtraces(self.series.modified_ztraces)
+        
         # clear the tracked added/removed traces
         self.section.clearTracking()
+        self.series.modified_ztraces = []
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
@@ -122,10 +128,11 @@ class FieldView():
         
         # clear selected straces
         self.section.selected_traces = []
+        self.section.selected_ztraces = []
 
         # get the last undo state
         section_states = self.series_states[self.series.current_section]
-        modified_contours = section_states.undoState(self.section)
+        modified_contours, modified_ztraces = section_states.undoState(self.section, self.series)
         if modified_contours is None:
             return
         
@@ -137,6 +144,9 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+        # update the ztrace table
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.updateZtraces(modified_ztraces)
             
         # update the trace table
         if self.trace_table_manager:
@@ -152,10 +162,11 @@ class FieldView():
         
         # clear the selected traces
         self.section.selected_traces = []
+        self.section.selected_ztraces = []
 
         # get the last redo state
         section_states = self.series_states[self.series.current_section]
-        modified_contours = section_states.redoState(self.section)
+        modified_contours, modified_ztraces = section_states.redoState(self.section, self.series)
         if modified_contours is None:
             return
         
@@ -167,6 +178,9 @@ class FieldView():
                     self.section,
                     self.series.current_section
                 )
+        # update the ztrace table
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.updateZtraces(modified_ztraces)
             
         # update the trace table
         if self.trace_table_manager:
@@ -242,7 +256,7 @@ class FieldView():
         
         # create section undo/redo state object if needed
         if new_section_num not in self.series_states:
-            self.series_states[new_section_num] = SectionStates(self.section)
+            self.series_states[new_section_num] = SectionStates(self.section, self.series)
         
         # reload trace list
         if self.trace_table_manager:
@@ -354,7 +368,25 @@ class FieldView():
 
         self.generateView(generate_image=False)
     
-    def selectTraces(self, traces : list[Trace]):
+    def selectZtrace(self, ztrace_i : tuple):
+        """Select/deselect a single ztrace point.
+        
+            Params:
+                ztrace_i (tuple): the ztrace, index of point selected
+        """
+        # disbale if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        
+        # check if ztrace point has been selected
+        if ztrace_i in self.section.selected_ztraces:
+            self.section.selected_ztraces.remove(ztrace_i)
+        else:
+            self.section.selected_ztraces.append(ztrace_i)
+        
+        self.generateView(generate_image=False)            
+    
+    def selectTraces(self, traces : list[Trace], ztraces_i : list):
         """Select/deselect a set of traces.
         
             Params:
@@ -363,16 +395,13 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        
-        traces_to_add = []
+
         for trace in traces:
             if trace not in self.section.selected_traces:
-                traces_to_add.append(trace)
-        if traces_to_add:
-            self.section.selected_traces += traces_to_add
-        else:
-            for trace in traces:
-                self.section.selected_traces.remove(trace)
+                self.section.selected_traces.append(trace)
+        for ztrace_i in ztraces_i:
+            if ztrace_i not in self.section.selected_ztraces:
+                self.section.selected_ztraces.append(ztrace_i)
             
         self.generateView(generate_image=False)
     
@@ -416,7 +445,7 @@ class FieldView():
                 dx (float): x-translate
                 dy (float): y-translate
         """
-        if self.section.selected_traces:
+        if self.section.selected_traces or self.section.selected_ztraces:
             self.section.translateTraces(dx, dy)
             self.generateView()
             self.saveState()
@@ -706,6 +735,11 @@ class FieldView():
             self.stored_tform = dtform * self.stored_tform
 
         self.section_layer.changeTform(new_tform)
+
+        # refresh the ztrace list
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.refresh()
+        
         self.saveState()
         self.generateView()
     

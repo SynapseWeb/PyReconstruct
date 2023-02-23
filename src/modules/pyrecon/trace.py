@@ -229,7 +229,7 @@ class Trace():
         """Get the most extreme coordinates for the trace.
         
             Params:
-                tform (QTransform): optional parameter to find extremeties of transformed trace
+                tform (Transform): optional parameter to find extremeties of transformed trace
             Returns:
                 (float) min x value
                 (float) min y value
@@ -245,6 +245,17 @@ class Trace():
             y = [p[1] for p in tform_points]
         
         return min(x), min(y), max(x), max(y)
+    
+    def getMidpoint(self, tform : Transform = None) -> tuple:
+        """Get the midpoint of the trace (avg of extremes).
+        
+            Params:
+                tform (Transform): transform to apply to calculation
+            Returns:
+                (tuple) x, y of midpoint
+        """
+        xmin, ymin, xmax, ymax = self.getBounds(tform)
+        return (xmin + xmax) / 2, (ymin + ymax) / 2
     
     def getRadius(self, tform : Transform = None):
         """Get the distance from the centroid of the trace to its farthest point.

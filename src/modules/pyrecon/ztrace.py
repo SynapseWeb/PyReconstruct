@@ -1,14 +1,26 @@
+from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
+
 class Ztrace():
 
-    def __init__(self, name : str, points : list = []):
+    def __init__(self, name : str, color : tuple, points : list = []):
         """Create a new ztrace.
         
             Params:
                 name (str): the name of the ztrace
+                color (tuple): the display color of the ztrace
                 points (list): the points for the trace (x, y, section)
         """
         self.name = name
+        self.color = color
         self.points = points
+    
+    def copy(self):
+        """Return a copy of the ztrace object."""
+        return Ztrace(
+            self.name,
+            self.color,
+            self.points.copy()
+        )
     
     def getDict(self) -> dict:
         """Get a dictionary representation of the object.
@@ -17,27 +29,110 @@ class Ztrace():
                 (dict): the dictionary representation of the object
         """
         d = {}
-        d["name"] = self.name
+        d["color"] = self.color
         d["points"] = self.points.copy()
         return d
     
-    def fromDict(d):
+    # STATIC METHOD
+    def dictFromXMLObj(xml_ztrace : XMLZContour):
+        """Create a trace from an xml contour object.
+        
+            Params:
+                xml_trace (XMLContour): the xml contour object
+                xml_image_tform (XMLTransform): the xml image transform object
+            Returns:
+                (Trace) the trace object
+        """
+        # get basic attributes
+        name = xml_ztrace.name
+        color = list(xml_ztrace.border)
+        for i in range(len(color)):
+            color[i] = int(color[i] * 255)
+        new_ztrace = Ztrace(name, color)
+        new_ztrace.points = xml_ztrace.points.copy()
+        
+        return new_ztrace.getDict()
+    
+    # STATIC METHOD
+    def fromDict(name, d):
         """Create the object from a dictionary.
         
             Params:
                 d (dict): the dictionary representation of the object
         """
-        ztrace = Ztrace(d["name"])
-        ztrace.points = d["points"]
+        ztrace = Ztrace(name, d["color"], d["points"])
         return ztrace
     
-    def smooth(self, smooth=10):
-        """Smooth a ztrace."""
+    def getSectionData(self, series, section):
+        """Get all the ztrace points on a section.
+        
+            Params:
+                series (Series): the series object
+                section (Section): the main section object
+            Returns:
+                (list): list of points
+                (list): list of lines between points
+        """
+        # transform all points to field coordinates
+        tformed_pts = []
+        for pt in self.points:
+            x, y, snum = pt
+            if pt[2] == section.n:
+                tform = section.tforms[series.alignment]
+            else:
+                tform = series.section_tforms[pt[2]][series.alignment]
+            x, y = tform.map(x, y)
+            tformed_pts.append((x, y, snum))
+        
+        pts = []
+        lines = []
+        for i, pt in enumerate(tformed_pts):
+            # add point to list if on section
+            if pt[2] == section.n:
+                pts.append(pt[:2])
+            
+            # check for lines to draw
+            if i > 0:
+                prev_pt = tformed_pts[i-1]
+                if prev_pt[2] <= pt[2]:
+                    p1, p2 = prev_pt, pt
+                else:
+                    p2, p1 = prev_pt, pt 
+                if p1[2] <= section.n <= p2[2]:
+                    segments = p2[2] - p1[2] + 1
+                    x_inc = (p2[0] - p1[0]) / segments
+                    y_inc = (p2[1] - p1[1]) / segments
+                    segment_i = section.n - p1[2]
+                    lines.append((
+                        (
+                            p1[0] + segment_i*x_inc,
+                            p1[1] + segment_i*y_inc
+                        ),
+                        (
+                            p1[0] + (segment_i+1)*x_inc,
+                            p1[1] + (segment_i+1)*y_inc
+                        )
+                    ))
+        
+        return pts, lines
 
+    def smooth(self, series, smooth=10):
+        """Smooth z-trace (based on legacy Reconstruct algorithm).
+        
+            Params:
+                series (Series): the series object (contains transform data)
+                smooth (int): the smoothing factor
+        """
+        # transform the points
+        points = []
+        for pt in self.points:
+            x, y, snum = pt
+            tform = series.section_tforms[snum][series.alignment]
+            x, y = tform.map(x, y)
+            points.append([x, y, snum])
+        
         x = [None] * smooth
         y = [None] * smooth
-
-        points = [[p[0], p[1]] for p in self.points]
 
         pt_idx = 0
         p = points[pt_idx]
@@ -88,12 +183,11 @@ class Ztrace():
                 
             xMA += (x[smooth-1] - old_x) / smooth
             yMA += (y[smooth-1] - old_y) / smooth
-
-        # Update self.points
-        for i, p in enumerate(points):
-            save_point_old = self.points[i]
-            current_sec = self.points[i][2]
-            self.points[i] = (p[0], p[1], current_sec)
-            print(f'old: {save_point_old} new: {self.points[i]}')
-
-        return None
+        
+        # reverse-transform the points
+        self.points = []
+        for pt in points:
+            x, y, snum = pt
+            tform = series.section_tforms[snum][series.alignment]
+            x, y = tform.map(x, y, inverted=True)
+            self.points.append((x, y, snum))

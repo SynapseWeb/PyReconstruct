@@ -4,6 +4,7 @@ import json
 from modules.pyrecon.ztrace import Ztrace
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.transform import Transform
 
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
@@ -47,22 +48,48 @@ class Series():
             self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
 
         self.current_trace = Trace.fromDict(series_data["current_trace"])
-        self.ztraces = series_data["ztraces"]
 
-        for i in range(len(self.ztraces)):
-            self.ztraces[i] = Ztrace.fromDict(self.ztraces[i])
+        self.ztraces = series_data["ztraces"]
+        for name in self.ztraces:
+            self.ztraces[name] = Ztrace.fromDict(name, self.ztraces[name])
 
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
         self.backup_dir = series_data["backup_dir"]
 
+        # keep track of transforms, mags, and section thicknesses
+        self.section_tforms = {}
+        self.section_mags = {}
+        self.section_thicknesses = {}
+
         # default settings
         self.fill_opacity = 0.2
+        self.modified_ztraces = []
 
         # ADDED SINCE JAN 25TH
 
         self.options = series_data["options"]
+
+        # gather thickness, mag, and tforms for each section
+        self.gatherSectionData()
+    
+    def gatherSectionData(self):
+        """Get the mag, thickness, and transforms from each section."""
+        # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
+        for n, section in self.sections.items():
+            filepath = os.path.join(
+                self.getwdir(),
+                section
+            )
+            with open(filepath, "r") as f:
+                section_json = json.load(f)
+            self.section_thicknesses[n] = section_json["thickness"]
+            self.section_mags[n] = section_json["mag"]
+            tforms = {}
+            for a in section_json["tforms"]:
+                tforms[a] = Transform(section_json["tforms"][a])
+            self.section_tforms[n] = tforms
     
     # STATIC METHOD
     def updateJSON(series_data):
@@ -71,6 +98,23 @@ class Series():
         for key in empty_series:
             if key not in series_data:
                 series_data[key] = empty_series[key]
+        for key in empty_series["options"]:
+            if key not in series_data["options"]:
+                series_data["options"][key] = empty_series["options"][key]
+        
+        # check the ztraces
+        if type(series_data["ztraces"]) is list:
+            ztraces_dict = {}
+            for ztrace in series_data["ztraces"]:
+                # check for missing color attribute
+                if "color" not in ztrace:
+                    ztrace["color"] = (255, 255, 0)
+                # convert to dictionary format
+                name = ztrace["name"]
+                ztraces_dict[name] = {}
+                del(ztrace["name"])
+                ztraces_dict[name] = ztrace
+            series_data["ztraces"] = ztraces_dict
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -90,10 +134,10 @@ class Series():
             d["palette_traces"].append(trace.getDict())
             
         d["current_trace"] = self.current_trace.getDict()
-        d["ztraces"] = []
-        
-        for ztrace in self.ztraces:
-            d["ztraces"].append(ztrace.getDict())
+
+        d["ztraces"] = {}
+        for name in self.ztraces:
+            d["ztraces"][name] = self.ztraces[name].getDict()
             
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
@@ -132,6 +176,7 @@ class Series():
         options["small_dist"] = 0.01
         options["med_dist"] = 0.1
         options["big_dist"] = 1
+        options["show_ztraces"] = True
 
         return series_data
     
@@ -199,7 +244,12 @@ class Series():
             Params:
                 section_num (int): the section number
         """
-        return Section(section_num, self)
+        section = Section(section_num, self)
+        # update transform data
+        self.section_tforms[section.n] = section.tforms
+        self.section_mags[section.n] = section.mag
+        self.section_thicknesses[section.n] = section.thickness
+        return section
     
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
         """Allow iteration through the sections."""
@@ -219,24 +269,52 @@ class Series():
         
         self.modified = True
     
-    def createZtrace(self, obj_name : str):
+    def createZtrace(self, obj_name : str, cross_sectioned=True):
         """Create a ztrace from an existing object in the series.
         
             Params:
                 obj_name (str): the name of the object to create the ztrace from
+                cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
         """
-        for ztrace in self.ztraces:
-            if obj_name == ztrace.name:
-                self.ztraces.remove(ztrace)
-                break
-        points = []
-        for snum in sorted(self.sections.keys()):
-            section = self.loadSection(snum)
-            if obj_name in section.contours:
-                contour = section.contours[obj_name]
-                p = (*contour.getMidpoint(), snum)
-                points.append(p)
-        self.ztraces.append(Ztrace(obj_name, points))
+        # delete an existing ztrace with the same name
+        if obj_name in self.ztraces:
+            del(self.ztraces[obj_name])
+
+        color = None
+        
+        # if cross-sectioned object (if create on midpoints), make one point per section
+        if cross_sectioned:
+            points = []
+            for snum, section in self.enumerateSections(
+                show_progress=False
+            ):
+                if obj_name in section.contours:
+                    if not color: color = section.contours[obj_name][0].color
+                    contour = section.contours[obj_name]
+                    p = (*contour.getMidpoint(), snum)
+                    points.append(p)
+                    
+        # otherwise, make points by trace history
+        # each trace gets its own point, ztrace points are in chronological order based on trace history
+        else:
+            dt_points = []
+            for snum, section in self.enumerateSections(
+                show_progress=False
+            ):
+                if obj_name in section.contours:
+                    contour = section.contours[obj_name]
+                    for trace in contour:
+                        if not color: color = trace.color
+                        # get the trace creation datetime
+                        dt = trace.history[0].dt
+                        # get the midpoint
+                        p = (*trace.getMidpoint(), snum)
+                        dt_points.append((dt, p))
+            # sort the points by datetime
+            dt_points.sort()
+            points = [dtp[1] for dtp in dt_points]
+        
+        self.ztraces[obj_name] = Ztrace(obj_name, color, points)
 
         self.modified = True
         

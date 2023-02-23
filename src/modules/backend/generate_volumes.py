@@ -1,3 +1,5 @@
+import pyqtgraph.opengl as gl
+
 from modules.backend.objects_3D import Surface, Spheres
 
 from modules.pyrecon.series import Series
@@ -91,3 +93,48 @@ def addToExtremes(extremes, new_extremes):
         if ne[5] > e[5]: e[5] = ne[5]
 
     return e
+
+def generate3DZtraces(series : Series, ztrace_names : list):
+    """Generate the 3D points for the ztraces
+    
+        Params:
+            series (Series): the series object
+            ztraces_names (list): the list of ztraces to plot
+        Return:
+            (list): the sets of 3D points for each ztrace
+    """
+    # get the ztraces of interest
+    ztraces = []
+    for name in ztrace_names:
+        ztraces.append(series.ztraces[name])
+    
+    # ASSUME UNIFORM SECTION THICKNESS
+    avg_thickness = 0
+    for s, t in series.section_thicknesses.items():
+        avg_thickness += t
+    avg_thickness /= len(series.section_thicknesses)
+    
+    ztrace_items = []
+    for ztrace in ztraces:
+        points = []
+        for pt in ztrace.points:
+            x, y, snum = pt
+            z = snum * avg_thickness
+            # transform point
+            tform = series.section_tforms[snum][series.alignment]
+            x, y = tform.map(x, y)
+            points.append((x, y, z))
+        ztrace_items.append(
+            gl.GLLinePlotItem(
+                pos=points,
+                color=[c/255 for c in ztrace.color]+[1],
+                width=2,
+                glOptions="translucent"
+            )
+        )
+    
+    return ztrace_items
+        
+
+
+        

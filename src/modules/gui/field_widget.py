@@ -336,10 +336,17 @@ class FieldWidget(QWidget, FieldView):
             # display the closest trace in the field
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
-                if closest_trace:
+                # user hovered over trace
+                if type(closest_trace) is Trace:
                     ct = "Nearest trace: " + closest_trace.name
                     if closest_trace.negative:
                         ct += " (negative)"
+                    self.status_list.append(ct)
+                # user hovered over ztrace
+                elif type(closest_trace) is tuple:
+                    ztrace, i = closest_trace
+                    ct = "Nearest trace: " + ztrace.name
+                    ct += " (ztrace)"
                     self.status_list.append(ct)
             
             # display the distance between the current position and the last point if line tracing
@@ -624,19 +631,31 @@ class FieldWidget(QWidget, FieldView):
         # left button is down and user clicked on a trace
         if self.lclick and (
             self.is_moving_trace or 
-            self.selected_trace in self.section.selected_traces
+            self.selected_trace in self.section.selected_traces or
+            self.selected_trace in self.section.selected_ztraces
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
                 # get pixel points
                 self.moving_traces = []
+                self.moving_points = []
                 for trace in self.section.selected_traces:
-                    moving_trace = trace.copy()
+                    # hide the trace
+                    self.section.temp_hide.append(trace)
+                    # get points and other data
                     pix_points = self.section_layer.traceToPix(trace)
-                    moving_trace.points = pix_points
-                    self.moving_traces.append(moving_trace)
-                # remove the traces
-                self.section.deleteTraces()
+                    color = trace.color
+                    closed = trace.closed
+                    self.moving_traces.append((pix_points, color, closed))
+                for ztrace, i in self.section.selected_ztraces:
+                    # hide the ztrace
+                    self.section.temp_hide.append(ztrace)
+                    # get points and other data
+                    point = ztrace.points[i][:2]
+                    pix_point = self.section_layer.pointToPix(point)
+                    color = ztrace.color
+                    self.moving_points.append((pix_point, color))
+
                 self.generateView(update=False)
 
             dx = event.x() - self.clicked_x
@@ -644,18 +663,24 @@ class FieldWidget(QWidget, FieldView):
             self.field_pixmap = self.field_pixmap_copy.copy()
             # redraw the traces with translatation
             painter = QPainter(self.field_pixmap)
-            for trace in self.moving_traces:
-                painter.setPen(QPen(QColor(*trace.color), 1))
-                plot_points = [QPoint(x+dx, y+dy) for x,y in trace.points]
-                if trace.closed:
+            for points, color, closed in self.moving_traces:
+                painter.setPen(QPen(QColor(*color), 1))
+                plot_points = [QPoint(x+dx, y+dy) for x,y in points]
+                if closed:
                     painter.drawPolygon(plot_points)
                 else:
                     painter.drawPolyline(plot_points)
+            # redraw points with translation
+            for (x, y), color in self.moving_points:
+                painter.setPen(QPen(QColor(*color), 6))
+                qpoint = QPoint(x+dx, y+dy)
+                painter.drawPoint(qpoint)
             painter.end()
             
             self.update()
 
         # no trace was clicked on OR user clicked on unselected trace
+        # draw lasso for selecting traces
         elif self.lclick:
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
@@ -680,29 +705,34 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in pointer mode."""
         # user moved traces
         if self.lclick and self.is_moving_trace:
+            # unhide the traces
+            self.section.temp_hide = []
             # save the traces in their final position
             self.is_moving_trace = False
-            dx = event.x() - self.clicked_x
-            dy = event.y() - self.clicked_y
-            for trace in self.moving_traces:
-                pix_points = [(x+dx, y+dy) for x,y in trace.points]
-                self.section_layer.newTrace(pix_points, trace, closed=trace.closed)
+            dx = (event.x() - self.clicked_x) * self.series.screen_mag
+            dy = (event.y() - self.clicked_y) * self.series.screen_mag * -1
+            self.section.translateTraces(dx, dy)
             self.generateView()
             self.saveState()
         
-        # user selected an area of traces
+        # user selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
-            selected_traces = self.section_layer.getTraces(self.selection_trace)
+            selected_traces, selected_ztraces = self.section_layer.getTraces(self.selection_trace)
             if selected_traces:
-                self.selectTraces(selected_traces)
+                self.selectTraces(selected_traces, selected_ztraces)
             else:
                 self.field_pixmap = self.field_pixmap_copy.copy()
                 self.update()
 
         # user single-clicked a trace
         elif self.lclick and self.selected_trace:
-            self.selectTrace(self.selected_trace)
+            # if user selected a normal trace
+            if type(self.selected_trace) is Trace:
+                self.selectTrace(self.selected_trace)
+            # if user selected a ztrace
+            else:
+                self.selectZtrace(self.selected_trace)
     
     def eraserMove(self, event):
         """Called when the user is erasing."""

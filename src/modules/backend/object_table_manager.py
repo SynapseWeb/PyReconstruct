@@ -367,18 +367,24 @@ class ObjectTableManager():
         
         HistoryWidget(self.mainwindow, output_str)
     
-    def createZtrace(self, obj_names : list):
+    def createZtrace(self, obj_names : list, cross_sectioned : bool):
         """Create ztraces from a set of objects.
         
             Params:
                 obj_names (list): the objects to create ztraces for
+                croess_sectioned (bool): True if object is cross-sectioned
         """
         self.mainwindow.saveAllData()
 
         for name in obj_names:
-            self.series.createZtrace(name)
+            self.series.createZtrace(name, cross_sectioned)
+
+        # update the ztrace table if one exists
+        if self.mainwindow.field.ztrace_table_manager:
+            self.mainwindow.field.ztrace_table_manager.refresh()
         
         self.mainwindow.seriesModified(True)
+        self.mainwindow.field.reload()
     
     def close(self):
         """Close all tables."""

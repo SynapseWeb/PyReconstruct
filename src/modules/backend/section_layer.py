@@ -36,6 +36,9 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
         """
+        # set the series screen mag
+        self.series.screen_mag = window[2] / pixmap_dim[0]
+
         # generate image
         if generate_image:
             self.image_layer = self.generateImageLayer(pixmap_dim, window)

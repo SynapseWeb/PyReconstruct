@@ -1,3 +1,4 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 # Table of Contents
 
@@ -215,7 +216,7 @@ If you'd like to uninstall PyReconstruct, simply delete the entire PyReconstruct
 
 If you followed the steps above to automatically install dependencies, start PyReconstruct by finding your operating system's `run` script in the `launch` subdirectory of your local repository.
 
-You can right-click on this file and make a shortcut/alias, which can be place anywhere on your machine. (Do not move the actual launch script itself, only the shortcut.)
+You can right-click on this file and make a shortcut/alias, which can be placed anywhere on your machine. (Do not move the actual launch script itself, only the shortcut.)
 
 
 ### After manual installation

@@ -155,7 +155,7 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     ("csztrace_act", "On contour midpoints", "", self.createZtrace),
-                    ("atztrace_act", "From trace history", "", lambda : self.createZtrace(cross_sectioned=False)),
+                    ("atztrace_act", "From trace sequence", "", lambda : self.createZtrace(cross_sectioned=False)),
                 ]
             },
             None,

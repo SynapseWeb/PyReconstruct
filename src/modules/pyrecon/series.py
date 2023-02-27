@@ -294,7 +294,7 @@ class Series():
                     p = (*contour.getMidpoint(), snum)
                     points.append(p)
                     
-        # otherwise, make points by trace history
+        # otherwise, make points by trace history by section
         # each trace gets its own point, ztrace points are in chronological order based on trace history
         else:
             dt_points = []
@@ -309,10 +309,10 @@ class Series():
                         dt = trace.history[0].dt
                         # get the midpoint
                         p = (*trace.getMidpoint(), snum)
-                        dt_points.append((dt, p))
+                        dt_points.append((snum, dt, p))
             # sort the points by datetime
             dt_points.sort()
-            points = [dtp[1] for dtp in dt_points]
+            points = [dtp[2] for dtp in dt_points]
         
         self.ztraces[obj_name] = Ztrace(obj_name, color, points)
 

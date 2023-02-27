@@ -630,7 +630,7 @@ class FieldWidget(QWidget, FieldView):
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
         # left button is down and user clicked on a trace
-        if self.lclick and time.time() - self.click_time > 0.3 and (
+        if self.lclick and time.time() - self.click_time > 0.1 and (
             self.is_moving_trace or 
             self.selected_trace in self.section.selected_traces or
             self.selected_trace in self.section.selected_ztraces
@@ -682,7 +682,7 @@ class FieldWidget(QWidget, FieldView):
 
         # no trace was clicked on OR user clicked on unselected trace
         # draw lasso for selecting traces
-        elif self.lclick:
+        elif self.lclick and time.time() - self.click_time > 0.1:
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
                 # create list
@@ -705,7 +705,7 @@ class FieldWidget(QWidget, FieldView):
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
         # user single-clicked a trace
-        if ((time.time() - self.click_time <= 0.3) and 
+        if ((time.time() - self.click_time <= 0.1) and 
         self.lclick and self.selected_trace
         ):
             # if user selected a normal trace
@@ -893,7 +893,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= 0.3):
+        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= 0.1):
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing

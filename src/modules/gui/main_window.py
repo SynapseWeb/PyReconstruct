@@ -567,13 +567,14 @@ class MainWindow(QMainWindow):
     
     def newFromXML(self):
         """Create a new series from a set of XML files."""
-        # save and clear the existing backend series
-        self.saveToJser(notify=True, close=True)
 
         # get xml series filepath from the user
         series_fp, ext = QFileDialog.getOpenFileName(self, "Select XML Series", filter="*.ser")
         if series_fp == "": return  # exit function if user does not provide series
 
+        # save and clear the existing backend series
+        self.saveToJser(notify=True, close=True)
+        
         # convert the series
         series = xmlToJSON(os.path.dirname(series_fp))
         if not series:

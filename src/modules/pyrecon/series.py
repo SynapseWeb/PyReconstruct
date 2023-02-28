@@ -269,6 +269,24 @@ class Series():
         
         self.modified = True
     
+    def getZValues(self):
+        """Return the z-values for each section.
+        
+            Returns:
+                (dict): section number : z-value
+        """
+        # ensure that data is up to date
+        self.gatherSectionData()
+
+        zvals = {}
+        z = 0
+        for snum in sorted(self.section_thicknesses.keys()):
+            t = self.section_thicknesses[snum]
+            z += t
+            zvals[snum] = z
+        
+        return zvals
+    
     def createZtrace(self, obj_name : str, cross_sectioned=True):
         """Create a ztrace from an existing object in the series.
         
@@ -318,7 +336,6 @@ class Series():
 
         self.modified = True
         
-    
     def rename(self, new_name : str):
         """Rename the series.
         

@@ -36,8 +36,7 @@ class ZtraceTableManager():
         for name, ztrace in self.series.ztraces.items():
             self.data[name] = ZtraceTableItem(
                 ztrace,
-                self.tforms,
-                self.section_heights
+                self.series
             )
     
     def refresh(self):
@@ -75,8 +74,7 @@ class ZtraceTableManager():
         for name in ztrace_names:
             self.data[name] = ZtraceTableItem(
                 self.series.ztraces[name],
-                self.tforms,
-                self.section_heights
+                self.series
             )
         for table in self.tables:
             self.updateTable(table)
@@ -135,8 +133,7 @@ class ZtraceTableManager():
             # update the table data
             self.data[ztrace.name] = ZtraceTableItem(
                 ztrace,
-                self.tforms,
-                self.section_heights
+                self.series
             )
         
         for table in self.tables:

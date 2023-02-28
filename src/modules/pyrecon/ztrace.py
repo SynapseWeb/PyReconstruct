@@ -1,5 +1,7 @@
 from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
 
+from modules.calc.quantification import distance3D
+
 class Ztrace():
 
     def __init__(self, name : str, color : tuple, points : list = []):
@@ -52,7 +54,34 @@ class Ztrace():
         new_ztrace.points = xml_ztrace.points.copy()
         
         return new_ztrace.getDict()
-    
+
+    def getXMLObj(self, series):
+        """Convert the ztrace into an XML object.
+        
+            Params:
+                series (Series): the series containing the ztrace
+            Returns:
+                (XMLZContour): the XML zcontour object
+        """
+        tform_pts = []
+        for x, y, snum in self.points:
+            tform = series.section_tforms[snum][series.alignment]
+            pt = (*tform.map(x, y), snum)
+            tform_pts.append(pt)
+        
+        color = [c/255 for c in self.color]
+
+        xml_zcontour = XMLZContour(
+            name = self.name,
+            closed = False,
+            mode = 11,
+            border = color,
+            fill = color,
+            points = tform_pts,
+        )
+
+        return xml_zcontour
+        
     # STATIC METHOD
     def fromDict(name, d):
         """Create the object from a dictionary.
@@ -115,6 +144,31 @@ class Ztrace():
                     ))
         
         return pts, lines
+
+    def getDistance(self, series):
+        """Get the distance of the z-trace.
+        
+            Params:
+                series (Series): the series containing the ztrace
+            Returns:
+                (float): the distance of the ztrace
+        """
+        # get z-values for each section
+        zvals = series.getZValues()
+
+        real_pts = []
+        for x, y, snum in self.points:
+            tform = series.section_tforms[snum][series.alignment]
+            new_pt = (*tform.map(x, y), zvals[snum])
+            real_pts.append(new_pt)
+        
+        dist = 0
+        for i in range(len(real_pts[:-1])):
+            x1, y1, z1 = real_pts[i]
+            x2, y2, z2 = real_pts[i+1]
+            dist += distance3D(x1, y1, z1, x2, y2, z2)
+
+        return dist   
 
     def smooth(self, series, smooth=10):
         """Smooth z-trace (based on legacy Reconstruct algorithm).

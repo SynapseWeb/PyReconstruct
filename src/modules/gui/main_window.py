@@ -169,6 +169,16 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
+                    {
+                        "attr_name": "importmenu",
+                        "text": "Import",
+                        "opts":
+                        [
+                            ("importtraces_act", "Import traces", "", self.importTraces),
+                            ("importzrtraces_act", "Import ztraces", "", self.importZtraces)
+                        ]
+                    },
+                    None,
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag)           
                 ]
             },
@@ -242,7 +252,6 @@ class MainWindow(QMainWindow):
             None,
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
-            ("deletetraces_act", "Delete traces", "Del", self.field.backspace),
             {
                 "attr_name": "negativemenu",
                 "text": "Negative",
@@ -260,11 +269,8 @@ class MainWindow(QMainWindow):
             self.copy_act,
             self.paste_act,
             self.pasteattributes_act,
-            # None,
-            # self.deselect_act,
-            # self.selectall_act,
-            # self.hideall_act,
-            # self.blend_act
+            None,
+            ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
         ]
         self.trace_menu = QMenu(self)
         populateMenu(self, self.trace_menu, trace_menu_list)
@@ -638,6 +644,48 @@ class MainWindow(QMainWindow):
         importTransforms(self.series, tforms_file)
         # reload the section
         self.field.reload()
+    
+    def importTraces(self):
+        """Import traces from another jser series."""
+        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = openJserFile(jser_fp)
+
+        # import the traces and close the other series
+        self.series.importTraces(o_series)
+        clearHiddenSeries(o_series)
+
+        # reload the field to update the traces
+        self.field.reload()
+
+        # refresh the object list if needed
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
+    
+    def importZtraces(self):
+        """Import ztraces from another jser series."""
+        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = openJserFile(jser_fp)
+
+        # import the ztraces and close the other series
+        self.series.importZtraces(o_series)
+        clearHiddenSeries(o_series)
+
+        # reload the field to update the ztraces
+        self.field.reload()
+
+        # refresh the ztrace list if needed
+        if self.field.ztrace_table_manager:
+            self.field.ztrace_table_manager.refresh()
     
     def editImage(self, option : str, direction : str):
         """Edit the brightness or contrast of the image.

@@ -64,9 +64,7 @@ def openJserFile(fp : str):
         update(progress/final_value * 100)
     
     # create and update the series
-    series = Series(series_fp)
-    # load collected data into object
-    series.sections = sections
+    series = Series(series_fp, sections)
     series.jser_fp = fp
     
     return series

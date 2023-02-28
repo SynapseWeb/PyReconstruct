@@ -461,3 +461,17 @@ class Section():
             ztrace.points[i] = (x, y, snum)
             # keep track of modified ztrace
             self.series.modified_ztraces.append(ztrace.name)
+    
+    def importTraces(self, other):
+        """Import the traces from another section.
+        
+            Params:
+                other (Section): the section with traces to import
+        """
+        for cname, contour in other.contours.items():
+            if cname in self.contours:
+                self.contours[cname].importTraces(contour)
+            else:
+                self.contours[cname] = contour.copy()
+        
+        self.save()

@@ -66,6 +66,23 @@ class Trace():
         if self.points != other.points:
             return False
         return True
+
+    def overlaps(self, other):
+        """Check if trace points overlap.
+        
+            Params:
+                other (Trace): the trace to compare
+            Returns:
+                (bool): whether or not trace traces overlap
+        """
+        if len(self.points) != len(other.points):
+            return False
+        
+        for (x1, y1), (x2, y2) in zip(self.points, other.points):
+            if abs(x1-x2) > 1e-6 or abs(y1-y2) > 1e-6:
+                return False
+        
+        return True
     
     def setHidden(self, hidden=True):
         """Set whether the trace is hidden.

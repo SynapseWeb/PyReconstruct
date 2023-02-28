@@ -23,6 +23,14 @@ class Ztrace():
             self.color,
             self.points.copy()
         )
+
+    def overlaps(self, other):
+        """Check if the ztraces have the same set of points."""
+        for (x1, y1, s1), (x2, y2, s2) in zip(self.points, other.points):
+            if s1 != s2 or abs(x1-x2) > 1e-6 or abs(y1-y2) > 1e-6:
+                return False
+        
+        return True
     
     def getDict(self) -> dict:
         """Get a dictionary representation of the object.

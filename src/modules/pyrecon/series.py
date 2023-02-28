@@ -15,11 +15,12 @@ from modules.gui.gui_functions import progbar
 
 class Series():
 
-    def __init__(self, filepath : str):
+    def __init__(self, filepath : str, sections : dict = None):
         """Load the series file.
         
             Params:
                 filepath (str): the filepath for the series JSON file
+                sections (dict): snum : section basename for each section
         """
         self.filepath = filepath
         self.name = os.path.basename(self.filepath)[:-4]
@@ -33,10 +34,13 @@ class Series():
         self.hidden_dir = os.path.dirname(self.filepath)
         self.modified = False
 
-        self.sections = {}  # section number : section file
-
-        for section_num, section_filename in series_data["sections"].items():
-            self.sections[int(section_num)] = section_filename
+        # check for override section dict
+        if sections:
+            self.sections = sections
+        else:
+            self.sections = {}  # section number : section file
+            for section_num, section_filename in series_data["sections"].items():
+                self.sections[int(section_num)] = section_filename
 
         self.current_section = series_data["current_section"]
         self.src_dir = series_data["src_dir"]
@@ -467,7 +471,27 @@ class Series():
                 section.save()
         
         self.modified = True
-
+    
+    def importTraces(self, other):
+        """Import all the traces from another series."""
+        # ensure that the two series have the same sections
+        if list(self.sections.keys()) != list(other.sections.keys()):
+            return
+        
+        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
+        for (r_num, r_section), (s_num, s_section) in iterator:
+            r_section.importTraces(s_section)
+        
+        self.save()
+    
+    def importZtraces(self, other):
+        """Import all the ztraces from another series."""
+        for o_zname, o_ztrace in other.ztraces.items():
+            # only import new ztraces, do NOT replace existing ones
+            if o_zname not in self.ztraces:
+                self.ztraces[o_zname] = o_ztrace.copy()
+        
+        self.save()
 
 class SeriesIterator():
 

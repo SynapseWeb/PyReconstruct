@@ -38,21 +38,21 @@ def openJserFile(fp : str):
     sections = {}
     
     # iterate through json data
-    for filename in jser_data:
-        filedata = jser_data[filename]
+    for ext in jser_data:
+        filedata = jser_data[ext]
 
         # ensure that filenames match the jser filename
-        filename = sname + filename[filename.rfind("."):]
+        filename = sname + "." + ext
         backend_fp = os.path.join(hidden_dir, filename)
 
-        if filename.endswith(".ser"):
+        if ext == "ser":
             Series.updateJSON(filedata)  # update any missing attributes
             series_fp = backend_fp
         else:
             Section.updateJSON(filedata)  # update any missing attributes
 
             # gather the section numbers and section filenames
-            snum = int(filename[filename.rfind(".")+1:])
+            snum = int(ext)
             sections[snum] = filename
             
         with open(backend_fp, "w") as f:
@@ -89,7 +89,8 @@ def saveJserFile(series : Series, close=False):
         fp = os.path.join(series.hidden_dir, filename)
         with open(fp, "r") as f:
             filedata = json.load(f)
-        jser_data[filename] = filedata
+        ext = filename[filename.rfind(".")+1:]
+        jser_data[ext] = filedata
 
         update(progress/final_value * 100)
         progress += 1

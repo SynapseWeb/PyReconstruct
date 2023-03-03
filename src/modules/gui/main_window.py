@@ -81,7 +81,10 @@ class MainWindow(QMainWindow):
         if len(argv) > 1:
             self.openSeries(jser_fp=argv[1], update_menu_bar=False)
         else:
-            open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
+            open_series = Series(
+                os.path.join(assets_dir, "welcome_series", "welcome.ser"),
+                {"0": "welcome.0"}
+            )
             self.openSeries(open_series, update_menu_bar=False)
         
         self.field.generateView()
@@ -425,9 +428,8 @@ class MainWindow(QMainWindow):
             if os.path.isdir(hidden_series_dir):
                 # find the series and timer files
                 new_series_fp = ""
+                sections = {}
                 for f in os.listdir(hidden_series_dir):
-                    if f.endswith(".ser"):
-                        new_series_fp = os.path.join(hidden_series_dir, f)
                     # check if the series is currently being modified
                     if "." not in f:
                         current_time = round(time.time())
@@ -443,13 +445,19 @@ class MainWindow(QMainWindow):
                                 exit()
                             else:
                                 return
+                    else:
+                        ext = f[f.rfind(".")+1:]
+                        if ext.isnumeric():
+                            sections[int(ext)] = f
+                        elif ext == "ser":
+                            new_series_fp = os.path.join(hidden_series_dir, f)                    
 
                 # if a series file has been found
                 if new_series_fp:
                     # ask the user if they want to open the unsaved series
                     open_unsaved = unsavedNotify()
                     if open_unsaved:
-                        new_series = Series(new_series_fp)
+                        new_series = Series(new_series_fp, sections)
                         new_series.modified = True
                         new_series.jser_fp = jser_fp
                     else:

@@ -15,7 +15,7 @@ from modules.gui.gui_functions import progbar
 
 class Series():
 
-    def __init__(self, filepath : str, sections : dict = None):
+    def __init__(self, filepath : str, sections : dict):
         """Load the series file.
         
             Params:
@@ -23,6 +23,7 @@ class Series():
                 sections (dict): snum : section basename for each section
         """
         self.filepath = filepath
+        self.sections = sections
         self.name = os.path.basename(self.filepath)[:-4]
 
         with open(filepath, "r") as f:
@@ -33,14 +34,6 @@ class Series():
         self.jser_fp = ""
         self.hidden_dir = os.path.dirname(self.filepath)
         self.modified = False
-
-        # check for override section dict
-        if sections:
-            self.sections = sections
-        else:
-            self.sections = {}  # section number : section file
-            for section_num, section_filename in series_data["sections"].items():
-                self.sections[int(section_num)] = section_filename
 
         self.current_section = series_data["current_section"]
         self.src_dir = series_data["src_dir"]
@@ -128,7 +121,7 @@ class Series():
         """
         d = {}
         
-        d["sections"] = self.sections
+        # d["sections"] = self.sections
         d["current_section"] = self.current_section
         d["src_dir"] = self.src_dir
         d["window"] = self.window
@@ -158,7 +151,7 @@ class Series():
         """Get an empty dictionary for a series object."""
         series_data = {}
         
-        series_data["sections"] = {}  # section_number : section_filename
+        # series_data["sections"] = {}  # section_number : section_filename
         series_data["current_section"] = 0  # last section left off
         series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
@@ -201,8 +194,9 @@ class Series():
         series_data = Series.getEmptyDict()
 
         series_data["src_dir"] = wdir  # the directory of the images
+        sections = {}
         for i in range(len(image_locations)):
-            series_data["sections"][i] = series_name + "." + str(i)
+            sections[i] = series_name + "." + str(i)
 
         series_fp = os.path.join(hidden_dir, series_name + ".ser")
         with open(series_fp, "w") as series_file:
@@ -212,7 +206,7 @@ class Series():
         for i in range(len(image_locations)):
             Section.new(series_name, i, image_locations[i], mag, thickness, hidden_dir)
         
-        return Series(series_fp)
+        return Series(series_fp, sections)
     
     def isWelcomeSeries(self):
         """Return True if self is the welcome series."""

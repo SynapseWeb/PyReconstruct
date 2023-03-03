@@ -34,7 +34,8 @@ from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
 from modules.backend.section_table_manager import SectionTableManager
 
-from modules.gui.dialog import TraceDialog
+from modules.gui.dialog import TraceDialog, ZtraceDialog
+from modules.gui.gui_functions import notify
 
 from constants import locations as loc
 
@@ -373,12 +374,44 @@ class FieldWidget(QWidget, FieldView):
             return
         
         name, color, tags, mode = new_attr
-        self.section_layer.section.editTraceAttributes(
+        self.section.editTraceAttributes(
             traces=self.section.selected_traces,
             name=name,
             color=color,
             tags=tags,
             mode=mode
+        )
+
+        self.generateView(generate_image=False)
+        self.saveState() 
+
+    def ztraceDialog(self):
+        """Opens a dialog to edit selected traces."""
+        if not self.section.selected_ztraces:
+            return
+        
+        # check only one ztrace selected
+        first_ztrace, i = self.section.selected_ztraces[0]
+        for ztrace, i in self.section.selected_ztraces:
+            if ztrace != first_ztrace:
+                notify("Please modify only one ztrace at a time.")
+                return
+        
+        name = first_ztrace.name
+        color = first_ztrace.color
+        new_attr, confirmed = ZtraceDialog(
+            self,
+            name,
+            color
+        ).exec()
+        if not confirmed:
+            return
+        
+        new_name, new_color = new_attr
+        self.series.editZtraceAttributes(
+            ztrace,
+            new_name,
+            new_color
         )
 
         self.generateView(generate_image=False)
@@ -494,8 +527,15 @@ class FieldWidget(QWidget, FieldView):
         context_menu &= not self.is_line_tracing
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
+            # if both traces and ztraces are highlighted, only allow general field options
+            if self.section.selected_traces and self.section.selected_ztraces:
+                self.mainwindow.field_menu.exec(event.globalPos())
+            # if selected trace in highlighted traces
             if clicked_trace in self.section.selected_traces:
                 self.mainwindow.trace_menu.exec(event.globalPos())
+            # if selected ztrace in highlighted ztraces
+            if clicked_trace in self.section.selected_ztraces:
+                self.mainwindow.ztrace_menu.exec(event.globalPos())
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
             return

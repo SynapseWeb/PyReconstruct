@@ -339,6 +339,23 @@ class Series():
         self.ztraces[obj_name] = Ztrace(obj_name, color, points)
 
         self.modified = True
+    
+    def editZtraceAttributes(self, ztrace : Ztrace, name : str, color : tuple):
+        """Edit the name and color of a ztrace.
+        
+            Params:
+                ztrace (Ztrace): the ztrace object to modify
+                name (str): the new name
+                color (tuple): the new color
+        """
+        if name:
+            del(self.ztraces[ztrace.name])
+            ztrace.name = name
+            self.ztraces[name] = ztrace
+        if color:
+            ztrace.color = color
+        
+        self.modified = True
         
     def rename(self, new_name : str):
         """Rename the series.

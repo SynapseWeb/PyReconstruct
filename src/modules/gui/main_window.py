@@ -262,9 +262,6 @@ class MainWindow(QMainWindow):
                 ]
             },
             None,
-            self.undo_act,
-            self.redo_act,
-            None,
             self.cut_act,
             self.copy_act,
             self.paste_act,
@@ -274,6 +271,12 @@ class MainWindow(QMainWindow):
         ]
         self.trace_menu = QMenu(self)
         populateMenu(self, self.trace_menu, trace_menu_list)
+
+        ztrace_menu_list = [
+            ("editztrace_act", "Edit ztrace attributes...", "", self.field.ztraceDialog),
+        ]
+        self.ztrace_menu = QMenu(self)
+        populateMenu(self, self.ztrace_menu, ztrace_menu_list)
 
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""

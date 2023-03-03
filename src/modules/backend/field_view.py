@@ -14,6 +14,8 @@ from modules.calc.quantification import (
     lineDistance
 )
 
+from modules.gui.gui_functions import notify
+
 class FieldView():
 
     def __init__(self, series : Series):
@@ -649,21 +651,29 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section.deleteTraces(traces)
-        self.saveState()
-        self.generateView(generate_image=False)
+        modified = self.section.deleteTraces(traces)
+        if modified:
+            self.saveState()
+            self.generateView(generate_image=False)
     
     def mergeSelectedTraces(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section_layer.mergeSelectedTraces()
-        self.saveState()
-        self.generateView(generate_image=False)
+        if self.section.selected_traces:
+            self.section_layer.mergeSelectedTraces()
+            self.saveState()
+            self.generateView(generate_image=False)
     
     def cutTrace(self, scalpel_trace):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
+            return
+        elif len(self.section.selected_traces) == 0:
+            notify("Please select the trace you wish to cut.")
+            return
+        elif len(self.section.selected_traces) > 1:
+            notify("Please select only one trace to cut at a time.")
             return
         self.section_layer.cutTrace(scalpel_trace)
         self.saveState()
@@ -707,16 +717,18 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.section.hideTraces(traces, hide)
-        self.saveState()
-        self.generateView(generate_image=False)
+        modified = self.section.hideTraces(traces, hide)
+        if modified:
+            self.saveState()
+            self.generateView(generate_image=False)
     
     def unhideAllTraces(self):
         if self.hide_trace_layer:
             self.hide_trace_layer = False
-        self.section.unhideAllTraces()
-        self.saveState()
-        self.generateView(generate_image=False)
+        modified = self.section.unhideAllTraces()
+        if modified:
+            self.saveState()
+            self.generateView(generate_image=False)
     
     def makeNegative(self, negative=True):
         self.section.makeNegative(negative)
@@ -760,15 +772,19 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.clipboard = self.section_layer.getCopiedTraces()
+        copied_traces = self.section_layer.getCopiedTraces()
+        if copied_traces:
+            self.clipboard = copied_traces
     
     def cut(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        self.clipboard = self.section_layer.getCopiedTraces(cut=True)
-        self.saveState()
-        self.generateView(generate_image=False)
+        copied_traces = self.section_layer.getCopiedTraces()
+        if copied_traces:
+            self.clipboard = copied_traces
+            self.saveState()
+            self.generateView(generate_image=False)
     
     def paste(self):
         # disable if trace layer is hidden

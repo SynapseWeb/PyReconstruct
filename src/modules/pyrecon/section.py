@@ -380,22 +380,31 @@ class Section():
                 traces (list): the traces to hide
                 hide (bool): True if traces should be hidden
         """
+        modified = False
+
         if not traces:
             traces = self.selected_traces
 
         for trace in traces:
+            modified = True
             trace.setHidden(hide)
             self.modified_traces.append(trace)
         
         self.selected_traces = []
+
+        return modified
     
     def unhideAllTraces(self):
         """Unhide all traces on the section."""
+        modified = False
         for trace in self.tracesAsList():
             hidden = trace.hidden
             if hidden:
+                modified = True
                 trace.setHidden(False)
                 self.modified_traces.append(trace)
+        
+        return modified
     
     def makeNegative(self, negative=True):
         """Make a set of traces negative."""
@@ -412,20 +421,25 @@ class Section():
                 traces (list): a list of traces to delete (default is selected traces)
                 ztraces (list): a list of ztrace, index pair points to delete
         """
+        modified = False
+
         if traces is None:
             traces = self.selected_traces.copy()
         if ztraces_i is None:
             ztraces_i = self.selected_ztraces.copy()
 
         for trace in traces:
+            modified = True
             self.removeTrace(trace)
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
-        for ztrace_i in ztraces_i:
-            ztrace, i = ztrace_i
-            del(ztrace.points[i])
-            if ztrace_i in self.selected_ztraces:
-                self.selected_ztraces.remove(ztrace_i)
+        # for ztrace_i in ztraces_i:
+        #     ztrace, i = ztrace_i
+        #     del(ztrace.points[i])
+        #     if ztrace_i in self.selected_ztraces:
+        #         self.selected_ztraces.remove(ztrace_i)
+
+        return modified
     
     def translateTraces(self, dx : float, dy : float):
         """Translate the selected traces.

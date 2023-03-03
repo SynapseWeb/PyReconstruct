@@ -238,12 +238,6 @@ class TraceLayer():
             Params:
                 knife_trace (list): the knife trace in pixmap points
         """
-        if len(self.section.selected_traces) == 0:
-            notify("Please select the trace you wish to cut.")
-            return
-        elif len(self.section.selected_traces) > 1:
-            notify("Please select only one trace to cut at a time.")
-            return
         trace = self.section.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces

@@ -1,3 +1,5 @@
+import math
+
 from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
     QPixmap,
@@ -413,7 +415,19 @@ class TraceLayer():
         # draw points and lines
         painter.drawPoints(qpoints)
         painter.setPen(QPen(QColor(*ztrace.color), 1))
-        painter.drawLines(qlines)
+        for line in qlines:
+            p1_arrow = True
+            p2_arrow = True
+            if line.p1() in qpoints:
+                p1_arrow = False
+            if line.p2() in qpoints:
+                p2_arrow = False
+            drawArrow(
+                painter,
+                line,
+                p1_arrow,
+                p2_arrow
+            )
         painter.end()
     
     def _drawZtraceHighlights(self, trace_layer : QPixmap):
@@ -496,4 +510,72 @@ class TraceLayer():
                 
 
         return trace_layer
+
+
+def getTheta(line : QLine):
+    """Get the angle a line makes with the x-axis.
+    
+        Params:
+            line (QLine): the qline to get the angle for
+    """
+    p1 = line.p1()
+    p2 = line.p2()
+    v = p2 - p1
+    if v.x() == 0:
+        if v.y() < 0:
+            theta = 3*math.pi/2
+        elif v.y() > 0:
+            theta = math.pi/2
+        else:
+            theta = None
+    elif v.x() < 0:
+        theta = math.pi + math.atan(v.y()/v.x())
+    elif v.x() > 0:
+        theta = math.atan(v.y()/v.x())
+    
+    return theta
+    
+def drawArrowHead(painter : QPainter, pt : QPoint, theta : float, l = 5):
+    """Draw an arrowhead in a given direction.
+    
+        Params:
+            painter (QPainter): the painter to draw the arrowhead
+            pt (QPoint): the point on which the arrowhead is located
+            theta (float): the angle (in radians) of the arrowhead (cc from x-axis)
+            l (int): the length of the arrowhead
+    """
+    theta += math.pi
+    t1 = theta + math.pi/6
+    t2 = theta - math.pi/6
+    p1 = QPoint(
+        pt.x() + l * math.cos(t1),
+        pt.y() + l * math.sin(t1)
+    )
+    p2 = pt
+    p3 = QPoint(
+        pt.x() + l * math.cos(t2),
+        pt.y() + l * math.sin(t2)
+    )
+    l1 = QLine(p1, p2)
+    l2 = QLine(p2, p3)
+    painter.drawLine(l1)
+    painter.drawLine(l2)
+
+def drawArrow(painter : QPainter, line : QLine, p1_arrow=True, p2_arrow=True):
+    """Draw an line with one or two arrowheads.
+    
+        Params:
+            painter (QPainter): the painter used to draw the arrow
+            line (QLine): the ztrace qline
+            p1_arrow (bool): True if arrowhead on the first point
+            p2_arrow (bool): True if arrowhead on the second point
+    """
+    painter.drawLine(line)
+    theta = getTheta(line)
+    if theta is not None:
+        if p1_arrow:
+            drawArrowHead(painter, line.p1(), theta)
+        if p2_arrow:
+            drawArrowHead(painter, line.p2(), theta)
+
         

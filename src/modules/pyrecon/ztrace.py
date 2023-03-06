@@ -133,14 +133,16 @@ class Ztrace():
                 prev_pt = tformed_pts[i-1]
                 if prev_pt[2] <= pt[2]:
                     p1, p2 = prev_pt, pt
+                    reversed = False
                 else:
-                    p2, p1 = prev_pt, pt 
+                    p2, p1 = prev_pt, pt
+                    reversed = True
                 if p1[2] <= section.n <= p2[2]:
                     segments = p2[2] - p1[2] + 1
                     x_inc = (p2[0] - p1[0]) / segments
                     y_inc = (p2[1] - p1[1]) / segments
                     segment_i = section.n - p1[2]
-                    lines.append((
+                    l = (
                         (
                             p1[0] + segment_i*x_inc,
                             p1[1] + segment_i*y_inc
@@ -149,7 +151,10 @@ class Ztrace():
                             p1[0] + (segment_i+1)*x_inc,
                             p1[1] + (segment_i+1)*y_inc
                         )
-                    ))
+                    )
+                    if reversed:
+                        l = l[::-1]
+                    lines.append(l)
         
         return pts, lines
 

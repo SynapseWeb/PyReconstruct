@@ -38,8 +38,12 @@ def openJserFile(fp : str):
     sections = {}
     
     # iterate through json data
-    for ext in jser_data:
+    for ext in jser_data:            
         filedata = jser_data[ext]
+
+        # check for old storage method
+        if not (ext.isnumeric() or ext =="ser"):
+            ext = ext[ext.rfind(".")+1:]
 
         # ensure that filenames match the jser filename
         filename = sname + "." + ext

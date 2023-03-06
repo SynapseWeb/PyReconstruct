@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         else:
             open_series = Series(
                 os.path.join(assets_dir, "welcome_series", "welcome.ser"),
-                {"0": "welcome.0"}
+                {0: "welcome.0"}
             )
             self.openSeries(open_series, update_menu_bar=False)
         

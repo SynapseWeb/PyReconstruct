@@ -71,7 +71,7 @@ class Object3DViewer(gl.GLViewWidget):
             obj_names,
         )
         # sort by volume and add the items to the scene
-        self.vol_items.sort()
+        self.vol_items = sortVolItems(self.vol_items)
         for v, item in self.vol_items:
             self.addItem(item)
         
@@ -129,7 +129,7 @@ class Object3DViewer(gl.GLViewWidget):
         
         # add all objects to scene
         self.vol_items += new_vol_items
-        self.vol_items.sort()
+        self.vol_items = sortVolItems(self.vol_items)
         for v, item in self.vol_items:
             self.addItem(item)
         
@@ -247,3 +247,12 @@ class Object3DViewer(gl.GLViewWidget):
         self.closed = True
         super().closeEvent(event)
 
+def sortVolItems(vol_items):
+    sort_list = []
+    for i in range(len(vol_items)):
+        sort_list.append((vol_items[i][0], i))
+    sort_list.sort()
+    new_vol_items = []
+    for v, i in sort_list:
+        new_vol_items.append(vol_items[i])
+    return new_vol_items

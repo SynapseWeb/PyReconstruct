@@ -20,4 +20,4 @@ fi
 
 source env/bin/activate
 pip install -r src/requirements.txt
-$PY_CMD src/PyReconstruct.py
+python src/PyReconstruct.py

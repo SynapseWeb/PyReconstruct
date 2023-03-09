@@ -27,7 +27,9 @@ def openJserFile(fp : str):
         "Loading series..."
     )
     progress = 0
-    final_value = len(jser_data)
+    final_value = 1
+    for sdata in jser_data["sections"]:
+        if sdata: final_value += 1
 
     # create the hidden directory
     sdir = os.path.dirname(fp)
@@ -66,6 +68,10 @@ def openJserFile(fp : str):
     series_fp = os.path.join(hidden_dir, sname + ".ser")
     with open(series_fp, "w") as f:
         json.dump(series_data, f)
+    if canceled():
+        return None
+    progress += 1
+    update(progress/final_value * 100)
 
     # extract JSON section data
     sections = {}
@@ -113,7 +119,7 @@ def saveJserFile(series : Series, close=False):
     # get the max section number
     sections_len = max(series.sections.keys())+1
     jser_data["sections"] = [None] * sections_len
-    
+
     for filename in filenames:
         if "." not in filename:  # skip the timer file
             continue

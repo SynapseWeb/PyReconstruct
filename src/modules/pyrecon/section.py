@@ -56,9 +56,15 @@ class Section():
         self.thickness = section_data["thickness"]
         self.contours = section_data["contours"]
         for name in self.contours:
+            trace_list = []
+            for trace_data in self.contours[name]:
+                trace = Trace.fromDict(trace_data, name)
+                # screen for defective traces
+                if len(trace.points) > 1:
+                    trace_list.append(trace)
             self.contours[name] = Contour(
                 name,
-                [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
+                trace_list
             )
         
         # ADDED SINCE JAN 25TH

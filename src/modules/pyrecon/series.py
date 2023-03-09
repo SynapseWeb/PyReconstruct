@@ -5,13 +5,14 @@ from modules.pyrecon.ztrace import Ztrace
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
 from modules.pyrecon.transform import Transform
-
 from modules.pyrecon.obj_group_dict import ObjGroupDict
 
 from constants.locations import createHiddenDir, assets_dir
 from constants.defaults import getDefaultPaletteTraces
 
 from modules.gui.gui_functions import progbar
+from modules.backend.object_table_item import ObjectTableItem
+
 
 class Series():
 
@@ -302,7 +303,7 @@ class Series():
         if cross_sectioned:
             points = []
             for snum, section in self.enumerateSections(
-                show_progress=False
+                message="Creating ztrace..."
             ):
                 if obj_name in section.contours:
                     if not color: color = section.contours[obj_name][0].color
@@ -315,7 +316,7 @@ class Series():
         else:
             dt_points = []
             for snum, section in self.enumerateSections(
-                show_progress=False
+                message="Creating ztrace..."
             ):
                 if obj_name in section.contours:
                     contour = section.contours[obj_name]
@@ -503,6 +504,41 @@ class Series():
                 self.ztraces[o_zname] = o_ztrace.copy()
         
         self.save()
+    
+    def loadObjectData(self, object_table_items=False):
+        """Load all of the data for each object in the series.
+        
+        Params:
+            object_table_items (bool): True if dictionary values should be ObjectTableItem objects
+        Returns:
+            (dict): object_name : object_data
+        """
+
+        objdict = {}  # object name : ObjectTableItem (contains data on object)
+
+        for snum, section in self.enumerateSections():
+            # iterate through contours
+            for contour_name in section.contours:
+                if contour_name not in objdict:
+                    objdict[contour_name] = ObjectTableItem(contour_name)
+                # iterate through traces
+                for trace in section.contours[contour_name]:
+                    # add to existing data
+                    objdict[contour_name].addTrace(
+                        trace,
+                        section.tforms[self.alignment],
+                        snum,
+                        section.thickness
+                    )
+        
+        if not object_table_items:
+            for name, item in objdict.items():
+                objdict[name] = item.getDict()
+                # add the object group to the data
+                objdict[name]["groups"] = self.object_groups.getObjectGroups(name)
+
+        return objdict
+
 
 class SeriesIterator():
 

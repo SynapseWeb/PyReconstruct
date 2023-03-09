@@ -143,6 +143,21 @@ class ObjectTableItem():
                     else:
                         combined.data[snum][key] += other.data[snum][key]
         return combined
+
+    def getDict(self):
+        """Return a dictionary with the object data.
+        
+            Returns:
+                (dict): data_type: data
+        """
+        d = {}
+        d["start"] = self.getStart()
+        d["end"] = self.getEnd()
+        d["count"] = self.getCount()
+        d["flat_area"] = self.getFlatArea()
+        d["volume"] = self.getVolume()
+        d["tags"] = self.getTags()
+        return d
     
     def copy(self, new_name=None):
         """Create a copy of the object table item object.

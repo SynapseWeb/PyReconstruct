@@ -20,7 +20,7 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.fspath(
 #################################################################
 
 
-from modules.gui.main_window import MainWindow
+from modules.gui import MainWindow
 
 # create and run applications
 app = QApplication(sys.argv)

@@ -22,22 +22,18 @@ from PySide6.QtGui import (
     QCursor
 )
 
-from modules.pyrecon.series import Series
-from modules.pyrecon.trace import Trace
-
-from modules.calc.pfconversions import pixmapPointToField
-from modules.calc.quantification import distance
-
-from modules.backend.field_view import FieldView
-from modules.backend.object_table_manager import ObjectTableManager
-from modules.backend.ztrace_table_manager import ZtraceTableManager
-from modules.backend.trace_table_manager import TraceTableManager
-from modules.backend.section_table_manager import SectionTableManager
-
+from modules.data import Series, Trace
+from modules.calc import pixmapPointToField, distance
+from modules.backend.view import FieldView
+from modules.backend.table import (
+    ObjectTableManager,
+    SectionTableManager,
+    TraceTableManager,
+    ZtraceTableManager
+)
 from modules.gui.dialog import TraceDialog, ZtraceDialog
-from modules.gui.gui_functions import notify
-
-from constants import locations as loc
+from modules.gui.utils import notify
+from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
@@ -74,6 +70,7 @@ class FieldWidget(QWidget, FieldView):
 
         # misc defaults
         self.current_trace = []
+        self.max_click_time = 0.2
 
         self.createField(series)
 
@@ -562,10 +559,10 @@ class FieldWidget(QWidget, FieldView):
             if self.section.selected_traces and self.section.selected_ztraces:
                 self.mainwindow.field_menu.exec(event.globalPos())
             # if selected trace in highlighted traces
-            if clicked_trace in self.section.selected_traces:
+            elif clicked_trace in self.section.selected_traces:
                 self.mainwindow.trace_menu.exec(event.globalPos())
             # if selected ztrace in highlighted ztraces
-            if clicked_trace in self.section.selected_ztraces:
+            elif clicked_trace in self.section.selected_ztraces:
                 self.mainwindow.ztrace_menu.exec(event.globalPos())
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
@@ -705,7 +702,7 @@ class FieldWidget(QWidget, FieldView):
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
         # do nothing if not left clicking or if insufficient time has passed
-        if not self.lclick or (time.time() - self.click_time <= 0.1):
+        if not self.lclick or (time.time() - self.click_time <= self.max_click_time):
             return
         
         # left button is down and user clicked on a trace
@@ -754,7 +751,7 @@ class FieldWidget(QWidget, FieldView):
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
         # user single-clicked a trace
-        if ((time.time() - self.click_time <= 0.1) and 
+        if ((time.time() - self.click_time <= self.max_click_time) and 
         self.lclick and self.selected_trace
         ):
             # if user selected a normal trace
@@ -944,7 +941,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= 0.1):
+        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= self.max_click_time):
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing

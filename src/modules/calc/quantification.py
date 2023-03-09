@@ -3,8 +3,6 @@
 import math
 import cv2
 import numpy as np
-from itertools import combinations
-from modules.pyrecon.transform import Transform
 
 def area(pts : list) -> float:
     """Find the area of a closed contour.
@@ -168,41 +166,3 @@ def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
         if linesIntersect(p1, p2, p3, p4):
             return True
     return False
-
-def estimateLinearTform(pts1, pts2):
-    """Estimate the transform that converts pts1 to pts2."""
-    combs = tuple(combinations(range(len(pts1)), 3))
-    sum_mat = np.zeros((2, 3), dtype=np.float32)
-    for c in combs:
-        trip1 = [pts1[i] for i in c]
-        trip2 = [pts2[i] for i in c]
-        mat = cv2.getAffineTransform(
-            np.array(trip1, dtype=np.float32),
-            np.array(trip2, dtype=np.float32)
-        )
-        sum_mat += mat
-    avg_mat = sum_mat / len(combs)
-    tform = Transform(avg_mat.reshape(1,6).tolist()[0])
-
-    return tform
-
-# def estimateLinearTform(pts1, pts2):
-#     """Estimate the transform that converts pts1 to pts2."""
-#     combs = tuple(combinations(range(len(pts1)), 3))
-#     estimated_tform = None
-#     estimated_error = 0
-#     for c in combs:
-#         trip1 = [pts1[i] for i in c]
-#         trip2 = [pts2[i] for i in c]
-#         mat = cv2.getAffineTransform(
-#             np.array(trip1, dtype=np.float32),
-#             np.array(trip2, dtype=np.float32)
-#         )
-#         tform = Transform(mat.reshape(1,6).tolist()[0])
-#         predicted_trip2 = tform.map(trip1)
-#         error = sum([distance(*trip2[i], *predicted_trip2[i]) for i in range(3)])
-#         if estimated_tform is None or error < estimated_error:
-#             estimated_tform = tform
-#             estimated_error = error
-
-#     return estimated_tform

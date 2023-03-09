@@ -7,6 +7,7 @@ from constants.locations import createHiddenDir
 
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
+from modules.pyrecon.transform import Transform
 
 from modules.gui.gui_functions import progbar
 
@@ -26,7 +27,9 @@ def openJserFile(fp : str):
         "Loading series..."
     )
     progress = 0
-    final_value = len(jser_data)
+    final_value = 1
+    for sdata in jser_data["sections"]:
+        if sdata: final_value += 1
 
     # create the hidden directory
     sdir = os.path.dirname(fp)
@@ -34,35 +37,67 @@ def openJserFile(fp : str):
     sname = sname[:sname.rfind(".")]
     hidden_dir = createHiddenDir(sdir, sname)
 
-    sections = {}
+    # UPDATE FROM OLD JSER FORMATS
+    updated_jser_data = {}
+    sections_dict = {}
+    if "sections" not in jser_data and "series" not in jser_data:
+        # gather the sections and section numbers
+        for key in jser_data:
+            # key could just be the extension OR the name + extension
+            if "." in key:
+                ext = key[key.rfind(".")+1:]
+            else:
+                ext = key
+            # check if section or series data
+            if ext.isnumeric():
+                snum = int(ext)
+                sections_dict[snum] = jser_data[key]
+            else:
+                updated_jser_data["series"] = jser_data[key]
+        # organize the sections in a list
+        sections_list = [None] * (max(sections_dict.keys())+1)
+        for snum, sdata in sections_dict.items():
+            sections_list[snum] = sdata
+        updated_jser_data["sections"] = sections_list
+        # replace data
+        jser_data = updated_jser_data
     
-    # iterate through json data
-    for filename in jser_data:
-        filedata = jser_data[filename]
+    # extract JSON series data
+    series_data = jser_data["series"]
+    Series.updateJSON(series_data)
+    series_fp = os.path.join(hidden_dir, sname + ".ser")
+    with open(series_fp, "w") as f:
+        json.dump(series_data, f)
+    if canceled():
+        return None
+    progress += 1
+    update(progress/final_value * 100)
 
-        # ensure that filenames match the jser filename
-        filename = sname + filename[filename.rfind("."):]
-        backend_fp = os.path.join(hidden_dir, filename)
+    # extract JSON section data
+    sections = {}
+    for snum, section_data in enumerate(jser_data["sections"]):
+        # check for empty section, skip if so
+        if section_data is None:
+            continue
 
-        if filename.endswith(".ser"):
-            Series.updateJSON(filedata)  # update any missing attributes
-            series_fp = backend_fp
-        else:
-            Section.updateJSON(filedata)  # update any missing attributes
-            # gather the section numbers and section filenames
-            snum = int(filename[filename.rfind(".")+1:])
-            sections[snum] = filename
+        filename = sname + "." + str(snum)
+        section_fp = os.path.join(hidden_dir, filename)
 
-        with open(backend_fp, "w") as f:
-            json.dump(filedata, f)
+        Section.updateJSON(section_data)  # update any missing attributes
+
+        # gather the section numbers and section filenames
+        sections[snum] = filename
+            
+        with open(section_fp, "w") as f:
+            json.dump(section_data, f)
         
         if canceled():
             return None
         progress += 1
         update(progress/final_value * 100)
-        
-    series = Series(series_fp)
-    series.sections = sections
+    
+    # create the series
+    series = Series(series_fp, sections)
     series.jser_fp = fp
     
     return series
@@ -81,13 +116,22 @@ def saveJserFile(series : Series, close=False):
     progress = 0
     final_value = len(filenames)
 
+    # get the max section number
+    sections_len = max(series.sections.keys())+1
+    jser_data["sections"] = [None] * sections_len
+
     for filename in filenames:
         if "." not in filename:  # skip the timer file
             continue
         fp = os.path.join(series.hidden_dir, filename)
         with open(fp, "r") as f:
             filedata = json.load(f)
-        jser_data[filename] = filedata
+        ext = filename[filename.rfind(".")+1:]
+
+        if ext.isnumeric():
+            jser_data["sections"][int(ext)] = filedata
+        else:
+            jser_data["series"] = filedata
 
         update(progress/final_value * 100)
         progress += 1

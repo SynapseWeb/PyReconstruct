@@ -81,7 +81,10 @@ class MainWindow(QMainWindow):
         if len(argv) > 1:
             self.openSeries(jser_fp=argv[1], update_menu_bar=False)
         else:
-            open_series = Series(os.path.join(assets_dir, "welcome_series", "welcome.ser"))
+            open_series = Series(
+                os.path.join(assets_dir, "welcome_series", "welcome.ser"),
+                {0: "welcome.0"}
+            )
             self.openSeries(open_series, update_menu_bar=False)
         
         self.field.generateView()
@@ -152,7 +155,7 @@ class MainWindow(QMainWindow):
                     ("change_src_act", "Find images", "", self.changeSrcDir),
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                    # ("ztracelist_act", "Z-trace list", "", self.openZtraceList),
+                    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
@@ -166,6 +169,16 @@ class MainWindow(QMainWindow):
                             None,
                             ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
                             ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                        ]
+                    },
+                    None,
+                    {
+                        "attr_name": "importmenu",
+                        "text": "Import",
+                        "opts":
+                        [
+                            ("importtraces_act", "Import traces", "", self.importTraces),
+                            ("importzrtraces_act", "Import ztraces", "", self.importZtraces)
                         ]
                     },
                     None,
@@ -226,19 +239,22 @@ class MainWindow(QMainWindow):
         field_menu_list = [
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
-            ("hideall_act", "Toggle hide all traces", "H", self.field.toggleHideAllTraces),
-            ("showall_act", "Toggle show all traces", "A", self.field.toggleShowAllTraces),
+            None,
+            ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
+            ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
+            None,
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
-            ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
+            None,
+            ("blend_act", "Toggle blend", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
 
         trace_menu_list = [
             ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
+            None,
             ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
             ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
-            ("deletetraces_act", "Delete traces", "Del", self.field.backspace),
             {
                 "attr_name": "negativemenu",
                 "text": "Negative",
@@ -249,21 +265,21 @@ class MainWindow(QMainWindow):
                 ]
             },
             None,
-            self.undo_act,
-            self.redo_act,
-            None,
             self.cut_act,
             self.copy_act,
             self.paste_act,
             self.pasteattributes_act,
-            # None,
-            # self.deselect_act,
-            # self.selectall_act,
-            # self.hideall_act,
-            # self.blend_act
+            None,
+            ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
         ]
         self.trace_menu = QMenu(self)
         populateMenu(self, self.trace_menu, trace_menu_list)
+
+        ztrace_menu_list = [
+            ("editztrace_act", "Edit ztrace attributes...", "", self.field.ztraceDialog),
+        ]
+        self.ztrace_menu = QMenu(self)
+        populateMenu(self, self.ztrace_menu, ztrace_menu_list)
 
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
@@ -397,9 +413,11 @@ class MainWindow(QMainWindow):
                 jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
                 if jser_fp == "": return  # exit function if user does not provide series
             
-            response = self.saveToJser(notify=True)
-            if response == "cancel":
-                return
+            # user has opened an existing series
+            if self.series:
+                response = self.saveToJser(notify=True)
+                if response == "cancel":
+                    return
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)
@@ -410,9 +428,8 @@ class MainWindow(QMainWindow):
             if os.path.isdir(hidden_series_dir):
                 # find the series and timer files
                 new_series_fp = ""
+                sections = {}
                 for f in os.listdir(hidden_series_dir):
-                    if f.endswith(".ser"):
-                        new_series_fp = os.path.join(hidden_series_dir, f)
                     # check if the series is currently being modified
                     if "." not in f:
                         current_time = round(time.time())
@@ -428,13 +445,19 @@ class MainWindow(QMainWindow):
                                 exit()
                             else:
                                 return
+                    else:
+                        ext = f[f.rfind(".")+1:]
+                        if ext.isnumeric():
+                            sections[int(ext)] = f
+                        elif ext == "ser":
+                            new_series_fp = os.path.join(hidden_series_dir, f)                    
 
                 # if a series file has been found
                 if new_series_fp:
                     # ask the user if they want to open the unsaved series
                     open_unsaved = unsavedNotify()
                     if open_unsaved:
-                        new_series = Series(new_series_fp)
+                        new_series = Series(new_series_fp, sections)
                         new_series.modified = True
                         new_series.jser_fp = jser_fp
                     else:
@@ -561,13 +584,14 @@ class MainWindow(QMainWindow):
     
     def newFromXML(self):
         """Create a new series from a set of XML files."""
-        # save and clear the existing backend series
-        self.saveToJser(notify=True, close=True)
 
         # get xml series filepath from the user
         series_fp, ext = QFileDialog.getOpenFileName(self, "Select XML Series", filter="*.ser")
         if series_fp == "": return  # exit function if user does not provide series
 
+        # save and clear the existing backend series
+        self.saveToJser(notify=True, close=True)
+        
         # convert the series
         series = xmlToJSON(os.path.dirname(series_fp))
         if not series:
@@ -631,6 +655,48 @@ class MainWindow(QMainWindow):
         importTransforms(self.series, tforms_file)
         # reload the section
         self.field.reload()
+    
+    def importTraces(self):
+        """Import traces from another jser series."""
+        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = openJserFile(jser_fp)
+
+        # import the traces and close the other series
+        self.series.importTraces(o_series)
+        clearHiddenSeries(o_series)
+
+        # reload the field to update the traces
+        self.field.reload()
+
+        # refresh the object list if needed
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
+    
+    def importZtraces(self):
+        """Import ztraces from another jser series."""
+        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = openJserFile(jser_fp)
+
+        # import the ztraces and close the other series
+        self.series.importZtraces(o_series)
+        clearHiddenSeries(o_series)
+
+        # reload the field to update the ztraces
+        self.field.reload()
+
+        # refresh the ztrace list if needed
+        if self.field.ztrace_table_manager:
+            self.field.ztrace_table_manager.refresh()
     
     def editImage(self, option : str, direction : str):
         """Edit the brightness or contrast of the image.

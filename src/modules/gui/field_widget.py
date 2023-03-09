@@ -34,7 +34,8 @@ from modules.backend.ztrace_table_manager import ZtraceTableManager
 from modules.backend.trace_table_manager import TraceTableManager
 from modules.backend.section_table_manager import SectionTableManager
 
-from modules.gui.dialog import TraceDialog
+from modules.gui.dialog import TraceDialog, ZtraceDialog
+from modules.gui.gui_functions import notify
 
 from constants import locations as loc
 
@@ -113,12 +114,16 @@ class FieldWidget(QWidget, FieldView):
         # establish misc defaults
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.status_list = ["Section: " + str(self.series.current_section)]
-        self.is_line_tracing = False
         self.blend_sections = False
         self.lclick = False
         self.rclick = False
         self.mclick = False
+
         self.erasing = False
+        self.is_gesturing = False
+        self.is_line_tracing = False
+        self.is_moving_trace = False
+        self.is_selecting_traces = False
 
         # set up the timer
         if not self.series.isWelcomeSeries():
@@ -180,7 +185,6 @@ class FieldWidget(QWidget, FieldView):
             generate_traces,
             blend=self.blend_sections
         )
-        self.field_pixmap_copy = self.field_pixmap.copy()
         if update:
             self.update()
     
@@ -274,11 +278,22 @@ class FieldWidget(QWidget, FieldView):
             for i in range(len(points)):
                 field_painter.drawLine(*points[i-1], *points[i])
 
-        # draw solid lines for existing trace
+        # draw the working trace on the screen
         if self.current_trace:
-            closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing)
-            color = QColor(*self.tracing_trace.color)
-            pen = QPen(color, 1)
+            # if drawing lasso
+            if (self.mouse_mode == FieldWidget.POINTER) and self.is_selecting_traces:
+                closed = True
+                pen = QPen(QColor(255, 255, 255), 1)
+                pen.setDashPattern([4, 4])
+            # if drawing knife
+            elif self.mouse_mode == FieldWidget.KNIFE:
+                closed = False
+                pen = QPen(QColor(255, 0, 0), 1)
+            # if drawing trace
+            else:
+                closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing)
+                color = QColor(*self.tracing_trace.color)
+                pen = QPen(color, 1)
             field_painter.setPen(pen)
             if closed:
                 start = 0
@@ -293,6 +308,24 @@ class FieldWidget(QWidget, FieldView):
                 field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
                 if closed:
                     field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
+            
+        # unique method for drawing moving traces
+        elif self.is_moving_trace:
+            dx = self.mouse_x - self.clicked_x
+            dy = self.mouse_y - self.clicked_y
+            # redraw the traces with translatation
+            for points, color, closed in self.moving_traces:
+                field_painter.setPen(QPen(QColor(*color), 1))
+                plot_points = [QPoint(x+dx, y+dy) for x,y in points]
+                if closed:
+                    field_painter.drawPolygon(plot_points)
+                else:
+                    field_painter.drawPolyline(plot_points)
+            # redraw points with translation
+            for (x, y), color in self.moving_points:
+                field_painter.setPen(QPen(QColor(*color), 6))
+                qpoint = QPoint(x+dx, y+dy)
+                field_painter.drawPoint(qpoint)
 
         field_painter.end()
     
@@ -333,13 +366,20 @@ class FieldWidget(QWidget, FieldView):
             position += "y = " + str("{:.4f}".format(y))
             self.status_list.append(position)
 
-            # display the closest trace in the field
+            # display the closest trace in the field if not tracing
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
-                if closest_trace:
+                # user hovered over trace
+                if type(closest_trace) is Trace:
                     ct = "Nearest trace: " + closest_trace.name
                     if closest_trace.negative:
                         ct += " (negative)"
+                    self.status_list.append(ct)
+                # user hovered over ztrace
+                elif type(closest_trace) is tuple:
+                    ztrace, i = closest_trace
+                    ct = "Nearest trace: " + ztrace.name
+                    ct += " (ztrace)"
                     self.status_list.append(ct)
             
             # display the distance between the current position and the last point if line tracing
@@ -366,12 +406,44 @@ class FieldWidget(QWidget, FieldView):
             return
         
         name, color, tags, mode = new_attr
-        self.section_layer.section.editTraceAttributes(
+        self.section.editTraceAttributes(
             traces=self.section.selected_traces,
             name=name,
             color=color,
             tags=tags,
             mode=mode
+        )
+
+        self.generateView(generate_image=False)
+        self.saveState() 
+
+    def ztraceDialog(self):
+        """Opens a dialog to edit selected traces."""
+        if not self.section.selected_ztraces:
+            return
+        
+        # check only one ztrace selected
+        first_ztrace, i = self.section.selected_ztraces[0]
+        for ztrace, i in self.section.selected_ztraces:
+            if ztrace != first_ztrace:
+                notify("Please modify only one ztrace at a time.")
+                return
+        
+        name = first_ztrace.name
+        color = first_ztrace.color
+        new_attr, confirmed = ZtraceDialog(
+            self,
+            name,
+            color
+        ).exec()
+        if not confirmed:
+            return
+        
+        new_name, new_color = new_attr
+        self.series.editZtraceAttributes(
+            ztrace,
+            new_name,
+            new_color
         )
 
         self.generateView(generate_image=False)
@@ -433,8 +505,7 @@ class FieldWidget(QWidget, FieldView):
             self.is_gesturing = True
             p = self.mapFromGlobal(g.centerPoint())
             x, y = p.x(), p.y()
-            self.clicked_x = x
-            self.clicked_y = y
+            self.panzoomPress(x, y)
 
         elif g.state() == Qt.GestureState.GestureUpdated:
             p = self.mapFromGlobal(g.centerPoint())
@@ -454,6 +525,7 @@ class FieldWidget(QWidget, FieldView):
         """
         self.mouse_x = event.x()
         self.mouse_y = event.y()
+        self.click_time = time.time()
 
         # ignore ALL finger touch for windows
         if os.name == "nt":
@@ -486,8 +558,15 @@ class FieldWidget(QWidget, FieldView):
         context_menu &= not self.is_line_tracing
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
+            # if both traces and ztraces are highlighted, only allow general field options
+            if self.section.selected_traces and self.section.selected_ztraces:
+                self.mainwindow.field_menu.exec(event.globalPos())
+            # if selected trace in highlighted traces
             if clicked_trace in self.section.selected_traces:
                 self.mainwindow.trace_menu.exec(event.globalPos())
+            # if selected ztrace in highlighted ztraces
+            if clicked_trace in self.section.selected_ztraces:
+                self.mainwindow.ztrace_menu.exec(event.globalPos())
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
             return
@@ -546,14 +625,18 @@ class FieldWidget(QWidget, FieldView):
             return
         
         # update the status bar
+        # if panzooming
         if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
             self.updateStatusBar()
+        # if pressing buttons or line tracing
+        elif event.buttons() or self.is_line_tracing:
+            self.updateStatusBar(event, find_closest_trace=False)
         else:
             self.updateStatusBar(event)
         
         # mouse functions
         if self.mouse_mode == FieldWidget.POINTER:
-                self.pointerMove(event)
+            self.pointerMove(event)
         elif self.mouse_mode == FieldWidget.PANZOOM:
             self.mousePanzoomMove(event)
         elif self.mouse_mode == FieldWidget.KNIFE:
@@ -621,88 +704,88 @@ class FieldWidget(QWidget, FieldView):
     
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
+        # do nothing if not left clicking or if insufficient time has passed
+        if not self.lclick or (time.time() - self.click_time <= 0.1):
+            return
+        
         # left button is down and user clicked on a trace
-        if self.lclick and (
+        if (
             self.is_moving_trace or 
-            self.selected_trace in self.section.selected_traces
+            self.selected_trace in self.section.selected_traces or
+            self.selected_trace in self.section.selected_ztraces
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
                 # get pixel points
                 self.moving_traces = []
+                self.moving_points = []
                 for trace in self.section.selected_traces:
-                    moving_trace = trace.copy()
+                    # hide the trace
+                    self.section.temp_hide.append(trace)
+                    # get points and other data
                     pix_points = self.section_layer.traceToPix(trace)
-                    moving_trace.points = pix_points
-                    self.moving_traces.append(moving_trace)
-                # remove the traces
-                self.section.deleteTraces()
-                self.generateView(update=False)
+                    color = trace.color
+                    closed = trace.closed
+                    self.moving_traces.append((pix_points, color, closed))
+                for ztrace, i in self.section.selected_ztraces:
+                    # hide the ztrace
+                    self.section.temp_hide.append(ztrace)
+                    # get points and other data
+                    point = ztrace.points[i][:2]
+                    pix_point = self.section_layer.pointToPix(point)
+                    color = ztrace.color
+                    self.moving_points.append((pix_point, color))
 
-            dx = event.x() - self.clicked_x
-            dy = event.y() - self.clicked_y
-            self.field_pixmap = self.field_pixmap_copy.copy()
-            # redraw the traces with translatation
-            painter = QPainter(self.field_pixmap)
-            for trace in self.moving_traces:
-                painter.setPen(QPen(QColor(*trace.color), 1))
-                plot_points = [QPoint(x+dx, y+dy) for x,y in trace.points]
-                if trace.closed:
-                    painter.drawPolygon(plot_points)
-                else:
-                    painter.drawPolyline(plot_points)
-            painter.end()
+                self.generateView(update=False)
             
             self.update()
 
         # no trace was clicked on OR user clicked on unselected trace
-        elif self.lclick:
+        # draw lasso for selecting traces
+        else:
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
-                # create list
-                self.selection_trace = [(self.clicked_x, self.clicked_y)]
             x = event.x()
             y = event.y()
-            self.selection_trace.append((x, y))
+            self.current_trace.append((x, y))
             # draw the trace on the screen
-            self.field_pixmap = self.field_pixmap_copy.copy()
-            painter = QPainter(self.field_pixmap)
-            pen = QPen(QColor(255, 255, 255), 1)
-            pen.setDashPattern([4, 4])
-            painter.setPen(pen)
-            painter.drawPolygon(
-                [QPoint(*p) for p in self.selection_trace]
-            )
-            painter.end()
             self.update()
     
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
+        # user single-clicked a trace
+        if ((time.time() - self.click_time <= 0.1) and 
+        self.lclick and self.selected_trace
+        ):
+            # if user selected a normal trace
+            if type(self.selected_trace) is Trace:
+                self.selectTrace(self.selected_trace)
+            # if user selected a ztrace
+            elif type(self.selected_trace)is tuple:
+                self.selectZtrace(self.selected_trace)
+        
         # user moved traces
-        if self.lclick and self.is_moving_trace:
+        elif self.lclick and self.is_moving_trace:
+            # unhide the traces
+            self.section.temp_hide = []
             # save the traces in their final position
             self.is_moving_trace = False
-            dx = event.x() - self.clicked_x
-            dy = event.y() - self.clicked_y
-            for trace in self.moving_traces:
-                pix_points = [(x+dx, y+dy) for x,y in trace.points]
-                self.section_layer.newTrace(pix_points, trace, closed=trace.closed)
+            dx = (event.x() - self.clicked_x) * self.series.screen_mag
+            dy = (event.y() - self.clicked_y) * self.series.screen_mag * -1
+            self.section.translateTraces(dx, dy)
             self.generateView()
             self.saveState()
         
-        # user selected an area of traces
+        # user selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
-            selected_traces = self.section_layer.getTraces(self.selection_trace)
-            if selected_traces:
-                self.selectTraces(selected_traces)
+            selected_traces, selected_ztraces = self.section_layer.getTraces(self.current_trace)
+            self.current_trace = []
+            if selected_traces or selected_ztraces:
+                self.selectTraces(selected_traces, selected_ztraces)
             else:
-                self.field_pixmap = self.field_pixmap_copy.copy()
+                self.current_trace = []
                 self.update()
-
-        # user single-clicked a trace
-        elif self.lclick and self.selected_trace:
-            self.selectTrace(self.selected_trace)
     
     def eraserMove(self, event):
         """Called when the user is erasing."""
@@ -722,6 +805,7 @@ class FieldWidget(QWidget, FieldView):
         """
         self.clicked_x = x
         self.clicked_y = y
+        self.field_pixmap_copy = self.field_pixmap.copy()
         
     def mousePanzoomPress(self, event):
         """Called when mouse is clicked in panzoom mode.
@@ -843,7 +927,6 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.linePress(event)
         else:
-            self.click_time = time.time()
             self.last_x = event.x()
             self.last_y = event.y()
             self.current_trace = [(self.last_x, self.last_y)]
@@ -861,7 +944,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time < 0.01):
+        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= 0.1):
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing
@@ -912,48 +995,21 @@ class FieldWidget(QWidget, FieldView):
                 self.current_trace = [(x, y)]
                 self.is_line_tracing = True
     
-    # def lineMove(self, event):
-    #     """Called when mouse is moved in a line mode.
-        
-    #     Adds dashed lines to screen connecting the mouse pointer to the existing trace.
-    #     """
-    #     if self.is_line_tracing:
-    #         closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
-    #         x, y = event.x(), event.y()
-    #         self.field_pixmap = self.field_pixmap_copy.copy()
-    #         # draw solid lines for existing trace
-    #         painter = QPainter(self.field_pixmap)
-    #         color = QColor(*self.tracing_trace.color)
-    #         pen = QPen(color, 1)
-    #         painter.setPen(pen)
-    #         if closed:
-    #             start = 0
-    #         else:
-    #             start = 1
-    #         for i in range(start, len(self.current_trace)):
-    #             painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-    #         # draw dashed lines that connect to mouse pointer
-    #         pen.setDashPattern([2,5])
-    #         painter.setPen(pen)
-    #         painter.drawLine(*self.current_trace[-1], x, y)
-    #         if closed:
-    #             painter.drawLine(*self.current_trace[0], x, y)
-    #         self.update()
-    
     def lineRelease(self, event):
         """Called when mouse is released in line mode."""
         if self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
             self.is_line_tracing = False
             if len(self.current_trace) > 1:
+                current_trace_copy = self.current_trace.copy()
+                self.current_trace = []
                 self.newTrace(
-                    self.current_trace,
+                    current_trace_copy,
                     self.tracing_trace,
                     closed=closed
                 )
-                self.current_trace = []
             else:
-                self.field_pixmap = self.field_pixmap_copy.copy()
+                self.current_trace = []
                 self.update()
     
     def backspace(self):
@@ -984,7 +1040,7 @@ class FieldWidget(QWidget, FieldView):
         """
         self.last_x = event.x()
         self.last_y = event.y()
-        self.knife_trace = [(self.last_x, self.last_y)]
+        self.current_trace = [(self.last_x, self.last_y)]
 
     def knifeMove(self, event):
         """Called when mouse is moved in pencil mode with a mouse button pressed.
@@ -995,14 +1051,7 @@ class FieldWidget(QWidget, FieldView):
             # draw knife trace on pixmap
             x = event.x()
             y = event.y()
-            painter = QPainter(self.field_pixmap)
-            color = QColor(255,0,0)
-            painter.setPen(QPen(color, 1))
-            painter.drawLine(self.last_x, self.last_y, x, y)
-            painter.end()
-            self.knife_trace.append((x, y))
-            self.last_x = x
-            self.last_y = y
+            self.current_trace.append((x, y))
             self.update()
 
     def knifeRelease(self, event):
@@ -1011,7 +1060,9 @@ class FieldWidget(QWidget, FieldView):
         Completes and adds trace.
         """
         if self.lclick:
-            self.cutTrace(self.knife_trace)
+            self.cutTrace(self.current_trace)
+        self.current_trace = []
+        self.update()
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

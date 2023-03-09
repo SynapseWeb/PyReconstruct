@@ -82,4 +82,32 @@ class Contour():
 
         return (xmax + xmin) / 2, (ymax + ymin) / 2
 
-
+    def importTraces(self, other):
+        """Import all of the traces from another contour.
+        
+            Params:
+                other (Contour): the contour with traces to import
+        """
+        # assume that the first few traces are the same to save time
+        for i, o_trace in enumerate(other):
+            if i >= len(self):
+                break
+            s_trace = self[i]
+            if not s_trace.overlaps(o_trace):
+                break
+        
+        # gather remaining traces and compare them
+        rem_s_traces = self[i:]
+        rem_o_traces = other[i:]
+        for o_trace in rem_o_traces:
+            found = False
+            found_i = None
+            for i, s_trace in enumerate(rem_s_traces):
+                if s_trace.overlaps(o_trace):
+                    found = True
+                    found_i = i
+                    break
+            if found:
+                rem_s_traces.pop(found_i)
+            else:
+                self.append(o_trace.copy())

@@ -7,6 +7,7 @@ from modules.pyrecon.transform import Transform
 
 from modules.calc.quantification import (
     getDistanceFromTrace,
+    distance
 )
 
 from constants.locations import assets_dir
@@ -29,6 +30,10 @@ class Section():
         )
 
         self.selected_traces = []
+        self.selected_ztraces = []
+
+        self.temp_hide = []
+
         self.added_traces = []
         self.removed_traces = []
         self.modified_traces = []
@@ -51,9 +56,15 @@ class Section():
         self.thickness = section_data["thickness"]
         self.contours = section_data["contours"]
         for name in self.contours:
+            trace_list = []
+            for trace_data in self.contours[name]:
+                trace = Trace.fromDict(trace_data, name)
+                # screen for defective traces
+                if len(trace.points) > 1:
+                    trace_list.append(trace)
             self.contours[name] = Contour(
                 name,
-                [Trace.fromDict(t, name) for t in self.contours[name]]  # convert trace dictionaries into trace objects
+                trace_list
             )
         
         # ADDED SINCE JAN 25TH
@@ -73,11 +84,20 @@ class Section():
             section_data["brightness"] = 0
         section_data["contrast"] = int(section_data["contrast"])
 
-        # modify traces and delete name
+        empty_contours = []
         for cname in section_data["contours"]:
             for trace in section_data["contours"][cname]:
+                # check for empty traces
+                if len(trace["x"]) < 2:
+                    section_data["contours"][cname].remove(trace)
+                # modify traces and delete name
                 if "name" in trace:
                     del(trace["name"])
+            # check for empty contours
+            if len(section_data["contours"][cname]) == 0:
+                empty_contours.append(cname)
+        for cname in empty_contours:
+            del(section_data["contours"][cname])
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.
@@ -338,11 +358,22 @@ class Section():
                 min_interior_distance = dist
                 closest_trace_interior = trace
         
+        # check for ztrace points close by
+        for ztrace in self.series.ztraces.values():
+            for i, pt in enumerate(ztrace.points):
+                if pt[2] == self.n:
+                    x, y = tform.map(*pt[:2])
+                    dist = distance(field_x, field_y, x, y)
+                    if closest_trace is None or dist < min_distance:
+                        min_distance = dist
+                        closest_trace = (ztrace, i)
+        
         return closest_trace if min_distance <= radius else closest_trace_interior
     
     def deselectAllTraces(self):
         """Deselect all traces."""
         self.selected_traces = []
+        self.selected_ztraces = []
     
     def selectAllTraces(self):
         """Select all traces."""
@@ -355,22 +386,31 @@ class Section():
                 traces (list): the traces to hide
                 hide (bool): True if traces should be hidden
         """
+        modified = False
+
         if not traces:
             traces = self.selected_traces
 
         for trace in traces:
+            modified = True
             trace.setHidden(hide)
             self.modified_traces.append(trace)
         
         self.selected_traces = []
+
+        return modified
     
     def unhideAllTraces(self):
         """Unhide all traces on the section."""
+        modified = False
         for trace in self.tracesAsList():
             hidden = trace.hidden
             if hidden:
+                modified = True
                 trace.setHidden(False)
                 self.modified_traces.append(trace)
+        
+        return modified
     
     def makeNegative(self, negative=True):
         """Make a set of traces negative."""
@@ -380,19 +420,32 @@ class Section():
             trace.negative = negative
             self.addTrace(trace, "made negative")
     
-    def deleteTraces(self, traces : list = None):
+    def deleteTraces(self, traces : list = None, ztraces_i : list = None):
         """Delete selected traces.
         
             Params:
                 traces (list): a list of traces to delete (default is selected traces)
+                ztraces (list): a list of ztrace, index pair points to delete
         """
+        modified = False
+
         if traces is None:
             traces = self.selected_traces.copy()
+        if ztraces_i is None:
+            ztraces_i = self.selected_ztraces.copy()
 
         for trace in traces:
+            modified = True
             self.removeTrace(trace)
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
+        # for ztrace_i in ztraces_i:
+        #     ztrace, i = ztrace_i
+        #     del(ztrace.points[i])
+        #     if ztrace_i in self.selected_ztraces:
+        #         self.selected_ztraces.remove(ztrace_i)
+
+        return modified
     
     def translateTraces(self, dx : float, dy : float):
         """Translate the selected traces.
@@ -415,3 +468,30 @@ class Section():
                 # replace point
                 trace.points[i] = (x, y)
             self.addTrace(trace, log_message="translated")
+        for ztrace, i in self.selected_ztraces:
+            x, y, snum = ztrace.points[i]
+            # apply forward tform
+            x, y = tform.map(x, y)
+            # apply translate
+            x += dx
+            y += dy
+            # apply reverse transform
+            x, y = tform.map(x, y, inverted=True)
+            # replace point
+            ztrace.points[i] = (x, y, snum)
+            # keep track of modified ztrace
+            self.series.modified_ztraces.append(ztrace.name)
+    
+    def importTraces(self, other):
+        """Import the traces from another section.
+        
+            Params:
+                other (Section): the section with traces to import
+        """
+        for cname, contour in other.contours.items():
+            if cname in self.contours:
+                self.contours[cname].importTraces(contour)
+            else:
+                self.contours[cname] = contour.copy()
+        
+        self.save()

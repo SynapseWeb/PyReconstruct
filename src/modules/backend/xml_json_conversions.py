@@ -11,10 +11,12 @@ from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.transform import Transform
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 
 from modules.legacy_recon.utils.reconstruct_reader import process_series_file, process_section_file
-from modules.legacy_recon.utils.reconstruct_writer import write_section
+from modules.legacy_recon.utils.reconstruct_writer import write_section, write_series
 from modules.legacy_recon.classes.transform import Transform as XMLTransform
+from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
 
 def xmlToJSON(xml_dir : str) -> Series:
     """Convert a series in XML to JSON.
@@ -63,15 +65,32 @@ def xmlToJSON(xml_dir : str) -> Series:
     progress += 1
     update(progress/final_value * 100)
 
-    # convert the section files
+    # convert the section files and gather transforms
+    section_tforms = {}
     for section_fp in section_fps:
-        sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
+        snum = int(section_fp[section_fp.rfind(".")+1:])
+        tform = sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
+        section_tforms[snum] = tform
         if canceled(): return
         progress += 1
         update(progress/final_value * 100)
     
-    # open and return the series file
-    return Series(json_series_fp)
+    # open the series file
+    series = Series(json_series_fp)
+
+    # modify the ztraces
+    for ztrace in series.ztraces.values():
+        for i, point in enumerate(ztrace.points):
+            x, y, snum = point
+            new_point = (
+                *section_tforms[snum].map(x, y, inverted=True),
+                snum
+            )
+            ztrace.points[i] = new_point
+    
+    # save and return the series
+    series.save()
+    return series
 
 def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     # grab the series file
@@ -101,8 +120,11 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
         ))
     series_dict["current_trace"] = series_dict["palette_traces"][0]
     
-    # IMPLEMENT THIS EVENTAULLY: ztraces
-    series_dict["ztraces"] = []
+    # import ztraces
+    series_dict["ztraces"] = {}
+    for xml_zcontour in xml_series.zcontours:
+        series_dict["ztraces"][xml_zcontour.name] = Ztrace.dictFromXMLObj(xml_zcontour)
+
 
     # get the series filename and save
     fname = os.path.basename(series_fp)
@@ -179,6 +201,9 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     # save the section
     with open(os.path.join(hidden_dir, fname), "w") as f:
         json.dump(section_dict, f)
+    
+    # return the section's transform
+    return tform
 
 def jsonToXML(series : Series, new_dir : str):
     """Convert a series in JSON to XML.
@@ -194,18 +219,18 @@ def jsonToXML(series : Series, new_dir : str):
     progress = 0
     final_value = len(series.sections) + 1
 
+    # convert the sections
+    for snum, section in series.enumerateSections():
+        sectionJSONtoXML(series, section, new_dir)
+        if canceled(): return
+        progress += 1
+        update(progress/final_value * 100)
+    
     # convert the series
     seriesJSONtoXML(series, new_dir)
     if canceled(): return
     progress += 1
     update(progress/final_value * 100)
-
-    # convert the sections
-    for snum in series.sections:
-        sectionJSONtoXML(series, snum, new_dir)
-        if canceled(): return
-        progress += 1
-        update(progress/final_value * 100)
 
 def seriesJSONtoXML(series : Series, new_dir : str):
     # create the blank series and replace text as needed
@@ -223,12 +248,23 @@ def seriesJSONtoXML(series : Series, new_dir : str):
     series_fp = os.path.join(new_dir, series.name + ".ser")
     with open(series_fp, "w") as f:
         f.write(xml_text)
+    
+    # load the series file and insert ztraces
+    xml_series = process_series_file(series_fp)
+    for ztrace in series.ztraces.values():
+        xml_series.zcontours.append(ztrace.getXMLObj(series))
+    write_series(
+        xml_series,
+        directory=os.path.basename(series_fp),
+        outpath=series_fp,
+        overwrite=True
+    )
+        
 
-def sectionJSONtoXML(series : Series, snum : int, new_dir : str):
-    section = series.loadSection(snum)
+def sectionJSONtoXML(series : Series, section : Section, new_dir : str):
     # create a blank xml section
     xml_text = blank_section
-    xml_text = xml_text.replace("[SECTION_INDEX]", str(snum))
+    xml_text = xml_text.replace("[SECTION_INDEX]", str(section.n))
     xml_text = xml_text.replace("[SECTION_THICKNESS]", str(section.thickness))
     xml_text = xml_text.replace("[TRANSFORM_DIM]", "3")
     xml_text = xml_text.replace("[XCOEF]", "0 1 0 0 0 0") # to be replaced
@@ -241,7 +277,7 @@ def sectionJSONtoXML(series : Series, snum : int, new_dir : str):
     # save the file
     section_fp = os.path.join(
         new_dir,
-        f"{series.name}.{snum}"
+        f"{series.name}.{section.n}"
     )
     with open(section_fp, "w") as xml_file:
         xml_file.write(xml_text)

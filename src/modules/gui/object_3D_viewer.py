@@ -6,7 +6,7 @@ from PySide6.QtGui import QKeySequence, QShortcut
 import pyqtgraph.opengl as gl
 from pyqtgraph.Vector import Vector
 
-from modules.backend.generate_volumes import generateVolumes
+from modules.backend.generate_volumes import generateVolumes, generate3DZtraces
 
 from modules.pyrecon.series import Series
 
@@ -132,6 +132,27 @@ class Object3DViewer(gl.GLViewWidget):
         self.vol_items = sortVolItems(self.vol_items)
         for v, item in self.vol_items:
             self.addItem(item)
+    
+    def addZtraces(self, ztrace_names):
+        """Add ztraces to the existing scene.
+        
+            Params:
+                ztrace_names (list): the list of ztraces to add to the scene
+        """
+        # get the ztrace items
+        ztrace_items = generate3DZtraces(self.series, ztrace_names)
+
+        # remove existing objects from scene
+        for v, item in self.vol_items:
+            self.removeItem(item)
+        
+        # add the ztraces to the scene
+        for item in ztrace_items:
+            self.addItem(item)
+        
+        # # add the volumes back to the scene
+        for v, item, in self.vol_items:
+            self.addItem(item)
         
     def createScaleCubeShortcuts(self):
         """Create the shortcuts for the 3D scene."""
@@ -248,11 +269,14 @@ class Object3DViewer(gl.GLViewWidget):
         super().closeEvent(event)
 
 def sortVolItems(vol_items):
-    sort_list = []
-    for i in range(len(vol_items)):
-        sort_list.append((vol_items[i][0], i))
-    sort_list.sort()
+    """Sort a set of GL items by volume.
+    
+        Params:
+            vol_items (list): a list of vol, item pairs
+    """
+    vol_index = [(v, i) for i, (v, item) in enumerate(vol_items)]
+    vol_index.sort()
     new_vol_items = []
-    for v, i in sort_list:
+    for v, i in vol_index:
         new_vol_items.append(vol_items[i])
     return new_vol_items

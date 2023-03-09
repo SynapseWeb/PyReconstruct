@@ -1,4 +1,6 @@
-from PySide6.QtCore import Qt, QPoint
+import math
+
+from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
     QPixmap,
     QPen,
@@ -10,6 +12,7 @@ from PySide6.QtGui import (
 from modules.pyrecon.series import Series
 from modules.pyrecon.section import Section
 from modules.pyrecon.trace import Trace
+from modules.pyrecon.ztrace import Ztrace
 
 from modules.backend.grid import (
     getExterior, 
@@ -39,6 +42,29 @@ class TraceLayer():
         self.series = series
         self.traces_in_view = []
     
+    def pointToPix(self, pt : tuple, apply_tform=True, qpoint=False) -> tuple:
+        """Return the pixel point corresponding to a field point.
+        
+            Params:
+                pt (tuple): the trace to convert
+                apply_tform (bool): true if section transform should be applied to the point
+                qpoints (bool): True if points should be converted QPoint
+            Returns:
+                (tuple): the pixel point
+        """
+        x, y = tuple(pt)
+        if apply_tform:
+            tform = self.section.tforms[self.series.alignment]
+            x, y = tform.map(x, y)
+        x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+
+        if qpoint:
+            new_pt = QPoint(x, y)
+        else:
+            new_pt = (x, y)
+        
+        return new_pt
+    
     def traceToPix(self, trace : Trace, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
         
@@ -49,15 +75,8 @@ class TraceLayer():
                 (list): list of pixel points
         """
         new_pts = []
-        tform = self.section.tforms[self.series.alignment]
         for point in trace.points:
-            x, y = tuple(point)
-            x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
-            if qpoints:
-                new_pts.append(QPoint(x, y))
-            else:
-                new_pts.append((x, y))
+            new_pts.append(self.pointToPix(point, qpoint=qpoints))
         return new_pts
     
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
@@ -108,7 +127,17 @@ class TraceLayer():
                     break
             if inside_poly:
                 traces_in_poly.append(trace)
-        return traces_in_poly
+        
+        ztraces_in_poly = []
+        for ztrace in self.series.ztraces.values():
+            # check if point is inside polygon
+            for i, (x, y, snum) in enumerate(ztrace.points):
+                if snum == self.section.n:
+                    pix_point = self.pointToPix((x, y))
+                    if pointInPoly(*pix_point, pix_poly):
+                        ztraces_in_poly.append((ztrace, i))
+
+        return traces_in_poly, ztraces_in_poly
 
     def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
         """Create a new trace from pixel coordinates.
@@ -120,7 +149,7 @@ class TraceLayer():
                 log_message (str): the log message for the new trace action
                 origin_traces (list): the traces that the new trace came from (used in the cases of merging and cutting; keeps track of history)
         """
-        if len(pix_trace) < 1:  # do not create a new trace if there is only one point
+        if len(pix_trace) < 2:  # do not create a new trace if there is only one point
             return
         if closed:
             pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
@@ -211,12 +240,6 @@ class TraceLayer():
             Params:
                 knife_trace (list): the knife trace in pixmap points
         """
-        if len(self.section.selected_traces) == 0:
-            notify("Please select the trace you wish to cut.")
-            return
-        elif len(self.section.selected_traces) > 1:
-            notify("Please select only one trace to cut at a time.")
-            return
         trace = self.section.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
@@ -355,6 +378,89 @@ class TraceLayer():
         
         return trace_in_view
     
+    def _drawZtrace(self, trace_layer : QPixmap, ztrace : Ztrace):
+        """Draw points on the current trace layer.
+        
+            Params:
+                trace_layer (QPixmap): the pixmap to draw the point
+                points (list): the list of points to draw
+        """
+        points, lines = ztrace.getSectionData(self.series, self.section)
+        # convert to screen coordinates
+        qpoints = []
+        for pt in points:
+            qpoints.append(self.pointToPix(
+                pt,
+                apply_tform=False,
+                qpoint=True
+            ))
+        qlines = []
+        for p1, p2 in lines:
+            qp1 = self.pointToPix(
+                p1[:2],
+                apply_tform=False,
+                qpoint=True
+            )
+            qp2 = self.pointToPix(
+                p2[:2],
+                apply_tform=False,
+                qpoint=True
+            )
+            qlines.append(QLine(qp1, qp2))
+        
+        # set up painter
+        painter = QPainter(trace_layer)
+        painter.setPen(QPen(QColor(*ztrace.color), 6))
+
+        # draw points and lines
+        painter.drawPoints(qpoints)
+        painter.setPen(QPen(QColor(*ztrace.color), 1))
+        for line in qlines:
+            p1_arrow = True
+            p2_arrow = True
+            if line.p1() in qpoints:
+                p1_arrow = False
+            if line.p2() in qpoints:
+                p2_arrow = False
+            drawArrow(
+                painter,
+                line,
+                p1_arrow,
+                p2_arrow
+            )
+        painter.end()
+    
+    def _drawZtraceHighlights(self, trace_layer : QPixmap):
+        """Draw highlighted points on the current trace layer.
+        
+            Params:
+                trace_layer (QPixmap): the pixmap to draw the points
+        """
+        points = []
+        colors = []
+        for ztrace, i in self.section.selected_ztraces:
+            if ztrace not in self.section.temp_hide:
+                points.append(ztrace.points[i][:2])
+                colors.append(ztrace.color)
+
+        # convert to screen coordinates
+        qpoints = []
+        for pt in points:
+            qpoints.append(self.pointToPix(
+                pt,
+                qpoint=True
+            ))
+        
+        # set up painter
+        painter = QPainter(trace_layer)
+        painter.setOpacity(self.series.fill_opacity)
+
+        # draw points
+        for qpoint, color in zip(qpoints, colors):
+            painter.setPen(QPen(QColor(*color), 15))
+            painter.drawPoint(qpoint)
+        painter.end()
+   
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False) -> QPixmap:
         """Generate the traces on a transparent background.
         
@@ -365,7 +471,6 @@ class TraceLayer():
             Returns:
                 (QPixmap): the pixmap with traces drawn in
         """
-        # draw all the traces
         self.window = window
         self.pixmap_dim = pixmap_dim
         self.screen_poly = [
@@ -381,17 +486,96 @@ class TraceLayer():
         # draw traces (keep track of those in view)
         self.traces_in_view = []
         for trace in self.section.tracesAsList():
-            if show_all_traces or not trace.hidden:
+            if (
+                trace not in self.section.temp_hide and
+                (show_all_traces or not trace.hidden)
+            ):
                 trace_in_view = self._drawTrace(
                     trace_layer,
                     trace
                 )
                 if trace_in_view:
                     self.traces_in_view.append(trace)
-            else:
-                # remove the trace from selected traces if it is not being shown
-                if trace in self.section.selected_traces:
-                    self.section.selected_traces.remove(trace)
+            # else:
+            #     # remove the trace from selected traces if it is not being shown
+            #     if trace in self.section.selected_traces:
+            #         self.section.selected_traces.remove(trace)
+        
+        # draw ztraces
+        if self.series.options["show_ztraces"]:
+            for ztrace in self.series.ztraces.values():
+                if ztrace not in self.section.temp_hide:
+                    self._drawZtrace(trace_layer, ztrace)
+        self._drawZtraceHighlights(trace_layer)
+                
 
         return trace_layer
+
+
+def getTheta(line : QLine):
+    """Get the angle a line makes with the x-axis.
+    
+        Params:
+            line (QLine): the qline to get the angle for
+    """
+    p1 = line.p1()
+    p2 = line.p2()
+    v = p2 - p1
+    if v.x() == 0:
+        if v.y() < 0:
+            theta = 3*math.pi/2
+        elif v.y() > 0:
+            theta = math.pi/2
+        else:
+            theta = None
+    elif v.x() < 0:
+        theta = math.pi + math.atan(v.y()/v.x())
+    elif v.x() > 0:
+        theta = math.atan(v.y()/v.x())
+    
+    return theta
+    
+def drawArrowHead(painter : QPainter, pt : QPoint, theta : float, l = 5):
+    """Draw an arrowhead in a given direction.
+    
+        Params:
+            painter (QPainter): the painter to draw the arrowhead
+            pt (QPoint): the point on which the arrowhead is located
+            theta (float): the angle (in radians) of the arrowhead (cc from x-axis)
+            l (int): the length of the arrowhead
+    """
+    theta += math.pi
+    t1 = theta + math.pi/6
+    t2 = theta - math.pi/6
+    p1 = QPoint(
+        pt.x() + l * math.cos(t1),
+        pt.y() + l * math.sin(t1)
+    )
+    p2 = pt
+    p3 = QPoint(
+        pt.x() + l * math.cos(t2),
+        pt.y() + l * math.sin(t2)
+    )
+    l1 = QLine(p1, p2)
+    l2 = QLine(p2, p3)
+    painter.drawLine(l1)
+    painter.drawLine(l2)
+
+def drawArrow(painter : QPainter, line : QLine, p1_arrow=True, p2_arrow=True):
+    """Draw an line with one or two arrowheads.
+    
+        Params:
+            painter (QPainter): the painter used to draw the arrow
+            line (QLine): the ztrace qline
+            p1_arrow (bool): True if arrowhead on the first point
+            p2_arrow (bool): True if arrowhead on the second point
+    """
+    painter.drawLine(line)
+    theta = getTheta(line)
+    if theta is not None:
+        if p1_arrow:
+            drawArrowHead(painter, line.p1(), theta)
+        if p2_arrow:
+            drawArrowHead(painter, line.p2(), theta)
+
         

@@ -25,27 +25,7 @@ class ObjectTableManager():
 
         self.object_viewer = None
 
-        self.loadSeriesData()
-
-    def loadSeriesData(self):
-        """Load all of the data for each object in the series."""
-
-        self.objdict = {}  # object name : ObjectTableItem (contains data on object)
-
-        for snum, section in self.series.enumerateSections():
-            # iterate through contours
-            for contour_name in section.contours:
-                if contour_name not in self.objdict:
-                    self.objdict[contour_name] = ObjectTableItem(contour_name)
-                # iterate through traces
-                for trace in section.contours[contour_name]:
-                    # add to existing data
-                    self.objdict[contour_name].addTrace(
-                        trace,
-                        section.tforms[self.series.alignment],
-                        snum,
-                        section.thickness
-                    )
+        self.objdict = self.series.loadObjectData(object_table_items=True)
     
     def newTable(self):
         """Create a new object list widget."""
@@ -147,7 +127,7 @@ class ObjectTableManager():
     def refresh(self):
         """Reload all of the section data."""
         self.mainwindow.saveAllData()
-        self.loadSeriesData()
+        self.objdict = self.series.loadObjectData(object_table_items=True)
         for table in self.tables:
             table.createTable(self.objdict)
     
@@ -367,18 +347,24 @@ class ObjectTableManager():
         
         HistoryWidget(self.mainwindow, output_str)
     
-    def createZtrace(self, obj_names : list):
+    def createZtrace(self, obj_names : list, cross_sectioned : bool):
         """Create ztraces from a set of objects.
         
             Params:
                 obj_names (list): the objects to create ztraces for
+                croess_sectioned (bool): True if object is cross-sectioned
         """
         self.mainwindow.saveAllData()
 
         for name in obj_names:
-            self.series.createZtrace(name)
+            self.series.createZtrace(name, cross_sectioned)
+
+        # update the ztrace table if one exists
+        if self.mainwindow.field.ztrace_table_manager:
+            self.mainwindow.field.ztrace_table_manager.refresh()
         
         self.mainwindow.seriesModified(True)
+        self.mainwindow.field.reload()
     
     def close(self):
         """Close all tables."""

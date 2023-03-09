@@ -9,15 +9,16 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog, 
-    QMessageBox
+    QFileDialog
 )
 from PySide6.QtCore import Qt
 
 from modules.pyrecon.series import Series
 
 from modules.backend.ztrace_table_item import ZtraceTableItem
-from modules.gui.gui_functions import populateMenuBar, populateMenu
+
+from modules.gui.gui_functions import populateMenuBar, populateMenu, notify
+from modules.gui.dialog import ZtraceDialog, SmoothZtraceDialog
 
 class ZtraceTableWidget(QDockWidget):
 
@@ -94,8 +95,11 @@ class ZtraceTableWidget(QDockWidget):
 
         # create the right-click menu
         context_menu_list = [
-            ("editname_act", "Edit name...", "", self.editName),
+            ("editname_act", "Edit attributes...", "", self.editAttributes),
             ("smooth_act", "Smooth", "", self.smooth),
+            None,
+            ("addto3D_act", "Add to 3D scene", "", self.addTo3D),
+            None,
             ("delete_act", "Delete", "", self.delete)
         ]
         self.context_menu = QMenu(self)
@@ -128,6 +132,7 @@ class ZtraceTableWidget(QDockWidget):
 
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu
+        self.table.mouseDoubleClickEvent = self.addTo3D
 
         # establish table headers
         self.horizontal_headers = ["Name", "Distance"]
@@ -189,30 +194,36 @@ class ZtraceTableWidget(QDockWidget):
             return
         self.context_menu.exec(event.globalPos())
 
-    def editName(self):
+    def editAttributes(self):
         """Edit the name of a ztrace."""
-        name = self.getSelectedName()
-        if name is None:
+        names = self.getSelectedNames()
+        if names is None:
             return
-        
-        new_name, confirmed = QInputDialog.getText(
-            self, 
-            "Rename Ztrace",
-            "Enter the new ztrace name:",
-            text=name
-        )
+        if len(names) > 1:
+            notify("Please modify one ztrace at a time.")
+            return
+        name = names[0]
+
+        if name not in self.series.ztraces:
+            return
+        ztrace = self.series.ztraces[name]
+
+        attributes, confirmed = ZtraceDialog(
+            self,
+            name=name,
+            color=ztrace.color
+        ).exec()
+
         if not confirmed:
             return
+
+        new_name, new_color = attributes
+
+        if new_name != name and new_name in self.manager.data:
+            notify("This ztrace already exists.")
+            return
         
-        if new_name not in self.manager.data:
-            self.manager.editName(name, new_name)
-        else:
-            QMessageBox.information(
-                self,
-                "Ztrace",
-                "This ztrace already exists..",
-                QMessageBox.Ok
-            )
+        self.manager.editAttributes(name, new_name, new_color)
     
     def smooth(self):
         """Smooth a set of ztraces."""
@@ -220,7 +231,21 @@ class ZtraceTableWidget(QDockWidget):
         if not names:
             return
         
-        self.manager.smooth(names)
+        response, confirmed = SmoothZtraceDialog(self).exec()
+        if not confirmed:
+            return
+        
+        smooth, newztrace = response
+        
+        self.manager.smooth(names, smooth, newztrace)
+    
+    def addTo3D(self, event=None):
+        """Add the ztrace to the 3D scene."""
+        names = self.getSelectedNames()
+        if not names:
+            return
+        
+        self.manager.addTo3D(names)
     
     def delete(self):
         """Delete a set of ztraces."""

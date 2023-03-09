@@ -66,6 +66,22 @@ def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     dist = ((x1-x2)**2 + (y1-y2)**2) ** 0.5
     return dist
 
+def distance3D(x1 : float, y1 : float, z1 : float, x2 : float, y2 : float, z2 : float) -> float:
+    """Calculate Euclidean distance between two points in 2D space.
+    
+        Params:
+            x1 (float): x-value of first point
+            y1 (float): y-value of first point
+            z1 (float): z-value of fist point
+            x2 (float): x-value of second point
+            y2 (float): y-value of second point
+            z2 (float): z-value of second point
+        Returns:
+            (float) the distance between the two points
+    """
+    dist = ((x1-x2)**2 + (y1-y2)**2 + (z2-z1)**2) ** 0.5
+    return dist
+
 def lineDistance(pts : list, closed=True) -> float:
     """Calculate distance along multi-vertex line.
 

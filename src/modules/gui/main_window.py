@@ -243,6 +243,8 @@ class MainWindow(QMainWindow):
             None,
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
             None,
+            self.paste_act,
+            None,
             ("blend_act", "Toggle blend", " ", self.field.toggleBlend),
         ]
         self.field_menu = QMenu(self)

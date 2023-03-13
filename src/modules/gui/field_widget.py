@@ -16,7 +16,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QPixmap, 
     QPen, 
-    QColor, 
+    QColor,
+    QFont, 
     QPainter, 
     QPointingDevice,
     QCursor
@@ -70,7 +71,9 @@ class FieldWidget(QWidget, FieldView):
 
         # misc defaults
         self.current_trace = []
-        self.max_click_time = 0.2
+        self.max_click_time = 0.15
+        self.mouse_x = 0
+        self.mouse_y = 0
 
         self.createField(series)
 
@@ -277,8 +280,9 @@ class FieldWidget(QWidget, FieldView):
 
         # draw the working trace on the screen
         if self.current_trace:
+            pen = None
             # if drawing lasso
-            if (self.mouse_mode == FieldWidget.POINTER) and self.is_selecting_traces:
+            if self.mouse_mode == FieldWidget.POINTER and self.is_selecting_traces:
                 closed = True
                 pen = QPen(QColor(255, 255, 255), 1)
                 pen.setDashPattern([4, 4])
@@ -287,24 +291,30 @@ class FieldWidget(QWidget, FieldView):
                 closed = False
                 pen = QPen(QColor(255, 0, 0), 1)
             # if drawing trace
-            else:
+            elif (
+                self.mouse_mode == FieldWidget.OPENTRACE or
+                self.mouse_mode == FieldWidget.CLOSEDTRACE
+            ):
                 closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing)
                 color = QColor(*self.tracing_trace.color)
                 pen = QPen(color, 1)
-            field_painter.setPen(pen)
-            if closed:
-                start = 0
-            else:
-                start = 1
-            for i in range(start, len(self.current_trace)):
-                field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-            # draw dashed lines that connect to mouse pointer
-            if self.is_line_tracing:
-                pen.setDashPattern([2,5])
+            
+            # draw current trace if exists
+            if pen:
                 field_painter.setPen(pen)
-                field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
                 if closed:
-                    field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
+                    start = 0
+                else:
+                    start = 1
+                for i in range(start, len(self.current_trace)):
+                    field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+                # draw dashed lines that connect to mouse pointer
+                if self.is_line_tracing:
+                    pen.setDashPattern([2,5])
+                    field_painter.setPen(pen)
+                    field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
+                    if closed:
+                        field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
             
         # unique method for drawing moving traces
         elif self.is_moving_trace:
@@ -323,6 +333,29 @@ class FieldWidget(QWidget, FieldView):
                 field_painter.setPen(QPen(QColor(*color), 6))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
+        
+        # draw the name of the closest trace on the screen
+        if (
+            not (self.lclick or self.rclick or self.mclick) and
+            not self.is_gesturing and
+            self.mouse_mode == FieldWidget.POINTER
+        ):
+            closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
+            if closest_trace:
+                name = closest_trace.name
+                # get handedness from mouse palette
+                if self.mainwindow.mouse_palette.left_handed:
+                    pos = self.mouse_x, self.mouse_y
+                else:
+                    pos = (
+                        self.mouse_x - int(9.5*len(name)),
+                        self.mouse_y
+                    )
+                color = closest_trace.color
+                field_painter.setPen(QColor(*color))
+                font = QFont("Courier New", 12, QFont.Bold)
+                field_painter.setFont(font)
+                field_painter.drawText(*pos, name)
 
         field_painter.end()
     
@@ -363,7 +396,7 @@ class FieldWidget(QWidget, FieldView):
             position += "y = " + str("{:.4f}".format(y))
             self.status_list.append(position)
 
-            # display the closest trace in the field if not tracing
+            # display the closest trace in the field if not tracing or in pointer mode
             if find_closest_trace:
                 closest_trace = self.findClosestTrace(x, y)
                 # user hovered over trace
@@ -625,8 +658,12 @@ class FieldWidget(QWidget, FieldView):
         # if panzooming
         if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
             self.updateStatusBar()
-        # if pressing buttons or line tracing
-        elif event.buttons() or self.is_line_tracing:
+        # if pressing buttons, line tracing, or in pointer mode
+        elif (
+            event.buttons() or 
+            self.is_line_tracing or 
+            self.mouse_mode == FieldWidget.POINTER
+        ):
             self.updateStatusBar(event, find_closest_trace=False)
         else:
             self.updateStatusBar(event)
@@ -701,8 +738,14 @@ class FieldWidget(QWidget, FieldView):
     
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
-        # do nothing if not left clicking or if insufficient time has passed
-        if not self.lclick or (time.time() - self.click_time <= self.max_click_time):
+        # print trace name to screen in pointer mode
+        if not (self.lclick or self.rclick or self.mclick):
+            self.update()
+            return
+        
+        # keep track of possible lasso if insufficient time has passed
+        if (time.time() - self.click_time <= self.max_click_time):
+            self.current_trace.append((event.x(), event.y()))
             return
         
         # left button is down and user clicked on a trace
@@ -713,6 +756,8 @@ class FieldWidget(QWidget, FieldView):
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
+                # clear lasso trace
+                self.current_trace = []
                 # get pixel points
                 self.moving_traces = []
                 self.moving_points = []
@@ -750,6 +795,7 @@ class FieldWidget(QWidget, FieldView):
     
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
+
         # user single-clicked a trace
         if ((time.time() - self.click_time <= self.max_click_time) and 
         self.lclick and self.selected_trace
@@ -770,19 +816,20 @@ class FieldWidget(QWidget, FieldView):
             dx = (event.x() - self.clicked_x) * self.series.screen_mag
             dy = (event.y() - self.clicked_y) * self.series.screen_mag * -1
             self.section.translateTraces(dx, dy)
-            self.generateView()
+            self.generateView(update=False)
             self.saveState()
         
         # user selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
-            selected_traces, selected_ztraces = self.section_layer.getTraces(self.current_trace)
-            self.current_trace = []
-            if selected_traces or selected_ztraces:
-                self.selectTraces(selected_traces, selected_ztraces)
-            else:
-                self.current_trace = []
-                self.update()
+            selected = self.section_layer.getTraces(self.current_trace)
+            if selected:
+                traces, ztraces = selected
+                self.selectTraces(traces, ztraces)
+        
+        # clear any traces made
+        self.current_trace = []
+        self.update()
     
     def eraserMove(self, event):
         """Called when the user is erasing."""

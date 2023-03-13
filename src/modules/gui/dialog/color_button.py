@@ -18,7 +18,10 @@ class ColorButton(QPushButton):
 
     def selectColor(self):
         """Called when button is clicked: prompts user to change color"""
-        color = QColorDialog.getColor()
+        if self.color:
+            color = QColorDialog.getColor(QColor(*self.color))
+        else:
+            color = QColorDialog.getColor()
         if color.isValid():
             self.setColor((color.red(), color.green(), color.blue()))
     

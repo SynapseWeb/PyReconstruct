@@ -778,7 +778,7 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        copied_traces = self.section_layer.getCopiedTraces()
+        copied_traces = self.section_layer.getCopiedTraces(cut=True)
         if copied_traces:
             self.clipboard = copied_traces
             self.saveState()

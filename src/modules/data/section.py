@@ -331,6 +331,9 @@ class Section():
         
         # iterate through all traces to get closest
         for trace in traces:
+            # skip hidden traces
+            if trace.hidden:
+                continue
             points = []
             for point in trace.points:
                 x, y = tform.map(*point)

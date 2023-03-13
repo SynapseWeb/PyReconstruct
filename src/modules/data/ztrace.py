@@ -1,6 +1,6 @@
 from modules.calc import distance3D
 
-from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
+from modules.legacy_recon import ZContour as XMLZContour
 
 class Ztrace():
 

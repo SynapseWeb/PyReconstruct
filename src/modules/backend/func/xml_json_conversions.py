@@ -13,11 +13,13 @@ from modules.data import (
     Trace,
     Ztrace
 )
-
-from modules.legacy_recon.utils.reconstruct_reader import process_series_file, process_section_file
-from modules.legacy_recon.utils.reconstruct_writer import write_section, write_series
-from modules.legacy_recon.classes.transform import Transform as XMLTransform
-from modules.legacy_recon.classes.zcontour import ZContour as XMLZContour
+from modules.legacy_recon import (
+    Transform as XMLTransform,
+    process_series_file, 
+    process_section_file,
+    write_section,
+    write_series
+)
 
 def xmlToJSON(xml_dir : str) -> Series:
     """Convert a series in XML to JSON.
@@ -227,7 +229,7 @@ def jsonToXML(series : Series, new_dir : str):
     final_value = len(series.sections) + 1
 
     # convert the sections
-    for snum, section in series.enumerateSections():
+    for snum, section in series.enumerateSections(show_progress=False):
         sectionJSONtoXML(series, section, new_dir)
         if canceled(): return
         progress += 1

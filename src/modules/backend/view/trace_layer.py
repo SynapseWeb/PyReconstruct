@@ -329,52 +329,73 @@ class TraceLayer():
         """        
         # convert to screen coordinates
         qpoints = self.traceToPix(trace, qpoints=True)
+        if not qpoints:
+            print("EMPTY TRACE DETECTED")
+            return
 
-        # check if trace in view
-        trace_in_view = False
-        for point in qpoints:
-            if pointInPoly(point.x(), point.y(), self.screen_poly):
-                trace_in_view = True
-                break
+        # get the bounds
+        xmin = qpoints[0].x()
+        xmax = xmin
+        ymin = qpoints[0].y()
+        ymax = ymin
+        for p in qpoints[1:]:
+            x = p.x()
+            y = p.y()
+            if x < xmin:
+                xmin = x
+            elif x > xmax:
+                xmax = x
+            if y < ymin:
+                ymin = y
+            elif y > ymax:
+                ymax = y
         
-        # set up painter
-        painter = QPainter(trace_layer)
-        painter.setPen(QPen(QColor(*trace.color), 1))
+        trace_bounds = xmin, ymin, xmax, ymax
+        screen_bounds = 0, 0, *self.pixmap_dim
 
-        # draw trace
-        if trace.closed:
-            painter.drawPolygon(qpoints)
-        else:
-            painter.drawPolyline(qpoints)
-        
-        # draw highlight
-        if trace in self.section.selected_traces:
-            painter.setPen(QPen(QColor(*trace.color), 8))
-            painter.setOpacity(0.4)
+        # draw if within view
+        if boundsOverlap(trace_bounds, screen_bounds):
+            # set up painter
+            painter = QPainter(trace_layer)
+            painter.setPen(QPen(QColor(*trace.color), 1))
+
+            # draw trace
             if trace.closed:
                 painter.drawPolygon(qpoints)
             else:
                 painter.drawPolyline(qpoints)
-        
-        # determine if user requested fill
-        if (
-            (trace.fill_mode[0] != "none") and
-            ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
-        ): fill = True
-        else: fill = False
+            
+            # draw highlight
+            if trace in self.section.selected_traces:
+                painter.setPen(QPen(QColor(*trace.color), 8))
+                painter.setOpacity(0.4)
+                if trace.closed:
+                    painter.drawPolygon(qpoints)
+                else:
+                    painter.drawPolyline(qpoints)
+            
+            # determine if user requested fill
+            if (
+                (trace.fill_mode[0] != "none") and
+                ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+            ): fill = True
+            else: fill = False
 
-        # fill in shape if requested
-        if fill:
-            painter.setPen(QPen(QColor(*trace.color), 1))
-            painter.setBrush(QBrush(QColor(*trace.color)))
-            # determine the type of fill
-            if trace.fill_mode[0] == "transparent":  # transparent fill
-                painter.setOpacity(self.series.fill_opacity)
-            elif trace.fill_mode[0] == "solid":  # solid
-                painter.setOpacity(1)
-            painter.drawPolygon(qpoints)
+            # fill in shape if requested
+            if fill:
+                painter.setPen(QPen(QColor(*trace.color), 1))
+                painter.setBrush(QBrush(QColor(*trace.color)))
+                # determine the type of fill
+                if trace.fill_mode[0] == "transparent":  # transparent fill
+                    painter.setOpacity(self.series.fill_opacity)
+                elif trace.fill_mode[0] == "solid":  # solid
+                    painter.setOpacity(1)
+                painter.drawPolygon(qpoints)
         
-        return trace_in_view
+            return True
+
+        else:
+            return False
     
     def _drawZtrace(self, trace_layer : QPixmap, ztrace : Ztrace):
         """Draw points on the current trace layer.
@@ -459,31 +480,37 @@ class TraceLayer():
             painter.drawPoint(qpoint)
         painter.end()
    
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False) -> QPixmap:
+    def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:
         """Generate the traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the view of the window (x, y, w, h)
                 show_all_traces (bool): True if all traces are displayed regardless of hidden status
+                window_moved (bool): True if the window has moved (upstream: same as generate_image)
             Returns:
                 (QPixmap): the pixmap with traces drawn in
         """
         self.window = window
         self.pixmap_dim = pixmap_dim
-        self.screen_poly = [
-            (0, 0),
-            (self.pixmap_dim[0], 0),
-            (self.pixmap_dim[0], self.pixmap_dim[1]),
-            (0, self.pixmap_dim[1])
-        ]
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         trace_layer = QPixmap(pixmap_w, pixmap_h)
         trace_layer.fill(Qt.transparent)
 
-        # draw traces (keep track of those in view)
+        if window_moved:
+            trace_list = self.section.tracesAsList()
+        else:
+            for trace in self.section.removed_traces:
+                for view_trace in self.traces_in_view:
+                    if trace.isSameTrace(view_trace):
+                        break
+                self.traces_in_view.remove(view_trace)
+            for trace in self.section.added_traces:
+                self.traces_in_view.append(trace)
+            trace_list = self.traces_in_view.copy()
+        
         self.traces_in_view = []
-        for trace in self.section.tracesAsList():
+        for trace in trace_list:
             if (
                 trace not in self.section.temp_hide and
                 (show_all_traces or not trace.hidden)
@@ -494,10 +521,6 @@ class TraceLayer():
                 )
                 if trace_in_view:
                     self.traces_in_view.append(trace)
-            # else:
-            #     # remove the trace from selected traces if it is not being shown
-            #     if trace in self.section.selected_traces:
-            #         self.section.selected_traces.remove(trace)
         
         # draw ztraces
         if self.series.options["show_ztraces"]:
@@ -506,9 +529,25 @@ class TraceLayer():
                     self._drawZtrace(trace_layer, ztrace)
         self._drawZtraceHighlights(trace_layer)
                 
-
         return trace_layer
 
+
+def boundsOverlap(b1 : tuple, b2 : tuple):
+    """Check if two bounding boxes intersect.
+    
+        Params:
+            b1 (tuple): xmin, ymin, xmax, ymax
+            b2 (tuple): xmin, ymin, xmax, ymax
+        Returns:
+            (bool): True if bounds have any overlap
+    """
+
+    return not (
+        b1[2] < b2[0] or 
+        b1[0] > b2[2] or 
+        b1[3] < b2[1] or 
+        b1[1] > b2[3]
+    )
 
 def getTheta(line : QLine):
     """Get the angle a line makes with the x-axis.

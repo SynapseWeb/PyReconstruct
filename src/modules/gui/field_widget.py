@@ -337,8 +337,8 @@ class FieldWidget(QWidget, FieldView):
         # draw the name of the closest trace on the screen
         if (
             not (self.lclick or self.rclick or self.mclick) and
-            not self.is_gesturing and
-            self.mouse_mode == FieldWidget.POINTER
+            not self.is_gesturing # and
+            # self.mouse_mode == FieldWidget.POINTER
         ):
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
             if closest_trace:
@@ -372,12 +372,11 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = (w, h)
         self.generateView()
     
-    def updateStatusBar(self, event=None, find_closest_trace=True):
+    def updateStatusBar(self, event=None):
         """Update status bar with useful information.
         
             Params:
                 event: contains data on mouse position
-                find_closest_trace (bool): whether or not to display closest trace
         """
         self.status_list = []
 
@@ -395,22 +394,6 @@ class FieldWidget(QWidget, FieldView):
             position = "x = " + str("{:.4f}".format(x)) + ", "
             position += "y = " + str("{:.4f}".format(y))
             self.status_list.append(position)
-
-            # display the closest trace in the field if not tracing or in pointer mode
-            if find_closest_trace:
-                closest_trace = self.findClosestTrace(x, y)
-                # user hovered over trace
-                if type(closest_trace) is Trace:
-                    ct = "Nearest trace: " + closest_trace.name
-                    if closest_trace.negative:
-                        ct += " (negative)"
-                    self.status_list.append(ct)
-                # user hovered over ztrace
-                elif type(closest_trace) is tuple:
-                    ztrace, i = closest_trace
-                    ct = "Nearest trace: " + ztrace.name
-                    ct += " (ztrace)"
-                    self.status_list.append(ct)
             
             # display the distance between the current position and the last point if line tracing
             if self.is_line_tracing:
@@ -658,15 +641,12 @@ class FieldWidget(QWidget, FieldView):
         # if panzooming
         if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
             self.updateStatusBar()
-        # if pressing buttons, line tracing, or in pointer mode
-        elif (
-            event.buttons() or 
-            self.is_line_tracing or 
-            self.mouse_mode == FieldWidget.POINTER
-        ):
-            self.updateStatusBar(event, find_closest_trace=False)
+        # if pressing buttons
+        elif event.buttons():
+            self.updateStatusBar(event)
         else:
             self.updateStatusBar(event)
+            self.update()
         
         # mouse functions
         if self.mouse_mode == FieldWidget.POINTER:
@@ -738,9 +718,8 @@ class FieldWidget(QWidget, FieldView):
     
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
-        # print trace name to screen in pointer mode
-        if not (self.lclick or self.rclick or self.mclick):
-            self.update()
+        # ignore if not clicking
+        if not self.lclick:
             return
         
         # keep track of possible lasso if insufficient time has passed
@@ -837,7 +816,7 @@ class FieldWidget(QWidget, FieldView):
             return
         erased = self.section_layer.eraseArea(event.x(), event.y())
         if erased:
-            self.generateView()
+            self.generateView(generate_image=False)
             self.saveState()
     
     def panzoomPress(self, x, y):

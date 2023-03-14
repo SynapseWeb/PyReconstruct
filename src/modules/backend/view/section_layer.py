@@ -50,7 +50,12 @@ class SectionLayer(ImageLayer, TraceLayer):
             return self.image_layer.copy()        
             
         if generate_traces:
-            self.trace_layer = self.generateTraceLayer(pixmap_dim, window, show_all_traces)
+            self.trace_layer = self.generateTraceLayer(
+                pixmap_dim,
+                window,
+                show_all_traces,
+                generate_image
+            )
         
         # combine pixmaps
         view = self.image_layer.copy()

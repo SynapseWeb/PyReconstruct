@@ -14,6 +14,8 @@ from modules.calc import (
 )
 from modules.gui.utils import notify
 
+import time
+
 class FieldView():
 
     def __init__(self, series : Series):
@@ -451,8 +453,8 @@ class FieldView():
         """
         if self.section.selected_traces or self.section.selected_ztraces:
             self.section.translateTraces(dx, dy)
-            self.generateView()
             self.saveState()
+            self.generateView()
         else:
             self.translateTform(dx, dy)
     
@@ -651,8 +653,8 @@ class FieldView():
             return
         modified = self.section.deleteTraces(traces)
         if modified:
-            self.saveState()
             self.generateView(generate_image=False)
+            self.saveState()
     
     def mergeSelectedTraces(self):
         # disable if trace layer is hidden
@@ -660,8 +662,8 @@ class FieldView():
             return
         if self.section.selected_traces:
             self.section_layer.mergeSelectedTraces()
-            self.saveState()
             self.generateView(generate_image=False)
+            self.saveState()
     
     def cutTrace(self, scalpel_trace):
         # disable if trace layer is hidden
@@ -674,8 +676,8 @@ class FieldView():
             notify("Please select only one trace to cut at a time.")
             return
         self.section_layer.cutTrace(scalpel_trace)
-        self.saveState()
         self.generateView(generate_image=False)
+        self.saveState()
     
     def newTrace(self, pix_trace, tracing_trace, closed=True):
         # disable if trace layer is hidden
@@ -683,19 +685,24 @@ class FieldView():
             self.generateView(generate_image=False)
             return
         self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed)
-        self.saveState()
         self.generateView(generate_image=False)
+        self.saveState()
     
     def placeStamp(self, pix_x, pix_y, stamp):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         self.section_layer.placeStamp(pix_x, pix_y, stamp)
-        self.saveState()
         self.generateView(generate_image=False)
+        self.saveState()
     
     def findClosestTrace(self, field_x, field_y, radius=0.5):
-        return self.section.findClosestTrace(field_x, field_y, radius)
+        return self.section.findClosestTrace(
+            field_x,
+            field_y,
+            radius,
+            self.section_layer.traces_in_view
+        )
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden
@@ -717,16 +724,16 @@ class FieldView():
             return
         modified = self.section.hideTraces(traces, hide)
         if modified:
-            self.saveState()
             self.generateView(generate_image=False)
+            self.saveState()
     
     def unhideAllTraces(self):
         if self.hide_trace_layer:
             self.hide_trace_layer = False
         modified = self.section.unhideAllTraces()
         if modified:
-            self.saveState()
             self.generateView(generate_image=False)
+            self.saveState()
     
     def makeNegative(self, negative=True):
         self.section.makeNegative(negative)
@@ -763,8 +770,8 @@ class FieldView():
         if self.ztrace_table_manager:
             self.ztrace_table_manager.refresh()
         
-        self.saveState()
         self.generateView()
+        self.saveState()
     
     def copy(self):
         # disable if trace layer is hidden
@@ -781,23 +788,23 @@ class FieldView():
         copied_traces = self.section_layer.getCopiedTraces(cut=True)
         if copied_traces:
             self.clipboard = copied_traces
-            self.saveState()
             self.generateView(generate_image=False)
+            self.saveState()
     
     def paste(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         self.section_layer.pasteTraces(self.clipboard)
-        self.saveState()
         self.generateView(generate_image=False)
+        self.saveState()
     
     def pasteAttributes(self):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         self.section_layer.pasteAttributes(self.clipboard)
-        self.saveState()
         self.generateView(generate_image=False)
+        self.saveState()
     
     

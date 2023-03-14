@@ -68,18 +68,20 @@ def xmlToJSON(xml_dir : str) -> Series:
     progress += 1
     update(progress/final_value * 100)
 
-    # convert the section files and gather transforms
+    # convert the section files and gather section names and tforms
+    sections = {}
     section_tforms = {}
     for section_fp in section_fps:
         snum = int(section_fp[section_fp.rfind(".")+1:])
         tform = sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
+        sections[snum] = f"{sname}.{snum}"
         section_tforms[snum] = tform
         if canceled(): return
         progress += 1
         update(progress/final_value * 100)
     
     # open the series file
-    series = Series(json_series_fp)
+    series = Series(json_series_fp, sections)
 
     # modify the ztraces
     for ztrace in series.ztraces.values():
@@ -106,13 +108,6 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
 
     # get the view window
     series_dict["window"] = list(xml_series.viewport[:2]) + [1, 1]
-
-    # get the section names
-    series_dict["sections"] = {}
-    for section_fp in section_fps:
-        section_fname = os.path.basename(section_fp)
-        section_num = int(section_fname[section_fname.rfind(".")+1:])
-        series_dict["sections"][section_num] = section_fname
     
     # import the palette
     series_dict["palette_traces"] = []

@@ -94,6 +94,8 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
 
 def progbar(title : str, text : str, cancel=True):
     """Create an easy progress dialog."""
+    if not mainwindow:
+        return None, None
     progbar = QProgressDialog(
             text,
             "Cancel",

@@ -16,7 +16,7 @@ from PySide6.QtGui import (
 )
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
 
-from modules.data import (
+from modules.pyrecon import (
     Series,
     Section,
     Transform

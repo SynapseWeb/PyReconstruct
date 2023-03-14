@@ -1,4 +1,4 @@
-from modules.data import (
+from modules.pyrecon import (
     Series,
     Section,
     Contour,

@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QInputDialog
 )
 
-from modules.data import ObjGroupDict
+from modules.pyrecon import ObjGroupDict
 
 
 class ObjectGroupDialog(QDialog):

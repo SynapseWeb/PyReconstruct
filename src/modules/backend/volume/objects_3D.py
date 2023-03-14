@@ -6,7 +6,7 @@ from skimage.draw import polygon
 import trimesh
 
 from modules.calc import centroid
-from modules.data import Trace, Transform
+from modules.pyrecon import Trace, Transform
 
 class Object3D():
 

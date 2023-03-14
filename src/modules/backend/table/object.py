@@ -5,7 +5,7 @@ from modules.gui.popup import (
     Object3DViewer,
     HistoryWidget
 )
-from modules.data import (
+from modules.pyrecon import (
     Series,
     Section,
     Trace,

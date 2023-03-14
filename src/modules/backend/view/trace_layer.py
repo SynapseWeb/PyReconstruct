@@ -8,7 +8,7 @@ from PySide6.QtGui import (
     QPainter,
     QBrush
 )
-from modules.data import (
+from modules.pyrecon import (
     Series, 
     Section,
     Trace,
@@ -380,38 +380,7 @@ class TraceLayer():
                 ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
             ): fill = True
             else: fill = False
-            # draw trace
-            if trace.closed:
-                painter.drawPolygon(qpoints)
-            else:
-                painter.drawPolyline(qpoints)
-            
-            # draw highlight
-            if trace in self.section.selected_traces:
-                painter.setPen(QPen(QColor(*trace.color), 8))
-                painter.setOpacity(0.4)
-                if trace.closed:
-                    painter.drawPolygon(qpoints)
-                else:
-                    painter.drawPolyline(qpoints)
-            
-            # determine if user requested fill
-            if (
-                (trace.fill_mode[0] != "none") and
-                ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
-            ): fill = True
-            else: fill = False
 
-            # fill in shape if requested
-            if fill:
-                painter.setPen(QPen(QColor(*trace.color), 1))
-                painter.setBrush(QBrush(QColor(*trace.color)))
-                # determine the type of fill
-                if trace.fill_mode[0] == "transparent":  # transparent fill
-                    painter.setOpacity(self.series.fill_opacity)
-                elif trace.fill_mode[0] == "solid":  # solid
-                    painter.setOpacity(1)
-                painter.drawPolygon(qpoints)
             # fill in shape if requested
             if fill:
                 painter.setPen(QPen(QColor(*trace.color), 1))

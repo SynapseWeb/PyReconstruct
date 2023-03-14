@@ -7,7 +7,7 @@ import pyqtgraph.opengl as gl
 from pyqtgraph.Vector import Vector
 
 from modules.backend.volume import generateVolumes, generate3DZtraces
-from modules.data import Series
+from modules.pyrecon import Series
 from modules.gui.utils import populateMenu
 
 class Object3DViewer(gl.GLViewWidget):

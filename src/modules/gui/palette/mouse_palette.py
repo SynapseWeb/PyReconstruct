@@ -7,13 +7,12 @@ from PySide6.QtCore import QSize, QRect
 from .palette_button import PaletteButton
 from .outlined_label import OutlinedLabel
 
-from modules.gui import FieldWidget
-from modules.data import Trace
+from modules.pyrecon import Trace
 from modules.constants import locations as loc
 
 class MousePalette():
 
-    def __init__(self, palette_traces : list, selected_trace : Trace, mainwindow : QWidget):
+    def __init__(self, palette_traces : list, selected_trace : Trace, mainwindow : QWidget, ):
         """Create the mouse dock widget object.
         
             Params:
@@ -31,12 +30,12 @@ class MousePalette():
 
         # create mode buttons
         self.mode_buttons = {}
-        self.createModeButton("Pointer", "p", 0, FieldWidget.POINTER)
-        self.createModeButton("Pan/Zoom", "z", 1, FieldWidget.PANZOOM)
-        self.createModeButton("Knife", "k", 2, FieldWidget.KNIFE)
-        self.createModeButton("Closed Trace", "c", 3, FieldWidget.CLOSEDTRACE)
-        self.createModeButton("Open Trace", "o", 4, FieldWidget.OPENTRACE)
-        self.createModeButton("Stamp", "s", 5, FieldWidget.STAMP)
+        self.createModeButton("Pointer", "p", 0, 0)
+        self.createModeButton("Pan/Zoom", "z", 1, 1)
+        self.createModeButton("Knife", "k", 2, 2)
+        self.createModeButton("Closed Trace", "c", 3, 3)
+        self.createModeButton("Open Trace", "o", 4, 4)
+        self.createModeButton("Stamp", "s", 5, 5)
 
         # create palette buttons
         self.palette_traces = palette_traces

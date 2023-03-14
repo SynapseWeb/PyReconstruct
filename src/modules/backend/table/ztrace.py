@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 
-from modules.data import (
+from modules.pyrecon import (
     Series,
     ZtraceTableItem
 )

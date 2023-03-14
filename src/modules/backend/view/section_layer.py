@@ -3,7 +3,7 @@ from PySide6.QtGui import QPainter
 from .image_layer import ImageLayer
 from .trace_layer import TraceLayer
 
-from modules.data import (
+from modules.pyrecon import (
     Series,
     Section,
     Transform

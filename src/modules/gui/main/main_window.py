@@ -34,13 +34,9 @@ from modules.gui.utils import (
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
-    importTransforms,
-    openJserFile,
-    saveJserFile,
-    clearHiddenSeries,
-    moveSeries
+    importTransforms
 )
-from modules.data import Series, Transform
+from modules.pyrecon import Series, Transform
 from modules.constants import assets_dir, img_dir
 
 
@@ -474,7 +470,7 @@ class MainWindow(QMainWindow):
             
             # open the JSER file if no unsaved series was opened
             if not new_series:
-                new_series = openJserFile(jser_fp)
+                new_series = Series.openJser(jser_fp)
                 # user pressed cancel
                 if new_series is None:
                     if self.series is None:
@@ -484,7 +480,7 @@ class MainWindow(QMainWindow):
             
             # clear the current series
             if self.series and not self.series.isWelcomeSeries():
-                clearHiddenSeries(self.series)
+                self.series.close()
 
             self.series = new_series
 
@@ -664,11 +660,11 @@ class MainWindow(QMainWindow):
         self.saveAllData()
 
         # open the other series
-        o_series = openJserFile(jser_fp)
+        o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
         self.series.importTraces(o_series)
-        clearHiddenSeries(o_series)
+        o_series.close()
 
         # reload the field to update the traces
         self.field.reload()
@@ -685,11 +681,11 @@ class MainWindow(QMainWindow):
         self.saveAllData()
 
         # open the other series
-        o_series = openJserFile(jser_fp)
+        o_series = Series.openJser(jser_fp)
 
         # import the ztraces and close the other series
         self.series.importZtraces(o_series)
-        clearHiddenSeries(o_series)
+        o_series.close()
 
         # reload the field to update the ztraces
         self.field.reload()
@@ -848,21 +844,21 @@ class MainWindow(QMainWindow):
             save = saveNotify()
             if save == "no":
                 if close:
-                    clearHiddenSeries(self.series)
+                    self.series.close()
                 return
             elif save == "cancel":
                 return "cancel"
         
         # check if the user is closing and the series was not modified
         if close and not self.series.modified:
-            clearHiddenSeries(self.series)
+            self.series.close()
             return
 
         # run save as if there is no jser filepath
         if not self.series.jser_fp:
             self.saveAsToJser(close=close)
         else:        
-            saveJserFile(self.series, close=close)
+            self.series.saveJser(close=close)
         
         # set the series to unmodified
         self.seriesModified(False)
@@ -882,15 +878,14 @@ class MainWindow(QMainWindow):
             return
         
         # move the working hidden folder to the new jser directory
-        moveSeries(
+        self.series.move(
             new_jser_fp,
-            self.series,
             self.field.section,
             self.field.b_section
         )
         
         # save the file
-        saveJserFile(self.series, close=close)
+        self.series.saveJser(close=close)
 
         # set the series to unmodified
         self.seriesModified(False)

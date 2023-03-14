@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from modules.data import (
+from modules.pyrecon import (
     Series,
     TraceTableItem
 )

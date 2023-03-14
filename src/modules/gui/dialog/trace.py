@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 from .color_button import ColorButton
 
-from modules.data import Trace
+from modules.pyrecon import Trace
 
 class TraceDialog(QDialog):
 

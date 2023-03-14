@@ -23,7 +23,7 @@ from PySide6.QtGui import (
     QCursor
 )
 
-from modules.data import Series, Trace
+from modules.pyrecon import Series, Trace
 from modules.calc import pixmapPointToField, distance
 from modules.backend.view import FieldView
 from modules.backend.table import (

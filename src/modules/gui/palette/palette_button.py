@@ -10,7 +10,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtCore import QPoint, QRect
 
-from modules.data import Trace
+from modules.pyrecon import Trace
 from modules.gui.dialog import TraceDialog
 
 class PaletteButton(QPushButton):

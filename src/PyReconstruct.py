@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from modules.gui.main_window import MainWindow
+from modules.gui import MainWindow
 
 # STOPGAP FOR WAYLAND QT ISSUE
 # https://stackoverflow.com/questions/68417682/qt-and-opencv-app-not-working-in-virtual-environment

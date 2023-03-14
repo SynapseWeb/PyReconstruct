@@ -16,11 +16,12 @@ from PySide6.QtGui import (
 )
 from PySide6.QtCore import Qt
 
-from modules.gui.mouse_palette import MousePalette
-from modules.gui.field_widget import FieldWidget
+from .field_widget import FieldWidget
+
+from modules.gui.palette import MousePalette
 from modules.gui.dialog import AlignmentDialog
-from modules.gui.history_widget import HistoryWidget
-from modules.gui.gui_functions import (
+from modules.gui.popup import HistoryWidget
+from modules.gui.utils import (
     progbar,
     populateMenuBar,
     populateMenu,
@@ -30,20 +31,17 @@ from modules.gui.gui_functions import (
     getSaveLocation,
     setMainWindow
 )
-
-from modules.backend.xml_json_conversions import xmlToJSON, jsonToXML
-from modules.backend.import_transforms import importTransforms
-from modules.backend.process_jser_file import (
+from modules.backend.func import (
+    xmlToJSON,
+    jsonToXML,
+    importTransforms,
     openJserFile,
     saveJserFile,
     clearHiddenSeries,
     moveSeries
 )
-
-from modules.pyrecon.series import Series
-from modules.pyrecon.transform import Transform
-
-from constants.locations import assets_dir, img_dir
+from modules.data import Series, Transform
+from modules.constants import assets_dir, img_dir
 
 
 class MainWindow(QMainWindow):
@@ -244,6 +242,8 @@ class MainWindow(QMainWindow):
             ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
             None,
             ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
+            None,
+            self.paste_act,
             None,
             ("blend_act", "Toggle blend", " ", self.field.toggleBlend),
         ]

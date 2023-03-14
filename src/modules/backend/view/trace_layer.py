@@ -380,7 +380,38 @@ class TraceLayer():
                 ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
             ): fill = True
             else: fill = False
+            # draw trace
+            if trace.closed:
+                painter.drawPolygon(qpoints)
+            else:
+                painter.drawPolyline(qpoints)
+            
+            # draw highlight
+            if trace in self.section.selected_traces:
+                painter.setPen(QPen(QColor(*trace.color), 8))
+                painter.setOpacity(0.4)
+                if trace.closed:
+                    painter.drawPolygon(qpoints)
+                else:
+                    painter.drawPolyline(qpoints)
+            
+            # determine if user requested fill
+            if (
+                (trace.fill_mode[0] != "none") and
+                ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+            ): fill = True
+            else: fill = False
 
+            # fill in shape if requested
+            if fill:
+                painter.setPen(QPen(QColor(*trace.color), 1))
+                painter.setBrush(QBrush(QColor(*trace.color)))
+                # determine the type of fill
+                if trace.fill_mode[0] == "transparent":  # transparent fill
+                    painter.setOpacity(self.series.fill_opacity)
+                elif trace.fill_mode[0] == "solid":  # solid
+                    painter.setOpacity(1)
+                painter.drawPolygon(qpoints)
             # fill in shape if requested
             if fill:
                 painter.setPen(QPen(QColor(*trace.color), 1))
@@ -531,6 +562,23 @@ class TraceLayer():
                 
         return trace_layer
 
+
+def boundsOverlap(b1 : tuple, b2 : tuple):
+    """Check if two bounding boxes intersect.
+    
+        Params:
+            b1 (tuple): xmin, ymin, xmax, ymax
+            b2 (tuple): xmin, ymin, xmax, ymax
+        Returns:
+            (bool): True if bounds have any overlap
+    """
+
+    return not (
+        b1[2] < b2[0] or 
+        b1[0] > b2[2] or 
+        b1[3] < b2[1] or 
+        b1[1] > b2[3]
+    )
 
 def boundsOverlap(b1 : tuple, b2 : tuple):
     """Check if two bounding boxes intersect.

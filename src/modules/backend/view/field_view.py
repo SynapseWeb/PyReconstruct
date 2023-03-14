@@ -695,7 +695,12 @@ class FieldView():
         self.generateView(generate_image=False)
     
     def findClosestTrace(self, field_x, field_y, radius=0.5):
-        return self.section.findClosestTrace(field_x, field_y, radius)
+        return self.section.findClosestTrace(
+            field_x,
+            field_y,
+            radius,
+            self.section_layer.traces_in_view
+        )
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden

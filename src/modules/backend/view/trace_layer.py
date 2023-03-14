@@ -330,51 +330,55 @@ class TraceLayer():
         # convert to screen coordinates
         qpoints = self.traceToPix(trace, qpoints=True)
 
-        # check if trace in view
-        trace_in_view = False
-        for point in qpoints:
-            if pointInPoly(point.x(), point.y(), self.screen_poly):
-                trace_in_view = True
-                break
+        x_vals = [p.x() for p in qpoints]
+        y_vals = [p.y() for p in qpoints]
         
-        # set up painter
-        painter = QPainter(trace_layer)
-        painter.setPen(QPen(QColor(*trace.color), 1))
+        trace_rect = min(x_vals), min(y_vals), max(x_vals), max(y_vals)
+        screen_rect = 0, 0, *self.pixmap_dim
 
-        # draw trace
-        if trace.closed:
-            painter.drawPolygon(qpoints)
-        else:
-            painter.drawPolyline(qpoints)
-        
-        # draw highlight
-        if trace in self.section.selected_traces:
-            painter.setPen(QPen(QColor(*trace.color), 8))
-            painter.setOpacity(0.4)
+        # draw if within view
+        if boundsOverlap(trace_rect, screen_rect):
+            # set up painter
+            painter = QPainter(trace_layer)
+            painter.setPen(QPen(QColor(*trace.color), 1))
+
+            # draw trace
             if trace.closed:
                 painter.drawPolygon(qpoints)
             else:
                 painter.drawPolyline(qpoints)
-        
-        # determine if user requested fill
-        if (
-            (trace.fill_mode[0] != "none") and
-            ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
-        ): fill = True
-        else: fill = False
+            
+            # draw highlight
+            if trace in self.section.selected_traces:
+                painter.setPen(QPen(QColor(*trace.color), 8))
+                painter.setOpacity(0.4)
+                if trace.closed:
+                    painter.drawPolygon(qpoints)
+                else:
+                    painter.drawPolyline(qpoints)
+            
+            # determine if user requested fill
+            if (
+                (trace.fill_mode[0] != "none") and
+                ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+            ): fill = True
+            else: fill = False
 
-        # fill in shape if requested
-        if fill:
-            painter.setPen(QPen(QColor(*trace.color), 1))
-            painter.setBrush(QBrush(QColor(*trace.color)))
-            # determine the type of fill
-            if trace.fill_mode[0] == "transparent":  # transparent fill
-                painter.setOpacity(self.series.fill_opacity)
-            elif trace.fill_mode[0] == "solid":  # solid
-                painter.setOpacity(1)
-            painter.drawPolygon(qpoints)
+            # fill in shape if requested
+            if fill:
+                painter.setPen(QPen(QColor(*trace.color), 1))
+                painter.setBrush(QBrush(QColor(*trace.color)))
+                # determine the type of fill
+                if trace.fill_mode[0] == "transparent":  # transparent fill
+                    painter.setOpacity(self.series.fill_opacity)
+                elif trace.fill_mode[0] == "solid":  # solid
+                    painter.setOpacity(1)
+                painter.drawPolygon(qpoints)
         
-        return trace_in_view
+            return True
+
+        else:
+            return False
     
     def _drawZtrace(self, trace_layer : QPixmap, ztrace : Ztrace):
         """Draw points on the current trace layer.
@@ -506,9 +510,25 @@ class TraceLayer():
                     self._drawZtrace(trace_layer, ztrace)
         self._drawZtraceHighlights(trace_layer)
                 
-
         return trace_layer
 
+
+def boundsOverlap(b1 : tuple, b2 : tuple):
+    """Check if two bounding boxes intersect.
+    
+        Params:
+            b1 (tuple): xmin, ymin, xmax, ymax
+            b2 (tuple): xmin, ymin, xmax, ymax
+        Returns:
+            (bool): True if bounds have any overlap
+    """
+
+    return not (
+        b1[2] < b2[0] or 
+        b1[0] > b2[2] or 
+        b1[3] < b2[1] or 
+        b1[1] > b2[3]
+    )
 
 def getTheta(line : QLine):
     """Get the angle a line makes with the x-axis.

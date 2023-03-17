@@ -15,10 +15,12 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import (
     QPixmap, 
-    QPen, 
+    QPen,
+    QBrush,
     QColor,
     QFont, 
     QPainter, 
+    QPainterPath,
     QPointingDevice,
     QCursor
 )
@@ -124,6 +126,8 @@ class FieldWidget(QWidget, FieldView):
         self.is_line_tracing = False
         self.is_moving_trace = False
         self.is_selecting_traces = False
+
+        self.selected_trace_names = {}
 
         # set up the timer
         if not self.series.isWelcomeSeries():
@@ -334,29 +338,79 @@ class FieldWidget(QWidget, FieldView):
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
         
+        # get handedness from mouse palette
+        left_handed = self.mainwindow.mouse_palette.left_handed
+        
         # draw the name of the closest trace on the screen
+        ct_size = 12
+        # draw the selected traces to the screen
+        st_size = 14
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing # and
             # self.mouse_mode == FieldWidget.POINTER
         ):
+            # draw name of closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
             if closest_trace:
                 name = closest_trace.name
-                # get handedness from mouse palette
-                if self.mainwindow.mouse_palette.left_handed:
-                    pos = self.mouse_x, self.mouse_y
+                pos = self.mouse_x, self.mouse_y
+                c = closest_trace.color
+                black_outline = c[0] + 3*c[1] + c[2] > 400
+                drawOutlinedText(
+                    field_painter,
+                    *pos,
+                    name,
+                    c,
+                    (0,0,0) if black_outline else (255,255,255),
+                    ct_size,
+                    left_handed
+                )
+        
+            # get the names of the selected traces
+            names = {}
+            counter = 0
+            height = self.height()
+            for trace in self.section.selected_traces:
+                if trace.name in names:
+                    names[trace.name] += 1
                 else:
-                    pos = (
-                        self.mouse_x - int(9.5*len(name)),
-                        self.mouse_y
-                    )
-                color = closest_trace.color
-                field_painter.setPen(QColor(*color))
-                font = QFont("Courier New", 12, QFont.Bold)
-                field_painter.setFont(font)
-                field_painter.drawText(*pos, name)
-
+                    names[trace.name] = 1
+                    counter += 1
+                if counter * (st_size + 10) + 20 > height / 2:
+                    names["..."] = 1
+                    break
+            self.selected_trace_names = names
+        
+        # draw the names of the selected traces
+        if self.selected_trace_names:
+            x = self.width() - 10 if left_handed else 10
+            y = 20
+            drawOutlinedText(
+                field_painter,
+                x, y,
+                "Selected Traces:",
+                (255, 255, 255),
+                (0, 0, 0),
+                st_size,
+                not left_handed
+            )
+            for name, n in self.selected_trace_names.items():
+                y += st_size + 10
+                if n == 1:
+                    text = name
+                else:
+                    text = f"{name} * {n}"
+                drawOutlinedText(
+                    field_painter,
+                    x, y,
+                    text,
+                    (255, 255, 255),
+                    (0, 0, 0),
+                    st_size,
+                    not left_handed
+                )   
+        
         field_painter.end()
     
     def resizeEvent(self, event):
@@ -1106,3 +1160,31 @@ class FieldWidget(QWidget, FieldView):
             self.is_line_tracing = False
             self.current_trace = []
             self.generateView(generate_image=False)
+
+
+def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, left_justified=True):
+    """Draw outlined text using a QPainter object.
+    
+        Params:
+            painter (QPainter): the QPainter object to use
+            x (int): the x-pos of the text
+            y (int): the y-pos of the text
+            text (str): the text to write to the screen
+            c1 (tuple): the primary color of the text
+            c2 (tuple): the outline color of the text
+            size (int): the size of the text
+            left_justified (bool): True if text is left justified
+    """
+    # add justification
+    if not left_justified:
+        x -= int(len(text) * (size * 0.812))
+    
+    w = 1  # outline thickness
+    path = QPainterPath()
+    font = QFont("Courier New", size, QFont.Bold)
+    path.addText(x, y, font, text)
+
+    pen = QPen(QColor(*c2), w * 2)
+    brush = QBrush(QColor(*c1))
+    painter.strokePath(path, pen)
+    painter.fillPath(path, brush)

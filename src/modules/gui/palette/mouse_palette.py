@@ -77,6 +77,7 @@ class MousePalette():
         """Toggle the position of the buttons."""
         self.left_handed = not self.left_handed
         self.resize()
+        self.mainwindow.field.update()
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.

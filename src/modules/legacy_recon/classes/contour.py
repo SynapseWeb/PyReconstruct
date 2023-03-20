@@ -75,3 +75,17 @@ class Contour(object):
             if x_neq or y_neq:
                 return False
         return True
+    
+    def isNegative(self):
+        """Check if the trace is a negative trace."""
+        if not self.closed:
+            return False
+        
+        sum = 0
+        for i in range(len(self.points)):
+            x1, y1 = self.points[i-1]
+            x2, y2 = self.points[i]
+            sum += (x2 - x1) * (y2 + y1)
+        
+        return sum > 0
+            

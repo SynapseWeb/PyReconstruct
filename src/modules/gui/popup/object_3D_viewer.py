@@ -1,7 +1,16 @@
+import sys
+import traceback
 import numpy as np
 
-from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog
+from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog
 from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import (
+    QRunnable,
+    Slot,
+    Signal,
+    QObject,
+    QThreadPool
+)
 
 import pyqtgraph.opengl as gl
 from pyqtgraph.Vector import Vector
@@ -9,6 +18,70 @@ from pyqtgraph.Vector import Vector
 from modules.backend.volume import generateVolumes, generate3DZtraces
 from modules.pyrecon import Series
 from modules.gui.utils import populateMenu
+
+# THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    progress
+        int indicating % progress
+
+    '''
+    error = Signal(tuple)
+    result = Signal(tuple)
+
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.signals = WorkerSignals()
+
+    @Slot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+
 
 class Object3DViewer(gl.GLViewWidget):
 
@@ -50,9 +123,11 @@ class Object3DViewer(gl.GLViewWidget):
             """)
         ]))
 
+        self.mainwindow = mainwindow
         self.series = series
         self.sc_side_len = 1
-        self.obj_set = set(obj_names)
+        self.obj_set = set()
+        self.vol_items = []
         self.closed = False
 
         self.setWindowTitle("3D Object Viewer")
@@ -63,36 +138,14 @@ class Object3DViewer(gl.GLViewWidget):
             mainwindow.height()-120
         )
 
-        # get the items
-        self.vol_items, extremes = generateVolumes(
-            self.series,
-            obj_names,
-        )
-        # sort by volume and add the items to the scene
-        self.vol_items = sortVolItems(self.vol_items)
-        for v, item in self.vol_items:
-            self.addItem(item)
-        
-        # center the camera view        
-        xavg = (extremes[0] + extremes[1]) / 2
-        yavg = (extremes[2] + extremes[3]) / 2
-        zavg = (extremes[4] + extremes[5]) / 2
-
-        diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
-        self.center = Vector(xavg, yavg, zavg)
-        self.setCameraPosition(
-            pos=self.center,
-            distance=max(diffs)*2
-        )
-
         self.setBackgroundColor((255, 255, 255))
-
-        self.sc_in_scene = False
-        self.createScaleCube()
-
         self.createContextMenu()
 
-        self.show()
+        self.established = False
+        self.pbars = []
+        self.threadpool = QThreadPool()
+
+        self.addObjects(obj_names)
     
     def createContextMenu(self):
         """Create the context menu for the 3D scene."""
@@ -110,16 +163,38 @@ class Object3DViewer(gl.GLViewWidget):
             Params:
                 obj_names (list): the names of the objects to add
         """
+        # create generic progress bar
+        pbar = QProgressDialog(
+            labelText="Loading 3D...",
+            minimum=0,
+            maximum=0,
+            parent=self.mainwindow
+        )
+        pbar.setWindowTitle("3D")
+        pbar.setCancelButton(None)
+        pbar.show()
+        self.pbars.append(pbar)
+
         # get new names and add names to existing set
         obj_names = list(set(obj_names).difference(self.obj_set))
         if not obj_names:
             return
         self.obj_set = self.obj_set.union(obj_names)
 
-        new_vol_items, e = generateVolumes(
-            self.series,
-            obj_names,
-        )
+        # pass the function to execute
+        worker = Worker(generateVolumes, self.series, obj_names) # pass fn and args to worker
+        worker.signals.result.connect(self.placeInScene)
+
+        # execute
+        self.threadpool.start(worker)
+    
+    def placeInScene(self, result):
+        """Place the items in the scene.
+        
+        Params:
+            result (tuple): the new items with volumes and their extremes
+        """
+        new_vol_items, extremes = result
 
         # remove existing objects from scene
         for v, item in self.vol_items:
@@ -130,6 +205,28 @@ class Object3DViewer(gl.GLViewWidget):
         self.vol_items = sortVolItems(self.vol_items)
         for v, item in self.vol_items:
             self.addItem(item)
+        
+        if not self.established:
+            # center the camera view        
+            xavg = (extremes[0] + extremes[1]) / 2
+            yavg = (extremes[2] + extremes[3]) / 2
+            zavg = (extremes[4] + extremes[5]) / 2
+
+            diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
+            self.center = Vector(xavg, yavg, zavg)
+            self.setCameraPosition(
+                pos=self.center,
+                distance=max(diffs)*2
+            )
+
+            self.sc_in_scene = False
+            self.createScaleCube()
+
+            self.established = True
+            self.show()
+        
+        self.pbars[0].close()
+        self.pbars.pop(0)
     
     def addZtraces(self, ztrace_names):
         """Add ztraces to the existing scene.

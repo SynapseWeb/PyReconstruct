@@ -352,7 +352,15 @@ class FieldWidget(QWidget, FieldView):
             # draw name of closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
             if closest_trace:
-                name = closest_trace.name
+                if type(closest_trace) is Trace:
+                    name = closest_trace.name
+                    if closest_trace.negative:
+                        name += " (negative)"
+                # ztrace returned
+                elif type(closest_trace) is tuple:
+                    closest_trace = closest_trace[0]
+                    name = f"{closest_trace.name} (ztrace)"
+                
                 pos = self.mouse_x, self.mouse_y
                 c = closest_trace.color
                 black_outline = c[0] + 3*c[1] + c[2] > 400

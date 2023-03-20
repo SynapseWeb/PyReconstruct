@@ -134,6 +134,12 @@ class Trace():
         for i in range(len(border_color)):
             border_color[i] /= 255
 
+        # reverse point order if negative trace
+        if self.negative:
+            points = self.points[::-1]
+        else:
+            points = self.points
+
         xml_contour = XMLContour(
             name = self.name,
             comment = "",
@@ -143,7 +149,7 @@ class Trace():
             mode = convertMode(self.fill_mode),
             border = border_color,
             fill = border_color,
-            points = self.points,
+            points = points,
             transform = xml_image_tform
         )
 
@@ -217,6 +223,9 @@ class Trace():
             color[i] = int(color[i] * 255)
         closed = xml_trace.closed
         points = xml_trace.points.copy()
+        negative = xml_trace.isNegative()
+        if negative:
+            points = points[::-1]
         new_trace = Trace(name, color, closed)
 
         # get the transform
@@ -227,6 +236,7 @@ class Trace():
         
         new_trace.points = points
         new_trace.fill_mode = convertMode(xml_trace.mode)
+        new_trace.negative = negative
 
         if not palette:
             new_trace.addLog("Imported")

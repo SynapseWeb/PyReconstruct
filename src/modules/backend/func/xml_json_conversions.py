@@ -259,7 +259,7 @@ def seriesJSONtoXML(series : Series, new_dir : str):
         xml_series.zcontours.append(ztrace.getXMLObj(series))
     write_series(
         xml_series,
-        directory=os.path.basename(series_fp),
+        directory=os.path.dirname(series_fp),
         outpath=series_fp,
         overwrite=True
     )

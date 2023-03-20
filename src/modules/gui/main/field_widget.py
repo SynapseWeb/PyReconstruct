@@ -342,13 +342,12 @@ class FieldWidget(QWidget, FieldView):
         left_handed = self.mainwindow.mouse_palette.left_handed
         
         # draw the name of the closest trace on the screen
-        ct_size = 12
         # draw the selected traces to the screen
+        ct_size = 12
         st_size = 14
         if (
             not (self.lclick or self.rclick or self.mclick) and
-            not self.is_gesturing # and
-            # self.mouse_mode == FieldWidget.POINTER
+            not self.is_gesturing
         ):
             # draw name of closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
@@ -751,9 +750,12 @@ class FieldWidget(QWidget, FieldView):
             self.traceRelease(event)
         elif self.mouse_mode == FieldWidget.KNIFE:
             self.knifeRelease(event)
+        elif self.mouse_mode == FieldWidget.STAMP:
+            self.stampRelease(event)
         
         self.lclick = False
         self.rclick = False
+        self.mclick = False
     
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
@@ -1109,6 +1111,10 @@ class FieldWidget(QWidget, FieldView):
         if self.lclick:
             pix_x, pix_y = event.x(), event.y()
             self.placeStamp(pix_x, pix_y, self.tracing_trace)
+    
+    def stampRelease(self, event):
+        """Called when mouse is released in stamp mode."""
+        self.update()
     
     def knifePress(self, event):
         """Called when mouse is pressed in knife mode.

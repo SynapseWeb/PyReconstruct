@@ -500,11 +500,14 @@ class TraceLayer():
         if window_moved:
             trace_list = self.section.tracesAsList()
         else:
+            trace_found = False
             for trace in self.section.removed_traces:
                 for view_trace in self.traces_in_view:
                     if trace.isSameTrace(view_trace):
+                        trace_found = True
                         break
-                self.traces_in_view.remove(view_trace)
+                if trace_found:
+                    self.traces_in_view.remove(view_trace)
             for trace in self.section.added_traces:
                 self.traces_in_view.append(trace)
             trace_list = self.traces_in_view.copy()

@@ -122,6 +122,7 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
 
         self.erasing = False
+        self.is_panzooming = False
         self.is_gesturing = False
         self.is_line_tracing = False
         self.is_moving_trace = False
@@ -419,6 +420,10 @@ class FieldWidget(QWidget, FieldView):
                 )   
         
         field_painter.end()
+
+        # update the status bar
+        if not self.is_panzooming:
+            self.updateStatusBar()
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -433,7 +438,7 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = (w, h)
         self.generateView()
     
-    def updateStatusBar(self, event=None):
+    def updateStatusBar(self):
         """Update status bar with useful information.
         
             Params:
@@ -449,20 +454,25 @@ class FieldWidget(QWidget, FieldView):
         alignment = "Alignment: " + self.series.alignment
         self.status_list.append(alignment)
 
-        if event is not None:
-            # display mouse position in the field
-            x, y = pixmapPointToField(self.mouse_x, self.mouse_y, self.pixmap_dim, self.series.window, self.section.mag)
-            position = "x = " + str("{:.4f}".format(x)) + ", "
-            position += "y = " + str("{:.4f}".format(y))
-            self.status_list.append(position)
-            
-            # display the distance between the current position and the last point if line tracing
-            if self.is_line_tracing:
-                last_x, last_y = self.current_trace[-1]
-                d = distance(last_x, last_y, self.mouse_x, self.mouse_y)
-                d = d / self.scaling * self.section.mag
-                dist = f"Line distance: {round(d, 5)}"
-                self.status_list.append(dist)
+        # display mouse position in the field
+        x, y = pixmapPointToField(
+            self.mouse_x, 
+            self.mouse_y, 
+            self.pixmap_dim, 
+            self.series.window, 
+            self.section.mag
+        )
+        position = "x = " + str("{:.4f}".format(x)) + ", "
+        position += "y = " + str("{:.4f}".format(y))
+        self.status_list.append(position)
+        
+        # display the distance between the current position and the last point if line tracing
+        if self.is_line_tracing:
+            last_x, last_y = self.current_trace[-1]
+            d = distance(last_x, last_y, self.mouse_x, self.mouse_y)
+            d = d / self.scaling * self.section.mag
+            dist = f"Line distance: {round(d, 5)}"
+            self.status_list.append(dist)
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
@@ -698,15 +708,8 @@ class FieldWidget(QWidget, FieldView):
             self.mousePanzoomMove(event)
             return
         
-        # update the status bar
-        # if panzooming
-        if (event.buttons() and self.mouse_mode == FieldWidget.PANZOOM):
-            self.updateStatusBar()
-        # if pressing buttons
-        elif event.buttons():
-            self.updateStatusBar(event)
-        else:
-            self.updateStatusBar(event)
+        # update the screen if not pressing buttons
+        if not event.buttons():
             self.update()
         
         # mouse functions
@@ -911,6 +914,7 @@ class FieldWidget(QWidget, FieldView):
                 new_y: the y from panning
                 zoom_factor: the scale from zooming
         """
+        self.is_panzooming = True
         field = self.field_pixmap_copy
         # calculate pan
         if new_x is not None and new_y is not None:
@@ -994,6 +998,7 @@ class FieldWidget(QWidget, FieldView):
             self.series.window[0] += move_x
             self.series.window[1] += move_y
         
+        self.is_panzooming = False        
         self.generateView()
 
     def mousePanzoomRelease(self, event):

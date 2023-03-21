@@ -2,7 +2,7 @@ import pyqtgraph.opengl as gl
 
 from .objects_3D import Surface, Spheres
 
-from modules.pyrecon import Series
+from modules.pyrecon import Series, VolItem
 
 def generateVolumes(series : Series, obj_names : list):
     """Generate the volume items for a set of objects.
@@ -124,15 +124,14 @@ def generate3DZtraces(series : Series, ztrace_names : list):
             tform = series.section_tforms[snum][series.alignment]
             x, y = tform.map(x, y)
             points.append((x, y, z))
-        ztrace_items.append(
-            gl.GLLinePlotItem(
-                pos=points,
-                color=[c/255 for c in ztrace.color]+[1],
-                width=2,
-                glOptions="translucent"
-            )
+        item = gl.GLLinePlotItem(
+            pos=points,
+            color=[c/255 for c in ztrace.color]+[1],
+            width=2,
+            glOptions="translucent"
         )
-    
+        ztrace_items.append(VolItem(ztrace.name, item, 0))
+        
     return ztrace_items
         
 

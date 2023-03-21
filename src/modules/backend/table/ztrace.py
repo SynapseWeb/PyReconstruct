@@ -154,6 +154,22 @@ class ZtraceTableManager():
             return
         
         object_viewer.addZtraces(names)
+    
+    def remove3D(self, names : list):
+        """Remove ztraces from the 3D scene.
+        
+            Params:
+                names (list): the names of ztraces to remove
+        """
+        # access the object viewer object
+        obj_table_manager = self.mainwindow.field.obj_table_manager
+        if not obj_table_manager:
+            return
+        object_viewer = obj_table_manager.object_viewer
+        if not object_viewer:
+            return
+        
+        object_viewer.remove(names, ztrace=True)
 
     def delete(self, names : list):
         """Delete a set of ztraces.

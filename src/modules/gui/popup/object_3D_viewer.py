@@ -42,6 +42,7 @@ class WorkerSignals(QObject):
     '''
     error = Signal(tuple)
     result = Signal(tuple)
+    finished = Signal()
 
 
 class Worker(QRunnable):
@@ -81,6 +82,8 @@ class Worker(QRunnable):
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
             self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()
 
 
 class Object3DViewer(gl.GLViewWidget):
@@ -127,6 +130,7 @@ class Object3DViewer(gl.GLViewWidget):
         self.series = series
         self.sc_side_len = 1
         self.obj_set = set()
+        self.ztrace_set = set()
         self.vol_items = []
         self.closed = False
 
@@ -137,12 +141,10 @@ class Object3DViewer(gl.GLViewWidget):
             mainwindow.width()-120,
             mainwindow.height()-120
         )
-
         self.setBackgroundColor((255, 255, 255))
-        self.createContextMenu()
 
-        self.established = False
         self.pbars = []
+        self.established = False
         self.threadpool = QThreadPool()
 
         self.addObjects(obj_names)
@@ -164,11 +166,15 @@ class Object3DViewer(gl.GLViewWidget):
                 obj_names (list): the names of the objects to add
         """
         # create generic progress bar
+        if self.established:
+            parent = self
+        else:
+            parent = self.mainwindow
         pbar = QProgressDialog(
             labelText="Loading 3D...",
             minimum=0,
             maximum=0,
-            parent=self.mainwindow
+            parent=parent
         )
         pbar.setWindowTitle("3D")
         pbar.setCancelButton(None)
@@ -182,49 +188,64 @@ class Object3DViewer(gl.GLViewWidget):
         self.obj_set = self.obj_set.union(obj_names)
 
         # pass the function to execute
-        worker = Worker(generateVolumes, self.series, obj_names) # pass fn and args to worker
-        worker.signals.result.connect(self.placeInScene)
+        worker = Worker(self.placeInScene, obj_names) # pass fn and args to worker
+        if not self.established:
+            worker.signals.result.connect(self.setScene)
+        worker.signals.finished.connect(self.closePbar)
 
         # execute
         self.threadpool.start(worker)
     
-    def placeInScene(self, result):
+    def placeInScene(self, obj_names):
         """Place the items in the scene.
         
         Params:
             result (tuple): the new items with volumes and their extremes
         """
-        new_vol_items, extremes = result
+        # generate the meshes
+        new_vol_items, extremes = generateVolumes(
+            self.series,
+            obj_names
+        )
 
         # remove existing objects from scene
-        for v, item in self.vol_items:
-            self.removeItem(item)
+        for vol_item in self.vol_items:
+            self.removeItem(vol_item.gl_item)
         
-        # add all objects to scene
+        # sort the objects
         self.vol_items += new_vol_items
-        self.vol_items = sortVolItems(self.vol_items)
-        for v, item in self.vol_items:
-            self.addItem(item)
+        self.vol_items.sort()
+
+        # add all objects to scene
+        for vol_item in self.vol_items:
+            self.addItem(vol_item.gl_item)
         
-        if not self.established:
-            # center the camera view        
-            xavg = (extremes[0] + extremes[1]) / 2
-            yavg = (extremes[2] + extremes[3]) / 2
-            zavg = (extremes[4] + extremes[5]) / 2
-
-            diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
-            self.center = Vector(xavg, yavg, zavg)
-            self.setCameraPosition(
-                pos=self.center,
-                distance=max(diffs)*2
-            )
-
-            self.sc_in_scene = False
-            self.createScaleCube()
-
-            self.established = True
-            self.show()
+        return extremes
+    
+    def setScene(self, extremes):
+        """Set up the 3D scene (unrelated to objects)."""
+        # center the camera view   
+        xavg = (extremes[0] + extremes[1]) / 2
+        yavg = (extremes[2] + extremes[3]) / 2
+        zavg = (extremes[4] + extremes[5]) / 2
         
+        diffs = [extremes[i] - extremes[i-1] for i in (1, 3, 5)]
+        self.center = Vector(xavg, yavg, zavg)
+        self.setCameraPosition(
+            pos=self.center,
+            distance=max(diffs)*2
+        )
+
+        # create the scale cube
+        self.sc_in_scene = False
+        self.createScaleCube()
+        self.createContextMenu()
+
+        self.established = True
+        self.show()
+    
+    def closePbar(self):
+        """Close a progress dialog."""
         self.pbars[0].close()
         self.pbars.pop(0)
     
@@ -234,20 +255,54 @@ class Object3DViewer(gl.GLViewWidget):
             Params:
                 ztrace_names (list): the list of ztraces to add to the scene
         """
+        # get new names and add names to existing set
+        ztrace_names = list(set(ztrace_names).difference(self.ztrace_set))
+        if not ztrace_names:
+            return
+        self.ztrace_set = self.ztrace_set.union(ztrace_names)
+
         # get the ztrace items
-        ztrace_items = generate3DZtraces(self.series, ztrace_names)
+        z_vol_items = generate3DZtraces(self.series, ztrace_names)
 
         # remove existing objects from scene
-        for v, item in self.vol_items:
-            self.removeItem(item)
+        for vol_item in self.vol_items:
+            self.removeItem(vol_item.gl_item)
         
-        # add the ztraces to the scene
-        for item in ztrace_items:
-            self.addItem(item)
+        # sort the items by volume
+        self.vol_items += z_vol_items
+        self.vol_items.sort()
         
-        # # add the volumes back to the scene
-        for v, item, in self.vol_items:
-            self.addItem(item)
+        # add the volumes back to the scene
+        for vol_item in self.vol_items:
+            self.addItem(vol_item.gl_item)
+        
+        # bring to front
+        self.activateWindow()
+    
+    def remove(self, names : list, ztrace=False):
+        """Remove item(s) from the scene.
+        
+            Params:
+                names (list): the list of names to remove
+                ztrace (bool): true if the item is a ztrace
+        """
+        # remove the name from its set
+        for name in names:
+            if ztrace:
+                if name in self.ztrace_set:
+                    self.ztrace_set.remove(name)
+            else:
+                if name in self.obj_set:
+                    self.obj_set.remove(name)
+        
+        # remove the item from the list and scene
+        for vol_item in self.vol_items.copy():
+            if vol_item.isZtrace() == ztrace and vol_item.name in names:
+                self.vol_items.remove(vol_item)
+                self.removeItem(vol_item.gl_item)
+
+        # bring to front
+        self.activateWindow()
         
     def createScaleCubeShortcuts(self):
         """Create the shortcuts for the 3D scene."""
@@ -362,16 +417,3 @@ class Object3DViewer(gl.GLViewWidget):
         """Executed when closed."""
         self.closed = True
         super().closeEvent(event)
-
-def sortVolItems(vol_items):
-    """Sort a set of GL items by volume.
-    
-        Params:
-            vol_items (list): a list of vol, item pairs
-    """
-    vol_index = [(v, i) for i, (v, item) in enumerate(vol_items)]
-    vol_index.sort()
-    new_vol_items = []
-    for v, i in vol_index:
-        new_vol_items.append(vol_items[i])
-    return new_vol_items

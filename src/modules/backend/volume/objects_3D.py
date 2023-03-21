@@ -6,7 +6,7 @@ from skimage.draw import polygon
 import trimesh
 
 from modules.calc import centroid
-from modules.pyrecon import Trace, Transform
+from modules.pyrecon import Trace, Transform, VolItem
 
 class Object3D():
 
@@ -141,7 +141,7 @@ class Surface(Object3D):
         )
 
         # provide volumes to draw opaque items in proper order
-        return tm.volume, item
+        return VolItem(self.name, item, tm.volume)
 
 
 class Spheres(Object3D):
@@ -185,6 +185,6 @@ class Spheres(Object3D):
             z = s * section_thickness
             volume = 4/3 * np.pi * radius**3
             item.translate(x, y, z)
-            items.append((volume, item))
+            items.append(VolItem(self.name, item, volume))
         
         return items

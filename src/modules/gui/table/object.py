@@ -128,7 +128,8 @@ class ObjectTableWidget(QDockWidget):
                 "text": "3D",
                 "opts":
                 [
-                    ("generate3D_act", "Generate 3D", "", self.generate3D),
+                    ("addto3D_act", "Add to scene", "", self.addTo3D),
+                    ("remove3D_act", "Remove from scene", "", self.remove3D),
                     ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
             },
@@ -263,7 +264,7 @@ class ObjectTableWidget(QDockWidget):
         self.table = QTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
         # connect table functions
-        self.table.mouseDoubleClickEvent = self.generate3D
+        self.table.mouseDoubleClickEvent = self.addTo3D
         self.table.contextMenuEvent = self.objectContextMenu
 
         # format table
@@ -432,11 +433,17 @@ class ObjectTableWidget(QDockWidget):
         
         self.manager.hideObjects(obj_names, hide)
 
-    def generate3D(self, event=None):
+    def addTo3D(self, event=None):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.manager.generate3D(obj_names)  
+            self.manager.generate3D(obj_names)
+    
+    def remove3D(self):
+        """Remove object(s) from the scene."""
+        obj_names = self.getSelectedObjects()
+        if obj_names:
+            self.manager.remove3D(obj_names)
 
     def addToGroup(self):
         """Add objects to a group."""

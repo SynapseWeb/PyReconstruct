@@ -293,6 +293,15 @@ class ObjectTableManager():
                 self.mainwindow
             )
     
+    def remove3D(self, obj_names : list):
+        """Remove objects from the 3D scene.
+        
+            Params:
+                obj_names (list): the object names to remove
+        """
+        if self.object_viewer and not self.object_viewer.closed:
+            self.object_viewer.remove(obj_names)
+    
     def edit3D(self, obj_names : list, new_type : str, new_opacity : float):
         """Modify the 3D settings for a set of objects.
         

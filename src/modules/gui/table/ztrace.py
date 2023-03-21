@@ -99,7 +99,15 @@ class ZtraceTableWidget(QDockWidget):
             ("editname_act", "Edit attributes...", "", self.editAttributes),
             ("smooth_act", "Smooth", "", self.smooth),
             None,
-            ("addto3D_act", "Add to 3D scene", "", self.addTo3D),
+            {
+                "attr_name": "menu_3D",
+                "text": "3D",
+                "opts":
+                [
+                    ("addto3D_act", "Add to scene", "", self.addTo3D),
+                    ("remove3D_act", "Remove from scene", "", self.remove3D)
+                ]
+            },
             None,
             ("delete_act", "Delete", "", self.delete)
         ]
@@ -247,6 +255,14 @@ class ZtraceTableWidget(QDockWidget):
             return
         
         self.manager.addTo3D(names)
+    
+    def remove3D(self):
+        """Remove the ztrace from the 3D scene."""
+        names = self.getSelectedNames()
+        if not names:
+            return
+        
+        self.manager.remove3D(names)
     
     def delete(self):
         """Delete a set of ztraces."""

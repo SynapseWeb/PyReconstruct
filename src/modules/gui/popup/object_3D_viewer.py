@@ -2,14 +2,15 @@ import sys
 import traceback
 import numpy as np
 
-from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog, QLabel
+from PySide6.QtGui import QKeySequence, QShortcut, QVector3D, QFont
 from PySide6.QtCore import (
     QRunnable,
     Slot,
     Signal,
     QObject,
-    QThreadPool
+    QThreadPool,
+    QTimer
 )
 
 import pyqtgraph.opengl as gl
@@ -142,6 +143,9 @@ class Object3DViewer(gl.GLViewWidget):
             mainwindow.height()-120
         )
         self.setBackgroundColor((255, 255, 255))
+        self.coord_label = None
+        self.target_item = None
+        self.vertex_error_message = "Vertex not found. Please try again."
 
         self.pbars = []
         self.established = False
@@ -158,7 +162,7 @@ class Object3DViewer(gl.GLViewWidget):
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
-    
+
     def addObjects(self, obj_names):
         """Add objects to the existing scene.
         
@@ -412,6 +416,148 @@ class Object3DViewer(gl.GLViewWidget):
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""
         self.sc_item.translate(dx, dy, dz)
+    
+    def mouseDoubleClickEvent(self, event):
+        """Called when mouse is double-clicked."""
+        # create the label if not already
+        if self.coord_label is None:
+            self.coord_label = QLabel(self)
+            self.coord_label.move(10, 10)
+            font = QFont("Courier New", 16, QFont.Bold)
+            self.coord_label.setFont(font)
+            self.coord_label.show()
+
+        # inform the user of loading
+        self.coord_label.setText("Loading...")
+        self.coord_label.resize(self.coord_label.sizeHint())
+        
+        # get screen coordinates of click on pass into thread
+        x, y = event.pos().x(), event.pos().y()
+        worker = Worker(self.getCoordinates, self.itemsAt((x, y, 4, 4)), x, y)
+        worker.signals.result.connect(self.displayCoordinates)
+        self.threadpool.start(worker)
+    
+    def getCoordinates(self, items : list, x : int, y : int):
+        """Get the coordinates of an object that was clicked on.
+        
+            Params:
+                items (list): the glitems to check
+                x (int): the screen x position
+                y (int): the screen y position
+        """
+        if not items:
+            return None
+        
+        # noramlize the coordinates
+        center = self.width() / 2, self.height() / 2
+        nx = (x - center[0]) / center[0]
+        ny = (self.height() - y - center[1]) / center[1]
+
+        # get the matrices
+        vm = self.viewMatrix()
+        pm = self.projectionMatrix()
+
+        # check each vertex on the items of interest
+        camera_dist = None
+        coord = None
+        selected_item = None
+        for item in items:
+            for p in item.vertexes:
+                camera = vm.map(QVector3D(*p))
+                d = camera.length()
+                clip = pm.map(camera)
+                error = 0.05 / d
+                if abs(clip.x() - nx) < error and abs(clip.y() - ny) < error:
+                    if camera_dist is None or d < camera_dist:
+                        coord = p
+                        camera_dist = d
+                        selected_item = item
+        
+        if coord is None:
+            return None
+        
+        # get the name of the item
+        for vol_item in self.vol_items:
+            if vol_item.gl_item == selected_item:
+                name = vol_item.name
+                break
+        
+        return name, coord
+    
+    def displayCoordinates(self, result):
+        """Display a set of object coordinates to the screen.
+        
+            Params:
+                result (tuple): the result of the getCoordinates function thread
+        """
+        if result is None:
+            self.coord_label.setText(self.vertex_error_message)
+            self.coord_label.resize(self.coord_label.sizeHint())
+            # remove the target
+            if self.target_item:
+                for sphere in self.target_item:
+                    self.removeItem(sphere)
+            self.target_item = None
+            # set timer to close label
+            timer = QTimer(self)
+            timer.timeout.connect(self.clearLabel)
+            timer.start(5000)
+            return
+        
+        name, coord = result
+        
+        snum = round(coord[2] / self.series.section_thicknesses[0])
+        x = coord[0]
+        y = coord[1]
+        text = f"{name} | Section {snum} | x = {x:.3f} | y = {y:.3f}"
+        self.coord_label.setText(text)
+        self.coord_label.resize(self.coord_label.sizeHint())
+        self.placeTarget(coord)
+    
+    def placeTarget(self, coord : tuple):
+        """Place a target object on the clicked vertex.
+        
+            Params:
+                coord (tuple): x, y, z
+        """
+        # remove previous target
+        if self.target_item:
+            for sphere in self.target_item:
+                self.removeItem(sphere)
+        
+        # make target radius dependent on camera distance
+        cam_dist = self.cameraParams()["distance"]
+        rad = cam_dist * 0.004
+
+        # create the target
+        sphere1 = gl.MeshData.sphere(rows=4, cols=4, radius=rad)
+        sphere1 = gl.GLMeshItem(
+            meshdata=sphere1,
+            smooth=True,
+            color=(0, 0, 0, 0.5),
+            shader="edgeDarken",
+            glOptions="translucent",
+        )
+        sphere2 = gl.MeshData.sphere(rows=4, cols=4, radius=rad*2)
+        sphere2 = gl.GLMeshItem(
+            meshdata=sphere2,
+            smooth=True,
+            color=(0, 0, 0, 0.5),
+            shader="edgeDarken",
+            glOptions="translucent",
+        )
+        self.target_item = [sphere1, sphere2]
+        
+        for sphere in self.target_item:
+            sphere.translate(*coord)
+            self.addItem(sphere)
+    
+    def clearLabel(self):
+        """Close the coordinates label."""
+        if (self.coord_label and 
+            self.coord_label.text() == self.vertex_error_message
+        ):
+            self.coord_label.setText("")
     
     def closeEvent(self, event):
         """Executed when closed."""

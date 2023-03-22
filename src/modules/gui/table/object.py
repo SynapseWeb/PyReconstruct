@@ -130,6 +130,7 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("addto3D_act", "Add to scene", "", self.addTo3D),
                     ("remove3D_act", "Remove from scene", "", self.remove3D),
+                    None,
                     ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
             },

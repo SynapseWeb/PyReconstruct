@@ -25,7 +25,7 @@ from PySide6.QtGui import (
     QCursor
 )
 
-from modules.pyrecon import Series, Trace
+from modules.pyrecon import Series, Trace, Ztrace
 from modules.calc import pixmapPointToField, distance
 from modules.backend.view import FieldView
 from modules.backend.table import (
@@ -129,6 +129,7 @@ class FieldWidget(QWidget, FieldView):
         self.is_selecting_traces = False
 
         self.selected_trace_names = {}
+        self.selected_ztrace_names = {}
 
         # set up the timer
         if not self.series.isWelcomeSeries():
@@ -350,18 +351,26 @@ class FieldWidget(QWidget, FieldView):
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
         ):
-            # draw name of closest trace
+            # get closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
+            # check for ztrace segments
+            if not closest_trace:
+                closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+            
+            # draw name of closest trace
             if closest_trace:
                 if type(closest_trace) is Trace:
                     name = closest_trace.name
                     if closest_trace.negative:
                         name += " (negative)"
-                # ztrace returned
+                elif type(closest_trace) is Ztrace:
+                    name = f"{closest_trace.name} (ztrace)"
+                # ztrace tuple returned
                 elif type(closest_trace) is tuple:
                     closest_trace = closest_trace[0]
                     name = f"{closest_trace.name} (ztrace)"
                 
+                closest_trace
                 pos = self.mouse_x, self.mouse_y
                 c = closest_trace.color
                 black_outline = c[0] + 3*c[1] + c[2] > 400
@@ -380,15 +389,30 @@ class FieldWidget(QWidget, FieldView):
             counter = 0
             height = self.height()
             for trace in self.section.selected_traces:
+                # check for max number
+                if counter * (st_size + 10) + 20 > height / 2:
+                    names["..."] = 1
+                    break
                 if trace.name in names:
                     names[trace.name] += 1
                 else:
                     names[trace.name] = 1
                     counter += 1
+            self.selected_trace_names = names
+            
+            names = {}
+            counter = 0
+            for ztrace, i in self.section.selected_ztraces:
+                # check for max number
                 if counter * (st_size + 10) + 20 > height / 2:
                     names["..."] = 1
                     break
-            self.selected_trace_names = names
+                if ztrace.name in names:
+                    names[ztrace.name] += 1
+                else:
+                    names[ztrace.name] = 1
+                    counter += 1
+            self.selected_ztrace_names = names
         
         # draw the names of the selected traces
         if self.selected_trace_names:
@@ -417,7 +441,39 @@ class FieldWidget(QWidget, FieldView):
                     (0, 0, 0),
                     st_size,
                     not left_handed
-                )   
+                )
+        
+        # draw the names of the selected ztraces
+        if self.selected_ztrace_names:
+            if not self.selected_trace_names:
+                x = self.width() - 10 if left_handed else 10
+                y = 20
+            else:
+                y += st_size + 20
+            drawOutlinedText(
+                field_painter,
+                x, y,
+                "Selected Ztraces:",
+                (255, 255, 255),
+                (0, 0, 0),
+                st_size,
+                not left_handed
+            )
+            for name, n in self.selected_ztrace_names.items():
+                y += st_size + 10
+                if n == 1:
+                    text = name
+                else:
+                    text = f"{name} * {n}"
+                drawOutlinedText(
+                    field_painter,
+                    x, y,
+                    text,
+                    (255, 255, 255),
+                    (0, 0, 0),
+                    st_size,
+                    not left_handed
+                )
         
         field_painter.end()
 

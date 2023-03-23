@@ -23,7 +23,8 @@ from modules.backend.func import (
 from modules.calc import (
     pointInPoly,
     pixmapPointToField,
-    fieldPointToPixmap
+    fieldPointToPixmap,
+    getDistanceFromTrace
 )
 from modules.gui.utils import notify
 
@@ -39,6 +40,7 @@ class TraceLayer():
         self.section = section
         self.series = series
         self.traces_in_view = []
+        self.zsegments_in_view = []
     
     def pointToPix(self, pt : tuple, apply_tform=True, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.
@@ -136,6 +138,35 @@ class TraceLayer():
                         ztraces_in_poly.append((ztrace, i))
 
         return traces_in_poly, ztraces_in_poly
+
+    def getZsegment(self, pix_x : float, pix_y : float, radius = 10):
+        """Find the closest ztrace segment (does not have a point on the section).
+        
+            Params:
+                pix_x (float): the screen pixel x
+                pix_y (float): the screen pixel y
+                radius (float): the max radius for finding a ztrace segment
+        """
+        if not self.zsegments_in_view:
+            return None
+        
+        closest_dist = None
+        closest_ztrace = None
+        for line, ztrace in self.zsegments_in_view:
+            d = getDistanceFromTrace(
+                pix_x,
+                pix_y,
+                line,
+                factor=1,
+                absolute=True
+            )
+            if (d < radius and 
+                (closest_dist is None or d < closest_dist)
+            ):
+                closest_dist = d
+                closest_ztrace = ztrace
+        
+        return closest_ztrace
 
     def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
         """Create a new trace from pixel coordinates.
@@ -435,11 +466,13 @@ class TraceLayer():
         painter.drawPoints(qpoints)
         painter.setPen(QPen(QColor(*ztrace.color), 1))
         for line in qlines:
+            p1 = line.p1()
+            p2 = line.p2()
             p1_arrow = True
             p2_arrow = True
-            if line.p1() in qpoints:
+            if p1 in qpoints:
                 p1_arrow = False
-            if line.p2() in qpoints:
+            if p2 in qpoints:
                 p2_arrow = False
             drawArrow(
                 painter,
@@ -447,6 +480,11 @@ class TraceLayer():
                 p1_arrow,
                 p2_arrow
             )
+            self.zsegments_in_view += [(
+                ((p1.x(), p1.y()),
+                (p2.x(), p2.y())),
+                ztrace
+            )]
         painter.end()
     
     def _drawZtraceHighlights(self, trace_layer : QPixmap):
@@ -526,6 +564,7 @@ class TraceLayer():
                     self.traces_in_view.append(trace)
         
         # draw ztraces
+        self.zsegments_in_view = []
         if self.series.options["show_ztraces"]:
             for ztrace in self.series.ztraces.values():
                 if ztrace not in self.section.temp_hide:

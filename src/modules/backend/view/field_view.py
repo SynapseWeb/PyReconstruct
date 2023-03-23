@@ -14,8 +14,6 @@ from modules.calc import (
 )
 from modules.gui.utils import notify
 
-import time
-
 class FieldView():
 
     def __init__(self, series : Series):

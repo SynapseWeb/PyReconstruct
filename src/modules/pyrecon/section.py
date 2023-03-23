@@ -57,7 +57,7 @@ class Section():
         for name in self.contours:
             trace_list = []
             for trace_data in self.contours[name]:
-                trace = Trace.fromDict(trace_data, name)
+                trace = Trace.fromList(trace_data, name)
                 # screen for defective traces
                 if len(trace.points) > 1:
                     trace_list.append(trace)
@@ -83,19 +83,36 @@ class Section():
             section_data["brightness"] = 0
         section_data["contrast"] = int(section_data["contrast"])
 
-        empty_contours = []
+        # scan contours
+        flagged_contours = []
         for cname in section_data["contours"]:
-            for trace in section_data["contours"][cname]:
-                # check for empty traces
-                if len(trace["x"]) < 2:
-                    section_data["contours"][cname].remove(trace)
-                # modify traces and delete name
-                if "name" in trace:
-                    del(trace["name"])
-            # check for empty contours
-            if len(section_data["contours"][cname]) == 0:
-                empty_contours.append(cname)
-        for cname in empty_contours:
+            flagged_traces = []
+            for i, trace in enumerate(section_data["contours"][cname]):
+                # convert trace to list format if needed
+                if type(trace) is dict:
+                    trace = [
+                        trace["x"],
+                        trace["y"],
+                        trace["color"],
+                        trace["closed"],
+                        trace["negative"],
+                        trace["hidden"],
+                        trace["mode"],
+                        trace["tags"],
+                        trace["history"]
+                    ]
+                    section_data["contours"][cname][i] = trace
+                # check for empty/defective traces
+                if len(trace[0]) < 2:
+                    flagged_traces.append(i)
+            # remove the flagged defective traces
+            for i in flagged_traces:
+                section_data["contours"][cname].pop(i)
+            # check if the contour is empty
+            if not section_data["contours"][cname]:
+                flagged_contours.append(cname)
+        # remove flagged contours
+        for cname in flagged_contours:
             del(section_data["contours"][cname])
 
     def getDict(self) -> dict:
@@ -123,7 +140,7 @@ class Section():
         for contour_name in self.contours:
             if not self.contours[contour_name].isEmpty():
                 d["contours"][contour_name] = [
-                    trace.getDict(include_name=False) for trace in self.contours[contour_name]
+                    trace.getList(include_name=False) for trace in self.contours[contour_name]
                 ]
         
         # ADDED SINCE JAN 25TH

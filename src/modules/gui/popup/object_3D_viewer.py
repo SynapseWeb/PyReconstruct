@@ -462,16 +462,17 @@ class Object3DViewer(gl.GLViewWidget):
         coord = None
         selected_item = None
         for item in items:
-            for p in item.vertexes:
-                camera = vm.map(QVector3D(*p))
-                d = camera.length()
-                clip = pm.map(camera)
-                error = 0.05 / d
-                if abs(clip.x() - nx) < error and abs(clip.y() - ny) < error:
-                    if camera_dist is None or d < camera_dist:
-                        coord = p
-                        camera_dist = d
-                        selected_item = item
+            if type(item) is gl.GLMeshItem:
+                for p in item.vertexes:
+                    camera = vm.map(QVector3D(*p))
+                    d = camera.length()
+                    clip = pm.map(camera)
+                    error = 0.05 / d
+                    if abs(clip.x() - nx) < error and abs(clip.y() - ny) < error:
+                        if camera_dist is None or d < camera_dist:
+                            coord = p
+                            camera_dist = d
+                            selected_item = item
         
         if coord is None:
             return None

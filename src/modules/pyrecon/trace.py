@@ -99,29 +99,36 @@ class Trace():
         """
         self.tags.append(tag)
 
-    def getDict(self, include_name=True) -> dict:
+    def getList(self, include_name=True) -> dict:
         """Return the trace data as a dictionary.
         
             Params:
                 include_name (bool): True if name should be included in dict
             Returns:
-                (dict) dictionary containing the trace data
+                (list) list containing the trace data
         """
-        d = {}
-        if include_name:
-            d["name"] = self.name
-        d["color"] = self.color
-        d["closed"] = self.closed
-        d["negative"] = self.negative
-        d["x"], d["y"] = [], []
+        x, y = [], []
         for p in self.points:
-            d["x"].append(round(p[0], 7))
-            d["y"].append(round(p[1], 7))
-        d["hidden"] = self.hidden
-        d["mode"] = self.fill_mode
-        d["tags"] = list(self.tags)
-        d["history"] = [list(l) for l in self.history]
-        return d
+            x.append(round(p[0], 7))
+            y.append(round(p[1], 7))
+        
+        l = []
+        if include_name:
+            l.append(self.name)
+        
+        l += [
+            x, 
+            y, 
+            self.color,
+            self.closed,
+            self.negative,
+            self.hidden,
+            self.fill_mode,
+            list(self.tags),
+            [list(l) for l in self.history]
+        ]
+
+        return l
     
     def getXMLObj(self, xml_image_tform : XMLTransform = None, legacy_format : bool = False):
         """Returns the trace data as an XML object.
@@ -186,24 +193,38 @@ class Trace():
             return xml_contour
     
     # STATIC METHOD
-    def fromDict(d, name : str = None):
+    def fromList(l : list, name : str = None):
         """Create a trace object from a dictionary.
         
             Params:
-                d (dict): the dictionary contour data
+                list (dict): the list trace data
                 name (str): the name of the trace
             Returns:
                 (Trace) a Trace object constructed from the dictionary data
         """
         if not name:
-            name = d["name"]
-        new_trace = Trace(name, d["color"], d["closed"])
-        new_trace.negative = d["negative"]
-        new_trace.points = list(zip(d["x"], d["y"]))
-        new_trace.hidden = d["hidden"]
-        new_trace.fill_mode = d["mode"]
-        new_trace.tags = set(d["tags"])
-        new_trace.history = [TraceLog(l) for l in d["history"]]
+            name = l.pop(0)
+        
+        (
+            x,
+            y,
+            color,
+            closed,
+            negative,
+            hidden,
+            fill_mode,
+            tags,
+            history
+        ) = tuple(l)
+
+        new_trace = Trace(name, color, closed)
+        new_trace.negative = negative
+        new_trace.points = list(zip(x, y))
+        new_trace.hidden = hidden
+        new_trace.fill_mode = fill_mode
+        new_trace.tags = set(tags)
+        new_trace.history = [TraceLog(l) for l in history]
+
         return new_trace
     
     # STATIC METHOD

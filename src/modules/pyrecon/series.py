@@ -47,9 +47,9 @@ class Series():
         self.palette_traces = series_data["palette_traces"]
 
         for i in range(len(self.palette_traces)):
-            self.palette_traces[i] = Trace.fromDict(self.palette_traces[i])
+            self.palette_traces[i] = Trace.fromList(self.palette_traces[i])
 
-        self.current_trace = Trace.fromDict(series_data["current_trace"])
+        self.current_trace = Trace.fromList(series_data["current_trace"])
 
         self.ztraces = series_data["ztraces"]
         for name in self.ztraces:
@@ -333,6 +333,38 @@ class Series():
                 del(ztrace["name"])
                 ztraces_dict[name] = ztrace
             series_data["ztraces"] = ztraces_dict
+        
+        # check the traces (convert dicts to lists)
+        for i, trace in enumerate(series_data["palette_traces"]):
+            if type(trace) is dict:
+                trace = [
+                    trace["name"],
+                    trace["x"],
+                    trace["y"],
+                    trace["color"],
+                    trace["closed"],
+                    trace["negative"],
+                    trace["hidden"],
+                    trace["mode"],
+                    trace["tags"],
+                    trace["history"]
+                ]
+                series_data["palette_traces"][i] = trace
+        trace = series_data["current_trace"]
+        if type(trace) is dict:
+            trace = [
+                trace["name"],
+                trace["x"],
+                trace["y"],
+                trace["color"],
+                trace["closed"],
+                trace["negative"],
+                trace["hidden"],
+                trace["mode"],
+                trace["tags"],
+                trace["history"]
+            ]
+            series_data["current_trace"] = trace
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -349,9 +381,9 @@ class Series():
         d["palette_traces"] = []
         
         for trace in self.palette_traces:
-            d["palette_traces"].append(trace.getDict())
+            d["palette_traces"].append(trace.getList())
             
-        d["current_trace"] = self.current_trace.getDict()
+        d["current_trace"] = self.current_trace.getList()
 
         d["ztraces"] = {}
         for name in self.ztraces:
@@ -494,9 +526,6 @@ class Series():
             Returns:
                 (dict): section number : z-value
         """
-        # ensure that data is up to date
-        self.gatherSectionData()
-
         zvals = {}
         z = 0
         for snum in sorted(self.section_thicknesses.keys()):

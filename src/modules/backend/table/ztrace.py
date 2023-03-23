@@ -20,18 +20,9 @@ class ZtraceTableManager():
         self.loadSeries()
     
     def loadSeries(self):
-        """Load the section thicknesses and transforms from the series."""
-        # load the transforms and section heights
-        self.tforms = {}
-        self.section_heights = {}
-        height = 0
-        for snum in sorted(self.series.sections.keys()):
-            tform = self.series.section_tforms[snum][self.series.alignment]
-            self.tforms[snum] = tform
-            self.section_heights[snum] = height
-            height += self.series.section_thicknesses[snum]
-        
+        """Load the section thicknesses and transforms from the series."""        
         # load the ztrace data
+        self.series.gatherSectionData()
         self.data = {}
         for name, ztrace in self.series.ztraces.items():
             self.data[name] = ZtraceTableItem(

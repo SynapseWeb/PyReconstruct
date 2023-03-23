@@ -94,20 +94,21 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
 
 def progbar(title : str, text : str, cancel=True):
     """Create an easy progress dialog."""
-    if not mainwindow:
+    try:
+        progbar = QProgressDialog(
+                text,
+                "Cancel",
+                0, 100,
+                mainwindow
+            )
+        progbar.setMinimumDuration(1500)
+        progbar.setWindowTitle(title)
+        progbar.setWindowModality(Qt.WindowModal)
+        if not cancel:
+            progbar.setCancelButton(None)
+        return progbar.setValue, progbar.wasCanceled
+    except:
         return None, None
-    progbar = QProgressDialog(
-            text,
-            "Cancel",
-            0, 100,
-            mainwindow
-        )
-    progbar.setMinimumDuration(1500)
-    progbar.setWindowTitle(title)
-    progbar.setWindowModality(Qt.WindowModal)
-    if not cancel:
-        progbar.setCancelButton(None)
-    return progbar.setValue, progbar.wasCanceled
 
 def setMainWindow(mw):
     """Set the main window for the gui functions."""

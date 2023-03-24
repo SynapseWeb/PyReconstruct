@@ -106,7 +106,7 @@ class Section():
                 if len(trace[0]) < 2:
                     flagged_traces.append(i)
             # remove the flagged defective traces
-            for i in flagged_traces:
+            for i in sorted(flagged_traces, reverse=True):
                 section_data["contours"][cname].pop(i)
             # check if the contour is empty
             if not section_data["contours"][cname]:

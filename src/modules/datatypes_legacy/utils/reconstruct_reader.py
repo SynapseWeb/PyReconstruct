@@ -4,9 +4,12 @@ import os
 
 from lxml import etree
 
-from modules.legacy_recon.classes import (
-    Contour, Image, Section, Series, Transform, ZContour
-)
+from ..classes.series import Series
+from ..classes.section import Section
+from ..classes.contour import Contour
+from ..classes.image import Image
+from ..classes.transform import Transform
+from ..classes.zcontour import ZContour
 
 
 def str_to_bool(string):

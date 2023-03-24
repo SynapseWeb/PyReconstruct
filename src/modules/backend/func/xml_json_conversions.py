@@ -13,7 +13,7 @@ from modules.datatypes import (
     Trace,
     Ztrace
 )
-from modules.legacy_recon import (
+from modules.datatypes_legacy import (
     Transform as XMLTransform,
     process_series_file, 
     process_section_file,

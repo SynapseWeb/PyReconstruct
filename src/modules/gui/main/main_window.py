@@ -36,7 +36,7 @@ from modules.backend.func import (
     jsonToXML,
     importTransforms
 )
-from modules.pyrecon import Series, Transform
+from modules.datatypes import Series, Transform
 from modules.constants import assets_dir, img_dir
 
 

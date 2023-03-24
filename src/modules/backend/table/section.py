@@ -3,7 +3,7 @@ import os
 from PySide6.QtCore import Qt
 
 from modules.gui.table import SectionTableWidget
-from modules.pyrecon import Series
+from modules.datatypes import Series
 
 class SectionTableManager():
 

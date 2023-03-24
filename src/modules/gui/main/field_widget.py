@@ -25,7 +25,7 @@ from PySide6.QtGui import (
     QCursor
 )
 
-from modules.pyrecon import Series, Trace, Ztrace
+from modules.datatypes import Series, Trace, Ztrace
 from modules.calc import pixmapPointToField, distance
 from modules.backend.view import FieldView
 from modules.backend.table import (

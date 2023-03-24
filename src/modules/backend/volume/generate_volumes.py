@@ -2,7 +2,7 @@ import pyqtgraph.opengl as gl
 
 from .objects_3D import Surface, Spheres
 
-from modules.pyrecon import Series, VolItem
+from modules.datatypes import Series, VolItem
 
 def generateVolumes(series : Series, obj_names : list):
     """Generate the volume items for a set of objects.

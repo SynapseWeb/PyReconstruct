@@ -17,7 +17,7 @@ import pyqtgraph.opengl as gl
 from pyqtgraph.Vector import Vector
 
 from modules.backend.volume import generateVolumes, generate3DZtraces
-from modules.pyrecon import Series
+from modules.datatypes import Series
 from modules.gui.utils import populateMenu
 
 # THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/

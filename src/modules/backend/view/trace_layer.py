@@ -8,7 +8,7 @@ from PySide6.QtGui import (
     QPainter,
     QBrush
 )
-from modules.pyrecon import (
+from modules.datatypes import (
     Series, 
     Section,
     Trace,

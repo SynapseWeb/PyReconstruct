@@ -7,7 +7,7 @@ from PySide6.QtCore import QSize, QRect
 from .palette_button import PaletteButton
 from .outlined_label import OutlinedLabel
 
-from modules.pyrecon import Trace
+from modules.datatypes import Trace
 from modules.constants import locations as loc
 
 class MousePalette():

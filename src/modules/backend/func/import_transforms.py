@@ -1,4 +1,4 @@
-from modules.pyrecon import Series, Transform
+from modules.datatypes import Series, Transform
 
 def importTransforms(series : Series, tforms_fp : str):
         """Import transforms from a text file.

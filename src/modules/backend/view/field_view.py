@@ -2,7 +2,7 @@ from PySide6.QtGui import QPainter
 
 from .section_layer import SectionLayer
 
-from modules.pyrecon import (
+from modules.datatypes import (
     Series,
     Transform,
     Trace

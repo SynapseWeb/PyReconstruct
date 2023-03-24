@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 
 from modules.gui.table import TraceTableWidget
 from modules.gui.popup import HistoryWidget
-from modules.pyrecon import (
+from modules.datatypes import (
     Series,
     Section,
     TraceTableItem

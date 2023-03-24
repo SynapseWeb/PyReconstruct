@@ -6,7 +6,7 @@ from .grid import reducePoints
 from modules.constants import blank_section, blank_series_no_contours
 from modules.gui.utils import progbar
 from modules.constants import createHiddenDir
-from modules.pyrecon import (
+from modules.datatypes import (
     Series,
     Section,
     Transform,

@@ -4,7 +4,7 @@ from .trace_log import TraceLog
 from modules.calc import centroid, distance
 from modules.constants import blank_palette_contour
 
-from modules.legacy_recon import (
+from modules.datatypes_legacy import (
     Contour as XMLContour,
     Transform as XMLTransform
 )

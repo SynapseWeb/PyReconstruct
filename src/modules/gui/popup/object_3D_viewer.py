@@ -158,7 +158,10 @@ class Object3DViewer(gl.GLViewWidget):
         context_menu_list = [
             ("togglesc_act", "Toggle scale cube", "S", self.toggleScaleCube),
             ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
-            ("background_act", "Set background color...", "", self.editBackgroundColor)
+            None,
+            ("background_act", "Set background color...", "", self.editBackgroundColor),
+            None,
+            ("moveto_act", "View point in 2D", "", self.moveToCoordinates)
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
@@ -378,6 +381,10 @@ class Object3DViewer(gl.GLViewWidget):
     
     def contextMenuEvent(self, event):
         """Execute the context menu when user right clicks."""
+        if self.target_item:
+            self.moveto_act.setEnabled(True)
+        else:
+            self.moveto_act.setEnabled(False)
         self.context_menu.exec(event.globalPos())
     
     def toggleScaleCube(self):
@@ -485,6 +492,15 @@ class Object3DViewer(gl.GLViewWidget):
         
         return name, coord
     
+    def moveToCoordinates(self):
+        """Jump to the coordinates displayed in 2D."""
+        if not self.coord_label or self.coord_label.text() == self.vertex_error_message:
+            return
+        
+        x, y, snum = self.coord_displayed
+        self.mainwindow.field.moveTo(snum, x, y)
+        self.mainwindow.activateWindow()
+        
     def displayCoordinates(self, result):
         """Display a set of object coordinates to the screen.
         
@@ -510,6 +526,7 @@ class Object3DViewer(gl.GLViewWidget):
         snum = round(coord[2] / self.series.section_thicknesses[0])
         x = coord[0]
         y = coord[1]
+        self.coord_displayed = (x, y, snum)
         text = f"{name} | Section {snum} | x = {x:.3f} | y = {y:.3f}"
         self.coord_label.setText(text)
         self.coord_label.resize(self.coord_label.sizeHint())

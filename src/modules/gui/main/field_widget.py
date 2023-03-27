@@ -140,6 +140,53 @@ class FieldWidget(QWidget, FieldView):
             self.timer.start(5000)
 
         self.generateView()
+    
+    def checkActions(self, context_menu=False, clicked_trace=None):
+        """Check for actions that should be enabled or disabled
+        
+            Params:
+                context_menu (bool): True if context menu is being generated
+                clicked_trace (Trace): the trace that was clicked on IF the cotext menu is being generated
+        """
+        # if both traces and ztraces are highlighted or nothing is highlighted, only allow general field options
+        if not (bool(self.section.selected_traces) ^ 
+                bool(self.section.selected_ztraces)
+        ):
+            for a in self.mainwindow.trace_actions:
+                a.setEnabled(False)
+            for a in self.mainwindow.ztrace_actions:
+                a.setEnabled(False)
+        # if selected trace in highlighted traces
+        elif ((not context_menu and self.section.selected_traces) or
+              (context_menu and clicked_trace in self.section.selected_traces)
+        ):
+            for a in self.mainwindow.ztrace_actions:
+                a.setEnabled(False)
+            for a in self.mainwindow.trace_actions:
+                a.setEnabled(True)
+        # if selected ztrace in highlighted ztraces
+        elif ((not context_menu and self.section.selected_ztraces) or
+              (context_menu and clicked_trace in self.section.selected_ztraces)
+        ):
+            for a in self.mainwindow.trace_actions:
+                a.setEnabled(False)
+            for a in self.mainwindow.ztrace_actions:
+                a.setEnabled(True)
+        else:
+            for a in self.mainwindow.trace_actions:
+                a.setEnabled(False)
+            for a in self.mainwindow.ztrace_actions:
+                a.setEnabled(False)
+        
+        # check clipboard for paste options
+        if self.clipboard:
+            self.mainwindow.paste_act.setEnabled(True)
+        else:
+            self.mainwindow.paste_act.setEnabled(False)
+            self.mainwindow.pasteattributes_act.setEnabled(False)
+        
+        # check for backup directory
+        self.mainwindow.backup_act.setChecked(bool(self.series.options["backup_dir"]))
 
     def markTime(self):
         """Keep track of the time on the series file."""
@@ -191,6 +238,10 @@ class FieldWidget(QWidget, FieldView):
             generate_traces,
             blend=self.blend_sections
         )
+        try:
+            self.checkActions()
+        except AttributeError:
+            pass
         if update:
             self.update()
     
@@ -535,7 +586,12 @@ class FieldWidget(QWidget, FieldView):
     
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
-        if not self.section.selected_traces:
+        # do not run if both types of traces are selected or none are selected
+        if bool(self.section.selected_traces) ^ bool(self.section.selected_ztraces):
+            return
+        # run the ztrace dialog if only ztraces selected
+        elif self.section.selected_ztraces:
+            self.ztraceDialog()
             return
         
         new_attr, confirmed = TraceDialog(
@@ -698,17 +754,9 @@ class FieldWidget(QWidget, FieldView):
         context_menu &= not self.is_line_tracing
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-            # if both traces and ztraces are highlighted, only allow general field options
-            if self.section.selected_traces and self.section.selected_ztraces:
-                self.mainwindow.field_menu.exec(event.globalPos())
-            # if selected trace in highlighted traces
-            elif clicked_trace in self.section.selected_traces:
-                self.mainwindow.trace_menu.exec(event.globalPos())
-            # if selected ztrace in highlighted ztraces
-            elif clicked_trace in self.section.selected_ztraces:
-                self.mainwindow.ztrace_menu.exec(event.globalPos())
-            else:
-                self.mainwindow.field_menu.exec(event.globalPos())
+            self.checkActions(context_menu=True, clicked_trace=clicked_trace)
+            self.mainwindow.field_menu.exec(event.globalPos())
+            self.checkActions()
             return
 
         if self.mouse_mode == FieldWidget.POINTER:

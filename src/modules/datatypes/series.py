@@ -58,7 +58,6 @@ class Series():
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
-        self.backup_dir = series_data["backup_dir"]
 
         # keep track of transforms, mags, and section thicknesses
         self.section_tforms = {}
@@ -227,7 +226,7 @@ class Series():
             f.write(save_str)
         
         # backup the series if requested
-        if self.backup_dir and os.path.isdir(self.backup_dir):
+        if self.options["backup_dir"] and os.path.isdir(self.options["backup_dir"]):
             # get the file name
             fn = os.path.basename(self.jser_fp)
             # create the new file name
@@ -236,13 +235,13 @@ class Series():
             fn = fn[:fn.rfind(".")] + "_" + dt + fn[fn.rfind("."):]
             # save the file
             backup_fp = os.path.join(
-                self.backup_dir,
+                self.options["backup_dir"],
                 fn
             )
             with open(backup_fp, "w") as f:
                 f.write(save_str)
         else:
-            self.backup_dir = ""
+            self.options["backup_dir"] = ""
         
         if close:
             self.close()
@@ -320,6 +319,11 @@ class Series():
             if key not in series_data["options"]:
                 series_data["options"][key] = empty_series["options"][key]
         
+        # check for backup_dir key
+        if "backup_dir" in series_data:
+            series_data["options"]["backup_dir"] = series_data["backup_dir"]
+            del series_data["backup_dir"]
+        
         # check the ztraces
         if type(series_data["ztraces"]) is list:
             ztraces_dict = {}
@@ -392,7 +396,6 @@ class Series():
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
-        d["backup_dir"] = self.backup_dir
 
         # ADDED SINCE JAN 25TH
         d["options"] = self.options
@@ -414,7 +417,6 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
-        series_data["backup_dir"] = ""
 
         # ADDED SINCE JAN 25TH
 
@@ -427,6 +429,7 @@ class Series():
         options["med_dist"] = 0.1
         options["big_dist"] = 1
         options["show_ztraces"] = True
+        options["backup_dir"] = ""
 
         return series_data
     

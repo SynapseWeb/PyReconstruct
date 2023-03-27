@@ -85,7 +85,6 @@ class MainWindow(QMainWindow):
 
         # create menu and shortcuts
         self.createMenuBar()
-        self.updateMenuBar()
         self.createContextMenus()
         self.createShortcuts()
 
@@ -223,41 +222,34 @@ class MainWindow(QMainWindow):
         self.menubar.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar, menu)
     
-    def updateMenuBar(self):
-        """Update the menubar with new series information."""
-        # set check actions
-        self.backup_act.setChecked(bool(self.series.backup_dir))
-    
     def createContextMenus(self):
         """Create the right-click menus used in the field."""
         field_menu_list = [
-            ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
-            ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
-            None,
-            ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
-            ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
-            None,
-            ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
-            None,
-            self.paste_act,
-            None,
-            ("blend_act", "Toggle blend", " ", self.field.toggleBlend),
-        ]
-        self.field_menu = QMenu(self)
-        populateMenu(self, self.field_menu, field_menu_list)
-
-        trace_menu_list = [
-            ("edittrace_act", "Edit trace attributes...", "Ctrl+E", self.field.traceDialog),
-            None,
-            ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
-            ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
+            ("edittrace_act", "Edit attributes...", "Ctrl+E", self.field.traceDialog),
             {
-                "attr_name": "negativemenu",
-                "text": "Negative",
+                "attr_name": "modifymenu",
+                "text": "Modify",
                 "opts":
                 [
+                    ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
+                    None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
+                ]
+            },
+            None,
+            {
+                "attr_name": "viewmenu",
+                "text": "View",
+                "opts":
+                [
+                    ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
+                    ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
+                    None,
+                    ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
+                    ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
+                    None,
+                    ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
                 ]
             },
             None,
@@ -266,16 +258,30 @@ class MainWindow(QMainWindow):
             self.paste_act,
             self.pasteattributes_act,
             None,
+            ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
+            ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
+            None,
             ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
         ]
-        self.trace_menu = QMenu(self)
-        populateMenu(self, self.trace_menu, trace_menu_list)
+        self.field_menu = QMenu(self)
+        populateMenu(self, self.field_menu, field_menu_list)
 
-        ztrace_menu_list = [
-            ("editztrace_act", "Edit ztrace attributes...", "", self.field.ztraceDialog),
+        # organize actions
+        self.trace_actions = [
+            self.edittrace_act,
+            self.modifymenu,
+            self.mergetraces_act,
+            self.makepositive_act,
+            self.makenegative_act,
+            self.hidetraces_act,
+            self.cut_act,
+            self.copy_act,
+            self.pasteattributes_act,
+            self.deletetraces_act
         ]
-        self.ztrace_menu = QMenu(self)
-        populateMenu(self, self.ztrace_menu, ztrace_menu_list)
+        self.ztrace_actions = [
+            self.edittrace_act
+        ]
 
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
@@ -533,10 +539,6 @@ class MainWindow(QMainWindow):
             self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
-
-        # update the menubar actions if requested
-        if update_menu_bar:
-            self.updateMenuBar()
     
     def newSeries(self, image_locations : list = None):
         """Create a new series from a set of images.
@@ -902,10 +904,12 @@ class MainWindow(QMainWindow):
             if not new_dir:
                 self.backup_act.setChecked(False)
                 return
-            self.series.backup_dir = new_dir
+            self.series.options["backup_dir"] = new_dir
         # user unchecked the option
         else:
-            self.series.backup_dir = ""
+            self.series.options["backup_dir"] = ""
+        
+        self.seriesModified()
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

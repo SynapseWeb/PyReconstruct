@@ -351,6 +351,26 @@ class FieldView():
         ]
         self.generateView()
     
+    def moveTo(self, snum : int, x : float, y : float):
+        """Move to a specified section number and coordinates (used from 3D scene).
+        
+            Params:
+                snum (int): the section number to move to
+                x (int): the x coordinate to focus on
+                y (int): the y coordinate to focus on
+        """
+        # check for section number
+        if snum not in self.series.sections:
+            return
+
+        if self.series.current_section != snum:
+            self.changeSection(snum)
+        
+        # set one micron diameter around object
+        self.series.window = [x-0.5, y-0.5, 1, 1]
+
+        self.generateView()
+    
     def selectTrace(self, trace : Trace):
         """Select/deselect a single trace.
         

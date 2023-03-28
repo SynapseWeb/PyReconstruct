@@ -116,7 +116,7 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
             xml_contour,
             palette=True
         )
-        series_dict["palette_traces"].append(trace.getDict())
+        series_dict["palette_traces"].append(trace.getList())
     series_dict["current_trace"] = series_dict["palette_traces"][0]
     
     # import ztraces
@@ -198,9 +198,9 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
             mag=2/section_dict["mag"]
         )
         if xml_contour.name in contours:
-            contours[xml_contour.name].append(trace.getDict())
+            contours[xml_contour.name].append(trace.getList())
         else:
-            contours[xml_contour.name] = [trace.getDict()]
+            contours[xml_contour.name] = [trace.getList()]
     
     # save the section
     with open(os.path.join(hidden_dir, fname), "w") as f:

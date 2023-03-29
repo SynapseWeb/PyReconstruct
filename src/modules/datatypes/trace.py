@@ -202,7 +202,8 @@ class Trace():
             Returns:
                 (Trace) a Trace object constructed from the dictionary data
         """
-        if not name:
+
+        if not name or len(l) != 9:
             name = l.pop(0)
         
         (

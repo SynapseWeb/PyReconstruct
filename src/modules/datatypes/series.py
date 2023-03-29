@@ -109,25 +109,6 @@ class Series():
         with open(fp, "r") as f:
             jser_data = json.load(f)
         
-        # creating loading bar
-        if prog_imported:
-            update, canceled = progbar(
-                "Open Series",
-                "Loading series..."
-            )
-        else:
-            update, canceled = None, None
-        progress = 0
-        final_value = 1
-        for sdata in jser_data["sections"]:
-            if sdata: final_value += 1
-
-        # create the hidden directory
-        sdir = os.path.dirname(fp)
-        sname = os.path.basename(fp)
-        sname = sname[:sname.rfind(".")]
-        hidden_dir = createHiddenDir(sdir, sname)
-
         # UPDATE FROM OLD JSER FORMATS
         updated_jser_data = {}
         sections_dict = {}
@@ -152,6 +133,22 @@ class Series():
             updated_jser_data["sections"] = sections_list
             # replace data
             jser_data = updated_jser_data
+        
+        # creating loading bar
+        update, canceled = progbar(
+            "Open Series",
+            "Loading series..."
+        )
+        progress = 0
+        final_value = 1
+        for sdata in jser_data["sections"]:
+            if sdata: final_value += 1
+
+        # create the hidden directory
+        sdir = os.path.dirname(fp)
+        sname = os.path.basename(fp)
+        sname = sname[:sname.rfind(".")]
+        hidden_dir = createHiddenDir(sdir, sname)
         
         # extract JSON series data
         series_data = jser_data["series"]

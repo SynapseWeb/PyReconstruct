@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import (
+    QApplication,
     QWidget,
     QMenuBar,
     QMenu,
@@ -92,9 +93,33 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     for menu_dict in menubar_list:
         newMenu(widget, menu, menu_dict)
 
+class BasicProgbar():
+    def __init__(self, text : str):
+        """Create a 'vanilla' progress indicator.
+        
+        Params:
+            text (str): the text to display by the indicator
+        """
+        self.text = text
+        print(f"{text} | 0.0%", end="\r")
+    
+    def update(self, p):
+        """Update the progress indicator.
+        
+            Params:
+                p (float): the percentage of progress made
+        """
+        print(f"{self.text} | {p:.1f}%", end="\r")
+        if p == 100:
+            print()
+
 def progbar(title : str, text : str, cancel=True):
     """Create an easy progress dialog."""
-    try:
+    # create vanilla progress bar if no pyside6 instance
+    if not QApplication.instance():
+        progbar = BasicProgbar(text)
+        return progbar.update, None
+    else:
         progbar = QProgressDialog(
                 text,
                 "Cancel",
@@ -107,8 +132,6 @@ def progbar(title : str, text : str, cancel=True):
         if not cancel:
             progbar.setCancelButton(None)
         return progbar.setValue, progbar.wasCanceled
-    except:
-        return None, None
 
 def setMainWindow(mw):
     """Set the main window for the gui functions."""

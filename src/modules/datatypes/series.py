@@ -15,7 +15,12 @@ from modules.constants import (
     assets_dir,
     getDefaultPaletteTraces
 )
-from modules.gui.utils import progbar
+try:
+    from modules.gui.utils import progbar
+    prog_imported = True
+except ImportError:
+    prog_imported = False
+
 
 
 class Series():
@@ -105,10 +110,13 @@ class Series():
             jser_data = json.load(f)
         
         # creating loading bar
-        update, canceled = progbar(
-            "Open Series",
-            "Loading series..."
-        )
+        if prog_imported:
+            update, canceled = progbar(
+                "Open Series",
+                "Loading series..."
+            )
+        else:
+            update, canceled = None, None
         progress = 0
         final_value = 1
         for sdata in jser_data["sections"]:
@@ -192,11 +200,14 @@ class Series():
 
         filenames = os.listdir(self.hidden_dir)
 
-        update, canceled = progbar(
-            "Save Series",
-            "Saving series...",
-            cancel=False
-        )
+        if prog_imported:
+            update, canceled = progbar(
+                "Save Series",
+                "Saving series...",
+                cancel=False
+            )
+        else:
+            update, canceled = None, None
         progress = 0
         final_value = len(filenames)
 
@@ -810,11 +821,14 @@ class SeriesIterator():
         self.section_numbers = sorted(list(self.series.sections.keys()))
         self.sni = 0
         if self.show_progress:
-            self.update, canceled = progbar(
-                title=" ",
-                text=self.message,
-                cancel=False
-            )
+            if prog_imported:
+                self.update, canceled = progbar(
+                    title=" ",
+                    text=self.message,
+                    cancel=False
+                )
+            else:
+                self.update, canceled = None, None
         return self
     
     def __next__(self):

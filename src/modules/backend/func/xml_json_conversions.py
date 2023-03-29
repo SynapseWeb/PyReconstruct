@@ -198,9 +198,9 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
             mag=2/section_dict["mag"]
         )
         if xml_contour.name in contours:
-            contours[xml_contour.name].append(trace.getList())
+            contours[xml_contour.name].append(trace.getList(include_name=False))
         else:
-            contours[xml_contour.name] = [trace.getList()]
+            contours[xml_contour.name] = [trace.getList(include_name=False)]
     
     # save the section
     with open(os.path.join(hidden_dir, fname), "w") as f:

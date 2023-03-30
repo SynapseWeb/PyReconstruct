@@ -49,43 +49,6 @@
 
 # General Concepts
 
-## File Structure
-
-Data for each series are stored in a single series file (.jser).
-
-Images are **not** stored in the .jser file.
-
-
-## JSON vs. XML Files
-
-JSON and XML are ways in which the section/series data are encoded into their files.
-
-PyReconstruct will store data as JSON files by default.
-
-Legacy Reconstruct stores data in XML files. These files can be opened and edited in PyReconstruct, but we strongly recommend to export these to JSON files, as save data will be lost when saving XML files.
-
-
-## Transforms
-
-A transform is a set of six numbers (a, b, c, d, e, f) that denotes an affine transformation.
-
-The numbers a, b, d, and e describe the stretch/shear/rotation component of the transformation, while c and f describe the horizontal and vertical translation components of the transformation, respectively.
-
-Each section has one transformation that is applied to the image and every trace. This means that the traces are **fixed** to the image. If the transformation for the section is changed, the traces and the image will move together.
-
-
-## Alignments
-
-Each series begins with the "default" alignment. An alignment is a single set of image transforms for each section. Through the alignments dialog (accessed through Series>Change Alignment or Ctrl+Shift+A), you can create new alignments and switch between them.
-
-For example, if your default alignment works well for object 1 but not for object 2, you can create a new alignment for object 2 and import transforms or manually align it.
-
-
-## History
-
-Every trace has a history – an set of logs related to the creation and modification of the trace. Each log contains a date, time, username, and description. By default, the username is found through the operating system, but it can also be changed manually (File>Change username).
-
-
 ## Trace vs. Contour vs. Object
 
 A **trace** is a single connected shape or curve on a 
@@ -103,6 +66,45 @@ Additionally, the trace radius can be modified. This is most commonly used for t
 Traces can also be hidden. This can be done by using the Ctrl+H shortcut on selected traces or through the object and trace lists. Ctrl+U Will unhide all hidden traces on the section.
 
 The fill mode of the trace is important for visuals. Traces can have no fill, a transparent fill, or a solid fill. You can also select whether the trace is filled only when select or only when deselected.
+
+## File Structure
+
+Data for each series are stored in a single series file (.jser).
+
+Images are **not** stored in the .jser file.
+
+The .jser file is in JSON format. It is split into two main keys: **series** and **sections**.
+
+The value for the **series** key contains data pertaining to the series as a whole and its usage data. It includes the viewing window, the last section viewed by the user, the ztraces, 3D options, all the series options, and the traces on the palette.
+
+The value for the **sections** key is a list. Each item in the list is the data for a single section. The index in the list corresponds to the section number. The list contains a null value for sections that do not exist.
+
+The section data is stored as a dictionary. It contains information that is relevant to the single section (transforms, thickness, magnification, brightness, contrast, etc.), which includes every contour on the section in the form of a dictionary.
+
+The value for the **contours** key is a dictionary. The keys in the dictionary are the names of each contour, and the value for each key is a list of traces.
+
+Each trace is stored as a list. The information in the list is as follows: [name, x-values, y-values, color, closed, negative, hidden, fill mode, tags, history]. Note: ONLY traces stored in the palette trace list in the series data have the name in the list. Traces in the section data do NOT contain their names.
+
+
+## Transforms
+
+A transform is a set of six numbers (a, b, c, d, e, f) that denotes an affine transformation.
+
+The numbers a, b, d, and e describe the stretch/shear/rotation component of the transformation, while c and f describe the horizontal and vertical translation components of the transformation, respectively.
+
+Each section has one transformation that is applied to the image and every trace. This means that the traces are **fixed** to the image. If the transformation for the section is changed, the traces and the image will move together.
+
+
+## Alignments
+
+Each series begins with the "default" alignment. An alignment is a single set of image transforms for each section. Through the alignments dialog (accessed through Series>Change Alignment or Ctrl+Shift+A), you can create new alignments and switch between them. When an alignment is created, it is created based on the current alignment setting.
+
+For example, if your default alignment works well for object 1 but not for object 2, you can create a new alignment for object 2 and import transforms or manually align it.
+
+
+## History
+
+Every trace has a history – an set of logs related to the creation and modification of the trace. Each log contains a date, time, username, and description. By default, the username is found through the operating system, but it can also be changed manually (File>Change username).
 
 
 ## Negative Traces
@@ -126,11 +128,15 @@ After naming the series, you will be prompted to provide a section thickness and
 
 ### Open (Ctrl+O)
 
-Allows you to open an existing series. You are prompted to locate the .ser file for your desired series. PyReconstruct can open both JSON and XML series, but JSON files are strongly preferred.
+Allows you to open an existing series. You are prompted to locate the .jser file for your desired series.
 
 ### Save (Ctrl+S)
 
-Saves data to the section file for the current section and the series file. Please note that this is also done automatically when switching sections.
+Saves data to the .jser file.
+
+### Save as...
+
+Allows the user to select the location to save
 
 ### Export Series
 

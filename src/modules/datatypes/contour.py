@@ -68,8 +68,8 @@ class Contour():
             traces.append(trace.copy())
         return Contour(self.name, traces)
     
-    def getMidpoint(self):
-        """Get the midpoint of the contour (average of extremes)."""
+    def getBounds(self):
+        """Get the bounds of the contour."""
         values = [[], [], [], []]
         for trace in self.traces:
             for i, v in enumerate(trace.getBounds()):
@@ -79,6 +79,12 @@ class Contour():
         ymin = min(values[1])
         xmax = max(values[2])
         ymax = max(values[3])
+
+        return xmin, ymin, xmax, ymax
+
+    def getMidpoint(self):
+        """Get the midpoint of the contour (average of extremes)."""
+        xmin, ymin, xmax, ymax = self.getBounds()
 
         return (xmax + xmin) / 2, (ymax + ymin) / 2
 

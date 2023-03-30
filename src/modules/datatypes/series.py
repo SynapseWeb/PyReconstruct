@@ -22,7 +22,6 @@ except ImportError:
     prog_imported = False
 
 
-
 class Series():
 
     def __init__(self, filepath : str, sections : dict):
@@ -135,9 +134,8 @@ class Series():
             jser_data = updated_jser_data
         
         # creating loading bar
-        update, canceled = progbar(
-            "Open Series",
-            "Loading series..."
+        update, canceled = seriesProgbar(
+            text="Opening series..."
         )
         progress = 0
         final_value = 1
@@ -197,14 +195,10 @@ class Series():
 
         filenames = os.listdir(self.hidden_dir)
 
-        if prog_imported:
-            update, canceled = progbar(
-                "Save Series",
-                "Saving series...",
-                cancel=False
-            )
-        else:
-            update, canceled = None, None
+        update, canceled = seriesProgbar(
+            text="Saving series...",
+            cancel=False
+        )
         progress = 0
         final_value = len(filenames)
 
@@ -818,14 +812,10 @@ class SeriesIterator():
         self.section_numbers = sorted(list(self.series.sections.keys()))
         self.sni = 0
         if self.show_progress:
-            if prog_imported:
-                self.update, canceled = progbar(
-                    title=" ",
-                    text=self.message,
-                    cancel=False
-                )
-            else:
-                self.update, canceled = None, None
+            self.update, canceled = seriesProgbar(
+                text=self.message,
+                cancel=False
+            )
         return self
     
     def __next__(self):
@@ -843,3 +833,50 @@ class SeriesIterator():
                 if self.update:
                     self.update(self.sni / len(self.section_numbers) * 100)
             raise StopIteration
+
+
+class BasicProgbar():
+    def __init__(self, text : str):
+        """Create a 'vanilla' progress indicator.
+        
+        Params:
+            text (str): the text to display by the indicator
+        """
+        self.text = text
+        print(f"{text} | 0.0%", end="\r")
+    
+    def update(self, p):
+        """Update the progress indicator.
+        
+            Params:
+                p (float): the percentage of progress made
+        """
+        print(f"{self.text} | {p:.1f}%", end="\r")
+        if p == 100:
+            print()
+    
+    def canceled(self):
+        """Dummy function -- do nothing!"""
+        return False
+
+def seriesProgbar(text : str, cancel : bool = True):
+    """Return the appropriate progress bar for the situation.
+    
+        text (str): the text to display on the progress bar
+        cancel (bool): True if progress can be canceled
+    """
+    use_basic = not prog_imported
+    if prog_imported:
+        update, canceled = progbar(
+            title=" ",
+            text=text,
+            cancel=cancel
+        )
+        if update is None:
+            use_basic = True
+    if use_basic:
+        pbar = BasicProgbar(text)
+        update = pbar.update
+        canceled = pbar.canceled
+    
+    return update, canceled

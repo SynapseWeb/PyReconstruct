@@ -587,7 +587,7 @@ class FieldWidget(QWidget, FieldView):
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
         # do not run if both types of traces are selected or none are selected
-        if bool(self.section.selected_traces) ^ bool(self.section.selected_ztraces):
+        if not(bool(self.section.selected_traces) ^ bool(self.section.selected_ztraces)):
             return
         # run the ztrace dialog if only ztraces selected
         elif self.section.selected_ztraces:
@@ -603,7 +603,7 @@ class FieldWidget(QWidget, FieldView):
         
         name, color, tags, mode = new_attr
         self.section.editTraceAttributes(
-            traces=self.section.selected_traces,
+            traces=self.section.selected_traces.copy(),
             name=name,
             color=color,
             tags=tags,
@@ -755,6 +755,7 @@ class FieldWidget(QWidget, FieldView):
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
             self.checkActions(context_menu=True, clicked_trace=clicked_trace)
+            self.lclick, self.rclick, self.mclick = False, False, False
             self.mainwindow.field_menu.exec(event.globalPos())
             self.checkActions()
             return

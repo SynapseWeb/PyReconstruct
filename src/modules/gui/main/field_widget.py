@@ -74,6 +74,7 @@ class FieldWidget(QWidget, FieldView):
         # misc defaults
         self.current_trace = []
         self.max_click_time = 0.15
+        self.click_time = None
         self.mouse_x = 0
         self.mouse_y = 0
 
@@ -205,21 +206,27 @@ class FieldWidget(QWidget, FieldView):
         self.blend_sections = not self.blend_sections
         self.generateView()
     
-    def setViewMagnification(self):
-        """Set the scaling for the section view."""
-        new_mag, confirmed = QInputDialog.getText(
-            self,
-            "View Magnification",
-            "Enter view magnification (pixels per micron):",
-            text=str(round(1 / self.series.screen_mag, 6))
-        )
-        if not confirmed:
-            return
+    def setViewMagnification(self, new_mag : float = None):
+        """Set the scaling for the section view.
         
-        try:
-            new_mag = float(new_mag)
-        except ValueError:
-            return
+            Params:
+                new_mag (float): the new magnification (pixels per micron)
+        """
+        if new_mag is None:
+            new_mag, confirmed = QInputDialog.getText(
+                self,
+                "View Magnification",
+                "Enter view magnification (pixels per micron):",
+                text=str(round(1 / self.series.screen_mag, 6))
+            )
+            if not confirmed:
+                return
+            try:
+                new_mag = float(new_mag)
+            except ValueError:
+                return
+        else:
+            new_mag = 1 / new_mag
         
         self.setView(new_mag)
     

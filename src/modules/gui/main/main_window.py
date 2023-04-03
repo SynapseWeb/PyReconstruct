@@ -67,19 +67,20 @@ class MainWindow(QMainWindow):
         self.mouse_palette = None  # placeholder for mouse palette
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
+        self.explorer_dir = ""
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
 
         # open the series requested from command line
         if len(argv) > 1:
-            self.openSeries(jser_fp=argv[1], update_menu_bar=False)
+            self.openSeries(jser_fp=argv[1])
         else:
             open_series = Series(
                 os.path.join(assets_dir, "welcome_series", "welcome.ser"),
                 {0: "welcome.0"}
             )
-            self.openSeries(open_series, update_menu_bar=False)
+            self.openSeries(open_series)
         
         self.field.generateView()
 
@@ -188,7 +189,7 @@ class MainWindow(QMainWindow):
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
                     ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
-                    ("goto_act", "Go to section", "Ctrl+G", self.gotoSection),
+                    ("goto_act", "Go to section", "Ctrl+G", self.changeSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                     None,
                     ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
@@ -341,10 +342,11 @@ class MainWindow(QMainWindow):
         for kbd, act in (mode_shortcuts + trace_shortcuts):
             QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
-    def changeSrcDir(self, notify=False):
+    def changeSrcDir(self, new_src_dir : str = None, notify=False):
         """Open a series of dialogs to change the image source directory.
         
             Params:
+                new_src_dir (str): the new image directory
                 notify (bool): True if user is to be notified with a pop-up
         """
         if notify:
@@ -357,39 +359,54 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.No:
                 return
-        new_src_dir = QFileDialog.getExistingDirectory(self, "Select folder containing images")
+        if new_src_dir is None:
+            new_src_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select folder containing images",
+                dir=self.explorer_dir
+            )
         if not new_src_dir:
             return
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
     
-    def changeUsername(self):
-        """Edit the login name used to track history."""
-        new_name, confirmed = QInputDialog.getText(
-            self,
-            "Change Login",
-            "Enter your desired username:",
-            text=os.getlogin()
-        )
-        if not confirmed or not new_name:
-            return
+    def changeUsername(self, new_name : str = None):
+        """Edit the login name used to track history.
+        
+            Params:
+                new_name (str): the new username
+        """
+        if new_name is None:
+            new_name, confirmed = QInputDialog.getText(
+                self,
+                "Change Login",
+                "Enter your desired username:",
+                text=os.getlogin()
+            )
+            if not confirmed or not new_name:
+                return
         
         def getlogin():
             return new_name
         
         os.getlogin = getlogin
     
-    def setFillOpacity(self):
-        """Set the opacity of the trace highlight."""
-        opacity, confirmed = QInputDialog.getText(
-            self,
-            "Fill Opacity",
-            "Enter fill opacity (0-1):",
-            text=str(round(self.series.fill_opacity, 3))
-        )
-        if not confirmed:
-            return
+    def setFillOpacity(self, opacity : float = None):
+        """Set the opacity of the trace highlight.
+        
+            Params:
+                opacity (float): the new fill opacity
+        """
+        if opacity is None:
+            opacity, confirmed = QInputDialog.getText(
+                self,
+                "Fill Opacity",
+                "Enter fill opacity (0-1):",
+                text=str(round(self.series.options["fill_opacity"], 3))
+            )
+            if not confirmed:
+                return
         
         try:
             opacity = float(opacity)
@@ -399,10 +416,10 @@ class MainWindow(QMainWindow):
         if not (0 <= opacity <= 1):
             return
         
-        self.series.fill_opacity = opacity
+        self.series.options["fill_opacity"] = opacity
         self.field.generateView(generate_image=False)
 
-    def openSeries(self, series_obj=None, jser_fp=None, update_menu_bar=True):
+    def openSeries(self, series_obj=None, jser_fp=None):
         """Open an existing series and create the field.
         
             Params:
@@ -412,7 +429,12 @@ class MainWindow(QMainWindow):
             # get the new series
             new_series = None
             if not jser_fp:
-                jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+                jser_fp, extension = QFileDialog.getOpenFileName(
+                    self,
+                    "Select Series",
+                    dir=self.explorer_dir,
+                    filter="*.jser"
+                )
                 if jser_fp == "": return  # exit function if user does not provide series
             
             # user has opened an existing series
@@ -505,7 +527,7 @@ class MainWindow(QMainWindow):
         # check series location second (welcome series case)
         if not images_found:
             src_path = os.path.join(
-                self.series.getwdir(),
+                os.path.join(self.series.getwdir(), ".."),
                 os.path.basename(section.src)
             )
             images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
@@ -525,6 +547,10 @@ class MainWindow(QMainWindow):
         # set the title of the main window
         self.seriesModified(self.series.modified)
 
+        # set the explorer filepath to the series
+        if not self.series.isWelcomeSeries():
+            self.explorer_dir = os.path.join(self.series.getwdir(), "..")
+
         # create field
         if self.field is not None:  # close previous field widget
             self.field.createField(self.series)
@@ -540,7 +566,13 @@ class MainWindow(QMainWindow):
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
     
-    def newSeries(self, image_locations : list = None):
+    def newSeries(
+        self,
+        image_locations : list = None,
+        series_name : str = None,
+        mag : float = None,
+        thickness : float = None
+    ):
         """Create a new series from a set of images.
         
             Params:
@@ -549,26 +581,33 @@ class MainWindow(QMainWindow):
         # get images from user
         if not image_locations:
             image_locations, extensions = QFileDialog.getOpenFileNames(
-                self, "Select Images", filter="*.jpg *.jpeg *.png *.tif *.tiff")
+                self,
+                "Select Images",
+                dir=self.explorer_dir,
+                filter="*.jpg *.jpeg *.png *.tif *.tiff"
+            )
             if len(image_locations) == 0:
                 return
         # get the name of the series from user
-        series_name, confirmed = QInputDialog.getText(
-            self, "New Series", "Enter series name:")
-        if not confirmed:
-            return
+        if series_name is None:
+            series_name, confirmed = QInputDialog.getText(
+                self, "New Series", "Enter series name:")
+            if not confirmed:
+                return
         # get calibration (microns per pix) from user
-        mag, confirmed = QInputDialog.getDouble(
-            self, "New Series", "Enter image calibration (μm/px):",
-            0.00254, minValue=0.000001, decimals=6)
-        if not confirmed:
-            return
+        if mag is None:
+            mag, confirmed = QInputDialog.getDouble(
+                self, "New Series", "Enter image calibration (μm/px):",
+                0.00254, minValue=0.000001, decimals=6)
+            if not confirmed:
+                return
         # get section thickness (microns) from user
-        thickness, confirmed = QInputDialog.getDouble(
-            self, "New Series", "Enter section thickness (μm):",
-            0.05, minValue=0.000001, decimals=6)
-        if not confirmed:
-            return
+        if thickness is None:
+            thickness, confirmed = QInputDialog.getDouble(
+                self, "New Series", "Enter section thickness (μm):",
+                0.05, minValue=0.000001, decimals=6)
+            if not confirmed:
+                return
         
         # save and clear the existing backend series
         self.saveToJser(notify=True, close=True)
@@ -580,11 +619,21 @@ class MainWindow(QMainWindow):
         # open series after creating
         self.openSeries(series)
     
-    def newFromXML(self):
-        """Create a new series from a set of XML files."""
+    def newFromXML(self, series_fp : str = None):
+        """Create a new series from a set of XML files.
+        
+            Params:
+                series_fp (str): the filepath for the XML series
+        """
 
         # get xml series filepath from the user
-        series_fp, ext = QFileDialog.getOpenFileName(self, "Select XML Series", filter="*.ser")
+        if not series_fp:
+            series_fp, ext = QFileDialog.getOpenFileName(
+                self,
+                "Select XML Series",
+                dir=self.explorer_dir,
+                filter="*.ser"
+            )
         if series_fp == "": return  # exit function if user does not provide series
 
         # save and clear the existing backend series
@@ -601,33 +650,29 @@ class MainWindow(QMainWindow):
         # open the series
         self.openSeries(series)
     
-    def exportToXML(self):
-        """Export the current series to XML."""
+    def exportToXML(self, export_fp : str = None):
+        """Export the current series to XML.
+        
+            Params:
+                export_fp (str): the filepath for the XML .ser file
+        """
         # save the current data
         self.saveAllData()
 
         # get the new xml series filepath from the user
-        file_path, ext = QFileDialog.getSaveFileName(
-            self,
-            "Export Series",
-            f"{self.series.name}.ser",
-            filter="XML Series (*.ser)",
-        )
-        if not file_path:
-            return False
+        if not export_fp:
+            export_fp, ext = QFileDialog.getSaveFileName(
+                self,
+                "Export Series",
+                f"{self.series.name}.ser",
+                dir=self.explorer_dir,
+                filter="XML Series (*.ser)",
+            )
+            if not export_fp:
+                return False
         
         # convert the series
-        jsonToXML(self.series, os.path.dirname(file_path))
-    
-    def exportSeries(self):
-        """Export the series to a given filetype."""
-        new_dir = QFileDialog.getExistingDirectory(self, "Find Destination Folder to Contain Series")
-        if not new_dir:
-            return
-        if self.series.filetype == "XML":
-            xmlToJSON(self.series, new_dir)
-        elif self.series.filetype == "JSON":
-            jsonToXML(self.series, new_dir)
+        jsonToXML(self.series, os.path.dirname(export_fp))
     
     def seriesModified(self, modified=True):
         """Change the title of the window reflect modifications."""
@@ -642,21 +687,40 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(self.series.name)
         self.series.modified = modified
     
-    def importTransforms(self):
-        """Import transforms from a text file."""
+    def importTransforms(self, tforms_fp : str = None):
+        """Import transforms from a text file.
+        
+            Params:
+                tforms_file (str): the filepath for the transforms file
+        """
         self.saveAllData()
         # get file from user
-        tforms_file, ext = QFileDialog.getOpenFileName(self, "Select file containing transforms")
-        if not tforms_file:
+        if tforms_fp is None:
+            tforms_fp, ext = QFileDialog.getOpenFileName(
+                self,
+                "Select file containing transforms",
+                dir=self.explorer_dir
+            )
+        if not tforms_fp:
             return
         # import the transforms
-        importTransforms(self.series, tforms_file)
+        importTransforms(self.series, tforms_fp)
         # reload the section
         self.field.reload()
     
-    def importTraces(self):
-        """Import traces from another jser series."""
-        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+    def importTraces(self, jser_fp : str = None):
+        """Import traces from another jser series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=self.explorer_dir,
+                filter="*.jser"
+            )
         if jser_fp == "": return  # exit function if user does not provide series
 
         self.saveAllData()
@@ -675,9 +739,19 @@ class MainWindow(QMainWindow):
         if self.field.obj_table_manager:
             self.field.obj_table_manager.refresh()
     
-    def importZtraces(self):
-        """Import ztraces from another jser series."""
-        jser_fp, extension = QFileDialog.getOpenFileName(self, "Select Series", filter="*.jser")
+    def importZtraces(self, jser_fp : str = None):
+        """Import ztraces from another jser series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=self.explorer_dir,
+                filter="*.jser"
+            )
         if jser_fp == "": return  # exit function if user does not provide series
 
         self.saveAllData()
@@ -733,13 +807,23 @@ class MainWindow(QMainWindow):
         self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
-    def changeSection(self, section_num : int, save=True):
+    def changeSection(self, section_num : int = None, save=True):
         """Change the section of the field.
         
             Params:
                 section_num (int): the section number to change to
                 save (bool): saves data to files if True
         """
+        if section_num is None:
+            section_num, confirmed = QInputDialog.getText(
+                self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
+            if not confirmed:
+                return
+            try:
+                section_num = int(section_num)
+            except ValueError:
+                return
+        
         # end the field pending events
         self.field.endPendingEvents()
         # save data
@@ -899,7 +983,8 @@ class MainWindow(QMainWindow):
             # prompt the user to find a folder to store backups
             new_dir = QFileDialog.getExistingDirectory(
                 self,
-                "Select folder to contain backup files"
+                "Select folder to contain backup files",
+                dir=self.explorer_dir
             )
             if not new_dir:
                 self.backup_act.setChecked(False)
@@ -936,7 +1021,7 @@ class MainWindow(QMainWindow):
             output_str += name + " "
             output_str += str(log) + "\n"
         
-        HistoryWidget(self, output_str)
+        self.history_widget = HistoryWidget(self, output_str)
     
     def openObjectList(self):
         """Open the object list widget."""
@@ -967,26 +1052,27 @@ class MainWindow(QMainWindow):
         self.changeSection(section_num)
         self.field.findContour(obj_name)
     
-    def changeTform(self):
+    def changeTform(self, new_tform_list : list = None):
         """Open a dialog to change the transform of a section."""
         # check for section locked status
         if self.field.section.align_locked:
             return
         
-        current_tform = " ".join(
-            [str(round(n, 5)) for n in self.field.section.tforms[self.series.alignment].getList()]
-        )
-        new_tform, confirmed = QInputDialog.getText(
-            self, "New Transform", "Enter the desired section transform:", text=current_tform)
-        if not confirmed:
-            return
-        try:
-            new_tform = [float(n) for n in new_tform.split()]
-            if len(new_tform) != 6:
+        if new_tform_list is None:
+            current_tform = " ".join(
+                [str(round(n, 5)) for n in self.field.section.tforms[self.series.alignment].getList()]
+            )
+            new_tform_list, confirmed = QInputDialog.getText(
+                self, "New Transform", "Enter the desired section transform:", text=current_tform)
+            if not confirmed:
                 return
-        except ValueError:
-            return
-        self.field.changeTform(Transform(new_tform))
+            try:
+                new_tform_list = [float(n) for n in new_tform_list.split()]
+                if len(new_tform_list) != 6:
+                    return
+            except ValueError:
+                return
+        self.field.changeTform(Transform(new_tform_list))
     
     def translate(self, direction : str, amount : str):
         """Translate the current transform.
@@ -1011,18 +1097,6 @@ class MainWindow(QMainWindow):
             x, y = 0, -num
         self.field.translate(x, y)
     
-    def gotoSection(self):
-        """Open a dialog to jump to a specific section number."""
-        new_section_num, confirmed = QInputDialog.getText(
-            self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
-        if not confirmed:
-            return
-        try:
-            new_section_num = int(new_section_num)
-            self.changeSection(new_section_num)
-        except ValueError:
-            return
-    
     def newAlignment(self, new_alignment_name : str):
         """Add a new alignment (based on existing alignment).
         
@@ -1042,49 +1116,59 @@ class MainWindow(QMainWindow):
             self.series.alignment
         )
     
-    def changeAlignment(self):
-        """Switch alignments."""
+    def changeAlignment(self, alignment_name : str = None):
+        """Switch alignments.
+        
+            Params:
+                alignment_name (str): the name of the new alignment"""
         alignments = list(self.field.section.tforms.keys())
-        alignment_name, confirmed = AlignmentDialog(
-            self,
-            alignments
-        ).exec()
-        if not confirmed:
-            return
+
+        if alignment_name is None:
+            alignment_name, confirmed = AlignmentDialog(
+                self,
+                alignments
+            ).exec()
+            if not confirmed:
+                return
         
         if alignment_name not in alignments:
             self.newAlignment(alignment_name)
 
         self.field.changeAlignment(alignment_name)
     
-    def calibrateMag(self):
-        """Calibrate the pixel size for the series."""
+    def calibrateMag(self, trace_lengths : dict = None):
+        """Calibrate the pixel size for the series.
+        
+            Params:
+                trace_lengths (dict): the lengths of traces to calibrate
+        """
         self.saveAllData()
         
-        # gather trace names
-        names = []
-        for trace in self.field.section_layer.selected_traces:
-            if trace.name not in names:
-                names.append(trace.name)
-        
-        if len(names) == 0:
-            notify("Please select traces for calibration.")
-        
-        # prompt user for length of each trace name
-        trace_lengths = {}
-        for name in names:
-            d, confirmed = QInputDialog.getText(
-                self,
-                "Trace Length",
-                f'Length of "{name}" in microns:'
-            )
-            if not confirmed:
-                return
-            try:
-                d = float(d)
-            except ValueError:
-                return
-            trace_lengths[name] = d
+        if trace_lengths is None:
+            # gather trace names
+            names = []
+            for trace in self.field.section_layer.selected_traces:
+                if trace.name not in names:
+                    names.append(trace.name)
+            
+            if len(names) == 0:
+                notify("Please select traces for calibration.")
+            
+            # prompt user for length of each trace name
+            trace_lengths = {}
+            for name in names:
+                d, confirmed = QInputDialog.getText(
+                    self,
+                    "Trace Length",
+                    f'Length of "{name}" in microns:'
+                )
+                if not confirmed:
+                    return
+                try:
+                    d = float(d)
+                except ValueError:
+                    return
+                trace_lengths[name] = d
         
         self.field.calibrateMag(trace_lengths)
             

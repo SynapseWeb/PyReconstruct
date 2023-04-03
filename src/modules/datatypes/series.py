@@ -70,7 +70,6 @@ class Series():
         self.section_thicknesses = {}
 
         # default settings
-        self.fill_opacity = 0.2
         self.modified_ztraces = []
 
         # ADDED SINCE JAN 25TH
@@ -438,6 +437,7 @@ class Series():
         options["big_dist"] = 1
         options["show_ztraces"] = True
         options["backup_dir"] = ""
+        options["fill_opacity"] = 0.2
 
         return series_data
     
@@ -664,6 +664,14 @@ class Series():
                     traces += section.contours[obj_name].getTraces()
             if traces:
                 section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True)
+                # gather new traces
+                if name:
+                    traces = section.contours[name].getTraces()
+                else:
+                    traces = []
+                    for obj_name in obj_names:
+                        if obj_name in section.contours:
+                            traces += section.contours[obj_name].getTraces()
                 # add trace data to table data
                 if addTrace:
                     for trace in traces:

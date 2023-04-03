@@ -201,10 +201,10 @@ class ObjectTableManager():
 
         # update the table data
         for table in self.tables:
-            for obj_name in obj_names:
-                table.updateObject(self.objdict[obj_name])
             if name:
                 table.updateObject(self.objdict[name])
+            for obj_name in obj_names:
+                table.updateObject(self.objdict[obj_name])
         
         # update the view
         self.mainwindow.field.reload()
@@ -356,7 +356,7 @@ class ObjectTableManager():
             output_str += name + " "
             output_str += str(log) + "\n"
         
-        HistoryWidget(self.mainwindow, output_str)
+        self.history_widget = HistoryWidget(self.mainwindow, output_str)
     
     def createZtrace(self, obj_names : list, cross_sectioned : bool):
         """Create ztraces from a set of objects.

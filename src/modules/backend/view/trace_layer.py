@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from skimage.draw import polygon
 
 from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
@@ -573,6 +575,78 @@ class TraceLayer():
                 
         return trace_layer
 
+    def _drawTraceLabel(self, arr : np.ndarray, trace : Trace, label : int):
+        """Draw labels of a trace on a trace layer.
+        
+            Params:
+                arr (np.ndarray): the array to draw the labels on
+                trace (Trace): the trace to draw
+                label (int): the label to use
+        """
+        # convert to screen coordinates
+        points = self.traceToPix(trace)
+
+        # get polygon coords
+        y_vals = [y for x, y in points]
+        x_vals = [x for x, y in points]
+        yy, xx = polygon(y_vals, x_vals, arr.shape)
+
+        # insert in trace_layer
+        arr[yy, xx] = label
+    
+    def generateLabelsArray(self, pixmap_dim : tuple, window : list, contour_names : list[str]):
+        """Generate numpy array with traces drawn as labels.
+        
+            Params:
+                pixmap_dim (tuple): the w and h of the 2D array
+                window (list): the view of the window (x, y, w, h)
+                contour_names (list[str]): the list of contour names to include
+            Returns:
+                (np.ndarray): the numpy array with traces drawn in as labels
+        """
+        # set up the trace layer
+        self.window = window
+        self.pixmap_dim = pixmap_dim
+        pixmap_w, pixmap_h = tuple(pixmap_dim)
+        arr = np.zeros(shape=(pixmap_h, pixmap_w), dtype=np.uint32)   
+
+        labels = []
+        for cname in contour_names:
+            # hash the name
+            label = hashName(cname)
+            # check if hash already exists
+            if label in labels:
+                raise(Exception("Duplicate labels!"))
+            labels.append(label)
+            if cname in self.section.contours:
+                for trace in self.section.contours[cname]:
+                    self._drawTraceLabel(arr, trace, label)
+
+        return arr
+
+def hashName(name : str):
+    """Create a hash label for a name.
+    
+        Params:
+            name (str): the name to hash
+    """
+    hash = 0
+    p = 1
+    for c in name:
+        add_to_hash = False
+        n = ord(c.lower())
+        if 48 <= n < 58:
+            n -= 48
+            add_to_hash = True
+        elif 97 <= n < 123:
+            n -= 87
+            add_to_hash = True
+        if add_to_hash:
+            hash += n ** p
+            p += 1
+            if hash >= 2**32:
+                hash %= 2**32
+    return hash
 
 def boundsOverlap(b1 : tuple, b2 : tuple):
     """Check if two bounding boxes intersect.

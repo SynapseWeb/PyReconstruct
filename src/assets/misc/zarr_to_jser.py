@@ -47,8 +47,8 @@ def randomColor():
         return (255, 255, 0)
 
 # user-entered info
-jser_fp = r"C:\Users\jfalco\Desktop\shapes_2_ng\shapes1.jser"
-zarr_fp = r"C:\Users\jfalco\Desktop\shapes_2_ng\data.zarr"
+jser_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\DSNYJ.jser"
+zarr_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\data.zarr"
 
 # open the series and zarr
 series = Series.openJser(jser_fp)

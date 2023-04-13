@@ -631,7 +631,7 @@ def hashName(name : str):
             name (str): the name to hash
     """
     hash = 0
-    p = 1
+    p = 0
     for c in name:
         add_to_hash = False
         n = ord(c.lower())
@@ -642,7 +642,7 @@ def hashName(name : str):
             n -= 87
             add_to_hash = True
         if add_to_hash:
-            hash += n ** p
+            hash += n * 36 ** p
             p += 1
             if hash >= 2**32:
                 hash %= 2**32

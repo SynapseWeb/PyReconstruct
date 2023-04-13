@@ -63,10 +63,11 @@ class Series():
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
-        # keep track of transforms, mags, and section thicknesses
+        # keep track of transforms, mags, section thicknesses, and obj names
         self.section_tforms = {}
         self.section_mags = {}
         self.section_thicknesses = {}
+        self.objs = set()
 
         # default settings
         self.fill_opacity = 0.2
@@ -83,18 +84,22 @@ class Series():
         """Get the mag, thickness, and transforms from each section."""
         # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
         for n, section in self.sections.items():
+            # open the json
             filepath = os.path.join(
                 self.getwdir(),
                 section
             )
             with open(filepath, "r") as f:
                 section_json = json.load(f)
+            # get relevant data
             self.section_thicknesses[n] = section_json["thickness"]
             self.section_mags[n] = section_json["mag"]
             tforms = {}
             for a in section_json["tforms"]:
                 tforms[a] = Transform(section_json["tforms"][a])
             self.section_tforms[n] = tforms
+            for cname in section_json["contours"]:
+                self.objs.add(cname)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -247,6 +252,8 @@ class Series():
         
         if close:
             self.close()
+        else:
+            self.gatherSectionData()
 
         if update: update(100)
     

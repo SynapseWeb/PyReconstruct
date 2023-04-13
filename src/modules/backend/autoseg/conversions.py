@@ -37,7 +37,7 @@ def seriesToZarr(
     w = max(x_vals) - x
     y = min(y_vals)
     h = max(y_vals) - y
-    window = [x, w, y, h]
+    window = [x, y, w, h]
 
     # calculate field attributes
     shape = (
@@ -48,14 +48,15 @@ def seriesToZarr(
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
 
     # create the zarr files
-    data_zg = zarr.open(os.path.join(
+    data_fp = os.path.join(
         os.path.dirname(series.jser_fp),
         "data.zarr"
-    ))
+    )
+    data_zg = zarr.open(data_fp)
     raw_zarr = data_zg.zeros("raw", shape=shape, dtype=np.uint8)
     labels_zarrs = {}
     for group in groups:
-        labels_zarrs[groups] = data_zg.zeros(f"labels_{group}", shape=shape, dtype=np.uint32)
+        labels_zarrs[group] = data_zg.zeros(f"labels_{group}", shape=shape, dtype=np.uint32)
     
     # iterate through series
     alignment = {}
@@ -100,6 +101,8 @@ def seriesToZarr(
         labels_zarrs[group].attrs["srange"] = srange
         labels_zarrs[group].attrs["true_mag"] = mag
         labels_zarrs[group].attrs["alignment"] = alignment
+    
+    return data_fp
 
 def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
     """Get the exteriors from a mask.
@@ -137,12 +140,12 @@ def randomColor():
     elif r == 6:
         return (255, 255, 0)
 
-def labelsToObjects(series : Series, labels_fp : str):
+def labelsToObjects(series : Series, labels_fp):
     """Convert labels in a zarr file to objects in a series.
     
         Params:
             series (Series): the series to import zarr data into
-            labels_fp (str): the filepath for the labels zarr
+            labels (zarr): the labels zarr object
     """
     labels = zarr.open(labels_fp)
 

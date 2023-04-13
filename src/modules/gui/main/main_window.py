@@ -1,5 +1,6 @@
 import os
 import time
+import shutil
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -19,7 +20,7 @@ from PySide6.QtCore import Qt
 from .field_widget import FieldWidget
 
 from modules.gui.palette import MousePalette
-from modules.gui.dialog import AlignmentDialog
+from modules.gui.dialog import AlignmentDialog, ZarrDialog
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
     progbar,
@@ -36,6 +37,7 @@ from modules.backend.func import (
     jsonToXML,
     importTransforms
 )
+from modules.backend.autoseg import seriesToZarr, labelsToObjects
 from modules.datatypes import Series, Transform
 from modules.constants import assets_dir, img_dir
 
@@ -210,6 +212,14 @@ class MainWindow(QMainWindow):
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
+                ]
+            },
+            {
+                "attr_name": "autosegmenu",
+                "text": "Autosegment",
+                "opts":
+                [
+                    ("autosegment_act", "Run autosegmentation...", "", self.autoseg)
                 ]
             }
         ]
@@ -1087,7 +1097,38 @@ class MainWindow(QMainWindow):
             trace_lengths[name] = d
         
         self.field.calibrateMag(trace_lengths)
-            
+    
+    def autoseg(self):
+        """Autosegment a series."""
+        self.saveAllData()
+
+        inputs, confirmed = ZarrDialog(self, self.series).exec()
+        if not confirmed:
+            return
+        
+        groups, border_obj, srange, mag = inputs
+        data_fp = seriesToZarr(
+            self.series,
+            groups,
+            border_obj,
+            srange,
+            mag
+        )
+
+        # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
+
+        for z in os.listdir(data_fp):
+            if z.startswith("labels"):
+                name = z[z.find("_")+1:]
+                if name not in groups:
+                    labels_fp = os.path.join(data_fp, z)
+                    labelsToObjects(
+                        self.series,
+                        labels_fp
+                    )
+        
+        self.field.reload()
+    
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         if self.series.options["autosave"]:

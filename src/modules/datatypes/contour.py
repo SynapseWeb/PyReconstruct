@@ -68,11 +68,11 @@ class Contour():
             traces.append(trace.copy())
         return Contour(self.name, traces)
     
-    def getBounds(self):
+    def getBounds(self, tform=None):
         """Get the bounds of the contour."""
         values = [[], [], [], []]
         for trace in self.traces:
-            for i, v in enumerate(trace.getBounds()):
+            for i, v in enumerate(trace.getBounds(tform)):
                 values[i].append(v)
         
         xmin = min(values[0])

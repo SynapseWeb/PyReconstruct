@@ -40,7 +40,7 @@ from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP = range(6)
+    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(7)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -670,7 +670,8 @@ class FieldWidget(QWidget, FieldView):
                 QPixmap(os.path.join(loc.img_dir, "pencil.cur")),
                 hotX=5, hotY=5
             )
-        elif mode == FieldWidget.STAMP:
+        elif (mode == FieldWidget.STAMP or
+              mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
         self.setCursor(cursor)
     
@@ -772,6 +773,8 @@ class FieldWidget(QWidget, FieldView):
             self.tracePress(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampPress(event)
+        elif self.mouse_mode == FieldWidget.GRID:
+            self.gridPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -867,6 +870,8 @@ class FieldWidget(QWidget, FieldView):
             self.knifeRelease(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampRelease(event)
+        elif self.mouse_mode == FieldWidget.GRID:
+            self.gridRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -1233,6 +1238,21 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in stamp mode."""
         self.update()
     
+    def gridPress(self, event):
+        """Creates a grid on the mouse location."""
+        # get mouse coords and convert to field coords
+        if self.lclick:
+            pix_x, pix_y = event.x(), event.y()
+            self.placeGrid(
+                pix_x, pix_y,
+                self.tracing_trace,
+                *tuple(self.series.options["grid"])
+            )
+    
+    def gridRelease(self, event):
+        """Called when mouse is released in grid mode."""
+        self.update()
+
     def knifePress(self, event):
         """Called when mouse is pressed in knife mode.
 

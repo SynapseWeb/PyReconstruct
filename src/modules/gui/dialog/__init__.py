@@ -7,3 +7,4 @@ from .alignment import AlignmentDialog
 from .object_3D import Object3DDialog
 from .bc import BCDialog
 from .zarr import ZarrDialog
+from .grid import GridDialog

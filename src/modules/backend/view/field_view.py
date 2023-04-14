@@ -714,6 +714,17 @@ class FieldView():
         self.generateView(generate_image=False)
         self.saveState()
     
+    def placeGrid(self, pix_x, pix_y, trace, w, h, dx, dy, nx, ny):
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        self.section_layer.placeGrid(
+            pix_x, pix_y, trace, w, h, dx, dy, nx, ny
+        )
+        self.generateView(generate_image=False)
+        self.saveState()
+
+    
     def findClosestTrace(self, field_x, field_y, radius=0.5):
         return self.section.findClosestTrace(
             field_x,

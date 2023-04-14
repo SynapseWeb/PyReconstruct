@@ -234,6 +234,49 @@ class TraceLayer():
         self.section.addTrace(new_trace)
         self.section.selected_traces.append(new_trace)
     
+    def placeGrid(
+        self,
+        pix_x : float, pix_y : float,
+        trace : Trace,
+        w : float, h : float,
+        dx : float, dy : float,
+        nx : int, ny : int):
+        """Place a grid on the field.
+        
+            Params:
+                pix_x (float): the x-coord of the mouse location
+                pix_y (float): the y-coord of the mouse location
+                trace (Trace): the trace shape to use in the grid
+                w (float): the desired width of the trace
+                h (float): the desired height of the trace
+                dx (float): the x distance between traces in the grid
+                dy (float): the y distance between traces in the grid
+                nx (int): the number of columns
+                ny (int): the number of rows
+        """
+        # get mouse coords and convert to field coords
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        origin = field_x + w/2, field_y - h/2
+
+        # stretch the trace to desired size
+        trace = trace.getStretched(w, h)
+
+        tform = self.section.tforms[self.series.alignment]
+        for c in range(nx):
+            for r in range(ny):
+                # create new trace
+                new_trace = trace.copy()
+                new_trace.points = []
+                for x, y in trace.points:
+                    field_point = (
+                        x + origin[0] + dx * c,
+                        y + origin[1] - dy * r
+                    )
+                    rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
+                    new_trace.add(rtform_point)
+                self.section.addTrace(new_trace)
+                self.section.selected_traces.append(new_trace)
+    
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
         if len(self.section.selected_traces) < 2:
@@ -546,7 +589,7 @@ class TraceLayer():
                     if trace.isSameTrace(view_trace):
                         trace_found = True
                         break
-                if trace_found:
+                if trace_found and view_trace in self.traces_in_view:
                     self.traces_in_view.remove(view_trace)
             for trace in self.section.added_traces:
                 self.traces_in_view.append(trace)

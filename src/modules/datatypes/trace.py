@@ -339,6 +339,29 @@ class Trace():
                 
         self.points = points
     
+    def getStretched(self, w : float, h : float):
+        """Get the trace stretched to a specific w and h."""
+        new_trace = self.copy()
+
+        # get constants
+        cx, cy = centroid(new_trace.points)
+        xmin, ymin, xmax, ymax = self.getBounds()
+
+        # get scale factors
+        scale_x = w / (xmax - xmin)
+        scale_y = h / (ymax - ymin)
+
+        # center trace at origin and apply scale factor
+        new_trace.points = [
+            (
+                scale_x*(x-cx) + cx, 
+                scale_y*(y-cy) + cy
+            )
+            for x, y in new_trace.points
+        ]
+        
+        return new_trace
+    
     def magScale(self, prev_mag : float, new_mag : float):
         """Scale the trace to magnification changes.
         

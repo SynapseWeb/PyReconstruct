@@ -7,8 +7,10 @@ from PySide6.QtCore import QSize, QRect
 from .palette_button import PaletteButton
 from .outlined_label import OutlinedLabel
 
-from modules.datatypes import Trace
-from modules.constants import locations as loc
+from modules.datatypes import Series, Trace
+from modules.constants import (
+    locations as loc
+)
 
 class MousePalette():
 
@@ -36,6 +38,7 @@ class MousePalette():
         self.createModeButton("Closed Trace", "c", 3, 3)
         self.createModeButton("Open Trace", "o", 4, 4)
         self.createModeButton("Stamp", "s", 5, 5)
+        self.createModeButton("Grid", "g", 6, 6)
 
         # create palette buttons
         self.palette_traces = palette_traces
@@ -258,6 +261,13 @@ class MousePalette():
                     self.mainwindow.changeTracingTrace(button.trace)
                     self.selected_trace = b.trace
         self.updateLabel()
+    
+    def resetPalette(self):
+        """Reset the palette to the default traces."""
+        self.palette_traces = Series.getDefaultPaletteTraces()
+        for b, t in zip(self.palette_buttons, self.palette_traces):
+            b.setTrace(t)
+        self.activatePaletteButton(0)
     
     def placeIncrementButtons(self):
         """Place the increment buttons on the field"""

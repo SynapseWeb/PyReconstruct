@@ -20,7 +20,7 @@ from PySide6.QtCore import Qt
 from .field_widget import FieldWidget
 
 from modules.gui.palette import MousePalette
-from modules.gui.dialog import AlignmentDialog, ZarrDialog
+from modules.gui.dialog import AlignmentDialog, ZarrDialog, GridDialog
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
     progbar,
@@ -177,7 +177,11 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
-                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag)           
+                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
+                    None,
+                    ("grid_act", "Grid properties...", "", self.modifyGrid),
+                    None,
+                    ("resetpalette_act", "Reset trace palette", "", self.mouse_palette.resetPalette)    
                 ]
             },
             
@@ -1098,6 +1102,18 @@ class MainWindow(QMainWindow):
         
         self.field.calibrateMag(trace_lengths)
     
+    def modifyGrid(self):
+        """Modify the grid properties."""
+        response, confirmed = GridDialog(
+            self,
+            tuple(self.series.options["grid"])
+        ).exec()
+        if not confirmed:
+            return
+        
+        self.series.options["grid"] = response
+        self.seriesModified()
+
     def autoseg(self):
         """Autosegment a series."""
         self.saveAllData()

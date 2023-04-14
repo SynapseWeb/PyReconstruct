@@ -1126,6 +1126,13 @@ class MainWindow(QMainWindow):
                         self.series,
                         labels_fp
                     )
+
+        ### MICHAEL ADDING FAKE AUTOSEG ############
+
+        from modules.backend import fake_autoseg
+        fake_autoseg.run(data_fp)
+
+        ############################################
         
         self.field.reload()
     

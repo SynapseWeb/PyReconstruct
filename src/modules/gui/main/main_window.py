@@ -549,7 +549,7 @@ class MainWindow(QMainWindow):
 
         # set the explorer filepath to the series
         if not self.series.isWelcomeSeries():
-            self.explorer_dir = os.path.join(self.series.getwdir(), "..")
+            self.explorer_dir = os.path.dirname(self.series.getwdir())
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -665,8 +665,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Export Series",
                 f"{self.series.name}.ser",
-                dir=self.explorer_dir,
-                filter="XML Series (*.ser)",
+                filter="XML Series (*.ser)"
             )
             if not export_fp:
                 return False

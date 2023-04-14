@@ -411,37 +411,40 @@ class FieldWidget(QWidget, FieldView):
         ):
             # get closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
-            # check for ztrace segments
-            if not closest_trace:
-                closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
-            
-            # draw name of closest trace
-            if closest_trace:
-                if type(closest_trace) is Trace:
-                    name = closest_trace.name
-                    if closest_trace.negative:
-                        name += " (negative)"
-                elif type(closest_trace) is Ztrace:
-                    name = f"{closest_trace.name} (ztrace)"
-                # ztrace tuple returned
-                elif type(closest_trace) is tuple:
-                    closest_trace = closest_trace[0]
-                    name = f"{closest_trace.name} (ztrace)"
+            status_bar_trace = closest_trace
+
+            if self.mouse_mode == FieldWidget.POINTER:
+                # check for ztrace segments
+                if not closest_trace:
+                    closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
                 
-                closest_trace
-                pos = self.mouse_x, self.mouse_y
-                c = closest_trace.color
-                black_outline = c[0] + 3*c[1] + c[2] > 400
-                drawOutlinedText(
-                    field_painter,
-                    *pos,
-                    name,
-                    c,
-                    (0,0,0) if black_outline else (255,255,255),
-                    ct_size,
-                    left_handed
-                )
-        
+                # draw name of closest trace
+                if closest_trace:
+                    if type(closest_trace) is Trace:
+                        name = closest_trace.name
+                        if closest_trace.negative:
+                            name += " (negative)"
+                    elif type(closest_trace) is Ztrace:
+                        name = f"{closest_trace.name} (ztrace)"
+                    # ztrace tuple returned
+                    elif type(closest_trace) is tuple:
+                        closest_trace = closest_trace[0]
+                        name = f"{closest_trace.name} (ztrace)"
+                    
+                    closest_trace
+                    pos = self.mouse_x, self.mouse_y
+                    c = closest_trace.color
+                    black_outline = c[0] + 3*c[1] + c[2] > 400
+                    drawOutlinedText(
+                        field_painter,
+                        *pos,
+                        name,
+                        c,
+                        (0,0,0) if black_outline else (255,255,255),
+                        ct_size,
+                        left_handed
+                    )
+            
             # get the names of the selected traces
             names = {}
             counter = 0
@@ -537,7 +540,7 @@ class FieldWidget(QWidget, FieldView):
 
         # update the status bar
         if not self.is_panzooming:
-            self.updateStatusBar()
+            self.updateStatusBar(status_bar_trace)
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -552,11 +555,11 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = (w, h)
         self.generateView()
     
-    def updateStatusBar(self):
+    def updateStatusBar(self, trace : Trace = None):
         """Update status bar with useful information.
         
             Params:
-                event: contains data on mouse position
+                trace (Trace): optional trace to add to status bar
         """
         self.status_list = []
 
@@ -587,6 +590,8 @@ class FieldWidget(QWidget, FieldView):
             d = d / self.scaling * self.section.mag
             dist = f"Line distance: {round(d, 5)}"
             self.status_list.append(dist)
+        elif trace is not None:
+            self.status_list.append(f"Closest trace: {trace.name}")
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)

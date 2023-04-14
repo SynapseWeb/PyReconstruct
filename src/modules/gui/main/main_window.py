@@ -1106,6 +1106,7 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         
+        # export to zarr
         groups, border_obj, srange, mag = inputs
         data_fp = seriesToZarr(
             self.series,
@@ -1117,6 +1118,14 @@ class MainWindow(QMainWindow):
 
         # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
 
+        ### MICHAEL ADDING FAKE AUTOSEG ############
+
+        from modules.backend.autoseg import fake_autoseg
+        fake_autoseg.run(data_fp)
+
+        ############################################
+
+        # import from zarr
         for z in os.listdir(data_fp):
             if z.startswith("labels"):
                 name = z[z.find("_")+1:]
@@ -1126,13 +1135,6 @@ class MainWindow(QMainWindow):
                         self.series,
                         labels_fp
                     )
-
-        ### MICHAEL ADDING FAKE AUTOSEG ############
-
-        from modules.backend import fake_autoseg
-        fake_autoseg.run(data_fp)
-
-        ############################################
         
         self.field.reload()
     

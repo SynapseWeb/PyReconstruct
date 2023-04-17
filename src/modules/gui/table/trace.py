@@ -304,7 +304,7 @@ class TraceTableWidget(QDockWidget):
             return
         
         name, color, tags, mode = new_attr
-        self.manager.editTraces(name, color, tags, mode, traces)
+        self.manager.editTraces(traces, name, color, tags, mode)
         self.manager.loadSection()
     
     def hideTraces(self, hide=True):
@@ -348,7 +348,7 @@ class TraceTableWidget(QDockWidget):
         except ValueError:
             return
         
-        self.manager.editRadius(new_rad, traces)
+        self.manager.editRadius(traces, new_rad)
         self.manager.loadSection()
           
     def findTrace(self, event=None):

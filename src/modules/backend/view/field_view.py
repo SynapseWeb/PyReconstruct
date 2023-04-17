@@ -242,6 +242,10 @@ class FieldView():
         if new_section_num not in self.series.sections:
             return
         
+        # check if already on section
+        if new_section_num == self.series.current_section:
+            return
+        
         # move current section data to b section
         self.swapABsections()
 
@@ -594,15 +598,18 @@ class FieldView():
         """
         # get an average scaling factor across the selected traces
         sum_scaling = 0
-        for trace in self.section.selected_traces:
-            # get the length of the trace with the given transform
-            tform = self.section.tforms[self.series.alignment]
-            d = lineDistance(tform.map(trace.points), closed=False)
-            # scaling = expected / actual
-            sum_scaling += trace_lengths[trace.name] / d
+        total = 0
+        for cname in trace_lengths:
+            for trace in self.section.contours[cname]:
+                # get the length of the trace with the given transform
+                tform = self.section.tforms[self.series.alignment]
+                d = lineDistance(tform.map(trace.points), closed=False)
+                # scaling = expected / actual
+                sum_scaling += trace_lengths[trace.name] / d
+                total += 1
         
         # calculate new mag
-        avg_scaling = sum_scaling / len(self.section.selected_traces)
+        avg_scaling = sum_scaling / total
         new_mag = self.section.mag * avg_scaling
 
         # apply new mag to every section

@@ -290,26 +290,39 @@ class Section():
                 add_tags (bool): True if tags should be added (rather than replaced)
         """
         for trace in traces:
+            # check if trace was highlighted
+            if trace in self.selected_traces:
+                self.selected_traces.remove(trace)
+                selected = True
+            else:
+                selected = False
+            
+            # remove the trace and modify
             self.removeTrace(trace)
+            new_trace = trace.copy()
             if name is not None:
-                trace.name = name
+                new_trace.name = name
             if color is not None:
-                trace.color = color
+                new_trace.color = color
             if tags is not None:
                 if add_tags:
                     for tag in tags:
-                        trace.tags.add(tag)
+                        new_trace.tags.add(tag)
                 else:
-                    trace.tags = tags
-            fill_mode = list(trace.fill_mode)
+                    new_trace.tags = tags
+            fill_mode = list(new_trace.fill_mode)
             if mode is not None:
                 style, condition = mode
                 if style is not None:
                     fill_mode[0] = style
                 if condition is not None:
                     fill_mode[1] = condition
-                trace.fill_mode = tuple(fill_mode)
-            self.addTrace(trace, "attributes modified")
+                new_trace.fill_mode = tuple(fill_mode)
+            
+            # add trace back to scene and highlight if needed
+            self.addTrace(new_trace, "attributes modified")
+            if selected:
+                self.selected_traces.append(new_trace)
     
     def editTraceRadius(self, traces : list[Trace], new_rad : float):
         """Change the radius of a trace or set of traces.

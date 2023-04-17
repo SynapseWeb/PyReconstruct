@@ -19,8 +19,8 @@ class TableColumnsDialog(QDialog):
 
         self.setWindowTitle("Table Columns")
 
-        self.title_text = QLabel(self)
-        self.title_text.setText("Table columns:")
+        title_text = QLabel(self)
+        title_text.setText("Table columns:")
 
         self.cbs = []
         for c in columns:
@@ -30,18 +30,18 @@ class TableColumnsDialog(QDialog):
             self.cbs.append(c_cb)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout(self)
-        self.vlayout.setSpacing(10)
-        self.vlayout.addWidget(self.title_text)
+        vlayout = QVBoxLayout(self)
+        vlayout.setSpacing(10)
+        vlayout.addWidget(title_text)
         for c_row in self.cbs:
-            self.vlayout.addWidget(c_row)
-        self.vlayout.addWidget(self.buttonbox)
+            vlayout.addWidget(c_row)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
     
     def exec(self):
         """Run the dialog."""

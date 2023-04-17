@@ -24,34 +24,32 @@ class ZtraceDialog(QDialog):
 
         self.setWindowTitle("Set Attributes")
 
-        self.name_row = QHBoxLayout()
-        self.name_text = QLabel(self)
-        self.name_text.setText("Name:")
+        name_row = QHBoxLayout()
+        name_text = QLabel(self, text="Name:")
         self.name_input = QLineEdit(self)
         self.name_input.setText(name)
-        self.name_row.addWidget(self.name_text)
-        self.name_row.addWidget(self.name_input)
+        name_row.addWidget(name_text)
+        name_row.addWidget(self.name_input)
 
-        self.color_row = QHBoxLayout()
-        self.color_text = QLabel(self)
-        self.color_text.setText("Color:")
+        color_row = QHBoxLayout()
+        color_text = QLabel(self, text="Color:")
         self.color_input = ColorButton(color, parent)
-        self.color_row.addWidget(self.color_text)
-        self.color_row.addWidget(self.color_input)
-        self.color_row.addStretch()
+        color_row.addWidget(color_text)
+        color_row.addWidget(self.color_input)
+        color_row.addStretch()
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.name_row)
-        self.vlayout.addLayout(self.color_row)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addLayout(name_row)
+        vlayout.addLayout(color_row)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
     
     def exec(self):
         """Run the dialog."""

@@ -1130,24 +1130,35 @@ class MainWindow(QMainWindow):
         )
     
     def changeAlignment(self, alignment_name : str = None):
-        """Switch alignments.
+        """Open dialog to modify and change alignments.
         
             Params:
-                alignment_name (str): the name of the new alignment"""
+                alignment_name (str): the name of the alignment ro switch to
+        """
         alignments = list(self.field.section.tforms.keys())
 
         if alignment_name is None:
-            alignment_name, confirmed = AlignmentDialog(
+            response, confirmed = AlignmentDialog(
                 self,
                 alignments
             ).exec()
             if not confirmed:
                 return
+            (
+                alignment_name,
+                added,
+                removed,
+                renamed
+            ) = response
+        else:
+            added, removed, renamed = [], [], []
         
-        if alignment_name not in alignments:
-            self.newAlignment(alignment_name)
-
-        self.field.changeAlignment(alignment_name)
+        if added or removed or renamed:
+            self.series.modifyAlignments(added, removed, renamed)
+            self.field.reload()
+        
+        if alignment_name:
+            self.field.changeAlignment(alignment_name)
     
     def calibrateMag(self, trace_lengths : dict = None):
         """Calibrate the pixel size for the series.

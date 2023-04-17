@@ -75,16 +75,16 @@ class GridDialog(QDialog):
         layout.addWidget(num_y_input, 2, 4)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(layout)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addLayout(layout)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
     
     def accept(self):
         """Overwritten from parent class."""

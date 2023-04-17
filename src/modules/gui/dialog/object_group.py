@@ -27,30 +27,29 @@ class ObjectGroupDialog(QDialog):
 
         self.setWindowTitle("Object Group")
 
-        self.group_row = QHBoxLayout()
-        self.group_text = QLabel(self)
-        self.group_text.setText("Group:")
+        group_row = QHBoxLayout()
+        group_text = QLabel(self, text="Group:")
         self.group_input = QComboBox(self)
         self.group_input.addItem("")
         self.group_input.addItems(sorted(objgroupdict.getGroupList()))
         self.group_input.resize(self.group_input.sizeHint())
-        self.group_row.addWidget(self.group_text)
-        self.group_row.addWidget(self.group_input)
+        group_row.addWidget(self.group_text)
+        group_row.addWidget(self.group_input)
         if new_group:
-            self.newgroup_bttn = QPushButton(self, "new_group", text="New Group...")
-            self.newgroup_bttn.clicked.connect(self.newGroup)
-            self.group_row.addWidget(self.newgroup_bttn)
+            newgroup_bttn = QPushButton(self, "new_group", text="New Group...")
+            newgroup_bttn.clicked.connect(self.newGroup)
+            group_row.addWidget(self.newgroup_bttn)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.group_row)
+        self.vlayout.addLayout(group_row)
         self.vlayout.addSpacing(10)
-        self.vlayout.addWidget(self.buttonbox)
+        self.vlayout.addWidget(buttonbox)
 
         self.setLayout(self.vlayout)
     

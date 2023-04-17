@@ -10,9 +10,10 @@ from PySide6.QtWidgets import (
     QPushButton
 )
 
+from .helper import resizeLineEdit
+
 from modules.datatypes import Series
 from modules.gui.utils import notify
-
 
 class ZarrDialog(QDialog):
 
@@ -33,11 +34,10 @@ class ZarrDialog(QDialog):
 
         self.setWindowTitle("Create Zarr")
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
 
         # create the group combo box inputs
-        self.group_rows = []
         self.group_widgets = []
         for i in range(5):
             row = QHBoxLayout()
@@ -52,63 +52,66 @@ class ZarrDialog(QDialog):
             if i != 0:
                 text.hide()
                 input.hide()
-            self.group_rows.append(row)
             self.group_widgets.append((text, input))
-            self.vlayout.addLayout(row)
+            vlayout.addLayout(row)
         self.inputs = 1
 
         # create buttons for adding and removing group inputs
-        self.addremove_row = QHBoxLayout()
-        self.addremove_row.addSpacing(10)
+        addremove_row = QHBoxLayout()
+        addremove_row.addSpacing(10)
         self.add_bttn = QPushButton(text="Add Group", parent=self)
         self.add_bttn.clicked.connect(self.addInput)
         self.remove_bttn = QPushButton(text="Remove Group", parent=self)
         self.remove_bttn.clicked.connect(self.removeInput)
-        self.addremove_row.addWidget(self.remove_bttn)
-        self.addremove_row.addWidget(self.add_bttn)
+        addremove_row.addWidget(self.remove_bttn)
+        addremove_row.addWidget(self.add_bttn)
         self.remove_bttn.hide()
-        self.vlayout.addLayout(self.addremove_row)
+        vlayout.addLayout(addremove_row)
 
         # get the border object
-        self.bobj_row = QHBoxLayout()
-        self.bobj_text = QLabel(self, text="Border object:")
+        bobj_row = QHBoxLayout()
+        bobj_text = QLabel(self, text="Border object:")
         self.bobj_input = QLineEdit(self)
-        self.bobj_row.addWidget(self.bobj_text)
-        self.bobj_row.addWidget(self.bobj_input)
-        self.vlayout.addLayout(self.bobj_row)
+        resizeLineEdit(self.bobj_input, "X"*15)
+        bobj_row.addWidget(bobj_text)
+        bobj_row.addWidget(self.bobj_input)
+        vlayout.addLayout(bobj_row)
 
         # get the section range
-        self.srange_row = QHBoxLayout()
-        self.srnage_text1 = QLabel(self, text="From section")
+        srange_row = QHBoxLayout()
+        srnage_text1 = QLabel(self, text="From section")
         self.srange_input1 = QLineEdit(self)
-        self.srange_text2 = QLabel(self, text="to")
+        resizeLineEdit(self.srange_input1, "0000")
+        srange_text2 = QLabel(self, text="to")
         self.srange_input2 = QLineEdit(self)
-        self.srange_row.addWidget(self.srnage_text1)
-        self.srange_row.addWidget(self.srange_input1)
-        self.srange_row.addWidget(self.srange_text2)
-        self.srange_row.addWidget(self.srange_input2)
-        self.vlayout.addLayout(self.srange_row)
+        resizeLineEdit(self.srange_input2, "0000")
+        srange_row.addWidget(srnage_text1)
+        srange_row.addWidget(self.srange_input1)
+        srange_row.addWidget(srange_text2)
+        srange_row.addWidget(self.srange_input2)
+        vlayout.addLayout(srange_row)
 
         # get the mangification
-        self.mag_row = QHBoxLayout()
-        self.mag_text = QLabel(self, text="Magnification (pixels per micron):")
+        mag_row = QHBoxLayout()
+        mag_text = QLabel(self, text="Magnification (pix/µm):")
         self.mag_input = QLineEdit(self)
+        resizeLineEdit(self.mag_input, "0"*10)
         self.mag_input.setText(
             str(self.series.section_mags[self.series.current_section])
         )
-        self.mag_row.addWidget(self.mag_text)
-        self.mag_row.addWidget(self.mag_input)
-        self.vlayout.addLayout(self.mag_row)
+        mag_row.addWidget(mag_text)
+        mag_row.addWidget(self.mag_input)
+        vlayout.addLayout(mag_row)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout.addSpacing(10)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout.addSpacing(10)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
     
     def addInput(self):
         """Add a group input."""

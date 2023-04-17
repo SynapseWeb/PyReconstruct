@@ -405,6 +405,7 @@ class FieldWidget(QWidget, FieldView):
         # draw the selected traces to the screen
         ct_size = 12
         st_size = 14
+        status_bar_trace = None
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing

@@ -5,10 +5,78 @@ from PySide6.QtWidgets import (
     QHBoxLayout, 
     QLabel,
     QVBoxLayout, 
-    QComboBox, 
     QPushButton, 
-    QInputDialog
+    QInputDialog,
+    QTableWidget,
+    QTableWidgetItem
 )
+
+from modules.gui.utils import notify
+
+class AlignmentList(QTableWidget):
+
+    def __init__(self, parent : QWidget, alignment_names : list):
+        """Create an alignment list widget."""
+        self.alignments = sorted(alignment_names)
+        super().__init__(len(self.alignments), 1, parent)
+        self.setShowGrid(False)
+        self.verticalHeader().hide()
+        self.horizontalHeader().hide()
+
+        # create the table
+        for i, a in enumerate(self.alignments):
+            self.setItem(i, 0, QTableWidgetItem(a)) 
+    
+    def getSelectedAlignments(self) -> list[str]:
+        """Get the name of the objects highlighted by the user.
+        
+            Returns:
+                (list): the name of the objects
+        """
+        selected_indexes = self.selectedIndexes()
+        alignments = []
+        for i in selected_indexes:
+            r = i.row()
+            alignments.append(self.item(r, 0).text())
+        return alignments
+    
+    def addAlignment(self, alignment : str):
+        """Add an alignment to the list.
+        
+            Params:
+                alignment (str): the name for the new alignment
+        """
+        if alignment in self.alignments:
+            return
+        
+        self.alignments.append(alignment)
+        self.alignments.sort()
+        i = self.alignments.index(alignment)
+        self.insertRow(i)
+        self.setItem(i, 0, QTableWidgetItem(alignment))
+    
+    def removeAlignment(self, alignment : str):
+        """Remove an alignment from the list.
+        
+            Params:
+                alignment(str): the name of the alignment to remove
+        """
+        if alignment not in self.alignments:
+            return
+        
+        i = self.alignments.index(alignment)
+        self.alignments.remove(alignment)
+        self.removeRow(i)
+    
+    def renameAlignment(self, alignment : str, new_name : str):
+        """Rename an alignment on the list.
+        
+            Params:
+                alignment (str): the alignment to rename
+                new_name (str): the new name for the alignment
+        """
+        self.removeAlignment(alignment)
+        self.addAlignment(new_name)
 
 class AlignmentDialog(QDialog):
 
@@ -23,46 +91,99 @@ class AlignmentDialog(QDialog):
 
         self.setWindowTitle("Change Alignment")
 
-        self.align_row = QHBoxLayout()
-        self.align_text = QLabel(self)
-        self.align_text.setText("Alignment:")
-        self.align_input = QComboBox(self)
-        self.align_input.addItem("")
-        self.align_input.addItems(sorted(alignment_names))
-        self.align_input.resize(self.align_input.sizeHint())
-        self.newalign_bttn = QPushButton(self, "new_alignment", text="New Alignment...")
-        self.newalign_bttn.clicked.connect(self.newAlignment)
-        self.align_row.addWidget(self.align_text)
-        self.align_row.addWidget(self.align_input)
-        self.align_row.addWidget(self.newalign_bttn)
+        title_text = QLabel(self, text="Switch to Alignment")
+
+        self.table = AlignmentList(self, alignment_names)
+
+        remove_bttn = QPushButton(self, "remove", text="Remove")
+        remove_bttn.clicked.connect(self.removeAlignments)
+
+        rename_bttn = QPushButton(self, "rename", text="Rename...")
+        rename_bttn.clicked.connect(self.renameAlignment)
+
+        new_bttn = QPushButton(self, "new", text="New...")
+        new_bttn.clicked.connect(self.newAlignment)
+
+        bttns = QHBoxLayout()
+        bttns.addWidget(remove_bttn)
+        bttns.addWidget(rename_bttn)
+        bttns.addWidget(new_bttn)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.align_row)
-        self.vlayout.addSpacing(10)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addWidget(title_text)
+        vlayout.addWidget(self.table)
+        vlayout.addLayout(bttns)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
+
+        self.added = []
+        self.removed = []
+        self.renamed = []
     
     def newAlignment(self):
         """Add a new alignment to the list."""
-        new_group_name, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
+        new_alignment, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
         if not confirmed:
             return
-        self.align_input.addItem(new_group_name)
-        self.align_input.setCurrentText(new_group_name)
-        self.align_input.resize(self.align_input.sizeHint())
+        self.table.addAlignment(new_alignment)
+        self.added.append(new_alignment)
+    
+    def removeAlignments(self):
+        """Remove selected alignments from the list."""
+        alignments = self.table.getSelectedAlignments()
+        for a in alignments:
+            self.table.removeAlignment(a)
+            self.removed.append(a)
+    
+    def renameAlignment(self):
+        """Rename a selected alignment."""
+        alignments = self.table.getSelectedAlignments()
+        if len(alignments) > 1:
+            notify("Please select only one alignment to rename.")
+            return
+        elif len(alignments) == 0:
+            return
+        a = alignments[0]
+        
+        new_name, confirmed = QInputDialog.getText(self, "Rename Alignment", "New alignment name:")
+        if not confirmed:
+            return
+        if new_name in self.table.alignments:
+            notify("This alignment already exists.")
+            return
+        
+        self.table.renameAlignment(a, new_name)
+        self.renamed.append((a, new_name))
+        
+    def accept(self):
+        """Overwritten from parent class."""
+        alignments = self.table.getSelectedAlignments()
+        if len(alignments) > 1:
+            notify("Please select only one alignment from the list.")
+            return
+        super().accept()
         
     def exec(self):
         """Run the dialog."""
         confirmed = super().exec()
-        text = self.align_input.currentText()
-        if confirmed and text:
-            return self.align_input.currentText(), True
+        alignments = self.table.getSelectedAlignments()
+        if alignments:
+            a = alignments[0]
         else:
-            return "", False
+            a = None
+        if confirmed:
+            return (
+                a,
+                self.added,
+                self.removed,
+                self.renamed
+            ), True
+        else:
+            return None, False

@@ -530,19 +530,27 @@ class Series():
         """Allow iteration through the sections."""
         return SeriesIterator(self, show_progress, message)
     
-    def newAlignment(self, alignment_name : str, base_alignment="default"):
-        """Create a new alignment.
+    def modifyAlignments(self, add : list = [], remove : list = [], rename : list = []):
+        """Modify the alignments (input from dialog).
         
             Params:
-                alignment_name (str): the name of the new alignment
-                base_alignment (str): the name of the reference alignment for this new alignment
+                add (list): the alignments to add
+                remove (list): the alignments to remove
+                rename (list): the alignments to rename (old, new)
         """
-        for snum in self.sections:
-            section = self.loadSection(snum)
-            section.tforms[alignment_name] = section.tforms[base_alignment]
+        if not (add or remove or rename):
+            return
+        for snum, section in self.enumerateSections(message="Modifying alignments..."):
+            for a in add:
+                section.tforms[a] = section.tforms[self.alignment]
+            for a, new_name in rename:
+                if a in section.tforms:
+                    section.tforms[new_name] = section.tforms[a]
+                    del(section.tforms[a])
+            for a in remove:
+                if a in section.tforms:
+                    del(section.tforms[a])
             section.save()
-        
-        self.modified = True
     
     def getZValues(self):
         """Return the z-values for each section.

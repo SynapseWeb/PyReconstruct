@@ -73,7 +73,8 @@ class ObjGroupDict():
         """Get a JSON serializable dictionary."""
         groups = self.groups.copy()
         for g in groups:
-            groups[g] = list(groups[g])
+            if groups[g]:
+                groups[g] = list(groups[g])
         return groups
     
     def getGroupList(self) -> list:

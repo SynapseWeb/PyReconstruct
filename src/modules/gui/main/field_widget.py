@@ -74,6 +74,7 @@ class FieldWidget(QWidget, FieldView):
         # misc defaults
         self.current_trace = []
         self.max_click_time = 0.15
+        self.click_time = None
         self.mouse_x = 0
         self.mouse_y = 0
 
@@ -205,21 +206,27 @@ class FieldWidget(QWidget, FieldView):
         self.blend_sections = not self.blend_sections
         self.generateView()
     
-    def setViewMagnification(self):
-        """Set the scaling for the section view."""
-        new_mag, confirmed = QInputDialog.getText(
-            self,
-            "View Magnification",
-            "Enter view magnification (pixels per micron):",
-            text=str(round(1 / self.series.screen_mag, 6))
-        )
-        if not confirmed:
-            return
+    def setViewMagnification(self, new_mag : float = None):
+        """Set the scaling for the section view.
         
-        try:
-            new_mag = float(new_mag)
-        except ValueError:
-            return
+            Params:
+                new_mag (float): the new magnification (pixels per micron)
+        """
+        if new_mag is None:
+            new_mag, confirmed = QInputDialog.getText(
+                self,
+                "View Magnification",
+                "Enter view magnification (pixels per micron):",
+                text=str(round(1 / self.series.screen_mag, 6))
+            )
+            if not confirmed:
+                return
+            try:
+                new_mag = float(new_mag)
+            except ValueError:
+                return
+        else:
+            new_mag = 1 / new_mag
         
         self.setView(new_mag)
     
@@ -398,43 +405,47 @@ class FieldWidget(QWidget, FieldView):
         # draw the selected traces to the screen
         ct_size = 12
         st_size = 14
+        status_bar_trace = None
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
         ):
             # get closest trace
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
-            # check for ztrace segments
-            if not closest_trace:
-                closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
-            
-            # draw name of closest trace
-            if closest_trace:
-                if type(closest_trace) is Trace:
-                    name = closest_trace.name
-                    if closest_trace.negative:
-                        name += " (negative)"
-                elif type(closest_trace) is Ztrace:
-                    name = f"{closest_trace.name} (ztrace)"
-                # ztrace tuple returned
-                elif type(closest_trace) is tuple:
-                    closest_trace = closest_trace[0]
-                    name = f"{closest_trace.name} (ztrace)"
+            status_bar_trace = closest_trace
+
+            if self.mouse_mode == FieldWidget.POINTER:
+                # check for ztrace segments
+                if not closest_trace:
+                    closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
                 
-                closest_trace
-                pos = self.mouse_x, self.mouse_y
-                c = closest_trace.color
-                black_outline = c[0] + 3*c[1] + c[2] > 400
-                drawOutlinedText(
-                    field_painter,
-                    *pos,
-                    name,
-                    c,
-                    (0,0,0) if black_outline else (255,255,255),
-                    ct_size,
-                    left_handed
-                )
-        
+                # draw name of closest trace
+                if closest_trace:
+                    if type(closest_trace) is Trace:
+                        name = closest_trace.name
+                        if closest_trace.negative:
+                            name += " (negative)"
+                    elif type(closest_trace) is Ztrace:
+                        name = f"{closest_trace.name} (ztrace)"
+                    # ztrace tuple returned
+                    elif type(closest_trace) is tuple:
+                        closest_trace = closest_trace[0]
+                        name = f"{closest_trace.name} (ztrace)"
+                    
+                    closest_trace
+                    pos = self.mouse_x, self.mouse_y
+                    c = closest_trace.color
+                    black_outline = c[0] + 3*c[1] + c[2] > 400
+                    drawOutlinedText(
+                        field_painter,
+                        *pos,
+                        name,
+                        c,
+                        (0,0,0) if black_outline else (255,255,255),
+                        ct_size,
+                        left_handed
+                    )
+            
             # get the names of the selected traces
             names = {}
             counter = 0
@@ -530,7 +541,7 @@ class FieldWidget(QWidget, FieldView):
 
         # update the status bar
         if not self.is_panzooming:
-            self.updateStatusBar()
+            self.updateStatusBar(status_bar_trace)
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -545,11 +556,11 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = (w, h)
         self.generateView()
     
-    def updateStatusBar(self):
+    def updateStatusBar(self, trace : Trace = None):
         """Update status bar with useful information.
         
             Params:
-                event: contains data on mouse position
+                trace (Trace): optional trace to add to status bar
         """
         self.status_list = []
 
@@ -580,6 +591,8 @@ class FieldWidget(QWidget, FieldView):
             d = d / self.scaling * self.section.mag
             dist = f"Line distance: {round(d, 5)}"
             self.status_list.append(dist)
+        elif trace is not None:
+            self.status_list.append(f"Closest trace: {trace.name}")
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
@@ -587,7 +600,7 @@ class FieldWidget(QWidget, FieldView):
     def traceDialog(self):
         """Opens dialog to edit selected traces."""
         # do not run if both types of traces are selected or none are selected
-        if bool(self.section.selected_traces) ^ bool(self.section.selected_ztraces):
+        if not(bool(self.section.selected_traces) ^ bool(self.section.selected_ztraces)):
             return
         # run the ztrace dialog if only ztraces selected
         elif self.section.selected_ztraces:
@@ -603,7 +616,7 @@ class FieldWidget(QWidget, FieldView):
         
         name, color, tags, mode = new_attr
         self.section.editTraceAttributes(
-            traces=self.section.selected_traces,
+            traces=self.section.selected_traces.copy(),
             name=name,
             color=color,
             tags=tags,
@@ -756,6 +769,7 @@ class FieldWidget(QWidget, FieldView):
         if context_menu:
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
             self.checkActions(context_menu=True, clicked_trace=clicked_trace)
+            self.lclick, self.rclick, self.mclick = False, False, False
             self.mainwindow.field_menu.exec(event.globalPos())
             self.checkActions()
             return

@@ -452,6 +452,7 @@ class TraceLayer():
             
             # determine if user requested fill
             if (
+                (trace.closed) and
                 (trace.fill_mode[0] != "none") and
                 ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
             ): fill = True
@@ -463,7 +464,7 @@ class TraceLayer():
                 painter.setBrush(QBrush(QColor(*trace.color)))
                 # determine the type of fill
                 if trace.fill_mode[0] == "transparent":  # transparent fill
-                    painter.setOpacity(self.series.fill_opacity)
+                    painter.setOpacity(self.series.options["fill_opacity"])
                 elif trace.fill_mode[0] == "solid":  # solid
                     painter.setOpacity(1)
                 painter.drawPolygon(qpoints)
@@ -555,7 +556,7 @@ class TraceLayer():
         
         # set up painter
         painter = QPainter(trace_layer)
-        painter.setOpacity(self.series.fill_opacity)
+        painter.setOpacity(self.series.options["fill_opacity"])
 
         # draw points
         for qpoint, color in zip(qpoints, colors):

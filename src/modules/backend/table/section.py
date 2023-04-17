@@ -135,9 +135,6 @@ class SectionTableManager():
         c = self.data[self.series.current_section]["contrast"]
         self.setBC(section_numbers, b, c)
 
-
-
-
     def editThickness(self, section_numbers : list[int], thickness : float):
         """Set the section thickness for a set of sections.
         

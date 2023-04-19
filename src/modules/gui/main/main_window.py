@@ -180,8 +180,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
-                    ("grid_act", "Grid properties...", "", self.modifyGrid),
-                    None,
                     ("resetpalette_act", "Reset trace palette", "", self.mouse_palette.resetPalette)    
                 ]
             },
@@ -1196,7 +1194,7 @@ class MainWindow(QMainWindow):
         
         self.field.calibrateMag(trace_lengths)
     
-    def modifyGrid(self):
+    def modifyGrid(self, event=None):
         """Modify the grid properties."""
         response, confirmed = GridDialog(
             self,

@@ -1,3 +1,142 @@
+# Software Overview
+
+## Series, Sections, Traces, Contours, Objects, and Ztraces
+
+Serial section microscopy results in set of sections that represent the sequential cross-sections of the tissue block. This software is organized around this concept.
+
+A **series** consists of an ordered set of **sections**. This software allows the user to operate on one series at a time.
+
+Data are grouped by section, with each section having an index indicating its position in the series.
+
+Each section contains a pointer to an image. This image is used as the "background" for the section when viewing it. The images for the series are selected when the series is created.
+
+Each section contains contour and trace data.
+
+A **trace** is a single shape or curve on a section.
+
+A **contour** is all traces with the same name on a SINGLE section.
+
+An **object** is all traces with the same name throughout the ENTIRE series.
+
+A **ztrace** is single curve or shape that exists on multiple sections.
+
+## Transformations and Alignments
+
+A transform is a set of six numbers (a, b, c, d, e, f) that denotes an affine transformation.
+
+The numbers a, b, d, and e describe the stretch/shear/rotation component of the transformation, while c and f describe the horizontal and vertical translation components of the transformation, respectively.
+
+Each section has one transformation that is applied to the image and every trace. This means that the traces are **fixed** to the image. If the transformation for the section is changed, the traces and the image will move together.
+
+An **alignment** is a set of transformations across a series, with each section having a single transform. (Transform is to section as alignment is to series).
+
+If a series has multiple alignments, each section will have multiple transformations stored under these alignment names. While running the software, the user can switch between the different alignments.
+
+## Coordinates
+
+For clarity, the different types of coordinates are defined here:
+
+**Field** coordinates refer to the real-world location of an item.
+
+**Untransformed field** coordinates refer to the location of an item before the section transformation has been applied.
+
+**Pixel** coordinates refer to the coordinates in refernece to the image pixels.
+
+**Screen** coordinates refer to the coordinates in refernece to the pixels on the output screen.
+
+## File Structure
+
+Data for each series are stored in a single series file (.jser).
+
+The .jser file is in JSON format, which is a basic dictionary. It is split into two main keys: **series** and **sections**.
+
+The value for the **series** key contains data pertaining to the series as a whole and its usage data. The key/value pairs in the series dictionary are as follows:
+- current_section: the section index the series is focused on
+- src_dir: the directory containing the image files (defined by the user)
+- window: the x, y, width, and height of the viewing window for the series in field coordinates
+- palette_traces: the traces that make up the trace palette
+- ztraces: all of the ztraces in the series
+- alignment: the name of the alignment setting (denotes a set of transforms)
+- object_groups: a dictionary that contains information on which objects belong to which groups
+- object_3D_modes: a dictionary that contains data for the 3D viewing settings for each object
+- options: a dictionary containing various series options
+
+The value for the **sections** key is a list, with each item in the list being a dictionary containing the data for a section. The key/value pairs in the section dictionary are as follows:
+- src: the name of the image file (only the name -- not the path)
+- brightness: user-adjusted brightness of the section (between -100 and 100)
+- contrast: user-adjusted contrast of the section (between -100 and 100)
+- mag: the magnification of the section (microns per image pixel)
+- align_locked: true if the section is locked (meaning that its transformation cannot be changed)
+- tforms: a dictionary of alignment name : transformation matrix pairs
+- thickness: the thickness of the section
+- contours: a dictionary of contour name : trace list pairs
+- calgrid: set to true if the section is a calibration grid; false otherwise
+
+**Contours** are stored within the section data. Contour data is stored as a dictionary, with each key being the name of a contour and each value being a list of the data for each trace corresponding to the contour name.
+
+**Traces** are stored within the contours dictionary. A single trace is represented as a list. The items in the list are as follows (in the following order):
+- the name of the trace (only for palette traces in the series data; traces within contours do NOT have a name)
+- x-values for the trace points
+- y-values for the trace points
+- the color of the trace (rgb 0-255)
+- whether or not the trace is closed
+- whether or not the trace is negative
+- whether or not the trace is hidden from view
+- the fill style of the trace when viewing
+- the tags of the trace
+- the history of the trace
+
+**Ztraces** are stored within the series file as a dictionary. Each key is the name of a ztrace, while each value is a dictionary containing ztrace data. The ztrace data dictionary is as follows:
+- color: the color of the ztrace (rgb 0-255)
+- points: the (x, y, section index) points of the ztrace
+
+## Image Types and Zarr Images
+
+The following image formats are supported for use as section images: bmp, jpeg, jpg, pbm, pgm, png, ppm, tga, tif, tiff, wbmp, webp, xbm, xpm
+
+Additionally, images can be stored in the zarr format. This is highly recommended for large images, as the software will load only the parts of the image that are needed (rather than the entire image every time the user changes sections).
+
+Each image is stored in a directory with the extension .zarr (ex. ABC_images.zarr). This directory contains every image, which are individually stored as directories themselves. These image directories are named *directly* after the image file (ex. image.tif) and contain the zarr data for the *untransformed* (base) image.
+
+## Libraries
+
+The libraries that PyReconstruct uses are the following:
+- lxml: used to import/export data from Legacy RECONSTRUCT
+- numpy: used for higher-level number and array processing
+- opencv-python: used to obtain exteriors/interiors of traces and reduce the number of points in a trace
+- PyOpenGL: used to generate 3D models
+- pyqtgraph: used to view the 3D models
+- PySide6: the main engine for the GUI
+- scikit-image: used to assist generating the 3D model
+- trimesh: used to generate the 3D model
+- zarr: used for understanding images in zarr format
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Table of Contents
 
 1.  [General Concepts](#general-concepts)
@@ -51,13 +190,13 @@
 
 ## Trace vs. Contour vs. Object
 
-A **trace** is a single connected shape or curve on a 
-section.
+A **trace** is a single connected shape or curve on a section.
 
 A **contour** is all traces with the same name on a SINGLE section.
 
 An **object** is all traces with the same name throughout the ENTIRE series.
-Trace Attributes
+
+## Trace Attributes
 
 Each trace has a set of modifiable attributes. Generally, the name, color, and tags are the most commonly modified attributes.
 
@@ -67,51 +206,7 @@ Traces can also be hidden. This can be done by using the Ctrl+H shortcut on sele
 
 The fill mode of the trace is important for visuals. Traces can have no fill, a transparent fill, or a solid fill. You can also select whether the trace is filled only when select or only when deselected.
 
-## File Structure
 
-Data for each series are stored in a single series file (.jser).
-
-Images are **not** stored in the .jser file.
-
-The .jser file is in JSON format. It is split into two main keys: **series** and **sections**.
-
-The value for the **series** key contains data pertaining to the series as a whole and its usage data. It includes the viewing window, the last section viewed by the user, the ztraces, 3D options, all the series options, and the traces on the palette.
-
-The value for the **sections** key is a list. Each item in the list is the data for a single section. The index in the list corresponds to the section number. The list contains a null value for sections that do not exist.
-
-The section data is stored as a dictionary. It contains information that is relevant to the single section (transforms, thickness, magnification, brightness, contrast, etc.), which includes every contour on the section in the form of a dictionary.
-
-The value for the **contours** key is a dictionary. The keys in the dictionary are the names of each contour, and the value for each key is a list of traces.
-
-Each trace is stored as a list. The information in the list is as follows: [name, x-values, y-values, color, closed, negative, hidden, fill mode, tags, history]. Note: ONLY traces stored in the palette trace list in the series data have the name in the list. Traces in the section data do NOT contain their names.
-
-
-## Transforms
-
-A transform is a set of six numbers (a, b, c, d, e, f) that denotes an affine transformation.
-
-The numbers a, b, d, and e describe the stretch/shear/rotation component of the transformation, while c and f describe the horizontal and vertical translation components of the transformation, respectively.
-
-Each section has one transformation that is applied to the image and every trace. This means that the traces are **fixed** to the image. If the transformation for the section is changed, the traces and the image will move together.
-
-
-## Alignments
-
-Each series begins with the "default" alignment. An alignment is a single set of image transforms for each section. Through the alignments dialog (accessed through Series>Change Alignment or Ctrl+Shift+A), you can create new alignments and switch between them. When an alignment is created, it is created based on the current alignment setting.
-
-For example, if your default alignment works well for object 1 but not for object 2, you can create a new alignment for object 2 and import transforms or manually align it.
-
-
-## History
-
-Every trace has a history – an set of logs related to the creation and modification of the trace. Each log contains a date, time, username, and description. By default, the username is found through the operating system, but it can also be changed manually (File>Change username).
-
-
-## Negative Traces
-
-Negative traces denote empty space that exists within another trace of the same name. An example of this would be a trace of a donut. The outer trace is positive (as all traces are by default), and the interior trace should be made negative.
-
-Traces can be made negative through the right click menu.
 
 
 # Menu Bar

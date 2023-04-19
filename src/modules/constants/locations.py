@@ -20,6 +20,7 @@ def createHiddenDir(jser_dir, series_name):
 fp = os.path.realpath(__file__)
 src_dir = Path(fp).parents[2]
 assets_dir = os.path.join(src_dir, "assets")
+welcome_series_dir = os.path.join(assets_dir, "welcome_series", ".welcome")
 checker_dir = os.path.join(assets_dir, "checker")
 img_dir = os.path.join(assets_dir, "img")
 

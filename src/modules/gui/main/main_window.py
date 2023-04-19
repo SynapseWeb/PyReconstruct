@@ -37,7 +37,7 @@ from modules.backend.func import (
     importTransforms
 )
 from modules.datatypes import Series, Transform
-from modules.constants import assets_dir, img_dir
+from modules.constants import welcome_series_dir, img_dir
 
 
 class MainWindow(QMainWindow):
@@ -77,7 +77,10 @@ class MainWindow(QMainWindow):
             self.openSeries(jser_fp=argv[1])
         else:
             open_series = Series(
-                os.path.join(assets_dir, "welcome_series", "welcome.ser"),
+                os.path.join(
+                    welcome_series_dir,
+                    "welcome.ser"
+                ),
                 {0: "welcome.0"}
             )
             self.openSeries(open_series)
@@ -527,7 +530,7 @@ class MainWindow(QMainWindow):
         # check series location second (welcome series case)
         if not images_found:
             src_path = os.path.join(
-                os.path.join(self.series.getwdir(), ".."),
+                os.path.dirname(self.series.getwdir()),
                 os.path.basename(section.src)
             )
             images_found = os.path.isfile(src_path) or os.path.isdir(src_path)

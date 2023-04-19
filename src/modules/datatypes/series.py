@@ -12,7 +12,7 @@ from .object_table_item import ObjectTableItem
 
 from modules.constants import (
     createHiddenDir,
-    assets_dir,
+    welcome_series_dir,
     getDefaultPaletteTraces
 )
 try:
@@ -475,7 +475,7 @@ class Series():
     def isWelcomeSeries(self):
         """Return True if self is the welcome series."""
         try:
-            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.ser")):
+            if os.path.samefile(self.filepath, os.path.join(welcome_series_dir, "welcome.ser")):
                 return True
             else:
                 return False

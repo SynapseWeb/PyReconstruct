@@ -9,5 +9,6 @@ from .locations import (
     createHiddenDir,
     src_dir,
     assets_dir,
-    img_dir
+    img_dir,
+    welcome_series_dir
 )

@@ -4,7 +4,6 @@
  "contrast": 0,
  "mag": 0.00015,
  "align_locked": false,
- "thickness": 0.05,
  "tforms": {
   "default": [
    1.0,
@@ -15,5 +14,7 @@
    0.3
   ]
  },
- "contours": {}
+ "thickness": 0.05,
+ "contours": {},
+ "calgrid": false
 }

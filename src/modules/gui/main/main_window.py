@@ -1233,11 +1233,11 @@ class MainWindow(QMainWindow):
 
         ############################################
 
+        data_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr"
+
         # import from zarr
         for z in os.listdir(data_fp):
-            if z.startswith("labels"):
-                name = z[z.find("_")+1:]
-                if name not in groups:
+            if z.startswith("segmentation"):
                     labels_fp = os.path.join(data_fp, z)
                     labelsToObjects(
                         self.series,

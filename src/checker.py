@@ -57,8 +57,8 @@ mainwindow.importTraces(os.path.join(testing_dir, "shapes2.jser"))
 # import ztraces
 mainwindow.importTraces(os.path.join(testing_dir, "shapes2.jser"))
 
-# create/change to a new alignment
-mainwindow.changeAlignment("identity")
+# change to a new alignment
+mainwindow.changeAlignment("default")
 
 # import transforms
 mainwindow.importTransforms(os.path.join(testing_dir, "tforms.txt"))

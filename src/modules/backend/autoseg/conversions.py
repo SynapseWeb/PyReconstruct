@@ -148,19 +148,29 @@ def labelsToObjects(series : Series, labels_fp):
             labels (zarr): the labels zarr object
     """
     labels = zarr.open(labels_fp)
+    raw = zarr.open(os.path.join(
+        os.path.dirname(labels_fp),
+        "raw"
+    ))
 
     # get relevant information from zarr
     offset = labels.attrs["offset"]
     resolution = labels.attrs["resolution"]
-    window = labels.attrs["window"]
-    srange = labels.attrs["srange"]
-    mag = labels.attrs["true_mag"]
-    alignment = labels.attrs["alignment"]
+
+    window = raw.attrs["window"]
+    srange = raw.attrs["srange"]
+    mag = raw.attrs["true_mag"]
+    alignment = raw.attrs["alignment"]
 
     colors = {}  # store colors for each id/object
     for snum in range(*srange):
+        # check if section was segmented
+        z = snum - srange[0] - round(offset[0] / resolution[0])
+        if not 0 <= z < labels.shape[0]:
+            continue
+        # load the section and data
         section = series.loadSection(snum)
-        arr = labels[snum - srange[0]]
+        arr = labels[z]
         # iterate through unique labels
         for id in np.unique(arr):
             if id == 0:

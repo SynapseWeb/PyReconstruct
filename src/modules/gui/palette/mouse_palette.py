@@ -125,12 +125,17 @@ class MousePalette():
         # b.setText(name)
         b.setToolTip(f"{name} ({sc})")
 
+        # manually enter dialog function for grid
+        if name == "Grid":
+            b.contextMenuEvent = self.mainwindow.modifyGrid
+
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default
             b.setChecked(True)
         b.clicked.connect(lambda : self.activateModeButton(name))
         # dictionary -- name : (button object, mouse mode, position)
         self.mode_buttons[name] = (b, mouse_mode, pos)
+
 
         b.show()
     

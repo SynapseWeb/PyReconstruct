@@ -12,8 +12,6 @@
 
 PyReconstruct is an actively maintained, extensible version of **RECONSTRUCT** written entirely in Python. We are currently in alpha testing, but we are happy to make the program available now.
 
-Instructions on installing and running PyReconstruct can be found in this repo's wiki by clicking the wiki button above.
-
 If you have any questions, please do not hesitate to send us a message:
 
 -   Julian Falco: julian.falco@utexas.edu
@@ -23,7 +21,7 @@ If you have any questions, please do not hesitate to send us a message:
 
 # Documentation
 
-Documentation, including installation guide, quickstart, and manuals, can be found in this repo's wiki, by clicking on the wiki button above.
+Documentation, including installation guide, quickstart, and manuals, can be found in [this repo's wiki](https://github.com/SynapseWeb/PyReconstruct/wiki), by clicking on the link or the wiki button above.
 
 
 <a id="submitting-bug-reports-and-feature-requests"></a>

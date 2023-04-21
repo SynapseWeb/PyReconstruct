@@ -78,12 +78,15 @@ class ZarrDialog(QDialog):
         vlayout.addLayout(bobj_row)
 
         # get the section range
+        sections = sorted(list(series.sections.keys()))
         srange_row = QHBoxLayout()
         srnage_text1 = QLabel(self, text="From section")
         self.srange_input1 = QLineEdit(self)
+        self.srange_input1.setText(str(sections[0]))
         resizeLineEdit(self.srange_input1, "0000")
         srange_text2 = QLabel(self, text="to")
         self.srange_input2 = QLineEdit(self)
+        self.srange_input2.setText(str(sections[-1]))
         resizeLineEdit(self.srange_input2, "0000")
         srange_row.addWidget(srnage_text1)
         srange_row.addWidget(self.srange_input1)

@@ -1224,27 +1224,27 @@ class MainWindow(QMainWindow):
             mag
         )
 
-        # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
+        # # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
 
-        ### MICHAEL ADDING FAKE AUTOSEG ############
+        # ### MICHAEL ADDING FAKE AUTOSEG ############
 
-        from modules.backend.autoseg import fake_autoseg
-        fake_autoseg.run(data_fp)
+        # from modules.backend.autoseg import fake_autoseg
+        # fake_autoseg.run(data_fp)
 
-        ############################################
+        # ############################################
 
-        data_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr"
+        # data_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr"
 
-        # import from zarr
-        for z in os.listdir(data_fp):
-            if z.startswith("segmentation"):
-                    labels_fp = os.path.join(data_fp, z)
-                    labelsToObjects(
-                        self.series,
-                        labels_fp
-                    )
+        # # import from zarr
+        # for z in os.listdir(data_fp):
+        #     if z.startswith("segmentation"):
+        #             labels_fp = os.path.join(data_fp, z)
+        #             labelsToObjects(
+        #                 self.series,
+        #                 labels_fp
+        #             )
         
-        self.field.reload()
+        # self.field.reload()
     
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

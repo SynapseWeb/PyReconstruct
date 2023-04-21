@@ -93,7 +93,7 @@ class ZarrDialog(QDialog):
 
         # get the mangification
         mag_row = QHBoxLayout()
-        mag_text = QLabel(self, text="Magnification (pix/µm):")
+        mag_text = QLabel(self, text="Magnification (µm/pix):")
         self.mag_input = QLineEdit(self)
         resizeLineEdit(self.mag_input, "0"*10)
         self.mag_input.setText(

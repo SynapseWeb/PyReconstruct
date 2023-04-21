@@ -33,12 +33,12 @@ class ObjectGroupDialog(QDialog):
         self.group_input.addItem("")
         self.group_input.addItems(sorted(objgroupdict.getGroupList()))
         self.group_input.resize(self.group_input.sizeHint())
-        group_row.addWidget(self.group_text)
+        group_row.addWidget(group_text)
         group_row.addWidget(self.group_input)
         if new_group:
             newgroup_bttn = QPushButton(self, "new_group", text="New Group...")
             newgroup_bttn.clicked.connect(self.newGroup)
-            group_row.addWidget(self.newgroup_bttn)
+            group_row.addWidget(newgroup_bttn)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)

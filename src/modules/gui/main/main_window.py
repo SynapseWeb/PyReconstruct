@@ -39,7 +39,7 @@ from modules.backend.func import (
 )
 from modules.backend.autoseg import seriesToZarr, labelsToObjects
 from modules.datatypes import Series, Transform
-from modules.constants import assets_dir, img_dir
+from modules.constants import assets_dir, img_dir, src_dir
 
 
 class MainWindow(QMainWindow):
@@ -1224,27 +1224,39 @@ class MainWindow(QMainWindow):
             mag
         )
 
-        # # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
+        # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
 
-        # ### MICHAEL ADDING FAKE AUTOSEG ############
+        ### MICHAEL ADDING FAKE AUTOSEG ############
 
-        # from modules.backend.autoseg import fake_autoseg
-        # fake_autoseg.run(data_fp)
+        from modules.backend.autoseg.vijay import predict, hierarchical
 
-        # ############################################
+        predict(
+            data_fp,
+            "raw",
+            None,
+            os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
+            checkpoint_path,
+            out_file=data_fp
+        )
 
-        # data_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr"
+        hierarchical.run(
+            data_fp,
+            "affs_30000",
+            thresholds=[0.5]
+        )
 
-        # # import from zarr
-        # for z in os.listdir(data_fp):
-        #     if z.startswith("segmentation"):
-        #             labels_fp = os.path.join(data_fp, z)
-        #             labelsToObjects(
-        #                 self.series,
-        #                 labels_fp
-        #             )
+        ############################################
+
+        # import from zarr
+        for z in os.listdir(data_fp):
+            if z.startswith("segmentation"):
+                labels_fp = os.path.join(data_fp, z)
+                labelsToObjects(
+                    self.series,
+                    labels_fp
+                )
         
-        # self.field.reload()
+        self.field.reload()
     
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

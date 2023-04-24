@@ -1,3 +1,6 @@
 [submodule "src/modules/backend/autoseg/fake_autoseg"]
 	path = src/modules/backend/autoseg/fake_autoseg
 	url = https://github.com/SynapseWeb/submod_testing
+[submodule "src/modules/backend/autoseg/vijay"]
+	path = src/modules/backend/autoseg/vijay
+	url = https://github.com/yajivunev/autoseg

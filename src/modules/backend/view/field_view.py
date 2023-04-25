@@ -79,8 +79,9 @@ class FieldView():
             self.b_section.selected_traces = []
         
         self.generateView()
+
         # notify that the series has been modified
-        self.mainwindow.seriesModified(True)
+        # self.mainwindow.seriesModified(True)
     
     def reloadImage(self):
         """Reload the section images (used if transform or image source is modified)."""

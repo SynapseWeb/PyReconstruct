@@ -148,17 +148,7 @@ class ZarrDialog(QDialog):
             self.remove_bttn.hide()
     
     def accept(self):
-        """Overwritten from QDialog."""
-        # check that at least one group is selected
-        group_selected = False
-        for text, input in self.group_widgets:
-            if input.currentText():
-                group_selected = True
-                break
-        if not group_selected:
-            notify("Please select an object group.")
-            return
-        
+        """Overwritten from QDialog."""        
         # check that border object is valid
         bobj = self.bobj_input.text()
         if bobj not in self.series.objs:

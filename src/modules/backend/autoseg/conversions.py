@@ -177,7 +177,7 @@ def seriesToZarr(
 
     # save attributes
     data_zg["raw"].attrs["offset"] = offset
-    data_zg["raw"].attrs["resolution"] = resolution 
+    data_zg["raw"].attrs["resolution"] = [50, 8, 8] # resolution 
 
     # save additional attributes for loading back into jser
     data_zg["raw"].attrs["window"] = window
@@ -355,6 +355,7 @@ def import_section(data_zg, group, snum, series, colors, counter):
             # create the trace and add to section
             trace = Trace(name=str(id), color=c)
             trace.points = trace_points
+            trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace, log_message="Imported from autoseg data")
     section.save()
     print(f"Section {snum} importing finished")

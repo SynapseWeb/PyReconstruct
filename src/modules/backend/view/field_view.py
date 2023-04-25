@@ -40,11 +40,8 @@ class FieldView():
         self.section_layer = SectionLayer(self.section, self.series)
 
         # create zarr view if applicable
-        if self.series.zarr_overlay_fp:
-            self.zarr_layer = ZarrLayer(self.series)
-        else:
-            self.zarr_layer = None
-
+        self.createZarrLayer()
+        
         # b section and view placeholder
         self.b_section = None
         self.b_section_layer = None
@@ -90,6 +87,13 @@ class FieldView():
         # notify that the series has been modified
         # self.mainwindow.seriesModified(True)
     
+    def createZarrLayer(self):
+        """Create a zarr layer."""
+        if self.series.zarr_overlay_fp:
+            self.zarr_layer = ZarrLayer(self.series)
+        else:
+            self.zarr_layer = None
+
     def reloadImage(self):
         """Reload the section images (used if transform or image source is modified)."""
         self.section_layer.loadImage()

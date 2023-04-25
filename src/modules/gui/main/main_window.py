@@ -222,7 +222,7 @@ class MainWindow(QMainWindow):
                 "text": "Autosegment",
                 "opts":
                 [
-                    ("autosegment_act", "Run autosegmentation...", "", self.autoseg)
+                    ("autosegment_act", "Run autosegmentation...", "", self.setUpAutoseg)
                 ]
             }
         ]
@@ -1206,8 +1206,8 @@ class MainWindow(QMainWindow):
         self.series.options["grid"] = response
         self.seriesModified()
 
-    def autoseg(self):
-        """Autosegment a series."""
+    def setUpAutoseg(self):
+        """Set up an autosegmentation for a series."""
         self.saveAllData()
 
         inputs, confirmed = ZarrDialog(self, self.series).exec()
@@ -1216,20 +1216,25 @@ class MainWindow(QMainWindow):
         
         # export to zarr
         groups, border_obj, srange, mag = inputs
-        data_fp = seriesToZarr(
+        seriesToZarr(
             self.series,
             groups,
             border_obj,
             srange,
-            mag
+            mag,
+            self.runAutoseg
         )
-
-        # RUN THE AUTOSEG FUNCTION ON THIS ZARR GROUP
-
-        ### MICHAEL ADDING FAKE AUTOSEG ############
-
+    
+    def runAutoseg(self, data_fp : str):
+        """Run an autosegmentation.
+        
+            Params:
+                data_fp (str): the filepath for the zarr
+        """
         from modules.backend.autoseg.vijay import predict, hierarchical
 
+        checkpoint_path = ""
+        
         predict(
             data_fp,
             "raw",
@@ -1245,19 +1250,25 @@ class MainWindow(QMainWindow):
             thresholds=[0.5]
         )
 
-        ############################################
-
+        self.importAutoseg(data_fp)
+    
+    def importAutoseg(self, data_fp):
+        """Import labels from an autosegmentation.
+        
+            Params:
+                data_fp (str): the filepath for the zarr
+        """
         # import from zarr
         for z in os.listdir(data_fp):
             if z.startswith("segmentation"):
-                labels_fp = os.path.join(data_fp, z)
                 labelsToObjects(
                     self.series,
-                    labels_fp
+                    data_fp,
+                    z,
+                    self.field.reload
                 )
-        
-        self.field.reload()
-    
+        print("Done!")
+            
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         if self.series.options["autosave"]:

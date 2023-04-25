@@ -1234,10 +1234,9 @@ class MainWindow(QMainWindow):
         from modules.backend.autoseg.vijay import predict, hierarchical
 
         checkpoint_path = ""
-        
+
         predict(
-            data_fp,
-            "raw",
+            [(data_fp, "raw")],
             None,
             os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
             checkpoint_path,

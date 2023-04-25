@@ -5,6 +5,7 @@ from datetime import datetime
 
 from .ztrace import Ztrace
 from .section import Section
+from .contour import Contour
 from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
@@ -14,6 +15,9 @@ from modules.constants import (
     createHiddenDir,
     assets_dir
 )
+
+from modules.calc import mergeTraces
+
 try:
     from modules.gui.utils import progbar
     prog_imported = True
@@ -838,6 +842,55 @@ class Series():
         for l in default_traces:
             palette_traces.append(Trace.fromList(l.copy()))
         return palette_traces * 2
+
+    def mergeObjects(self, obj_names : list, new_name : str):
+        """Merge objects on every section.
+        
+            Params:
+                obj_names (list): the names of the objects to merge
+                new_name (str): the name for the merged object
+        """
+        # iterate through sections
+        for snum, section in self.enumerateSections(message="Merging objects..."):
+            # get the traces to modify
+            traces = []
+            for name in obj_names:
+                if name in section.contours:
+                    traces += section.contours[name].getTraces()
+                    del(section.contours[name])
+            if not traces:
+                continue
+
+            # get the color
+            color = traces[0].color
+
+            # iterate through and gather pixel points
+            pix_traces = []
+            for trace in traces:
+                trace.name = new_name
+                pix_traces.append(
+                    [(round(x / section.mag), round(y / section.mag)) for x, y in trace.points]
+                )
+            
+            # merge the traces
+            new_pix_traces = mergeTraces(pix_traces)
+
+            # create a new contour from the traces
+            contour = Contour(new_name)
+            for pix_trace in new_pix_traces:
+                # convert pixels back to field coords
+                field_points = [
+                    (x * section.mag, y * section.mag) for x, y in pix_trace
+                ]
+                # create the trace
+                trace = Trace(new_name, color)
+                trace.points = field_points
+                # add it to the contour
+                contour.append(trace)
+            section.contours[new_name] = contour
+
+            # save thes section
+            section.save()
 
 
 class SeriesIterator():

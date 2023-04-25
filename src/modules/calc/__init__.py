@@ -16,3 +16,9 @@ from .quantification import (
     lineIntersectsContour,
     colorize
 )
+from .grid import (
+    mergeTraces,
+    cutTraces,
+    reducePoints,
+    getExterior
+)

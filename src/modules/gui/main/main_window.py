@@ -255,6 +255,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
+                    ("mergeobjects_act", "Merge objects...", "", self.mergeObjects),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
@@ -1225,7 +1226,7 @@ class MainWindow(QMainWindow):
         )
         if not zarr_dir:
             return
-        
+
         self.series.zarr_overlay_fp = zarr_dir
         self.field.createZarrLayer()
         self.field.generateView()
@@ -1242,20 +1243,22 @@ class MainWindow(QMainWindow):
 
         # self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/dsnyj_crop.zarr")
 
-        inputs, confirmed = ZarrDialog(self, self.series).exec()
-        if not confirmed:
-            return
+        # inputs, confirmed = ZarrDialog(self, self.series).exec()
+        # if not confirmed:
+        #     return
         
-        # export to zarr
-        groups, border_obj, srange, mag = inputs
-        seriesToZarr(
-            self.series,
-            groups,
-            border_obj,
-            srange,
-            mag,
-            self.runAutoseg
-        )
+        # # export to zarr
+        # groups, border_obj, srange, mag = inputs
+        # seriesToZarr(
+        #     self.series,
+        #     groups,
+        #     border_obj,
+        #     srange,
+        #     mag,
+        #     self.runAutoseg
+        # )
+
+        self.importAutoseg(r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr")
     
     def runAutoseg(self, data_fp : str):
         """Run an autosegmentation.
@@ -1301,6 +1304,30 @@ class MainWindow(QMainWindow):
                     self.field.reload
                 )
         print("Done!")
+    
+    def mergeObjects(self, new_name=None):
+        """Merge full objects across the series.
+        
+            Params:
+                new_name (str): the new name for the merged objects
+        """            
+        names = set()
+        for trace in self.field.section.selected_traces:
+            names.add(trace.name)
+        names = list(names)
+        
+        if not new_name:
+            new_name, confirmed = QInputDialog.getText(
+                self,
+                "Object Name",
+                "Enter the desired name for the merged object:",
+                text=names[0]
+            )
+            if not confirmed or not new_name:
+                return
+        
+        self.series.mergeObjects(names, new_name)
+        self.field.reload()
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

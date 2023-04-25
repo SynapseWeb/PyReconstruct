@@ -1210,20 +1210,22 @@ class MainWindow(QMainWindow):
         """Set up an autosegmentation for a series."""
         self.saveAllData()
 
-        inputs, confirmed = ZarrDialog(self, self.series).exec()
-        if not confirmed:
-            return
+        self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/dsnyj_crop.zarr")
+
+        # inputs, confirmed = ZarrDialog(self, self.series).exec()
+        # if not confirmed:
+        #     return
         
-        # export to zarr
-        groups, border_obj, srange, mag = inputs
-        seriesToZarr(
-            self.series,
-            groups,
-            border_obj,
-            srange,
-            mag,
-            self.runAutoseg
-        )
+        # # export to zarr
+        # groups, border_obj, srange, mag = inputs
+        # seriesToZarr(
+        #     self.series,
+        #     groups,
+        #     border_obj,
+        #     srange,
+        #     mag,
+        #     self.runAutoseg
+        # )
     
     def runAutoseg(self, data_fp : str):
         """Run an autosegmentation.
@@ -1235,11 +1237,11 @@ class MainWindow(QMainWindow):
 
         print("Running predictions...")
 
-        checkpoint_path = ""
+        checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
 
         predict(
             [(data_fp, "raw")],
-            None,
+            ((500, 4000, 4000), (1500, 8000, 8000)),
             os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
             checkpoint_path,
             out_file=data_fp

@@ -160,9 +160,9 @@ def seriesToZarr(
     if os.path.isdir(data_fp):  # delete existing data.zarr
         shutil.rmtree(data_fp)
     data_zg = zarr.open(data_fp, "a")
-    data_zg["raw"] = zarr.empty(shape=shape, chunks=(1, 256, 256))
+    data_zg["raw"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
     for group in groups:
-        data_zg[f"labels_{group}"] = zarr.empty(shape=shape, chunks=(1, 256, 256))
+        data_zg[f"labels_{group}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
     
     # get values for saving zarr files (from last known section)
     z_res = int(section.thickness * 1000)

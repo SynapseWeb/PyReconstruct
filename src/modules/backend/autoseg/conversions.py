@@ -196,6 +196,7 @@ def seriesToZarr(
 
     # create threadpool and interate through series
     threadpool = QThreadPool()
+    threadpool.setMaxThreadCount(10)
     counter = Counter(
         len(range(*srange)),
         finished_fn,
@@ -232,6 +233,7 @@ def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn):
     # create threadpool and iterate through sections
     colors = {}  # store colors for each id/object
     threadpool = QThreadPool()
+    threadpool.setMaxThreadCount(10)
     counter = Counter(
         len(range(*srange)),
         finished_fn

@@ -1233,6 +1233,8 @@ class MainWindow(QMainWindow):
         """
         from modules.backend.autoseg.vijay import predict, hierarchical
 
+        print("Running predictions...")
+
         checkpoint_path = ""
 
         predict(

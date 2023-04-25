@@ -1,6 +1,7 @@
 from PySide6.QtGui import QPainter
 
 from .section_layer import SectionLayer
+from .zarr_layer import ZarrLayer
 
 from modules.datatypes import (
     Series,
@@ -37,6 +38,12 @@ class FieldView():
 
         # create section view
         self.section_layer = SectionLayer(self.section, self.series)
+
+        # create zarr view if applicable
+        if self.series.zarr_overlay_fp:
+            self.zarr_layer = ZarrLayer(self.series)
+        else:
+            self.zarr_layer = None
 
         # b section and view placeholder
         self.b_section = None
@@ -667,6 +674,18 @@ class FieldView():
             painter = QPainter(view)
             painter.setOpacity(0.5)
             painter.drawPixmap(0, 0, b_view)
+            painter.end()
+        
+        # overlay zarr if requested
+        if self.zarr_layer:
+            zarr_layer = self.zarr_layer.generateZarrLayer(
+                self.section,
+                pixmap_dim,
+                self.series.window
+            )
+            painter = QPainter(view)
+            painter.setOpacity(0.3)
+            painter.drawPixmap(0, 0, zarr_layer)
             painter.end()
         
         return view

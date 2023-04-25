@@ -83,6 +83,9 @@ class Series():
         # default settings
         self.modified_ztraces = []
 
+        # possible zarr overlay
+        self.zarr_overlay_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr\segmentation_0.5_clean"
+
         # ADDED SINCE JAN 25TH
 
         self.options = series_data["options"]

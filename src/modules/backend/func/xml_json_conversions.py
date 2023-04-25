@@ -1,7 +1,7 @@
 import os
 import json
 
-from .grid import reducePoints
+from modules.calc import reducePoints
 
 from modules.constants import blank_section, blank_series_no_contours
 from modules.gui.utils import progbar

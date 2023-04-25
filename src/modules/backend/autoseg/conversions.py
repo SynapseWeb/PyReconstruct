@@ -4,13 +4,11 @@ import shutil
 import traceback
 import numpy as np
 import cv2
-import random
 import zarr
 
 from modules.datatypes import Series, Transform, Trace
 from modules.backend.view import SectionLayer
-from modules.backend.func import reducePoints
-from modules.calc import colorize
+from modules.calc import colorize, reducePoints
 
 from PySide6.QtCore import (
     QRunnable,

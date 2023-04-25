@@ -1247,7 +1247,7 @@ class MainWindow(QMainWindow):
 
         hierarchical.run(
             data_fp,
-            "affs_30000",
+            "pred_affs_30000",
             thresholds=[0.5]
         )
 

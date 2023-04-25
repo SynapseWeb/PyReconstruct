@@ -10,6 +10,7 @@ import zarr
 from modules.datatypes import Series, Transform, Trace
 from modules.backend.view import SectionLayer
 from modules.backend.func import reducePoints
+from modules.calc import colorize
 
 from PySide6.QtCore import (
     QRunnable,
@@ -270,22 +271,6 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
-def randomColor():
-    """Return a random color (rgb or primary)."""
-    r = random.randint(1, 6)
-    if r == 1:
-        return (255, 0, 0)
-    elif r == 2:
-        return (0, 255, 0)
-    elif r == 3:
-        return (0, 0, 255)
-    elif r == 4:
-        return (0, 255, 255)
-    elif r == 5:
-        return (255, 0, 255)
-    elif r == 6:
-        return (255, 255, 0)
-
 def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim, counter):
     print(f"Section {snum} exporting started")
     section = series.loadSection(snum)
@@ -347,13 +332,9 @@ def import_section(data_zg, group, snum, series, colors, counter):
             ext[:,1] += window[1]
             # apply reverse transform
             tform = Transform(alignment[str(snum)])
-            trace_points = tform.map(ext.tolist(), inverted=True)
-            # get the trace color
-            if id not in colors:
-                colors[id] = randomColor()
-            c = colors[id]               
+            trace_points = tform.map(ext.tolist(), inverted=True)          
             # create the trace and add to section
-            trace = Trace(name=str(id), color=c)
+            trace = Trace(name=str(id), color=colorize(id))
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace, log_message="Imported from autoseg data")

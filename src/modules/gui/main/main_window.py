@@ -214,7 +214,17 @@ class MainWindow(QMainWindow):
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
-                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
+                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    None,
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
                 ]
             },
             {
@@ -1205,6 +1215,26 @@ class MainWindow(QMainWindow):
         
         self.series.options["grid"] = response
         self.seriesModified()
+    
+    def setZarrLayer(self):
+        """Set a zarr layer."""
+        zarr_dir = QFileDialog.getExistingDirectory(
+            self,
+            "Select overlay zarr",
+            dir=self.explorer_dir
+        )
+        if not zarr_dir:
+            return
+        
+        self.series.zarr_overlay_fp = zarr_dir
+        self.field.createZarrLayer()
+        self.field.generateView()
+    
+    def removeZarrLayer(self):
+        """Remove an existing zarr layer."""
+        self.series.zarr_overlay_fp = None
+        self.field.createZarrLayer()
+        self.field.generateView()
 
     def setUpAutoseg(self):
         """Set up an autosegmentation for a series."""

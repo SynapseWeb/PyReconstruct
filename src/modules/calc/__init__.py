@@ -14,4 +14,5 @@ from .quantification import (
     ccw,
     linesIntersect,
     lineIntersectsContour,
+    colorize
 )

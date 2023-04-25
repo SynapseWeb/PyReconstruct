@@ -84,7 +84,7 @@ class Series():
         self.modified_ztraces = []
 
         # possible zarr overlay
-        self.zarr_overlay_fp = None #"/work/07087/mac539/ls6/autoseg-testing/data.zarr/pred_affs_30000"
+        self.zarr_overlay_fp = None
 
         # ADDED SINCE JAN 25TH
 

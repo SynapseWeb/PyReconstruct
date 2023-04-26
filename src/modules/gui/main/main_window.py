@@ -1272,15 +1272,23 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Exporting series to zarr...",
+            cancel=False
+        )
+        
         # export to zarr
         groups, border_obj, srange, mag = inputs
-        seriesToZarr(
+        self.temp_threadpool = seriesToZarr(
             self.series,
             groups,
             border_obj,
             srange,
             mag,
-            self.runAutoseg
+            self.runAutoseg,
+            update
         )
         
     def runAutoseg(self, data_fp : str):
@@ -1289,25 +1297,27 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
-        from modules.backend.autoseg.vijay import predict, hierarchical
+        # from modules.backend.autoseg.vijay import predict, hierarchical
 
-        print("Running predictions...")
+        # print("Running predictions...")
 
-        checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
+        # checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
 
-        predict(
-            [(data_fp, "raw")],
-            None,
-            os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
-            checkpoint_path,
-            out_file=data_fp
-        )
+        # predict(
+        #     [(data_fp, "raw")],
+        #     None,
+        #     os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
+        #     checkpoint_path,
+        #     out_file=data_fp
+        # )
 
-        hierarchical.run(
-            data_fp,
-            "pred_affs_30000",
-            thresholds=[0.5]
-        )
+        # hierarchical.run(
+        #     data_fp,
+        #     "pred_affs_30000",
+        #     thresholds=[0.5]
+        # )
+
+        data_fp = r"C:\Users\jfalco\Documents\Series\DSNYJ_JSER\dsnyj_crop.zarr"
 
         self.setZarrLayer(data_fp)
     
@@ -1329,15 +1339,21 @@ class MainWindow(QMainWindow):
         
         self.series.zarr_overlay_fp = None
         self.series.zarr_overlay_group = None
+
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Importing segmentation...",
+            cancel=False
+        )
         
-        labelsToObjects(
+        self.temp_threadpool = labelsToObjects(
             self.series,
             data_fp,
             group_name,
-            self.field.reload
+            self.field.reload,
+            update
         )
-        
-        print("Done!")
     
     def mergeObjects(self, new_name=None):
         """Merge full objects across the series.

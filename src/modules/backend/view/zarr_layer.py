@@ -36,7 +36,9 @@ class ZarrLayer():
     
     def loadZarrData(self):
         """Load the relevant data from the zarr file."""
-        self.zarr = zarr.open(self.series.zarr_overlay_fp)
+        group = zarr.open(self.series.zarr_overlay_fp)
+        self.zarr = group[self.series.zarr_overlay_group]
+        raw = group["raw"]
 
         # check if labels or otherwise
         self.is_labels = (len(self.zarr.shape) == 3)
@@ -46,10 +48,6 @@ class ZarrLayer():
         resolution = self.zarr.attrs["resolution"]
 
         # get the relevant data from the raw in the zarr folder
-        raw = zarr.open(os.path.join(
-            os.path.dirname(self.series.zarr_overlay_fp),
-            "raw"
-        ))
         self.zarr_x, self.zarr_y = tuple(raw.attrs["window"][:2])
         self.zarr_s = raw.attrs["srange"][0]
         self.zarr_mag = raw.attrs["true_mag"]

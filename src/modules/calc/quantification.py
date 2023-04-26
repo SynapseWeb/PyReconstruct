@@ -171,6 +171,6 @@ def colorize(n):
     cn = (n % 256) ** 3
     c = [0, 0, 0]
     for i in range(3):
-        c[i] = int(cn % 256)
+        c[i] = cn % 256
         cn //= 256
     return c

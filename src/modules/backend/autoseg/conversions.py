@@ -332,7 +332,7 @@ def import_section(data_zg, group, snum, series, colors, counter):
             tform = Transform(alignment[str(snum)])
             trace_points = tform.map(ext.tolist(), inverted=True)          
             # create the trace and add to section
-            trace = Trace(name=str(id), color=colorize(id))
+            trace = Trace(name=str(id), color=tuple(map(int, colorize(id))))
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace, log_message="Imported from autoseg data")

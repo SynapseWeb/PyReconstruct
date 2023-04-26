@@ -89,7 +89,7 @@ class FieldView():
     
     def createZarrLayer(self):
         """Create a zarr layer."""
-        if self.series.zarr_overlay_fp:
+        if self.series.zarr_overlay_fp and self.series.zarr_overlay_group:
             self.zarr_layer = ZarrLayer(self.series)
         else:
             self.zarr_layer = None
@@ -687,10 +687,11 @@ class FieldView():
                 pixmap_dim,
                 self.series.window
             )
-            painter = QPainter(view)
-            painter.setOpacity(0.3)
-            painter.drawPixmap(0, 0, zarr_layer)
-            painter.end()
+            if zarr_layer:
+                painter = QPainter(view)
+                painter.setOpacity(0.3)
+                painter.drawPixmap(0, 0, zarr_layer)
+                painter.end()
         
         return view
     

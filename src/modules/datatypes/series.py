@@ -89,6 +89,7 @@ class Series():
 
         # possible zarr overlay
         self.zarr_overlay_fp = None
+        self.zarr_overlay_group = None
 
         # ADDED SINCE JAN 25TH
 
@@ -863,31 +864,37 @@ class Series():
 
             # get the color
             color = traces[0].color
+            fill_mode = traces[0].fill_mode
+
+            # get the mag
+            if self.screen_mag:
+                mag = self.screen_mag
+            else:
+                mag = section.mag
 
             # iterate through and gather pixel points
             pix_traces = []
             for trace in traces:
                 trace.name = new_name
                 pix_traces.append(
-                    [(round(x / section.mag), round(y / section.mag)) for x, y in trace.points]
+                    [(round(x / mag), round(y / mag)) for x, y in trace.points]
                 )
             
             # merge the traces
             new_pix_traces = mergeTraces(pix_traces)
 
             # create a new contour from the traces
-            contour = Contour(new_name)
             for pix_trace in new_pix_traces:
                 # convert pixels back to field coords
                 field_points = [
-                    (x * section.mag, y * section.mag) for x, y in pix_trace
+                    (x * mag, y * mag) for x, y in pix_trace
                 ]
                 # create the trace
                 trace = Trace(new_name, color)
+                trace.fill_mode = fill_mode
                 trace.points = field_points
                 # add it to the contour
-                contour.append(trace)
-            section.contours[new_name] = contour
+                section.addTrace(trace, "Created by merging objects")
 
             # save thes section
             section.save()

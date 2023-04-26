@@ -1,114 +1,13 @@
 import os
-import sys
 import shutil
-import traceback
 import numpy as np
 import cv2
 import zarr
 
 from modules.datatypes import Series, Transform, Trace
 from modules.backend.view import SectionLayer
+from modules.backend.threading import ThreadPool
 from modules.calc import colorize, reducePoints
-
-from PySide6.QtCore import (
-    QRunnable,
-    Slot,
-    Signal,
-    QObject,
-    QThreadPool
-)
-
-# THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
-
-class WorkerSignals(QObject):
-    '''
-    Defines the signals available from a running worker thread.
-
-    Supported signals are:
-
-    finished
-        No data
-
-    error
-        tuple (exctype, value, traceback.format_exc() )
-
-    result
-        object data returned from processing, anything
-
-    progress
-        int indicating % progress
-
-    '''
-    error = Signal(tuple)
-    result = Signal(tuple)
-    finished = Signal()
-
-
-class Worker(QRunnable):
-    '''
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    '''
-
-    def __init__(self, fn, *args):
-        super(Worker, self).__init__()
-
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.signals = WorkerSignals()
-
-    @Slot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args.
-        '''
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try:
-            result = self.fn(*self.args)
-        except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
-        finally:
-            self.signals.finished.emit()
-
-
-class Counter():
-
-    def __init__(self, n : int, end_fn, *end_args):
-        """Create the counter object.
-        
-            n (int): the threshold number that runs function when reached
-            end_fn (function): the function that will be exectued when the list is complete
-            *end_args: the arguments to include in the function when run
-        """
-        self.n = n
-        self.count = 0
-        self.fn = end_fn
-        self.args = end_args
-    
-    def inc(self):
-        """Add a number to the count.
-            
-            Params:
-                n (int): the number to add to the count
-        """
-        self.count += 1
-        if self.count == self.n:
-            self.fn(*self.args)
-
 
 def seriesToZarr(
         series : Series,
@@ -116,7 +15,8 @@ def seriesToZarr(
         border_obj : str,
         srange : tuple,
         mag : float,
-        finished_fn):
+        finished_fn=None,
+        update=None):
     """Convert a series into a zarr file usable by neuroglancer.
     
         Params:
@@ -126,6 +26,9 @@ def seriesToZarr(
             srange (tuple): the range of sections (exclusive)
             mag (float): the microns per pixel for the zarr file
             finished_fn (function): the function to run when finished
+            update (function): the function to update a progress bar
+        Returns:
+            the filepath for the zarr, the threadpool
     """
     # get the border window
     x_vals = []
@@ -163,6 +66,21 @@ def seriesToZarr(
     for group in groups:
         data_zg[f"labels_{group}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
     
+    # create threadpool and interate through series
+    threadpool = ThreadPool(update=update)
+    for snum in range(*srange):
+        threadpool.createWorker(
+            export_section,
+            data_zg,
+            snum,
+            series,
+            groups,
+            srange,
+            window,
+            pixmap_dim
+        )
+    threadpool.startAll(finished_fn, data_fp)
+    
     # get values for saving zarr files (from last known section)
     z_res = int(section.thickness * 1000)
     xy_res = int(mag * 1000)
@@ -192,32 +110,10 @@ def seriesToZarr(
         data_zg[f"labels_{group}"].attrs["srange"] = srange
         data_zg[f"labels_{group}"].attrs["true_mag"] = mag
         data_zg[f"labels_{group}"].attrs["alignment"] = alignment
-
-    # create threadpool and interate through series
-    threadpool = QThreadPool()
-    threadpool.setMaxThreadCount(10)
-    counter = Counter(
-        len(range(*srange)),
-        finished_fn,
-        data_fp
-    )
-    for snum in range(*srange):
-        worker = Worker(
-            export_section,
-            data_zg,
-            snum,
-            series,
-            groups,
-            srange,
-            window,
-            pixmap_dim,
-            counter
-        )
-        threadpool.start(worker)
     
-    return data_fp
+    return threadpool  # pass the threadpool to keep in memory
 
-def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn):
+def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn=None, update=None):
     """Convert labels in a zarr file to objects in a series.
     
         Params:
@@ -225,29 +121,26 @@ def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn):
             data_zg (str): the filepath for the zarr group
             group (str): the name of the group with labels of interest
             finished_fn (function): the function to run when finished
+            update (function): the function to update a progress bar
+        Returns:
+            the threadpool
     """
     data_zg = zarr.open(data_fp)
     srange = data_zg["raw"].attrs["srange"]
 
     # create threadpool and iterate through sections
-    colors = {}  # store colors for each id/object
-    threadpool = QThreadPool()
-    threadpool.setMaxThreadCount(10)
-    counter = Counter(
-        len(range(*srange)),
-        finished_fn
-    )
+    threadpool = ThreadPool(update=update)
     for snum in range(*srange):
-        worker = Worker(
+        threadpool.createWorker(
             import_section,
             data_zg,
             group,
             snum,
-            series,
-            colors,
-            counter
+            series
         )
-        threadpool.start(worker)
+    threadpool.startAll(finished_fn)
+    
+    return threadpool  # pass the threadpool to keep in memory
 
 def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
     """Get the exteriors from a mask.
@@ -269,7 +162,7 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
-def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim, counter):
+def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim):
     print(f"Section {snum} exporting started")
     section = series.loadSection(snum)
     slayer = SectionLayer(section, series)
@@ -287,9 +180,8 @@ def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim, co
             series.object_groups.getGroupObjects(group)
         )
     print(f"Section {snum} exporting finished")
-    counter.inc()
 
-def import_section(data_zg, group, snum, series, colors, counter):
+def import_section(data_zg, group, snum, series):
     print(f"Section {snum} importing started")
     # get relevant information from zarr
     labels = data_zg[group]
@@ -305,7 +197,6 @@ def import_section(data_zg, group, snum, series, colors, counter):
     # check if section was segmented
     z = snum - srange[0] - round(offset[0] / resolution[0])
     if not 0 <= z < labels.shape[0]:
-        counter.inc()
         print(f"Section {snum} importing finished")
         return
     # load the section and data
@@ -338,4 +229,3 @@ def import_section(data_zg, group, snum, series, colors, counter):
             section.addTrace(trace, log_message="Imported from autoseg data")
     section.save()
     print(f"Section {snum} importing finished")
-    counter.inc()

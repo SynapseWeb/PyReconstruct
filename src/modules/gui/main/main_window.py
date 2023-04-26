@@ -1272,15 +1272,23 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Exporting series to zarr...",
+            cancel=False
+        )
+        
         # export to zarr
         groups, border_obj, srange, mag = inputs
-        seriesToZarr(
+        self.temp_threadpool = seriesToZarr(
             self.series,
             groups,
             border_obj,
             srange,
             mag,
-            self.runAutoseg
+            self.runAutoseg,
+            update
         )
         
     def runAutoseg(self, data_fp : str):
@@ -1329,15 +1337,21 @@ class MainWindow(QMainWindow):
         
         self.series.zarr_overlay_fp = None
         self.series.zarr_overlay_group = None
+
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Importing segmentation...",
+            cancel=False
+        )
         
-        labelsToObjects(
+        self.temp_threadpool = labelsToObjects(
             self.series,
             data_fp,
             group_name,
-            self.field.reload
+            self.field.reload,
+            update
         )
-        
-        print("Done!")
     
     def mergeObjects(self, new_name=None):
         """Merge full objects across the series.

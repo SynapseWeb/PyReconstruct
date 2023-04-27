@@ -20,7 +20,7 @@ from PySide6.QtCore import Qt
 from .field_widget import FieldWidget
 
 from modules.gui.palette import MousePalette, ZarrPalette
-from modules.gui.dialog import AlignmentDialog, ZarrDialog, GridDialog
+from modules.gui.dialog import AlignmentDialog, CreateZarrDialog, GridDialog
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
     progbar,
@@ -233,8 +233,18 @@ class MainWindow(QMainWindow):
                 "text": "Autosegment",
                 "opts":
                 [
-                    ("autoseg_act", "Run autosegmentation...", "", lambda : self.setUpAutoseg(run="segment"))
-                    ("trainautoseg_act", "Train autosegmentation model...", "", lambda : self.setUpAutoseg(run="train"))
+                    ("Export to zarr...", "", self.exportToZarr),
+                    ("Train...", "", self.train),
+                    ("Segment...", "", self.segment),
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
                 ]
             }
         ]
@@ -1263,7 +1273,7 @@ class MainWindow(QMainWindow):
         self.field.createZarrLayer()
         self.field.generateView()
 
-    def setUpAutoseg(self, run : str):
+    def exportToZarr(self):
         """Set up an autosegmentation for a series.
         
             Params:
@@ -1271,9 +1281,16 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
-        # self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/dsnyj_crop.zarr")
+        data_fp = None
 
-        inputs, confirmed = ZarrDialog(self, self.series).exec()
+        if data_fp:
+            self.exportLabels(data_fp)
+        else:
+            self.createZarr()
+        
+    def createZarr(self):
+        """Create a new zarr file from scracth"""
+        inputs, confirmed = CreateZarrDialog(self, self.series).exec()
         if not confirmed:
             return
         
@@ -1283,13 +1300,6 @@ class MainWindow(QMainWindow):
             "Exporting series to zarr...",
             cancel=False
         )
-
-        if run == "train":
-            fn = self.trainAutoseg
-        elif run == "segment":
-            fn = self.runAutoseg
-        else:
-            fn = None
         
         # export to zarr
         groups, border_obj, srange, mag = inputs
@@ -1299,9 +1309,14 @@ class MainWindow(QMainWindow):
             border_obj,
             srange,
             mag,
-            fn,
-            update
+            update=update
         )
+    
+    def exportToZarr(self, data_fp : str):
+        """Export contours as labels to an existing zarr.
+        
+            Params:
+                data_fp (str): the file path for the zarr"""
     
     def trainAutoseg(self, data_fp : str):
         """Train an autosegmentation model.

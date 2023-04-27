@@ -57,7 +57,7 @@ def seriesToZarr(
     # create the zarr files
     data_fp = os.path.join(
         os.path.dirname(series.jser_fp),
-        "data.zarr"
+        f"data_{border_obj}.zarr"
     )
     if os.path.isdir(data_fp):  # delete existing data.zarr
         shutil.rmtree(data_fp)

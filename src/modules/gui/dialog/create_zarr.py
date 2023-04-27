@@ -15,7 +15,7 @@ from .helper import resizeLineEdit
 from modules.datatypes import Series
 from modules.gui.utils import notify
 
-class ZarrDialog(QDialog):
+class CreateZarrDialog(QDialog):
 
     def __init__(self, parent : QWidget, series : Series):
         """Create a zarr dialog.

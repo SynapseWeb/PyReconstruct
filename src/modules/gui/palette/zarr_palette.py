@@ -69,7 +69,7 @@ class ZarrPalette():
             Params:
                 group_name (str): the name of the group to change to
         """
-        if group_name.startswith("segmentation"):
+        if group_name.startswith("seg"):
             self.bttn.show()
         else:
             self.bttn.hide()

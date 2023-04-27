@@ -233,7 +233,8 @@ class MainWindow(QMainWindow):
                 "text": "Autosegment",
                 "opts":
                 [
-                    ("autosegment_act", "Run autosegmentation...", "", self.setUpAutoseg)
+                    ("autoseg_act", "Run autosegmentation...", "", lambda : self.setUpAutoseg(run="segment"))
+                    ("trainautoseg_act", "Train autosegmentation model...", "", lambda : self.setUpAutoseg(run="train"))
                 ]
             }
         ]
@@ -1262,8 +1263,12 @@ class MainWindow(QMainWindow):
         self.field.createZarrLayer()
         self.field.generateView()
 
-    def setUpAutoseg(self):
-        """Set up an autosegmentation for a series."""
+    def setUpAutoseg(self, run : str):
+        """Set up an autosegmentation for a series.
+        
+            Params:
+                run (str): "train" or "segment"
+        """
         self.saveAllData()
 
         # self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/dsnyj_crop.zarr")
@@ -1278,6 +1283,13 @@ class MainWindow(QMainWindow):
             "Exporting series to zarr...",
             cancel=False
         )
+
+        if run == "train":
+            fn = self.trainAutoseg
+        elif run == "segment":
+            fn = self.runAutoseg
+        else:
+            fn = None
         
         # export to zarr
         groups, border_obj, srange, mag = inputs
@@ -1287,9 +1299,16 @@ class MainWindow(QMainWindow):
             border_obj,
             srange,
             mag,
-            self.runAutoseg,
+            fn,
             update
         )
+    
+    def trainAutoseg(self, data_fp : str):
+        """Train an autosegmentation model.
+        
+            Params:
+                data_dp (str): the filepath for the zarr
+        """
         
     def runAutoseg(self, data_fp : str):
         """Run an autosegmentation.

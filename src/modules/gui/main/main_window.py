@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
                 "text": "Autosegment",
                 "opts":
                 [
-                    ("autoseg_act", "Run autosegmentation...", "", lambda : self.setUpAutoseg(run="segment"))
+                    ("autoseg_act", "Run autosegmentation...", "", lambda : self.setUpAutoseg(run="segment")),
                     ("trainautoseg_act", "Train autosegmentation model...", "", lambda : self.setUpAutoseg(run="train"))
                 ]
             }
@@ -1271,7 +1271,7 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
-        # self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/dsnyj_crop.zarr")
+        #self.runAutoseg("/work/07087/mac539/ls6/autoseg-testing/data.zarr")
 
         inputs, confirmed = ZarrDialog(self, self.series).exec()
         if not confirmed:
@@ -1302,6 +1302,8 @@ class MainWindow(QMainWindow):
             fn,
             update
         )
+
+        print("Autosegmentation setup done.")
     
     def trainAutoseg(self, data_fp : str):
         """Train an autosegmentation model.
@@ -1309,6 +1311,9 @@ class MainWindow(QMainWindow):
             Params:
                 data_dp (str): the filepath for the zarr
         """
+
+        print('Training started...')
+        
         from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
         iterations = 10
@@ -1327,7 +1332,7 @@ class MainWindow(QMainWindow):
             "unlabelled" : (data_fp, "unlabelled")
         }]
 
-        model = model_paths["membrane"]["mtlsd_2.5_unet"]
+        model = model_paths["membrane"]["mtlsd_2.5d_unet"]
         
 
         train(
@@ -1335,6 +1340,9 @@ class MainWindow(QMainWindow):
             save_every=save_every,
             sources=sources,
             model_path=model,
+            pre_cache=(10, 40),
+            min_masked=0.05, # default 0.5, don't go past 0.05
+            #downsample=False,
             checkpoint_basename=os.path.join(os.path.dirname(self.series.jser_fp), "model")  # will go into this path to look for existing checkpoints
         )
 
@@ -1351,7 +1359,8 @@ class MainWindow(QMainWindow):
         print("Running predictions...")
 
         checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
-        model = model_paths["membrane"]["mtlsd_2.5_unet"]
+        print(model_paths)
+        model = model_paths["membrane"]["mtlsd_2.5d_unet"]
 
         datasets = predict(
             sources=[(data_fp, "raw")],

@@ -82,8 +82,8 @@ def seriesToZarr(
     threadpool.startAll(finished_fn, data_fp)
     
     # get values for saving zarr files (from last known section)
-    z_res = int(section.thickness * 1000)
-    xy_res = int(mag * 1000)
+    z_res = round(section.thickness * 1000)
+    xy_res = round(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
     offset = [0, 0, 0]
 
@@ -94,7 +94,7 @@ def seriesToZarr(
 
     # save attributes
     data_zg["raw"].attrs["offset"] = offset
-    data_zg["raw"].attrs["resolution"] = [50, 8, 8] # resolution 
+    data_zg["raw"].attrs["resolution"] = resolution 
 
     # save additional attributes for loading back into jser
     data_zg["raw"].attrs["window"] = window

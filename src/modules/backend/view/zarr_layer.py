@@ -1,7 +1,6 @@
 import os
 import zarr
 import numpy as np
-from skimage import color
 
 from PySide6.QtCore import (
     Qt
@@ -18,7 +17,7 @@ from modules.datatypes import (
     Section
 )
 
-from modules.calc import pixmapPointToField
+from modules.calc import colorize
 
 class ZarrLayer():
 
@@ -37,7 +36,9 @@ class ZarrLayer():
     
     def loadZarrData(self):
         """Load the relevant data from the zarr file."""
-        self.zarr = zarr.open(self.series.zarr_overlay_fp)
+        group = zarr.open(self.series.zarr_overlay_fp)
+        self.zarr = group[self.series.zarr_overlay_group]
+        raw = group["raw"]
 
         # check if labels or otherwise
         self.is_labels = (len(self.zarr.shape) == 3)
@@ -47,10 +48,6 @@ class ZarrLayer():
         resolution = self.zarr.attrs["resolution"]
 
         # get the relevant data from the raw in the zarr folder
-        raw = zarr.open(os.path.join(
-            os.path.dirname(self.series.zarr_overlay_fp),
-            "raw"
-        ))
         self.zarr_x, self.zarr_y = tuple(raw.attrs["window"][:2])
         self.zarr_s = raw.attrs["srange"][0]
         self.zarr_mag = raw.attrs["true_mag"]
@@ -67,24 +64,7 @@ class ZarrLayer():
 
         # load colors
         if self.is_labels:
-            unique = np.unique(self.zarr)
-            self.colors = np.random.randint(
-                256,
-                size=(len(unique), 3)
-            )
-        # if self.is_labels:
-        #     unique = np.unique(self.zarr)
-        #     self.colors = dict(zip(
-        #         unique,
-        #         np.random.randint(
-        #             256,
-        #             size=(len(unique),3)
-        #         )
-        #     ))
-    
-    def selectID(self, pix_x, pix_y):
-        """Select an ID from a user click."""
-
+            self.id_colors = {}
     
     def generateZarrLayer(self, section : Section, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the zarr layer.
@@ -168,18 +148,18 @@ class ZarrLayer():
         xmin, ymin, xmax, ymax = tuple(map(int, (xmin, ymin, xmax, ymax)))
 
         if self.is_labels:
-            # zarr_crop = self.zarr[z, ymin:ymax, xmin:xmax]
-            # zarr_crop_colors = np.ndarray(zarr_crop.shape + (3,), dtype=np.uint8)
-            # for id in self.colors:
-            #     zarr_crop_colors[zarr_crop == id] = self.colors[id]
-            zarr_section = color.label2rgb(
-                self.zarr[z,:,:],
-                colors=self.colors
-            ).astype(np.uint8)
-            zarr_crop_colors = np.ascontiguousarray(zarr_section[ymin:ymax, xmin:xmax])
+            zarr_crop = self.zarr[z, ymin:ymax, xmin:xmax]
+            zarr_crop_colors = np.ascontiguousarray(
+                np.moveaxis(
+                    np.array(
+                        colorize(zarr_crop), dtype=np.uint8
+                    ), 0, -1
+                )
+            )
         else:
             zarr_crop = self.zarr[:3, z, ymin:ymax, xmin:xmax]
             zarr_crop_colors = np.ascontiguousarray(np.moveaxis(zarr_crop, 0, -1))
+        
         im_crop = QImage(
             zarr_crop_colors.data,
             xmax-xmin,
@@ -215,26 +195,3 @@ class ZarrLayer():
         painter.end()
 
         return zarr_layer
-
-hash_colors = {}
-def hashColor(id, selected_ids):
-    """Return a color based on the id (rgb or primary)."""
-    if id not in hash_colors:
-        r = id % 6 + 1
-        if r == 1:
-            hash_colors[id] = (255, 0, 0)
-        elif r == 2:
-            hash_colors[id] = (0, 255, 0)
-        elif r == 3:
-            hash_colors[id] = (0, 0, 255)
-        elif r == 4:
-            hash_colors[id] = (0, 255, 255)
-        elif r == 5:
-            hash_colors[id] = (255, 0, 255)
-        elif r == 6:
-            hash_colors[id] = (255, 255, 0)
-    c = hash_colors[id]
-    if id in selected_ids:
-        c = tuple([(n + 20 if n <= (255-20) else n) for n in c])
-    return c
-

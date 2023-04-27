@@ -16,17 +16,15 @@ from modules.datatypes import (
     Trace,
     Ztrace
 )
-from modules.backend.func import (
-    getExterior, 
-    mergeTraces, 
-    reducePoints, 
-    cutTraces
-)
 from modules.calc import (
     pointInPoly,
     pixmapPointToField,
     fieldPointToPixmap,
-    getDistanceFromTrace
+    getDistanceFromTrace,
+    getExterior, 
+    mergeTraces, 
+    reducePoints, 
+    cutTraces
 )
 from modules.gui.utils import notify
 

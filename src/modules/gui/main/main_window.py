@@ -1309,6 +1309,36 @@ class MainWindow(QMainWindow):
             Params:
                 data_dp (str): the filepath for the zarr
         """
+        from modules.backend.autoseg.vijay import train, make_mask, model_paths
+
+        iterations = 10
+        save_every = 5
+
+        # CHANGE THIS
+        group_name = ""
+        for z in os.listdir(data_fp):
+            if z.startswith("labels"):
+                group_name = z
+
+        make_mask(data_fp, group_name)
+        sources = [{
+            "raw" : (data_fp, "raw"),
+            "labels" : (data_fp, group_name),
+            "unlabelled" : (data_fp, "unlabelled")
+        }]
+
+        model = model_paths["membrane"]["mtlsd_2.5_unet"]
+        
+
+        train(
+            iterations=iterations,
+            save_every=save_every,
+            sources=sources,
+            model_path=model,
+            checkpoint_basename=os.path.join(os.path.dirname(self.series.jser_fp), "model")  # will go into this path to look for existing checkpoints
+        )
+
+        print("Done training!")
         
     def runAutoseg(self, data_fp : str):
         """Run an autosegmentation.
@@ -1316,23 +1346,31 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
-        from modules.backend.autoseg.vijay import predict, hierarchical
+        from modules.backend.autoseg.vijay import predict, hierarchical, model_paths
 
         print("Running predictions...")
 
         checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
+        model = model_paths["membrane"]["mtlsd_2.5_unet"]
 
-        predict(
-            [(data_fp, "raw")],
-            None,
-            os.path.join(src_dir, "modules", "backend", "autoseg", "vijay", "autoseg", "models", "membrane", "mtlsd_2.5d_unet", "model.py"),
-            checkpoint_path,
-            out_file=data_fp
+        datasets = predict(
+            sources=[(data_fp, "raw")],
+            out_file=data_fp,
+            checkpoint_path=checkpoint_path,
+            model_path=model
         )
+
+        print("Running hierarchical...")
+
+        dataset = None
+        for d in datasets:
+            if "affs" in d:
+                dataset = d
+                break
 
         hierarchical.run(
             data_fp,
-            "pred_affs_30000",
+            dataset,
             thresholds=[0.5]
         )
 

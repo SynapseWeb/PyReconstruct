@@ -19,7 +19,7 @@ from PySide6.QtCore import Qt
 
 from .field_widget import FieldWidget
 
-from modules.gui.palette import MousePalette
+from modules.gui.palette import MousePalette, ZarrPalette
 from modules.gui.dialog import AlignmentDialog, ZarrDialog, GridDialog
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -66,7 +66,8 @@ class MainWindow(QMainWindow):
         self.series = None
         self.field = None  # placeholder for field
         self.menubar = None
-        self.mouse_palette = None  # placeholder for mouse palette
+        self.mouse_palette = None  # placeholder for palettes
+        self.zarr_palette = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
@@ -213,8 +214,18 @@ class MainWindow(QMainWindow):
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     None,
-                    ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
-                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
+                    ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
+                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    None,
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
                 ]
             },
             {
@@ -245,6 +256,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
+                    ("mergeobjects_act", "Merge objects...", "", self.mergeObjects),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
@@ -1205,6 +1217,50 @@ class MainWindow(QMainWindow):
         
         self.series.options["grid"] = response
         self.seriesModified()
+    
+    def toggleHandedness(self):
+        """Toggle the handedness of the palettes."""
+        self.mouse_palette.toggleHandedness()
+        if self.zarr_palette:
+            self.zarr_palette.toggleHandedness()
+    
+    def setZarrLayer(self, zarr_dir=None):
+        """Set a zarr layer."""
+        if not zarr_dir:
+            zarr_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select overlay zarr",
+                dir=self.explorer_dir
+            )
+            if not zarr_dir:
+                return
+
+        self.series.zarr_overlay_fp = zarr_dir
+        self.series.zarr_overlay_group = None
+
+        groups = []
+        for g in os.listdir(zarr_dir):
+            if os.path.isdir(os.path.join(zarr_dir, g)):
+                groups.append(g)
+
+        self.zarr_palette = ZarrPalette(groups, self)
+    
+    def setLayerGroup(self, group_name):
+        """Set the specific group displayed in the zarr layer."""
+        if not group_name:
+            group_name = None
+        self.series.zarr_overlay_group = group_name
+        self.field.createZarrLayer()
+        self.field.generateView()
+    
+    def removeZarrLayer(self):
+        """Remove an existing zarr layer."""
+        self.series.zarr_overlay_fp = None
+        self.series.zarr_overlay_group = None
+        if self.zarr_palette:
+            self.zarr_palette.close()
+        self.field.createZarrLayer()
+        self.field.generateView()
 
     def setUpAutoseg(self):
         """Set up an autosegmentation for a series."""
@@ -1216,17 +1272,25 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Exporting series to zarr...",
+            cancel=False
+        )
+        
         # export to zarr
         groups, border_obj, srange, mag = inputs
-        seriesToZarr(
+        self.temp_threadpool = seriesToZarr(
             self.series,
             groups,
             border_obj,
             srange,
             mag,
-            self.runAutoseg
+            self.runAutoseg,
+            update
         )
-    
+        
     def runAutoseg(self, data_fp : str):
         """Run an autosegmentation.
         
@@ -1253,24 +1317,65 @@ class MainWindow(QMainWindow):
             thresholds=[0.5]
         )
 
-        self.importAutoseg(data_fp)
+        self.setZarrLayer(data_fp)
     
-    def importAutoseg(self, data_fp):
+    def importAutoseg(self, data_fp=None, group_name=None):
         """Import labels from an autosegmentation.
         
             Params:
                 data_fp (str): the filepath for the zarr
         """
-        # import from zarr
-        for z in os.listdir(data_fp):
-            if z.startswith("segmentation"):
-                labelsToObjects(
-                    self.series,
-                    data_fp,
-                    z,
-                    self.field.reload
-                )
-        print("Done!")
+        if not data_fp:
+            data_fp = self.series.zarr_overlay_fp
+            if not data_fp:
+                return
+        
+        if not group_name:
+            group_name = self.series.zarr_overlay_group
+            if not group_name:
+                return
+        
+        self.series.zarr_overlay_fp = None
+        self.series.zarr_overlay_group = None
+
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Importing segmentation...",
+            cancel=False
+        )
+        
+        self.temp_threadpool = labelsToObjects(
+            self.series,
+            data_fp,
+            group_name,
+            self.field.reload,
+            update
+        )
+    
+    def mergeObjects(self, new_name=None):
+        """Merge full objects across the series.
+        
+            Params:
+                new_name (str): the new name for the merged objects
+        """            
+        names = set()
+        for trace in self.field.section.selected_traces:
+            names.add(trace.name)
+        names = list(names)
+        
+        if not new_name:
+            new_name, confirmed = QInputDialog.getText(
+                self,
+                "Object Name",
+                "Enter the desired name for the merged object:",
+                text=names[0]
+            )
+            if not confirmed or not new_name:
+                return
+        
+        self.series.mergeObjects(names, new_name)
+        self.field.reload()
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

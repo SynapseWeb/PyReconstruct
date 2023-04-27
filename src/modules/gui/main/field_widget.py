@@ -178,6 +178,15 @@ class FieldWidget(QWidget, FieldView):
                 a.setEnabled(False)
             for a in self.mainwindow.ztrace_actions:
                 a.setEnabled(False)
+            
+        # check for objects (to allow merging)
+        names = set()
+        for trace in self.section.selected_traces:
+            names.add(trace.name)
+        if len(names) > 1:
+            self.mainwindow.mergeobjects_act.setEnabled(True)
+        else:
+            self.mainwindow.mergeobjects_act.setEnabled(False)
         
         # check clipboard for paste options
         if self.clipboard:

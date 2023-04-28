@@ -113,6 +113,56 @@ def seriesToZarr(
     
     return threadpool  # pass the threadpool to keep in memory
 
+def exportLabels(series : Series, data_fp : str, groups : list[str], finished_fn=None, update=None):
+    """Export contours as labels to an existing zarr."""
+    # extract data from raw
+    data_zg = zarr.open(data_fp)
+
+    raw = data_zg["raw"]
+    srange = raw.attrs["srange"]
+    window = raw.attrs["window"]
+    mag = raw.attrs["true_mag"]
+    alignment = raw.attrs["alignment"]
+    offset = raw.attrs["offset"]
+    resolution = raw.attrs["resolution"]
+
+    # calculate field attributes
+    shape = (
+        srange[1] - srange[0],
+        round(window[3]/mag),
+        round(window[2]/mag)
+    )
+    pixmap_dim = shape[2], shape[1]  # the w and h of the 2D array
+
+    threadpool = ThreadPool(update=update)
+    for group in groups:
+        # create labels datasets
+        data_zg[f"labels_{group}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
+        data_zg[f"labels_{group}"].attrs["offset"] = offset
+        data_zg[f"labels_{group}"].attrs["resolution"] = resolution
+        data_zg[f"labels_{group}"].attrs["window"] = window
+        data_zg[f"labels_{group}"].attrs["srange"] = srange
+        data_zg[f"labels_{group}"].attrs["true_mag"] = mag
+        data_zg[f"labels_{group}"].attrs["alignment"] = alignment
+
+        # create threadpool
+        for snum in range(*srange):
+            threadpool.createWorker(
+                export_labels,
+                data_zg,
+                snum,
+                series,
+                group,
+                srange,
+                window,
+                pixmap_dim,
+                alignment[str(snum)]
+            )
+    threadpool.startAll(finished_fn, data_fp)
+
+    return threadpool
+    
+
 def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn=None, update=None):
     """Convert labels in a zarr file to objects in a series.
     
@@ -162,11 +212,28 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
+def export_labels(data_zg, snum, series, group, srange, window, pixmap_dim, tform_list=None, slayer=None):
+    z = snum - srange[0]
+    if slayer is None:
+        section = series.loadSection(snum)
+        slayer = SectionLayer(section, series)
+    if tform_list:
+        tform = Transform(tform_list)
+    else:
+        tform = None
+    data_zg[f"labels_{group}"][z] = slayer.generateLabelsArray(
+            pixmap_dim,
+            window,
+            series.object_groups.getGroupObjects(group),
+            tform=tform
+        )
+
 def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim):
     print(f"Section {snum} exporting started")
     section = series.loadSection(snum)
     slayer = SectionLayer(section, series)
     z = snum - srange[0]
+
     arr = slayer.generateImageArray(
         pixmap_dim, 
         window
@@ -174,10 +241,15 @@ def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim):
     data_zg["raw"][z] = arr
 
     for group in groups:
-        data_zg[f"labels_{group}"][z] = slayer.generateLabelsArray(
-            pixmap_dim,
+        export_labels(
+            data_zg,
+            snum,
+            series,
+            group,
+            srange,
             window,
-            series.object_groups.getGroupObjects(group)
+            pixmap_dim,
+            slayer=slayer
         )
     print(f"Section {snum} exporting finished")
 

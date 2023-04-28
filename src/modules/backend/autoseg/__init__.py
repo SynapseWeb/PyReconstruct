@@ -1,1 +1,1 @@
-from .conversions import seriesToZarr, labelsToObjects
+from .conversions import seriesToZarr, labelsToObjects, exportLabels

@@ -6,5 +6,8 @@ from .table_columns import TableColumnsDialog
 from .alignment import AlignmentDialog
 from .object_3D import Object3DDialog
 from .bc import BCDialog
-from .create_zarr import CreateZarrDialog
 from .grid import GridDialog
+from .create_zarr import CreateZarrDialog
+from .addto_zarr import AddToZarrDialog
+from .train import TrainDialog
+from .segment import SegmentDialog

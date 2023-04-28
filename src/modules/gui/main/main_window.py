@@ -1,6 +1,5 @@
 import os
 import time
-import shutil
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -20,7 +19,14 @@ from PySide6.QtCore import Qt
 from .field_widget import FieldWidget
 
 from modules.gui.palette import MousePalette, ZarrPalette
-from modules.gui.dialog import AlignmentDialog, CreateZarrDialog, GridDialog
+from modules.gui.dialog import (
+    AlignmentDialog,
+    GridDialog,
+    CreateZarrDialog,
+    AddToZarrDialog,
+    TrainDialog,
+    SegmentDialog
+)
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
     progbar,
@@ -37,7 +43,7 @@ from modules.backend.func import (
     jsonToXML,
     importTransforms
 )
-from modules.backend.autoseg import seriesToZarr, labelsToObjects
+from modules.backend.autoseg import seriesToZarr, labelsToObjects, exportLabels
 from modules.datatypes import Series, Transform
 from modules.constants import assets_dir, img_dir, src_dir
 
@@ -233,9 +239,9 @@ class MainWindow(QMainWindow):
                 "text": "Autosegment",
                 "opts":
                 [
-                    ("Export to zarr...", "", self.exportToZarr),
-                    ("Train...", "", self.train),
-                    ("Segment...", "", self.segment),
+                    ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
+                    ("trainzarr_act", "Train...", "", self.train),
+                    ("segmentzarr_act", "Autosegment...", "", self.segment),
                     {
                         "attr_name": "zarrlayermenu",
                         "text": "Zarr layer",
@@ -1283,6 +1289,23 @@ class MainWindow(QMainWindow):
 
         data_fp = None
 
+        reply = QMessageBox.question(
+            self,
+            "Export Zarr",
+            "Will you be creating a new zarr file?",
+            QMessageBox.Yes,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.No:
+            data_fp = QFileDialog.getExistingDirectory(
+                self,
+                "Please select the zarr to export labels to",
+                dir=self.explorer_dir,
+            )
+            if not data_fp:
+                return
+
         if data_fp:
             self.exportLabels(data_fp)
         else:
@@ -1312,31 +1335,53 @@ class MainWindow(QMainWindow):
             update=update
         )
     
-    def exportToZarr(self, data_fp : str):
+    def exportLabels(self, data_fp : str):
         """Export contours as labels to an existing zarr.
         
             Params:
-                data_fp (str): the file path for the zarr"""
+                data_fp (str): the file path for the zarr
+        """
+        group, confirmed = AddToZarrDialog(self, self.series).exec()
+        if not confirmed or not group:
+            return
+        
+        update, _ = progbar(
+            " ",
+            "Exporting labels to zarr...",
+            cancel=False
+        )
+        
+        self.temp_threadpool = exportLabels(
+            self.series,
+            data_fp,
+            group,
+            update=update
+        )
     
-    def trainAutoseg(self, data_fp : str):
+    def train(self, data_fp : str = None):
         """Train an autosegmentation model.
         
             Params:
-                data_dp (str): the filepath for the zarr
+                data_fp (str): the filepath for the zarr
         """
-
-        print('Training started...')
-        
         from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        iterations = 10
-        save_every = 5
+        print("Starting training...")
 
-        # CHANGE THIS
-        group_name = ""
-        for z in os.listdir(data_fp):
-            if z.startswith("labels"):
-                group_name = z
+        response, confirmed = TrainDialog(self, model_paths).exec()
+        if not confirmed:
+            return
+        
+        (
+            data_fp,
+            iterations,
+            save_every,
+            group_name,
+            model_path,
+            cdir,
+            pre_cache,
+            min_masked
+        ) = response
 
         make_mask(data_fp, group_name)
         sources = [{
@@ -1345,23 +1390,20 @@ class MainWindow(QMainWindow):
             "unlabelled" : (data_fp, "unlabelled")
         }]
 
-        model = model_paths["membrane"]["mtlsd_2.5d_unet"]
-        
-
         train(
             iterations=iterations,
             save_every=save_every,
             sources=sources,
-            model_path=model,
-            pre_cache=(10, 40),
-            min_masked=0.05, # default 0.5, don't go past 0.05
+            model_path=model_path,
+            pre_cache=pre_cache,
+            min_masked=min_masked,
             #downsample=False,
-            checkpoint_basename=os.path.join(os.path.dirname(self.series.jser_fp), "model")  # will go into this path to look for existing checkpoints
+            checkpoint_basename=os.path.join(cdir, "model")  # will go into this path to look for existing checkpoints
         )
 
         print("Done training!")
         
-    def runAutoseg(self, data_fp : str):
+    def segment(self, data_fp : str = None):
         """Run an autosegmentation.
         
             Params:
@@ -1371,15 +1413,23 @@ class MainWindow(QMainWindow):
 
         print("Running predictions...")
 
-        checkpoint_path = "/work/07087/mac539/ls6/autoseg-testing/model_checkpoint_30000"
-        print(model_paths)
-        model = model_paths["membrane"]["mtlsd_2.5d_unet"]
+        response, confirmed = SegmentDialog(self, model_paths).exec()
+        if not confirmed:
+            return        
+        
+        
+        (
+            data_fp,
+            model_path,
+            checkpoint_path,
+            thresholds
+        ) = response
 
         datasets = predict(
             sources=[(data_fp, "raw")],
             out_file=data_fp,
             checkpoint_path=checkpoint_path,
-            model_path=model
+            model_path=model_path
         )
 
         print("Running hierarchical...")
@@ -1393,7 +1443,7 @@ class MainWindow(QMainWindow):
         hierarchical.run(
             data_fp,
             dataset,
-            thresholds=[0.5]
+            thresholds=thresholds
         )
 
         self.setZarrLayer(data_fp)

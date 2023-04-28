@@ -14,7 +14,8 @@ from modules.datatypes import (
     Series, 
     Section,
     Trace,
-    Ztrace
+    Ztrace,
+    Transform
 )
 from modules.calc import (
     pointInPoly,
@@ -42,19 +43,21 @@ class TraceLayer():
         self.traces_in_view = []
         self.zsegments_in_view = []
     
-    def pointToPix(self, pt : tuple, apply_tform=True, qpoint=False) -> tuple:
+    def pointToPix(self, pt : tuple, apply_tform=True, tform : Transform = None, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.
         
             Params:
                 pt (tuple): the trace to convert
                 apply_tform (bool): true if section transform should be applied to the point
+                tform (Transform): the transform to apply (otherwise, uses series data)
                 qpoints (bool): True if points should be converted QPoint
             Returns:
                 (tuple): the pixel point
         """
         x, y = tuple(pt)
         if apply_tform:
-            tform = self.section.tforms[self.series.alignment]
+            if tform is None:
+                tform = self.section.tforms[self.series.alignment]
             x, y = tform.map(x, y)
         x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
 
@@ -65,18 +68,19 @@ class TraceLayer():
         
         return new_pt
     
-    def traceToPix(self, trace : Trace, qpoints=False) -> list:
+    def traceToPix(self, trace : Trace, tform : Transform = None, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
         
             Params:
                 trace (Trace): the trace to convert
+                tform (Transform): the transform to apply
                 qpoints (bool): True if points should be converted QPoint
             Returns:
                 (list): list of pixel points
         """
         new_pts = []
         for point in trace.points:
-            new_pts.append(self.pointToPix(point, qpoint=qpoints))
+            new_pts.append(self.pointToPix(point, tform=tform, qpoint=qpoints))
         return new_pts
     
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
@@ -617,16 +621,17 @@ class TraceLayer():
                 
         return trace_layer
 
-    def _drawTraceLabel(self, arr : np.ndarray, trace : Trace, label : int):
+    def _drawTraceLabel(self, arr : np.ndarray, trace : Trace, label : int, tform : Transform = None):
         """Draw labels of a trace on a trace layer.
         
             Params:
                 arr (np.ndarray): the array to draw the labels on
                 trace (Trace): the trace to draw
                 label (int): the label to use
+                tform (Transform): the transform to apply to the trace
         """
         # convert to screen coordinates
-        points = self.traceToPix(trace)
+        points = self.traceToPix(trace, tform=tform)
 
         # get polygon coords
         y_vals = [y for x, y in points]
@@ -636,13 +641,14 @@ class TraceLayer():
         # insert in trace_layer
         arr[yy, xx] = label
     
-    def generateLabelsArray(self, pixmap_dim : tuple, window : list, contour_names : list[str]):
+    def generateLabelsArray(self, pixmap_dim : tuple, window : list, contour_names : list[str], tform : Transform = None):
         """Generate numpy array with traces drawn as labels.
         
             Params:
                 pixmap_dim (tuple): the w and h of the 2D array
                 window (list): the view of the window (x, y, w, h)
                 contour_names (list[str]): the list of contour names to include
+                tform (Transform): the unique transform to apply to the traces
             Returns:
                 (np.ndarray): the numpy array with traces drawn in as labels
         """
@@ -662,7 +668,7 @@ class TraceLayer():
             labels.append(label)
             if cname in self.section.contours:
                 for trace in self.section.contours[cname]:
-                    self._drawTraceLabel(arr, trace, label)
+                    self._drawTraceLabel(arr, trace, label, tform)
 
         return arr
 

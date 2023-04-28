@@ -156,17 +156,23 @@ class ZarrLayer():
                     ), 0, -1
                 )
             )
+            im_crop = QImage(
+                zarr_crop_colors.data,
+                xmax-xmin,
+                ymax-ymin,
+                zarr_crop_colors.strides[0],
+                QImage.Format.Format_RGB888
+            )
         else:
             zarr_crop = self.zarr[:3, z, ymin:ymax, xmin:xmax]
             zarr_crop_colors = np.ascontiguousarray(np.moveaxis(zarr_crop, 0, -1))
-        
-        im_crop = QImage(
-            zarr_crop_colors.data,
-            xmax-xmin,
-            ymax-ymin,
-            zarr_crop_colors.strides[0],
-            QImage.Format.Format_RGB888
-        )
+            im_crop = QImage(
+                zarr_crop_colors.data,
+                xmax-xmin,
+                ymax-ymin,
+                zarr_crop_colors.strides[0],
+                QImage.Format.Format_RGB888
+            )
 
         # make the crop the size of the screen
         im_scaled = im_crop.scaled(

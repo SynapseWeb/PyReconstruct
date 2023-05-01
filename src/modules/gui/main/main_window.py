@@ -325,6 +325,15 @@ class MainWindow(QMainWindow):
             self.edittrace_act
         ]
 
+        # create the label menu
+        label_menu_list = [
+            ("importlabels_act", "Import label(s)", "", self.importLabels),
+            ("mergelabels_act", "Merge labels", "", self.mergeLabels)
+        ]
+        self.label_menu = QMenu(self)
+        populateMenu(self, self.label_menu, label_menu_list)
+
+
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
@@ -1448,24 +1457,14 @@ class MainWindow(QMainWindow):
 
         self.setZarrLayer(data_fp)
     
-    def importAutoseg(self, data_fp=None, group_name=None):
-        """Import labels from an autosegmentation.
+    def importLabels(self, all=False):
+        """Import labels from a zarr."""
+        if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
+            return
         
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-        if not data_fp:
-            data_fp = self.series.zarr_overlay_fp
-            if not data_fp:
-                return
-        
-        if not group_name:
-            group_name = self.series.zarr_overlay_group
-            if not group_name:
-                return
-        
-        self.series.zarr_overlay_fp = None
-        self.series.zarr_overlay_group = None
+        # get necessary data
+        data_fp = self.series.zarr_overlay_fp
+        group_name = self.series.zarr_overlay_group
 
         # create a progress bar
         update, _ = progbar(
@@ -1473,14 +1472,27 @@ class MainWindow(QMainWindow):
             "Importing segmentation...",
             cancel=False
         )
+
+        labels = None if all else self.field.zarr_layer.selected_ids
         
         self.temp_threadpool = labelsToObjects(
             self.series,
             data_fp,
             group_name,
+            labels,
             self.field.reload,
             update
         )
+
+        self.setLayerGroup(None)
+    
+    def mergeLabels(self):
+        """Merge selected labels in a zarr."""
+        if not self.field.zarr_layer:
+            return
+        
+        self.field.zarr_layer.mergeLabels()
+        self.field.generateView()
     
     def mergeObjects(self, new_name=None):
         """Merge full objects across the series.

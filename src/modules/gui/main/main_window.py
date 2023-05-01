@@ -1357,9 +1357,11 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the file path for the zarr
         """
-        group, confirmed = AddToZarrDialog(self, self.series).exec()
-        if not confirmed or not group:
+        groups, delete_group, confirmed = AddToZarrDialog(self, self.series).exec()
+        if not confirmed or not groups:
             return
+        
+        self.series.delGroupObjects(delete_group, groups)
 
         print("Exporting labels to zarr directory...")
         
@@ -1372,7 +1374,7 @@ class MainWindow(QMainWindow):
         self.temp_threadpool = exportLabels(
             self.series,
             data_fp,
-            group,
+            groups,
             update=update
         )
 

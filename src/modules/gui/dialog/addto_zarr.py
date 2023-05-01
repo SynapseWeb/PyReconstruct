@@ -64,6 +64,20 @@ class AddToZarrDialog(QDialog):
         self.remove_bttn.hide()
         vlayout.addLayout(addremove_row)
 
+        # create option to delete a group from the series when exporting
+        row = QHBoxLayout()
+        text = QLabel(self, text="Delete group (opt):")
+        self.delete_input = QComboBox(self)
+        self.delete_input.addItem("")
+        self.delete_input.addItems(
+            sorted(series.object_groups.getGroupList())
+        )
+        self.delete_input.resize(
+            self.delete_input.sizeHint()
+        )
+        row.addWidget(text)
+        vlayout.addLayout(row)
+
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
         buttonbox.accepted.connect(self.accept)
@@ -128,8 +142,9 @@ class AddToZarrDialog(QDialog):
                 if group:
                     groups.add(group)
             groups = list(groups)
+            delete_group = self.delete_input.currentText()
 
-            return groups, True
+            return groups, delete_group, True
         
         else:
             return None, False

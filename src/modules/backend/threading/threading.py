@@ -1,7 +1,6 @@
 import sys
 import traceback
 
-
 from PySide6.QtCore import (
     QRunnable,
     Slot,

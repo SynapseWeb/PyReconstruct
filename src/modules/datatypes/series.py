@@ -24,6 +24,8 @@ try:
 except ImportError:
     prog_imported = False
 
+from modules.backend.threading import ThreadPool
+
 default_traces = [
     ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], [], []],
     ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], [], []],
@@ -537,7 +539,42 @@ class Series():
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
         """Allow iteration through the sections."""
         return SeriesIterator(self, show_progress, message)
-    
+
+    def map(self, fn, *args, message=None):
+        """Map a function to every section in the series.
+        
+            Params:
+                fn (function): the function to run on the section
+                *args: the arguments to pass into the function AFTER the section
+        """
+        # create progress bar
+        if message:
+            update, _ = seriesProgbar(text=message, cancel=False)
+            finished_sections = []
+
+        # create wrapper func
+        results = {}
+        total_sections = len(self.sections)
+        def wrapper(snum, fn, *args):
+            section = self.loadSection(snum)
+            results[snum] = fn(section, *args)
+            if message:
+                finished_sections.append(snum)
+                update(len(finished_sections) / total_sections * 100)
+
+        # create and run threadpool
+        threadpool = ThreadPool()
+        for snum in self.sections:
+            threadpool.createWorker(
+                wrapper,
+                snum,
+                fn,
+                *args
+            )
+        threadpool.startAll(finished_fn=None)
+
+        return results
+
     def modifyAlignments(self, add : list = [], remove : list = [], rename : list = []):
         """Modify the alignments (input from dialog).
         

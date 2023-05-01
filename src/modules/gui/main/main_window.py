@@ -1338,6 +1338,13 @@ class MainWindow(QMainWindow):
             cancel=False
         )
         
+        # create a progress bar
+        update, _ = progbar(
+            " ",
+            "Exporting series to zarr...",
+            cancel=False
+        )
+        
         # export to zarr
         groups, border_obj, srange, mag = inputs
         self.temp_threadpool = seriesToZarr(

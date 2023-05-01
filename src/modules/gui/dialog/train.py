@@ -133,7 +133,7 @@ class TrainDialog(QDialog):
             return
         
         t = self.cdir_input.text()
-        if not (t and os.path.isfile(t)):
+        if not (t and os.path.isdir(t)):
             notify("Please select a checkpoint directory.")
             return
         

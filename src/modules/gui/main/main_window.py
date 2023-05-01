@@ -241,7 +241,8 @@ class MainWindow(QMainWindow):
                 [
                     ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
                     ("trainzarr_act", "Train...", "", self.train),
-                    ("segmentzarr_act", "Autosegment...", "", self.segment),
+                    ("predictzarr_act", "Predict (infer)...", "", self.predict),
+                    ("sementzarr_act", "Segment...", "", self.segment),
                     {
                         "attr_name": "zarrlayermenu",
                         "text": "Zarr layer",
@@ -1325,6 +1326,8 @@ class MainWindow(QMainWindow):
         inputs, confirmed = CreateZarrDialog(self, self.series).exec()
         if not confirmed:
             return
+
+        print("Making zarr directory...")
         
         # create a progress bar
         update, _ = progbar(
@@ -1343,6 +1346,8 @@ class MainWindow(QMainWindow):
             mag,
             update=update
         )
+
+        print("Zarr directory done.")
     
     def exportLabels(self, data_fp : str):
         """Export contours as labels to an existing zarr.
@@ -1353,6 +1358,8 @@ class MainWindow(QMainWindow):
         group, confirmed = AddToZarrDialog(self, self.series).exec()
         if not confirmed or not group:
             return
+
+        print("Exporting labels to zarr directory...")
         
         update, _ = progbar(
             " ",
@@ -1366,6 +1373,8 @@ class MainWindow(QMainWindow):
             group,
             update=update
         )
+
+        print("Zarr directory updated with labels...")
     
     def train(self, data_fp : str = None):
         """Train an autosegmentation model.
@@ -1373,9 +1382,10 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
-        from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        print("Starting training...")
+        print("Importing training modules...")
+
+        from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
         response, confirmed = TrainDialog(self, model_paths).exec()
         if not confirmed:
@@ -1392,6 +1402,8 @@ class MainWindow(QMainWindow):
             min_masked
         ) = response
 
+        print("Start training....")
+
         make_mask(data_fp, group_name)
         sources = [{
             "raw" : (data_fp, "raw"),
@@ -1407,25 +1419,25 @@ class MainWindow(QMainWindow):
             pre_cache=pre_cache,
             min_masked=min_masked,
             #downsample=False,
-            checkpoint_basename=os.path.join(cdir, "model")  # will go into this path to look for existing checkpoints
+            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
         )
 
         print("Done training!")
-        
-    def segment(self, data_fp : str = None):
-        """Run an autosegmentation.
+
+    def predict(self, data_fp : str = None):
+        """Run predictons.
         
             Params:
                 data_fp (str): the filepath for the zarr
         """
-        from modules.backend.autoseg.vijay import predict, hierarchical, model_paths
 
-        print("Running predictions...")
+        print("Importing modles...")
+        
+        from modules.backend.autoseg.vijay import predict, model_paths
 
         response, confirmed = SegmentDialog(self, model_paths).exec()
         if not confirmed:
             return        
-        
         
         (
             data_fp,
@@ -1434,26 +1446,53 @@ class MainWindow(QMainWindow):
             thresholds
         ) = response
 
-        datasets = predict(
+        print("Running predictions...")
+
+        self.zarr_datasets = predict(
             sources=[(data_fp, "raw")],
             out_file=data_fp,
             checkpoint_path=checkpoint_path,
-            model_path=model_path
+            model_path=model_path,
+            write="affs",
+            #increase=(8, 96, 96)  # adds to output shape (reduces chunks during prediction)
         )
+
+        print("Predictions done.")
+        
+    def segment(self, data_fp : str = None):
+        """Run an autosegmentation.
+        
+            Params:
+                data_fp (str): the filepath for the zarr
+        """
+
+        print("Importing modules...")
+        
+        from modules.backend.autoseg.vijay import hierarchical, model_paths
+
+        response, confirmed = SegmentDialog(self, model_paths).exec()
+        if not confirmed:
+            return        
+        
+        data_fp, model_path, checkpoint_path, thresholds = response
 
         print("Running hierarchical...")
 
         dataset = None
-        for d in datasets:
+        for d in self.zarr_datasets:
             if "affs" in d:
                 dataset = d
                 break
 
+        print("Segmentation started...")
+            
         hierarchical.run(
             data_fp,
             dataset,
-            thresholds=thresholds
+            thresholds=list(sorted(thresholds))
         )
+
+        print("Segmentation done.")
 
         self.setZarrLayer(data_fp)
     

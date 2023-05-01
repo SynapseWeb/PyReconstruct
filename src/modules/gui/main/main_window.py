@@ -25,7 +25,8 @@ from modules.gui.dialog import (
     CreateZarrDialog,
     AddToZarrDialog,
     TrainDialog,
-    SegmentDialog
+    SegmentDialog,
+    PredictDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -1435,20 +1436,16 @@ class MainWindow(QMainWindow):
         
         from modules.backend.autoseg.vijay import predict, model_paths
 
-        response, confirmed = SegmentDialog(self, model_paths).exec()
+        response, confirmed = PredictDialog(self, model_paths).exec()
         if not confirmed:
             return        
         
-        (
-            data_fp,
-            model_path,
-            checkpoint_path,
-            thresholds
-        ) = response
-
+        
+        data_fp, model_path, checkpoint_path = response
+        
         print("Running predictions...")
 
-        self.zarr_datasets = predict(
+        zarr_datasets = predict(
             sources=[(data_fp, "raw")],
             out_file=data_fp,
             checkpoint_path=checkpoint_path,
@@ -1468,18 +1465,18 @@ class MainWindow(QMainWindow):
 
         print("Importing modules...")
         
-        from modules.backend.autoseg.vijay import hierarchical, model_paths
+        from modules.backend.autoseg.vijay import hierarchical
 
-        response, confirmed = SegmentDialog(self, model_paths).exec()
+        response, confirmed = SegmentDialog(self).exec()
         if not confirmed:
             return        
         
-        data_fp, model_path, checkpoint_path, thresholds = response
+        data_fp, thresholds = response
 
         print("Running hierarchical...")
 
         dataset = None
-        for d in self.zarr_datasets:
+        for d in os.listdir(data_fp):
             if "affs" in d:
                 dataset = d
                 break

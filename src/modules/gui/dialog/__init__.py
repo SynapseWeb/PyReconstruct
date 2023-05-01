@@ -11,3 +11,4 @@ from .create_zarr import CreateZarrDialog
 from .addto_zarr import AddToZarrDialog
 from .train import TrainDialog
 from .segment import SegmentDialog
+from .predict import PredictDialog

@@ -293,6 +293,7 @@ class MainWindow(QMainWindow):
                     ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
                     ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
                     None,
+                    ("hideimage_act", "Toggle hide image", "I", self.field.toggleHideImage),
                     ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
                 ]
             },

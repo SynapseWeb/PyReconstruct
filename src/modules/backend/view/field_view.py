@@ -55,6 +55,7 @@ class FieldView():
         # hide/show defaults
         self.hide_trace_layer = False
         self.show_all_traces = False
+        self.hide_image = False
 
         # propogate tform defaults
         self.propogate_tform = False
@@ -562,6 +563,11 @@ class FieldView():
                     self.section.selected_traces.remove(trace)
         self.generateView(generate_image=False)
     
+    def toggleHideImage(self):
+        """Toggle hide the image from view."""
+        self.hide_image = not self.hide_image
+        self.generateView(generate_traces=False)
+    
     def linearAlign(self):
         """Modify the linear transformation using points from the selected trace.
         """
@@ -661,7 +667,8 @@ class FieldView():
             generate_image=generate_image,
             generate_traces=generate_traces,
             hide_traces=self.hide_trace_layer,
-            show_all_traces=self.show_all_traces
+            show_all_traces=self.show_all_traces,
+            hide_image=self.hide_image
         )
 
         # blend b section if requested
@@ -672,7 +679,9 @@ class FieldView():
                 self.series.window,
                 generate_image=generate_image,
                 generate_traces=generate_traces,
-                hide_traces=self.hide_trace_layer
+                hide_traces=self.hide_trace_layer,
+                show_all_traces=self.show_all_traces,
+                hide_image=self.hide_image
             )
             # overlay a and b sections
             painter = QPainter(view)
@@ -681,7 +690,7 @@ class FieldView():
             painter.end()
         
         # overlay zarr if requested
-        if self.zarr_layer:
+        if self.zarr_layer and not self.hide_trace_layer:
             zarr_layer = self.zarr_layer.generateZarrLayer(
                 self.section,
                 pixmap_dim,
@@ -689,7 +698,8 @@ class FieldView():
             )
             if zarr_layer:
                 painter = QPainter(view)
-                painter.setOpacity(0.3)
+                if not self.hide_image:
+                    painter.setOpacity(0.3)
                 painter.drawPixmap(0, 0, zarr_layer)
                 painter.end()
         

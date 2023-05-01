@@ -324,6 +324,28 @@ class FieldWidget(QWidget, FieldView):
             return
         self.findContour(contour_name)
     
+    def drawBorder(self, painter : QPainter, color : tuple):
+        """Draw a border around the field (called during paintEvent).
+        
+            Params:
+                painter (QPainter): the painter for the field
+                color(tuple): the color for the border
+        """
+        pen = QPen(QColor(*color), 8)
+        if self.border_exists:
+            pen.setDashPattern([2, 2, 2, 2])
+        painter.setPen(pen)
+        w, h = self.width(), self.height()
+        points = [
+            (0, 0),
+            (0, h),
+            (w, h),
+            (w, 0)
+        ]
+        for i in range(len(points)):
+            painter.drawLine(*points[i-1], *points[i])
+        self.border_exists = True
+
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
         
@@ -336,30 +358,15 @@ class FieldWidget(QWidget, FieldView):
         field_painter.drawPixmap(0, 0, self.field_pixmap)
 
         # add red border if trace layer is hidden
+        self.border_exists = False
         if self.hide_trace_layer:
-            field_painter.setPen(QPen(QColor(255, 0, 0), 8))
-            w, h = self.width(), self.height()
-            points = [
-                (0, 0),
-                (0, h),
-                (w, h),
-                (w, 0)
-            ]
-            for i in range(len(points)):
-                field_painter.drawLine(*points[i-1], *points[i])
-        
+            self.drawBorder(field_painter, (255, 0, 0))
         # add green border if all traces are being shown
-        if self.show_all_traces:
-            field_painter.setPen(QPen(QColor(0, 255, 0), 8))
-            w, h = self.width(), self.height()
-            points = [
-                (0, 0),
-                (0, h),
-                (w, h),
-                (w, 0)
-            ]
-            for i in range(len(points)):
-                field_painter.drawLine(*points[i-1], *points[i])
+        elif self.show_all_traces:
+            self.drawBorder(field_painter, (0, 255, 0))
+        # add magenta border if image is hidden
+        if self.hide_image:
+            self.drawBorder(field_painter, (255, 0, 255))
 
         # draw the working trace on the screen
         if self.current_trace:

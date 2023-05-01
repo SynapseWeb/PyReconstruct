@@ -4,10 +4,18 @@ import numpy as np
 import cv2
 import zarr
 
+from datetime import datetime
+dt = None
+
 from modules.datatypes import Series, Transform, Trace
 from modules.backend.view import SectionLayer
 from modules.backend.threading import ThreadPool
 from modules.calc import colorize, reducePoints
+
+def setDT():
+    global dt
+    t = datetime.now()
+    dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
 def seriesToZarr(
         series : Series,
@@ -180,6 +188,7 @@ def labelsToObjects(series : Series, data_fp : str, group : str, labels : list, 
     srange = data_zg["raw"].attrs["srange"]
 
     # create threadpool and iterate through sections
+    setDT()
     threadpool = ThreadPool(update=update)
     for snum in range(*srange):
         threadpool.createWorker(
@@ -303,5 +312,8 @@ def import_section(data_zg, group, ids, snum, series):
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace, log_message="Imported from autoseg data")
+        # add trace to group
+        series.object_groups.add(f"seg_{dt}", str(id))
+
     section.save()
     print(f"Section {snum} importing finished")

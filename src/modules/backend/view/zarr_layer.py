@@ -17,7 +17,7 @@ from modules.datatypes import (
     Section
 )
 
-from modules.calc import colorize
+from modules.calc import colorize, pixmapPointToField
 
 class ZarrLayer():
 
@@ -33,7 +33,7 @@ class ZarrLayer():
             self.loadZarrData()
         else:
             self.zarr = None
-    
+
     def loadZarrData(self):
         """Load the relevant data from the zarr file."""
         group = zarr.open(self.series.zarr_overlay_fp)
@@ -66,6 +66,76 @@ class ZarrLayer():
         if self.is_labels:
             self.id_colors = {}
     
+    def getID(self, pix_x : int, pix_y : int):
+        """Get an ID from screen pixel coordinates.
+        
+            Params: 
+                pix_x (int): the x coord in screen pixels
+                pix_y (int): the y coord in screen pixels
+        """
+        if not self.is_labels:
+            return None
+        
+        # check if the section is within the range
+        bz, bh, bw = self.zarr.shape
+        z = round(self.section.n - self.zarr_s)
+        if not 0 <= z < bz:
+            return None
+        
+        # convert to field coordinates
+        field_x, field_y = pixmapPointToField(
+            pix_x, pix_y,
+            self.pixmap_dim,
+            self.window,
+            self.section.mag
+        )
+
+        # get zarr coordinates from field coordinates
+        image_x = round((field_x - self.zarr_x) / self.zarr_mag)
+        image_y = bh - round((field_y - self.zarr_y) / self.zarr_mag)
+
+        if not 0 <= image_x < bw:
+            return None
+        if not 0 <= image_y < bh:
+            return None
+
+        return self.zarr[z, image_y, image_x]
+
+    def selectID(self, pix_x : int, pix_y : int):
+        """Select the ID at a given screen coord.
+        
+            Params: 
+                pix_x (int): the x coord in screen pixels
+                pix_y (int): the y coord in screen pixels
+        """
+        label_id = self.getID(pix_x, pix_y)
+        if label_id:
+            if label_id in self.selected_ids:
+                self.selected_ids.remove(label_id)
+            else:
+                self.selected_ids.append(label_id)
+            return True
+        return False
+
+    def deselectAll(self):
+        """Deselect all the IDs."""
+        self.selected_ids = []
+    
+    def mergeLabels(self):
+        """Merge the selected labels."""
+        if not (self.is_labels and len(self.selected_ids) > 1):
+            return
+        
+        min_id = min(self.selected_ids)
+        self.selected_ids.remove(min_id)     
+
+        for z in range(self.zarr.shape[0]):
+            section = self.zarr[z]
+            for label_id in self.selected_ids:
+                section[section == label_id] = min_id
+                self.zarr[z] = section        
+        self.selected_ids = [min_id]
+    
     def generateZarrLayer(self, section : Section, pixmap_dim : tuple, window : list) -> QPixmap:
         """Generate the zarr layer.
         
@@ -76,6 +146,8 @@ class ZarrLayer():
             Returns:
                 zarr_layer (QPixmap): the zarr layer
         """
+        self.section = section
+
         # return nothing if there is no zarr file
         if not self.zarr:
             return None
@@ -149,6 +221,7 @@ class ZarrLayer():
 
         if self.is_labels:
             zarr_crop = self.zarr[z, ymin:ymax, xmin:xmax]
+            # generate all labels
             zarr_crop_colors = np.ascontiguousarray(
                 np.moveaxis(
                     np.array(
@@ -163,6 +236,21 @@ class ZarrLayer():
                 zarr_crop_colors.strides[0],
                 QImage.Format.Format_RGB888
             )
+            # generate overlay for selected labels
+            if self.selected_ids:
+                zarr_crop_selected = np.zeros(zarr_crop.shape, dtype=np.uint8)
+                for label_id in self.selected_ids:
+                    zarr_crop_selected[zarr_crop == label_id] = 255
+                im_crop_selected = QImage(
+                    zarr_crop_selected.data,
+                    xmax-xmin,
+                    ymax-ymin,
+                    zarr_crop_selected.strides[0],
+                    QImage.Format.Format_Grayscale8
+                )
+                painter = QPainter(im_crop)
+                painter.setOpacity(0.5)
+                painter.drawImage(0, 0, im_crop_selected)
         else:
             zarr_crop = self.zarr[:3, z, ymin:ymax, xmin:xmax]
             zarr_crop_colors = np.ascontiguousarray(np.moveaxis(zarr_crop, 0, -1))

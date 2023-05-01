@@ -163,13 +163,14 @@ def exportLabels(series : Series, data_fp : str, groups : list[str], finished_fn
     return threadpool
     
 
-def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn=None, update=None):
+def labelsToObjects(series : Series, data_fp : str, group : str, labels : list, finished_fn=None, update=None):
     """Convert labels in a zarr file to objects in a series.
     
         Params:
             series (Series): the series to import zarr data into
             data_zg (str): the filepath for the zarr group
             group (str): the name of the group with labels of interest
+            labels (list): the labels to import (will import all if None)
             finished_fn (function): the function to run when finished
             update (function): the function to update a progress bar
         Returns:
@@ -185,6 +186,7 @@ def labelsToObjects(series : Series, data_fp : str, group : str, finished_fn=Non
             import_section,
             data_zg,
             group,
+            labels,
             snum,
             series
         )
@@ -253,7 +255,7 @@ def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim):
         )
     print(f"Section {snum} exporting finished")
 
-def import_section(data_zg, group, snum, series):
+def import_section(data_zg, group, ids, snum, series):
     print(f"Section {snum} importing started")
     # get relevant information from zarr
     labels = data_zg[group]
@@ -274,8 +276,10 @@ def import_section(data_zg, group, snum, series):
     # load the section and data
     section = series.loadSection(snum)
     arr = labels[z]
-    # iterate through unique labels
-    for id in np.unique(arr):
+    # iterate through label ids
+    if ids is None:
+        ids = np.unique(arr)
+    for id in ids:
         if id == 0:
             continue
         # get exteriors for the label

@@ -767,10 +767,12 @@ class FieldView():
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden
-        if self.hide_trace_layer:
-            return
-        self.section.deselectAllTraces()
-        self.generateView(generate_image=False)
+        if self.zarr_layer:
+            self.zarr_layer.deselectAll()
+            self.generateView(generate_image=False)
+        if not self.hide_trace_layer:
+            self.section.deselectAllTraces()
+            self.generateView(generate_image=False)
     
     def selectAllTraces(self):
         # disable if trace layer is hidden

@@ -34,7 +34,7 @@ class ZarrPalette():
 
         self.bttn = QPushButton(self.mainwindow, text="Import Contours")
         self.bttn.resize(self.bttn.sizeHint())
-        self.bttn.clicked.connect(self.mainwindow.importAutoseg)
+        self.bttn.clicked.connect(lambda : self.mainwindow.importLabels(all=True))
         self.bttn.hide()
 
         self.placeWidgets()

@@ -547,31 +547,29 @@ class Series():
                 fn (function): the function to run on the section
                 *args: the arguments to pass into the function AFTER the section
         """
-        # create progress bar
-        if message:
-            update, _ = seriesProgbar(text=message, cancel=False)
-            finished_sections = []
-
         # create wrapper func
         results = {}
-        total_sections = len(self.sections)
         def wrapper(snum, fn, *args):
             section = self.loadSection(snum)
             results[snum] = fn(section, *args)
-            if message:
-                finished_sections.append(snum)
-                update(len(finished_sections) / total_sections * 100)
 
+        # create progress bar
+        if message:
+            update, _ = seriesProgbar(text=message, cancel=False)
+            self.threadpool = ThreadPool(update=update)
+        else:
+            self.threadpool = ThreadPool()
+        
         # create and run threadpool
-        threadpool = ThreadPool()
         for snum in self.sections:
-            threadpool.createWorker(
+            self.threadpool.createWorker(
                 wrapper,
                 snum,
                 fn,
                 *args
             )
-        threadpool.startAll(finished_fn=None)
+        self.threadpool.startAll(finished_fn=None)
+        self.threadpool.waitForDone(-1)
 
         return results
 

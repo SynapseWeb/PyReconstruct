@@ -278,7 +278,9 @@ class MainWindow(QMainWindow):
                     ("mergeobjects_act", "Merge objects...", "", self.mergeObjects),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
-                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
+                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
+                    None,
+                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markSeg)
                 ]
             },
             None,
@@ -1436,6 +1438,27 @@ class MainWindow(QMainWindow):
         )
 
         print("Done training!")
+    
+    def markSeg(self):
+        """Add the selected trace to the most recent "keep" segmentation group."""
+        # get the most recent seg group
+        groups = self.series.object_groups.getGroupList()
+        last_segment = ""
+        for group in groups:
+            if (group.startswith("seg_") and not group.endswith("_keep") and
+                (not last_segment or group > last_segment)
+            ):
+                last_segment = group
+        if not last_segment:
+            return
+
+        # add the traces (and their full objects) to the group
+        keep_group = f"{last_segment}_keep"
+        for trace in self.field.section.selected_traces:
+            self.series.object_groups.add(keep_group, trace.name)
+        
+        # deselect traces
+        self.field.deselectAllTraces()
 
     def predict(self, data_fp : str = None):
         """Run predictons.

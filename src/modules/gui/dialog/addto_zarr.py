@@ -4,13 +4,10 @@ from PySide6.QtWidgets import (
     QDialogButtonBox, 
     QHBoxLayout, 
     QLabel, 
-    QLineEdit,
     QVBoxLayout, 
     QComboBox, 
     QPushButton
 )
-
-from .helper import resizeLineEdit
 
 from modules.datatypes import Series
 from modules.gui.utils import notify
@@ -76,6 +73,7 @@ class AddToZarrDialog(QDialog):
             self.delete_input.sizeHint()
         )
         row.addWidget(text)
+        row.addWidget(self.delete_input)
         vlayout.addLayout(row)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -130,7 +128,6 @@ class AddToZarrDialog(QDialog):
             return
         
         super().accept()
-              
 
     def exec(self):
         """Run the dialog."""
@@ -144,7 +141,7 @@ class AddToZarrDialog(QDialog):
             groups = list(groups)
             delete_group = self.delete_input.currentText()
 
-            return groups, delete_group, True
+            return (groups, delete_group), True
         
         else:
             return None, False

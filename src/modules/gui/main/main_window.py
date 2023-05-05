@@ -1364,12 +1364,12 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the file path for the zarr
         """
-        groups, delete_group, confirmed = AddToZarrDialog(self, self.series).exec()
-        if not confirmed or not groups:
+        response, confirmed = AddToZarrDialog(self, self.series).exec()
+        if not confirmed:
             return
         
-        self.series.delGroupObjects(delete_group, groups)
-
+        groups, del_group = response
+        
         print("Exporting labels to zarr directory...")
         
         update, _ = progbar(
@@ -1382,10 +1382,12 @@ class MainWindow(QMainWindow):
             self.series,
             data_fp,
             groups,
+            del_group=del_group,
+            finished_fn=self.field.reload,
             update=update
         )
 
-        print("Zarr directory updated with labels...")
+        print("Zarr directory updated with labels!")
     
     def train(self, data_fp : str = None):
         """Train an autosegmentation model.

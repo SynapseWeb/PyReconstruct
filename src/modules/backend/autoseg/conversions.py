@@ -121,7 +121,7 @@ def seriesToZarr(
     
     return threadpool  # pass the threadpool to keep in memory
 
-def exportLabels(series : Series, data_fp : str, groups : list[str], finished_fn=None, update=None):
+def exportLabels(series : Series, data_fp : str, groups : list[str], del_group : str = None, finished_fn=None, update=None):
     """Export contours as labels to an existing zarr."""
     # extract data from raw
     data_zg = zarr.open(data_fp)
@@ -142,16 +142,22 @@ def exportLabels(series : Series, data_fp : str, groups : list[str], finished_fn
     )
     pixmap_dim = shape[2], shape[1]  # the w and h of the 2D array
 
+    # get the names of objects to delete
+    if del_group:
+        del_group_objects = series.object_groups.getGroupObjects(del_group)
+        exc_group_objects = []
+        for group in groups:
+            exc_group_objects += series.object_groups.getGroupObjects(group)
+        del_group_objects = set(del_group_objects).difference(set(exc_group_objects))
+    else:
+        del_group_objects = []
+
     threadpool = ThreadPool(update=update)
     for group in groups:
         # create labels datasets
         data_zg[f"labels_{group}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
         data_zg[f"labels_{group}"].attrs["offset"] = offset
         data_zg[f"labels_{group}"].attrs["resolution"] = resolution
-        data_zg[f"labels_{group}"].attrs["window"] = window
-        data_zg[f"labels_{group}"].attrs["srange"] = srange
-        data_zg[f"labels_{group}"].attrs["true_mag"] = mag
-        data_zg[f"labels_{group}"].attrs["alignment"] = alignment
 
         # create threadpool
         for snum in range(*srange):
@@ -161,6 +167,7 @@ def exportLabels(series : Series, data_fp : str, groups : list[str], finished_fn
                 snum,
                 series,
                 group,
+                del_group_objects,
                 srange,
                 window,
                 pixmap_dim,
@@ -223,7 +230,7 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
-def export_labels(data_zg, snum, series, group, srange, window, pixmap_dim, tform_list=None, slayer=None):
+def export_labels(data_zg, snum, series, group, del_group_objects, srange, window, pixmap_dim, tform_list=None, slayer=None):
     z = snum - srange[0]
     if slayer is None:
         section = series.loadSection(snum)
@@ -237,7 +244,15 @@ def export_labels(data_zg, snum, series, group, srange, window, pixmap_dim, tfor
             window,
             series.object_groups.getGroupObjects(group),
             tform=tform
-        )
+    )
+    # check for objects to delete
+    modified = False
+    for obj_name in del_group_objects:
+        if obj_name in section.contours:
+            del(section.contours[obj_name])
+            modified = True
+    if modified:
+        section.save()
 
 def export_section(data_zg, snum, series, groups, srange, window, pixmap_dim):
     print(f"Section {snum} exporting started")

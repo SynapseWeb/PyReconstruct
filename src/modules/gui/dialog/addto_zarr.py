@@ -45,6 +45,16 @@ class AddToZarrDialog(QDialog):
             if i != 0:
                 text.hide()
                 input.hide()
+            else:
+                # find the most recent keep segmentation
+                default_group = ""
+                for g in series.object_groups.getGroupList():
+                    if (g.startswith("seg_") and g.endswith("_keep") and
+                        (not default_group or g > default_group)
+                    ):
+                        default_group = g
+                input.setCurrentText(default_group)
+            
             self.group_widgets.append((text, input))
             vlayout.addLayout(row)
         self.inputs = 1
@@ -71,7 +81,15 @@ class AddToZarrDialog(QDialog):
         )
         self.delete_input.resize(
             self.delete_input.sizeHint()
-        )
+        )  
+        # find the most recent segmentation
+        default_group = ""
+        for g in series.object_groups.getGroupList():
+            if (g.startswith("seg_") and not g.endswith("_keep") and
+                (not default_group or g > default_group)
+            ):
+                default_group = g
+        self.delete_input.setCurrentText(default_group)
         row.addWidget(text)
         row.addWidget(self.delete_input)
         vlayout.addLayout(row)

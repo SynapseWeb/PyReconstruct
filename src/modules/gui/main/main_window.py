@@ -44,7 +44,7 @@ from modules.backend.func import (
     jsonToXML,
     importTransforms
 )
-from modules.backend.autoseg import seriesToZarr, labelsToObjects, exportLabels
+from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
 from modules.datatypes import Series, Transform
 from modules.constants import assets_dir, img_dir, src_dir
 
@@ -242,6 +242,7 @@ class MainWindow(QMainWindow):
                 [
                     ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
                     ("trainzarr_act", "Train...", "", self.train),
+                    ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
                     ("predictzarr_act", "Predict (infer)...", "", self.predict),
                     ("sementzarr_act", "Segment...", "", self.segment),
                     {
@@ -280,7 +281,7 @@ class MainWindow(QMainWindow):
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
                     None,
-                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markSeg)
+                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
                 ]
             },
             None,
@@ -1301,108 +1302,30 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
-        data_fp = None
-
-        reply = QMessageBox.question(
-            self,
-            "Export Zarr",
-            "Will you be creating a new zarr file?",
-            QMessageBox.Yes,
-            QMessageBox.No
-        )
-
-        if reply == QMessageBox.No:
-            data_fp = QFileDialog.getExistingDirectory(
-                self,
-                "Please select the zarr to export labels to",
-                dir=self.explorer_dir,
-            )
-            if not data_fp:
-                return
-
-        if data_fp:
-            self.exportLabels(data_fp)
-        else:
-            self.createZarr()
-        
-    def createZarr(self):
-        """Create a new zarr file from scracth"""
         inputs, confirmed = CreateZarrDialog(self, self.series).exec()
         if not confirmed:
             return
 
         print("Making zarr directory...")
         
-        # create a progress bar
-        update, _ = progbar(
-            " ",
-            "Exporting series to zarr...",
-            cancel=False
-        )
-        
-        # create a progress bar
-        update, _ = progbar(
-            " ",
-            "Exporting series to zarr...",
-            cancel=False
-        )
-        
         # export to zarr
-        groups, border_obj, srange, mag = inputs
+        border_obj, srange, mag = inputs
         self.temp_threadpool = seriesToZarr(
             self.series,
-            groups,
             border_obj,
             srange,
-            mag,
-            update=update
+            mag
         )
 
         print("Zarr directory done.")
     
-    def exportLabels(self, data_fp : str):
-        """Export contours as labels to an existing zarr.
-        
-            Params:
-                data_fp (str): the file path for the zarr
-        """
-        response, confirmed = AddToZarrDialog(self, self.series).exec()
-        if not confirmed:
-            return
-        
-        groups, del_group = response
-        
-        print("Exporting labels to zarr directory...")
-        
-        update, _ = progbar(
-            " ",
-            "Exporting labels to zarr...",
-            cancel=False
-        )
-        
-        self.temp_threadpool = exportLabels(
-            self.series,
-            data_fp,
-            groups,
-            del_group=del_group,
-            finished_fn=self.field.reload,
-            update=update
-        )
-
-        print("Zarr directory updated with labels!")
-    
-    def train(self, data_fp : str = None):
-        """Train an autosegmentation model.
-        
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-
+    def train(self, retrain=False):
+        """Train an autosegmentation model."""
         print("Importing training modules...")
 
         from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        response, confirmed = TrainDialog(self, model_paths).exec()
+        response, confirmed = TrainDialog(self, self.series, model_paths, retrain).exec()
         if not confirmed:
             return
         
@@ -1410,14 +1333,35 @@ class MainWindow(QMainWindow):
             data_fp,
             iterations,
             save_every,
-            group_name,
+            group,
             model_path,
             cdir,
             pre_cache,
             min_masked
         ) = response
+        
+        print("Exporting labels to zarr directory...")
+        
+        if retrain:
+            seriesToLabels(
+                self.series,
+                data_fp
+            )
+            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+        else:
+            seriesToLabels(
+                self.series,
+                data_fp,
+                group
+            )
+            group_name = f"label_{group}"
 
-        print("Start training....")
+        print("Zarr directory updated with labels!")
+
+        if retrain:
+            self.field.reload()
+
+        print("Starting training....")
 
         make_mask(data_fp, group_name)
         sources = [{
@@ -1433,31 +1377,19 @@ class MainWindow(QMainWindow):
             model_path=model_path,
             pre_cache=pre_cache,
             min_masked=min_masked,
-            #downsample=False,
+            # downsample=False,
             checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
         )
 
         print("Done training!")
     
-    def markSeg(self):
+    def markKeep(self):
         """Add the selected trace to the most recent "keep" segmentation group."""
-        # get the most recent seg group
-        groups = self.series.object_groups.getGroupList()
-        last_segment = ""
-        for group in groups:
-            if (group.startswith("seg_") and not group.endswith("_keep") and
-                (not last_segment or group > last_segment)
-            ):
-                last_segment = group
-        if not last_segment:
-            return
-
-        # add the traces (and their full objects) to the group
-        keep_group = f"{last_segment}_keep"
+        keep_tag = f"{self.series.getRecentSegGroup()}_keep"
         for trace in self.field.section.selected_traces:
-            self.series.object_groups.add(keep_group, trace.name)
-        
-        # deselect traces
+            trace.addTag(keep_tag)
+        # deselect traces and hide
+        self.field.hideTraces()
         self.field.deselectAllTraces()
 
     def predict(self, data_fp : str = None):
@@ -1474,7 +1406,6 @@ class MainWindow(QMainWindow):
         response, confirmed = PredictDialog(self, model_paths).exec()
         if not confirmed:
             return        
-        
         
         data_fp, model_path, checkpoint_path = response
         
@@ -1537,25 +1468,17 @@ class MainWindow(QMainWindow):
         data_fp = self.series.zarr_overlay_fp
         group_name = self.series.zarr_overlay_group
 
-        # create a progress bar
-        update, _ = progbar(
-            " ",
-            "Importing segmentation...",
-            cancel=False
-        )
-
         labels = None if all else self.field.zarr_layer.selected_ids
         
-        self.temp_threadpool = labelsToObjects(
+        labelsToObjects(
             self.series,
             data_fp,
             group_name,
-            labels,
-            self.field.reload,
-            update
+            labels
         )
 
         self.setLayerGroup(None)
+        self.field.reload()
     
     def mergeLabels(self):
         """Merge selected labels in a zarr."""

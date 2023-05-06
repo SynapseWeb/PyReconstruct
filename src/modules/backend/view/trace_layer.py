@@ -641,13 +641,13 @@ class TraceLayer():
         # insert in trace_layer
         arr[yy, xx] = label
     
-    def generateLabelsArray(self, pixmap_dim : tuple, window : list, contour_names : list[str], tform : Transform = None):
+    def generateLabelsArray(self, pixmap_dim : tuple, window : list, traces : list[Trace], tform : Transform = None):
         """Generate numpy array with traces drawn as labels.
         
             Params:
                 pixmap_dim (tuple): the w and h of the 2D array
                 window (list): the view of the window (x, y, w, h)
-                contour_names (list[str]): the list of contour names to include
+                traces (list[Traces]): the traces to include as labels
                 tform (Transform): the unique transform to apply to the traces
             Returns:
                 (np.ndarray): the numpy array with traces drawn in as labels
@@ -658,17 +658,13 @@ class TraceLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         arr = np.zeros(shape=(pixmap_h, pixmap_w), dtype=np.uint32)   
 
-        labels = []
-        for cname in contour_names:
-            # hash the name
-            label = hashName(cname)
-            # check if hash already exists
-            if label in labels:
-                raise(Exception("Duplicate labels!"))
-            labels.append(label)
-            if cname in self.section.contours:
-                for trace in self.section.contours[cname]:
-                    self._drawTraceLabel(arr, trace, label, tform)
+        for trace in traces:
+            self._drawTraceLabel(
+                arr, 
+                trace, 
+                hashName(trace.name), 
+                tform
+            )
 
         return arr
 

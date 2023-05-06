@@ -22,8 +22,7 @@ class CreateZarrDialog(QDialog):
         
             Params:
                 parent (QWidget): the parent widget
-                objgroupdict (ObjGroupDict): object containing information on object groups
-                new_group (bool): whether or not to include new group button
+                series (Series): the series
         """
         self.series = series
 
@@ -36,37 +35,6 @@ class CreateZarrDialog(QDialog):
 
         vlayout = QVBoxLayout()
         vlayout.setSpacing(10)
-
-        # create the group combo box inputs
-        self.group_widgets = []
-        for i in range(5):
-            row = QHBoxLayout()
-            text = QLabel(self)
-            text.setText("Group:")
-            input = QComboBox(self)
-            input.addItem("")
-            input.addItems(sorted(series.object_groups.getGroupList()))
-            input.resize(input.sizeHint())
-            row.addWidget(text)
-            row.addWidget(input)
-            if i != 0:
-                text.hide()
-                input.hide()
-            self.group_widgets.append((text, input))
-            vlayout.addLayout(row)
-        self.inputs = 1
-
-        # create buttons for adding and removing group inputs
-        addremove_row = QHBoxLayout()
-        addremove_row.addSpacing(10)
-        self.add_bttn = QPushButton(text="Add Group", parent=self)
-        self.add_bttn.clicked.connect(self.addInput)
-        self.remove_bttn = QPushButton(text="Remove Group", parent=self)
-        self.remove_bttn.clicked.connect(self.removeInput)
-        addremove_row.addWidget(self.remove_bttn)
-        addremove_row.addWidget(self.add_bttn)
-        self.remove_bttn.hide()
-        vlayout.addLayout(addremove_row)
 
         # get the border object
         bobj_row = QHBoxLayout()
@@ -116,37 +84,6 @@ class CreateZarrDialog(QDialog):
 
         self.setLayout(vlayout)
     
-    def addInput(self):
-        """Add a group input."""
-        if self.inputs >= 5:
-            return
-        text, input = self.group_widgets[self.inputs]
-        text.show()
-        input.show()
-        self.inputs += 1
-        self.updateButtons()
-    
-    def removeInput(self):
-        """Remove a group input."""
-        if self.inputs <= 1:
-            return
-        text, input = self.group_widgets[self.inputs-1]
-        text.hide()
-        input.hide()
-        self.inputs -= 1
-        self.updateButtons()
-    
-    def updateButtons(self):
-        """Show/hide buttons according to number of inputs."""
-        if self.inputs < 5:
-            self.add_bttn.show()
-        else:
-            self.add_bttn.hide()
-        if self.inputs > 1:
-            self.remove_bttn.show()
-        else:
-            self.remove_bttn.hide()
-    
     def accept(self):
         """Overwritten from QDialog."""        
         # check that border object is valid
@@ -180,12 +117,6 @@ class CreateZarrDialog(QDialog):
         """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
-            groups = set()
-            for text, input in self.group_widgets:
-                group = input.currentText()
-                if group:
-                    groups.add(group)
-            groups = list(groups)
 
             border_obj = self.bobj_input.text()
 
@@ -196,7 +127,7 @@ class CreateZarrDialog(QDialog):
 
             mag = float(self.mag_input.text())
 
-            return (groups, border_obj, srange, mag), True
+            return (border_obj, srange, mag), True
         
         else:
             return None, False

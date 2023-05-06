@@ -1,12 +1,17 @@
 import sys
 import traceback
 
+from PySide6.QtWidgets import QProgressDialog
+
+from modules.gui.utils import mainwindow
+
 from PySide6.QtCore import (
     QRunnable,
     Slot,
     Signal,
     QObject,
-    QThreadPool
+    QThreadPool,
+    Qt
 )
 
 # THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
@@ -77,7 +82,8 @@ class Worker(QRunnable):
 
 class ThreadPool(QThreadPool):
     """Extended from QThreadPool class."""
-    def __init__(self, update=None):
+
+    def __init__(self):
         """Overwritten from parent class.
         
         Params:
@@ -87,7 +93,6 @@ class ThreadPool(QThreadPool):
         self.setMaxThreadCount(10)
         self.workers = []
         self.n_finished = 0
-        self.update = update
         self.finished_fn = None
 
     def createWorker(self, fn, *args):
@@ -103,8 +108,6 @@ class ThreadPool(QThreadPool):
     def count(self):
         """Keep track of the number of finished workers."""
         self.n_finished += 1
-        if self.update:
-            self.update(self.n_finished / len(self.workers) * 100)
         if self.n_finished == len(self.workers) and self.finished_fn is not None:
             self.finished_fn(
                 *self.finished_fn_args
@@ -121,4 +124,39 @@ class ThreadPool(QThreadPool):
         for w in self.workers:
             w.signals.finished.connect(self.count)
             self.start(w)
-            
+
+class MemoryInt():
+
+    def __init__(self):
+        self.n = 0
+    
+    def inc(self):
+        self.n += 1
+
+class ThreadPoolProgBar(ThreadPool):
+
+    def startAll(self, text):
+        final_value = len(self.workers)
+        progbar = QProgressDialog(
+                text,
+                "Cancel",
+                0,
+                final_value,
+                mainwindow
+            )
+        progbar.setMinimumDuration(1500)
+        progbar.setWindowTitle(" ")
+        progbar.setWindowModality(Qt.WindowModal)
+        progbar.setCancelButton(None)
+        counter = MemoryInt()
+        for worker in self.workers:
+            fn = worker.fn
+            def wrapper(*args):
+                fn(*args)
+                counter.inc()
+            worker.fn = wrapper
+            self.start(worker)
+        
+        while counter.n < final_value:
+            progbar.setValue(counter.n)
+        

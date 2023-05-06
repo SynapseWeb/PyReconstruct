@@ -933,6 +933,17 @@ class Series():
 
             # save thes section
             section.save()
+    
+    def getRecentSegGroup(self):
+        """Return the most recent segmentation group name."""
+        g = None
+        for group in self.object_groups.getGroupList():
+            if group.startswith("seg_") and (
+                g is None or group > g
+            ):
+                g = group
+        return g
+
 
 
 class SeriesIterator():

@@ -15,22 +15,26 @@ from .helper import BrowseWidget
 
 from modules.gui.utils import notify
 
+from modules.datatypes import Series
+
 class TrainDialog(QDialog):
 
-    def __init__(self, parent, models : dict):
+    def __init__(self, parent, series : Series, models : dict, retrain=False):
         """Create a dialog for training an autoseg model.
         
             Params:
                 parent (QWidget): the parent of the dialog
+                series (Series): the series
                 models (dict): the dictionary containing the model paths
+                retrain (bool): True if user is retraining (picks tag and groups by default)
         """
         super().__init__(parent)
+        self.setWindowTitle("Train Model")
+        self.retrain = retrain
 
         zarr_fp_text = QLabel(self, text="Zarr:")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
-        self.zarr_fp_input.le.textChanged.connect(self.updateGroups)
 
-        self.setWindowTitle("Train Model")
 
         iter_text = QLabel(self, text="Iterations:")
         self.iter_input = QLineEdit(self)
@@ -38,9 +42,10 @@ class TrainDialog(QDialog):
         savefreq_text = QLabel(self, text="Save checkpoints every:")
         self.savefreq_input = QLineEdit(self)
 
-        group_text = QLabel(self, text="Training group name:")
-        self.group_input = QComboBox(self)
-        self.group_input.addItems([""])
+        if not retrain:
+            group_text = QLabel(self, text="Training object group name:")
+            self.group_input = QComboBox(self)
+            self.group_input.addItems([""] + series.object_groups.getGroupList())
 
         self.models = models
         model_text = QLabel(self, text="Training model:")
@@ -64,29 +69,40 @@ class TrainDialog(QDialog):
         
         layout = QGridLayout()
 
-        layout.addWidget(zarr_fp_text, 0, 0)
-        layout.addWidget(self.zarr_fp_input, 0, 1)
+        r = 0
 
-        layout.addWidget(iter_text, 1, 0)
-        layout.addWidget(self.iter_input, 1, 1)
+        layout.addWidget(zarr_fp_text, r, 0)
+        layout.addWidget(self.zarr_fp_input, r, 1)
+        r += 1
 
-        layout.addWidget(savefreq_text, 2, 0)
-        layout.addWidget(self.savefreq_input, 2, 1)
+        layout.addWidget(iter_text, r, 0)
+        layout.addWidget(self.iter_input, r, 1)
+        r += 1
 
-        layout.addWidget(group_text, 3, 0)
-        layout.addWidget(self.group_input, 3, 1)
+        layout.addWidget(savefreq_text, r, 0)
+        layout.addWidget(self.savefreq_input, r, 1)
+        r += 1
 
-        layout.addWidget(model_text, 4, 0)
-        layout.addWidget(self.model_input, 4, 1)
+        if not retrain:
+            layout.addWidget(group_text, r, 0)
+            layout.addWidget(self.group_input, r, 1)
+            r += 1
 
-        layout.addWidget(cdir_text, 5, 0)
-        layout.addWidget(self.cdir_input, 5, 1)
+        layout.addWidget(model_text, r, 0)
+        layout.addWidget(self.model_input, r, 1)
+        r += 1
 
-        layout.addWidget(pre_cache_text, 6, 0)
-        layout.addWidget(self.pre_cache_input, 6, 1)
+        layout.addWidget(cdir_text, r, 0)
+        layout.addWidget(self.cdir_input, r, 1)
+        r += 1
 
-        layout.addWidget(minmasked_text, 7, 0)
-        layout.addWidget(self.minmasked_input, 7, 1)
+        layout.addWidget(pre_cache_text, r, 0)
+        layout.addWidget(self.pre_cache_input, r, 1)
+        r += 1
+
+        layout.addWidget(minmasked_text, r, 0)
+        layout.addWidget(self.minmasked_input, r, 1)
+        r += 1
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -99,16 +115,6 @@ class TrainDialog(QDialog):
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
-    
-    def updateGroups(self, zarr_fp):
-        """Modify the displayed groups."""
-        if os.path.isdir(zarr_fp):
-            groups = []
-            for g in zarr.open(zarr_fp):
-                if g.startswith("labels"):
-                    groups.append(g)
-            self.group_input.clear()
-            self.group_input.addItems([""] + groups)
     
     def accept(self):
         """Overwritten from parent class."""
@@ -124,7 +130,7 @@ class TrainDialog(QDialog):
             notify("Please enter a valid number for saving frequency.")
             return
         
-        if not self.group_input.currentText():
+        if not self.retrain and not self.group_input.currentText():
             notify("Please select a group to use for training.")
             return
         
@@ -164,8 +170,13 @@ class TrainDialog(QDialog):
             response = [
                 self.zarr_fp_input.text(),
                 int(self.iter_input.text()),
-                int(self.savefreq_input.text()),
-                self.group_input.currentText(),
+                int(self.savefreq_input.text())
+            ]
+            if self.retrain:
+                response += [None]
+            else:
+                response += [self.group_input.currentText()]
+            response += [
                 model_path,
                 self.cdir_input.text(),
                 tuple([int(n.strip()) for n in self.pre_cache_input.text().split(",")]),

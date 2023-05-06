@@ -97,7 +97,7 @@ class Trace():
             Params:
                 tag (str): the tag for the trace
         """
-        self.tags.append(tag)
+        self.tags.add(tag)
 
     def getList(self, include_name=True) -> dict:
         """Return the trace data as a dictionary.

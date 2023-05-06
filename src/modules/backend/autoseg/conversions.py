@@ -276,11 +276,12 @@ def exportTraces(data_zg,
                 traces += section.contours[cname].getTraces()
     else:
         tag = group_or_tag
-        for cname in section.contours:
-            for trace in section.contours[cname]:
-                if tag in trace.tags:
-                    print(trace.name)
-                    traces.append(trace)
+        for cname in series.object_groups.getGroupObjects(del_group): # only search recent seg group to save time
+            if cname in section.contours:
+                for trace in section.contours[cname]:
+                    if tag in trace.tags:
+                        print(trace.name)
+                        traces.append(trace)
 
     data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
             pixmap_dim,
@@ -292,15 +293,11 @@ def exportTraces(data_zg,
     # delete group if requested
     if not is_group:
         if del_group:
-            # save the traces with the tag
-            tagged_traces = []
             for cname in series.object_groups.getGroupObjects(del_group):
                 if cname in section.contours:
-                    for trace in section.contours[cname]:
-                        if tag in trace.tags:
-                            tagged_traces.append(trace)
                     del(section.contours[cname])
-            for trace in tagged_traces:
+            for trace in traces:
+                trace.setHidden(False)
                 section.addTrace(trace, log_message="Saved after zarr export")
             section.save()
 

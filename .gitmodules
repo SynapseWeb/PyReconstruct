@@ -1,0 +1,3 @@
+[submodule "vijay"]
+	path = src/modules/backend/autoseg/vijay
+	url = https://github.com/yajivunev/autoseg

@@ -13,10 +13,13 @@ from .object_table_item import ObjectTableItem
 
 from modules.constants import (
     createHiddenDir,
-    assets_dir
+    assets_dir,
+    welcome_series_dir
 )
 
 from modules.calc import mergeTraces
+
+from modules.constants import welcome_series_dir
 
 try:
     from modules.gui.utils import progbar

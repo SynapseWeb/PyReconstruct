@@ -1356,7 +1356,7 @@ class MainWindow(QMainWindow):
                 data_fp,
                 group
             )
-            group_name = f"label_{group}"
+            group_name = f"labels_{group}"
 
         print("Zarr directory updated with labels!")
 
@@ -1401,7 +1401,7 @@ class MainWindow(QMainWindow):
                 data_fp (str): the filepath for the zarr
         """
 
-        print("Importing modles...")
+        print("Importing models...")
         
         from modules.backend.autoseg.vijay import predict, model_paths
 

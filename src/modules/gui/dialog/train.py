@@ -65,7 +65,7 @@ class TrainDialog(QDialog):
 
         minmasked_text = QLabel(self, text="Min Masked (0-1):")
         self.minmasked_input = QLineEdit(self)
-        self.minmasked_input.setText("0.5")
+        self.minmasked_input.setText("0.05")
         
         layout = QGridLayout()
 

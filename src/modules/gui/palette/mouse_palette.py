@@ -7,8 +7,10 @@ from PySide6.QtCore import QSize, QRect
 from .palette_button import PaletteButton
 from .outlined_label import OutlinedLabel
 
-from modules.datatypes import Trace
-from modules.constants import locations as loc
+from modules.datatypes import Series, Trace
+from modules.constants import (
+    locations as loc
+)
 
 class MousePalette():
 
@@ -36,6 +38,7 @@ class MousePalette():
         self.createModeButton("Closed Trace", "c", 3, 3)
         self.createModeButton("Open Trace", "o", 4, 4)
         self.createModeButton("Stamp", "s", 5, 5)
+        self.createModeButton("Grid", "g", 6, 6)
 
         # create palette buttons
         self.palette_traces = palette_traces
@@ -122,12 +125,17 @@ class MousePalette():
         # b.setText(name)
         b.setToolTip(f"{name} ({sc})")
 
+        # manually enter dialog function for grid
+        if name == "Grid":
+            b.contextMenuEvent = self.mainwindow.modifyGrid
+
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default
             b.setChecked(True)
         b.clicked.connect(lambda : self.activateModeButton(name))
         # dictionary -- name : (button object, mouse mode, position)
         self.mode_buttons[name] = (b, mouse_mode, pos)
+
 
         b.show()
     
@@ -258,6 +266,13 @@ class MousePalette():
                     self.mainwindow.changeTracingTrace(button.trace)
                     self.selected_trace = b.trace
         self.updateLabel()
+    
+    def resetPalette(self):
+        """Reset the palette to the default traces."""
+        self.palette_traces = Series.getDefaultPaletteTraces()
+        for b, t in zip(self.palette_buttons, self.palette_traces):
+            b.setTrace(t)
+        self.activatePaletteButton(0)
     
     def placeIncrementButtons(self):
         """Place the increment buttons on the field"""

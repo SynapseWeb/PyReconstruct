@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from modules.calc import area
+from .quantification import area
 
 class Grid():
 
@@ -198,7 +198,7 @@ class Grid():
 
 # METHODS (used to access the class functions)
 
-def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) -> list:
+def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None, array=False) -> list:
     """Reduce the number of points in a trace (uses cv2.approxPolyDP).
     
         Params:
@@ -207,6 +207,7 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) ->
             iterations (int): the number of times the approximation is run
             closed (bool): whether or not the trace is closed
             mag (float): magnifcation for the trace
+            array (bool): True if returns as np.ndarray
         Returns:
             (list) the final points after the approximation
     """
@@ -223,7 +224,10 @@ def reducePoints(points : list, ep=0.80, iterations=1, closed=True, mag=None) ->
         reduced_points = reduced_points.astype(np.float64)
         reduced_points /= mag
     
-    return reduced_points[:,0,:].tolist()
+    if array:
+        return reduced_points[:,0,:]
+    else:
+        return reduced_points[:,0,:].tolist()
 
 def getExterior(points : list) -> list:
     """Get the exterior of a single set of points.

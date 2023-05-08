@@ -1,0 +1,363 @@
+import os
+import shutil
+import numpy as np
+import cv2
+import zarr
+
+from datetime import datetime
+dt = None
+
+from modules.datatypes import Series, Transform, Trace
+from modules.backend.view import SectionLayer
+from modules.backend.threading import ThreadPoolProgBar
+from modules.calc import colorize, reducePoints
+
+def setDT():
+    global dt
+    t = datetime.now()
+    dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
+
+def seriesToZarr(
+        series : Series,
+        border_obj : str,
+        srange : tuple,
+        mag : float):
+    """Convert a series into a zarr file usable by neuroglancer.
+    
+        Params:
+            series (Series): the series to convert
+            border_obj (str): the object to use as the border marking
+            srange (tuple): the range of sections (exclusive)
+            mag (float): the microns per pixel for the zarr file
+        Returns:
+            the filepath for the zarr, the threadpool
+    """
+    # get the border window
+    x_vals = []
+    y_vals = []
+    for snum in range(*srange):
+        section = series.loadSection(snum)
+        tform = section.tforms[series.alignment]
+        if border_obj in section.contours:
+            xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
+            x_vals += [xmin, xmax]
+            y_vals += [ymin, ymax]
+    x = min(x_vals)
+    w = max(x_vals) - x
+    y = min(y_vals)
+    h = max(y_vals) - y
+    window = [x, y, w, h]
+
+    # calculate field attributes
+    shape = (
+        srange[1] - srange[0],
+        round(window[3]/mag),
+        round(window[2]/mag)
+    )
+    pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
+
+    # create the zarr files
+    data_fp = os.path.join(
+        os.path.dirname(series.jser_fp),
+        f"data_{border_obj}.zarr"
+    )
+    if os.path.isdir(data_fp):  # delete existing data.zarr
+        shutil.rmtree(data_fp)
+    data_zg = zarr.open(data_fp, "a")
+    data_zg["raw"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
+
+    # get values for saving zarr files (from last known section)
+    z_res = round(section.thickness * 1000)
+    xy_res = round(mag * 1000)
+    resolution = [z_res, xy_res, xy_res]
+    offset = [0, 0, 0]
+
+    # get alignment of series
+    alignment = {}
+    for snum in range(*srange):
+        alignment[str(snum)] = series.section_tforms[snum][series.alignment].getList()
+
+    # save attributes
+    data_zg["raw"].attrs["offset"] = offset
+    data_zg["raw"].attrs["resolution"] = resolution 
+
+    # save additional attributes for loading back into jser
+    data_zg["raw"].attrs["window"] = window
+    data_zg["raw"].attrs["srange"] = srange
+    data_zg["raw"].attrs["true_mag"] = mag
+    data_zg["raw"].attrs["alignment"] = alignment
+    
+    # create threadpool and interate through series
+    threadpool = ThreadPoolProgBar()
+    for snum in range(*srange):
+        threadpool.createWorker(
+            exportSection,
+            data_zg,
+            snum,
+            series,
+            srange,
+            window,
+            pixmap_dim
+        )
+    threadpool.startAll("Converting series to zarr...")
+    
+def seriesToLabels(series : Series,
+                   data_fp : str,
+                   group : str = None):
+    """Export contours as labels to an existing zarr.
+    
+        Params:
+            series (Series): the series
+            data_fp (str): the filepath for the zarr
+            group (str): the group to export as labels (None if retraining)
+    """
+    # extract data from raw
+    data_zg = zarr.open(data_fp)
+
+    raw = data_zg["raw"]
+    srange = raw.attrs["srange"]
+    window = raw.attrs["window"]
+    mag = raw.attrs["true_mag"]
+    alignment = raw.attrs["alignment"]
+    offset = raw.attrs["offset"]
+    resolution = raw.attrs["resolution"]
+
+    # calculate field attributes
+    shape = (
+        srange[1] - srange[0],
+        round(window[3]/mag),
+        round(window[2]/mag)
+    )
+    pixmap_dim = shape[2], shape[1]  # the w and h of the 2D array
+
+    if group:
+        is_group = True
+        del_group = None
+        group_or_tag = group
+    # if retrain, use tag and search for group to delete
+    else:
+        is_group = False
+        del_group = series.getRecentSegGroup()
+        group_or_tag = f"{del_group}_keep"
+
+    # create labels datasets
+    data_zg[f"labels_{group_or_tag}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
+    data_zg[f"labels_{group_or_tag}"].attrs["offset"] = offset
+    data_zg[f"labels_{group_or_tag}"].attrs["resolution"] = resolution
+
+    threadpool = ThreadPoolProgBar()
+
+    # create threadpool
+    for snum in range(*srange):
+        threadpool.createWorker(
+            exportTraces,
+            data_zg,
+            snum,
+            series,
+            group_or_tag,
+            is_group,
+            srange,
+            window,
+            pixmap_dim,
+            del_group,
+            alignment[str(snum)]
+        )
+    threadpool.startAll("Converting contours to zarr...")
+
+def labelsToObjects(series : Series, data_fp : str, group : str, labels : list = None):
+    """Convert labels in a zarr file to objects in a series.
+    
+        Params:
+            series (Series): the series to import zarr data into
+            data_zg (str): the filepath for the zarr group
+            group (str): the name of the group with labels of interest
+            labels (list): the labels to import (will import all if None)
+        Returns:
+            the threadpool
+    """
+    data_zg = zarr.open(data_fp)
+    srange = data_zg["raw"].attrs["srange"]
+
+    # create threadpool and iterate through sections
+    setDT()
+    threadpool = ThreadPoolProgBar()
+    for snum in range(*srange):
+        threadpool.createWorker(
+            importSection,
+            data_zg,
+            group,
+            snum,
+            series,
+            labels
+        )
+    threadpool.startAll("Converting labels to contours...")
+
+def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
+    """Get the exteriors from a mask.
+    
+        Params:
+            mask (np.ndarray): the mask to extract exteriors from
+        Returns:
+            (list[np.ndarray]): the list of exteriors
+    """
+    cv_detected, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    exteriors = []
+    for e in cv_detected:
+        e = e[:,0,:]
+        # invert the y axis
+        e[:,1] *= -1
+        e[:,1] += mask.shape[0]
+        # reduce the points
+        e = reducePoints(e, array=True)
+        exteriors.append(e)
+    return exteriors
+
+def exportSection(data_zg, snum : int, series : Series, srange : tuple, window : list, pixmap_dim : tuple):
+    """Export the raw data for a single section.
+    
+        Params:
+            data_zg: the zarr group
+            snum (int): the section number
+            series (Series): the series
+            srange (tuple): the range of sections
+            window (list): the frame for the raw export
+            pixmap_dim (tuple): the w and h in pixels for the arr output
+    """
+    print(f"Section {snum} exporting started")
+    section = series.loadSection(snum)
+    slayer = SectionLayer(section, series)
+    z = snum - srange[0]
+
+    arr = slayer.generateImageArray(
+        pixmap_dim, 
+        window
+    )
+    data_zg["raw"][z] = arr
+    print(f"Section {snum} exporting finished")
+
+def exportTraces(data_zg,
+                 snum : int,
+                 series : Series,
+                 group_or_tag : str,
+                 is_group : bool,
+                 srange : tuple,
+                 window : list,
+                 pixmap_dim : tuple,
+                 del_group : str = None,
+                 tform_list=None):
+    """Export the traces as labels for a single section.
+    
+        Params:
+            data_zg: the zarr group
+            snum (int): the section number
+            series (Series): the series
+            group_or_tag (str): the group or tag to include as labels
+            is_group (bool): True if the previous entry is a group, False if tag
+            srange (tuple): the range of sections
+            window (list): the frame for the raw export
+            pixmap_dim (tuple): the w and h in pixels for the arr output
+            del_group (str): the group to delete
+            tform_list (list): the transform to apply to the traces
+    """
+    z = snum - srange[0]
+    section = series.loadSection(snum)
+    slayer = SectionLayer(section, series)
+    if tform_list:
+        tform = Transform(tform_list)
+    else:
+        tform = None
+
+    # gather the traces
+    traces = []
+    if is_group:
+        group = group_or_tag
+        for cname in series.object_groups.getGroupObjects(group):
+            if cname in section.contours:
+                traces += section.contours[cname].getTraces()
+    else:
+        tag = group_or_tag
+        for cname in series.object_groups.getGroupObjects(del_group): # only search recent seg group to save time
+            if cname in section.contours:
+                for trace in section.contours[cname]:
+                    if tag in trace.tags:
+                        print(trace.name)
+                        traces.append(trace)
+
+    data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
+            pixmap_dim,
+            window,
+            traces,
+            tform=tform
+    )
+
+    # delete group if requested
+    if not is_group:
+        if del_group:
+            for cname in series.object_groups.getGroupObjects(del_group):
+                if cname in section.contours:
+                    del(section.contours[cname])
+            for trace in traces:
+                trace.setHidden(False)
+                section.addTrace(trace, log_message="Saved after zarr export")
+            section.save()
+
+def importSection(data_zg, group, snum, series, ids=None):
+    """Import label data for a single section.
+    
+        Params:
+            data_zg: the zarr group
+            group: the name of the zarr group with data to import
+            snum (int): the section number
+            series (Series): the series
+            ids (list): the ids to include in importing
+    """
+    # get relevant information from zarr
+    labels = data_zg[group]
+    offset = labels.attrs["offset"]
+    resolution = labels.attrs["resolution"]
+
+    raw = data_zg["raw"]
+    window = raw.attrs["window"]
+    srange = raw.attrs["srange"]
+    mag = raw.attrs["true_mag"]
+    alignment = raw.attrs["alignment"]
+
+    # check if section was segmented
+    z = snum - srange[0] - round(offset[0] / resolution[0])
+    if not 0 <= z < labels.shape[0]:
+        print(f"Section {snum} importing finished")
+        return
+    # load the section and data
+    section = series.loadSection(snum)
+    arr = labels[z]
+    # iterate through label ids
+    if ids is None:
+        ids = np.unique(arr)
+    for id in ids:
+        if id == 0:
+            continue
+        # get exteriors for the label
+        exteriors = getExteriors(arr == id)
+        for ext in exteriors:
+            # convert to float
+            ext = ext.astype(np.float64)
+            # add offset to coordinates
+            ext[:,0] += offset[2] / resolution[2]
+            ext[:,1] += offset[1] / resolution[1]
+            # scale to actual coordinates
+            ext *= mag
+            # add origin
+            ext[:,0] += window[0]
+            ext[:,1] += window[1]
+            # apply reverse transform
+            tform = Transform(alignment[str(snum)])
+            trace_points = tform.map(ext.tolist(), inverted=True)          
+            # create the trace and add to section
+            trace = Trace(name=str(id), color=tuple(map(int, colorize(id))))
+            trace.points = trace_points
+            trace.fill_mode = ("transparent", "unselected")
+            section.addTrace(trace, log_message="Imported from autoseg data")
+        # add trace to group
+        series.object_groups.add(f"seg_{dt}", str(id))
+
+    section.save()

@@ -26,7 +26,7 @@ from PySide6.QtGui import (
 )
 
 from modules.datatypes import Series, Trace, Ztrace
-from modules.calc import pixmapPointToField, distance
+from modules.calc import pixmapPointToField, distance, colorize
 from modules.backend.view import FieldView
 from modules.backend.table import (
     ObjectTableManager,
@@ -40,7 +40,7 @@ from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP = range(6)
+    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(7)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -142,7 +142,7 @@ class FieldWidget(QWidget, FieldView):
 
         self.generateView()
     
-    def checkActions(self, context_menu=False, clicked_trace=None):
+    def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
         """Check for actions that should be enabled or disabled
         
             Params:
@@ -178,6 +178,15 @@ class FieldWidget(QWidget, FieldView):
                 a.setEnabled(False)
             for a in self.mainwindow.ztrace_actions:
                 a.setEnabled(False)
+            
+        # check for objects (to allow merging)
+        names = set()
+        for trace in self.section.selected_traces:
+            names.add(trace.name)
+        if len(names) > 1:
+            self.mainwindow.mergeobjects_act.setEnabled(True)
+        else:
+            self.mainwindow.mergeobjects_act.setEnabled(False)
         
         # check clipboard for paste options
         if self.clipboard:
@@ -188,6 +197,16 @@ class FieldWidget(QWidget, FieldView):
         
         # check for backup directory
         self.mainwindow.backup_act.setChecked(bool(self.series.options["backup_dir"]))
+
+        # check labels
+        if clicked_label:
+            if clicked_label in self.zarr_layer.selected_ids:
+                self.mainwindow.importlabels_act.setEnabled(True)
+                if len(self.zarr_layer.selected_ids) > 1:
+                    self.mainwindow.mergelabels_act.setEnabled(True)
+            else:
+                self.mainwindow.importlabels_act.setEnabled(False)
+                self.mainwindow.mergelabels_act.setEnabled(False)
 
     def markTime(self):
         """Keep track of the time on the series file."""
@@ -305,6 +324,28 @@ class FieldWidget(QWidget, FieldView):
             return
         self.findContour(contour_name)
     
+    def drawBorder(self, painter : QPainter, color : tuple):
+        """Draw a border around the field (called during paintEvent).
+        
+            Params:
+                painter (QPainter): the painter for the field
+                color(tuple): the color for the border
+        """
+        pen = QPen(QColor(*color), 8)
+        if self.border_exists:
+            pen.setDashPattern([2, 2, 2, 2])
+        painter.setPen(pen)
+        w, h = self.width(), self.height()
+        points = [
+            (0, 0),
+            (0, h),
+            (w, h),
+            (w, 0)
+        ]
+        for i in range(len(points)):
+            painter.drawLine(*points[i-1], *points[i])
+        self.border_exists = True
+
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
         
@@ -317,30 +358,15 @@ class FieldWidget(QWidget, FieldView):
         field_painter.drawPixmap(0, 0, self.field_pixmap)
 
         # add red border if trace layer is hidden
+        self.border_exists = False
         if self.hide_trace_layer:
-            field_painter.setPen(QPen(QColor(255, 0, 0), 8))
-            w, h = self.width(), self.height()
-            points = [
-                (0, 0),
-                (0, h),
-                (w, h),
-                (w, 0)
-            ]
-            for i in range(len(points)):
-                field_painter.drawLine(*points[i-1], *points[i])
-        
+            self.drawBorder(field_painter, (255, 0, 0))
         # add green border if all traces are being shown
-        if self.show_all_traces:
-            field_painter.setPen(QPen(QColor(0, 255, 0), 8))
-            w, h = self.width(), self.height()
-            points = [
-                (0, 0),
-                (0, h),
-                (w, h),
-                (w, 0)
-            ]
-            for i in range(len(points)):
-                field_painter.drawLine(*points[i-1], *points[i])
+        elif self.show_all_traces:
+            self.drawBorder(field_painter, (0, 255, 0))
+        # add magenta border if image is hidden
+        if self.hide_image:
+            self.drawBorder(field_painter, (255, 0, 255))
 
         # draw the working trace on the screen
         if self.current_trace:
@@ -414,37 +440,59 @@ class FieldWidget(QWidget, FieldView):
             closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
             status_bar_trace = closest_trace
 
+            # get zarr label
+            if self.zarr_layer:
+                label_id = self.zarr_layer.getID(self.mouse_x, self.mouse_y)
+            else:
+                label_id = None
+
+
             if self.mouse_mode == FieldWidget.POINTER:
-                # check for ztrace segments
-                if not closest_trace:
-                    closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
-                
-                # draw name of closest trace
-                if closest_trace:
-                    if type(closest_trace) is Trace:
-                        name = closest_trace.name
-                        if closest_trace.negative:
-                            name += " (negative)"
-                    elif type(closest_trace) is Ztrace:
-                        name = f"{closest_trace.name} (ztrace)"
-                    # ztrace tuple returned
-                    elif type(closest_trace) is tuple:
-                        closest_trace = closest_trace[0]
-                        name = f"{closest_trace.name} (ztrace)"
-                    
-                    closest_trace
+                # prioritize showing label name
+                if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
-                    c = closest_trace.color
+                    c = colorize(label_id)
                     black_outline = c[0] + 3*c[1] + c[2] > 400
                     drawOutlinedText(
                         field_painter,
                         *pos,
-                        name,
+                        str(label_id),
                         c,
                         (0,0,0) if black_outline else (255,255,255),
                         ct_size,
                         left_handed
                     )
+                # if no label found, check for closest traces
+                else:
+                    # check for ztrace segments
+                    if not closest_trace:
+                        closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+                    
+                    # draw name of closest trace
+                    if closest_trace:
+                        if type(closest_trace) is Trace:
+                            name = closest_trace.name
+                            if closest_trace.negative:
+                                name += " (negative)"
+                        elif type(closest_trace) is Ztrace:
+                            name = f"{closest_trace.name} (ztrace)"
+                        # ztrace tuple returned
+                        elif type(closest_trace) is tuple:
+                            closest_trace = closest_trace[0]
+                            name = f"{closest_trace.name} (ztrace)"
+                        
+                        pos = self.mouse_x, self.mouse_y
+                        c = closest_trace.color
+                        black_outline = c[0] + 3*c[1] + c[2] > 400
+                        drawOutlinedText(
+                            field_painter,
+                            *pos,
+                            name,
+                            c,
+                            (0,0,0) if black_outline else (255,255,255),
+                            ct_size,
+                            left_handed
+                        )
             
             # get the names of the selected traces
             names = {}
@@ -683,7 +731,8 @@ class FieldWidget(QWidget, FieldView):
                 QPixmap(os.path.join(loc.img_dir, "pencil.cur")),
                 hotX=5, hotY=5
             )
-        elif mode == FieldWidget.STAMP:
+        elif (mode == FieldWidget.STAMP or
+              mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
         self.setCursor(cursor)
     
@@ -766,10 +815,16 @@ class FieldWidget(QWidget, FieldView):
         context_menu &= not (self.mouse_mode == FieldWidget.PANZOOM)
         context_menu &= not self.is_line_tracing
         if context_menu:
+            clicked_label = None
+            if self.zarr_layer:
+                clicked_label = self.zarr_layer.getID(event.x(), event.y())
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-            self.checkActions(context_menu=True, clicked_trace=clicked_trace)
+            self.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
-            self.mainwindow.field_menu.exec(event.globalPos())
+            if clicked_label:
+                self.mainwindow.label_menu.exec(event.globalPos())
+            else:
+                self.mainwindow.field_menu.exec(event.globalPos())
             self.checkActions()
             return
 
@@ -786,6 +841,8 @@ class FieldWidget(QWidget, FieldView):
             self.tracePress(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampPress(event)
+        elif self.mouse_mode == FieldWidget.GRID:
+            self.gridPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -881,6 +938,8 @@ class FieldWidget(QWidget, FieldView):
             self.knifeRelease(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampRelease(event)
+        elif self.mouse_mode == FieldWidget.GRID:
+            self.gridRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -960,16 +1019,23 @@ class FieldWidget(QWidget, FieldView):
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
 
-        # user single-clicked a trace
+        # user single-clicked
         if ((time.time() - self.click_time <= self.max_click_time) and 
-        self.lclick and self.selected_trace
+            self.lclick
         ):
-            # if user selected a normal trace
-            if type(self.selected_trace) is Trace:
-                self.selectTrace(self.selected_trace)
-            # if user selected a ztrace
-            elif type(self.selected_trace)is tuple:
-                self.selectZtrace(self.selected_trace)
+            # if user selected a label id
+            if self.zarr_layer and self.zarr_layer.selectID(
+                self.mouse_x, self.mouse_y
+            ):
+                self.generateView(update=False)
+            # if user selected a trace
+            elif self.selected_trace:
+                # if user selected a normal trace
+                if type(self.selected_trace) is Trace:
+                    self.selectTrace(self.selected_trace)
+                # if user selected a ztrace
+                elif type(self.selected_trace)is tuple:
+                    self.selectZtrace(self.selected_trace)
         
         # user moved traces
         elif self.lclick and self.is_moving_trace:
@@ -1247,6 +1313,21 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in stamp mode."""
         self.update()
     
+    def gridPress(self, event):
+        """Creates a grid on the mouse location."""
+        # get mouse coords and convert to field coords
+        if self.lclick:
+            pix_x, pix_y = event.x(), event.y()
+            self.placeGrid(
+                pix_x, pix_y,
+                self.tracing_trace,
+                *tuple(self.series.options["grid"])
+            )
+    
+    def gridRelease(self, event):
+        """Called when mouse is released in grid mode."""
+        self.update()
+
     def knifePress(self, event):
         """Called when mouse is pressed in knife mode.
 

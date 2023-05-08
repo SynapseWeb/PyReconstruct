@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from skimage.draw import polygon
 
 from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
@@ -12,19 +14,18 @@ from modules.datatypes import (
     Series, 
     Section,
     Trace,
-    Ztrace
-)
-from modules.backend.func import (
-    getExterior, 
-    mergeTraces, 
-    reducePoints, 
-    cutTraces
+    Ztrace,
+    Transform
 )
 from modules.calc import (
     pointInPoly,
     pixmapPointToField,
     fieldPointToPixmap,
-    getDistanceFromTrace
+    getDistanceFromTrace,
+    getExterior, 
+    mergeTraces, 
+    reducePoints, 
+    cutTraces
 )
 from modules.gui.utils import notify
 
@@ -42,19 +43,21 @@ class TraceLayer():
         self.traces_in_view = []
         self.zsegments_in_view = []
     
-    def pointToPix(self, pt : tuple, apply_tform=True, qpoint=False) -> tuple:
+    def pointToPix(self, pt : tuple, apply_tform=True, tform : Transform = None, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.
         
             Params:
                 pt (tuple): the trace to convert
                 apply_tform (bool): true if section transform should be applied to the point
+                tform (Transform): the transform to apply (otherwise, uses series data)
                 qpoints (bool): True if points should be converted QPoint
             Returns:
                 (tuple): the pixel point
         """
         x, y = tuple(pt)
         if apply_tform:
-            tform = self.section.tforms[self.series.alignment]
+            if tform is None:
+                tform = self.section.tforms[self.series.alignment]
             x, y = tform.map(x, y)
         x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
 
@@ -65,18 +68,19 @@ class TraceLayer():
         
         return new_pt
     
-    def traceToPix(self, trace : Trace, qpoints=False) -> list:
+    def traceToPix(self, trace : Trace, tform : Transform = None, qpoints=False) -> list:
         """Return the set of pixel points corresponding to a trace.
         
             Params:
                 trace (Trace): the trace to convert
+                tform (Transform): the transform to apply
                 qpoints (bool): True if points should be converted QPoint
             Returns:
                 (list): list of pixel points
         """
         new_pts = []
         for point in trace.points:
-            new_pts.append(self.pointToPix(point, qpoint=qpoints))
+            new_pts.append(self.pointToPix(point, tform=tform, qpoint=qpoints))
         return new_pts
     
     def getTrace(self, pix_x : float, pix_y : float) -> Trace:
@@ -231,6 +235,49 @@ class TraceLayer():
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
         self.section.selected_traces.append(new_trace)
+    
+    def placeGrid(
+        self,
+        pix_x : float, pix_y : float,
+        trace : Trace,
+        w : float, h : float,
+        dx : float, dy : float,
+        nx : int, ny : int):
+        """Place a grid on the field.
+        
+            Params:
+                pix_x (float): the x-coord of the mouse location
+                pix_y (float): the y-coord of the mouse location
+                trace (Trace): the trace shape to use in the grid
+                w (float): the desired width of the trace
+                h (float): the desired height of the trace
+                dx (float): the x distance between traces in the grid
+                dy (float): the y distance between traces in the grid
+                nx (int): the number of columns
+                ny (int): the number of rows
+        """
+        # get mouse coords and convert to field coords
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        origin = field_x + w/2, field_y - h/2
+
+        # stretch the trace to desired size
+        trace = trace.getStretched(w, h)
+
+        tform = self.section.tforms[self.series.alignment]
+        for c in range(nx):
+            for r in range(ny):
+                # create new trace
+                new_trace = trace.copy()
+                new_trace.points = []
+                for x, y in trace.points:
+                    field_point = (
+                        x + origin[0] + dx * c,
+                        y + origin[1] - dy * r
+                    )
+                    rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
+                    new_trace.add(rtform_point)
+                self.section.addTrace(new_trace)
+                self.section.selected_traces.append(new_trace)
     
     def mergeSelectedTraces(self):
         """Merge all selected traces."""
@@ -545,7 +592,7 @@ class TraceLayer():
                     if trace.isSameTrace(view_trace):
                         trace_found = True
                         break
-                if trace_found:
+                if trace_found and view_trace in self.traces_in_view:
                     self.traces_in_view.remove(view_trace)
             for trace in self.section.added_traces:
                 self.traces_in_view.append(trace)
@@ -574,6 +621,76 @@ class TraceLayer():
                 
         return trace_layer
 
+    def _drawTraceLabel(self, arr : np.ndarray, trace : Trace, label : int, tform : Transform = None):
+        """Draw labels of a trace on a trace layer.
+        
+            Params:
+                arr (np.ndarray): the array to draw the labels on
+                trace (Trace): the trace to draw
+                label (int): the label to use
+                tform (Transform): the transform to apply to the trace
+        """
+        # convert to screen coordinates
+        points = self.traceToPix(trace, tform=tform)
+
+        # get polygon coords
+        y_vals = [y for x, y in points]
+        x_vals = [x for x, y in points]
+        yy, xx = polygon(y_vals, x_vals, arr.shape)
+
+        # insert in trace_layer
+        arr[yy, xx] = label
+    
+    def generateLabelsArray(self, pixmap_dim : tuple, window : list, traces : list[Trace], tform : Transform = None):
+        """Generate numpy array with traces drawn as labels.
+        
+            Params:
+                pixmap_dim (tuple): the w and h of the 2D array
+                window (list): the view of the window (x, y, w, h)
+                traces (list[Traces]): the traces to include as labels
+                tform (Transform): the unique transform to apply to the traces
+            Returns:
+                (np.ndarray): the numpy array with traces drawn in as labels
+        """
+        # set up the trace layer
+        self.window = window
+        self.pixmap_dim = pixmap_dim
+        pixmap_w, pixmap_h = tuple(pixmap_dim)
+        arr = np.zeros(shape=(pixmap_h, pixmap_w), dtype=np.uint32)   
+
+        for trace in traces:
+            self._drawTraceLabel(
+                arr, 
+                trace, 
+                hashName(trace.name), 
+                tform
+            )
+
+        return arr
+
+def hashName(name : str):
+    """Create a hash label for a name.
+    
+        Params:
+            name (str): the name to hash
+    """
+    hash = 0
+    p = 0
+    for c in name:
+        add_to_hash = False
+        n = ord(c.lower())
+        if 48 <= n < 58:
+            n -= 48
+            add_to_hash = True
+        elif 97 <= n < 123:
+            n -= 87
+            add_to_hash = True
+        if add_to_hash:
+            hash += n * 36 ** p
+            p += 1
+            if hash >= 2**32:
+                hash %= 2**32
+    return hash
 
 def boundsOverlap(b1 : tuple, b2 : tuple):
     """Check if two bounding boxes intersect.

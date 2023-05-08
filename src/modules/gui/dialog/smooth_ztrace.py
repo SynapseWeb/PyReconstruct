@@ -9,6 +9,10 @@ from PySide6.QtWidgets import (
     QCheckBox
 )
 
+from .helper import resizeLineEdit
+
+from modules.gui.utils import notify
+
 class SmoothZtraceDialog(QDialog):
 
     def __init__(self, parent : QWidget):
@@ -23,17 +27,17 @@ class SmoothZtraceDialog(QDialog):
 
         self.setWindowTitle("Set Attributes")
 
-        self.smooth_row = QHBoxLayout()
-        self.smooth_text = QLabel(self)
-        self.smooth_text.setText("Smoothing factor:")
+        smooth_row = QHBoxLayout()
+        smooth_text = QLabel(self, text="Smoothing factor:")
         self.smooth_input = QLineEdit(self)
+        resizeLineEdit(self.smooth_input, "0000")
         self.smooth_input.setText("10")
-        self.smooth_row.addWidget(self.smooth_text)
-        self.smooth_row.addWidget(self.smooth_input)
+        smooth_row.addWidget(smooth_text)
+        smooth_row.addWidget(self.smooth_input)
 
-        self.newztrace_row = QHBoxLayout()
+        newztrace_row = QHBoxLayout()
         self.newztrace_input = QCheckBox("Create new ztrace")
-        self.newztrace_row.addWidget(self.newztrace_input)
+        newztrace_row.addWidget(self.newztrace_input)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonbox = QDialogButtonBox(QBtn)
@@ -42,11 +46,25 @@ class SmoothZtraceDialog(QDialog):
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.smooth_row)
-        self.vlayout.addLayout(self.newztrace_row)
+        self.vlayout.addLayout(smooth_row)
+        self.vlayout.addLayout(newztrace_row)
         self.vlayout.addWidget(self.buttonbox)
 
         self.setLayout(self.vlayout)
+    
+    def accept(self):
+        """Overwritten from parent class."""
+        try:
+            s = int(self.smooth_input.text())
+        except ValueError:
+            notify("Please enter a valid number.")
+            return
+        
+        if s < 0:
+            notify("Please enter a positive number.")
+            return
+        
+        super().accept()
     
     def exec(self):
         """Run the dialog."""

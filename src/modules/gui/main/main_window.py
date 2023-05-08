@@ -46,8 +46,7 @@ from modules.backend.func import (
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
 from modules.datatypes import Series, Transform
-from modules.constants import assets_dir, img_dir, src_dir
-
+from modules.constants import welcome_series_dir, assets_dir, img_dir, src_dir
 
 class MainWindow(QMainWindow):
 

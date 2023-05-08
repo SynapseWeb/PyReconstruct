@@ -11,5 +11,6 @@ from .utils import (
     noUndoWarning,
     saveNotify,
     unsavedNotify,
-    getSaveLocation
+    getSaveLocation,
+    mainwindow
 )

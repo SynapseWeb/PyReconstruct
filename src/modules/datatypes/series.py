@@ -5,6 +5,7 @@ from datetime import datetime
 
 from .ztrace import Ztrace
 from .section import Section
+from .contour import Contour
 from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
@@ -12,16 +13,31 @@ from .object_table_item import ObjectTableItem
 
 from modules.constants import (
     createHiddenDir,
-    welcome_series_dir,
-    getDefaultPaletteTraces
+    assets_dir
 )
+
+from modules.calc import mergeTraces
+
 try:
     from modules.gui.utils import progbar
     prog_imported = True
 except ImportError:
     prog_imported = False
 
+from modules.backend.threading import ThreadPool
 
+default_traces = [
+    ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], [], []],
+    ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], [], []],
+    ['triangle', [-0.0818157, 0.0818157, 0.0], [-0.0500008, -0.0500008, 0.1], [255, 0, 128], True, False, False, ['none', 'none'], [], []],
+    ['cross', [-0.0707107, -0.0202091, -0.0707107, -0.0404041, 0.0, 0.0404041, 0.0707107, 0.0202091, 0.0707107, 0.0404041, 0.0, -0.0404041], [0.0707107, 0.0, -0.0707107, -0.0707107, -0.0100975, -0.0707107, -0.0707107, 0.0, 0.0707107, 0.0707107, 0.0100975, 0.0707107], [255, 0, 0], True, False, False, ['none', 'none'], [], []],       
+    ['window', [0.0534515, 0.0534515, -0.0570026, -0.0570026, -0.0708093, -0.0708093, 0.0672582, 0.0672582, -0.0708093, -0.0570026], [0.0568051, -0.0536489, -0.0536489, 0.0429984, 0.0568051, -0.0674557, -0.0674557, 0.0706119, 0.0706119, 0.0568051], [255, 255, 0], True, False, False, ['none', 'none'], [], []],
+    ['diamond', [0.0, -0.1, 0.0, 0.1], [0.1, 0.0, -0.1, 0.0], [0, 0, 255], True, False, False, ['none', 'none'], [], []],
+    ['rect', [-0.0707107, 0.0707107, 0.0707107, -0.0707107], [0.0707107, 0.0707107, -0.0707107, -0.0707107], [255, 0, 255], True, False, False, ['none', 'none'], [], []],
+    ['arrow1', [0.0484259, 0.0021048, 0.0021048, 0.0252654, 0.094747, 0.0484259, 0.0252654, -0.0210557, -0.0442163, -0.0442163, -0.0905373, -0.0210557], [-0.0424616, -0.0424616, -0.0193011, 0.0038595, 0.02702, 0.0501806, 0.0965017, 0.0501806, 0.0038595, -0.0424616, -0.0424616, -0.0887827], [255, 0, 0], True, False, False, ['none', 'none'], [], []],
+    ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], [], []],
+    ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], [], []]
+]
 
 class Series():
 
@@ -64,13 +80,18 @@ class Series():
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
-        # keep track of transforms, mags, and section thicknesses
+        # keep track of transforms, mags, section thicknesses, and obj names
         self.section_tforms = {}
         self.section_mags = {}
         self.section_thicknesses = {}
+        self.objs = set()
 
         # default settings
         self.modified_ztraces = []
+
+        # possible zarr overlay
+        self.zarr_overlay_fp = None
+        self.zarr_overlay_group = None
 
         # ADDED SINCE JAN 25TH
 
@@ -83,18 +104,22 @@ class Series():
         """Get the mag, thickness, and transforms from each section."""
         # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
         for n, section in self.sections.items():
+            # open the json
             filepath = os.path.join(
                 self.getwdir(),
                 section
             )
             with open(filepath, "r") as f:
                 section_json = json.load(f)
+            # get relevant data
             self.section_thicknesses[n] = section_json["thickness"]
             self.section_mags[n] = section_json["mag"]
             tforms = {}
             for a in section_json["tforms"]:
                 tforms[a] = Transform(section_json["tforms"][a])
             self.section_tforms[n] = tforms
+            for cname in section_json["contours"]:
+                self.objs.add(cname)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -134,9 +159,8 @@ class Series():
             jser_data = updated_jser_data
         
         # creating loading bar
-        update, canceled = progbar(
-            "Open Series",
-            "Loading series..."
+        update, canceled = seriesProgbar(
+            text="Opening series..."
         )
         progress = 0
         final_value = 1
@@ -196,14 +220,10 @@ class Series():
 
         filenames = os.listdir(self.hidden_dir)
 
-        if prog_imported:
-            update, canceled = progbar(
-                "Save Series",
-                "Saving series...",
-                cancel=False
-            )
-        else:
-            update, canceled = None, None
+        update, canceled = seriesProgbar(
+            text="Saving series...",
+            cancel=False
+        )
         progress = 0
         final_value = len(filenames)
 
@@ -252,6 +272,8 @@ class Series():
         
         if close:
             self.close()
+        else:
+            self.gatherSectionData()
 
         if update: update(100)
     
@@ -418,7 +440,7 @@ class Series():
         series_data["current_section"] = 0  # last section left off
         series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
-        series_data["palette_traces"] = getDefaultPaletteTraces()  # trace palette
+        series_data["palette_traces"] = [t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]
         series_data["current_trace"] = series_data["palette_traces"][0]
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
@@ -438,6 +460,7 @@ class Series():
         options["show_ztraces"] = True
         options["backup_dir"] = ""
         options["fill_opacity"] = 0.2
+        options["grid"] = [1, 1, 1, 1, 1, 1]
 
         return series_data
     
@@ -516,20 +539,61 @@ class Series():
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
         """Allow iteration through the sections."""
         return SeriesIterator(self, show_progress, message)
-    
-    def newAlignment(self, alignment_name : str, base_alignment="default"):
-        """Create a new alignment.
+
+    def map(self, fn, *args, message=None):
+        """Map a function to every section in the series.
         
             Params:
-                alignment_name (str): the name of the new alignment
-                base_alignment (str): the name of the reference alignment for this new alignment
+                fn (function): the function to run on the section
+                *args: the arguments to pass into the function AFTER the section
         """
-        for snum in self.sections:
+        # create wrapper func
+        results = {}
+        def wrapper(snum, fn, *args):
             section = self.loadSection(snum)
-            section.tforms[alignment_name] = section.tforms[base_alignment]
-            section.save()
+            results[snum] = fn(section, *args)
+
+        # create progress bar
+        if message:
+            update, _ = seriesProgbar(text=message, cancel=False)
+            self.threadpool = ThreadPool(update=update)
+        else:
+            self.threadpool = ThreadPool()
         
-        self.modified = True
+        # create and run threadpool
+        for snum in self.sections:
+            self.threadpool.createWorker(
+                wrapper,
+                snum,
+                fn,
+                *args
+            )
+        self.threadpool.startAll(finished_fn=None)
+        self.threadpool.waitForDone(-1)
+
+        return results
+
+    def modifyAlignments(self, add : list = [], remove : list = [], rename : list = []):
+        """Modify the alignments (input from dialog).
+        
+            Params:
+                add (list): the alignments to add
+                remove (list): the alignments to remove
+                rename (list): the alignments to rename (old, new)
+        """
+        if not (add or remove or rename):
+            return
+        for snum, section in self.enumerateSections(message="Modifying alignments..."):
+            for a in add:
+                section.tforms[a] = section.tforms[self.alignment]
+            for a, new_name in rename:
+                if a in section.tforms:
+                    section.tforms[new_name] = section.tforms[a]
+                    del(section.tforms[a])
+            for a in remove:
+                if a in section.tforms:
+                    del(section.tforms[a])
+            section.save()
     
     def getZValues(self):
         """Return the z-values for each section.
@@ -807,6 +871,80 @@ class Series():
 
         return objdict
 
+    # STATIC METHOD
+    def getDefaultPaletteTraces():
+        """Return the default palette trace list."""
+        palette_traces = []
+        for l in default_traces:
+            palette_traces.append(Trace.fromList(l.copy()))
+        return palette_traces * 2
+
+    def mergeObjects(self, obj_names : list, new_name : str):
+        """Merge objects on every section.
+        
+            Params:
+                obj_names (list): the names of the objects to merge
+                new_name (str): the name for the merged object
+        """
+        # iterate through sections
+        for snum, section in self.enumerateSections(message="Merging objects..."):
+            # get the traces to modify
+            traces = []
+            for name in obj_names:
+                if name in section.contours:
+                    traces += section.contours[name].getTraces()
+                    del(section.contours[name])
+            if not traces:
+                continue
+
+            # get the color
+            color = traces[0].color
+            fill_mode = traces[0].fill_mode
+
+            # get the mag
+            if self.screen_mag:
+                mag = self.screen_mag
+            else:
+                mag = section.mag
+
+            # iterate through and gather pixel points
+            pix_traces = []
+            for trace in traces:
+                trace.name = new_name
+                pix_traces.append(
+                    [(round(x / mag), round(y / mag)) for x, y in trace.points]
+                )
+            
+            # merge the traces
+            new_pix_traces = mergeTraces(pix_traces)
+
+            # create a new contour from the traces
+            for pix_trace in new_pix_traces:
+                # convert pixels back to field coords
+                field_points = [
+                    (x * mag, y * mag) for x, y in pix_trace
+                ]
+                # create the trace
+                trace = Trace(new_name, color)
+                trace.fill_mode = fill_mode
+                trace.points = field_points
+                # add it to the contour
+                section.addTrace(trace, "Created by merging objects")
+
+            # save thes section
+            section.save()
+    
+    def getRecentSegGroup(self):
+        """Return the most recent segmentation group name."""
+        g = None
+        for group in self.object_groups.getGroupList():
+            if group.startswith("seg_") and (
+                g is None or group > g
+            ):
+                g = group
+        return g
+
+
 
 class SeriesIterator():
 
@@ -826,14 +964,10 @@ class SeriesIterator():
         self.section_numbers = sorted(list(self.series.sections.keys()))
         self.sni = 0
         if self.show_progress:
-            if prog_imported:
-                self.update, canceled = progbar(
-                    title=" ",
-                    text=self.message,
-                    cancel=False
-                )
-            else:
-                self.update, canceled = None, None
+            self.update, canceled = seriesProgbar(
+                text=self.message,
+                cancel=False
+            )
         return self
     
     def __next__(self):
@@ -851,3 +985,50 @@ class SeriesIterator():
                 if self.update:
                     self.update(self.sni / len(self.section_numbers) * 100)
             raise StopIteration
+
+
+class BasicProgbar():
+    def __init__(self, text : str):
+        """Create a 'vanilla' progress indicator.
+        
+        Params:
+            text (str): the text to display by the indicator
+        """
+        self.text = text
+        print(f"{text} | 0.0%", end="\r")
+    
+    def update(self, p):
+        """Update the progress indicator.
+        
+            Params:
+                p (float): the percentage of progress made
+        """
+        print(f"{self.text} | {p:.1f}%", end="\r")
+        if p == 100:
+            print()
+    
+    def canceled(self):
+        """Dummy function -- do nothing!"""
+        return False
+
+def seriesProgbar(text : str, cancel : bool = True):
+    """Return the appropriate progress bar for the situation.
+    
+        text (str): the text to display on the progress bar
+        cancel (bool): True if progress can be canceled
+    """
+    use_basic = not prog_imported
+    if prog_imported:
+        update, canceled = progbar(
+            title=" ",
+            text=text,
+            cancel=cancel
+        )
+        if update is None:
+            use_basic = True
+    if use_basic:
+        pbar = BasicProgbar(text)
+        update = pbar.update
+        canceled = pbar.canceled
+    
+    return update, canceled

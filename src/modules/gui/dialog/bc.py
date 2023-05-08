@@ -1,11 +1,15 @@
 from PySide6.QtWidgets import (
     QDialog, 
     QDialogButtonBox, 
-    QHBoxLayout, 
+    QGridLayout,
     QLabel, 
     QLineEdit, 
     QVBoxLayout
 )
+
+from modules.gui.utils import notify
+
+from .helper import resizeLineEdit
 
 class BCDialog(QDialog):
 
@@ -15,51 +19,56 @@ class BCDialog(QDialog):
 
         self.setWindowTitle("Set Brightness/Contrast")
 
-        self.b_row = QHBoxLayout()
-        self.b_text = QLabel(self)
-        self.b_text.setText("Brightness (-100 - 100):")
-        self.b_input = QLineEdit(self)
-        self.b_row.addWidget(self.b_text)
-        self.b_row.addWidget(self.b_input)
+        b_text = QLabel(self, text="Brightness (-100 - 100):")
+        b_input = QLineEdit(self)
+        resizeLineEdit(b_input, "000")
 
-        self.c_row = QHBoxLayout()
-        self.c_text = QLabel(self)
-        self.c_text.setText("Contrast (-100 - 100):")
-        self.c_input = QLineEdit(self)
-        self.c_row.addWidget(self.c_text)
-        self.c_row.addWidget(self.c_input)
+        c_text = QLabel(self, text="Contrast (-100 - 100):")
+        c_input = QLineEdit(self)
+        resizeLineEdit(c_input, "000")
+
+        grid = QGridLayout()
+
+        grid.addWidget(b_text, 0, 0)
+        grid.addWidget(b_input, 0, 1)
+
+        grid.addWidget(c_text, 1, 0)
+        grid.addWidget(c_input, 1, 1)
+
+        self.inputs = [b_input, c_input]
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.b_row)
-        self.vlayout.addLayout(self.c_row)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addLayout(grid)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
+    
+    def accept(self):
+        """Overwritten from parent class."""
+        for input in self.inputs:
+            try:
+                n = int(input.text())
+            except ValueError:
+                notify("Please enter a valid number.")
+                return
+            if not -100 <= n <= 100:
+                notify("Please enter a number between -100 and 100.")
+                return
+        
+        super().accept()
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
         if confirmed:
-            b = self.b_input.text()
-            c = self.c_input.text()
-            try:
-                b = int(b)
-                if abs(b) > 100:
-                    b = None
-            except ValueError:
-                b = None
-            try:
-                c = int(c)
-                if abs(c) > 100:
-                    c = None
-            except ValueError:
-                c = None
-            return (b, c), confirmed
+            b = int(self.inputs[0].text())
+            c = int(self.inputs[1].text())
+            return (b, c), True
         else:
-            return (None, None), False 
+            return None, False 

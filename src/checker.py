@@ -57,8 +57,8 @@ mainwindow.importTraces(os.path.join(testing_dir, "shapes2.jser"))
 # import ztraces
 mainwindow.importTraces(os.path.join(testing_dir, "shapes2.jser"))
 
-# create/change to a new alignment
-mainwindow.changeAlignment("identity")
+# change to a new alignment
+mainwindow.changeAlignment("default")
 
 # import transforms
 mainwindow.importTransforms(os.path.join(testing_dir, "tforms.txt"))
@@ -566,6 +566,17 @@ field.lclick = False
 assert(len(field.section.contours["circle1"]) == 1)
 
 # undo stamp
+field.undoState()
+
+# imitate grid tool
+field.series.options["grid"] = [0.5, 0.1, 1, 1, 5, 5]
+field.lclick = True
+field.gridPress(MouseEvent(2, 2))
+field.gridRelease(MouseEvent(2, 2))
+field.lclick = False
+assert(len(field.section.contours["circle1"]) == 25)
+
+# undo grid
 field.undoState()
 
 # imitate the knife tool

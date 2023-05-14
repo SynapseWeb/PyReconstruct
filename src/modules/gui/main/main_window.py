@@ -1325,7 +1325,9 @@ class MainWindow(QMainWindow):
         """Train an autosegmentation model."""
         print("Importing training modules...")
 
-        from modules.backend.autoseg.vijay import train, make_mask, model_paths
+        #from modules.backend.autoseg.vijay import train, make_mask, model_paths
+
+        model_paths = { "membrane": { "model_1" : "/tmp/model_1.py" } }
 
         response, confirmed = TrainDialog(self, self.series, model_paths, retrain).exec()
         if not confirmed:

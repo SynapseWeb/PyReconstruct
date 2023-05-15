@@ -1337,8 +1337,6 @@ class MainWindow(QMainWindow):
         (data_fp, iterations, save_every, group, model_path, cdir, \
          pre_cache, min_masked, downsample) = response
 
-        print(f'RESPONSE:\n{response}')
-
         training_opts = {
             'zarr_current': data_fp,
             'iters': str(iterations),
@@ -1352,8 +1350,6 @@ class MainWindow(QMainWindow):
         }
 
         self.autoseg_opts.update({"train" : training_opts})
-
-        print(f'OPTS:\n{self.autoseg_opts}')
 
         print("Exporting labels to zarr directory...")
         
@@ -1423,8 +1419,6 @@ class MainWindow(QMainWindow):
 
         if not dialog_confirmed: return
 
-        print(response)
-        
         data_fp, model_path, cp_path, write_opts, increase, downsample = response
 
         inc_opt = "None" if not increase else f'{increase[0]}, {increase[1]}, {increase[2]}'
@@ -1465,13 +1459,24 @@ class MainWindow(QMainWindow):
         
         # from modules.backend.autoseg.vijay import hierarchical
 
-        opts = self.autoseg_opts["predict"]
+        opts = self.autoseg_opts["segment"]
 
-        response, dialog_confirmed = SegmentDialog(self).exec()
+        response, dialog_confirmed = SegmentDialog(self, opts).exec()
 
-        if not dialog_confirmed: return        
-        
-        data_fp, thresholds = response
+        if not dialog_confirmed: return
+
+        data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
+
+        segment_opts = {
+            "zarr_current": data_fp,
+            "thresholds": ', '.join(str(x) for x in thresholds),
+            "downsample": str(downsample),
+            "norm_preds": norm_preds,
+            "min_seed": str(min_seed),
+            "merge_fun": merge_fun
+        }
+
+        self.autoseg_opts.update({"segment": segment_opts})
 
         print("Running hierarchical...")
 
@@ -1483,15 +1488,18 @@ class MainWindow(QMainWindow):
 
         print("Segmentation started...")
             
-        hierarchical.run(
-            data_fp,
-            dataset,
-            thresholds=list(sorted(thresholds))
-        )
+        # hierarchical.run(
+        #     data_fp,
+        #     dataset,
+        #     thresholds=list(sorted(thresholds)),
+        #     normalize_preds=norm_preds,
+        #     min_seed_distance=min_seed,
+        #     merge_function=merge_fun
+        # )
 
-        print("Segmentation done.")
+        # print("Segmentation done.")
 
-        self.setZarrLayer(data_fp)
+        # self.setZarrLayer(data_fp)
     
     def importLabels(self, all=False):
         """Import labels from a zarr."""

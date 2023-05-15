@@ -5,6 +5,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QVBoxLayout,
     QGridLayout,
+    QCheckBox,
+    QComboBox
 )
 
 from .helper import BrowseWidget
@@ -13,22 +15,61 @@ from modules.gui.utils import notify
 
 class SegmentDialog(QDialog):
 
-    def __init__(self, parent):
+    def __init__(self, parent, opts):
         """Create a dialog for running an autosegmentation.
         
             Params:
                 parent (QWidget): the parent of the dialog
+                opts (dict): segmentations opts
         """
         super().__init__(parent)
 
         self.setWindowTitle("Segment")
 
-        zarr_fp_text = QLabel(self, text="Zarr:")
+        zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
-        thresholds_text = QLabel(self, text="Thresholds:")
+        if opts.get("zarr_current"):
+            self.zarr_fp_input.le.setText(opts.get("zarr_current"))
+
+        thresholds_text = QLabel(self, text="Thresholds")
         self.thresholds_input = QLineEdit(self)
         self.thresholds_input.setText("0.5")
+
+        if opts.get("thresholds"):
+            self.thresholds_input.setText(opts.get("thresholds"))
+
+        downsample_text = QLabel(self, text="Downsample")
+        self.downsample_input = QLineEdit(self)
+        self.downsample_input.setText("1")
+
+        if opts.get("downsample"):
+            self.downsample_input.setText(opts.get("downsample"))
+
+        norm_preds_text = QLabel(self, text="Normalize preds")
+        self.norm_preds_input = QCheckBox(self)
+
+        if opts.get("norm_preds") == True:
+            self.norm_preds_input.setChecked(True)
+
+        min_seed_text = QLabel(self, text="Min seed distance")
+        self.min_seed_input = QLineEdit(self)
+        self.min_seed_input.setText("10")
+
+        if opts.get("min_seed"):
+            self.min_seed_input.setText(opts.get("min_seed"))
+
+        merge_text = QLabel(self, text="Merge function")
+        self.merge_input = QComboBox(self)
+        funs = ["mean", "hist_quant_10", "hist_quant_10_initmax",
+                 "hist_quant_25", "hist_quant_25_initmax", "hist_quant_50",
+                 "hist_quant_50_initmax", "hist_quant_75", "hist_quant_75_initmax",
+                 "hist_quant_90", "hist_quant_90_initmax"]
+        self.merge_input.addItems(funs)
+
+        if opts.get("merge_fun"):
+            self.merge_input.setCurrentIndex(funs.index(opts.get("merge_fun")))
+        
         
         layout = QGridLayout()
 
@@ -37,6 +78,18 @@ class SegmentDialog(QDialog):
 
         layout.addWidget(thresholds_text, 1, 0)
         layout.addWidget(self.thresholds_input, 1, 1)
+
+        layout.addWidget(downsample_text, 2, 0)
+        layout.addWidget(self.downsample_input, 2, 1)
+
+        layout.addWidget(norm_preds_text, 3, 0)
+        layout.addWidget(self.norm_preds_input, 3, 1)
+
+        layout.addWidget(min_seed_text, 4, 0)
+        layout.addWidget(self.min_seed_input, 4, 1)
+
+        layout.addWidget(merge_text, 5, 0)
+        layout.addWidget(self.merge_input, 5, 1)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -67,16 +120,40 @@ class SegmentDialog(QDialog):
                 notify("Please enter a valid threshold number.")
                 return
 
+        if not self.downsample_input.text().isnumeric():
+            notify("Please enter a value value for downsampling.")
+            return
+
+        if not self.min_seed_input.text().isnumeric():
+            notify("Please enter a value value for mininum seed distance.")
+            return
+
         super().accept()
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
+        
         if confirmed:
+
+            zarr_fp = self.zarr_fp_input.text()
+            thresholds = tuple([float(n.strip()) for n in self.thresholds_input.text().split(",")])
+            downsample = int(self.downsample_input.text())
+            norm_preds = self.norm_preds_input.isChecked()
+            min_seed = int(self.min_seed_input.text())
+            merge_fun = self.merge_input.currentText()
+
             response = [
-                self.zarr_fp_input.text(),
-                tuple([float(n.strip()) for n in self.thresholds_input.text().split(",")]),
+                zarr_fp,
+                thresholds,
+                downsample,
+                norm_preds,
+                min_seed,
+                merge_fun
             ]
+            
             return tuple(response), True
+        
         else:
+            
             return None, False

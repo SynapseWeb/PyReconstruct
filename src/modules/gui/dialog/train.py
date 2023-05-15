@@ -2,6 +2,7 @@ import os
 import zarr
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog, 
     QDialogButtonBox, 
     QLabel, 
@@ -96,6 +97,13 @@ class TrainDialog(QDialog):
 
         if autoseg_opts.get("min_masked"):
             self.minmasked_input.setText(autoseg_opts.get("min_masked"))
+            
+        probabilities_text = QLabel(self, text="Probabilities (list of floats)")
+        self.probabilities_input = QLineEdit(self)
+        self.probabilities_input.setText("None")
+
+        downsample_text = QLabel(self, text="Downsample")
+        self.downsample_input = QCheckBox(self)
         
         layout = QGridLayout()
 
@@ -132,6 +140,14 @@ class TrainDialog(QDialog):
 
         layout.addWidget(minmasked_text, r, 0)
         layout.addWidget(self.minmasked_input, r, 1)
+        r += 1
+
+        layout.addWidget(probabilities_text, r, 0)
+        layout.addWidget(self.probabilities_input, r, 1)
+        r += 1
+
+        layout.addWidget(downsample_text, r, 0)
+        layout.addWidget(self.downsample_input, r, 1)
         r += 1
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -187,6 +203,14 @@ class TrainDialog(QDialog):
         except ValueError:
             notify("Please enter a valid number for the min masked value.")
             return
+        
+        probs = self.probabilities_input.text()
+        if probs != "None":
+            try:
+                pc = [float(n.strip()) for n in probs.split(",")]
+            except:
+                notify("Please enter a list of floats for probabilities or None.")
+                return
 
         super().accept()
     
@@ -195,23 +219,43 @@ class TrainDialog(QDialog):
         confirmed = super().exec()
         if confirmed:
             group, model = self.model_input.currentText().split(" - ")
-            model_path = self.models[group][model] 
+            model_path = self.models[group][model]
+
+            zarr_dir = self.zarr_fp_input.text()
+            iterations = int(self.iter_input.text())
+            save_freq = int(self.savefreq_input.text())
+            groups = [None] if self.retrain else [self.group_input.currentText()]
+            checkpoints_dir = self.cdir_input.text()
+            pre_cache = tuple([int(n.strip()) for n in self.pre_cache_input.text().split(",")])
+
+            print(f'Here: { self.minmasked_input.text() }')
+            
+            minmask = float(self.minmasked_input.text())
+            downsample = self.downsample_input.isChecked()
+
+            probs = self.probabilities_input.text().split(",")            
+            if "None" in probs:
+                probabilites = None
+            else:
+                probabilites = tuple([float(n.strip()) for n in probs])
 
             response = [
-                self.zarr_fp_input.text(),
-                int(self.iter_input.text()),
-                int(self.savefreq_input.text())
-            ]
-            if self.retrain:
-                response += [None]
-            else:
-                response += [self.group_input.currentText()]
-            response += [
+                
+                zarr_dir,
+                iterations,
+                save_freq,
+                groups,
                 model_path,
-                self.cdir_input.text(),
-                tuple([int(n.strip()) for n in self.pre_cache_input.text().split(",")]),
-                float(self.minmasked_input.text())
+                checkpoints_dir,
+                pre_cache,
+                minmask,
+                probabilites,
+                downsample
+                
             ]
+                
             return tuple(response), True
+        
         else:
+            
             return None, False

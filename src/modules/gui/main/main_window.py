@@ -1379,16 +1379,16 @@ class MainWindow(QMainWindow):
             "unlabelled" : (data_fp, "unlabelled")
         }]
 
-        train(
-            iterations=iterations,
-            save_every=save_every,
-            sources=sources,
-            model_path=model_path,
-            pre_cache=pre_cache,
-            min_masked=min_masked,
-            # downsample=False,
-            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
-        )
+        # train(
+        #     iterations=iterations,
+        #     save_every=save_every,
+        #     sources=sources,
+        #     model_path=model_path,
+        #     pre_cache=pre_cache,
+        #     min_masked=min_masked,
+        #     downsample=downsample,
+        #     checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
+        # )
 
         print("Done training!")
     

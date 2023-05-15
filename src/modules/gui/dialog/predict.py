@@ -46,8 +46,8 @@ class PredictDialog(QDialog):
         self.model_input.addItems(items)
 
         if opts.get("model_path"):
-            original_path = opts.get("model_path")
-            original_choice = os.path.basename(original_path)[:-3]
+            original_path = os.path.dirname(opts.get("model_path"))
+            original_choice = os.path.basename(original_path)
             original_type = os.path.basename(os.path.dirname(original_path))
             orig = f'{original_type} - {original_choice}'
             self.model_input.setCurrentIndex(items.index(orig))

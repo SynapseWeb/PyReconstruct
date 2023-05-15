@@ -1326,9 +1326,8 @@ class MainWindow(QMainWindow):
         """Train an autosegmentation model."""
         print("Importing training modules...")
 
-        #from modules.backend.autoseg.vijay import train, make_mask, model_paths
+        from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        model_paths = { "membrane": { "model_1" : "/tmp/membrane/model_1.py" } }
         opts = self.autoseg_opts["train"]
 
         response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
@@ -1337,11 +1336,13 @@ class MainWindow(QMainWindow):
         (data_fp, iterations, save_every, group, model_path, cdir, \
          pre_cache, min_masked, downsample) = response
 
+        print(f'RESPONSE:\n{response}')
+
         training_opts = {
             'zarr_current': data_fp,
             'iters': str(iterations),
             'save_every': str(save_every),
-            'group': group[0],
+            'group': group,
             'model_path': model_path,
             'checkpts_dir': cdir,
             'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
@@ -1353,41 +1354,40 @@ class MainWindow(QMainWindow):
 
         print("Exporting labels to zarr directory...")
         
-        # if retrain:
+        if retrain:
             
-        #     seriesToLabels(self.series, data_fp)
-        #     group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+            seriesToLabels(self.series, data_fp)
+            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
             
-        # else:
+        else:
             
-        #     seriesToLabels(self.series, data_fp, group)
-        #     group_name = f"labels_{group}"
+            seriesToLabels(self.series, data_fp, group)
+            group_name = f"labels_{group}"
 
-        # print("Zarr directory updated with labels!")
+        print("Zarr directory updated with labels!")
 
-        # if retrain: self.field.reload()
+        if retrain: self.field.reload()
 
-        # print("Starting training....")
+        print("Starting training....")
 
-        # make_mask(data_fp, group_name)
+        make_mask(data_fp, group_name)
         
-        # sources = [{
-        #     "raw" : (data_fp, "raw"),
-        #     "labels" : (data_fp, group_name),
-        #     "unlabelled" : (data_fp, "unlabelled")
-        # }]
+        sources = [{
+            "raw" : (data_fp, "raw"),
+            "labels" : (data_fp, group_name),
+            "unlabelled" : (data_fp, "unlabelled")
+        }]
 
-        # train(
-        #     iterations=iterations,
-        #     save_every=save_every,
-        #     sources=sources,
-        #     model_path=model_path,
-        #     pre_cache=pre_cache,
-        #     min_masked=min_masked,
-        #     downsample=downsample,
-        #     probabilities=probs,
-        #     checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
-        # )
+        train(
+            iterations=iterations,
+            save_every=save_every,
+            sources=sources,
+            model_path=model_path,
+            pre_cache=pre_cache,
+            min_masked=min_masked,
+            downsample=downsample,
+            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
+        )
 
         print("Done training!")
     
@@ -1409,10 +1409,8 @@ class MainWindow(QMainWindow):
 
         print("Importing models...")
         
-        # from modules.backend.autoseg.vijay import predict, model_paths
+        from modules.backend.autoseg.vijay import predict, model_paths
 
-        # TESTING
-        model_paths = { "membrane": { "model_1" : "/tmp/membrane/model_1.py" } }
         opts = self.autoseg_opts["predict"]
 
         response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
@@ -1436,17 +1434,17 @@ class MainWindow(QMainWindow):
         
         print("Running predictions...")
 
-        # zarr_datasets = predict(
-        #     sources=[(data_fp, "raw")],
-        #     out_file=data_fp,
-        #     checkpoint_path=cp_path,
-        #     model_path=model_path,
-        #     write=write_opts,
-        #     increase=increase
-        #     downsample=downsample,
-        # )
+        zarr_datasets = predict(
+            sources=[(data_fp, "raw")],
+            out_file=data_fp,
+            checkpoint_path=cp_path,
+            model_path=model_path,
+            write=write_opts,
+            increase=increase,
+            downsample=downsample,
+        )
 
-        # print("Predictions done.")
+        print("Predictions done.")
         
     def segment(self, data_fp : str = None):
         """Run an autosegmentation.
@@ -1457,7 +1455,7 @@ class MainWindow(QMainWindow):
 
         print("Importing modules...")
         
-        # from modules.backend.autoseg.vijay import hierarchical
+        from modules.backend.autoseg.vijay import hierarchical
 
         opts = self.autoseg_opts["segment"]
 
@@ -1488,18 +1486,18 @@ class MainWindow(QMainWindow):
 
         print("Segmentation started...")
             
-        # hierarchical.run(
-        #     data_fp,
-        #     dataset,
-        #     thresholds=list(sorted(thresholds)),
-        #     normalize_preds=norm_preds,
-        #     min_seed_distance=min_seed,
-        #     merge_function=merge_fun
-        # )
+        hierarchical.run(
+            data_fp,
+            dataset,
+            thresholds=list(sorted(thresholds)),
+            normalize_preds=norm_preds,
+            min_seed_distance=min_seed,
+            merge_function=merge_fun
+        )
 
-        # print("Segmentation done.")
+        print("Segmentation done.")
 
-        # self.setZarrLayer(data_fp)
+        self.setZarrLayer(data_fp)
     
     def importLabels(self, all=False):
         """Import labels from a zarr."""

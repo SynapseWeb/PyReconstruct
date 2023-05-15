@@ -61,15 +61,15 @@ class SegmentDialog(QDialog):
 
         merge_text = QLabel(self, text="Merge function")
         self.merge_input = QComboBox(self)
-        funs = ["mean", "hist_quant_10", "hist_quant_10_initmax",
-                 "hist_quant_25", "hist_quant_25_initmax", "hist_quant_50",
-                 "hist_quant_50_initmax", "hist_quant_75", "hist_quant_75_initmax",
-                 "hist_quant_90", "hist_quant_90_initmax"]
+        funs = ["mean",
+                "hist_quant_25",
+                "hist_quant_50",
+                "hist_quant_75",
+                "hist_quant_90"]
         self.merge_input.addItems(funs)
 
         if opts.get("merge_fun"):
             self.merge_input.setCurrentIndex(funs.index(opts.get("merge_fun")))
-        
         
         layout = QGridLayout()
 

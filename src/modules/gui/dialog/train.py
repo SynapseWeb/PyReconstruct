@@ -72,8 +72,8 @@ class TrainDialog(QDialog):
         self.model_input.addItems(items)
 
         if autoseg_opts.get("model_path"):
-            original_path = autoseg_opts.get("model_path")
-            original_choice = os.path.basename(original_path)[:-3]
+            original_path = os.path.dirname(autoseg_opts.get("model_path"))
+            original_choice = os.path.basename(original_path)
             original_type = os.path.basename(os.path.dirname(original_path))
             orig = f'{original_type} - {original_choice}'
             self.model_input.setCurrentIndex(items.index(orig))
@@ -211,12 +211,9 @@ class TrainDialog(QDialog):
             zarr_dir = self.zarr_fp_input.text()
             iterations = int(self.iter_input.text())
             save_freq = int(self.savefreq_input.text())
-            groups = [None] if self.retrain else [self.group_input.currentText()]
+            groups = None if self.retrain else self.group_input.currentText()
             checkpoints_dir = self.cdir_input.text()
             pre_cache = tuple([int(n.strip()) for n in self.pre_cache_input.text().split(",")])
-
-            print(f'Here: { self.minmasked_input.text() }')
-            
             minmask = float(self.minmasked_input.text())
             downsample = self.downsample_input.isChecked()
 

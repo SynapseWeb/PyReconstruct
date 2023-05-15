@@ -1,13 +1,16 @@
 import os
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog, 
     QDialogButtonBox, 
     QLabel, 
     QVBoxLayout,
     QGridLayout,
-    QComboBox
+    QComboBox,
+    QLineEdit
 )
+from gunpowder import downsample
 
 from .helper import BrowseWidget
 
@@ -26,11 +29,11 @@ class PredictDialog(QDialog):
 
         self.setWindowTitle("Predict")
 
-        zarr_fp_text = QLabel(self, text="Zarr:")
+        zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
         self.models = models
-        model_text = QLabel(self, text="Model:")
+        model_text = QLabel(self, text="Model")
         self.model_input = QComboBox(self)
         items = [""]
         for g in self.models:
@@ -40,6 +43,18 @@ class PredictDialog(QDialog):
 
         cfile_text = QLabel(self, text="Checkpoint:")
         self.cfile_input = BrowseWidget(self, type="file")
+
+        write_text = QLabel(self, text="Write")
+        self.write_input = QComboBox(self)
+        write_opts = ["affs", "lsds", "mask", "all"]
+        self.write_input.addItems(write_opts)
+
+        increase_text = QLabel(self, text="Increase")
+        self.increase_input = QLineEdit(self)
+        self.increase_input.setText("")
+
+        downsample_text = QLabel(self, text="Downsample")
+        self.downsample_input = QCheckBox(self)
         
         layout = QGridLayout()
 
@@ -51,6 +66,15 @@ class PredictDialog(QDialog):
 
         layout.addWidget(cfile_text, 2, 0)
         layout.addWidget(self.cfile_input, 2, 1)
+
+        layout.addWidget(write_text, 3, 0)
+        layout.addWidget(self.write_input, 3, 1)
+
+        layout.addWidget(downsample_text, 4, 0)
+        layout.addWidget(self.downsample_input, 4, 1)
+
+        layout.addWidget(increase_text, 5, 0)
+        layout.addWidget(self.increase_input, 5, 1)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -79,20 +103,47 @@ class PredictDialog(QDialog):
             notify("Please select a checkpoint file.")
             return
 
+        increase = self.increase_input.text()
+        if "None" not in increase and increase.strip() != "":
+            inc = [n.strip() for n in self.increase_input.text().split(",")]
+            for n in inc:
+                if not n.isnumeric():
+                    notify("Please enter a valid numbers for increase (e.g.: 8, 96, 96).")
+                    return
+
         super().accept()
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
+        
         if confirmed:
+            
             group, model = self.model_input.currentText().split(" - ")
-            model_path = self.models[group][model] 
+            model_path = self.models[group][model]
+
+            zarr_fp = self.zarr_fp_input.text()
+            checkpoint_fp = self.cfile_input.text()
+            write_opts = self.write_input.currentText()
+            downsample = self.downsample_input.isChecked()
+
+            increase = self.increase_input.text()
+            if "None" in increase or increase == "":
+                increase = None
+            else:
+                increase = tuple([int(n.strip()) for n in increase.split(",")])
 
             response = [
-                self.zarr_fp_input.text(),
+                zarr_fp,
                 model_path,
-                self.cfile_input.text()
+                checkpoint_fp,
+                write_opts,
+                increase,
+                downsample
             ]
+
             return tuple(response), True
+        
         else:
+            
             return None, False

@@ -1412,26 +1412,32 @@ class MainWindow(QMainWindow):
 
         print("Importing models...")
         
-        from modules.backend.autoseg.vijay import predict, model_paths
+        # from modules.backend.autoseg.vijay import predict, model_paths
 
-        response, confirmed = PredictDialog(self, model_paths).exec()
-        if not confirmed:
-            return        
+        # TESTING
+        model_paths = { "membrane": { "model_1" : "/tmp/model_1.py" } }
+
+        response, dialog_confirmed = PredictDialog(self, model_paths).exec()
+
+        if not dialog_confirmed: return
+
+        print(response)
         
-        data_fp, model_path, checkpoint_path = response
+        data_fp, model_path, cp_path, write_opts, increase, downsample = response
         
         print("Running predictions...")
 
-        zarr_datasets = predict(
-            sources=[(data_fp, "raw")],
-            out_file=data_fp,
-            checkpoint_path=checkpoint_path,
-            model_path=model_path,
-            write="affs",
-            #increase=(8, 96, 96)  # adds to output shape (reduces chunks during prediction)
-        )
+        # zarr_datasets = predict(
+        #     sources=[(data_fp, "raw")],
+        #     out_file=data_fp,
+        #     checkpoint_path=cp_path,
+        #     model_path=model_path,
+        #     write=write_opts,
+        #     increase=increase
+        #     downsample=downsample,
+        # )
 
-        print("Predictions done.")
+        # print("Predictions done.")
         
     def segment(self, data_fp : str = None):
         """Run an autosegmentation.

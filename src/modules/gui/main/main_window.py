@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
-        self.autoseg_opts = {} # placeholder for autoseg opts
+        self.autoseg_opts = {"train": {}, "predict": {}, "segment": {}}
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -1329,8 +1329,9 @@ class MainWindow(QMainWindow):
         #from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
         model_paths = { "membrane": { "model_1" : "/tmp/membrane/model_1.py" } }
+        opts = self.autoseg_opts["train"]
 
-        response, confirmed = TrainDialog(self, self.series, model_paths, self.autoseg_opts, retrain).exec()
+        response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
         if not confirmed: return
         
         (data_fp, iterations, save_every, group, model_path, cdir, \
@@ -1338,19 +1339,19 @@ class MainWindow(QMainWindow):
 
         print(f'RESPONSE:\n{response}')
 
-        self.autoseg_opts.update(
-            {
-                'zarr_current': data_fp,
-                'iters': str(iterations),
-                'save_every': str(save_every),
-                'group': group[0],
-                'model_path': model_path,
-                'checkpts_dir': cdir,
-                'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
-                'min_masked': str(min_masked),
-                'downsample': downsample
-            }
-        )
+        training_opts = {
+            'zarr_current': data_fp,
+            'iters': str(iterations),
+            'save_every': str(save_every),
+            'group': group[0],
+            'model_path': model_path,
+            'checkpts_dir': cdir,
+            'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
+            'min_masked': str(min_masked),
+            'downsample': downsample
+        }
+
+        self.autoseg_opts.update({"train" : training_opts})
 
         print(f'OPTS:\n{self.autoseg_opts}')
 
@@ -1415,15 +1416,29 @@ class MainWindow(QMainWindow):
         # from modules.backend.autoseg.vijay import predict, model_paths
 
         # TESTING
-        model_paths = { "membrane": { "model_1" : "/tmp/model_1.py" } }
+        model_paths = { "membrane": { "model_1" : "/tmp/membrane/model_1.py" } }
+        opts = self.autoseg_opts["predict"]
 
-        response, dialog_confirmed = PredictDialog(self, model_paths).exec()
+        response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
 
         if not dialog_confirmed: return
 
         print(response)
         
         data_fp, model_path, cp_path, write_opts, increase, downsample = response
+
+        inc_opt = "None" if not increase else f'{increase[0]}, {increase[1]}, {increase[2]}'
+
+        predict_opts = {
+            'zarr_current': data_fp,
+            'model_path': model_path,
+            'cp_path': cp_path,
+            'write': write_opts,
+            'increase': inc_opt,
+            'downsample': downsample
+        }
+
+        self.autoseg_opts.update({"predict": predict_opts})
         
         print("Running predictions...")
 
@@ -1448,11 +1463,13 @@ class MainWindow(QMainWindow):
 
         print("Importing modules...")
         
-        from modules.backend.autoseg.vijay import hierarchical
+        # from modules.backend.autoseg.vijay import hierarchical
 
-        response, confirmed = SegmentDialog(self).exec()
-        if not confirmed:
-            return        
+        opts = self.autoseg_opts["predict"]
+
+        response, dialog_confirmed = SegmentDialog(self).exec()
+
+        if not dialog_confirmed: return        
         
         data_fp, thresholds = response
 

@@ -1334,7 +1334,7 @@ class MainWindow(QMainWindow):
         if not confirmed: return
         
         (data_fp, iterations, save_every, group, model_path, cdir, \
-         pre_cache, min_masked) = response
+         pre_cache, min_masked, downsample) = response
 
         print(f'RESPONSE:\n{response}')
 
@@ -1343,11 +1343,12 @@ class MainWindow(QMainWindow):
                 'zarr_current': data_fp,
                 'iters': str(iterations),
                 'save_every': str(save_every),
-                'group': group,
+                'group': group[0],
                 'model_path': model_path,
                 'checkpts_dir': cdir,
                 'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
-                'min_masked': str(min_masked)
+                'min_masked': str(min_masked),
+                'downsample': downsample
             }
         )
 
@@ -1355,29 +1356,29 @@ class MainWindow(QMainWindow):
 
         print("Exporting labels to zarr directory...")
         
-        if retrain:
+        # if retrain:
             
-            seriesToLabels(self.series, data_fp)
-            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+        #     seriesToLabels(self.series, data_fp)
+        #     group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
             
-        else:
+        # else:
             
-            seriesToLabels(self.series, data_fp, group)
-            group_name = f"labels_{group}"
+        #     seriesToLabels(self.series, data_fp, group)
+        #     group_name = f"labels_{group}"
 
-        print("Zarr directory updated with labels!")
+        # print("Zarr directory updated with labels!")
 
-        if retrain: self.field.reload()
+        # if retrain: self.field.reload()
 
-        print("Starting training....")
+        # print("Starting training....")
 
-        make_mask(data_fp, group_name)
+        # make_mask(data_fp, group_name)
         
-        sources = [{
-            "raw" : (data_fp, "raw"),
-            "labels" : (data_fp, group_name),
-            "unlabelled" : (data_fp, "unlabelled")
-        }]
+        # sources = [{
+        #     "raw" : (data_fp, "raw"),
+        #     "labels" : (data_fp, group_name),
+        #     "unlabelled" : (data_fp, "unlabelled")
+        # }]
 
         # train(
         #     iterations=iterations,
@@ -1387,6 +1388,7 @@ class MainWindow(QMainWindow):
         #     pre_cache=pre_cache,
         #     min_masked=min_masked,
         #     downsample=downsample,
+        #     probabilities=probs,
         #     checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
         # )
 

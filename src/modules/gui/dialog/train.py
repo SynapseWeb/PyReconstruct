@@ -98,12 +98,11 @@ class TrainDialog(QDialog):
         if autoseg_opts.get("min_masked"):
             self.minmasked_input.setText(autoseg_opts.get("min_masked"))
             
-        probabilities_text = QLabel(self, text="Probabilities (list of floats)")
-        self.probabilities_input = QLineEdit(self)
-        self.probabilities_input.setText("None")
-
         downsample_text = QLabel(self, text="Downsample")
         self.downsample_input = QCheckBox(self)
+
+        if autoseg_opts.get("downsample") == True:
+            self.downsample_input.setChecked(True)
         
         layout = QGridLayout()
 
@@ -140,10 +139,6 @@ class TrainDialog(QDialog):
 
         layout.addWidget(minmasked_text, r, 0)
         layout.addWidget(self.minmasked_input, r, 1)
-        r += 1
-
-        layout.addWidget(probabilities_text, r, 0)
-        layout.addWidget(self.probabilities_input, r, 1)
         r += 1
 
         layout.addWidget(downsample_text, r, 0)
@@ -204,14 +199,6 @@ class TrainDialog(QDialog):
             notify("Please enter a valid number for the min masked value.")
             return
         
-        probs = self.probabilities_input.text()
-        if probs != "None":
-            try:
-                pc = [float(n.strip()) for n in probs.split(",")]
-            except:
-                notify("Please enter a list of floats for probabilities or None.")
-                return
-
         super().accept()
     
     def exec(self):
@@ -233,12 +220,6 @@ class TrainDialog(QDialog):
             minmask = float(self.minmasked_input.text())
             downsample = self.downsample_input.isChecked()
 
-            probs = self.probabilities_input.text().split(",")            
-            if "None" in probs:
-                probabilites = None
-            else:
-                probabilites = tuple([float(n.strip()) for n in probs])
-
             response = [
                 
                 zarr_dir,
@@ -249,7 +230,6 @@ class TrainDialog(QDialog):
                 checkpoints_dir,
                 pre_cache,
                 minmask,
-                probabilites,
                 downsample
                 
             ]

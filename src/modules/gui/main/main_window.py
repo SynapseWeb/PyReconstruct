@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
+        self.autoseg_opts = {} # placeholder for autoseg opts
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -1304,9 +1305,9 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
-        inputs, confirmed = CreateZarrDialog(self, self.series).exec()
-        if not confirmed:
-            return
+        inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
+
+        if not dialog_confirmed: return
 
         print("Making zarr directory...")
         
@@ -1327,47 +1328,51 @@ class MainWindow(QMainWindow):
 
         #from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        model_paths = { "membrane": { "model_1" : "/tmp/model_1.py" } }
+        model_paths = { "membrane": { "model_1" : "/tmp/membrane/model_1.py" } }
 
-        response, confirmed = TrainDialog(self, self.series, model_paths, retrain).exec()
-        if not confirmed:
-            return
+        response, confirmed = TrainDialog(self, self.series, model_paths, self.autoseg_opts, retrain).exec()
+        if not confirmed: return
         
-        (
-            data_fp,
-            iterations,
-            save_every,
-            group,
-            model_path,
-            cdir,
-            pre_cache,
-            min_masked
-        ) = response
-        
+        (data_fp, iterations, save_every, group, model_path, cdir, \
+         pre_cache, min_masked) = response
+
+        print(f'RESPONSE:\n{response}')
+
+        self.autoseg_opts.update(
+            {
+                'zarr_current': data_fp,
+                'iters': str(iterations),
+                'save_every': str(save_every),
+                'group': group,
+                'model_path': model_path,
+                'checkpts_dir': cdir,
+                'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
+                'min_masked': str(min_masked)
+            }
+        )
+
+        print(f'OPTS:\n{self.autoseg_opts}')
+
         print("Exporting labels to zarr directory...")
         
         if retrain:
-            seriesToLabels(
-                self.series,
-                data_fp
-            )
+            
+            seriesToLabels(self.series, data_fp)
             group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+            
         else:
-            seriesToLabels(
-                self.series,
-                data_fp,
-                group
-            )
+            
+            seriesToLabels(self.series, data_fp, group)
             group_name = f"labels_{group}"
 
         print("Zarr directory updated with labels!")
 
-        if retrain:
-            self.field.reload()
+        if retrain: self.field.reload()
 
         print("Starting training....")
 
         make_mask(data_fp, group_name)
+        
         sources = [{
             "raw" : (data_fp, "raw"),
             "labels" : (data_fp, group_name),

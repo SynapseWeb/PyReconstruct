@@ -19,7 +19,7 @@ from modules.datatypes import Series
 
 class TrainDialog(QDialog):
 
-    def __init__(self, parent, series : Series, models : dict, retrain=False):
+    def __init__(self, parent, series : Series, models : dict, autoseg_opts : dict, retrain=False):
         """Create a dialog for training an autoseg model.
         
             Params:
@@ -27,28 +27,42 @@ class TrainDialog(QDialog):
                 series (Series): the series
                 models (dict): the dictionary containing the model paths
                 retrain (bool): True if user is retraining (picks tag and groups by default)
+                autoseg_opts (dict): dictionry holding autoseg options
         """
         super().__init__(parent)
         self.setWindowTitle("Train Model")
         self.retrain = retrain
 
-        zarr_fp_text = QLabel(self, text="Zarr:")
+        zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
+        if autoseg_opts.get("zarr_current"):
+            self.zarr_fp_input.le.setText(autoseg_opts.get("zarr_current"))
 
-        iter_text = QLabel(self, text="Iterations:")
+        iter_text = QLabel(self, text="Iterations")
         self.iter_input = QLineEdit(self)
 
-        savefreq_text = QLabel(self, text="Save checkpoints every:")
+        if autoseg_opts.get("iters"):
+            self.iter_input.setText(autoseg_opts.get("iters"))
+
+        savefreq_text = QLabel(self, text="Save checkpoints every")
         self.savefreq_input = QLineEdit(self)
 
+        if autoseg_opts.get("save_every"):
+            self.savefreq_input.setText(autoseg_opts.get("save_every"))
+
         if not retrain:
-            group_text = QLabel(self, text="Training object group name:")
+            group_text = QLabel(self, text="Training object group name")
             self.group_input = QComboBox(self)
-            self.group_input.addItems([""] + series.object_groups.getGroupList())
+            group_items = [""] + series.object_groups.getGroupList()
+            self.group_input.addItems(group_items)
+
+            if autoseg_opts.get("group"):
+                current_group = autoseg_opts.get("group")
+                self.group_input.setCurrentIndex(group_items.index(current_group))
 
         self.models = models
-        model_text = QLabel(self, text="Training model:")
+        model_text = QLabel(self, text="Training model")
         self.model_input = QComboBox(self)
         items = [""]
         for g in self.models:
@@ -56,16 +70,32 @@ class TrainDialog(QDialog):
                 items.append(f"{g} - {m}")
         self.model_input.addItems(items)
 
+        if autoseg_opts.get("model_path"):
+            original_path = autoseg_opts.get("model_path")
+            original_choice = os.path.basename(original_path)[:-3]
+            original_type = os.path.basename(os.path.dirname(original_path))
+            orig = f'{original_type} - {original_choice}'
+            self.model_input.setCurrentIndex(items.index(orig))
+
         cdir_text = QLabel(self, text="Checkpoints Directory")
         self.cdir_input = BrowseWidget(self, type="dir")
 
-        pre_cache_text = QLabel(self, text="Pre Cache:")
+        if autoseg_opts.get("checkpts_dir"):
+            self.cdir_input.le.setText(autoseg_opts.get("checkpts_dir"))
+
+        pre_cache_text = QLabel(self, text="Pre Cache")
         self.pre_cache_input = QLineEdit(self)
         self.pre_cache_input.setText("10, 40")
 
-        minmasked_text = QLabel(self, text="Min Masked (0-1):")
+        if autoseg_opts.get("pre_cache"):
+            self.pre_cache_input.setText(autoseg_opts.get("pre_cache"))
+
+        minmasked_text = QLabel(self, text="Min Masked (0-1)")
         self.minmasked_input = QLineEdit(self)
         self.minmasked_input.setText("0.05")
+
+        if autoseg_opts.get("min_masked"):
+            self.minmasked_input.setText(autoseg_opts.get("min_masked"))
         
         layout = QGridLayout()
 

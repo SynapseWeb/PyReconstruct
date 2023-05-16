@@ -299,6 +299,10 @@ def exportTraces(data_zg,
             for cname in series.object_groups.getGroupObjects(del_group):
                 if cname in section.contours:
                     del(section.contours[cname])
+            # add the traces of interest back in
+            for trace in traces:
+                trace.setHidden(False)
+                section.addTrace(trace, log_message="retained from segmentation data")
             section.save()
 
 def importSection(data_zg, group, snum, series, ids=None):
@@ -317,10 +321,12 @@ def importSection(data_zg, group, snum, series, ids=None):
     resolution = labels.attrs["resolution"]
 
     raw = data_zg["raw"]
+    raw_resolution = raw.attrs["resolution"]
     window = raw.attrs["window"]
     srange = raw.attrs["srange"]
     mag = raw.attrs["true_mag"]
     alignment = raw.attrs["alignment"]
+    tform = Transform(alignment[str(snum)])
 
     # check if section was segmented
     z = snum - srange[0] - round(offset[0] / resolution[0])
@@ -330,6 +336,51 @@ def importSection(data_zg, group, snum, series, ids=None):
     # load the section and data
     section = series.loadSection(snum)
     arr = labels[z]
+
+    # exclude areas that already have good traces
+
+    # get groups/tags that are good
+    gts = []
+    for zg in data_zg:
+        if zg.startswith("labels_"):
+            gts.append(zg[len("labels_"):])
+        
+    # gather traces with these groups or tags
+    traces = []
+    for trace in section.tracesAsList():
+        for tag in trace.tags:
+            if tag in gts:
+                traces.append(trace)
+                continue
+        for g in gts:
+            if trace.name in series.object_groups.getGroupObjects(g):
+                traces.append(trace)
+            
+    # block out areas on the labels array with traces
+    slayer = SectionLayer(section, series, load_image_layer=False)
+    pixmap_dim = (arr.shape[1], arr.shape[0])
+
+    # modify the window to adjust for offset and resolution
+    zarr_window = window.copy()
+
+    field_offset_x = offset[2] / raw_resolution[2] * mag
+    field_offset_y = offset[1] / raw_resolution[1] * mag
+    field_width = pixmap_dim[0] * resolution[2] / raw_resolution[2] * mag
+    field_height = pixmap_dim[1] * resolution[1] / raw_resolution[1] * mag
+
+    zarr_window[0] += field_offset_x
+    zarr_window[1] += field_offset_y
+    zarr_window[2] = field_width
+    zarr_window[3] = field_height
+
+    exclude_arr = slayer.generateLabelsArray(
+        pixmap_dim,
+        zarr_window,
+        traces,
+        tform
+    )
+    arr[exclude_arr != 0] = 0
+
     # iterate through label ids
     if ids is None:
         ids = np.unique(arr)
@@ -350,7 +401,6 @@ def importSection(data_zg, group, snum, series, ids=None):
             ext[:,0] += window[0]
             ext[:,1] += window[1]
             # apply reverse transform
-            tform = Transform(alignment[str(snum)])
             trace_points = tform.map(ext.tolist(), inverted=True)          
             # create the trace and add to section
             trace = Trace(name=f"autoseg_{id}", color=tuple(map(int, colorize(id))))

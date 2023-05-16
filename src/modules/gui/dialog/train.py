@@ -20,7 +20,7 @@ from modules.datatypes import Series
 
 class TrainDialog(QDialog):
 
-    def __init__(self, parent, series : Series, models : dict, autoseg_opts : dict, retrain=False):
+    def __init__(self, parent, series : Series, models : dict, opts : dict, retrain=False):
         """Create a dialog for training an autoseg model.
         
             Params:
@@ -28,7 +28,7 @@ class TrainDialog(QDialog):
                 series (Series): the series
                 models (dict): the dictionary containing the model paths
                 retrain (bool): True if user is retraining (picks tag and groups by default)
-                autoseg_opts (dict): dictionry holding autoseg options
+                opts (dict): dictionry holding autoseg options
         """
         super().__init__(parent)
         self.setWindowTitle("Train Model")
@@ -37,20 +37,20 @@ class TrainDialog(QDialog):
         zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
-        if autoseg_opts.get("zarr_current"):
-            self.zarr_fp_input.le.setText(autoseg_opts.get("zarr_current"))
+        if "zarr_current" in opts:
+            self.zarr_fp_input.le.setText(opts["zarr_current"])
 
         iter_text = QLabel(self, text="Iterations")
         self.iter_input = QLineEdit(self)
 
-        if autoseg_opts.get("iters"):
-            self.iter_input.setText(autoseg_opts.get("iters"))
+        if "iters" in opts:
+            self.iter_input.setText(str(opts["iters"]))
 
         savefreq_text = QLabel(self, text="Save checkpoints every")
         self.savefreq_input = QLineEdit(self)
 
-        if autoseg_opts.get("save_every"):
-            self.savefreq_input.setText(autoseg_opts.get("save_every"))
+        if "save_every" in opts:
+            self.savefreq_input.setText(str(opts["save_every"]))
 
         if not retrain:
             group_text = QLabel(self, text="Training object group name")
@@ -58,9 +58,10 @@ class TrainDialog(QDialog):
             group_items = [""] + series.object_groups.getGroupList()
             self.group_input.addItems(group_items)
 
-            if autoseg_opts.get("group"):
-                current_group = autoseg_opts.get("group")
-                self.group_input.setCurrentIndex(group_items.index(current_group))
+            if "group" in opts:
+                current_group = opts["group"]
+                if current_group in group_items:
+                    self.group_input.setCurrentText(current_group)
 
         self.models = models
         model_text = QLabel(self, text="Training model")
@@ -71,38 +72,41 @@ class TrainDialog(QDialog):
                 items.append(f"{g} - {m}")
         self.model_input.addItems(items)
 
-        if autoseg_opts.get("model_path"):
-            original_path = os.path.dirname(autoseg_opts.get("model_path"))
+        if "model_path" in opts:
+            original_path = os.path.dirname(opts["model_path"])
             original_choice = os.path.basename(original_path)
             original_type = os.path.basename(os.path.dirname(original_path))
             orig = f'{original_type} - {original_choice}'
-            self.model_input.setCurrentIndex(items.index(orig))
+            if orig in items:
+                self.model_input.setCurrentText(orig)
 
         cdir_text = QLabel(self, text="Checkpoints Directory")
         self.cdir_input = BrowseWidget(self, type="dir")
 
-        if autoseg_opts.get("checkpts_dir"):
-            self.cdir_input.le.setText(autoseg_opts.get("checkpts_dir"))
+        if "checkpts_dir" in opts:
+            self.cdir_input.le.setText(opts["checkpts_dir"])
 
         pre_cache_text = QLabel(self, text="Pre Cache")
         self.pre_cache_input = QLineEdit(self)
         self.pre_cache_input.setText("10, 40")
 
-        if autoseg_opts.get("pre_cache"):
-            self.pre_cache_input.setText(autoseg_opts.get("pre_cache"))
+        if "pre_cache" in opts:
+            pc = opts["pre_cache"]
+            t = f"{pc[0]}, {pc[1]}"
+            self.pre_cache_input.setText(t)
 
         minmasked_text = QLabel(self, text="Min Masked (0-1)")
         self.minmasked_input = QLineEdit(self)
         self.minmasked_input.setText("0.05")
 
-        if autoseg_opts.get("min_masked"):
-            self.minmasked_input.setText(autoseg_opts.get("min_masked"))
+        if "min_masked" in opts:
+            self.minmasked_input.setText(str(opts["min_masked"]))
             
         downsample_text = QLabel(self, text="Downsample")
         self.downsample_input = QCheckBox(self)
 
-        if autoseg_opts.get("downsample") == True:
-            self.downsample_input.setChecked(True)
+        if "downsample_bool" in opts:
+            self.downsample_input.setChecked(opts["downsample_bool"])
         
         layout = QGridLayout()
 

@@ -12,14 +12,15 @@ from modules.datatypes import (
 
 class SectionLayer(ImageLayer, TraceLayer):
 
-    def __init__(self, section : Section, series : Series):
+    def __init__(self, section : Section, series : Series, load_image_layer=True):
         """Create the section layer object.
         
             Params:
                 section (Section): the section object for the layer
                 series (Series): the series object
         """
-        ImageLayer.__init__(self, section, series)
+        if load_image_layer:
+            ImageLayer.__init__(self, section, series)
         TraceLayer.__init__(self, section, series)
     
     def generateView(

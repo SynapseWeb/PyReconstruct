@@ -154,14 +154,15 @@ class TraceDialog(QDialog):
     
     def accept(self):
         """Overwritten from parent class."""
-        try:
-            r = float(self.stamp_size_input.text())
-        except ValueError:
-            notify("Please enter a valid number.")
-            return
-        if r < 0:
-            notify("Please enter a positive number.")
-            return
+        if self.include_radius:
+            try:
+                r = float(self.stamp_size_input.text())
+            except ValueError:
+                notify("Please enter a valid number.")
+                return
+            if r < 0:
+                notify("Please enter a positive number.")
+                return
         
         super().accept()
     

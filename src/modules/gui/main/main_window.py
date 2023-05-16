@@ -77,7 +77,6 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
-        self.autoseg_opts = {"train": {}, "predict": {}, "segment": {}}
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -1328,7 +1327,7 @@ class MainWindow(QMainWindow):
 
         from modules.backend.autoseg.vijay import train, make_mask, model_paths
 
-        opts = self.autoseg_opts["train"]
+        opts = self.series.options["autoseg"]
 
         response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
         if not confirmed: return
@@ -1340,27 +1339,26 @@ class MainWindow(QMainWindow):
 
         training_opts = {
             'zarr_current': data_fp,
-            'iters': str(iterations),
-            'save_every': str(save_every),
+            'iters': iterations,
+            'save_every': save_every,
             'group': group,
             'model_path': model_path,
             'checkpts_dir': cdir,
-            'pre_cache': f'{pre_cache[0]}, {pre_cache[1]}',
-            'min_masked': str(min_masked),
-            'downsample': downsample
+            'pre_cache': pre_cache,
+            'min_masked': min_masked,
+            'downsample_bool': downsample
         }
 
-        self.autoseg_opts.update({"train" : training_opts})
+        for k, v in training_opts.items():
+            opts[k] = v
 
         print("Exporting labels to zarr directory...")
         
         if retrain:
-            
             seriesToLabels(self.series, data_fp)
             group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
             
         else:
-            
             seriesToLabels(self.series, data_fp, group)
             group_name = f"labels_{group}"
 
@@ -1411,7 +1409,7 @@ class MainWindow(QMainWindow):
         
         from modules.backend.autoseg.vijay import predict, model_paths
 
-        opts = self.autoseg_opts["predict"]
+        opts = self.series.options["autoseg"]
 
         response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
 
@@ -1419,19 +1417,18 @@ class MainWindow(QMainWindow):
 
         data_fp, model_path, cp_path, write_opts, increase, downsample = response
 
-        inc_opt = "None" if not increase else f'{increase[0]}, {increase[1]}, {increase[2]}'
-
         predict_opts = {
             'zarr_current': data_fp,
             'model_path': model_path,
-            'cp_path': cp_path,
+            'checkpts_dir': os.path.dirname(cp_path),
             'write': write_opts,
-            'increase': inc_opt,
-            'downsample': downsample
+            'increase': increase,
+            'downsample_bool': downsample
         }
 
-        self.autoseg_opts.update({"predict": predict_opts})
-        
+        for k, v in predict_opts.items():
+            opts[k] = v
+                
         print("Running predictions...")
 
         zarr_datasets = predict(
@@ -1457,7 +1454,7 @@ class MainWindow(QMainWindow):
         
         from modules.backend.autoseg.vijay import hierarchical
 
-        opts = self.autoseg_opts["segment"]
+        opts = self.series.options["autoseg"]
 
         response, dialog_confirmed = SegmentDialog(self, opts).exec()
 
@@ -1467,14 +1464,15 @@ class MainWindow(QMainWindow):
 
         segment_opts = {
             "zarr_current": data_fp,
-            "thresholds": ', '.join(str(x) for x in thresholds),
-            "downsample": str(downsample),
+            "thresholds": thresholds,
+            "downsample_int": downsample,
             "norm_preds": norm_preds,
-            "min_seed": str(min_seed),
+            "min_seed": min_seed,
             "merge_fun": merge_fun
         }
 
-        self.autoseg_opts.update({"segment": segment_opts})
+        for k, v in segment_opts.items():
+            opts[k] = v
 
         print("Running hierarchical...")
 
@@ -1516,9 +1514,11 @@ class MainWindow(QMainWindow):
             group_name,
             labels
         )
-
-        self.setLayerGroup(None)
         self.field.reload()
+        self.removeZarrLayer()
+
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
     
     def mergeLabels(self):
         """Merge selected labels in a zarr."""

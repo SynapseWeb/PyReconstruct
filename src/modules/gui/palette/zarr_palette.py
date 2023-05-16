@@ -41,27 +41,26 @@ class ZarrPalette():
     
     def placeWidgets(self):
         """Place the widgets in the correct locations."""
-        if not self.left_handed:
-            lbl_x = self.mainwindow.field.x() + 10
+        y = (
+            self.mainwindow.field.y() + self.mainwindow.field.height() - 
+            (15 + self.lbl.height() + self.cb.height())
+        )
+        if self.bttn.isVisible():
+            y -= (5 + self.bttn.height())
+            widgets = (self.lbl, self.cb, self.bttn)
         else:
-            lbl_x = (
-                self.mainwindow.field.x() + self.mainwindow.field.width() -
-                (self.lbl.width() + 10) - 
-                (self.cb.width() + 10) - 
-                (self.bttn.width())
-            )
-        self.lbl.move(
-            lbl_x,
-            self.mainwindow.field.y() + self.mainwindow.field.height() - 40
-        )
-        self.cb.move(
-            self.lbl.x() + self.lbl.width() + 10,
-            self.lbl.y() + 2
-        )
-        self.bttn.move(
-            self.cb.x() + self.cb.width() + 10,
-            self.lbl.y()
-        )
+            widgets = (self.lbl, self.cb)
+
+        for widget in widgets:
+            if self.left_handed:
+                x = (
+                    self.mainwindow.field.x() + self.mainwindow.field.width() -
+                    (widget.width() + 10)
+                )
+            else:
+                x = self.mainwindow.field.x() + 10
+            widget.move(x, y)
+            y += 5 + widget.height()
 
     def changeGroup(self, group_name):
         """Change the group for the overlay displayed.
@@ -73,6 +72,7 @@ class ZarrPalette():
             self.bttn.show()
         else:
             self.bttn.hide()
+        self.placeWidgets()
         self.mainwindow.setLayerGroup(group_name)
     
     def toggleHandedness(self):

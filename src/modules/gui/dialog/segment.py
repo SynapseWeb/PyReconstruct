@@ -29,35 +29,35 @@ class SegmentDialog(QDialog):
         zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
-        if opts.get("zarr_current"):
-            self.zarr_fp_input.le.setText(opts.get("zarr_current"))
+        if "zarr_current" in opts:
+            self.zarr_fp_input.le.setText(opts["zarr_current"])
 
         thresholds_text = QLabel(self, text="Thresholds")
         self.thresholds_input = QLineEdit(self)
         self.thresholds_input.setText("0.5")
 
-        if opts.get("thresholds"):
-            self.thresholds_input.setText(opts.get("thresholds"))
+        if "thresholds" in opts:
+            self.thresholds_input.setText(", ".join(map(str, opts["thresholds"])))
 
         downsample_text = QLabel(self, text="Downsample")
         self.downsample_input = QLineEdit(self)
         self.downsample_input.setText("1")
 
-        if opts.get("downsample"):
-            self.downsample_input.setText(opts.get("downsample"))
+        if "downsample_int" in opts:
+            self.downsample_input.setText(str(opts["downsample_int"]))
 
         norm_preds_text = QLabel(self, text="Normalize preds")
         self.norm_preds_input = QCheckBox(self)
 
-        if opts.get("norm_preds") == True:
-            self.norm_preds_input.setChecked(True)
+        if "norm_preds" in opts:
+            self.norm_preds_input.setChecked(opts["norm_preds"])
 
         min_seed_text = QLabel(self, text="Min seed distance")
         self.min_seed_input = QLineEdit(self)
         self.min_seed_input.setText("10")
 
-        if opts.get("min_seed"):
-            self.min_seed_input.setText(opts.get("min_seed"))
+        if "min_seed" in opts:
+            self.min_seed_input.setText(str(opts["min_seed"]))
 
         merge_text = QLabel(self, text="Merge function")
         self.merge_input = QComboBox(self)
@@ -68,8 +68,9 @@ class SegmentDialog(QDialog):
                 "hist_quant_90"]
         self.merge_input.addItems(funs)
 
-        if opts.get("merge_fun"):
-            self.merge_input.setCurrentIndex(funs.index(opts.get("merge_fun")))
+        if "merge_fun" in opts:
+            if opts["merge_fun"] in funs:
+                self.merge_input.setCurrentText(opts["merge_fun"])
         
         layout = QGridLayout()
 

@@ -141,13 +141,13 @@ def seriesToLabels(series : Series,
         group_or_tag = f"{del_group}_keep"
 
     # create labels datasets
-    data_zg[f"labels_{group_or_tag}"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
+    # why is this so slow?
+    data_zg[f"labels_{group_or_tag}"] = zarr.zeros(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
     data_zg[f"labels_{group_or_tag}"].attrs["offset"] = offset
     data_zg[f"labels_{group_or_tag}"].attrs["resolution"] = resolution
 
-    threadpool = ThreadPoolProgBar()
-
     # create threadpool
+    threadpool = ThreadPoolProgBar()
     for snum in range(*srange):
         threadpool.createWorker(
             exportTraces,
@@ -163,6 +163,11 @@ def seriesToLabels(series : Series,
             alignment[str(snum)]
         )
     threadpool.startAll("Converting contours to zarr...")
+
+    # remove group-object associations
+    if del_group:
+        series.object_groups.removeGroup(del_group)
+
 
 def labelsToObjects(series : Series, data_fp : str, group : str, labels : list = None):
     """Convert labels in a zarr file to objects in a series.
@@ -261,7 +266,7 @@ def exportTraces(data_zg,
     """
     z = snum - srange[0]
     section = series.loadSection(snum)
-    slayer = SectionLayer(section, series)
+    slayer = SectionLayer(section, series, load_image_layer=False)
     if tform_list:
         tform = Transform(tform_list)
     else:
@@ -280,7 +285,6 @@ def exportTraces(data_zg,
             if cname in section.contours:
                 for trace in section.contours[cname]:
                     if tag in trace.tags:
-                        print(trace.name)
                         traces.append(trace)
 
     data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
@@ -296,9 +300,6 @@ def exportTraces(data_zg,
             for cname in series.object_groups.getGroupObjects(del_group):
                 if cname in section.contours:
                     del(section.contours[cname])
-            for trace in traces:
-                trace.setHidden(False)
-                section.addTrace(trace, log_message="Saved after zarr export")
             section.save()
 
 def importSection(data_zg, group, snum, series, ids=None):
@@ -353,11 +354,11 @@ def importSection(data_zg, group, snum, series, ids=None):
             tform = Transform(alignment[str(snum)])
             trace_points = tform.map(ext.tolist(), inverted=True)          
             # create the trace and add to section
-            trace = Trace(name=str(id), color=tuple(map(int, colorize(id))))
+            trace = Trace(name=f"autoseg_{id}", color=tuple(map(int, colorize(id))))
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace, log_message="Imported from autoseg data")
         # add trace to group
-        series.object_groups.add(f"seg_{dt}", str(id))
+        series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 
     section.save()

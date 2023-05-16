@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QLineEdit
 )
-from gunpowder import downsample
 
 from .helper import BrowseWidget
 
@@ -33,8 +32,8 @@ class PredictDialog(QDialog):
         zarr_fp_text = QLabel(self, text="Zarr")
         self.zarr_fp_input = BrowseWidget(self, type="dir")
 
-        if opts.get("zarr_current"):
-            self.zarr_fp_input.le.setText(opts.get("zarr_current"))
+        if "zarr_current" in opts:
+            self.zarr_fp_input.le.setText(opts["zarr_current"])
 
         self.models = models
         model_text = QLabel(self, text="Model")
@@ -45,40 +44,52 @@ class PredictDialog(QDialog):
                 items.append(f"{g} - {m}")
         self.model_input.addItems(items)
 
-        if opts.get("model_path"):
-            original_path = os.path.dirname(opts.get("model_path"))
+        if "model_path" in opts:
+            original_path = os.path.dirname(opts["model_path"])
             original_choice = os.path.basename(original_path)
             original_type = os.path.basename(os.path.dirname(original_path))
             orig = f'{original_type} - {original_choice}'
-            self.model_input.setCurrentIndex(items.index(orig))
+            if orig in items:
+                self.model_input.setCurrentText(orig)
 
         cfile_text = QLabel(self, text="Checkpoint:")
         self.cfile_input = BrowseWidget(self, type="file")
 
-        if opts.get("cp_path"):
-            self.cfile_input.le.setText(opts.get("cp_path"))
+        if "checkpts_dir" in opts:
+            # scan the directory for the most recent checkpoints file
+            highest_cp = ""
+            highest_n = 0
+            for f in os.listdir(opts["checkpts_dir"]):
+                n = f.split("_")[-1]
+                if n.isnumeric() and int(n) > highest_n:
+                    highest_cp = f
+                    highest_n = int(n)  
+            if highest_cp:
+                self.cfile_input.le.setText(
+                    os.path.join(opts["checkpts_dir"], highest_cp)
+                )
 
         write_text = QLabel(self, text="Write")
         self.write_input = QComboBox(self)
         write_opts = ["affs", "lsds", "mask", "all"]
         self.write_input.addItems(write_opts)
 
-        current_write = opts.get("write")
-        if current_write:
-            self.write_input.setCurrentIndex(write_opts.index(current_write))
+        if "write" in opts:
+            if opts["write"] in write_opts:
+                self.write_input.setCurrentText(opts["write"])
 
         increase_text = QLabel(self, text="Increase")
         self.increase_input = QLineEdit(self)
         self.increase_input.setText("")
 
-        if opts.get("increase"):
-            self.increase_input.setText(opts.get("increase"))
+        if "increase" in opts and opts["increase"]:
+            self.increase_input.setText(", ".join(map(str, opts["increase"])))
 
         downsample_text = QLabel(self, text="Downsample")
         self.downsample_input = QCheckBox(self)
 
-        if opts.get("downsample") == True:
-            self.downsample_input.setChecked(True)
+        if "downsample_bool" in opts:
+            self.downsample_input.setChecked(opts["downsample_bool"])
         
         layout = QGridLayout()
 

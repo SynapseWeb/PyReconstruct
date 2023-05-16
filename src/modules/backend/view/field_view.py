@@ -86,7 +86,7 @@ class FieldView():
         self.generateView()
 
         # notify that the series has been modified
-        # self.mainwindow.seriesModified(True)
+        self.mainwindow.seriesModified(True)
     
     def createZarrLayer(self):
         """Create a zarr layer."""

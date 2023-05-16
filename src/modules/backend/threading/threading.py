@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from PySide6.QtWidgets import QProgressDialog
+from PySide6.QtWidgets import QProgressDialog, QApplication
 
 from modules.gui.utils import mainwindow
 
@@ -144,10 +144,10 @@ class ThreadPoolProgBar(ThreadPool):
                 final_value,
                 mainwindow
             )
-        progbar.setMinimumDuration(1500)
         progbar.setWindowTitle(" ")
         progbar.setWindowModality(Qt.WindowModal)
         progbar.setCancelButton(None)
+        progbar.show()
         counter = MemoryInt()
         for worker in self.workers:
             fn = worker.fn
@@ -159,4 +159,4 @@ class ThreadPoolProgBar(ThreadPool):
         
         while counter.n < final_value:
             progbar.setValue(counter.n)
-        
+            QApplication.processEvents()

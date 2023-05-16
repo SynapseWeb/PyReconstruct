@@ -464,6 +464,7 @@ class Series():
         options["backup_dir"] = ""
         options["fill_opacity"] = 0.2
         options["grid"] = [1, 1, 1, 1, 1, 1]
+        options["autoseg"] = {}
 
         return series_data
     
@@ -697,6 +698,9 @@ class Series():
             Params:
                 obj_names (list): the objects to delete
         """
+        # remove objects from their groups
+        for name in obj_names:
+            self.object_groups.removeObject(name)
         for snum, section in self.enumerateSections(
             message="Deleting object(s)..."
         ):

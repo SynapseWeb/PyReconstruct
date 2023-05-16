@@ -64,7 +64,7 @@ def seriesToZarr(
     if os.path.isdir(data_fp):  # delete existing data.zarr
         shutil.rmtree(data_fp)
     data_zg = zarr.open(data_fp, "a")
-    data_zg["raw"] = zarr.empty(shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
+    data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
 
     # get values for saving zarr files (from last known section)
     z_res = round(section.thickness * 1000)
@@ -141,8 +141,7 @@ def seriesToLabels(series : Series,
         group_or_tag = f"{del_group}_keep"
 
     # create labels datasets
-    # why is this so slow?
-    data_zg[f"labels_{group_or_tag}"] = zarr.zeros(shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
+    data_zg.create_dataset(f"labels_{group_or_tag}", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
     data_zg[f"labels_{group_or_tag}"].attrs["offset"] = offset
     data_zg[f"labels_{group_or_tag}"].attrs["resolution"] = resolution
 

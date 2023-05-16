@@ -1326,6 +1326,7 @@ class MainWindow(QMainWindow):
         print("Importing training modules...")
 
         from modules.backend.autoseg.vijay import train, make_mask, model_paths
+        # model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
 
@@ -1408,6 +1409,7 @@ class MainWindow(QMainWindow):
         print("Importing models...")
         
         from modules.backend.autoseg.vijay import predict, model_paths
+        # model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
 

@@ -101,7 +101,7 @@ class CreateZarrDialog(QDialog):
             if not s.isnumeric() or int(s) not in self.series.sections:
                 notify("Please enter a valid section number.")
                 return
-        if srange[0] >= srange[1]:
+        if int(srange[0]) >= int(srange[1]):
             notify("Please enter a valid section range.")
             return
         

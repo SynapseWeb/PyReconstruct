@@ -90,6 +90,12 @@ class PredictDialog(QDialog):
 
         if "downsample_bool" in opts:
             self.downsample_input.setChecked(opts["downsample_bool"])
+
+        out_roi_text = QLabel(self, text="Full output ROI")
+        self.out_roi_input = QCheckBox(self)
+
+        if "out_roi" in opts:
+            self.out_roi_input.setChecked(opts["out_roi"] == "full")
         
         layout = QGridLayout()
 
@@ -110,6 +116,9 @@ class PredictDialog(QDialog):
 
         layout.addWidget(increase_text, 5, 0)
         layout.addWidget(self.increase_input, 5, 1)
+
+        layout.addWidget(out_roi_text, 6, 0)
+        layout.addWidget(self.out_roi_input, 6, 1)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -161,6 +170,7 @@ class PredictDialog(QDialog):
             checkpoint_fp = self.cfile_input.text()
             write_opts = self.write_input.currentText()
             downsample = self.downsample_input.isChecked()
+            out_roi = "full" if self.out_roi_input.isChecked() else None
 
             increase = self.increase_input.text()
             if "None" in increase or increase == "":
@@ -174,7 +184,8 @@ class PredictDialog(QDialog):
                 checkpoint_fp,
                 write_opts,
                 increase,
-                downsample
+                downsample,
+                out_roi
             ]
 
             return tuple(response), True

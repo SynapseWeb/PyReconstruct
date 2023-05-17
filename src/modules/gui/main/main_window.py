@@ -1417,7 +1417,7 @@ class MainWindow(QMainWindow):
 
         if not dialog_confirmed: return
 
-        data_fp, model_path, cp_path, write_opts, increase, downsample = response
+        data_fp, model_path, cp_path, write_opts, increase, downsample, out_roi = response
 
         predict_opts = {
             'zarr_current': data_fp,
@@ -1425,7 +1425,8 @@ class MainWindow(QMainWindow):
             'checkpts_dir': os.path.dirname(cp_path),
             'write': write_opts,
             'increase': increase,
-            'downsample_bool': downsample
+            'downsample_bool': downsample,
+            'out_roi': out_roi
         }
 
         for k, v in predict_opts.items():
@@ -1441,6 +1442,7 @@ class MainWindow(QMainWindow):
             write=write_opts,
             increase=increase,
             downsample=downsample,
+            out_roi=out_roi
         )
 
         print("Predictions done.")

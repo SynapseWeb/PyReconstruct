@@ -1325,7 +1325,7 @@ class MainWindow(QMainWindow):
         """Train an autosegmentation model."""
         print("Importing training modules...")
 
-        from modules.backend.autoseg.vijay import train, make_mask, model_paths
+        from autoseg import train, make_mask, model_paths
         # model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
@@ -1408,7 +1408,7 @@ class MainWindow(QMainWindow):
 
         print("Importing models...")
         
-        from modules.backend.autoseg.vijay import predict, model_paths
+        from autoseg import predict, model_paths
         # model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
@@ -1454,7 +1454,7 @@ class MainWindow(QMainWindow):
 
         print("Importing modules...")
         
-        from modules.backend.autoseg.vijay import hierarchical
+        from autoseg import hierarchical
 
         opts = self.series.options["autoseg"]
 

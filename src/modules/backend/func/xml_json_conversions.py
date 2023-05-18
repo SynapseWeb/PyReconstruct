@@ -34,6 +34,7 @@ def xmlToJSON(xml_dir : str) -> Series:
     for f in os.listdir(xml_dir):
         if f.endswith(".ser"):
             series_fp = os.path.join(xml_dir, f)
+            series_name = f[:-4]
         elif f.endswith(".json"):
             json_fp = os.path.join(xml_dir, f)
         elif f[f.rfind(".")+1:].isnumeric():
@@ -95,6 +96,12 @@ def xmlToJSON(xml_dir : str) -> Series:
     
     # save and return the series
     series.save()
+    series.jser_fp = os.path.join(
+        xml_dir,
+        f"{series_name}.jser"
+    )
+    series.saveJser()
+
     return series
 
 def seriesXMLToJSON(series_fp, section_fps, hidden_dir):

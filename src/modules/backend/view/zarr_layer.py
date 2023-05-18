@@ -51,7 +51,7 @@ class ZarrLayer():
         # get the relevant data from the raw in the zarr folder
         self.zarr_x, self.zarr_y = tuple(raw.attrs["window"][:2])
         self.zarr_s = raw.attrs["srange"][0]
-        self.zarr_mag = raw.attrs["true_mag"]
+        self.zarr_mag = raw.attrs["true_mag"] * (self.resolution[-1] / self.raw_resolution[-1])
 
         # modify attributes
         pixel_offset = [o / r for o, r in zip(self.offset, self.resolution)]
@@ -173,7 +173,7 @@ class ZarrLayer():
         x_scaling = pixmap_w / (window_w / section.mag)
         y_scaling = pixmap_h / (window_h / section.mag)
         # assert(abs(x_scaling - y_scaling) < 1e-6)
-        self.zarr_scaling = x_scaling * self.zarr_mag / section.mag * (self.resolution[-1] / self.raw_resolution[-1])
+        self.zarr_scaling = x_scaling * self.zarr_mag / section.mag
 
         # calculate the coordinates to crop the image
         xmin = ((window_x - self.zarr_x) / self.zarr_mag)

@@ -324,7 +324,7 @@ def importSection(data_zg, group, snum, series, ids=None):
     raw_resolution = raw.attrs["resolution"]
     window = raw.attrs["window"]
     srange = raw.attrs["srange"]
-    mag = raw.attrs["true_mag"]
+    mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
     alignment = raw.attrs["alignment"]
     tform = Transform(alignment[str(snum)])
 
@@ -363,10 +363,10 @@ def importSection(data_zg, group, snum, series, ids=None):
     # modify the window to adjust for offset and resolution
     zarr_window = window.copy()
 
-    field_offset_x = offset[2] / raw_resolution[2] * mag
-    field_offset_y = offset[1] / raw_resolution[1] * mag
-    field_width = pixmap_dim[0] * resolution[2] / raw_resolution[2] * mag
-    field_height = pixmap_dim[1] * resolution[1] / raw_resolution[1] * mag
+    field_offset_x = offset[2] / resolution[2] * mag
+    field_offset_y = offset[1] / resolution[1] * mag
+    field_width = pixmap_dim[0] * mag
+    field_height = pixmap_dim[1] * mag
 
     zarr_window[0] += field_offset_x
     zarr_window[1] += field_offset_y

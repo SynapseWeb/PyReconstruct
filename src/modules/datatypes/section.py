@@ -336,13 +336,15 @@ class Section():
             trace.resize(new_rad)
             self.addTrace(trace, "radius modified")
     
-    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5, traces_in_view : list[Trace] = None) -> Trace:
+    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5, traces_in_view : list[Trace] = None, include_hidden=False) -> Trace:
         """Find closest trace to field coordinates in a given radius.
         
             Params:
                 field_x (float): x coordinate of search center
                 field_y (float): y coordinate of search center
                 radius (float): 1/2 of the side length of search square
+                traces_in_view (list): the traces in the window viewed by the user
+                include_hidden (bool): True if hidden traces can be returned
             Returns:
                 (Trace) the trace closest to the center
                 None if no trace points are found within the radius
@@ -362,7 +364,7 @@ class Section():
         # iterate through all traces to get closest
         for trace in traces:
             # skip hidden traces
-            if trace.hidden:
+            if not include_hidden and trace.hidden:
                 continue
             points = []
             for point in trace.points:

@@ -496,8 +496,18 @@ class Series():
         # create section files (.#)
         for i in range(len(image_locations)):
             Section.new(series_name, i, image_locations[i], mag, thickness, hidden_dir)
+
+        # create series object
+        series = Series(series_fp, sections)
         
-        return Series(series_fp, sections)
+        # save the jser file
+        series.jser_fp = os.path.join(
+            os.path.dirname(image_locations[0]),
+            f"{series_name}.jser"
+        )
+        series.saveJser()
+        
+        return series
     
     def isWelcomeSeries(self):
         """Return True if self is the welcome series."""

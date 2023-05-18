@@ -39,4 +39,5 @@ dependencies:
     - git+https://github.com/funkelab/funlib.segment.git
     - git+https://github.com/funkelab/lsd.git
     - git+https://github.com/funkelab/funlib.persistence.git
+    - git+https://github.com/yajivunev/autoseg.git
 

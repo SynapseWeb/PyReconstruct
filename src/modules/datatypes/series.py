@@ -480,8 +480,18 @@ class Series():
             Returns:
                 (Series): the newly created series object
         """
-        wdir = os.path.dirname(image_locations[0])
-        hidden_dir = createHiddenDir(wdir, series_name)
+        try:
+            wdir = os.path.dirname(image_locations[0])
+            hidden_dir = createHiddenDir(wdir, series_name)
+        except PermissionError:
+            print("Series cannot be created adjacent to images due to permissions; \
+                   creating in home folder instead.")
+            if os.name == "nt":
+                wdir = os.environ.get("HOMEPATH")
+            else:
+                wdir = os.environ.get("HOME")
+            hidden_dir = createHiddenDir(wdir, series_name)
+
         series_data = Series.getEmptyDict()
 
         series_data["src_dir"] = wdir  # the directory of the images
@@ -502,7 +512,7 @@ class Series():
         
         # save the jser file
         series.jser_fp = os.path.join(
-            os.path.dirname(image_locations[0]),
+            wdir,
             f"{series_name}.jser"
         )
         series.saveJser()

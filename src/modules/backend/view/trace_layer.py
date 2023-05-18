@@ -102,7 +102,8 @@ class TraceLayer():
             field_x,
             field_y,
             radius=radius,
-            traces_in_view=self.traces_in_view
+            traces_in_view=self.traces_in_view,
+            include_hidden=self.show_all_traces
         )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
@@ -579,6 +580,7 @@ class TraceLayer():
         """
         self.window = window
         self.pixmap_dim = pixmap_dim
+        self.show_all_traces = show_all_traces
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         trace_layer = QPixmap(pixmap_w, pixmap_h)
         trace_layer.fill(Qt.transparent)

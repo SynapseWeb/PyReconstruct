@@ -561,7 +561,7 @@ class FieldView():
             for trace in self.section.selected_traces:
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
-        self.generateView(generate_image=False)
+        self.generateView()
     
     def toggleHideImage(self):
         """Toggle hide the image from view."""
@@ -805,7 +805,7 @@ class FieldView():
             self.hide_trace_layer = False
         modified = self.section.unhideAllTraces()
         if modified:
-            self.generateView(generate_image=False)
+            self.generateView()
             self.saveState()
     
     def makeNegative(self, negative=True):

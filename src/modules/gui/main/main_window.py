@@ -642,7 +642,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Select Images",
                 dir=self.explorer_dir,
-                filter="*.jpg *.jpeg *.png *.tif *.tiff"
+                filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
             )
             if len(image_locations) == 0:
                 return

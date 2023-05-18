@@ -39,13 +39,14 @@ class ZarrLayer():
         group = zarr.open(self.series.zarr_overlay_fp)
         self.zarr = group[self.series.zarr_overlay_group]
         raw = group["raw"]
+        self.raw_resolution = raw.attrs["resolution"]
 
         # check if labels or otherwise
         self.is_labels = (len(self.zarr.shape) == 3)
 
         # get relevant data from overlay zarr
-        offset = self.zarr.attrs["offset"]
-        resolution = self.zarr.attrs["resolution"]
+        self.offset = self.zarr.attrs["offset"]
+        self.resolution = self.zarr.attrs["resolution"]
 
         # get the relevant data from the raw in the zarr folder
         self.zarr_x, self.zarr_y = tuple(raw.attrs["window"][:2])
@@ -53,7 +54,7 @@ class ZarrLayer():
         self.zarr_mag = raw.attrs["true_mag"]
 
         # modify attributes
-        pixel_offset = [o / r for o, r in zip(offset, resolution)]
+        pixel_offset = [o / r for o, r in zip(self.offset, self.resolution)]
         field_offset = [p * self.zarr_mag for p in pixel_offset]
         self.zarr_x += field_offset[2]
         self.zarr_y += field_offset[1]
@@ -172,7 +173,7 @@ class ZarrLayer():
         x_scaling = pixmap_w / (window_w / section.mag)
         y_scaling = pixmap_h / (window_h / section.mag)
         # assert(abs(x_scaling - y_scaling) < 1e-6)
-        self.zarr_scaling = x_scaling * self.zarr_mag / section.mag
+        self.zarr_scaling = x_scaling * self.zarr_mag / section.mag * (self.resolution[-1] / self.raw_resolution[-1])
 
         # calculate the coordinates to crop the image
         xmin = ((window_x - self.zarr_x) / self.zarr_mag)

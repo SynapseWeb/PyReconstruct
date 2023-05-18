@@ -672,7 +672,6 @@ class MainWindow(QMainWindow):
         
         # create new series
         series = Series.new(sorted(image_locations), series_name, mag, thickness)
-        series.modified = True
     
         # open series after creating
         self.openSeries(series)
@@ -701,9 +700,6 @@ class MainWindow(QMainWindow):
         series = xmlToJSON(os.path.dirname(series_fp))
         if not series:
             return
-
-        # flag to save
-        series.modified = True
 
         # open the series
         self.openSeries(series)
@@ -1304,6 +1300,11 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
+        if not self.series.jser_fp:
+            self.saveAsToJser()
+            if not self.series.jser_fp:
+                return
+
         inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
 
         if not dialog_confirmed: return
@@ -1352,6 +1353,7 @@ class MainWindow(QMainWindow):
 
         for k, v in training_opts.items():
             opts[k] = v
+        self.seriesModified(True)
 
         print("Exporting labels to zarr directory...")
         
@@ -1431,6 +1433,7 @@ class MainWindow(QMainWindow):
 
         for k, v in predict_opts.items():
             opts[k] = v
+        self.seriesModified(True)
                 
         print("Running predictions...")
 
@@ -1477,6 +1480,7 @@ class MainWindow(QMainWindow):
 
         for k, v in segment_opts.items():
             opts[k] = v
+        self.seriesModified(True)
 
         print("Running hierarchical...")
 

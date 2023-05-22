@@ -4,7 +4,7 @@ cd $SCRIPT_DIR/../..
 echo "Checking for updates..."
 
 git fetch --all
-git reset --hard origin/main
+git reset --hard origin/autoseg-dev
 
 # Reset file permissions
 chmod u+x launch/mac/run310.command

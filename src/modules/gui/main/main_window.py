@@ -955,6 +955,8 @@ class MainWindow(QMainWindow):
     
     def saveAllData(self):
         """Write current series and section data into backend JSON files."""
+        if self.series.isWelcomeSeries():
+            return
         # save the trace palette
         self.series.palette_traces = []
         for button in self.mouse_palette.palette_buttons:  # get trace palette

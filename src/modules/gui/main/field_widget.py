@@ -1378,6 +1378,7 @@ class FieldWidget(QWidget, FieldView):
             self.is_line_tracing = False
             self.current_trace = []
             self.generateView(generate_image=False)
+            self.saveState()
 
 
 def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, left_justified=True):

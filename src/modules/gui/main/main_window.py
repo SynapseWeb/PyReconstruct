@@ -1281,6 +1281,8 @@ class MainWindow(QMainWindow):
         """Set the specific group displayed in the zarr layer."""
         if not group_name:
             group_name = None
+        if self.zarr_palette.cb.currentText != group_name:
+            self.zarr_palette.cb.setCurrentText(group_name)
         self.series.zarr_overlay_group = group_name
         self.field.createZarrLayer()
         self.field.generateView()
@@ -1457,7 +1459,7 @@ class MainWindow(QMainWindow):
         # display the affinities
         self.setZarrLayer(data_fp)
         for zg in os.listdir(data_fp):
-            if zg.startswith("affs"):
+            if zg.startswith("pred_affs"):
                 self.setLayerGroup(zg)
                 break
 

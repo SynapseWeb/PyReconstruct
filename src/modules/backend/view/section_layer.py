@@ -41,6 +41,10 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
         """
+        # save attributes
+        self.window = window
+        self.pixmap_dim = pixmap_dim
+        
         # set the series screen mag
         self.series.screen_mag = window[2] / pixmap_dim[0]
 

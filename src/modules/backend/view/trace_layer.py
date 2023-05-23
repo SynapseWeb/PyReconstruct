@@ -43,6 +43,7 @@ class TraceLayer():
         self.series = series
         self.traces_in_view = []
         self.zsegments_in_view = []
+        self.show_all_traces = False
     
     def pointToPix(self, pt : tuple, apply_tform=True, tform : Transform = None, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.

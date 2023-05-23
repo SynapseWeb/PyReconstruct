@@ -132,15 +132,27 @@ class AlignmentDialog(QDialog):
         new_alignment, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
         if not confirmed:
             return
+        if new_alignment in self.table.alignments:
+            notify("This alignment already exists")
+            return
         self.table.addAlignment(new_alignment)
-        self.added.append(new_alignment)
+        if new_alignment in self.removed:
+            self.removed.remove(new_alignment)
+        else:
+            self.added.append(new_alignment)
     
     def removeAlignments(self):
         """Remove selected alignments from the list."""
         alignments = self.table.getSelectedAlignments()
         for a in alignments:
             self.table.removeAlignment(a)
-            self.removed.append(a)
+            if a in self.added:
+                self.added.remove(a)
+            else:
+                self.removed.append(a)
+            newly_renamed = [i[1] for i in self.renamed]
+            if a in newly_renamed:
+                self.renamed.pop(newly_renamed.index(a))
     
     def renameAlignment(self):
         """Rename a selected alignment."""

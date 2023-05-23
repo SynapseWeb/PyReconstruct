@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
-                    ("mergeobjects_act", "Merge objects...", "", self.mergeObjects),
+                    ("mergeobjects_act", "Merge object traces...", "Ctrl+Shift+M", lambda : self.field.mergeSelectedTraces(merge_objects=True)),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
@@ -1301,6 +1301,7 @@ class MainWindow(QMainWindow):
                 run (str): "train" or "segment"
         """
         self.saveAllData()
+        self.removeZarrLayer()
 
         if not self.series.jser_fp:
             self.saveAsToJser()
@@ -1326,6 +1327,8 @@ class MainWindow(QMainWindow):
     
     def train(self, retrain=False):
         """Train an autosegmentation model."""
+        self.removeZarrLayer()
+
         print("Importing training modules...")
 
         from autoseg import train, make_mask, model_paths
@@ -1409,6 +1412,7 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
+        self.removeZarrLayer()
 
         print("Importing models...")
         
@@ -1450,6 +1454,13 @@ class MainWindow(QMainWindow):
             full_out_roi=full_out_roi
         )
 
+        # display the affinities
+        self.setZarrLayer(data_fp)
+        for zg in os.listdir(data_fp):
+            if zg.startswith("affs"):
+                self.setLayerGroup(zg)
+                break
+
         print("Predictions done.")
         
     def segment(self, data_fp : str = None):
@@ -1458,6 +1469,7 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
+        self.removeZarrLayer()
 
         print("Importing modules...")
         
@@ -1505,7 +1517,12 @@ class MainWindow(QMainWindow):
 
         print("Segmentation done.")
 
+        # display the segmetnation
         self.setZarrLayer(data_fp)
+        for zg in os.listdir(data_fp):
+            if zg.startswith("seg"):
+                self.setLayerGroup(zg)
+                break
     
     def importLabels(self, all=False):
         """Import labels from a zarr."""

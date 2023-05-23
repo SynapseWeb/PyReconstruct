@@ -640,7 +640,10 @@ class FieldWidget(QWidget, FieldView):
             dist = f"Line distance: {round(d, 5)}"
             self.status_list.append(dist)
         elif trace is not None:
-            self.status_list.append(f"Closest trace: {trace.name}")
+            if type(trace) is Trace:
+                self.status_list.append(f"Closest trace: {trace.name}")
+            elif type(trace) is tuple and type(trace[0]) is Ztrace:
+                self.status_list.append(f"Closest trace: {trace[0].name} (ztrace)")
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)

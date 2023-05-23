@@ -716,12 +716,12 @@ class FieldView():
             self.generateView(generate_image=False)
             self.saveState()
     
-    def mergeSelectedTraces(self):
+    def mergeSelectedTraces(self, merge_objects=False):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         if self.section.selected_traces:
-            self.section_layer.mergeSelectedTraces()
+            self.section_layer.mergeSelectedTraces(merge_objects)
             self.generateView(generate_image=False)
             self.saveState()
     

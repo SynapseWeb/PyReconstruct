@@ -25,7 +25,8 @@ from modules.calc import (
     getExterior, 
     mergeTraces, 
     reducePoints, 
-    cutTraces
+    cutTraces,
+    area
 )
 from modules.gui.utils import notify
 
@@ -280,24 +281,45 @@ class TraceLayer():
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
     
-    def mergeSelectedTraces(self):
-        """Merge all selected traces."""
+    def mergeSelectedTraces(self, merge_objects=False):
+        """Merge all selected traces.
+        
+            Params:
+                merge_objects (bool): True if traces with different names can be merged
+        """
         if len(self.section.selected_traces) < 2:
             notify("Please select two or more traces to merge.")
             return
+        
+        # if merging objects, decrease the zomming to prevent inlets
+        if merge_objects:
+            mag = self.section.mag
+            self.section.mag *= 4
+
         traces = []
         first_trace = self.section.selected_traces[0]
         name = first_trace.name
+        max_area = 0
         for trace in self.section.selected_traces:
+            if merge_objects:
+                a = area(trace.points)
+                if a > max_area:
+                    max_area = a
+                    first_trace = trace
+            elif trace.name != name:
+                notify("Please merge traces with the same name.")
+                return
             if trace.closed == False:
                 notify("Please merge only closed traces.")
-                return
-            if trace.name != name:
-                notify("Please merge traces with the same name.")
                 return
             # collect pixel values for trace points
             pix_points = self.traceToPix(trace)
             traces.append(pix_points)
+        
+        # restore the section magnification
+        if merge_objects:
+            self.section.mag = mag
+        
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # delete the old traces
         origin_traces = self.section.selected_traces.copy()

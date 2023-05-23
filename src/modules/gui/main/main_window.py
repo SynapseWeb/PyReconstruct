@@ -1344,8 +1344,6 @@ class MainWindow(QMainWindow):
         (data_fp, iterations, save_every, group, model_path, cdir, \
          pre_cache, min_masked, downsample) = response
 
-        print(f'RESPONSE:\n{response}')
-
         training_opts = {
             'zarr_current': data_fp,
             'iters': iterations,
@@ -1365,12 +1363,12 @@ class MainWindow(QMainWindow):
         print("Exporting labels to zarr directory...")
         
         if retrain:
-            seriesToLabels(self.series, data_fp)
             group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+            seriesToLabels(self.series, data_fp)
             
         else:
-            seriesToLabels(self.series, data_fp, group)
             group_name = f"labels_{group}"
+            seriesToLabels(self.series, data_fp, group)
 
         print("Zarr directory updated with labels!")
 

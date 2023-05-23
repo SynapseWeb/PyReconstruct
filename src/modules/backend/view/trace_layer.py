@@ -293,9 +293,10 @@ class TraceLayer():
             return
         
         # if merging objects, decrease the zomming to prevent inlets
-        if merge_objects:
-            mag = self.section.mag
-            self.section.mag *= 4
+        # factor = 16
+        # if merge_objects:
+        #     original_pd = self.pixmap_dim
+        #     self.pixmap_dim = tuple([round(d/factor) for d in self.pixmap_dim])
 
         traces = []
         first_trace = self.section.selected_traces[0]
@@ -315,11 +316,13 @@ class TraceLayer():
                 return
             # collect pixel values for trace points
             pix_points = self.traceToPix(trace)
+            # if merge_objects:
+            #     pix_points = [(round(x*factor), round(y*factor)) for x, y in pix_points]
             traces.append(pix_points)
         
         # restore the section magnification
-        if merge_objects:
-            self.section.mag = mag
+        # if merge_objects:
+        #     self.pixmap_dim = original_pd
         
         merged_traces = mergeTraces(traces)  # merge the pixel traces
         # delete the old traces

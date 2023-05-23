@@ -549,7 +549,7 @@ class FieldView():
             for trace in self.section.selected_traces:
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
-        self.generateView(generate_image=False)
+        self.generateView()
     
     def toggleShowAllTraces(self):
         """Toggle show all traces regardless of hiding status."""

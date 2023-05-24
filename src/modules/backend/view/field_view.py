@@ -690,7 +690,7 @@ class FieldView():
             painter.end()
         
         # overlay zarr if requested
-        if self.zarr_layer and not self.hide_trace_layer:
+        if self.zarr_layer:
             zarr_layer = self.zarr_layer.generateZarrLayer(
                 self.section,
                 pixmap_dim,

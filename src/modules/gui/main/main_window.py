@@ -1318,12 +1318,14 @@ class MainWindow(QMainWindow):
         
         # export to zarr
         border_obj, srange, mag = inputs
-        self.temp_threadpool = seriesToZarr(
+        data_fp = seriesToZarr(
             self.series,
             border_obj,
             srange,
             mag
         )
+
+        self.series.options["autoseg"]["zarr_current"] = data_fp
 
         print("Zarr directory done.")
     

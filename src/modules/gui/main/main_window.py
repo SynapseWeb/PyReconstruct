@@ -1334,8 +1334,8 @@ class MainWindow(QMainWindow):
 
         print("Importing training modules...")
 
-        # from autoseg import train, make_mask, model_paths
-        model_paths = {"a":{"b":"a/b/m.py"}}
+        from autoseg import train, make_mask, model_paths
+        # model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
 

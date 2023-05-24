@@ -100,6 +100,8 @@ def seriesToZarr(
             pixmap_dim
         )
     threadpool.startAll("Converting series to zarr...")
+
+    return data_fp
     
 def seriesToLabels(series : Series,
                    data_fp : str,

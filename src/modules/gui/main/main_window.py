@@ -1329,12 +1329,13 @@ class MainWindow(QMainWindow):
     
     def train(self, retrain=False):
         """Train an autosegmentation model."""
+        self.saveAllData()
         self.removeZarrLayer()
 
         print("Importing training modules...")
 
-        from autoseg import train, make_mask, model_paths
-        # model_paths = {"a":{"b":"a/b/m.py"}}
+        # from autoseg import train, make_mask, model_paths
+        model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
 
@@ -1373,6 +1374,8 @@ class MainWindow(QMainWindow):
         print("Zarr directory updated with labels!")
 
         if retrain: self.field.reload()
+        if retrain and self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
 
         print("Starting training....")
 
@@ -1412,6 +1415,7 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
+        self.saveAllData()
         self.removeZarrLayer()
 
         print("Importing models...")
@@ -1469,6 +1473,7 @@ class MainWindow(QMainWindow):
             Params:
                 data_fp (str): the filepath for the zarr
         """
+        self.saveAllData()
         self.removeZarrLayer()
 
         print("Importing modules...")

@@ -599,6 +599,10 @@ class FieldWidget(QWidget, FieldView):
         # resize the mouse palette
         self.mainwindow.mouse_palette.resize()
 
+        # resize the zarr palette
+        if self.mainwindow.zarr_palette:
+            self.mainwindow.zarr_palette.placeWidgets()
+
         w = event.size().width()
         h = event.size().height()
         self.pixmap_dim = (w, h)

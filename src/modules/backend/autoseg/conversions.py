@@ -285,6 +285,8 @@ def exportTraces(data_zg,
                 for trace in section.contours[cname]:
                     if tag in trace.tags:
                         traces.append(trace)
+    
+    print(snum, traces)
 
     data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
             pixmap_dim,
@@ -301,7 +303,7 @@ def exportTraces(data_zg,
                     del(section.contours[cname])
             # add the traces of interest back in
             for trace in traces:
-                trace.setHidden(False)
+                trace.setHidden(True)
                 section.addTrace(trace, log_message="retained from segmentation data")
             section.save()
 

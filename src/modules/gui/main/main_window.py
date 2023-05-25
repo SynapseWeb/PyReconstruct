@@ -42,7 +42,8 @@ from modules.gui.utils import (
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
-    importTransforms
+    importTransforms,
+    importSwiftTransforms
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
 from modules.datatypes import Series, Transform
@@ -126,8 +127,6 @@ class MainWindow(QMainWindow):
                     ("fromxml_act", "New from XML series...", "", self.newFromXML),
                     ("exportxml_act", "Export as XML series...", "", self.exportToXML),
                     None,
-                    ("import_transforms_act", "Import transformations", "", self.importTransforms),
-                    None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
                     ("restart_act", "Restart", "Ctrl+R", self.restart),
@@ -167,17 +166,33 @@ class MainWindow(QMainWindow):
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                     {
-                        "attr_name": "propogatemenu",
-                        "text": "Propogate transform",
+                        "attr_name": "alignments",
+                        "text": "Alignments",
                         "opts":
                         [
-                            ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
-                            ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
-                            None,
-                            ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
-                            ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                            {
+                                "attr_name": "importmenu",
+                                "text": "Import alignments",
+                                "opts":
+                                [
+                                    ("import_transforms_act", ".txt file", "", self.importTransforms),
+                                    ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
+                                ]
+                            },
+                            ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                            {
+                                "attr_name": "propogatemenu",
+                                "text": "Propogate transform",
+                                "opts":
+                                [
+                                    ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
+                                    ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
+                                    None,
+                                    ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
+                                    ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                                ]
+                            }
                         ]
                     },
                     None,
@@ -763,6 +778,33 @@ class MainWindow(QMainWindow):
         importTransforms(self.series, tforms_fp)
         # reload the section
         self.field.reload()
+
+    def importSwiftTransforms(self, tforms_fp : str = None):
+        """Import transforms from a text file.
+        
+            Params:
+                tforms_file (str): the filepath for the transforms file
+        """
+        self.saveAllData()
+
+        tforms_fp = None  # Ummmmm, not sure about this?
+        
+        # get file from user
+        if tforms_fp is None:
+            tforms_fp, ext = QFileDialog.getOpenFileName(
+                self,
+                "Select SWiFT project file",
+                dir=self.explorer_dir
+            )
+
+        if not tforms_fp: return
+        
+        # import transforms
+        print('Importing SWiFT transforms...')
+        importSwiftTransforms(self.series, tforms_fp)
+        # reload the section
+        self.field.reload()
+        print('SWiFT transforms imported!')
     
     def importTraces(self, jser_fp : str = None):
         """Import traces from another jser series.

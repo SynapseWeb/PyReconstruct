@@ -24,6 +24,8 @@ while run:
     app.exec()
     if main_window.restart_mainwindow:
         if not main_window.series.isWelcomeSeries():
+            if len(sys.argv) < 2:
+                sys.argv.append("")
             sys.argv[1] = main_window.series.jser_fp  # load the series being worked on
     else:
         run = False

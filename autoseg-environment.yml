@@ -17,6 +17,7 @@ dependencies:
   - boost
   - jupyter
   - pip:
+    - protobuf==3.19.6
     - zarr
     - matplotlib
     - neuroglancer

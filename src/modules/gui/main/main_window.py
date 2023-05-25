@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
+        self.restart_mainwindow = False
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -128,6 +129,8 @@ class MainWindow(QMainWindow):
                     ("import_transforms_act", "Import transformations", "", self.importTransforms),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
+                    None,
+                    ("restart_act", "Restart", "Ctrl+R", self.restart),
                     None,
                     ("quit_act", "Quit", "Ctrl+Q", self.close),
                 ]
@@ -1585,6 +1588,10 @@ class MainWindow(QMainWindow):
         
         self.series.mergeObjects(names, new_name)
         self.field.reload()
+
+    def restart(self):
+        self.restart_mainwindow = True
+        self.close()
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

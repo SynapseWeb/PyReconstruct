@@ -379,7 +379,10 @@ class MainWindow(QMainWindow):
             ("Shift+Up", lambda : self.translate("up", "big")),
             ("Ctrl+Down", lambda : self.translate("down", "small")),
             ("Down", lambda : self.translate("down", "med")),
-            ("Shift+Down", lambda : self.translate("down", "big"))
+            ("Shift+Down", lambda : self.translate("down", "big")),
+
+            ("Ctrl+Shift+Left", self.field.rotateTform),
+            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False))
         ]
 
         for kbd, act in shortcuts:

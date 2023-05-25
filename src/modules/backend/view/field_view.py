@@ -1,3 +1,4 @@
+import math
 from PySide6.QtGui import QPainter
 
 from .section_layer import SectionLayer
@@ -11,7 +12,8 @@ from modules.datatypes import (
 from modules.backend.func import SectionStates
 from modules.calc import (
     centroid,
-    lineDistance
+    lineDistance,
+    pixmapPointToField
 )
 from modules.gui.utils import notify
 
@@ -477,6 +479,31 @@ class FieldView():
         new_tform[2] += dx
         new_tform[5] += dy
         new_tform = Transform(new_tform)
+        self.changeTform(new_tform)
+    
+    def rotateTform(self, cc=True):
+        """Rotate the section transform."""
+        tform = self.section.tforms[self.series.alignment]
+        tform_list = tform.getList()
+        x, y = pixmapPointToField(
+            self.mouse_x,
+            self.mouse_y,
+            self.pixmap_dim,
+            self.series.window,
+            self.section.mag
+        )
+        translate_tform = Transform([1, 0, x, 0, 1, y])
+        t = math.pi / 720
+        t *= 1 if cc else -1
+        sin = math.sin(t)
+        cos = math.cos(t)
+        rotate_tform = Transform([
+            cos, -sin, 0,
+            sin, cos, 0
+        ])
+        new_tform = (
+            (tform * translate_tform.inverted() * rotate_tform * translate_tform)
+        )
         self.changeTform(new_tform)
     
     def translate(self, dx : float, dy : float):

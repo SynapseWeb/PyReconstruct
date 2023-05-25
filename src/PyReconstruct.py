@@ -1,8 +1,10 @@
 import os
 import sys
 import PySide6
+import importlib
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
+import modules.gui.main as main
 
 # STOPGAP FOR WAYLAND QT ISSUE
 # https://stackoverflow.com/questions/68417682/qt-and-opencv-app-not-working-in-virtual-environment
@@ -19,13 +21,13 @@ app = QApplication(sys.argv)
 # run program until user closes without restart
 run = True
 while run:
-    from modules.gui.main import MainWindow
-    main_window = MainWindow(sys.argv)
+    main_window = main.MainWindow(sys.argv)
     app.exec()
     if main_window.restart_mainwindow:
         if not main_window.series.isWelcomeSeries():
             if len(sys.argv) < 2:
                 sys.argv.append("")
             sys.argv[1] = main_window.series.jser_fp  # load the series being worked on
+        importlib.reload(main)
     else:
         run = False

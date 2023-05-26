@@ -372,7 +372,9 @@ class FieldWidget(QWidget, FieldView):
         if self.current_trace:
             pen = None
             # if drawing lasso
-            if self.mouse_mode == FieldWidget.POINTER and self.is_selecting_traces:
+            if ((self.mouse_mode == FieldWidget.POINTER and self.is_selecting_traces) or
+                (self.mouse_mode == FieldWidget.STAMP and self.is_drawing_rad)
+            ):
                 closed = True
                 pen = QPen(QColor(255, 255, 255), 1)
                 pen.setDashPattern([4, 4])
@@ -906,6 +908,8 @@ class FieldWidget(QWidget, FieldView):
             self.mouse_mode == FieldWidget.OPENTRACE
         ):
             self.traceMove(event)
+        elif self.mouse_mode == FieldWidget.STAMP:
+            self.stampMove(event)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -1313,11 +1317,60 @@ class FieldWidget(QWidget, FieldView):
         """
         # get mouse coords and convert to field coords
         if self.lclick:
-            pix_x, pix_y = event.x(), event.y()
-            self.placeStamp(pix_x, pix_y, self.tracing_trace)
+            self.is_drawing_rad = False
+            self.clicked_x, self.clicked_y = event.x(), event.y()
+    
+    def stampMove(self, event):
+        """Called when mouse is moved in stamp mode."""
+        if not self.lclick:
+            return
+        
+        self.current_trace = [
+            (self.clicked_x, self.clicked_y),
+            (event.x(), event.y())
+        ]
+
+        if time.time() - self.click_time > self.max_click_time:
+            self.is_drawing_rad = True
+
+        self.update()
     
     def stampRelease(self, event):
         """Called when mouse is released in stamp mode."""
+        # user single-clicked
+        if ((time.time() - self.click_time <= self.max_click_time) and
+            self.lclick
+        ):
+            self.placeStamp(event.x(), event.y(), self.tracing_trace)
+        # user defined a radius
+        elif self.lclick and self.is_drawing_rad:
+            x, y = event.x(), event.y()
+            r = distance(
+                *pixmapPointToField(
+                    self.clicked_x,
+                    self.clicked_y,
+                    self.pixmap_dim,
+                    self.series.window,
+                    self.section.mag
+                ),
+                *pixmapPointToField(
+                    x,
+                    y,
+                    self.pixmap_dim,
+                    self.series.window,
+                    self.section.mag
+                ),
+            ) / 2
+            stamp = self.tracing_trace.copy()
+            stamp.resize(r)
+            center = (
+                (x + self.clicked_x) / 2,
+                (y + self.clicked_y) / 2
+            )
+            self.placeStamp(*center, stamp)
+        
+        self.current_trace = []
+        self.is_drawing_rad = False
         self.update()
     
     def gridPress(self, event):

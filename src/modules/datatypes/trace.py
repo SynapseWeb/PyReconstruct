@@ -296,6 +296,19 @@ class Trace():
         """
         xmin, ymin, xmax, ymax = self.getBounds(tform)
         return (xmin + xmax) / 2, (ymin + ymax) / 2
+
+    def getCentroid(self, tform : Transform = None) -> tuple:
+        """Get the centroid of the trace.
+        
+            Params:
+                tform (Transform)"""
+        c = centroid(self.points)
+        if tform:
+            return tform.map(*c)
+        else:
+            return c
+
+
     
     def getRadius(self, tform : Transform = None):
         """Get the distance from the centroid of the trace to its farthest point.

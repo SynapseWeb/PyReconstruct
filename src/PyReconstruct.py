@@ -28,6 +28,9 @@ while run:
             if len(sys.argv) < 2:
                 sys.argv.append("")
             sys.argv[1] = main_window.series.jser_fp  # load the series being worked on
-        importlib.reload(main)
+        # reload all of the written code
+        for module_name, module in list(sys.modules.items()):
+            if module_name.startswith("modules"):
+                importlib.reload(module)
     else:
         run = False

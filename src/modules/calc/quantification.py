@@ -166,3 +166,11 @@ def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
         if linesIntersect(p1, p2, p3, p4):
             return True
     return False
+
+def colorize(n):
+    cn = (n % 156) ** 3
+    c = [0, 0, 0]
+    for i in range(3):
+        c[i] = cn % 156 + 100
+        cn //= 156
+    return c

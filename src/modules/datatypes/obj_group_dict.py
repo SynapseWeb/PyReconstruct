@@ -46,6 +46,24 @@ class ObjGroupDict():
             del self.objects[obj]
         
         return True
+
+    def removeObject(self, obj : str):
+        """Remove an object from all its associated groups.
+        
+            Params:
+                obj (str): the name of the object
+        """
+        for group in self.getObjectGroups(obj).copy():
+            self.remove(group, obj)
+    
+    def removeGroup(self, group : str):
+        """Remove a group.
+        
+            Params:
+                groups (str): the group to remove
+        """
+        for obj in self.getGroupObjects(group).copy():
+            self.remove(group, obj)
     
     def getObjectGroups(self, obj : str = None) -> set:
         """Get the groups for a given object.
@@ -73,7 +91,8 @@ class ObjGroupDict():
         """Get a JSON serializable dictionary."""
         groups = self.groups.copy()
         for g in groups:
-            groups[g] = list(groups[g])
+            if groups[g]:
+                groups[g] = list(groups[g])
         return groups
     
     def getGroupList(self) -> list:

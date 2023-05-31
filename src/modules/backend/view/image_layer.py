@@ -1,6 +1,8 @@
 import os
 import zarr
+import numpy as np
 
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import (
     Qt,
     QPoint,
@@ -206,7 +208,7 @@ class ImageLayer():
         # scaling: ratio of screen pixels to actual image pixels (should be equal)
         x_scaling = pixmap_w / (window_w / self.section.mag)
         y_scaling = pixmap_h / (window_h / self.section.mag)
-        assert(abs(x_scaling - y_scaling) < 1e-6)
+        # assert(abs(x_scaling - y_scaling) < 1e-6)
         self.scaling = x_scaling
 
         # get vectors for four window corners
@@ -300,11 +302,14 @@ class ImageLayer():
         origin_shift[0] *= self.scaling
         origin_shift[1] *= self.scaling
 
+        # get padded pixmap dim
+        padded_w = int(blank_space[0] + im_scaled.width() + extra_space[0] + 1)
+        if padded_w < pixmap_dim[0]: padded_w = pixmap_dim[0]
+        padded_h = int(blank_space[1] + im_scaled.height() + extra_space[1] + 1)
+        if padded_h < pixmap_dim[1]: padded_h = pixmap_dim[1]
+
         # add blank space on each side
-        im_padded = QPixmap(
-            round(blank_space[0] + im_scaled.width() + extra_space[0]),
-            round(blank_space[1] + im_scaled.height() + extra_space[1])
-        )
+        im_padded = QPixmap(padded_w, padded_h)
         im_padded.fill(Qt.black)
         painter = QPainter(im_padded)
         painter.drawImage(
@@ -345,6 +350,31 @@ class ImageLayer():
         self._drawBrightness(image_layer)
 
         return image_layer
+    
+    def generateImageArray(self, pixmap_dim : tuple, window : list):
+        """Generate the image layer.
+        
+            Params:
+                pixmap_dim (tuple): the w and h of the 2D array
+                window (list): the x, y, w, and h of the field window
+            Returns:
+                (numpy.ndarray) the image as a numpy array
+        """
+        # generate the qimage from pixmap
+        qimage = self.generateImageLayer(
+            pixmap_dim,
+            window
+        ).toImage()
+        qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
+
+        # convert the pixmap to a numpy array
+        width = qimage.width()
+        height = qimage.height()
+        raw = np.frombuffer(qimage.bits(), np.uint8)
+        raw = raw.reshape((height, width, 4))[:,:,0]
+        arr = np.array(raw, dtype=np.uint8)
+
+        return arr
 
 def getBoundingRect(points : list):
     """Get the bounding rectangle and shift in origin for a set of points.

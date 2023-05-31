@@ -1,15 +1,8 @@
-import sys
-import traceback
 import numpy as np
 
 from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog, QLabel
 from PySide6.QtGui import QKeySequence, QShortcut, QVector3D, QFont
 from PySide6.QtCore import (
-    QRunnable,
-    Slot,
-    Signal,
-    QObject,
-    QThreadPool,
     QTimer
 )
 
@@ -17,75 +10,9 @@ import pyqtgraph.opengl as gl
 from pyqtgraph.Vector import Vector
 
 from modules.backend.volume import generateVolumes, generate3DZtraces
+from modules.backend.threading import ThreadPool
 from modules.datatypes import Series
 from modules.gui.utils import populateMenu
-
-# THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
-
-class WorkerSignals(QObject):
-    '''
-    Defines the signals available from a running worker thread.
-
-    Supported signals are:
-
-    finished
-        No data
-
-    error
-        tuple (exctype, value, traceback.format_exc() )
-
-    result
-        object data returned from processing, anything
-
-    progress
-        int indicating % progress
-
-    '''
-    error = Signal(tuple)
-    result = Signal(tuple)
-    finished = Signal()
-
-
-class Worker(QRunnable):
-    '''
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    '''
-
-    def __init__(self, fn, *args):
-        super(Worker, self).__init__()
-
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.signals = WorkerSignals()
-
-    @Slot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args.
-        '''
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try:
-            result = self.fn(*self.args)
-        except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
-        finally:
-            self.signals.finished.emit()
-
 
 class Object3DViewer(gl.GLViewWidget):
 
@@ -149,7 +76,7 @@ class Object3DViewer(gl.GLViewWidget):
 
         self.pbars = []
         self.established = False
-        self.threadpool = QThreadPool()
+        self.threadpool = ThreadPool()
 
         self.addObjects(obj_names)
     
@@ -195,7 +122,7 @@ class Object3DViewer(gl.GLViewWidget):
         self.obj_set = self.obj_set.union(obj_names)
 
         # pass the function to execute
-        worker = Worker(self.placeInScene, obj_names) # pass fn and args to worker
+        worker = self.threadpool.createWorker(self.placeInScene, obj_names) # pass fn and args to worker
         if not self.established:
             worker.signals.result.connect(self.setScene)
         worker.signals.finished.connect(self.closePbar)
@@ -440,7 +367,7 @@ class Object3DViewer(gl.GLViewWidget):
         
         # get screen coordinates of click on pass into thread
         x, y = event.pos().x(), event.pos().y()
-        worker = Worker(self.getCoordinates, self.itemsAt((x, y, 4, 4)), x, y)
+        worker = self.threadpool.createWorker(self.getCoordinates, self.itemsAt((x, y, 4, 4)), x, y)
         worker.signals.result.connect(self.displayCoordinates)
         self.threadpool.start(worker)
     

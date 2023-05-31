@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from .color_button import ColorButton
 
 from modules.datatypes import Trace
+from modules.gui.utils import notify
 
 class TraceDialog(QDialog):
 
@@ -68,41 +69,37 @@ class TraceDialog(QDialog):
 
         self.setWindowTitle("Set Attributes")
 
-        self.name_row = QHBoxLayout()
-        self.name_text = QLabel(self)
-        self.name_text.setText("Name:")
+        name_row = QHBoxLayout()
+        name_text = QLabel(self, text="Name:")
         self.name_input = QLineEdit(self)
         self.name_input.setText(name)
-        self.name_row.addWidget(self.name_text)
-        self.name_row.addWidget(self.name_input)
+        name_row.addWidget(name_text)
+        name_row.addWidget(self.name_input)
 
-        self.color_row = QHBoxLayout()
-        self.color_text = QLabel(self)
-        self.color_text.setText("Color:")
+        color_row = QHBoxLayout()
+        color_text = QLabel(self, text="Color:")
         self.color_input = ColorButton(color, parent)
-        self.color_row.addWidget(self.color_text)
-        self.color_row.addWidget(self.color_input)
-        self.color_row.addStretch()
+        color_row.addWidget(color_text)
+        color_row.addWidget(self.color_input)
+        color_row.addStretch()
 
-        self.tags_row = QHBoxLayout()
-        self.tags_text = QLabel(self)
-        self.tags_text.setText("Tags:")
+        tags_row = QHBoxLayout()
+        tags_text = QLabel(self, text="Tags:")
         self.tags_input = QLineEdit(self)
         self.tags_input.setText(", ".join(tags))
-        self.tags_row.addWidget(self.tags_text)
-        self.tags_row.addWidget(self.tags_input)
+        tags_row.addWidget(tags_text)
+        tags_row.addWidget(self.tags_input)
 
-        self.condition_row = QHBoxLayout()
+        condition_row = QHBoxLayout()
         self.condition_input = QCheckBox("Fill when selected")
         if fill_condition == "selected":
             self.condition_input.setChecked(True)
         else:
             self.condition_input.setChecked(False)
-        self.condition_row.addWidget(self.condition_input)
+        condition_row.addWidget(self.condition_input)
 
-        self.style_row = QHBoxLayout()
-        self.style_text = QLabel(self)
-        self.style_text.setText("Fill:")
+        style_row = QHBoxLayout()
+        style_text = QLabel(self, text="Fill:")
         self.style_none = QRadioButton("None")
         self.style_none.toggled.connect(self.checkDisplayCondition)
         self.style_transparent = QRadioButton("Transparent")
@@ -117,37 +114,36 @@ class TraceDialog(QDialog):
             self.style_solid.setChecked(True)
         else:
             self.checkDisplayCondition()
-        self.style_row.addWidget(self.style_text)
-        self.style_row.addWidget(self.style_none)
-        self.style_row.addWidget(self.style_transparent)
-        self.style_row.addWidget(self.style_solid)
+        style_row.addWidget(style_text)
+        style_row.addWidget(self.style_none)
+        style_row.addWidget(self.style_transparent)
+        style_row.addWidget(self.style_solid)
 
         if self.include_radius:
-            self.stamp_size_row = QHBoxLayout()
-            self.stamp_size_text = QLabel(self)
-            self.stamp_size_text.setText("Stamp radius (microns):")
+            stamp_size_row = QHBoxLayout()
+            stamp_size_text = QLabel(self, text="Stamp radius (microns):")
             self.stamp_size_input = QLineEdit(self)
             self.stamp_size_input.setText(str(round(trace.getRadius(), 6)))
-            self.stamp_size_row.addWidget(self.stamp_size_text)
-            self.stamp_size_row.addWidget(self.stamp_size_input)
+            stamp_size_row.addWidget(stamp_size_text)
+            stamp_size_row.addWidget(self.stamp_size_input)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.name_row)
-        self.vlayout.addLayout(self.color_row)
-        self.vlayout.addLayout(self.tags_row)
-        self.vlayout.addLayout(self.style_row)
-        self.vlayout.addLayout(self.condition_row)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addLayout(name_row)
+        vlayout.addLayout(color_row)
+        vlayout.addLayout(tags_row)
+        vlayout.addLayout(style_row)
+        vlayout.addLayout(condition_row)
         if self.include_radius:
-            self.vlayout.addLayout(self.stamp_size_row)
-        self.vlayout.addWidget(self.buttonbox)
+            vlayout.addLayout(stamp_size_row)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
     
     def checkDisplayCondition(self):
         """Determine whether the "fill when selected" checkbox should be displayed."""
@@ -155,6 +151,20 @@ class TraceDialog(QDialog):
             self.condition_input.show()
         else:
             self.condition_input.hide()
+    
+    def accept(self):
+        """Overwritten from parent class."""
+        if self.include_radius:
+            try:
+                r = float(self.stamp_size_input.text())
+            except ValueError:
+                notify("Please enter a valid number.")
+                return
+            if r < 0:
+                notify("Please enter a positive number.")
+                return
+        
+        super().accept()
     
     def exec(self):
         """Run the dialog."""
@@ -199,11 +209,7 @@ class TraceDialog(QDialog):
 
             # radius
             if self.include_radius:
-                stamp_size = self.stamp_size_input.text()
-                try:
-                    stamp_size = float(stamp_size)
-                except ValueError:
-                    stamp_size = None
+                stamp_size = float(self.stamp_size_input.text())
                 retlist.append(stamp_size)
             
             return tuple(retlist), True

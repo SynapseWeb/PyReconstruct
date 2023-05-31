@@ -14,4 +14,11 @@ from .quantification import (
     ccw,
     linesIntersect,
     lineIntersectsContour,
+    colorize
+)
+from .grid import (
+    mergeTraces,
+    cutTraces,
+    reducePoints,
+    getExterior
 )

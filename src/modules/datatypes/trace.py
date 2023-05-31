@@ -97,7 +97,7 @@ class Trace():
             Params:
                 tag (str): the tag for the trace
         """
-        self.tags.append(tag)
+        self.tags.add(tag)
 
     def getList(self, include_name=True) -> dict:
         """Return the trace data as a dictionary.
@@ -296,6 +296,19 @@ class Trace():
         """
         xmin, ymin, xmax, ymax = self.getBounds(tform)
         return (xmin + xmax) / 2, (ymin + ymax) / 2
+
+    def getCentroid(self, tform : Transform = None) -> tuple:
+        """Get the centroid of the trace.
+        
+            Params:
+                tform (Transform)"""
+        c = centroid(self.points)
+        if tform:
+            return tform.map(*c)
+        else:
+            return c
+
+
     
     def getRadius(self, tform : Transform = None):
         """Get the distance from the centroid of the trace to its farthest point.
@@ -338,6 +351,29 @@ class Trace():
         ]
                 
         self.points = points
+    
+    def getStretched(self, w : float, h : float):
+        """Get the trace stretched to a specific w and h."""
+        new_trace = self.copy()
+
+        # get constants
+        cx, cy = centroid(new_trace.points)
+        xmin, ymin, xmax, ymax = self.getBounds()
+
+        # get scale factors
+        scale_x = w / (xmax - xmin)
+        scale_y = h / (ymax - ymin)
+
+        # center trace at origin and apply scale factor
+        new_trace.points = [
+            (
+                scale_x*(x-cx) + cx, 
+                scale_y*(y-cy) + cy
+            )
+            for x, y in new_trace.points
+        ]
+        
+        return new_trace
     
     def magScale(self, prev_mag : float, new_mag : float):
         """Scale the trace to magnification changes.

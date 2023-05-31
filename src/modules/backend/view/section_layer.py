@@ -1,4 +1,5 @@
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtCore import Qt
 
 from .image_layer import ImageLayer
 from .trace_layer import TraceLayer
@@ -11,14 +12,15 @@ from modules.datatypes import (
 
 class SectionLayer(ImageLayer, TraceLayer):
 
-    def __init__(self, section : Section, series : Series):
+    def __init__(self, section : Section, series : Series, load_image_layer=True):
         """Create the section layer object.
         
             Params:
                 section (Section): the section object for the layer
                 series (Series): the series object
         """
-        ImageLayer.__init__(self, section, series)
+        if load_image_layer:
+            ImageLayer.__init__(self, section, series)
         TraceLayer.__init__(self, section, series)
     
     def generateView(
@@ -28,7 +30,8 @@ class SectionLayer(ImageLayer, TraceLayer):
         generate_image=True,
         generate_traces=True,
         hide_traces=False,
-        show_all_traces=False
+        show_all_traces=False,
+        hide_image=False
         ):
         """Generate the pixmap view for the section.
         
@@ -38,11 +41,18 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
         """
+        # save attributes
+        self.window = window
+        self.pixmap_dim = pixmap_dim
+        
         # set the series screen mag
         self.series.screen_mag = window[2] / pixmap_dim[0]
 
         # generate image
-        if generate_image:
+        if hide_image:
+            self.image_layer = QPixmap(*pixmap_dim)
+            self.image_layer.fill(Qt.black)
+        elif generate_image:
             self.image_layer = self.generateImageLayer(pixmap_dim, window)
         
         # if user requests traces to be hidden

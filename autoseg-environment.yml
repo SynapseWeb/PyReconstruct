@@ -1,0 +1,44 @@
+name: pr_autoseg
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - cython
+  - python=3.9
+  - pip
+  - setuptools
+  - numpy
+  - opencv
+  - PySide6
+  - pyopengl
+  - pytorch
+  - pytorch-cuda
+  - boost
+  - jupyter
+  - pip:
+    - protobuf==3.19.6
+    - zarr
+    - matplotlib
+    - neuroglancer
+    - cloud-volume
+    - tensorboard
+    - tensorboardx
+    - jsmin
+    - lxml
+    - Pillow
+    - pyqtgraph
+    - trimesh
+    - mahotas
+    - git+https://github.com/funkelab/funlib.geometry.git
+    - git+https://github.com/funkelab/daisy.git
+    - git+https://github.com/funkey/gunpowder.git
+    - git+https://github.com/funkelab/funlib.math.git
+    - git+https://github.com/funkelab/funlib.evaluate.git
+    - git+https://github.com/funkelab/funlib.learn.torch.git
+    - git+https://github.com/htem/waterz@hms
+    - git+https://github.com/funkelab/funlib.segment.git
+    - git+https://github.com/funkelab/lsd.git
+    - git+https://github.com/funkelab/funlib.persistence.git
+    - git+https://github.com/yajivunev/autoseg.git
+

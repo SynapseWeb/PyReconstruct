@@ -485,9 +485,7 @@ class ObjectTableWidget(QDockWidget):
             return
         
         for name in obj_names:
-            groups = self.series.object_groups.getObjectGroups(name)
-            for group in groups.copy():
-                self.series.object_groups.remove(group=group, obj=name)
+            self.series.object_groups.removeObject(name)
             self.manager.refreshObject(name)
     
     def removeAllTags(self):

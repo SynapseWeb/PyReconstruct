@@ -80,7 +80,7 @@ class SectionTableWidget(QDockWidget):
                 "text": "Brightness/contrast",
                 "opts":
                 [
-                    ("setbc_act", "Set brightness/contrast", "", self.setBC),
+                    ("setbc_act", "Set brightness/contrast...", "", self.setBC),
                     ("matchbc_act", "Match brightness/contrast to current section", "", self.matchBC)
                 ]
             },
@@ -213,10 +213,11 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
-        (b, c), confirmed = BCDialog(self).exec()
+        response, confirmed = BCDialog(self).exec()
         if not confirmed:
             return
         
+        b, c = response
         if b is not None and c is not None:
             self.manager.setBC(section_numbers, b, c)
     

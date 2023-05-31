@@ -1,6 +1,8 @@
+import math
 from PySide6.QtGui import QPainter
 
 from .section_layer import SectionLayer
+from .zarr_layer import ZarrLayer
 
 from modules.datatypes import (
     Series,
@@ -10,7 +12,8 @@ from modules.datatypes import (
 from modules.backend.func import SectionStates
 from modules.calc import (
     centroid,
-    lineDistance
+    lineDistance,
+    pixmapPointToField
 )
 from modules.gui.utils import notify
 
@@ -38,6 +41,9 @@ class FieldView():
         # create section view
         self.section_layer = SectionLayer(self.section, self.series)
 
+        # create zarr view if applicable
+        self.createZarrLayer()
+        
         # b section and view placeholder
         self.b_section = None
         self.b_section_layer = None
@@ -51,6 +57,7 @@ class FieldView():
         # hide/show defaults
         self.hide_trace_layer = False
         self.show_all_traces = False
+        self.hide_image = False
 
         # propogate tform defaults
         self.propogate_tform = False
@@ -79,9 +86,17 @@ class FieldView():
             self.b_section.selected_traces = []
         
         self.generateView()
+
         # notify that the series has been modified
         self.mainwindow.seriesModified(True)
     
+    def createZarrLayer(self):
+        """Create a zarr layer."""
+        if self.series.zarr_overlay_fp and self.series.zarr_overlay_group:
+            self.zarr_layer = ZarrLayer(self.series)
+        else:
+            self.zarr_layer = None
+
     def reloadImage(self):
         """Reload the section images (used if transform or image source is modified)."""
         self.section_layer.loadImage()
@@ -466,6 +481,31 @@ class FieldView():
         new_tform = Transform(new_tform)
         self.changeTform(new_tform)
     
+    def rotateTform(self, cc=True):
+        """Rotate the section transform."""
+        tform = self.section.tforms[self.series.alignment]
+        tform_list = tform.getList()
+        x, y = pixmapPointToField(
+            self.mouse_x,
+            self.mouse_y,
+            self.pixmap_dim,
+            self.series.window,
+            self.section.mag
+        )
+        translate_tform = Transform([1, 0, x, 0, 1, y])
+        t = math.pi / 720
+        t *= 1 if cc else -1
+        sin = math.sin(t)
+        cos = math.cos(t)
+        rotate_tform = Transform([
+            cos, -sin, 0,
+            sin, cos, 0
+        ])
+        new_tform = (
+            (tform * translate_tform.inverted() * rotate_tform * translate_tform)
+        )
+        self.changeTform(new_tform)
+    
     def translate(self, dx : float, dy : float):
         """Translate the transform OR the selected traces.
         
@@ -536,7 +576,7 @@ class FieldView():
             for trace in self.section.selected_traces:
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
-        self.generateView(generate_image=False)
+        self.generateView()
     
     def toggleShowAllTraces(self):
         """Toggle show all traces regardless of hiding status."""
@@ -549,6 +589,11 @@ class FieldView():
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
         self.generateView()
+    
+    def toggleHideImage(self):
+        """Toggle hide the image from view."""
+        self.hide_image = not self.hide_image
+        self.generateView(generate_traces=False)
     
     def linearAlign(self):
         """Modify the linear transformation using points from the selected trace.
@@ -649,7 +694,8 @@ class FieldView():
             generate_image=generate_image,
             generate_traces=generate_traces,
             hide_traces=self.hide_trace_layer,
-            show_all_traces=self.show_all_traces
+            show_all_traces=self.show_all_traces,
+            hide_image=self.hide_image
         )
 
         # blend b section if requested
@@ -660,13 +706,29 @@ class FieldView():
                 self.series.window,
                 generate_image=generate_image,
                 generate_traces=generate_traces,
-                hide_traces=self.hide_trace_layer
+                hide_traces=self.hide_trace_layer,
+                show_all_traces=self.show_all_traces,
+                hide_image=self.hide_image
             )
             # overlay a and b sections
             painter = QPainter(view)
             painter.setOpacity(0.5)
             painter.drawPixmap(0, 0, b_view)
             painter.end()
+        
+        # overlay zarr if requested
+        if self.zarr_layer:
+            zarr_layer = self.zarr_layer.generateZarrLayer(
+                self.section,
+                pixmap_dim,
+                self.series.window
+            )
+            if zarr_layer:
+                painter = QPainter(view)
+                if not self.hide_image:
+                    painter.setOpacity(0.3)
+                painter.drawPixmap(0, 0, zarr_layer)
+                painter.end()
         
         return view
     
@@ -681,12 +743,12 @@ class FieldView():
             self.generateView(generate_image=False)
             self.saveState()
     
-    def mergeSelectedTraces(self):
+    def mergeSelectedTraces(self, merge_objects=False):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         if self.section.selected_traces:
-            self.section_layer.mergeSelectedTraces()
+            self.section_layer.mergeSelectedTraces(merge_objects)
             self.generateView(generate_image=False)
             self.saveState()
     
@@ -721,6 +783,17 @@ class FieldView():
         self.generateView(generate_image=False)
         self.saveState()
     
+    def placeGrid(self, pix_x, pix_y, trace, w, h, dx, dy, nx, ny):
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        self.section_layer.placeGrid(
+            pix_x, pix_y, trace, w, h, dx, dy, nx, ny
+        )
+        self.generateView(generate_image=False)
+        self.saveState()
+
+    
     def findClosestTrace(self, field_x, field_y, radius=0.5):
         return self.section.findClosestTrace(
             field_x,
@@ -731,10 +804,12 @@ class FieldView():
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden
-        if self.hide_trace_layer:
-            return
-        self.section.deselectAllTraces()
-        self.generateView(generate_image=False)
+        if self.zarr_layer:
+            self.zarr_layer.deselectAll()
+            self.generateView(generate_image=False)
+        if not self.hide_trace_layer:
+            self.section.deselectAllTraces()
+            self.generateView(generate_image=False)
     
     def selectAllTraces(self):
         # disable if trace layer is hidden

@@ -1,12 +1,16 @@
 from PySide6.QtWidgets import (
     QDialog, 
     QDialogButtonBox, 
-    QHBoxLayout, 
     QLabel, 
     QLineEdit, 
     QVBoxLayout, 
+    QGridLayout,
     QComboBox
 )
+
+from modules.gui.utils import notify
+
+from .helper import resizeLineEdit
 
 class Object3DDialog(QDialog):
 
@@ -16,9 +20,7 @@ class Object3DDialog(QDialog):
 
         self.setWindowTitle("3D Object Settings")
 
-        self.type_row = QHBoxLayout()
-        self.type_text = QLabel(self)
-        self.type_text.setText("3D Type:")
+        type_text = QLabel(self, text="3D Type:")
         self.type_input = QComboBox(self)
         type_list = ["surface", "spheres"]
         if not type3D:
@@ -27,41 +29,53 @@ class Object3DDialog(QDialog):
         if type3D:
             self.type_input.setCurrentText(type3D)
         self.type_input.resize(self.type_input.sizeHint())
-        self.type_row.addWidget(self.type_text)
-        self.type_row.addWidget(self.type_input)
 
-        self.opacity_row = QHBoxLayout()
-        self.opacity_text = QLabel(self)
-        self.opacity_text.setText("Opacity (0-1):")
+        opacity_text = QLabel(self, text="Opacity (0-1):")
         self.opacity_input = QLineEdit(self)
+        resizeLineEdit(self.opacity_input, "0.000")
         if opacity:
             self.opacity_input.setText(str(round(opacity, 6)))
-        self.opacity_row.addWidget(self.opacity_text)
-        self.opacity_row.addWidget(self.opacity_input)
+
+        grid = QGridLayout()
+
+        grid.addWidget(type_text, 0, 0)
+        grid.addWidget(self.type_input, 0, 1)
+
+        grid.addWidget(opacity_text, 1, 0)
+        grid.addWidget(self.opacity_input, 1, 1)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
-        self.buttonbox.rejected.connect(self.reject)
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
 
-        self.vlayout = QVBoxLayout()
-        self.vlayout.setSpacing(10)
-        self.vlayout.addLayout(self.type_row)
-        self.vlayout.addLayout(self.opacity_row)
-        self.vlayout.addWidget(self.buttonbox)
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+        vlayout.addLayout(grid)
+        vlayout.addWidget(buttonbox)
 
-        self.setLayout(self.vlayout)
+        self.setLayout(vlayout)
+    
+    def accept(self):
+        """Overwritten from parent class."""
+        try:
+            o = float(self.opacity_input.text())
+        except ValueError:
+            notify("Please enter a valid number.")
+            return
+        
+        if not 0 <= o <= 1:
+            notify("Please enter a number between 0 and 1.")
+            return
+        
+        super().accept()
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
         if confirmed:
             type3D = self.type_input.currentText()
-            opacity = self.opacity_input.text()
-            try:
-                opacity = float(opacity)
-            except ValueError:
-                opacity = None
-            return (type3D, opacity), confirmed
+            opacity = float(self.opacity_input.text())
+            return (type3D, opacity), True
         else:
             return None, None

@@ -18,8 +18,16 @@ from PySide6.QtCore import Qt
 
 from .field_widget import FieldWidget
 
-from modules.gui.palette import MousePalette
-from modules.gui.dialog import AlignmentDialog
+from modules.gui.palette import MousePalette, ZarrPalette
+from modules.gui.dialog import (
+    AlignmentDialog,
+    GridDialog,
+    CreateZarrDialog,
+    AddToZarrDialog,
+    TrainDialog,
+    SegmentDialog,
+    PredictDialog
+)
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
     progbar,
@@ -34,11 +42,12 @@ from modules.gui.utils import (
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
-    importTransforms
+    importTransforms,
+    importSwiftTransforms
 )
+from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
 from modules.datatypes import Series, Transform
-from modules.constants import welcome_series_dir, img_dir
-
+from modules.constants import welcome_series_dir, assets_dir, img_dir, src_dir
 
 class MainWindow(QMainWindow):
 
@@ -64,10 +73,12 @@ class MainWindow(QMainWindow):
         self.series = None
         self.field = None  # placeholder for field
         self.menubar = None
-        self.mouse_palette = None  # placeholder for mouse palette
+        self.mouse_palette = None  # placeholder for palettes
+        self.zarr_palette = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.explorer_dir = ""
+        self.restart_mainwindow = False
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -116,9 +127,9 @@ class MainWindow(QMainWindow):
                     ("fromxml_act", "New from XML series...", "", self.newFromXML),
                     ("exportxml_act", "Export as XML series...", "", self.exportToXML),
                     None,
-                    ("import_transforms_act", "Import transformations", "", self.importTransforms),
-                    None,
                     ("username_act", "Change username...", "", self.changeUsername),
+                    None,
+                    ("restart_act", "Restart", "Ctrl+R", self.restart),
                     None,
                     ("quit_act", "Quit", "Ctrl+Q", self.close),
                 ]
@@ -155,17 +166,33 @@ class MainWindow(QMainWindow):
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                     {
-                        "attr_name": "propogatemenu",
-                        "text": "Propogate transform",
+                        "attr_name": "alignments",
+                        "text": "Alignments",
                         "opts":
                         [
-                            ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
-                            ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
-                            None,
-                            ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
-                            ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                            {
+                                "attr_name": "importmenu",
+                                "text": "Import alignments",
+                                "opts":
+                                [
+                                    ("import_transforms_act", ".txt file", "", self.importTransforms),
+                                    ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
+                                ]
+                            },
+                            ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                            {
+                                "attr_name": "propogatemenu",
+                                "text": "Propogate transform",
+                                "opts":
+                                [
+                                    ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
+                                    ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
+                                    None,
+                                    ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
+                                    ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                                ]
+                            }
                         ]
                     },
                     None,
@@ -179,7 +206,9 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
-                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag)           
+                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
+                    None,
+                    ("resetpalette_act", "Reset trace palette", "", self.mouse_palette.resetPalette)    
                 ]
             },
             
@@ -212,8 +241,39 @@ class MainWindow(QMainWindow):
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     None,
-                    ("paletteside_act", "Palette to other side", "Shift+L", self.mouse_palette.toggleHandedness),
-                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons)
+                    ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
+                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    None,
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
+                ]
+            },
+            {
+                "attr_name": "autosegmenu",
+                "text": "Autosegment",
+                "opts":
+                [
+                    ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
+                    ("trainzarr_act", "Train...", "", self.train),
+                    ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
+                    ("predictzarr_act", "Predict (infer)...", "", self.predict),
+                    ("sementzarr_act", "Segment...", "", self.segment),
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
                 ]
             }
         ]
@@ -236,9 +296,12 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
+                    ("mergeobjects_act", "Merge object traces...", "Ctrl+Shift+M", lambda : self.field.mergeSelectedTraces(merge_objects=True)),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
-                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False))
+                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
+                    None,
+                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
                 ]
             },
             None,
@@ -253,6 +316,7 @@ class MainWindow(QMainWindow):
                     ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
                     ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
                     None,
+                    ("hideimage_act", "Toggle hide image", "I", self.field.toggleHideImage),
                     ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
                 ]
             },
@@ -287,6 +351,15 @@ class MainWindow(QMainWindow):
             self.edittrace_act
         ]
 
+        # create the label menu
+        label_menu_list = [
+            ("importlabels_act", "Import label(s)", "", self.importLabels),
+            ("mergelabels_act", "Merge labels", "", self.mergeLabels)
+        ]
+        self.label_menu = QMenu(self)
+        populateMenu(self, self.label_menu, label_menu_list)
+
+
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
@@ -306,7 +379,10 @@ class MainWindow(QMainWindow):
             ("Shift+Up", lambda : self.translate("up", "big")),
             ("Ctrl+Down", lambda : self.translate("down", "small")),
             ("Down", lambda : self.translate("down", "med")),
-            ("Shift+Down", lambda : self.translate("down", "big"))
+            ("Shift+Down", lambda : self.translate("down", "big")),
+
+            ("Ctrl+Shift+Left", self.field.rotateTform),
+            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False))
         ]
 
         for kbd, act in shortcuts:
@@ -587,7 +663,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Select Images",
                 dir=self.explorer_dir,
-                filter="*.jpg *.jpeg *.png *.tif *.tiff"
+                filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
             )
             if len(image_locations) == 0:
                 return
@@ -617,7 +693,6 @@ class MainWindow(QMainWindow):
         
         # create new series
         series = Series.new(sorted(image_locations), series_name, mag, thickness)
-        series.modified = True
     
         # open series after creating
         self.openSeries(series)
@@ -646,9 +721,6 @@ class MainWindow(QMainWindow):
         series = xmlToJSON(os.path.dirname(series_fp))
         if not series:
             return
-
-        # flag to save
-        series.modified = True
 
         # open the series
         self.openSeries(series)
@@ -709,6 +781,33 @@ class MainWindow(QMainWindow):
         importTransforms(self.series, tforms_fp)
         # reload the section
         self.field.reload()
+
+    def importSwiftTransforms(self, tforms_fp : str = None):
+        """Import transforms from a text file.
+        
+            Params:
+                tforms_file (str): the filepath for the transforms file
+        """
+        self.saveAllData()
+
+        tforms_fp = None  # Ummmmm, not sure about this?
+        
+        # get file from user
+        if tforms_fp is None:
+            tforms_fp, ext = QFileDialog.getOpenFileName(
+                self,
+                "Select SWiFT project file",
+                dir=self.explorer_dir
+            )
+
+        if not tforms_fp: return
+        
+        # import transforms
+        print('Importing SWiFT transforms...')
+        importSwiftTransforms(self.series, tforms_fp)
+        # reload the section
+        self.field.reload()
+        print('SWiFT transforms imported!')
     
     def importTraces(self, jser_fp : str = None):
         """Import traces from another jser series.
@@ -1121,24 +1220,35 @@ class MainWindow(QMainWindow):
         )
     
     def changeAlignment(self, alignment_name : str = None):
-        """Switch alignments.
+        """Open dialog to modify and change alignments.
         
             Params:
-                alignment_name (str): the name of the new alignment"""
+                alignment_name (str): the name of the alignment ro switch to
+        """
         alignments = list(self.field.section.tforms.keys())
 
         if alignment_name is None:
-            alignment_name, confirmed = AlignmentDialog(
+            response, confirmed = AlignmentDialog(
                 self,
                 alignments
             ).exec()
             if not confirmed:
                 return
+            (
+                alignment_name,
+                added,
+                removed,
+                renamed
+            ) = response
+        else:
+            added, removed, renamed = [], [], []
         
-        if alignment_name not in alignments:
-            self.newAlignment(alignment_name)
-
-        self.field.changeAlignment(alignment_name)
+        if added or removed or renamed:
+            self.series.modifyAlignments(added, removed, renamed)
+            self.field.reload()
+        
+        if alignment_name:
+            self.field.changeAlignment(alignment_name)
     
     def calibrateMag(self, trace_lengths : dict = None):
         """Calibrate the pixel size for the series.
@@ -1175,6 +1285,358 @@ class MainWindow(QMainWindow):
                 trace_lengths[name] = d
         
         self.field.calibrateMag(trace_lengths)
+    
+    def modifyGrid(self, event=None):
+        """Modify the grid properties."""
+        response, confirmed = GridDialog(
+            self,
+            tuple(self.series.options["grid"])
+        ).exec()
+        if not confirmed:
+            return
+        
+        self.series.options["grid"] = response
+        self.seriesModified()
+    
+    def toggleHandedness(self):
+        """Toggle the handedness of the palettes."""
+        self.mouse_palette.toggleHandedness()
+        if self.zarr_palette:
+            self.zarr_palette.toggleHandedness()
+    
+    def setZarrLayer(self, zarr_dir=None):
+        """Set a zarr layer."""
+        if not zarr_dir:
+            zarr_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select overlay zarr",
+                dir=self.explorer_dir
+            )
+            if not zarr_dir:
+                return
+
+        self.series.zarr_overlay_fp = zarr_dir
+        self.series.zarr_overlay_group = None
+
+        groups = []
+        for g in os.listdir(zarr_dir):
+            if os.path.isdir(os.path.join(zarr_dir, g)):
+                groups.append(g)
+
+        self.zarr_palette = ZarrPalette(groups, self)
+    
+    def setLayerGroup(self, group_name):
+        """Set the specific group displayed in the zarr layer."""
+        if not group_name:
+            group_name = None
+        if self.zarr_palette.cb.currentText != group_name:
+            self.zarr_palette.cb.setCurrentText(group_name)
+        self.series.zarr_overlay_group = group_name
+        self.field.createZarrLayer()
+        self.field.generateView()
+    
+    def removeZarrLayer(self):
+        """Remove an existing zarr layer."""
+        self.series.zarr_overlay_fp = None
+        self.series.zarr_overlay_group = None
+        if self.zarr_palette:
+            self.zarr_palette.close()
+        self.field.createZarrLayer()
+        self.field.generateView()
+
+    def exportToZarr(self):
+        """Set up an autosegmentation for a series.
+        
+            Params:
+                run (str): "train" or "segment"
+        """
+        self.saveAllData()
+        self.removeZarrLayer()
+
+        if not self.series.jser_fp:
+            self.saveAsToJser()
+            if not self.series.jser_fp:
+                return
+
+        inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
+
+        if not dialog_confirmed: return
+
+        print("Making zarr directory...")
+        
+        # export to zarr
+        border_obj, srange, mag = inputs
+        data_fp = seriesToZarr(
+            self.series,
+            border_obj,
+            srange,
+            mag
+        )
+
+        self.series.options["autoseg"]["zarr_current"] = data_fp
+
+        print("Zarr directory done.")
+    
+    def train(self, retrain=False):
+        """Train an autosegmentation model."""
+        self.saveAllData()
+        self.removeZarrLayer()
+
+        print("Importing training modules...")
+
+        from autoseg import train, make_mask, model_paths
+        # model_paths = {"a":{"b":"a/b/m.py"}}
+
+        opts = self.series.options["autoseg"]
+
+        response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
+        if not confirmed: return
+        
+        (data_fp, iterations, save_every, group, model_path, cdir, \
+         pre_cache, min_masked, downsample) = response
+
+        training_opts = {
+            'zarr_current': data_fp,
+            'iters': iterations,
+            'save_every': save_every,
+            'group': group,
+            'model_path': model_path,
+            'checkpts_dir': cdir,
+            'pre_cache': pre_cache,
+            'min_masked': min_masked,
+            'downsample_bool': downsample
+        }
+
+        for k, v in training_opts.items():
+            opts[k] = v
+        self.seriesModified(True)
+
+        print("Exporting labels to zarr directory...")
+        
+        if retrain:
+            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+            seriesToLabels(self.series, data_fp)
+            
+        else:
+            group_name = f"labels_{group}"
+            seriesToLabels(self.series, data_fp, group)
+
+        print("Zarr directory updated with labels!")
+
+        if retrain: self.field.reload()
+        if retrain and self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
+
+        print("Starting training....")
+
+        make_mask(data_fp, group_name)
+        
+        sources = [{
+            "raw" : (data_fp, "raw"),
+            "labels" : (data_fp, group_name),
+            "unlabelled" : (data_fp, "unlabelled")
+        }]
+
+        train(
+            iterations=iterations,
+            save_every=save_every,
+            sources=sources,
+            model_path=model_path,
+            pre_cache=pre_cache,
+            min_masked=min_masked,
+            downsample=downsample,
+            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
+        )
+
+        print("Done training!")
+    
+    def markKeep(self):
+        """Add the selected trace to the most recent "keep" segmentation group."""
+        keep_tag = f"{self.series.getRecentSegGroup()}_keep"
+        for trace in self.field.section.selected_traces:
+            trace.addTag(keep_tag)
+        # deselect traces and hide
+        self.field.hideTraces()
+        self.field.deselectAllTraces()
+
+    def predict(self, data_fp : str = None):
+        """Run predictons.
+        
+            Params:
+                data_fp (str): the filepath for the zarr
+        """
+        self.saveAllData()
+        self.removeZarrLayer()
+
+        print("Importing models...")
+        
+        from autoseg import predict, model_paths
+        # model_paths = {"a":{"b":"a/b/m.py"}}
+
+        opts = self.series.options["autoseg"]
+
+        response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
+
+        if not dialog_confirmed: return
+
+        data_fp, model_path, cp_path, write_opts, increase, downsample, full_out_roi = response
+
+        predict_opts = {
+            'zarr_current': data_fp,
+            'model_path': model_path,
+            'checkpts_dir': os.path.dirname(cp_path),
+            'write': write_opts,
+            'increase': increase,
+            'downsample_bool': downsample,
+            'full_out_roi': full_out_roi
+        }
+
+        for k, v in predict_opts.items():
+            opts[k] = v
+        self.seriesModified(True)
+                
+        print("Running predictions...")
+
+        zarr_datasets = predict(
+            sources=[(data_fp, "raw")],
+            out_file=data_fp,
+            checkpoint_path=cp_path,
+            model_path=model_path,
+            write=write_opts,
+            increase=increase,
+            downsample=downsample,
+            full_out_roi=full_out_roi
+        )
+
+        # display the affinities
+        self.setZarrLayer(data_fp)
+        for zg in os.listdir(data_fp):
+            if zg.startswith("pred_affs"):
+                self.setLayerGroup(zg)
+                break
+
+        print("Predictions done.")
+        
+    def segment(self, data_fp : str = None):
+        """Run an autosegmentation.
+        
+            Params:
+                data_fp (str): the filepath for the zarr
+        """
+        self.saveAllData()
+        self.removeZarrLayer()
+
+        print("Importing modules...")
+        
+        from autoseg import hierarchical
+
+        opts = self.series.options["autoseg"]
+
+        response, dialog_confirmed = SegmentDialog(self, opts).exec()
+
+        if not dialog_confirmed: return
+
+        data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
+
+        segment_opts = {
+            "zarr_current": data_fp,
+            "thresholds": thresholds,
+            "downsample_int": downsample,
+            "norm_preds": norm_preds,
+            "min_seed": min_seed,
+            "merge_fun": merge_fun
+        }
+
+        for k, v in segment_opts.items():
+            opts[k] = v
+        self.seriesModified(True)
+
+        print("Running hierarchical...")
+
+        dataset = None
+        for d in os.listdir(data_fp):
+            if "affs" in d:
+                dataset = d
+                break
+
+        print("Segmentation started...")
+            
+        hierarchical.run(
+            data_fp,
+            dataset,
+            thresholds=list(sorted(thresholds)),
+            normalize_preds=norm_preds,
+            min_seed_distance=min_seed,
+            merge_function=merge_fun
+        )
+
+        print("Segmentation done.")
+
+        # display the segmetnation
+        self.setZarrLayer(data_fp)
+        for zg in os.listdir(data_fp):
+            if zg.startswith("seg"):
+                self.setLayerGroup(zg)
+                break
+    
+    def importLabels(self, all=False):
+        """Import labels from a zarr."""
+        if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
+            return
+        
+        # get necessary data
+        data_fp = self.series.zarr_overlay_fp
+        group_name = self.series.zarr_overlay_group
+
+        labels = None if all else self.field.zarr_layer.selected_ids
+        
+        labelsToObjects(
+            self.series,
+            data_fp,
+            group_name,
+            labels
+        )
+        self.field.reload()
+        self.removeZarrLayer()
+
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.refresh()
+    
+    def mergeLabels(self):
+        """Merge selected labels in a zarr."""
+        if not self.field.zarr_layer:
+            return
+        
+        self.field.zarr_layer.mergeLabels()
+        self.field.generateView()
+    
+    def mergeObjects(self, new_name=None):
+        """Merge full objects across the series.
+        
+            Params:
+                new_name (str): the new name for the merged objects
+        """            
+        names = set()
+        for trace in self.field.section.selected_traces:
+            names.add(trace.name)
+        names = list(names)
+        
+        if not new_name:
+            new_name, confirmed = QInputDialog.getText(
+                self,
+                "Object Name",
+                "Enter the desired name for the merged object:",
+                text=names[0]
+            )
+            if not confirmed or not new_name:
+                return
+        
+        self.series.mergeObjects(names, new_name)
+        self.field.reload()
+
+    def restart(self):
+        self.restart_mainwindow = True
+        self.close()
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""

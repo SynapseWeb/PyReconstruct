@@ -551,7 +551,7 @@ class ObjectTableWidget(QDockWidget):
             self,
             "Save Object List",
             "objects.csv",
-            filter="Comma Separated Values (.csv)"
+            filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return

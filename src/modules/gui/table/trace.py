@@ -406,7 +406,7 @@ class TraceTableWidget(QDockWidget):
             self,
             "Save Trace List",
             "traces.csv",
-            filter="Comma Separated Values (.csv)"
+            filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return

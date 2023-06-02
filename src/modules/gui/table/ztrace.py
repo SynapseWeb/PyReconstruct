@@ -285,7 +285,7 @@ class ZtraceTableWidget(QDockWidget):
             self,
             "Save Ztrace List",
             "ztraces.csv",
-            filter="Comma Separated Values (.csv)"
+            filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return

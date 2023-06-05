@@ -1638,6 +1638,15 @@ class MainWindow(QMainWindow):
 
     def restart(self):
         self.restart_mainwindow = True
+
+        # Clear console
+        
+        if os.name == 'nt':  # Windows
+            _ = os.system('cls')
+        
+        else:  # Mac and Linux
+            _ = os.system('clear')
+        
         self.close()
             
     def closeEvent(self, event):

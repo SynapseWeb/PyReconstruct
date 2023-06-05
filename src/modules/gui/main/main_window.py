@@ -26,7 +26,8 @@ from modules.gui.dialog import (
     AddToZarrDialog,
     TrainDialog,
     SegmentDialog,
-    PredictDialog
+    PredictDialog,
+    SwiftDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -790,24 +791,25 @@ class MainWindow(QMainWindow):
         """
         self.saveAllData()
 
-        tforms_fp = None  # Ummmmm, not sure about this?
+        swift_fp = None  # Ummmmm, not sure about this?
         
         # get file from user
-        if tforms_fp is None:
-            tforms_fp, ext = QFileDialog.getOpenFileName(
+        if swift_fp is None:
+            swift_fp, ext = QFileDialog.getOpenFileName(
                 self,
                 "Select SWiFT project file",
                 dir=self.explorer_dir
             )
 
-        if not tforms_fp: return
-        
+        if not swift_fp: return
+
+        scale, confirmed = SwiftDialog(self, swift_fp).exec()
+
         # import transforms
-        print('Importing SWiFT transforms...')
-        importSwiftTransforms(self.series, tforms_fp)
-        # reload the section
+        print(f'Importing SWiFT transforms at scale {scale}...')
+        importSwiftTransforms(self.series, swift_fp, scale)
+        
         self.field.reload()
-        print('SWiFT transforms imported!')
     
     def importTraces(self, jser_fp : str = None):
         """Import traces from another jser series.
@@ -1636,6 +1638,15 @@ class MainWindow(QMainWindow):
 
     def restart(self):
         self.restart_mainwindow = True
+
+        # Clear console
+        
+        if os.name == 'nt':  # Windows
+            _ = os.system('cls')
+        
+        else:  # Mac and Linux
+            _ = os.system('clear')
+        
         self.close()
             
     def closeEvent(self, event):

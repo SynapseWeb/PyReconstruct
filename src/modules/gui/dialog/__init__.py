@@ -12,3 +12,4 @@ from .addto_zarr import AddToZarrDialog
 from .train import TrainDialog
 from .segment import SegmentDialog
 from .predict import PredictDialog
+from .swift_importer import SwiftDialog

@@ -237,10 +237,12 @@ class Series():
         for filename in filenames:
             if "." not in filename:  # skip the timer file
                 continue
+            ext = filename[filename.rfind(".")+1:]
+            if not (ext.isnumeric() or ext == "ser"):  # skip any other files
+                continue
             fp = os.path.join(self.hidden_dir, filename)
             with open(fp, "r") as f:
                 filedata = json.load(f)
-            ext = filename[filename.rfind(".")+1:]
 
             if ext.isnumeric():
                 jser_data["sections"][int(ext)] = filedata

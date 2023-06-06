@@ -381,10 +381,12 @@ class ObjectTableWidget(QDockWidget):
         # ask the user for the new object name
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
+            tags = self.manager.objdict[obj_names[0]].getTags()
         else:
             displayed_name = None
+            tags=None
         
-        new_attr, confirmed = TraceDialog(self, name=displayed_name).exec()
+        new_attr, confirmed = TraceDialog(self, name=displayed_name, tags=tags).exec()
 
         if not confirmed:
             return

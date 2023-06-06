@@ -17,7 +17,7 @@ from modules.gui.utils import notify
 
 class TraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, traces : list[Trace]=[], name=None, include_radius=False, pos=None):
+    def __init__(self, parent : QWidget, traces : list[Trace]=[], name=None, color=None, tags=None, include_radius=False, pos=None):
         """Create an attribute dialog.
         
             Params:
@@ -62,8 +62,8 @@ class TraceDialog(QDialog):
         else:
             if not name:
                 name = "*"
-            color = None
-            tags = set()
+            if not tags:
+                tags = set()
             fill_style = None
             fill_condition = None
 

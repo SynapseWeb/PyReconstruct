@@ -41,9 +41,16 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
     t[1, 0] *= -1  # b1
     t[1, 2] *= -1  # b3
 
+    print(f'pre-scaled matrix: {t}')
+    
     # Apply any scale ratio difference
-    t[0, 0] *= scale_ratio
-    t[1, 1] *= scale_ratio
+    scale_martix = np.matrix([[scale_ratio, 0, 0],
+                              [1, scale_ratio, 0],
+                              [0, 0, 1]])
+
+    t = np.matmul(scale_martix, t)
+
+    print(f'post-scaled matrix: {t}')
 
     return t
 

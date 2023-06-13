@@ -19,7 +19,7 @@ def cafm_to_matrix(t):
                       [0, 0, 1]])
 
 
-def cafm_to_sanity(t, dim):
+def cafm_to_sanity(t, dim, scale_ratio=1):
     """Convert c_afm to something sane."""
 
     # Convert to matrix
@@ -41,6 +41,10 @@ def cafm_to_sanity(t, dim):
     t[1, 0] *= -1  # b1
     t[1, 2] *= -1  # b3
 
+    # Apply any scale ratio difference
+    t[0, 0] *= scale_ratio
+    t[1, 1] *= scale_ratio
+
     return t
 
 
@@ -55,11 +59,13 @@ def make_pyr_transforms(project_file, scale=1):
     
     stack_data = scale_data.get("stack")
     
-    img_height = scale_data_1.get('image_src_size')[1]
+    img_height_1 = scale_data_1.get('image_src_size')[1]
     print(f'IMG HEIGHT SCALE 1: {img_height}')
     
     img_height = scale_data.get('image_src_size')[1]
     print(f'IMG HEIGHT OTHER SCALE: {img_height}')
+
+    height_ratio = img_height_1 / img_height
 
     pyr_transforms = []
 
@@ -69,7 +75,7 @@ def make_pyr_transforms(project_file, scale=1):
         transform = section["alignment"]["method_results"]["cumulative_afm"]
         
         # Make sane
-        transform = cafm_to_sanity(transform, dim=img_height)
+        transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
         
         # Append to list
         pyr_transforms.append(transform)

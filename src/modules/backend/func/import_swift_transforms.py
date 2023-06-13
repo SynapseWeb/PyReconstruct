@@ -8,7 +8,7 @@ class IncorrectFormatError(Exception):
     pass
 
 
-class IncorrectSecNumErorr(Exception):
+class IncorrectSecNumError(Exception):
     pass
 
 
@@ -51,9 +51,11 @@ def make_pyr_transforms(project_file, scale=1):
 
     scale = f'scale_{str(scale)}'
     scale_data = swift_json["data"]["scales"][scale]
+    scale_data_1 = swift_json["data"]["scales"]["scale_1"]
     
     stack_data = scale_data.get("stack")
-    img_height = scale_data.get('image_src_size')[1]
+    
+    img_height = scale_data_1.get('image_src_size')[1]
 
     pyr_transforms = []
 
@@ -100,13 +102,12 @@ def importSwiftTransforms(series : Series, project_fp : str, scale : int = 1):
         
         if len(nums) != 7:
             
-            print("Incorrect transform file format")
-            return
+            raise IncorrectFormatError(f"Project file (at index {nums[0]}) is not correct length")
         
         try:
             
             if int(nums[0]) not in series.sections:
-                raise IncorrectSecNumErorr("Section numbers in project file do not correspond to current series.")
+                raise IncorrectSecNumError("Section numbers in project file do not correspond to current series.")
             
             tforms[int(nums[0])] = [float(n) for n in nums[1:]]
             

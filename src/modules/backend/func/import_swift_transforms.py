@@ -60,7 +60,7 @@ def make_pyr_transforms(project_file, scale=1):
     stack_data = scale_data.get("stack")
     
     img_height_1 = scale_data_1.get('image_src_size')[1]
-    print(f'IMG HEIGHT SCALE 1: {img_height}')
+    print(f'IMG HEIGHT SCALE 1: {img_height_1}')
     
     img_height = scale_data.get('image_src_size')[1]
     print(f'IMG HEIGHT OTHER SCALE: {img_height}')

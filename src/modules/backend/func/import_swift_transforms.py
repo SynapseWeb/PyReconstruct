@@ -40,17 +40,10 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
     t[0, 1] *= -1  # a2
     t[1, 0] *= -1  # b1
     t[1, 2] *= -1  # b3
-
-    print(f'pre-scaled matrix: {t}')
     
     # Apply any scale ratio difference
-    scale_martix = np.matrix([[scale_ratio, 0, 0],
-                              [0, scale_ratio, 0],
-                              [0, 0, 1]])
-
-    t = np.matmul(scale_martix, t)
-
-    print(f'post-scaled matrix: {t}')
+    t[0, 2] *= scale_ratio
+    t[1, 2] *= scale_ratio
 
     return t
 
@@ -66,15 +59,13 @@ def make_pyr_transforms(project_file, scale=1):
     
     stack_data = scale_data.get("stack")
     
-    img_height_1 = scale_data_1.get('image_src_size')[1]
-    print(f'IMG HEIGHT SCALE 1: {img_height_1}')
-    
-    img_height = scale_data.get('image_src_size')[1]
-    print(f'IMG HEIGHT OTHER SCALE: {img_height}')
+    img_height_1, img_width_1 = scale_data_1.get('image_src_size')
+    img_height, img_width = scale_data.get('image_src_size')
 
+    # Currently only the height in px is considered when scaling
+    # Will need to understand if this changes with non-square images
     height_ratio = img_height_1 / img_height
-
-    height_ratio = 1  # For now
+    width_ratio = img_width_1 / img_width
 
     pyr_transforms = []
 

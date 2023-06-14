@@ -45,7 +45,7 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
     
     # Apply any scale ratio difference
     scale_martix = np.matrix([[scale_ratio, 0, 0],
-                              [1, scale_ratio, 0],
+                              [0, scale_ratio, 0],
                               [0, 0, 1]])
 
     t = np.matmul(scale_martix, t)
@@ -73,6 +73,8 @@ def make_pyr_transforms(project_file, scale=1):
     print(f'IMG HEIGHT OTHER SCALE: {img_height}')
 
     height_ratio = img_height_1 / img_height
+
+    height_ratio = 1  # For now
 
     pyr_transforms = []
 

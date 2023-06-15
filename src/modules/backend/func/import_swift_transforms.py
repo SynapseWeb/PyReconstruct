@@ -48,7 +48,7 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
     return t
 
 
-def make_pyr_transforms(project_file, scale=1):
+def make_pyr_transforms(project_file, scale=1, cal_grid=False):
     """Return a list of PyReconstruct-formatted transformations."""
 
     with open(project_file, "r") as fp: swift_json = json.load(fp)
@@ -67,7 +67,8 @@ def make_pyr_transforms(project_file, scale=1):
     height_ratio = img_height_1 / img_height
     width_ratio = img_width_1 / img_width
 
-    pyr_transforms = []
+    # Start with identity matrix if cal_grid included as section 0
+    pyr_transforms = [np.identity(3)] if cal_grid else []
 
     for section in stack_data:
         
@@ -99,27 +100,33 @@ def transforms_as_strings(recon_transforms, output_file=None):
     return output
 
         
-def importSwiftTransforms(series : Series, project_fp : str, scale : int = 1):
+def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False):
 
-    new_transforms = make_pyr_transforms(project_fp, scale)
+    new_transforms = make_pyr_transforms(project_fp, scale, cal_grid)
     new_transforms = transforms_as_strings(new_transforms)
+    transforms_list = new_transforms.strip().split("\n")
+
+    if len(transforms_list) != len(series.sections):
+        raise IncorrectSecNumError("Mismatch between number of sections and number of transformations you are trying to import.")
 
     tforms = {}  # Empty dictionary to hold transformations
     
-    for line in new_transforms.strip().split("\n"):
+    for line in transforms_list:
         
-        nums = line.split()
+        swift_sec, *matrix = line.split()
         
-        if len(nums) != 7:
+        if len(matrix) != 6:
             
-            raise IncorrectFormatError(f"Project file (at index {nums[0]}) is not correct length")
+            raise IncorrectFormatError(f"Project file (at index {swift_sec}) incorrect number of elements.")
         
         try:
-            
-            if int(nums[0]) not in series.sections:
+
+            if int(swift_sec) not in series.sections:
                 raise IncorrectSecNumError("Section numbers in project file do not correspond to current series.")
+
+            current_tform = { int(swift_sec): [float(elem) for elem in matrix] }
             
-            tforms[int(nums[0])] = [float(n) for n in nums[1:]]
+            tforms.update(current_tform)
             
         except ValueError:
             

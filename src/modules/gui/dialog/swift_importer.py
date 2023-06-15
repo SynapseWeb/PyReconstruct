@@ -50,11 +50,18 @@ class SwiftDialog(QDialog):
             items.append(str(scale))
         self.scale_input.addItems(items)
 
+        cal_text = QLabel(self, text="Includes cal grid")
+        self.cal_input = QCheckBox(self)
+
         layout = QGridLayout()
 
         r = 0
         layout.addWidget(scale_text, r, 0)
         layout.addWidget(self.scale_input, r, 1)
+        r += 1
+
+        layout.addWidget(cal_text, r, 0)
+        layout.addWidget(self.cal_input, r, 1)
         r += 1
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -84,8 +91,13 @@ class SwiftDialog(QDialog):
         confirmed = super().exec()
         
         if confirmed:
+
+            scale = int(self.scale_input.currentText())
+            cal_grid = self.cal_input.isChecked()
+
+            response = (scale, cal_grid)
             
-            return int(self.scale_input.currentText()), True
+            return response, True
         
         else:
             

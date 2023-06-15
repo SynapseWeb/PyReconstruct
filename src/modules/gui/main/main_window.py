@@ -803,11 +803,13 @@ class MainWindow(QMainWindow):
 
         if not swift_fp: return
 
-        scale, confirmed = SwiftDialog(self, swift_fp).exec()
+        response, confirmed = SwiftDialog(self, swift_fp).exec()
+        scale, cal_grid = response
 
         # import transforms
         print(f'Importing SWiFT transforms at scale {scale}...')
-        importSwiftTransforms(self.series, swift_fp, scale)
+        if cal_grid: print('Cal grid included in series')
+        importSwiftTransforms(self.series, swift_fp, scale, cal_grid)
         
         self.field.reload()
     

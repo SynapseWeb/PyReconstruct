@@ -8,7 +8,7 @@ class IncorrectFormatError(Exception):
     pass
 
 
-class IncorrectSecNumErorr(Exception):
+class IncorrectSecNumError(Exception):
     pass
 
 
@@ -19,7 +19,7 @@ def cafm_to_matrix(t):
                       [0, 0, 1]])
 
 
-def cafm_to_sanity(t, dim):
+def cafm_to_sanity(t, dim, scale_ratio=1):
     """Convert c_afm to something sane."""
 
     # Convert to matrix
@@ -40,22 +40,35 @@ def cafm_to_sanity(t, dim):
     t[0, 1] *= -1  # a2
     t[1, 0] *= -1  # b1
     t[1, 2] *= -1  # b3
+    
+    # Apply any scale ratio difference
+    t[0, 2] *= scale_ratio
+    t[1, 2] *= scale_ratio
 
     return t
 
 
-def make_pyr_transforms(project_file, scale=1):
+def make_pyr_transforms(project_file, scale=1, cal_grid=False):
     """Return a list of PyReconstruct-formatted transformations."""
 
     with open(project_file, "r") as fp: swift_json = json.load(fp)
 
     scale = f'scale_{str(scale)}'
     scale_data = swift_json["data"]["scales"][scale]
+    scale_data_1 = swift_json["data"]["scales"]["scale_1"]
     
     stack_data = scale_data.get("stack")
-    img_height = scale_data.get('image_src_size')[1]
+    
+    img_height_1, img_width_1 = scale_data_1.get('image_src_size')
+    img_height, img_width = scale_data.get('image_src_size')
 
-    pyr_transforms = []
+    # Currently only the height in px is considered when scaling
+    # Will need to understand if this changes with non-square images
+    height_ratio = img_height_1 / img_height
+    width_ratio = img_width_1 / img_width
+
+    # Start with identity matrix if cal_grid included as section 0
+    pyr_transforms = [np.identity(3)] if cal_grid else []
 
     for section in stack_data:
         
@@ -63,7 +76,7 @@ def make_pyr_transforms(project_file, scale=1):
         transform = section["alignment"]["method_results"]["cumulative_afm"]
         
         # Make sane
-        transform = cafm_to_sanity(transform, dim=img_height)
+        transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
         
         # Append to list
         pyr_transforms.append(transform)
@@ -87,28 +100,33 @@ def transforms_as_strings(recon_transforms, output_file=None):
     return output
 
         
-def importSwiftTransforms(series : Series, project_fp : str, scale : int = 1):
+def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False):
 
-    new_transforms = make_pyr_transforms(project_fp, scale)
+    new_transforms = make_pyr_transforms(project_fp, scale, cal_grid)
     new_transforms = transforms_as_strings(new_transforms)
+    transforms_list = new_transforms.strip().split("\n")
+
+    if len(transforms_list) != len(series.sections):
+        raise IncorrectSecNumError("Mismatch between number of sections and number of transformations you are trying to import.")
 
     tforms = {}  # Empty dictionary to hold transformations
     
-    for line in new_transforms.strip().split("\n"):
+    for line in transforms_list:
         
-        nums = line.split()
+        swift_sec, *matrix = line.split()
         
-        if len(nums) != 7:
+        if len(matrix) != 6:
             
-            print("Incorrect transform file format")
-            return
+            raise IncorrectFormatError(f"Project file (at index {swift_sec}) incorrect number of elements.")
         
         try:
+
+            if int(swift_sec) not in series.sections:
+                raise IncorrectSecNumError("Section numbers in project file do not correspond to current series.")
+
+            current_tform = { int(swift_sec): [float(elem) for elem in matrix] }
             
-            if int(nums[0]) not in series.sections:
-                raise IncorrectSecNumErorr("Section numbers in project file do not correspond to current series.")
-            
-            tforms[int(nums[0])] = [float(n) for n in nums[1:]]
+            tforms.update(current_tform)
             
         except ValueError:
             

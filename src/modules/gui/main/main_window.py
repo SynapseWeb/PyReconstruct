@@ -1263,7 +1263,7 @@ class MainWindow(QMainWindow):
         if trace_lengths is None:
             # gather trace names
             names = []
-            for trace in self.field.section_layer.selected_traces:
+            for trace in self.field.section.selected_traces:
                 if trace.name not in names:
                     names.append(trace.name)
             

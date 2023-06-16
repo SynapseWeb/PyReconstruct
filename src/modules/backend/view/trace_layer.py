@@ -96,9 +96,9 @@ class TraceLayer():
         """
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
 
-        # calculate radius based on window size (2% of window size)
+        # calculate radius based on window size (5% of window size)
         window_size = max(self.window[2:])
-        radius = window_size / 100
+        radius = window_size * (0.05)
 
         return self.section.findClosestTrace(
             field_x,

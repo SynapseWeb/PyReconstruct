@@ -75,6 +75,7 @@ class FieldWidget(QWidget, FieldView):
         self.current_trace = []
         self.max_click_time = 0.15
         self.click_time = None
+        self.single_click = False
         self.mouse_x = 0
         self.mouse_y = 0
 
@@ -793,6 +794,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_x = event.x()
         self.mouse_y = event.y()
         self.click_time = time.time()
+        self.single_click = True
 
         # ignore ALL finger touch for windows
         if os.name == "nt":
@@ -861,6 +863,7 @@ class FieldWidget(QWidget, FieldView):
         # keep track of position
         self.mouse_x = event.x()
         self.mouse_y = event.y()
+        self.single_click = False
 
         # ignore ALL finger touch for windows
         if os.name == "nt":
@@ -955,7 +958,19 @@ class FieldWidget(QWidget, FieldView):
         self.lclick = False
         self.rclick = False
         self.mclick = False
+        self.single_click = False
     
+    def isSingleClicking(self):
+        """Check if user is single-clicking.
+        
+            Returns:
+                (bool) True if user is single-clicking
+        """
+        if self.single_click or (time.time() - self.click_time <= self.max_click_time):
+            return True
+        else:
+            return False
+
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
 
@@ -978,7 +993,7 @@ class FieldWidget(QWidget, FieldView):
             return
         
         # keep track of possible lasso if insufficient time has passed
-        if (time.time() - self.click_time <= self.max_click_time):
+        if self.isSingleClicking():
             self.current_trace.append((event.x(), event.y()))
             return
         
@@ -1031,9 +1046,7 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in pointer mode."""
 
         # user single-clicked
-        if ((time.time() - self.click_time <= self.max_click_time) and 
-            self.lclick
-        ):
+        if self.lclick and self.isSingleClicking():
             # if user selected a label id
             if self.zarr_layer and self.zarr_layer.selectID(
                 self.mouse_x, self.mouse_y
@@ -1231,7 +1244,7 @@ class FieldWidget(QWidget, FieldView):
         if self.is_line_tracing:
             self.lineRelease(event)
         # user decided to line trace
-        elif len(self.current_trace) == 1 or (time.time() - self.click_time <= self.max_click_time):
+        elif self.isSingleClicking():
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
         # user is not line tracing
@@ -1330,7 +1343,7 @@ class FieldWidget(QWidget, FieldView):
             (event.x(), event.y())
         ]
 
-        if time.time() - self.click_time > self.max_click_time:
+        if not self.isSingleClicking():
             self.is_drawing_rad = True
 
         self.update()
@@ -1338,9 +1351,7 @@ class FieldWidget(QWidget, FieldView):
     def stampRelease(self, event):
         """Called when mouse is released in stamp mode."""
         # user single-clicked
-        if ((time.time() - self.click_time <= self.max_click_time) and
-            self.lclick
-        ):
+        if self.lclick and self.isSingleClicking():
             self.placeStamp(event.x(), event.y(), self.tracing_trace)
         # user defined a radius
         elif self.lclick and self.is_drawing_rad:

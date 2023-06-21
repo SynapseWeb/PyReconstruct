@@ -36,12 +36,12 @@ class ImageLayer():
         """
         self.section = section
         self.series = series
-        self.is_zarr_file = self.series.src_dir.endswith(".zarr")
         self.loadImage()
     
     def loadImage(self):
         """Load the image."""
         # get the image path
+        self.is_zarr_file = self.series.src_dir.endswith(".zarr")
         src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
         
         # if the image folder is a zarr file

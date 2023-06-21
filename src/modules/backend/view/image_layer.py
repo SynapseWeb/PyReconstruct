@@ -42,20 +42,30 @@ class ImageLayer():
         """Load the image."""
         # get the image path
         self.is_zarr_file = self.series.src_dir.endswith(".zarr")
-        src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
+        self.selected_scale = 1
         
         # if the image folder is a zarr file
         if self.is_zarr_file:
             try:
-                self.image = zarr.open(src_path, mode="r")
+                self.zg = zarr.open(self.series.src_dir, mode="r")
+                self.image_found = "scale_1" in self.zg and self.section.src in self.zg["scale_1"]
+            except zarr.errors.PathNotFoundError:
+                self.image_found = False
+            if self.image_found:
+                self.image = self.zg["scale_1"][self.section.src]
                 self.bh, self.bw = self.image.shape
                 self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
                 self.image_found = True
-            except zarr.errors.PathNotFoundError:
-                self.image_found = False
+                # get scales
+                self.scales = [1]
+                for g in self.zg:
+                    if self.section.src in self.zg[g]:
+                        self.scales.append(int(g.split("_")[-1]))
+                self.scales.sort(reverse=True)
         
         # if saved as normal images
         else:
+            src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
             self.image = QImage(src_path)
             if self.image.isNull():
                 self.image_found = False
@@ -208,8 +218,14 @@ class ImageLayer():
         # scaling: ratio of screen pixels to actual image pixels (should be equal)
         x_scaling = pixmap_w / (window_w / self.section.mag)
         y_scaling = pixmap_h / (window_h / self.section.mag)
-        # assert(abs(x_scaling - y_scaling) < 1e-6)
         self.scaling = x_scaling
+        # assert(abs(x_scaling - y_scaling) < 1e-6)
+        scale_level = 1
+        if self.is_zarr_file:
+            for s in self.scales:
+                if (1/self.scaling) > s:
+                    scale_level = s
+                    break
 
         # get vectors for four window corners
         window_corners = [
@@ -274,14 +290,27 @@ class ImageLayer():
             ymax = self.bh
 
         # crop image and place in field
-        xmin, ymin, xmax, ymax = tuple(map(int, (xmin, ymin, xmax, ymax)))
+        xmin, ymin, xmax, ymax = tuple(
+            map(
+                int,
+                (
+                    xmin / scale_level,
+                    ymin / scale_level,
+                    xmax / scale_level,
+                    ymax / scale_level
+                )
+            )
+        )
         if self.is_zarr_file:
-            self.zarr_saved = self.image[ymin:ymax, xmin:xmax]
+            if self.selected_scale != scale_level:
+                self.image = self.zg[f"scale_{scale_level}"][self.section.src]
+                self.selected_scale = scale_level
+            zarr_saved = self.image[ymin:ymax, xmin:xmax]
             im_crop = QImage(
-                self.zarr_saved.data,
+                zarr_saved.data,
                 xmax-xmin,
                 ymax-ymin,
-                self.zarr_saved.strides[0],
+                zarr_saved.strides[0],
                 QImage.Format.Format_Grayscale8
             )
         else:
@@ -294,7 +323,7 @@ class ImageLayer():
             im_crop = self.image.copy(crop_rect)
 
         # make the crop the size of the screen
-        im_scaled = im_crop.scaled(im_crop.width()*self.scaling, im_crop.height()*self.scaling)
+        im_scaled = im_crop.scaled(im_crop.width()*self.scaling*scale_level, im_crop.height()*self.scaling*scale_level)
         blank_space[0] *= self.scaling
         blank_space[1] *= self.scaling
         extra_space[0] *= self.scaling

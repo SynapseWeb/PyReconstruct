@@ -90,14 +90,15 @@ class MainWindow(QMainWindow):
         if len(argv) > 1:
             self.openSeries(jser_fp=argv[1])
         else:
-            open_series = Series(
+            welcome_series = Series(
                 os.path.join(
                     welcome_series_dir,
                     "welcome.ser"
                 ),
                 {0: "welcome.0"}
             )
-            self.openSeries(open_series)
+            welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
+            self.openSeries(welcome_series)
         
         self.field.generateView()
 
@@ -613,7 +614,6 @@ class MainWindow(QMainWindow):
                         os.remove(os.path.join(hidden_series_dir, f))
                     os.rmdir(hidden_series_dir)
 
-            
             # open the JSER file if no unsaved series was opened
             if not new_series:
                 new_series = Series.openJser(jser_fp)
@@ -633,34 +633,6 @@ class MainWindow(QMainWindow):
         # series has already been provided by other function
         else:
             self.series = series_obj
-        
-        # ensure that images are found
-        # check saved directory first
-        section = self.series.loadSection(self.series.current_section)
-        src_path = os.path.join(
-            self.series.src_dir,
-            os.path.basename(section.src)
-        )
-        images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        # check series location second (welcome series case)
-        if not images_found:
-            src_path = os.path.join(
-                os.path.dirname(self.series.getwdir()),
-                os.path.basename(section.src)
-            )
-            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        # check jser directory last
-        if not images_found:
-            src_path = os.path.join(
-                os.path.dirname(self.series.jser_fp),
-                os.path.basename(section.src)
-            )
-            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        
-        if not images_found:
-            self.changeSrcDir(notify=True)
-        else:
-            self.series.src_dir = os.path.dirname(src_path)
         
         # set the title of the main window
         self.seriesModified(self.series.modified)
@@ -683,6 +655,20 @@ class MainWindow(QMainWindow):
             self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+
+        # ensure that images are found
+        if not self.field.section_layer.image_found:
+            # check jser directory
+            src_path = os.path.join(
+                os.path.dirname(self.series.jser_fp),
+                os.path.basename(self.field.section.src)
+            )
+            images_found = os.path.isfile(src_path)
+            
+            if images_found:
+                self.changeSrcDir(src_path)
+            else:
+                self.changeSrcDir(notify=True)
     
     def newSeries(
         self,

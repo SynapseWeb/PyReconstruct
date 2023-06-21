@@ -26,4 +26,10 @@ for fname in os.listdir("."):
     except:
         print("File is not an image.")
 
-print("Finished successfully!")
+print()
+print("Images successfully exported as zarr directory to:")
+print(f"{img_dir}/{zarr_name}")
+print()
+print("Open series, then SERIES > FIND IMAGES and point to this zarr directory.")
+print()
+print("Happy scrolling!")

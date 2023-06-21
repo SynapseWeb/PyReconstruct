@@ -1,5 +1,7 @@
 import os
+import sys
 import time
+import subprocess
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -161,7 +163,15 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Find images", "", self.changeSrcDir),
+                    {
+                        "attr_name": "imagesmenu",
+                        "text": "Images",
+                        "opts":
+                        [
+                            ("change_src_act", "Find images", "", self.changeSrcDir),
+                            ("zarrimage_act", "Convert images to zarr", "", self.srcToZarr)
+                        ]
+                    },
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
@@ -451,6 +461,34 @@ class MainWindow(QMainWindow):
         if self.field:
             self.field.reloadImage()
     
+    def srcToZarr(self):
+        """Convert the series images to zarr."""
+        if self.field.section_layer.is_zarr_file:
+            notify("Images are already in zarr format.")
+            return
+        if not self.field.section_layer.image_found:
+            notify("Images not found.")
+            return
+        
+        zarr_fp, ext = QFileDialog.getSaveFileName(
+            self,
+            "Convert Images to Zarr",
+            f"{self.series.name}_images.zarr",
+            filter="Zarr Directory (*.zarr)"
+        )
+        if not zarr_fp:
+            return
+        
+        subprocess.Popen(
+            [
+                sys.executable,
+                os.path.join(assets_dir, "scripts", "create_zarr.py"),
+                self.series.src_dir,
+                zarr_fp
+            ],
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.
         

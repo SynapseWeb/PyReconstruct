@@ -467,6 +467,7 @@ class MainWindow(QMainWindow):
         if self.field.section_layer.is_zarr_file:
             notify("Images are already in zarr format.")
             return
+
         if not self.field.section_layer.image_found:
             notify("Images not found.")
             return
@@ -477,18 +478,21 @@ class MainWindow(QMainWindow):
             f"{self.series.name}_images.zarr",
             filter="Zarr Directory (*.zarr)"
         )
+
         if not zarr_fp:
             return
-        
-        subprocess.Popen(
-            [
-                sys.executable,
-                os.path.join(assets_dir, "scripts", "create_zarr.py"),
-                self.series.src_dir,
-                zarr_fp
-            ],
-            creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+
+        python_bin = sys.executable
+        zarr_converter = os.path.join(assets_dir, "scripts", "create_zarr.py")
+
+        convert_cmd = f'{python_bin} {zarr_converter} {self.series.src_dir} {zarr_fp}'
+
+        if os.name == 'nt':
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True)
+        else:
+            convert_cmd = "nohup " + convert_cmd
+            print(convert_cmd)
+            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
 
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.

@@ -488,7 +488,7 @@ class MainWindow(QMainWindow):
         convert_cmd = f'{python_bin} {zarr_converter} {self.series.src_dir} {zarr_fp}'
 
         if os.name == 'nt':
-            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True)
+            subprocess.Popen([convert_cmd], creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
             convert_cmd = "nohup " + convert_cmd
             print(convert_cmd)

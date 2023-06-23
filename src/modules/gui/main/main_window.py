@@ -485,13 +485,14 @@ class MainWindow(QMainWindow):
         python_bin = sys.executable
         zarr_converter = os.path.join(assets_dir, "scripts", "create_zarr.py")
 
-        convert_cmd = f'{python_bin} {zarr_converter} {self.series.src_dir} {zarr_fp}'
-
         if os.name == 'nt':
-            subprocess.Popen([convert_cmd], creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            
         else:
-            convert_cmd = "nohup " + convert_cmd
-            print(convert_cmd)
+
+            convert_cmd = f'nohup {python_bin} {zarr_converter} {self.series.src_dir} {zarr_fp}'
             subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
 
     def changeUsername(self, new_name : str = None):

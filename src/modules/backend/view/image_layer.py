@@ -1,5 +1,7 @@
 import os
+import sys
 import zarr
+import subprocess
 import numpy as np
 
 from PySide6.QtWidgets import QApplication
@@ -24,6 +26,7 @@ from modules.datatypes import (
     Transform
 )
 from modules.calc import fieldPointToPixmap
+from modules.constants import assets_dir
 
 class ImageLayer():
 
@@ -47,7 +50,24 @@ class ImageLayer():
         # if the image folder is a zarr file
         if self.is_zarr_file:
             try:
-                self.zg = zarr.open(self.series.src_dir, mode="r")
+                self.zg = zarr.open(self.series.src_dir)
+                # special expection: zarr is in previous format
+                if self.section.src in self.zg:
+                    print("This zarr format is outdated. Updating zarr...")
+                    # reorganize the zarr file (move images into scale_1 folder)
+                    self.zg.create_group("scale_1", overwrite=True)
+                    for g in self.zg:
+                        if g != "scale_1":
+                            self.zg.move(g, os.path.join("scale_1", g))
+                    # run the program to downsample the zarr file in the background
+                    subprocess.Popen(
+                        [
+                            sys.executable,
+                            os.path.join(assets_dir, "scripts", "create_zarr.py"),
+                            self.series.src_dir
+                        ],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE
+                    )
                 self.image_found = "scale_1" in self.zg and self.section.src in self.zg["scale_1"]
             except zarr.errors.PathNotFoundError:
                 self.image_found = False

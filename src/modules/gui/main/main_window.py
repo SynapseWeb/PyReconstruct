@@ -461,10 +461,24 @@ class MainWindow(QMainWindow):
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
+        
+        # prompt user to scale zarr images if not scaled
+        if (self.field.section_layer.image_found and 
+            self.field.section_layer.is_zarr_file and
+            not self.field.section_layer.is_scaled):
+            reply = QMessageBox.question(
+                self,
+                "Zarr Scaling",
+                "Zarr file not scaled.\nWould you like to update the zarr with scales?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.srcToZarr(create_new=False)
     
-    def srcToZarr(self):
+    def srcToZarr(self, create_new=True):
         """Convert the series images to zarr."""
-        if self.field.section_layer.is_zarr_file:
+        if self.field.section_layer.is_zarr_file and create_new:
             notify("Images are already in zarr format.")
             return
 
@@ -472,27 +486,30 @@ class MainWindow(QMainWindow):
             notify("Images not found.")
             return
         
-        zarr_fp, ext = QFileDialog.getSaveFileName(
-            self,
-            "Convert Images to Zarr",
-            f"{self.series.name}_images.zarr",
-            filter="Zarr Directory (*.zarr)"
-        )
-
-        if not zarr_fp:
-            return
+        if create_new:
+            zarr_fp, ext = QFileDialog.getSaveFileName(
+                self,
+                "Convert Images to Zarr",
+                f"{self.series.name}_images.zarr",
+                filter="Zarr Directory (*.zarr)"
+            )
+            if not zarr_fp:
+                return
 
         python_bin = sys.executable
         zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
+        if create_new:
+            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
+        else:
+            convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
 
         if os.name == 'nt':
 
-            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
-            subprocess.Popen(convert_cmd)#, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
             
         else:
 
-            convert_cmd = f'nohup {python_bin} {zarr_converter} {self.series.src_dir} {zarr_fp}'
+            convert_cmd = " ".join(["nohup"] + convert_cmd)
             subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
 
     def changeUsername(self, new_name : str = None):
@@ -674,6 +691,19 @@ class MainWindow(QMainWindow):
                 self.changeSrcDir(src_path)
             else:
                 self.changeSrcDir(notify=True)
+        # prompt user to scale zarr images if not scaled
+        elif (self.field.section_layer.image_found and 
+            self.field.section_layer.is_zarr_file and
+            not self.field.section_layer.is_scaled):
+            reply = QMessageBox.question(
+                self,
+                "Zarr Scaling",
+                "Zarr file not scaled.\nWould you like to update the zarr with scales?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.srcToZarr(create_new=False)
     
     def newSeries(
         self,

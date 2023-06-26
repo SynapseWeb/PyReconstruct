@@ -483,12 +483,12 @@ class MainWindow(QMainWindow):
             return
 
         python_bin = sys.executable
-        zarr_converter = os.path.join(assets_dir, "scripts", "create_zarr.py")
+        zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
 
         if os.name == 'nt':
 
             convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
-            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            subprocess.Popen(convert_cmd)#, creationflags=subprocess.CREATE_NEW_CONSOLE)
             
         else:
 

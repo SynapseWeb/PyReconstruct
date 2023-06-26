@@ -59,15 +59,19 @@ class ImageLayer():
                     for g in self.zg:
                         if g != "scale_1":
                             self.zg.move(g, os.path.join("scale_1", g))
+                        
                     # run the program to downsample the zarr file in the background
                     python_bin = sys.executable
-                    zarr_converter = os.path.join(assets_dir, "scripts", "create_zarr.py")
+                    zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
+
                     if os.name == "nt":
                         convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
                         subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    
                     else:
                         convert_cmd = f'nohup {python_bin} {zarr_converter} {self.series.src_dir}'
                         subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
+                    
                 self.image_found = "scale_1" in self.zg and self.section.src in self.zg["scale_1"]
             except zarr.errors.PathNotFoundError:
                 self.image_found = False

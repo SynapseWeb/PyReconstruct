@@ -1,5 +1,6 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QPlainTextEdit, QVBoxLayout, QWidget, QLabel
+import os
+from PySide6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QVBoxLayout, QWidget, QLabel
 from PySide6.QtCore import QProcess
 
 
@@ -48,7 +49,7 @@ class MainWindow(QMainWindow):
         
         data = self.p.readAllStandardError()
         stderr = bytes(data).decode("utf8")
-        self.message(stderr)
+        # self.message(stderr)
 
     def handle_stdout(self):
         
@@ -76,8 +77,9 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
 
-    zarr_cmd = "./zarree-2.py"
-    zarr_args = ["images", "zarr_me_up_baby.zarr"]
+    zarr_cmd = sys.executable
+    zarr_converter = os.path.join(os.path.dirname(__file__), "zarree-2.py")
+    zarr_args = [zarr_converter] + sys.argv[1:]
     
     app = QApplication(sys.argv)
     window = MainWindow()

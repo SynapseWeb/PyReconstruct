@@ -45,35 +45,22 @@ class ImageLayer():
         """Load the image."""
         # get the image path
         self.is_zarr_file = self.series.src_dir.endswith(".zarr")
+        self.is_scaled = False
         self.selected_scale = 1
         
         # if the image folder is a zarr file
         if self.is_zarr_file:
-            try:
+            if os.path.isdir(self.series.src_dir):
                 self.zg = zarr.open(self.series.src_dir)
                 # special expection: zarr is in previous format
                 if self.section.src in self.zg:
-                    print("This zarr format is outdated. Updating zarr...")
                     # reorganize the zarr file (move images into scale_1 folder)
                     self.zg.create_group("scale_1", overwrite=True)
                     for g in self.zg:
                         if g != "scale_1":
                             self.zg.move(g, os.path.join("scale_1", g))
-                        
-                    # run the program to downsample the zarr file in the background
-                    python_bin = sys.executable
-                    zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
-
-                    if os.name == "nt":
-                        convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
-                        subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-                    
-                    else:
-                        convert_cmd = f'nohup {python_bin} {zarr_converter} {self.series.src_dir}'
-                        subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
-                    
                 self.image_found = "scale_1" in self.zg and self.section.src in self.zg["scale_1"]
-            except zarr.errors.PathNotFoundError:
+            else:
                 self.image_found = False
             if self.image_found:
                 self.image = self.zg["scale_1"][self.section.src]
@@ -81,11 +68,13 @@ class ImageLayer():
                 self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
                 self.image_found = True
                 # get scales
-                self.scales = [1]
+                self.scales = []
                 for g in self.zg:
                     if self.section.src in self.zg[g]:
                         self.scales.append(int(g.split("_")[-1]))
                 self.scales.sort(reverse=True)
+                if len(self.scales) > 1:
+                    self.is_scaled = True
         
         # if saved as normal images
         else:

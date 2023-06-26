@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-
 import os
 import sys
+os.environ["OPENCV-LOG-LEVEL"] = "FATAL"
 import cv2
 import zarr
 from multiprocessing import Pool

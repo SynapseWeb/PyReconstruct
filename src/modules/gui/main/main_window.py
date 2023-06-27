@@ -169,8 +169,8 @@ class MainWindow(QMainWindow):
                         "text": "Images",
                         "opts":
                         [
-                            ("change_src_act", "Find images", "", self.changeSrcDir),
-                            ("zarrimage_act", "Convert images to zarr", "", self.srcToZarr)
+                            ("change_src_act", "Find/change images", "", self.changeSrcDir),
+                            ("zarrimage_act", "Convert to zarr", "", self.srcToZarr)
                         ]
                     },
                     None,

@@ -51,7 +51,7 @@ def create2D(filename):
             scale_group = f"scale_{2**exp}"
             if scale_group not in zg:
                 zg.create_group(scale_group)
-            downscaled_cvim = cv2.resize(cvim, (h, w))
+            downscaled_cvim = cv2.resize(cvim, (w, h))
             zg[scale_group].create_dataset(filename, data=downscaled_cvim)
 
     except Exception as e:

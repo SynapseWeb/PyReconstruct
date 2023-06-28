@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
                         "text": "Images",
                         "opts":
                         [
-                            ("change_src_act", "Find/change images", "", self.changeSrcDir),
+                            ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
                             ("zarrimage_act", "Convert to zarr", "", self.srcToZarr)
                         ]
                     },
@@ -509,7 +509,7 @@ class MainWindow(QMainWindow):
             
         else:
 
-            convert_cmd = " ".join(["nohup"] + convert_cmd)
+            convert_cmd = " ".join(convert_cmd)
             subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
 
     def changeUsername(self, new_name : str = None):

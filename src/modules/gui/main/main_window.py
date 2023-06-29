@@ -1,5 +1,7 @@
 import os
+import sys
 import time
+import subprocess
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -88,14 +90,15 @@ class MainWindow(QMainWindow):
         if len(argv) > 1:
             self.openSeries(jser_fp=argv[1])
         else:
-            open_series = Series(
+            welcome_series = Series(
                 os.path.join(
                     welcome_series_dir,
                     "welcome.ser"
                 ),
                 {0: "welcome.0"}
             )
-            self.openSeries(open_series)
+            welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
+            self.openSeries(welcome_series)
         
         self.field.generateView()
 
@@ -161,7 +164,15 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
-                    ("change_src_act", "Find images", "", self.changeSrcDir),
+                    {
+                        "attr_name": "imagesmenu",
+                        "text": "Images",
+                        "opts":
+                        [
+                            ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
+                            ("zarrimage_act", "Convert to zarr", "", self.srcToZarr)
+                        ]
+                    },
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
@@ -450,7 +461,57 @@ class MainWindow(QMainWindow):
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
+        
+        # prompt user to scale zarr images if not scaled
+        if (self.field.section_layer.image_found and 
+            self.field.section_layer.is_zarr_file and
+            not self.field.section_layer.is_scaled):
+            reply = QMessageBox.question(
+                self,
+                "Zarr Scaling",
+                "Zarr file not scaled.\nWould you like to update the zarr with scales?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.srcToZarr(create_new=False)
     
+    def srcToZarr(self, create_new=True):
+        """Convert the series images to zarr."""
+        if self.field.section_layer.is_zarr_file and create_new:
+            notify("Images are already in zarr format.")
+            return
+
+        if not self.field.section_layer.image_found:
+            notify("Images not found.")
+            return
+        
+        if create_new:
+            zarr_fp, ext = QFileDialog.getSaveFileName(
+                self,
+                "Convert Images to Zarr",
+                f"{self.series.name}_images.zarr",
+                filter="Zarr Directory (*.zarr)"
+            )
+            if not zarr_fp:
+                return
+
+        python_bin = sys.executable
+        zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
+        if create_new:
+            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
+        else:
+            convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
+
+        if os.name == 'nt':
+
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            
+        else:
+
+            convert_cmd = " ".join(convert_cmd)
+            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
+
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.
         
@@ -575,7 +636,6 @@ class MainWindow(QMainWindow):
                         os.remove(os.path.join(hidden_series_dir, f))
                     os.rmdir(hidden_series_dir)
 
-            
             # open the JSER file if no unsaved series was opened
             if not new_series:
                 new_series = Series.openJser(jser_fp)
@@ -595,34 +655,6 @@ class MainWindow(QMainWindow):
         # series has already been provided by other function
         else:
             self.series = series_obj
-        
-        # ensure that images are found
-        # check saved directory first
-        section = self.series.loadSection(self.series.current_section)
-        src_path = os.path.join(
-            self.series.src_dir,
-            os.path.basename(section.src)
-        )
-        images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        # check series location second (welcome series case)
-        if not images_found:
-            src_path = os.path.join(
-                os.path.dirname(self.series.getwdir()),
-                os.path.basename(section.src)
-            )
-            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        # check jser directory last
-        if not images_found:
-            src_path = os.path.join(
-                os.path.dirname(self.series.jser_fp),
-                os.path.basename(section.src)
-            )
-            images_found = os.path.isfile(src_path) or os.path.isdir(src_path)
-        
-        if not images_found:
-            self.changeSrcDir(notify=True)
-        else:
-            self.series.src_dir = os.path.dirname(src_path)
         
         # set the title of the main window
         self.seriesModified(self.series.modified)
@@ -645,6 +677,33 @@ class MainWindow(QMainWindow):
             self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
             self.createPaletteShortcuts()
         self.changeTracingTrace(self.series.current_trace) # set the current trace
+
+        # ensure that images are found
+        if not self.field.section_layer.image_found:
+            # check jser directory
+            src_path = os.path.join(
+                os.path.dirname(self.series.jser_fp),
+                os.path.basename(self.field.section.src)
+            )
+            images_found = os.path.isfile(src_path)
+            
+            if images_found:
+                self.changeSrcDir(src_path)
+            else:
+                self.changeSrcDir(notify=True)
+        # prompt user to scale zarr images if not scaled
+        elif (self.field.section_layer.image_found and 
+            self.field.section_layer.is_zarr_file and
+            not self.field.section_layer.is_scaled):
+            reply = QMessageBox.question(
+                self,
+                "Zarr Scaling",
+                "Zarr file not scaled.\nWould you like to update the zarr with scales?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.srcToZarr(create_new=False)
     
     def newSeries(
         self,

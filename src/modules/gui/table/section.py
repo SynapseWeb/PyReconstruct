@@ -237,9 +237,9 @@ class SectionTableWidget(QDockWidget):
         
         # get the existing section thickness
         snum = section_numbers[0]
-        sthickness = self.sectiondict[snum][0]
+        sthickness = self.sectiondict[snum]["thickness"]
         for snum in section_numbers[1:]:
-            if self.sectiondict[snum][0] != sthickness:
+            if self.sectiondict[snum]["thickness"] != sthickness:
                 sthickness = 0
                 break
         if sthickness:

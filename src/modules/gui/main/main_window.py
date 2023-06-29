@@ -461,6 +461,7 @@ class MainWindow(QMainWindow):
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
+        self.seriesModified(True)
         
         # prompt user to scale zarr images if not scaled
         if (self.field.section_layer.image_found and 

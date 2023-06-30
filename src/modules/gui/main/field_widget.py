@@ -142,72 +142,6 @@ class FieldWidget(QWidget, FieldView):
             self.timer.start(5000)
 
         self.generateView()
-    
-    def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
-        """Check for actions that should be enabled or disabled
-        
-            Params:
-                context_menu (bool): True if context menu is being generated
-                clicked_trace (Trace): the trace that was clicked on IF the cotext menu is being generated
-        """
-        # if both traces and ztraces are highlighted or nothing is highlighted, only allow general field options
-        if not (bool(self.section.selected_traces) ^ 
-                bool(self.section.selected_ztraces)
-        ):
-            for a in self.mainwindow.trace_actions:
-                a.setEnabled(False)
-            for a in self.mainwindow.ztrace_actions:
-                a.setEnabled(False)
-        # if selected trace in highlighted traces
-        elif ((not context_menu and self.section.selected_traces) or
-              (context_menu and clicked_trace in self.section.selected_traces)
-        ):
-            for a in self.mainwindow.ztrace_actions:
-                a.setEnabled(False)
-            for a in self.mainwindow.trace_actions:
-                a.setEnabled(True)
-        # if selected ztrace in highlighted ztraces
-        elif ((not context_menu and self.section.selected_ztraces) or
-              (context_menu and clicked_trace in self.section.selected_ztraces)
-        ):
-            for a in self.mainwindow.trace_actions:
-                a.setEnabled(False)
-            for a in self.mainwindow.ztrace_actions:
-                a.setEnabled(True)
-        else:
-            for a in self.mainwindow.trace_actions:
-                a.setEnabled(False)
-            for a in self.mainwindow.ztrace_actions:
-                a.setEnabled(False)
-            
-        # check for objects (to allow merging)
-        names = set()
-        for trace in self.section.selected_traces:
-            names.add(trace.name)
-        if len(names) > 1:
-            self.mainwindow.mergeobjects_act.setEnabled(True)
-        else:
-            self.mainwindow.mergeobjects_act.setEnabled(False)
-        
-        # check clipboard for paste options
-        if self.clipboard:
-            self.mainwindow.paste_act.setEnabled(True)
-        else:
-            self.mainwindow.paste_act.setEnabled(False)
-            self.mainwindow.pasteattributes_act.setEnabled(False)
-        
-        # check for backup directory
-        self.mainwindow.backup_act.setChecked(bool(self.series.options["backup_dir"]))
-
-        # check labels
-        if clicked_label:
-            if clicked_label in self.zarr_layer.selected_ids:
-                self.mainwindow.importlabels_act.setEnabled(True)
-                if len(self.zarr_layer.selected_ids) > 1:
-                    self.mainwindow.mergelabels_act.setEnabled(True)
-            else:
-                self.mainwindow.importlabels_act.setEnabled(False)
-                self.mainwindow.mergelabels_act.setEnabled(False)
 
     def markTime(self):
         """Keep track of the time on the series file."""
@@ -266,7 +200,7 @@ class FieldWidget(QWidget, FieldView):
             blend=self.blend_sections
         )
         try:
-            self.checkActions()
+            self.mainwindow.checkActions()
         except AttributeError:
             pass
         if update:
@@ -830,13 +764,13 @@ class FieldWidget(QWidget, FieldView):
             if self.zarr_layer:
                 clicked_label = self.zarr_layer.getID(event.x(), event.y())
             clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-            self.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
+            self.mainwindow.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
-            self.checkActions()
+            self.mainwindow.checkActions()
             return
 
         if self.mouse_mode == FieldWidget.POINTER:

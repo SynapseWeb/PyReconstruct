@@ -94,13 +94,13 @@ def xmlToJSON(xml_dir : str) -> Series:
             )
             ztrace.points[i] = new_point
     
-    # save and return the series
-    series.save()
-    series.jser_fp = os.path.join(
-        xml_dir,
-        f"{series_name}.jser"
-    )
-    series.saveJser()
+    # save the jser file
+    # series.save()
+    # series.jser_fp = os.path.join(
+    #     xml_dir,
+    #     f"{series_name}.jser"
+    # )
+    # series.saveJser()
 
     return series
 

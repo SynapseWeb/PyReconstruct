@@ -849,6 +849,9 @@ class MainWindow(QMainWindow):
     
         # open series after creating
         self.openSeries(series)
+
+        # prompt the user to save the series
+        self.saveAsToJser()
     
     def newFromXML(self, series_fp : str = None):
         """Create a new series from a set of XML files.
@@ -877,6 +880,9 @@ class MainWindow(QMainWindow):
 
         # open the series
         self.openSeries(series)
+
+        # prompt the user the save the series
+        self.saveAsToJser()
     
     def exportToXML(self, export_fp : str = None):
         """Export the current series to XML.

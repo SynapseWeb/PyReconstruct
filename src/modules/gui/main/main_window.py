@@ -152,10 +152,17 @@ class MainWindow(QMainWindow):
                     ("paste_act", "Paste", "Ctrl+V", self.field.paste),
                     ("pasteattributes_act", "Paste attributes", "Ctrl+B", self.field.pasteAttributes),
                     None,
-                    ("incbr_act", "Increase brightness", "=", lambda : self.editImage(option="brightness", direction="up")),
-                    ("decbr_act", "Decrease brightness", "-", lambda : self.editImage(option="brightness", direction="down")),
-                    ("inccon_act", "Increase contrast", "]", lambda : self.editImage(option="contrast", direction="up")),
-                    ("deccon_act", "Decrease contrast", "[", lambda : self.editImage(option="contrast", direction="down"))
+                    {
+                        "attr_name": "bcmenu",
+                        "text": "Brightness/contrast",
+                        "opts":
+                        [
+                            ("incbr_act", "Increase brightness", "=", lambda : self.editImage(option="brightness", direction="up")),
+                            ("decbr_act", "Decrease brightness", "-", lambda : self.editImage(option="brightness", direction="down")),
+                            ("inccon_act", "Increase contrast", "]", lambda : self.editImage(option="contrast", direction="up")),
+                            ("deccon_act", "Decrease contrast", "[", lambda : self.editImage(option="contrast", direction="down"))
+                        ]
+                    }
                 ]
             },
 
@@ -256,16 +263,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
-                    None,
-                    {
-                        "attr_name": "zarrlayermenu",
-                        "text": "Zarr layer",
-                        "opts":
-                        [
-                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
-                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
-                        ]
-                    }
+                    None
                 ]
             },
             {
@@ -371,7 +369,97 @@ class MainWindow(QMainWindow):
         ]
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
+    
+    def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
+        """Check for actions that should be enabled or disabled
+        
+            Params:
+                context_menu (bool): True if context menu is being generated
+                clicked_trace (Trace): the trace that was clicked on IF the cotext menu is being generated
+        """
+        # if both traces and ztraces are highlighted or nothing is highlighted, only allow general field options
+        if not (bool(self.field.section.selected_traces) ^ 
+                bool(self.field.section.selected_ztraces)
+        ):
+            for a in self.trace_actions:
+                a.setEnabled(False)
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
+        # if selected trace in highlighted traces
+        elif ((not context_menu and self.field.section.selected_traces) or
+              (context_menu and clicked_trace in self.field.section.selected_traces)
+        ):
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
+            for a in self.trace_actions:
+                a.setEnabled(True)
+        # if selected ztrace in highlighted ztraces
+        elif ((not context_menu and self.field.section.selected_ztraces) or
+              (context_menu and clicked_trace in self.field.section.selected_ztraces)
+        ):
+            for a in self.trace_actions:
+                a.setEnabled(False)
+            for a in self.ztrace_actions:
+                a.setEnabled(True)
+        else:
+            for a in self.trace_actions:
+                a.setEnabled(False)
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
+            
+        # check for objects (to allow merging)
+        names = set()
+        for trace in self.field.section.selected_traces:
+            names.add(trace.name)
+        if len(names) > 1:
+            self.mergeobjects_act.setEnabled(True)
+        else:
+            self.mergeobjects_act.setEnabled(False)
 
+        # check labels
+        if clicked_label:
+            if clicked_label in self.field.zarr_layer.selected_ids:
+                self.importlabels_act.setEnabled(True)
+                if len(self.zarr_layer.selected_ids) > 1:
+                    self.mergelabels_act.setEnabled(True)
+            else:
+                self.importlabels_act.setEnabled(False)
+                self.mergelabels_act.setEnabled(False)
+        
+        # MENUBAR
+
+        # disable saving for welcome series
+        is_not_welcome_series = not self.series.isWelcomeSeries()
+        self.save_act.setEnabled(is_not_welcome_series)
+        self.saveas_act.setEnabled(is_not_welcome_series)
+        self.backup_act.setEnabled(is_not_welcome_series)
+
+        # check for backup directory
+        self.backup_act.setChecked(bool(self.series.options["backup_dir"]))
+
+        # undo/redo
+        states = self.field.series_states[self.series.current_section]
+        has_undo_states = bool(states.undo_states)
+        has_redo_states = bool(states.redo_states)
+        self.undo_act.setEnabled(has_undo_states)
+        self.redo_act.setEnabled(has_redo_states)
+
+        # check clipboard for paste options
+        if self.field.clipboard:
+            self.paste_act.setEnabled(True)
+        else:
+            self.paste_act.setEnabled(False)
+            self.pasteattributes_act.setEnabled(False)
+
+        # zarr images
+        self.zarrimage_act.setEnabled(not self.field.section_layer.is_zarr_file)
+        self.scalezarr_act.setEnabled(self.field.section_layer.is_zarr_file)
+
+        # calibrate
+        self.calibrate_act.setEnabled(bool(self.field.section.selected_traces))
+
+        # zarr layer
+        self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
 
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""

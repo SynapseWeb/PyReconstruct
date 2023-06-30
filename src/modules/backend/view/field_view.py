@@ -608,13 +608,17 @@ class FieldView():
         # check number of selected traces
         alen = len(a_traces)
         blen = len(b_traces)
-        if alen != blen or alen < 3:
+        if alen < 3:
+            notify("Please select 3 or more traces for aligning.")
+        if alen != blen:
+            notify("Please select the same number of traces on each section.")
             return
         contour_name = a_traces[0].name
 
         # check that all traces have same name
         for trace in (a_traces + b_traces):
             if trace.name != contour_name:
+                notify("Please select traces of the same name on both sections.")
                 return
 
         # gather points from each section

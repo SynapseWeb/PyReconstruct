@@ -170,7 +170,8 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
-                            ("zarrimage_act", "Convert to zarr", "", self.srcToZarr)
+                            ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
+                            ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False))
                         ]
                     },
                     None,
@@ -479,12 +480,15 @@ class MainWindow(QMainWindow):
     
     def srcToZarr(self, create_new=True):
         """Convert the series images to zarr."""
+        if not self.field.section_layer.image_found:
+            notify("Images not found.")
+            return
+        
         if self.field.section_layer.is_zarr_file and create_new:
             notify("Images are already in zarr format.")
             return
-
-        if not self.field.section_layer.image_found:
-            notify("Images not found.")
+        elif not self.field.section_layer.is_zarr_file and not create_new:
+            notify("Images are not in zarr format.\nPlease convert to zarr first.")
             return
         
         if create_new:

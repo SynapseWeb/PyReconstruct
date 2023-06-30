@@ -33,9 +33,7 @@ class MainWindow(QMainWindow):
     def start_process(self):
         
         if self.p is None:  # No process running.
-            
-            self.message("Converting to zarr now...")
-            
+
             self.p = QProcess()
             
             self.p.readyReadStandardOutput.connect(self.handle_stdout)

@@ -513,11 +513,11 @@ class Series():
         series = Series(series_fp, sections)
         
         # save the jser file
-        series.jser_fp = os.path.join(
-            wdir,
-            f"{series_name}.jser"
-        )
-        series.saveJser()
+        # series.jser_fp = os.path.join(
+        #     wdir,
+        #     f"{series_name}.jser"
+        # )
+        # series.saveJser()
         
         return series
     

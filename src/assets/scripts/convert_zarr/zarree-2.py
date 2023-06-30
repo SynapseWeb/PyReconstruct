@@ -25,8 +25,12 @@ else:
 if create_new:
     zg = zarr.group(zarr_fp, overwrite=True)
     zg.create_group("scale_1")
+    message = "Converting to zarr now..."
 else:
     zg = zarr.open(zarr_fp)
+    message = "Updating zarr scales now..."
+
+print(message)
 
 def create2D(filename):
     print(f"Working on {filename}...", flush=True)

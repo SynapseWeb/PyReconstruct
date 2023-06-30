@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidget, 
     QTableWidgetItem, 
     QAbstractItemView, 
     QWidget, 
@@ -10,6 +9,8 @@ from PySide6.QtWidgets import (
     QFileDialog
 )
 from PySide6.QtCore import Qt
+
+from .copy_table_widget import CopyTableWidget
 
 from modules.gui.utils import (
     populateMenuBar,
@@ -86,6 +87,8 @@ class SectionTableWidget(QDockWidget):
             },
             ("thickness_act", "Edit thickness...", "", self.editThickness),
             None,
+            ("copy_act", "Copy", "", self.table.copy),
+            None,
             ("delete_act", "Delete", "", self.deleteSections)
         ]
         self.context_menu = QMenu(self)
@@ -127,7 +130,7 @@ class SectionTableWidget(QDockWidget):
                 sectiondict (dict): section number : (thickness, locked)
         """
         self.sectiondict = sectiondict
-        self.table = QTableWidget(len(sectiondict), 5)
+        self.table = CopyTableWidget(len(sectiondict), 5)
 
         # connect table functions
         self.table.contextMenuEvent = self.sectionContextMenu

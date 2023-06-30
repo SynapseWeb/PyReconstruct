@@ -3,7 +3,6 @@ import re
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidget, 
     QTableWidgetItem, 
     QAbstractItemView, 
     QWidget, 
@@ -12,6 +11,8 @@ from PySide6.QtWidgets import (
     QFileDialog
 )
 from PySide6.QtCore import Qt
+
+from .copy_table_widget import CopyTableWidget
 
 from modules.datatypes import Series, ZtraceTableItem
 from modules.gui.utils import (
@@ -109,6 +110,8 @@ class ZtraceTableWidget(QDockWidget):
                 ]
             },
             None,
+            ("copy_act", "Copy", "", self.table.copy),
+            None,
             ("delete_act", "Delete", "", self.delete)
         ]
         self.context_menu = QMenu(self)
@@ -137,7 +140,7 @@ class ZtraceTableWidget(QDockWidget):
             Params:
                 ztracedict (dict): the dictionary containing the object table data objects
         """
-        self.table = QTableWidget(0, 2)
+        self.table = CopyTableWidget(0, 2)
 
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu

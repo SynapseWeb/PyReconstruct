@@ -3,7 +3,6 @@ import re
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidget, 
     QTableWidgetItem, 
     QAbstractItemView, 
     QWidget, 
@@ -12,6 +11,8 @@ from PySide6.QtWidgets import (
     QFileDialog
 )
 from PySide6.QtCore import Qt
+
+from .copy_table_widget import CopyTableWidget
 
 from modules.datatypes import Series, ObjectTableItem
 from modules.gui.utils import (
@@ -158,6 +159,8 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             None,
+            ("copy_act", "Copy", "", self.table.copy),
+            None,
             ("delete_act", "Delete", "", self.deleteObjects)
         ]
         self.context_menu = QMenu(self)
@@ -262,7 +265,7 @@ class ObjectTableWidget(QDockWidget):
                 filtered_obj_names.append(name)
 
         # create the table object
-        self.table = QTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
+        self.table = CopyTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
         # connect table functions
         self.table.mouseDoubleClickEvent = self.addTo3D

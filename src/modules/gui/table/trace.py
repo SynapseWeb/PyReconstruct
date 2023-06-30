@@ -3,7 +3,6 @@ import re
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidget, 
     QTableWidgetItem, 
     QAbstractItemView, 
     QWidget, 
@@ -12,6 +11,8 @@ from PySide6.QtWidgets import (
     QFileDialog
 )
 from PySide6.QtCore import Qt
+
+from .copy_table_widget import CopyTableWidget
 
 from modules.datatypes import (
     Series,
@@ -135,6 +136,8 @@ class TraceTableWidget(QDockWidget):
             ("find_act", "Find", "", self.findTrace),
             ("history_act", "View history", "", self.viewHistory),
             None,
+            ("copy_act", "Copy", "", self.table.copy),
+            None,
             ("delete_act", "Delete", "", self.deleteTraces)
         ]
         self.context_menu = QMenu(self)
@@ -199,7 +202,7 @@ class TraceTableWidget(QDockWidget):
                     self.items.append(item)
 
         # create the table
-        self.table = QTableWidget(0, len(self.horizontal_headers))
+        self.table = CopyTableWidget(0, len(self.horizontal_headers))
 
         # connect table functions
         self.table.contextMenuEvent = self.traceContextMenu

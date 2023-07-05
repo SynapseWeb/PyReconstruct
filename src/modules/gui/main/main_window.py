@@ -29,7 +29,8 @@ from modules.gui.dialog import (
     TrainDialog,
     SegmentDialog,
     PredictDialog,
-    SwiftDialog
+    SwiftDialog,
+    ImportTransformsDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -196,7 +197,7 @@ class MainWindow(QMainWindow):
                                 "text": "Import alignments",
                                 "opts":
                                 [
-                                    ("import_transforms_act", ".txt file", "", self.importTransforms),
+                                    ("importtransforms_act", ".txt file", "", self.importTransforms),
                                     ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
                                 ]
                             },
@@ -221,14 +222,16 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            ("importtraces_act", "Import traces", "", self.importTraces),
-                            ("importzrtraces_act", "Import ztraces", "", self.importZtraces)
+                            ("importtraces_act", "Import traces...", "", self.importTraces),
+                            ("importzrtraces_act", "Import ztraces...", "", self.importZtraces),
+                            ("importtracepalette_act", "Import trace palette...", "", self.importTracePalette),
+                            ("importseriestransforms_act", "Import transforms...", "", self.importSeriesTransforms)
                         ]
                     },
                     None,
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
-                    ("resetpalette_act", "Reset trace palette", "", self.mouse_palette.resetPalette)    
+                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)    
                 ]
             },
             
@@ -1033,6 +1036,91 @@ class MainWindow(QMainWindow):
         if self.field.ztrace_table_manager:
             self.field.ztrace_table_manager.refresh()
     
+    def importTracePalette(self, jser_fp : str = None):
+        """Import the trace palette from another series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=self.explorer_dir,
+                filter="*.jser"
+            )
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # import the trace palette
+        self.mouse_palette.modifyPalette(o_series.palette_traces)
+        self.saveAllData()
+
+        o_series.close()
+    
+    def importSeriesTransforms(self, jser_fp : str = None):
+        """Import the trace palette from another series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=self.explorer_dir,
+                filter="*.jser"
+            )
+        if jser_fp == "": return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # preliminary sections check
+        self_sections = sorted(list(self.series.sections.keys()))
+        other_sections = sorted(list(o_series.sections.keys()))
+        if self_sections != other_sections:
+            return
+        
+        # get a list of alignments from the other series
+        o_alignments = list(o_series.section_tforms[other_sections[0]].keys())
+        s_alignments = list(self.series.section_tforms[other_sections[0]].keys())
+
+        # prompt the user to choose an alignment
+        chosen_alignments, confirmed = ImportTransformsDialog(self, o_alignments).exec()
+        if not confirmed or not chosen_alignments:
+            return
+        
+        overlap_alignments = []
+        for a in chosen_alignments:
+            if a in s_alignments:
+                overlap_alignments.append(a)
+        
+        if overlap_alignments:
+            overlap_str = ", ".join(overlap_alignments)
+            reply = QMessageBox.question(
+                self,
+                "Import Alignments",
+                f"The alignments {overlap_str} exist in your series.\nWould you like to overwrite them?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                notify("Import transforms canceled.")
+                return
+        
+        if chosen_alignments:
+            self.series.importTransforms(o_series, chosen_alignments)
+        
+        self.field.reload()
+        self.seriesModified()
+    
     def editImage(self, option : str, direction : str):
         """Edit the brightness or contrast of the image.
         
@@ -1465,6 +1553,12 @@ class MainWindow(QMainWindow):
         self.mouse_palette.toggleHandedness()
         if self.zarr_palette:
             self.zarr_palette.toggleHandedness()
+    
+    def resetTracePalette(self):
+        """Reset the trace palette to default traces."""
+        self.mouse_palette.resetPalette()
+        self.saveAllData()
+        self.seriesModified()
     
     def setZarrLayer(self, zarr_dir=None):
         """Set a zarr layer."""

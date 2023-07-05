@@ -267,12 +267,22 @@ class MousePalette():
                     self.selected_trace = b.trace
         self.updateLabel()
     
-    def resetPalette(self):
-        """Reset the palette to the default traces."""
-        self.palette_traces = Series.getDefaultPaletteTraces()
+    def modifyPalette(self, trace_list : list):
+        """Modify all of the palette traces.
+        
+            Params:
+                trace_list (list): the list of traces to set the palette buttons
+        """
+        if len(trace_list) != len(self.palette_traces):
+            return
+        self.palette_traces = trace_list
         for b, t in zip(self.palette_buttons, self.palette_traces):
             b.setTrace(t)
         self.activatePaletteButton(0)
+    
+    def resetPalette(self):
+        """Reset the palette to the default traces."""
+        self.modifyPalette(Series.getDefaultPaletteTraces())
     
     def placeIncrementButtons(self):
         """Place the increment buttons on the field"""

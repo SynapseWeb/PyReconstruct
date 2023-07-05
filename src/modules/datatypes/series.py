@@ -91,12 +91,11 @@ class Series():
 
         # default settings
         self.modified_ztraces = []
+        self.leave_open = False
 
         # possible zarr overlay
         self.zarr_overlay_fp = None
         self.zarr_overlay_group = None
-
-        # ADDED SINCE JAN 25TH
 
         self.options = series_data["options"]
 
@@ -132,6 +131,27 @@ class Series():
             Params:
                 fp (str): the filepath
         """
+        # check for existing hidden folder
+        sdir = os.path.dirname(fp)
+        sname = os.path.basename(fp)
+        sname = sname[:sname.rfind(".")]
+        hidden_dir = os.path.join(sdir, f".{sname}")
+        ser_filepath = os.path.join(hidden_dir, f"{sname}.ser")
+        if os.path.isdir(hidden_dir) and os.path.isfile(ser_filepath):
+            # gather sections
+            sections = {}
+            for f in os.listdir(hidden_dir):
+                if "." not in f:
+                    continue
+                ext = f[f.rfind(".")+1:]
+                if ext.isnumeric():
+                    snum = int(ext)
+                    sections[snum] = f
+            series = Series(ser_filepath, sections)
+            series.jser_fp = fp
+            series.leave_open = True
+            return series
+
         # load json
         with open(fp, "r") as f:
             jser_data = json.load(f)
@@ -171,9 +191,6 @@ class Series():
             if sdata: final_value += 1
 
         # create the hidden directory
-        sdir = os.path.dirname(fp)
-        sname = os.path.basename(fp)
-        sname = sname[:sname.rfind(".")]
         hidden_dir = createHiddenDir(sdir, sname)
         
         # extract JSON series data
@@ -337,6 +354,8 @@ class Series():
     
     def close(self):
         """Clear the hidden directory of the series."""
+        if self.leave_open:
+            return
         if os.path.isdir(self.hidden_dir):
             for f in os.listdir(self.hidden_dir):
                 os.remove(os.path.join(self.hidden_dir, f))
@@ -848,7 +867,7 @@ class Series():
     def importTraces(self, other):
         """Import all the traces from another series."""
         # ensure that the two series have the same sections
-        if list(self.sections.keys()) != list(other.sections.keys()):
+        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
             return
         
         iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
@@ -864,6 +883,26 @@ class Series():
             if o_zname not in self.ztraces:
                 self.ztraces[o_zname] = o_ztrace.copy()
         
+        self.save()
+    
+    def importTransforms(self, other, alignments : list):
+        """Import transforms from another series.
+        
+            Params:
+                other (series): the series to import transforms from
+                alignments (list): the names of alignments to import
+        """
+        # ensure that the two series have the same sections
+        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
+            return
+        
+        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
+        for (r_num, r_section), (s_num, s_section) in iterator:
+            for a in alignments:
+                r_section.tforms[a] = s_section.tforms[a].copy()
+                r_section.save()
+                self.section_tforms[r_num][a] = s_section.tforms[a].copy()
+                
         self.save()
     
     def loadObjectData(self, object_table_items=False):

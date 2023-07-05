@@ -30,7 +30,8 @@ from modules.gui.dialog import (
     SegmentDialog,
     PredictDialog,
     SwiftDialog,
-    ImportTransformsDialog
+    ImportTransformsDialog,
+    SmoothingDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -229,9 +230,11 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
+                    ("smoothing_act", "Modify 3D smoothing...", "", self.edit3DSmoothing),
+                    None,
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
-                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)    
+                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)  
                 ]
             },
             
@@ -266,7 +269,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
-                    None
                 ]
             },
             {
@@ -1889,6 +1891,24 @@ class MainWindow(QMainWindow):
         
         self.series.mergeObjects(names, new_name)
         self.field.reload()
+    
+    def edit3DSmoothing(self, smoothing_alg : str = ""):
+        """Modify the algorithm used for 3D smoothing.
+        
+            Params:
+                smoothing_alg (str): the name of the smoothing algorithm to use
+        """
+        if not smoothing_alg:
+            smoothing_alg, confirmed = SmoothingDialog(self, self.series.options["3D_smoothing"]).exec()
+            if not confirmed:
+                return
+        
+        if smoothing_alg not in ["laplacian", "humphrey", "none"]:
+            return
+
+        self.series.options["3D_smoothing"] = smoothing_alg
+        self.saveAllData()
+        self.seriesModified()
 
     def restart(self):
         self.restart_mainwindow = True

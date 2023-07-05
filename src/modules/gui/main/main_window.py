@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     {
-                        "attr_name": "alignments",
+                        "attr_name": "alignmentsmenu",
                         "text": "Alignments",
                         "opts":
                         [
@@ -215,6 +215,16 @@ class MainWindow(QMainWindow):
                                     ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
                                 ]
                             }
+                        ]
+                    },
+                    None,
+                    {
+                        "attr_name": "serieshidemenu",
+                        "text": "Hide",
+                        "opts":
+                        [
+                            ("hidealltraces_act", "Hide all traces", "", self.hideSeriesTraces),
+                            ("unhidealltraces_act", "Unhide all traces", "", lambda : self.hideSeriesTraces(hidden=False))
                         ]
                     },
                     None,
@@ -1909,6 +1919,15 @@ class MainWindow(QMainWindow):
         self.series.options["3D_smoothing"] = smoothing_alg
         self.saveAllData()
         self.seriesModified()
+    
+    def hideSeriesTraces(self, hidden=True):
+        """Hide or unhide all traces in the entire series.
+        
+            Params:
+                hidden (bool) True if traces will be hidden
+        """
+        self.series.hideAllTraces(hidden)
+        self.field.reload()
 
     def restart(self):
         self.restart_mainwindow = True

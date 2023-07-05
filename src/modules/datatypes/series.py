@@ -864,6 +864,18 @@ class Series():
         
         self.modified = True
     
+    def hideAllTraces(self, hidden=True):
+        """Hide all traces in the entire series.
+        
+            Params:
+                hidden (bool): True if traces are to be hidden
+        """
+        for snum, section in self.enumerateSections(
+            message="Hiding traces..." if hidden else "Unhiding traces..."):
+            for trace in section.tracesAsList():
+                trace.setHidden(hidden)
+            section.save()
+    
     def importTraces(self, other):
         """Import all the traces from another series."""
         # ensure that the two series have the same sections

@@ -1,15 +1,14 @@
 from PySide6.QtWidgets import (
     QWidget, 
     QDialog, 
-    QDialogButtonBox, 
-    QCheckBox, 
+    QDialogButtonBox,  
     QVBoxLayout, 
-    QCheckBox,
+    QRadioButton,
 )
 
-class ImportTransformsDialog(QDialog):
+class SmoothingDialog(QDialog):
 
-    def __init__(self, parent : QWidget, alignments : list):
+    def __init__(self, parent : QWidget, current_smoothing : str):
         """Create an attribute dialog.
         
             Params:
@@ -18,15 +17,19 @@ class ImportTransformsDialog(QDialog):
         """
         super().__init__(parent)
 
-        self.setWindowTitle("Import Transforms")
+        self.setWindowTitle("3D Smoothing")
 
         vlayout = QVBoxLayout()
 
-        self.cbs = []
-        for a in alignments:
-            cb = QCheckBox(a, self)
-            self.cbs.append(cb)
-            vlayout.addWidget(cb)
+        smoothing_algs = ["Laplacian (most smooth)", "Humphrey (less smooth)", "None (blocky)"]
+
+        self.rbs = []
+        for s in smoothing_algs:
+            rb = QRadioButton(s, self)
+            self.rbs.append(rb)
+            vlayout.addWidget(rb)
+            if s.split()[0].lower() == current_smoothing:
+                rb.setChecked(True)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -41,12 +44,8 @@ class ImportTransformsDialog(QDialog):
         """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
-            alignments = []
-            for cb in self.cbs:
-                if cb.isChecked():
-                    alignments.append(cb.text())
-            return alignments, True
+            for rb in self.rbs:
+                if rb.isChecked():
+                    return rb.text().split()[0].lower(), True
         
-        # user pressed cancel
-        else:
-            return None, False
+        return None, False

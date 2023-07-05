@@ -184,6 +184,8 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
+                    ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
+                    None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
@@ -261,7 +263,7 @@ class MainWindow(QMainWindow):
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                     None,
                     ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
-                    ("findcontour_act", "Find contour...", "Ctrl+F", self.field.findContourDialog),
+                    ("findcontour_act", "Find contour...", "Ctrl+Shift+F", self.field.findContourDialog),
                     None,
                     ("linearalign_act", "Align linear", "", self.field.linearAlign)
                 ]
@@ -1416,6 +1418,31 @@ class MainWindow(QMainWindow):
         """
         self.changeSection(section_num)
         self.field.findContour(obj_name)
+    
+    def findObjectFirst(self, obj_name=None):
+        """Find the first or last contour in the series.
+        
+            Params:
+                obj_name (str): the name of the object to find
+        """
+        if obj_name is None:
+            obj_name, confirmed = QInputDialog.getText(
+                self,
+                "Find Object",
+                "Enter the object name:",
+            )
+            if not confirmed:
+                return
+
+        # find the contour
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.findObject(obj_name, first=True)
+        else:
+            for snum, section in self.series.enumerateSections(
+                show_progress=False):
+                if obj_name in section.contours:
+                    self.setToObject(obj_name, snum)
+                    return
     
     def changeTform(self, new_tform_list : list = None):
         """Open a dialog to change the transform of a section."""

@@ -103,7 +103,7 @@ class Series():
         self.gatherSectionData()
     
     def gatherSectionData(self):
-        """Get the mag, thickness, and transforms from each section."""
+        """Get the mag, thickness, transforms, and object names from each section."""
         # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
         for n, section in self.sections.items():
             # open the json
@@ -122,6 +122,15 @@ class Series():
             self.section_tforms[n] = tforms
             for cname in section_json["contours"]:
                 self.objs.add(cname)
+    
+    def updateSectionData(self, section : Section):
+        """Get mag, thickness, transforms, and object names from a section."""
+        n = section.n
+        self.section_thicknesses[n] = section.thickness
+        self.section_mags[n] = section.mag
+        self.section_tforms[n] = section.tforms
+        for cname in section.contours.keys():
+            self.objs.add(cname)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -887,6 +896,7 @@ class Series():
             r_section.importTraces(s_section)
         
         self.save()
+        self.gatherSectionData()
     
     def importZtraces(self, other):
         """Import all the ztraces from another series."""

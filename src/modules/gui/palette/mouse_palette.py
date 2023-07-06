@@ -35,10 +35,11 @@ class MousePalette():
         self.createModeButton("Pointer", "p", 0, 0)
         self.createModeButton("Pan/Zoom", "z", 1, 1)
         self.createModeButton("Knife", "k", 2, 2)
-        self.createModeButton("Closed Trace", "c", 3, 3)
-        self.createModeButton("Open Trace", "o", 4, 4)
-        self.createModeButton("Stamp", "s", 5, 5)
-        self.createModeButton("Grid", "g", 6, 6)
+        self.createModeButton("Scissors", "x", 3, 3)
+        self.createModeButton("Closed Trace", "c", 4, 4)
+        self.createModeButton("Open Trace", "o", 5, 5)
+        self.createModeButton("Stamp", "s", 6, 6)
+        self.createModeButton("Grid", "g", 7, 7)
 
         # create palette buttons
         self.palette_traces = palette_traces
@@ -128,6 +129,8 @@ class MousePalette():
         # manually enter dialog function for pointer and grid
         if name == "Pointer":
             b.contextMenuEvent = self.mainwindow.modifyPointer
+        elif name == "Closed Trace":
+            b.contextMenuEvent = self.mainwindow.changeClosedTraceMode
         elif name == "Grid":
             b.contextMenuEvent = self.mainwindow.modifyGrid
 
@@ -137,7 +140,6 @@ class MousePalette():
         b.clicked.connect(lambda : self.activateModeButton(name))
         # dictionary -- name : (button object, mouse mode, position)
         self.mode_buttons[name] = (b, mouse_mode, pos)
-
 
         b.show()
     

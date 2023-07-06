@@ -174,3 +174,21 @@ def colorize(n):
         c[i] = cn % 156 + 100
         cn //= 156
     return c
+
+def ellipseFromPair(x1, y1, x2, y2, number=100):
+    """Create an ellipse from two points in space."""
+    center = (
+        (x1 + x2) / 2,
+        (y1 + y2) / 2
+    )
+    a = abs(x1 - center[0])
+    b = abs(y1 - center[1])
+
+    ellipse = []
+    for i in range(number):
+        ellipse.append((
+            round(center[0] + a * math.cos((i / number) * 2 * math.pi)),
+            round(center[1] + b * math.sin((i / number) * 2 * math.pi))
+        ))
+    
+    return ellipse

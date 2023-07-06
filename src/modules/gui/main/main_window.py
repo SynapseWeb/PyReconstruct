@@ -31,7 +31,8 @@ from modules.gui.dialog import (
     PredictDialog,
     SwiftDialog,
     ImportTransformsDialog,
-    SmoothingDialog
+    SmoothingDialog,
+    PointerDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -1574,6 +1575,17 @@ class MainWindow(QMainWindow):
                 trace_lengths[name] = d
         
         self.field.calibrateMag(trace_lengths)
+    
+    def modifyPointer(self, event=None):
+        """Modify the pointer properties."""
+        response, confirmed = PointerDialog(
+            self,
+            tuple(self.series.options["pointer"])
+        ).exec()
+        if not confirmed:
+            return
+        self.series.options["pointer"] = response
+        self.seriesModified()
     
     def modifyGrid(self, event=None):
         """Modify the grid properties."""

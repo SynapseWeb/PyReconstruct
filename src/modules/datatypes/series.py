@@ -494,6 +494,7 @@ class Series():
         options["backup_dir"] = ""
         options["fill_opacity"] = 0.2
         options["grid"] = [1, 1, 1, 1, 1, 1]
+        options["pointer"] = ["lasso", "exc"]
         options["autoseg"] = {}
 
         return series_data

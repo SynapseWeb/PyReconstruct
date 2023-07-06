@@ -125,8 +125,10 @@ class MousePalette():
         # b.setText(name)
         b.setToolTip(f"{name} ({sc})")
 
-        # manually enter dialog function for grid
-        if name == "Grid":
+        # manually enter dialog function for pointer and grid
+        if name == "Pointer":
+            b.contextMenuEvent = self.mainwindow.modifyPointer
+        elif name == "Grid":
             b.contextMenuEvent = self.mainwindow.modifyGrid
 
         b.setCheckable(True)

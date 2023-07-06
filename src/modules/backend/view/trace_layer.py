@@ -127,12 +127,17 @@ class TraceLayer():
         for trace in self.traces_in_view:
             pix_points = self.traceToPix(trace)
             inside_poly = True
-            # check if EVERY point is inside the polygon
+            # check if ANY point is inside the polygon for inc
+            # check if EVERY point is inside the polygon for exc
+            inc = self.series.options["pointer"][1] == "inc"
             for point in pix_points:
-                if not pointInPoly(*point, pix_poly):
+                if inc and pointInPoly(*point, pix_poly):
+                    traces_in_poly.append(trace)
+                    break
+                elif not inc and not pointInPoly(*point, pix_poly):
                     inside_poly = False
                     break
-            if inside_poly:
+            if not inc and inside_poly:
                 traces_in_poly.append(trace)
         
         ztraces_in_poly = []

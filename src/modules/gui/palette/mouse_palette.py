@@ -39,6 +39,7 @@ class MousePalette():
         self.createModeButton("Open Trace", "o", 4, 4)
         self.createModeButton("Stamp", "s", 5, 5)
         self.createModeButton("Grid", "g", 6, 6)
+        self.createModeButton("Scissors", "x", 7, 7)
 
         # create palette buttons
         self.palette_traces = palette_traces
@@ -137,7 +138,6 @@ class MousePalette():
         b.clicked.connect(lambda : self.activateModeButton(name))
         # dictionary -- name : (button object, mouse mode, position)
         self.mode_buttons[name] = (b, mouse_mode, pos)
-
 
         b.show()
     

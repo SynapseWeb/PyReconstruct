@@ -16,3 +16,4 @@ from .swift_importer import SwiftDialog
 from .import_transforms import ImportTransformsDialog
 from .smoothing import SmoothingDialog
 from .pointer import PointerDialog
+from .closed_trace import ClosedTraceDialog

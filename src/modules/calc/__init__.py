@@ -14,7 +14,8 @@ from .quantification import (
     ccw,
     linesIntersect,
     lineIntersectsContour,
-    colorize
+    colorize,
+    ellipseFromPair
 )
 from .grid import (
     mergeTraces,

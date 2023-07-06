@@ -970,9 +970,19 @@ class FieldWidget(QWidget, FieldView):
         else:
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
-            x = event.x()
-            y = event.y()
-            self.current_trace.append((x, y))
+            if self.series.options["pointer"][0] == "rect":
+                x1, y1 = self.current_trace[0]
+                x2, y2 = event.x(), event.y()
+                self.current_trace = [
+                    (x1, y1),
+                    (x2, y1),
+                    (x2, y2),
+                    (x1, y2)
+                ]
+            else:
+                x = event.x()
+                y = event.y()
+                self.current_trace.append((x, y))
             # draw the trace on the screen
             self.update()
     

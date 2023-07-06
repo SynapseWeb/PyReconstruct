@@ -134,6 +134,7 @@ class FieldView():
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
+        self.mainwindow.checkActions()
 
     def undoState(self):
         """Undo last action (switch to last state)."""

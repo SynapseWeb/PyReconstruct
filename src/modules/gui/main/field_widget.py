@@ -711,8 +711,8 @@ class FieldWidget(QWidget, FieldView):
         if g.state() == Qt.GestureState.GestureStarted:
             self.is_gesturing = True
             p = self.mapFromGlobal(g.centerPoint())
-            x, y = p.x(), p.y()
-            self.panzoomPress(x, y)
+            self.clicked_x, self.clicked_y = p.x(), p.y()
+            self.panzoomPress(self.clicked_x, self.clicked_y)
 
         elif g.state() == Qt.GestureState.GestureUpdated:
             p = self.mapFromGlobal(g.centerPoint())
@@ -732,8 +732,9 @@ class FieldWidget(QWidget, FieldView):
         """
         self.mouse_x = event.x()
         self.mouse_y = event.y()
-        self.clicked_x = self.mouse_x
-        self.clicked_y = self.mouse_y
+        if not self.is_gesturing:
+            self.clicked_x = self.mouse_x
+            self.clicked_y = self.mouse_y
         self.click_time = time.time()
         self.single_click = True
 
@@ -741,7 +742,6 @@ class FieldWidget(QWidget, FieldView):
         if os.name == "nt":
             if event.pointerType() == QPointingDevice.PointerType.Finger:
                 return
-
 
         # if any finger touch
         if self.is_gesturing:

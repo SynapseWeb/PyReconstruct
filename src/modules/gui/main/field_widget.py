@@ -40,7 +40,7 @@ from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(7)
+    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP, GRID, SCISSORS = range(8)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -129,6 +129,7 @@ class FieldWidget(QWidget, FieldView):
         self.is_line_tracing = False
         self.is_moving_trace = False
         self.is_selecting_traces = False
+        self.is_scissoring = False
 
         self.selected_trace_names = {}
         self.selected_ztrace_names = {}
@@ -678,6 +679,8 @@ class FieldWidget(QWidget, FieldView):
         elif (mode == FieldWidget.STAMP or
               mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
+        elif mode == FieldWidget.SCISSORS:
+            cursor = QCursor(Qt.CrossCursor)
         self.setCursor(cursor)
     
     def setTracingTrace(self, trace : Trace):
@@ -788,6 +791,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampPress(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridPress(event)
+        elif self.mouse_mode == FieldWidget.SCISSORS:
+            self.scissorsPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -1255,6 +1260,10 @@ class FieldWidget(QWidget, FieldView):
             else:
                 self.current_trace = []
                 self.update()
+            if self.is_scissoring:
+                self.is_scissoring = False
+                self.setMouseMode(FieldWidget.SCISSORS)
+                self.setTracingTrace(self.mainwindow.mouse_palette.selected_trace)
     
     def backspace(self):
         """Called when backspace OR Del is pressed: either delete traces or undo line trace."""
@@ -1342,6 +1351,42 @@ class FieldWidget(QWidget, FieldView):
     def gridRelease(self, event):
         """Called when mouse is released in grid mode."""
         self.update()
+    
+    def scissorsPress(self, event):
+        """Identifies the nearest trace and allows user to poly edit it."""
+        # select, deselect or move
+        if self.lclick:
+            self.clicked_x = event.x()
+            self.clicked_y = event.y()
+            self.selected_trace = self.section_layer.getTrace(
+                self.clicked_x,
+                self.clicked_y
+            )
+            if self.selected_trace:
+                self.is_scissoring = True
+                self.deselectAllTraces()
+                self.deleteTraces([self.selected_trace])
+                self.current_trace = self.section_layer.traceToPix(self.selected_trace)
+
+                # find the index of the closest point
+                least_dist = distance(self.clicked_x, self.clicked_y, *self.current_trace[0])
+                least_i = 0
+                for (i, p) in enumerate(self.current_trace):
+                    d = distance(self.clicked_x, self.clicked_y, *p)
+                    if d < least_dist:
+                        least_dist = d
+                        least_i = i
+
+                if self.selected_trace.closed:
+                    self.mouse_mode = FieldWidget.CLOSEDTRACE
+                    self.current_trace = self.current_trace[least_i:] + self.current_trace[:least_i]
+                    self.current_trace.reverse()
+                else:
+                    self.mouse_mode = FieldWidget.OPENTRACE
+                    self.current_trace = self.current_trace[:least_i+1]
+                self.is_line_tracing = True
+                self.tracing_trace = self.selected_trace
+                self.update()
 
     def knifePress(self, event):
         """Called when mouse is pressed in knife mode.

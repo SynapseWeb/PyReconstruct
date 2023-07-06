@@ -26,7 +26,7 @@ from PySide6.QtGui import (
 )
 
 from modules.datatypes import Series, Trace, Ztrace
-from modules.calc import pixmapPointToField, distance, colorize
+from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair
 from modules.backend.view import FieldView
 from modules.backend.table import (
     ObjectTableManager,
@@ -40,7 +40,7 @@ from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, CLOSEDTRACE, OPENTRACE, STAMP, GRID, SCISSORS = range(8)
+    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(8)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -130,6 +130,7 @@ class FieldWidget(QWidget, FieldView):
         self.is_moving_trace = False
         self.is_selecting_traces = False
         self.is_scissoring = False
+        self.closed_trace_mode = "trace"
 
         self.selected_trace_names = {}
         self.selected_ztrace_names = {}
@@ -323,7 +324,8 @@ class FieldWidget(QWidget, FieldView):
                 self.mouse_mode == FieldWidget.OPENTRACE or
                 self.mouse_mode == FieldWidget.CLOSEDTRACE
             ):
-                closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing)
+                closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing or
+                          self.mouse_mode == FieldWidget.CLOSEDTRACE and self.closed_trace_mode != "trace")
                 color = QColor(*self.tracing_trace.color)
                 pen = QPen(color, 1)
             
@@ -730,6 +732,8 @@ class FieldWidget(QWidget, FieldView):
         """
         self.mouse_x = event.x()
         self.mouse_y = event.y()
+        self.clicked_x = self.mouse_x
+        self.clicked_y = self.mouse_y
         self.click_time = time.time()
         self.single_click = True
 
@@ -1050,8 +1054,6 @@ class FieldWidget(QWidget, FieldView):
                 x: the x position of the start
                 y: the y position of the start
         """
-        self.clicked_x = x
-        self.clicked_y = y
         self.field_pixmap_copy = self.field_pixmap.copy()
         
     def mousePanzoomPress(self, event):
@@ -1209,7 +1211,18 @@ class FieldWidget(QWidget, FieldView):
             # draw trace on pixmap
             x = event.x()
             y = event.y()
-            self.current_trace.append((x, y))
+            if self.closed_trace_mode == "trace":
+                self.current_trace.append((x, y))
+            elif self.closed_trace_mode == "rect":
+                x1, y1 = self.current_trace[0]
+                self.current_trace = [
+                    (x1, y1),
+                    (x, y1),
+                    (x, y),
+                    (x1, y)
+                ]
+            elif self.closed_trace_mode == "circle":
+                self.current_trace = ellipseFromPair(self.clicked_x, self.clicked_y, x, y)
             self.last_x = x
             self.last_y = y
             self.update()
@@ -1356,16 +1369,15 @@ class FieldWidget(QWidget, FieldView):
         """Identifies the nearest trace and allows user to poly edit it."""
         # select, deselect or move
         if self.lclick:
-            self.clicked_x = event.x()
-            self.clicked_y = event.y()
             self.selected_trace = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
-            if self.selected_trace:
+            if self.selected_trace and type(self.selected_trace) is Trace:
                 self.is_scissoring = True
                 self.deselectAllTraces()
-                self.deleteTraces([self.selected_trace])
+                self.section.deleteTraces([self.selected_trace])
+                self.generateView(generate_image=False)
                 self.current_trace = self.section_layer.traceToPix(self.selected_trace)
 
                 # find the index of the closest point

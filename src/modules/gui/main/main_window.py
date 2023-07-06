@@ -32,7 +32,8 @@ from modules.gui.dialog import (
     SwiftDialog,
     ImportTransformsDialog,
     SmoothingDialog,
-    PointerDialog
+    PointerDialog,
+    ClosedTraceDialog
 )
 from modules.gui.popup import HistoryWidget
 from modules.gui.utils import (
@@ -1161,6 +1162,14 @@ class MainWindow(QMainWindow):
                 new_mode: the new mouse mode to set
         """
         self.field.setMouseMode(new_mode)
+    
+    def changeClosedTraceMode(self, new_mode=None):
+        """Change the closed trace mode (trace, rectangle, circle)."""
+        if new_mode not in ["trace", "rect", "circle"]:
+            new_mode, confirmed = ClosedTraceDialog(self, self.field.closed_trace_mode).exec()
+            if not confirmed:
+                return
+        self.field.closed_trace_mode = new_mode
 
     def changeTracingTrace(self, trace):
         """Change the trace utilized by the user.

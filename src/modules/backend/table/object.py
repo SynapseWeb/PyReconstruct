@@ -175,14 +175,13 @@ class ObjectTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
 
-    def editAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None):
+    def editAttributes(self, obj_names : list, attr_trace : Trace):
         """Edit objects on every section.
         
             Params:
                 series (Series): the series object
                 obj_names (list): the names of the objects to rename
-                name (str): the new name for the objects
-                color (tuple): the new color for the objects
+                attr_trace (Trace): the trace holding the new attributes
         """
         self.mainwindow.saveAllData()
         # delete existing trace information
@@ -190,6 +189,10 @@ class ObjectTableManager():
             self.objdict[obj_name] = ObjectTableItem(obj_name)
         
         # modify the object on every section
+        t = attr_trace
+        name, color, tags, mode = (
+            t.name, t.color, t.tags, t.fill_mode
+        )
         self.series.editObjectAttributes(
             obj_names,
             name,
@@ -226,6 +229,34 @@ class ObjectTableManager():
         self.series.editObjectRadius(
             obj_names,
             new_rad,
+            self.addTrace
+        )
+        
+        # update the table data
+        for table in self.tables:
+            for name in obj_names:
+                table.updateObject(self.objdict[name])
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+    
+    def editShape(self, obj_names : list, new_shape : list):
+        """Change the shapes of all traces of an object.
+        
+            Params:
+                obj_names (list): the names of objects to modify
+                new_shape (list): the new shape for the traces of the object
+        """
+        self.mainwindow.saveAllData()
+        # delete existing trace information
+        for name in obj_names:
+            self.objdict[name] = ObjectTableItem(name)
+        
+        # iterate through all sections
+        self.series.editObjectShape(
+            obj_names,
+            new_shape,
             self.addTrace
         )
         

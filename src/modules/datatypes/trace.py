@@ -307,8 +307,6 @@ class Trace():
             return tform.map(*c)
         else:
             return c
-
-
     
     def getRadius(self, tform : Transform = None):
         """Get the distance from the centroid of the trace to its farthest point.
@@ -351,6 +349,18 @@ class Trace():
         ]
                 
         self.points = points
+
+    def reshape(self, new_points : float):
+        """Resize a trace beased on its radius
+        
+            Params:
+                new_points (float): the new points for the trace
+        """
+        r = self.getRadius()
+        xc, yc = self.getCentroid()
+        self.points = new_points
+        self.resize(r)
+        self.points = [(x + xc, y + yc) for x, y in self.points]
     
     def getStretched(self, w : float, h : float):
         """Get the trace stretched to a specific w and h."""

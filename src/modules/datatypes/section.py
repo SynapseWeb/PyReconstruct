@@ -315,7 +315,6 @@ class Section():
                     new_trace.tags = tags
             fill_mode = list(new_trace.fill_mode)
             if mode is not None:
-                print(mode)
                 style, condition = mode
                 if style is not None:
                     fill_mode[0] = style

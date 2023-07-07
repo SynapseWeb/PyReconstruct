@@ -112,13 +112,17 @@ class TraceDialog(QDialog):
         tags_row.addWidget(tags_text)
         tags_row.addWidget(self.tags_input)
 
-        condition_row = QHBoxLayout()
-        self.condition_input = QCheckBox("Fill when selected")
-        if fill_condition == "selected":
-            self.condition_input.setChecked(True)
+        self.selected_input = QCheckBox("Fill when selected")
+        if fill_condition in ("selected", "always"):
+            self.selected_input.setChecked(True)
         else:
-            self.condition_input.setChecked(False)
-        condition_row.addWidget(self.condition_input)
+            self.selected_input.setChecked(False)
+
+        self.unselected_input = QCheckBox("Fill when unselected")
+        if fill_condition in ("unselected", "always"):
+            self.unselected_input.setChecked(True)
+        else:
+            self.unselected_input.setChecked(False)
 
         style_row = QHBoxLayout()
         style_text = QLabel(self, text="Fill:")
@@ -161,7 +165,8 @@ class TraceDialog(QDialog):
         if self.is_palette: vlayout.addLayout(shape_row)
         vlayout.addLayout(tags_row)
         vlayout.addLayout(style_row)
-        vlayout.addLayout(condition_row)
+        vlayout.addWidget(self.selected_input)
+        vlayout.addWidget(self.unselected_input)
         if self.is_palette: vlayout.addLayout(stamp_size_row)
         vlayout.addWidget(buttonbox)
 
@@ -170,9 +175,15 @@ class TraceDialog(QDialog):
     def checkDisplayCondition(self):
         """Determine whether the "fill when selected" checkbox should be displayed."""
         if self.style_transparent.isChecked() or self.style_solid.isChecked():
-            self.condition_input.show()
+            self.selected_input.show()
+            self.selected_input.setChecked(True)
+            self.unselected_input.show()
+            self.unselected_input.setChecked(True)
         else:
-            self.condition_input.hide()
+            self.selected_input.hide()
+            self.selected_input.setChecked(False)
+            self.unselected_input.hide()
+            self.unselected_input.setChecked(True)
     
     def accept(self):
         """Overwritten from parent class."""
@@ -225,19 +236,24 @@ class TraceDialog(QDialog):
                 condition = "none"
             elif self.style_transparent.isChecked():
                 style = "transparent"
-                if self.condition_input.isChecked():
-                    condition = "selected"
-                else:
-                    condition = "unselected"
             elif self.style_solid.isChecked():
                 style = "solid"
-                if self.condition_input.isChecked():
-                    condition = "selected"
-                else:
-                    condition = "unselected"
             else:
                 style = None
                 condition = None
+            
+            if style in ("transparent", "solid"):
+                sel = self.selected_input.isChecked()
+                unsel = self.unselected_input.isChecked()
+                if sel and unsel:
+                    condition = "always"
+                elif sel:
+                    condition = "selected"
+                elif unsel:
+                    condition = "unselected"
+                else:
+                    style = "none"
+                    condition = "none"
             
             trace.fill_mode = (style, condition)
 

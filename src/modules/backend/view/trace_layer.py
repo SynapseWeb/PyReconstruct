@@ -489,8 +489,10 @@ class TraceLayer():
             # determine if user requested fill
             if (
                 (trace.closed) and
-                (trace.fill_mode[0] != "none") and
-                ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+                (trace.fill_mode[0] != "none") and (
+                    (trace.fill_mode[1] == "always") or
+                    ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+                )
             ): fill = True
             else: fill = False
 

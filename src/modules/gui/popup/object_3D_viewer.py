@@ -86,6 +86,8 @@ class Object3DViewer(gl.GLViewWidget):
             ("togglesc_act", "Toggle scale cube", "S", self.toggleScaleCube),
             ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
             None,
+            ("rotation_act", "Toggle rotation method", "R", self.toggleRotationMethod),
+            None,
             ("background_act", "Set background color...", "", self.editBackgroundColor),
             None,
             ("moveto_act", "View point in 2D", "", self.moveToCoordinates)
@@ -321,6 +323,14 @@ class Object3DViewer(gl.GLViewWidget):
         else:
             self.addItem(self.sc_item)
         self.sc_in_scene = not self.sc_in_scene
+    
+    def toggleRotationMethod(self):
+        """Toggle the rotation method between euler and quaternion"""
+        current_method = self.opts["rotationMethod"]
+        if current_method == "euler":
+            self.opts["rotationMethod"] = "quaternion"
+        else:
+            self.opts["rotationMethod"] = "euler"
     
     def editSCSize(self):
         """Modify the size of the scale cube."""

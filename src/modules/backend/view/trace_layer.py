@@ -105,7 +105,8 @@ class TraceLayer():
             field_y,
             radius=radius,
             traces_in_view=self.traces_in_view,
-            include_hidden=self.show_all_traces
+            include_hidden=self.show_all_traces,
+            include_ztraces=self.series.options["show_ztraces"]
         )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
@@ -141,13 +142,14 @@ class TraceLayer():
                 traces_in_poly.append(trace)
         
         ztraces_in_poly = []
-        for ztrace in self.series.ztraces.values():
-            # check if point is inside polygon
-            for i, (x, y, snum) in enumerate(ztrace.points):
-                if snum == self.section.n:
-                    pix_point = self.pointToPix((x, y))
-                    if pointInPoly(*pix_point, pix_poly):
-                        ztraces_in_poly.append((ztrace, i))
+        if self.series.options["show_ztraces"]:
+            for ztrace in self.series.ztraces.values():
+                # check if point is inside polygon
+                for i, (x, y, snum) in enumerate(ztrace.points):
+                    if snum == self.section.n:
+                        pix_point = self.pointToPix((x, y))
+                        if pointInPoly(*pix_point, pix_poly):
+                            ztraces_in_poly.append((ztrace, i))
 
         return traces_in_poly, ztraces_in_poly
 
@@ -650,7 +652,7 @@ class TraceLayer():
             for ztrace in self.series.ztraces.values():
                 if ztrace not in self.section.temp_hide:
                     self._drawZtrace(trace_layer, ztrace)
-        self._drawZtraceHighlights(trace_layer)
+            self._drawZtraceHighlights(trace_layer)
                 
         return trace_layer
 

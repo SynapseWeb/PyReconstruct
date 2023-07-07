@@ -339,7 +339,14 @@ class Section():
             trace.resize(new_rad)
             self.addTrace(trace, "radius modified")
     
-    def findClosestTrace(self, field_x : float, field_y : float, radius=0.5, traces_in_view : list[Trace] = None, include_hidden=False) -> Trace:
+    def findClosestTrace(
+            self,
+            field_x : float,
+            field_y : float,
+            radius=0.5,
+            traces_in_view : list[Trace] = None,
+            include_hidden=False,
+            include_ztraces=True):
         """Find closest trace to field coordinates in a given radius.
         
             Params:
@@ -396,14 +403,15 @@ class Section():
                 closest_trace_interior = trace
         
         # check for ztrace points close by
-        for ztrace in self.series.ztraces.values():
-            for i, pt in enumerate(ztrace.points):
-                if pt[2] == self.n:
-                    x, y = tform.map(*pt[:2])
-                    dist = distance(field_x, field_y, x, y)
-                    if closest_trace is None or dist < min_distance:
-                        min_distance = dist
-                        closest_trace = (ztrace, i)
+        if include_ztraces:
+            for ztrace in self.series.ztraces.values():
+                for i, pt in enumerate(ztrace.points):
+                    if pt[2] == self.n:
+                        x, y = tform.map(*pt[:2])
+                        dist = distance(field_x, field_y, x, y)
+                        if closest_trace is None or dist < min_distance:
+                            min_distance = dist
+                            closest_trace = (ztrace, i)
         
         return closest_trace if min_distance <= radius else closest_trace_interior
     

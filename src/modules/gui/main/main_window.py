@@ -190,6 +190,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
+                    ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     {
@@ -1409,6 +1410,12 @@ class MainWindow(QMainWindow):
         """Open the ztrace list widget."""
         self.saveAllData()
         self.field.openZtraceList()
+    
+    def toggleZtraces(self):
+        """Toggle whether ztraces are shown."""
+        self.field.deselectAllTraces()
+        self.series.options["show_ztraces"] = not self.series.options["show_ztraces"]
+        self.field.generateView(generate_image=False)
     
     def openTraceList(self):
         """Open the trace list widget."""

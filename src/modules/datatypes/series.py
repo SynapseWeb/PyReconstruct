@@ -828,6 +828,31 @@ class Series():
         
         self.modified = True
     
+    def editObjectShape(self, obj_names : list, new_shape : float, addTrace=None):
+        """Change the shape of all traces of an object.
+        
+            Params:
+                obj_names (list): the names of objects to modify
+                new_shape (list): the new shape for the traces of the object
+                addTrace (function): for object table updating purposes
+        """
+        for snum, section in self.enumerateSections(
+            message="Modifying shapes..."
+        ):
+            traces = []
+            for name in obj_names:
+                if name in section.contours:
+                    traces += section.contours[name].getTraces()
+            if traces:
+                section.editTraceShape(traces, new_shape)
+                # add trace data to table data
+                if addTrace:
+                    for trace in traces:
+                        addTrace(trace, section, snum)
+                section.save()
+        
+        self.modified = True
+    
     def removeAllTraceTags(self, obj_names : list):
         """Remove all tags from all traces on a set of objects.
         

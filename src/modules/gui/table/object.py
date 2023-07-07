@@ -24,7 +24,8 @@ from modules.gui.dialog import (
     ObjectGroupDialog,
     TableColumnsDialog,
     Object3DDialog,
-    TraceDialog
+    TraceDialog,
+    ShapesDialog
 )
 
 class ObjectTableWidget(QDockWidget):
@@ -118,7 +119,15 @@ class ObjectTableWidget(QDockWidget):
         # create the right-click menu
         context_menu_list = [
             ("editattribtues_act", "Edit attributes...", "", self.editAttributes),
-            ("editradius_act", "Edit radius...", "", self.editRadius),
+            {
+                "attr_name": "stampmenu",
+                "text": "Stamp attributes",
+                "opts":
+                [
+                    ("editradius_act", "Edit radius...", "", self.editRadius),
+                    ("editshape_act", "Edit shape...", "", self.editShape)
+                ]
+            },
             ("removealltags_act", "Remove all tags", "", self.removeAllTags),
             None,
             ("hideobj_act", "Hide", "", self.hideObj),
@@ -389,7 +398,7 @@ class ObjectTableWidget(QDockWidget):
             displayed_name = None
             tags=None
         
-        new_attr, confirmed = TraceDialog(self, name=displayed_name, tags=tags).exec()
+        attr_trace, confirmed = TraceDialog(self, name=displayed_name, tags=tags).exec()
 
         if not confirmed:
             return
@@ -398,7 +407,7 @@ class ObjectTableWidget(QDockWidget):
         if not noUndoWarning():
             return
         
-        self.manager.editAttributes(obj_names, *new_attr)
+        self.manager.editAttributes(obj_names, attr_trace)
     
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
@@ -426,6 +435,21 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.manager.editRadius(obj_names, new_rad)
+    
+    def editShape(self):
+        """Modify the shape of the traces on an entire object."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            return
+        
+        new_shape, confirmed = ShapesDialog(self).exec()
+        if not confirmed:
+            return
+        
+        if not noUndoWarning():
+            return
+        
+        self.manager.editShape(obj_names, new_shape)
     
     def hideObj(self, hide=True):
         """Edit whether or not an object is hidden in the entire series.

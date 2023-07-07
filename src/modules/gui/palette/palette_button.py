@@ -75,19 +75,25 @@ class PaletteButton(QPushButton):
     
     def openDialog(self):
         """Change the attributes of a trace on the palette."""
-        new_attr, confirmed = TraceDialog(
+        t, confirmed = TraceDialog(
             self,
             [self.trace],
-            include_radius=True
+            is_palette=True
         ).exec()
         if not confirmed:
             return
         
-        name, color, tags, mode, radius = new_attr
+        name, color, points, tags, mode, radius = (
+            t.name, t.color, t.points, t.tags, t.fill_mode, t.getRadius()
+        )
         if name:
             self.trace.name = name
         if color:
             self.trace.color = color
+        if points:
+            original_radius = self.trace.getRadius()
+            self.trace.points = points
+            self.trace.resize(original_radius)
         if tags:
             self.trace.tags = tags
         fill_mode = list(self.trace.fill_mode)

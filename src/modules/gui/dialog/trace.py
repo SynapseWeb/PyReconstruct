@@ -11,13 +11,22 @@ from PySide6.QtWidgets import (
 )
 
 from .color_button import ColorButton
+from .shape_button import ShapeButton
 
 from modules.datatypes import Trace
 from modules.gui.utils import notify
 
 class TraceDialog(QDialog):
 
-    def __init__(self, parent : QWidget, traces : list[Trace]=[], name=None, color=None, tags=None, include_radius=False, pos=None):
+    def __init__(
+            self,
+            parent : QWidget, 
+            traces : list[Trace]=[], 
+            name=None,
+            color=None,
+            tags=None,
+            is_palette=False,
+            pos=None):
         """Create an attribute dialog.
         
             Params:
@@ -31,13 +40,16 @@ class TraceDialog(QDialog):
         if pos:
             self.move(*pos)
 
-        self.include_radius = include_radius
+        self.is_palette = is_palette
 
         # get the display values if traces have been provided
         if traces:
             trace = traces[0]
             name = trace.name
             color = trace.color
+            ct = trace.copy()
+            ct.resize(1)
+            points = ct.points
             tags = trace.tags
             fill_style, fill_condition = trace.fill_mode
 
@@ -45,7 +57,7 @@ class TraceDialog(QDialog):
             self.traces = traces
 
             # only include radius for editing single palette traces
-            if self.include_radius:
+            if self.is_palette:
                 assert(len(traces) == 1)
             
             for trace in traces[1:]:
@@ -53,6 +65,8 @@ class TraceDialog(QDialog):
                     name = "*"
                 if trace.color != color:
                     color = None
+                if trace.points != points:
+                    points = None
                 if trace.tags != tags:
                     tags = set()
                 if trace.fill_mode[0] != fill_style:
@@ -78,10 +92,18 @@ class TraceDialog(QDialog):
 
         color_row = QHBoxLayout()
         color_text = QLabel(self, text="Color:")
-        self.color_input = ColorButton(color, parent)
+        self.color_input = ColorButton(color, self)
         color_row.addWidget(color_text)
         color_row.addWidget(self.color_input)
         color_row.addStretch()
+
+        if self.is_palette:
+            shape_row = QHBoxLayout()
+            shape_text = QLabel(self, text="Shape:")
+            self.shape_input = ShapeButton(points, self)
+            shape_row.addWidget(shape_text)
+            shape_row.addWidget(self.shape_input)
+            shape_row.addStretch()
 
         tags_row = QHBoxLayout()
         tags_text = QLabel(self, text="Tags:")
@@ -119,7 +141,7 @@ class TraceDialog(QDialog):
         style_row.addWidget(self.style_transparent)
         style_row.addWidget(self.style_solid)
 
-        if self.include_radius:
+        if self.is_palette:
             stamp_size_row = QHBoxLayout()
             stamp_size_text = QLabel(self, text="Stamp radius (microns):")
             self.stamp_size_input = QLineEdit(self)
@@ -136,11 +158,11 @@ class TraceDialog(QDialog):
         vlayout.setSpacing(10)
         vlayout.addLayout(name_row)
         vlayout.addLayout(color_row)
+        if self.is_palette: vlayout.addLayout(shape_row)
         vlayout.addLayout(tags_row)
         vlayout.addLayout(style_row)
         vlayout.addLayout(condition_row)
-        if self.include_radius:
-            vlayout.addLayout(stamp_size_row)
+        if self.is_palette: vlayout.addLayout(stamp_size_row)
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
@@ -154,7 +176,7 @@ class TraceDialog(QDialog):
     
     def accept(self):
         """Overwritten from parent class."""
-        if self.include_radius:
+        if self.is_palette:
             try:
                 r = float(self.stamp_size_input.text())
             except ValueError:
@@ -170,16 +192,17 @@ class TraceDialog(QDialog):
         """Run the dialog."""
         confirmed = super().exec()
         if confirmed:
-            retlist = []
+            # create a dummy trace to return
+            trace = Trace(None, None, None)
 
             # name
             name = self.name_input.text()
             if name == "*" or name == "":
                 name = None
-            retlist.append(name)
+            trace.name = name
 
             color = self.color_input.getColor()
-            retlist.append(color)
+            trace.color = color
 
             # color
             tags = self.tags_input.text().split(", ")
@@ -187,32 +210,43 @@ class TraceDialog(QDialog):
                 tags = None
             else:
                 tags = set(tags)
-            retlist.append(tags)
+            trace.tags = tags
+
+            # shape
+            if self.is_palette:
+                points = self.shape_input.getShape()
+                trace.points = points
+            else:
+                trace.points = None
             
             # fill mode
             if self.style_none.isChecked():
                 style = "none"
                 condition = "none"
-            else:
-                if self.style_transparent.isChecked():
-                    style = "transparent"
-                elif self.style_solid.isChecked():
-                    style = "solid"
-                else:
-                    style = None
-                    condition = None
+            elif self.style_transparent.isChecked():
+                style = "transparent"
                 if self.condition_input.isChecked():
                     condition = "selected"
                 else:
                     condition = "unselected"
-            retlist.append((style, condition))
+            elif self.style_solid.isChecked():
+                style = "solid"
+                if self.condition_input.isChecked():
+                    condition = "selected"
+                else:
+                    condition = "unselected"
+            else:
+                style = None
+                condition = None
+            
+            trace.fill_mode = (style, condition)
 
             # radius
-            if self.include_radius:
+            if self.is_palette:
                 stamp_size = float(self.stamp_size_input.text())
-                retlist.append(stamp_size)
-            
-            return tuple(retlist), True
+                trace.resize(stamp_size)
+
+            return trace, True
         
         # user pressed cancel
         else:

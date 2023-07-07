@@ -602,14 +602,16 @@ class FieldWidget(QWidget, FieldView):
             self.ztraceDialog()
             return
         
-        new_attr, confirmed = TraceDialog(
+        t, confirmed = TraceDialog(
             self,
             self.section.selected_traces,
         ).exec()
         if not confirmed:
             return
         
-        name, color, tags, mode = new_attr
+        name, color, tags, mode = (
+            t.name, t.color, t.tags, t.fill_mode
+        )
         self.section.editTraceAttributes(
             traces=self.section.selected_traces.copy(),
             name=name,

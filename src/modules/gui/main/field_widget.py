@@ -1056,6 +1056,9 @@ class FieldWidget(QWidget, FieldView):
                 x: the x position of the start
                 y: the y position of the start
         """
+        self.clicked_x = x
+        self.clicked_y = y
+        self.endPendingEvents()
         self.field_pixmap_copy = self.field_pixmap.copy()
         
     def mousePanzoomPress(self, event):

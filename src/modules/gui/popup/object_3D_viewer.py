@@ -88,11 +88,11 @@ class Object3DViewer(gl.GLViewWidget):
                 "text": "Edit scale cube",
                 "opts":
                 [
-                    ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
-                    ("eidtsccolor_act", "Edit scale cube color...", "", self.editSCColor),
+                    ("editscsize_act", "Size...", "", self.editSCSize),
+                    ("eidtsccolor_act", "Color...", "", self.editSCColor),
                     {
                         "attr_name": "movescmenu",
-                        "text": "Move scale cube",
+                        "text": "Move",
                         "opts":
                         [
                             ("minusx", "-X", "Left", lambda : self.moveScaleCube(-0.1, 0, 0)),

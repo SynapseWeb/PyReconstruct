@@ -59,7 +59,10 @@ class Section():
             for trace_data in self.contours[name]:
                 trace = Trace.fromList(trace_data, name)
                 # screen for defective traces
-                if len(trace.points) > 1:
+                l = len(trace.points)
+                if l == 2:
+                    trace.closed = False
+                if l > 1:
                     trace_list.append(trace)
             self.contours[name] = Contour(
                 name,
@@ -255,6 +258,12 @@ class Section():
                 trace (Trace): the trace to add
                 log_message (str): the history log message to put on the trace
         """
+        # do not add trace if less than two points
+        if len(trace.points) < 2:
+            return
+        # force trace to be open if only two points
+        elif len(trace.points) == 2:
+            trace.closed = False
         # add to the trace history
         if log_message:
             trace.addLog(log_message)

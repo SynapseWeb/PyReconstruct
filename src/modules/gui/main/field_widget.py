@@ -542,6 +542,9 @@ class FieldWidget(QWidget, FieldView):
         # resize the zarr palette
         if self.mainwindow.zarr_palette:
             self.mainwindow.zarr_palette.placeWidgets()
+        
+        # ensure field is below palettes
+        self.lower()
 
         w = event.size().width()
         h = event.size().height()
@@ -699,10 +702,14 @@ class FieldWidget(QWidget, FieldView):
     def event(self, event):
         """Overwritten from QWidget.event.
         
-        Added to catch gestures.
+        Added to catch gestures and zorder events.
         """
         if event.type() == QEvent.Gesture:
             self.gestureEvent(event)
+        elif event.type() == QEvent.ZOrderChange:
+            r = super().event(event)
+            self.lower()
+            return r
         
         return super().event(event)
 

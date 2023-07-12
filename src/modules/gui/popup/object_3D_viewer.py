@@ -1,7 +1,7 @@
 import numpy as np
 
-from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog, QLabel
-from PySide6.QtGui import QKeySequence, QShortcut, QVector3D, QFont
+from PySide6.QtWidgets import QInputDialog, QMenu, QColorDialog, QProgressDialog, QLabel, QColorDialog
+from PySide6.QtGui import QColor, QVector3D, QFont
 from PySide6.QtCore import (
     QTimer
 )
@@ -56,7 +56,6 @@ class Object3DViewer(gl.GLViewWidget):
 
         self.mainwindow = mainwindow
         self.series = series
-        self.sc_side_len = 1
         self.obj_set = set()
         self.ztrace_set = set()
         self.vol_items = []
@@ -84,7 +83,28 @@ class Object3DViewer(gl.GLViewWidget):
         """Create the context menu for the 3D scene."""
         context_menu_list = [
             ("togglesc_act", "Toggle scale cube", "S", self.toggleScaleCube),
-            ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
+            {
+                "attr_name": "scalecubemenu",
+                "text": "Edit scale cube",
+                "opts":
+                [
+                    ("editscsize_act", "Edit scale cube size...", "", self.editSCSize),
+                    ("eidtsccolor_act", "Edit scale cube color...", "", self.editSCColor),
+                    {
+                        "attr_name": "movescmenu",
+                        "text": "Move scale cube",
+                        "opts":
+                        [
+                            ("minusx", "-X", "Left", lambda : self.moveScaleCube(-0.1, 0, 0)),
+                            ("plusx", "+X", "Right", lambda : self.moveScaleCube(0.1, 0, 0)),
+                            ("minusy", "-Y", "Down", lambda : self.moveScaleCube(0, -0.1, 0)),
+                            ("plusy", "+Y", "Up", lambda : self.moveScaleCube(0, 0.1, 0)),
+                            ("minusz", "-Z", "Ctrl+Down", lambda : self.moveScaleCube(0, 0, -0.1)),
+                            ("plusz", "+Z", "Ctrl+Up", lambda : self.moveScaleCube(0, 0, 0.1))
+                        ]
+                    }
+                ]
+            },
             None,
             ("rotation_act", "Toggle rotation method", "R", self.toggleRotationMethod),
             None,
@@ -174,6 +194,7 @@ class Object3DViewer(gl.GLViewWidget):
 
         # create the scale cube
         self.sc_in_scene = False
+        self.sc_color = [102, 102, 102]
         self.createScaleCube()
         self.createContextMenu()
 
@@ -239,23 +260,22 @@ class Object3DViewer(gl.GLViewWidget):
 
         # bring to front
         self.activateWindow()
-        
-    def createScaleCubeShortcuts(self):
-        """Create the shortcuts for the 3D scene."""
-        shortcuts = [
-            # ("s", self.scaleCubeSize),
-            ("Left", lambda : self.moveScaleCube(-0.1, 0, 0)),
-            ("Right", lambda : self.moveScaleCube(0.1, 0, 0)),
-            ("Up", lambda : self.moveScaleCube(0, 0.1, 0)),
-            ("Down", lambda : self.moveScaleCube(0, -0.1, 0)),
-            ("Ctrl+Up", lambda : self.moveScaleCube(0, 0, 0.1)),
-            ("Ctrl+Down", lambda : self.moveScaleCube(0, 0, -0.1))
-        ]
-        for kbd, act in shortcuts:
-            QShortcut(QKeySequence(kbd), self).activated.connect(act)
     
-    def createScaleCube(self):
+    def createScaleCube(self, coords : tuple = None, scale : float = None, color : tuple = None):
         """Create the scale cube to display in the 3D environment."""
+        if coords is None:
+            self.sc_coords = [0, 0, 0]
+        else:
+            self.sc_coords = coords
+        if scale is None:
+            self.sc_side_len = 1
+        else:
+            self.sc_side_len = scale
+        if color is None:
+            self.sc_color = [102, 102, 102]
+        else:
+            self.sc_color = color
+        
         verts_box = np.array(
             [
                 [ 0, 0, 0],
@@ -285,28 +305,20 @@ class Object3DViewer(gl.GLViewWidget):
             [5, 6, 7],
         ])
 
-        colors_box = []
-        for i in range(1, 7):
-            c = i/10+0.05
-            for _ in range(2):
-                colors_box.append([c,c,c,1])
-        colors_box = np.array(colors_box)
-
         self.sc_item = gl.GLMeshItem(
             vertexes=verts_box,
             faces=faces_box,
-            faceColors=colors_box,
+            faceColors=getCubeColors(self.sc_color),
             smooth=False
         )
 
         self.sc_item.translate(
-            self.center.x(),
-            self.center.y(),
-            self.center.z()
+            self.center.x() + self.sc_coords[0],
+            self.center.y() + self.sc_coords[1],
+            self.center.z() + self.sc_coords[2]
         )
 
-        # create the shortcuts
-        self.createScaleCubeShortcuts()
+        self.sc_item.scale(self.sc_side_len, self.sc_side_len, self.sc_side_len)
     
     def contextMenuEvent(self, event):
         """Execute the context menu when user right clicks."""
@@ -321,6 +333,12 @@ class Object3DViewer(gl.GLViewWidget):
         if self.sc_in_scene:
             self.removeItem(self.sc_item)
         else:
+            # reset location to center
+            self.moveScaleCube(
+                -self.sc_coords[0],
+                -self.sc_coords[1],
+                -self.sc_coords[2]
+            )
             self.addItem(self.sc_item)
         self.sc_in_scene = not self.sc_in_scene
     
@@ -332,15 +350,16 @@ class Object3DViewer(gl.GLViewWidget):
         else:
             self.opts["rotationMethod"] = "euler"
     
-    def editSCSize(self):
+    def editSCSize(self, new_side_len : int = None):
         """Modify the size of the scale cube."""
-        new_side_len, confirmed = QInputDialog.getText(
-            self,
-            "Scale Cube Size",
-            "Enter the scale cube side length (in µm):"
-        )
-        if not confirmed:
-            return
+        if new_side_len is None:
+            new_side_len, confirmed = QInputDialog.getText(
+                self,
+                "Scale Cube Size",
+                "Enter the scale cube side length (in µm):"
+            )
+            if not confirmed:
+                return
 
         try:
             new_side_len = float(new_side_len)
@@ -351,6 +370,20 @@ class Object3DViewer(gl.GLViewWidget):
         self.sc_item.scale(scale, scale, scale)
         self.sc_side_len = new_side_len
     
+    def editSCColor(self):
+        """Edit the color of the scale cube."""
+        c = QColorDialog.getColor(QColor(*self.sc_color))
+        if c.isValid():
+            if self.sc_in_scene:
+                self.removeItem(self.sc_item)
+            self.createScaleCube(
+                coords=self.sc_coords,
+                scale=self.sc_side_len,
+                color=(c.red(), c.green(), c.blue())
+            )
+            if self.sc_in_scene:
+                self.addItem(self.sc_item)
+    
     def editBackgroundColor(self):
         """Edit the background color of the 3D scene."""
         color = QColorDialog.getColor()
@@ -360,6 +393,9 @@ class Object3DViewer(gl.GLViewWidget):
     def moveScaleCube(self, dx, dy, dz):
         """Translate the scale cube."""
         self.sc_item.translate(dx, dy, dz)
+        self.sc_coords[0] += dx
+        self.sc_coords[1] += dy
+        self.sc_coords[2] += dz
     
     def mouseDoubleClickEvent(self, event):
         """Called when mouse is double-clicked."""
@@ -518,3 +554,27 @@ class Object3DViewer(gl.GLViewWidget):
         """Executed when closed."""
         self.closed = True
         super().closeEvent(event)
+
+
+def getCubeColors(color : tuple):
+    """Return the colors for each cube face.
+    
+        Params:
+            color (tuple): the base color for the cube
+    """
+    r, g, b = tuple([(c / 255) - 0.35 for c in color])
+    colors_box = []
+    for i in range(1, 7):
+        r += 0.1
+        g += 0.1
+        b += 0.1
+        c = [r, g, b, 1]
+        for i in range(3):
+            if c[i] > 1:
+                c[i] = 1
+            elif c[i] < 0:
+                c[i] = 0
+        for _ in range(2):
+            colors_box.append(c)
+    colors_box = np.array(colors_box)
+    return colors_box

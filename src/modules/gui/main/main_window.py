@@ -1240,6 +1240,7 @@ class MainWindow(QMainWindow):
 
         # if zooming
         if modifiers == Qt.ControlModifier:
+            self.activateWindow()
             field_cursor = self.field.cursor()
             p = self.field.mapFromGlobal(field_cursor.pos())
             x, y = p.x(), p.y()

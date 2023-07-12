@@ -82,7 +82,7 @@ class SectionTableWidget(QDockWidget):
                 "opts":
                 [
                     ("setbc_act", "Set brightness/contrast...", "", self.setBC),
-                    ("matchbc_act", "Match brightness/contrast to current section", "", self.matchBC)
+                    ("matchbc_act", "Match brightness/contrast to section in view", "", self.matchBC)
                 ]
             },
             ("thickness_act", "Edit thickness...", "", self.editThickness),

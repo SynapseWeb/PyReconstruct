@@ -281,6 +281,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
+                    ("findview_act", "Set zoom for finding contours...", "", self.setFindZoom),
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
@@ -1984,6 +1985,21 @@ class MainWindow(QMainWindow):
         """
         self.series.hideAllTraces(hidden)
         self.field.reload()
+    
+    def setFindZoom(self):
+        """Set the magnification for find contour."""
+        z, confirmed = QInputDialog.getInt(
+            self,
+            "Find Contour Zoom",
+            "Enter the find contour Zoom (0-100):",
+            value=self.series.options["find_zoom"],
+            minValue=0,
+            maxValue=100
+        )
+        if not confirmed:
+            return
+
+        self.series.options["find_zoom"] = z
 
     def restart(self):
         self.restart_mainwindow = True

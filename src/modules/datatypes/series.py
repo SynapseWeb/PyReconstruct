@@ -496,6 +496,7 @@ class Series():
         options["grid"] = [1, 1, 1, 1, 1, 1]
         options["pointer"] = ["lasso", "exc"]
         options["show_ztraces"] = False
+        options["find_zoom"] = 95
         options["autoseg"] = {}
 
         return series_data

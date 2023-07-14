@@ -9,5 +9,6 @@ from .locations import (
     src_dir,
     assets_dir,
     img_dir,
-    welcome_series_dir
+    welcome_series_dir,
+    fd_dir
 )

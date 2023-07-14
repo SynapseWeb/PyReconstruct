@@ -54,7 +54,7 @@ from modules.backend.func import (
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
 from modules.datatypes import Series, Transform
-from modules.constants import welcome_series_dir, assets_dir, img_dir, src_dir
+from modules.constants import welcome_series_dir, assets_dir, img_dir, fd_dir
 
 class MainWindow(QMainWindow):
 
@@ -84,7 +84,6 @@ class MainWindow(QMainWindow):
         self.zarr_palette = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
-        self.explorer_dir = ""
         self.restart_mainwindow = False
 
         # create status bar at bottom of window
@@ -561,13 +560,19 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.No:
                 return
         if new_src_dir is None:
+            global fd_dir
             new_src_dir = QFileDialog.getExistingDirectory(
                 self,
                 "Select folder containing images",
-                dir=self.explorer_dir
+                dir=fd_dir.get()
             )
         if not new_src_dir:
             return
+        else:
+            if new_src_dir.endswith(".zarr"):
+                fd_dir.set(os.path.dirname(new_src_dir))
+            else:
+                fd_dir.set(new_src_dir)
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
@@ -601,14 +606,17 @@ class MainWindow(QMainWindow):
             return
         
         if create_new:
+            global fd_dir
             zarr_fp, ext = QFileDialog.getSaveFileName(
                 self,
                 "Convert Images to Zarr",
-                f"{self.series.name}_images.zarr",
+                os.path.join(fd_dir.get(), f"{self.series.name}_images.zarr"),
                 filter="Zarr Directory (*.zarr)"
             )
             if not zarr_fp:
                 return
+            else:
+                fd_dir.set(os.path.dirname(zarr_fp))
 
         python_bin = sys.executable
         zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
@@ -680,6 +688,7 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
+        global fd_dir
         if not series_obj:  # if series is not provided            
             # get the new series
             new_series = None
@@ -687,10 +696,11 @@ class MainWindow(QMainWindow):
                 jser_fp, extension = QFileDialog.getOpenFileName(
                     self,
                     "Select Series",
-                    dir=self.explorer_dir,
+                    dir=fd_dir.get(),
                     filter="*.jser"
                 )
                 if jser_fp == "": return  # exit function if user does not provide series
+                else: fd_dir.set(os.path.dirname(jser_fp))
             
             # user has opened an existing series
             if self.series:
@@ -773,9 +783,9 @@ class MainWindow(QMainWindow):
         # set the title of the main window
         self.seriesModified(self.series.modified)
 
-        # set the explorer filepath to the series
+        # set the explorer filepath
         if not self.series.isWelcomeSeries():
-            self.explorer_dir = os.path.dirname(self.series.getwdir())
+            fd_dir.set(os.path.dirname(self.series.jser_fp))
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -833,14 +843,17 @@ class MainWindow(QMainWindow):
         """
         # get images from user
         if not image_locations:
+            global fd_dir
             image_locations, extensions = QFileDialog.getOpenFileNames(
                 self,
                 "Select Images",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
             )
             if len(image_locations) == 0:
                 return
+            else:
+                fd_dir.set(os.path.dirname(image_locations[0]))
         # get the name of the series from user
         if series_name is None:
             series_name, confirmed = QInputDialog.getText(
@@ -883,13 +896,15 @@ class MainWindow(QMainWindow):
 
         # get xml series filepath from the user
         if not series_fp:
+            global fd_dir
             series_fp, ext = QFileDialog.getOpenFileName(
                 self,
                 "Select XML Series",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.ser"
             )
         if series_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(series_fp))
 
         # save and clear the existing backend series
         self.saveToJser(notify=True, close=True)
@@ -916,14 +931,17 @@ class MainWindow(QMainWindow):
 
         # get the new xml series filepath from the user
         if not export_fp:
+            global fd_dir
             export_fp, ext = QFileDialog.getSaveFileName(
                 self,
                 "Export Series",
-                f"{self.series.name}.ser",
+                os.path.join(fd_dir.get(), f"{self.series.name}.ser"),
                 filter="XML Series (*.ser)"
             )
             if not export_fp:
                 return False
+            else:
+                fd_dir.set(os.path.dirname(export_fp))
         
         # convert the series
         jsonToXML(self.series, os.path.dirname(export_fp))
@@ -950,13 +968,16 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         # get file from user
         if tforms_fp is None:
+            global fd_dir
             tforms_fp, ext = QFileDialog.getOpenFileName(
                 self,
                 "Select file containing transforms",
-                dir=self.explorer_dir
+                dir=fd_dir.get()
             )
         if not tforms_fp:
             return
+        else:
+            fd_dir.set(os.path.dirname(tforms_fp))
         # import the transforms
         importTransforms(self.series, tforms_fp)
         # reload the section
@@ -974,13 +995,15 @@ class MainWindow(QMainWindow):
         
         # get file from user
         if swift_fp is None:
+            global fd_dir
             swift_fp, ext = QFileDialog.getOpenFileName(
                 self,
                 "Select SWiFT project file",
-                dir=self.explorer_dir
+                dir=fd_dir.get()
             )
 
         if not swift_fp: return
+        else: fd_dir.set(os.path.dirname(swift_fp))
 
         response, confirmed = SwiftDialog(self, swift_fp).exec()
         scale, cal_grid = response
@@ -999,13 +1022,15 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
+            global fd_dir
             jser_fp, extension = QFileDialog.getOpenFileName(
                 self,
                 "Select Series",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.jser"
             )
         if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
 
         self.saveAllData()
 
@@ -1030,13 +1055,15 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
+            global fd_dir
             jser_fp, extension = QFileDialog.getOpenFileName(
                 self,
                 "Select Series",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.jser"
             )
         if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
 
         self.saveAllData()
 
@@ -1061,13 +1088,15 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
+            global fd_dir
             jser_fp, extension = QFileDialog.getOpenFileName(
                 self,
                 "Select Series",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.jser"
             )
         if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
 
         self.saveAllData()
 
@@ -1087,13 +1116,15 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
+            global fd_dir
             jser_fp, extension = QFileDialog.getOpenFileName(
                 self,
                 "Select Series",
-                dir=self.explorer_dir,
+                dir=fd_dir.get(),
                 filter="*.jser"
             )
         if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
 
         self.saveAllData()
 
@@ -1361,14 +1392,17 @@ class MainWindow(QMainWindow):
         # user checked the option
         if self.backup_act.isChecked():
             # prompt the user to find a folder to store backups
+            global fd_dir
             new_dir = QFileDialog.getExistingDirectory(
                 self,
                 "Select folder to contain backup files",
-                dir=self.explorer_dir
+                dir=fd_dir.get()
             )
             if not new_dir:
                 self.backup_act.setChecked(False)
                 return
+            else:
+                fd_dir.set(new_dir)
             self.series.options["backup_dir"] = new_dir
         # user unchecked the option
         else:
@@ -1632,13 +1666,16 @@ class MainWindow(QMainWindow):
     def setZarrLayer(self, zarr_dir=None):
         """Set a zarr layer."""
         if not zarr_dir:
+            global fd_dir
             zarr_dir = QFileDialog.getExistingDirectory(
                 self,
                 "Select overlay zarr",
-                dir=self.explorer_dir
+                dir=fd_dir.get()
             )
             if not zarr_dir:
                 return
+            else:
+                fd_dir.set(os.path.dirname(zarr_dir))
 
         self.series.zarr_overlay_fp = zarr_dir
         self.series.zarr_overlay_group = None

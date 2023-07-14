@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -9,6 +11,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
+
+from modules.constants import fd_dir
 
 mainwindow = None
 
@@ -169,13 +173,15 @@ def unsavedNotify():
 
 def getSaveLocation(series):
     # prompt user to pick a location to save the jser file
+    global fd_dir
     file_path, ext = QFileDialog.getSaveFileName(
         mainwindow,
         "Save Series",
-        f"{series.name}.jser",
+        os.path.join(fd_dir.get(), f"{series.name}.jser"),
         filter="JSON Series (*.jser)"
     )
     if not file_path:
         return None, False
     else:
+        fd_dir.set(os.path.dirname(file_path))
         return file_path, True

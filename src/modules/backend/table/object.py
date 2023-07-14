@@ -316,6 +316,7 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
         
         if self.object_viewer and not self.object_viewer.closed:
+            self.object_viewer.remove(obj_names)
             self.object_viewer.addObjects(obj_names)
         else:
             self.object_viewer = Object3DViewer(

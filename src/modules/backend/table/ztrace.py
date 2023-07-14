@@ -144,6 +144,7 @@ class ZtraceTableManager():
         if not object_viewer:
             return
         
+        object_viewer.remove(names, ztrace=True)
         object_viewer.addZtraces(names)
     
     def remove3D(self, names : list):

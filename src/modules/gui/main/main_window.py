@@ -189,7 +189,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                    ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     {
@@ -281,6 +280,8 @@ class MainWindow(QMainWindow):
                     ("homeview_act", "Set view to image", "Home", self.field.home),
                     ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
                     ("findview_act", "Set zoom for finding contours...", "", self.setFindZoom),
+                    None,
+                    ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
                     ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),

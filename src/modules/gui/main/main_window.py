@@ -2020,6 +2020,7 @@ class MainWindow(QMainWindow):
             Params:
                 hidden (bool) True if traces will be hidden
         """
+        self.saveAllData()
         self.series.hideAllTraces(hidden)
         self.field.reload()
     
@@ -2028,7 +2029,7 @@ class MainWindow(QMainWindow):
         z, confirmed = QInputDialog.getInt(
             self,
             "Find Contour Zoom",
-            "Enter the find contour Zoom (0-100):",
+            "Enter the find contour zoom (0-100):",
             value=self.series.options["find_zoom"],
             minValue=0,
             maxValue=100

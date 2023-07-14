@@ -344,25 +344,32 @@ class FieldView():
         range_x = max_x - min_x
         range_y = max_y - min_y
 
-        # Get values of image in order to figure out what 100% zoom means
-        # This should probably be a stand alone function
-        # It is used vertbatim in home method below
+        # Get values of image (if exists) in order to figure out what 100% zoom means
+
+        if hasattr(self.section_layer, 'base_corners'):
+
+            # This should probably be a stand alone function
+            # It is used vertbatim in home method below
         
-        tform = self.section.tforms[self.series.alignment]
-        xvals = []
-        yvals = []
+            tform = self.section.tforms[self.series.alignment]
+            xvals = []
+            yvals = []
         
-        # get the field location of the image
-        for p in self.section_layer.base_corners:
+            # get the field location of the image
+            for p in self.section_layer.base_corners:
             
-            x, y = [n * self.section.mag for n in p]
-            x, y = tform.map(x, y)
-            xvals.append(x)
-            yvals.append(y)
+                x, y = [n * self.section.mag for n in p]
+                x, y = tform.map(x, y)
+                xvals.append(x)
+                yvals.append(y)
 
-        max_img_dist = max(xvals + yvals)
+            max_img_dist = max(xvals + yvals)
 
-        zoom = 0.25
+        else: # default to some arbitrary large size
+
+            max_img_dist = 50
+
+        zoom = 0.15
 
         new_range_x = range_x + (zoom * (max_img_dist - range_x))
         new_range_y = range_y + (zoom * (max_img_dist - range_y))

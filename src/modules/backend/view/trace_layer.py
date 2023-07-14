@@ -201,9 +201,15 @@ class TraceLayer():
 
         # create the new trace
         new_trace = base_trace.copy()
-        new_trace.closed = closed
         new_trace.points = []
         new_trace.history = []
+
+        # force trace to be open if only two points
+        if len(pix_trace) == 2:
+            new_trace.closed = False
+        else:
+            new_trace.closed = closed
+
         # merge the history of any origin traces
         if origin_traces:
             for trace in origin_traces:

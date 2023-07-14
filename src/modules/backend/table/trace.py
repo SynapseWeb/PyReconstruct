@@ -51,8 +51,19 @@ class TraceTableManager():
     
     def update(self):
         """Update the table for a section."""
+        # update removed traces
+        for trace in self.section.removed_traces + self.section.modified_traces:
+            contour = self.data[trace.name]
+            for index, item in enumerate(contour):
+                if item.isTrace(trace):
+                    contour.remove(item)
+                    break
+            for i in range(index, len(contour)):
+                contour[i].index -= 1
+            for table in self.tables:
+                table.removeItem(item)
         # update added traces
-        for trace in self.section.added_traces:
+        for trace in self.section.added_traces + self.section.modified_traces:
             if trace.name in self.data:
                 contour = self.data[trace.name]
             else:
@@ -66,17 +77,6 @@ class TraceTableManager():
             contour.append(item)
             for table in self.tables:
                 table.addItem(item)
-        # update removed traces
-        for trace in self.section.removed_traces:
-            contour = self.data[trace.name]
-            for index, item in enumerate(contour):
-                if item.isTrace(trace):
-                    contour.remove(item)
-                    break
-            for i in range(index, len(contour)):
-                contour[i].index -= 1
-            for table in self.tables:
-                table.removeItem(item)
     
     def newTable(self):
         """Create a new trace list."""

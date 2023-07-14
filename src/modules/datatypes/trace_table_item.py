@@ -16,6 +16,7 @@ class TraceTableItem():
         self.name = trace.name
         self.index = index
         self.closed = trace.closed
+        self.negative = trace.negative
         self.tags = trace.tags
         tformed_points = tform.map(trace.points)
         self.length = lineDistance(tformed_points, closed=trace.closed)
@@ -23,6 +24,7 @@ class TraceTableItem():
             self.area = 0
         else:
             self.area = area(tformed_points)
+            self.area *= -1 if self.negative else 1
         self.radius = trace.getRadius(tform)
     
     def isTrace(self, trace : Trace):

@@ -344,37 +344,40 @@ class FieldView():
         range_x = max_x - min_x
         range_y = max_y - min_y
 
-        # # Get values of image in order to figure out what 100% zoom means
-        # tform = self.section.tforms[self.series.alignment]
-        # xvals = []
-        # yvals = []
+        # Get values of image in order to figure out what 100% zoom means
+        # This should probably be a stand alone function
+        # It is used vertbatim in home method below
         
-        # # get the field location of the image
-        # for p in self.section_layer.base_corners:
-        #     x, y = [n*self.section.mag for n in p]
-        #     x, y = tform.map(x, y)
-        #     xvals.append(x)
-        #     yvals.append(y)
-
-        # max_img_dist = max(xvals + yvals)
-        # print(max_img_dist)
-
-        zoom = 0
-
-        # range_x = range_x + (zoom * (max_img_dist - range_x))
-        # range_y = range_y + (zoom * (max_img_dist - range_y))
+        tform = self.section.tforms[self.series.alignment]
+        xvals = []
+        yvals = []
         
+        # get the field location of the image
+        for p in self.section_layer.base_corners:
+            
+            x, y = [n * self.section.mag for n in p]
+            x, y = tform.map(x, y)
+            xvals.append(x)
+            yvals.append(y)
+
+        max_img_dist = max(xvals + yvals)
+
+        zoom = 0.25
+
+        new_range_x = range_x + (zoom * (max_img_dist - range_x))
+        new_range_y = range_y + (zoom * (max_img_dist - range_y))
+
+        new_x = min_x - ( (new_range_x - range_x) / 2 )
+        new_y = min_y - ( (new_range_y - range_y) / 2 )
         
         self.series.window = [
             
-            min_x - (range_x * zoom),
-            min_y - (range_y * zoom),
-            range_x * ((zoom * 2) + 1),
-            range_y * ((zoom * 2) + 1)
+            new_x,
+            new_y,
+            new_range_x,
+            new_range_y
             
         ]
-
-        print(min_x, min_y)
 
         # set the selected traces
         self.section.selected_traces = contour.getTraces()

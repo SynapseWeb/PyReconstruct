@@ -331,17 +331,72 @@ class FieldView():
         if contour_name not in self.section.contours or self.section.contours[contour_name].isEmpty():
             return
         
+        # get the minimum window requirements (1:1 screen to image pixels)
+        min_window_w = self.section.mag * self.section_layer.pixmap_dim[0]
+        min_window_h = self.section.mag * self.section_layer.pixmap_dim[1]
+        
         # get the bounds of the contour and set the window
         contour = self.section.contours[contour_name]
         tform = self.section.tforms[self.series.alignment]
         vals = [trace.getBounds(tform) for trace in contour]
+        
         min_x = min([v[0] for v in vals])
         min_y = min([v[1] for v in vals])
         max_x = max([v[2] for v in vals])
         max_y = max([v[3] for v in vals])
+        
         range_x = max_x - min_x
         range_y = max_y - min_y
-        self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
+
+        # Get values of image (if exists) in order to figure out what 100% zoom means
+
+        if self.section_layer.image_found:
+
+            # This should probably be a stand alone function
+            # It is used vertbatim in home method below
+        
+            tform = self.section.tforms[self.series.alignment]
+            xvals = []
+            yvals = []
+        
+            # get the field location of the image
+            for p in self.section_layer.base_corners:
+            
+                x, y = [n * self.section.mag for n in p]
+                x, y = tform.map(x, y)
+                xvals.append(x)
+                yvals.append(y)
+
+            max_img_dist = max(xvals + yvals)
+
+        else: # default to some arbitrary large size
+
+            max_img_dist = 50
+
+        zoom = self.series.options["find_zoom"]
+
+        new_range_x = range_x + ((100 - zoom)/100 * (max_img_dist - range_x))
+        new_range_y = range_y + ((100 - zoom)/100 * (max_img_dist - range_y))
+
+        new_x = min_x - ( (new_range_x - range_x) / 2 )
+        new_y = min_y - ( (new_range_y - range_y) / 2 )
+
+        # check if minimum requirements are met
+        if new_range_x < min_window_w:
+            new_x -= (min_window_w - new_range_x) / 2
+            new_range_x = min_window_w
+        elif new_range_y < min_window_h:
+            new_y -= (min_window_h - new_range_y) / 2
+            new_range_y = min_window_h
+        
+        self.series.window = [
+            
+            new_x,
+            new_y,
+            new_range_x,
+            new_range_y
+            
+        ]
 
         # set the selected traces
         self.section.selected_traces = contour.getTraces()

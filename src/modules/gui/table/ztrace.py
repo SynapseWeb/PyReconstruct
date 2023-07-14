@@ -1,4 +1,5 @@
 import re
+import os
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -21,6 +22,7 @@ from modules.gui.utils import (
     notify
 )
 from modules.gui.dialog import ZtraceDialog, SmoothZtraceDialog
+from modules.constants import fd_dir
 
 class ZtraceTableWidget(QDockWidget):
 
@@ -284,14 +286,17 @@ class ZtraceTableWidget(QDockWidget):
     def export(self):
         """Export the trace list as a csv file."""
         # get the location from the user
+        global fd_dir
         file_path, ext = QFileDialog.getSaveFileName(
             self,
             "Save Ztrace List",
-            "ztraces.csv",
+            os.path.join(fd_dir.get(), "ztraces.csv"),
             filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return
+        else:
+            fd_dir.set(os.path.dirname(file_path))
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

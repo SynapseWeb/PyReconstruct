@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtWidgets import (
     QWidget,
     QLineEdit,
@@ -5,6 +7,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QFileDialog
 )
+from modules.constants import fd_dir
 
 def resizeLineEdit(le : QLineEdit, text : str):
     """Resize a line edit to fit a specific string.
@@ -33,18 +36,22 @@ class BrowseWidget(QWidget):
     def browse(self):
         """Change the selected folder."""
         response = None
+        global fd_dir
         if self.type == "file":
             response = QFileDialog.getOpenFileName(
                 self,
-                "Find File"
+                "Find File",
+                dir=fd_dir.get()
             )[0]
         elif self.type == "dir":
             response = QFileDialog.getExistingDirectory(
                 self,
-                "Find Folder"
+                "Find Folder",
+                dir=fd_dir.get()
             )
         if response:
             self.le.setText(response)
+            fd_dir.set(os.path.dirname(response))
     
     def text(self):
         """Get the displayed text."""

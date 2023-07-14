@@ -1,4 +1,5 @@
 import re
+import os
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -20,6 +21,7 @@ from modules.datatypes import (
 )
 from modules.gui.utils import populateMenuBar, populateMenu
 from modules.gui.dialog import TableColumnsDialog, TraceDialog
+from modules.constants import fd_dir
 
 class TraceTableWidget(QDockWidget):
 
@@ -405,14 +407,17 @@ class TraceTableWidget(QDockWidget):
     def export(self):
         """Export the trace list as a csv file."""
         # get the location from the user
+        global fd_dir
         file_path, ext = QFileDialog.getSaveFileName(
             self,
             "Save Trace List",
-            "traces.csv",
+            os.path.join(fd_dir.get(), "traces.csv"),
             filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return
+        else:
+            fd_dir.set(os.path.dirname(file_path))
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

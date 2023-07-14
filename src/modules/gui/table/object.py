@@ -1,4 +1,5 @@
 import re
+import os
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -27,6 +28,7 @@ from modules.gui.dialog import (
     TraceDialog,
     ShapesDialog
 )
+from modules.constants import fd_dir
 
 class ObjectTableWidget(QDockWidget):
 
@@ -576,14 +578,17 @@ class ObjectTableWidget(QDockWidget):
     def export(self):
         """Export the object list as a csv file."""
         # get the location from the user
+        global fd_dir
         file_path, ext = QFileDialog.getSaveFileName(
             self,
             "Save Object List",
-            "objects.csv",
+            os.path.join(fd_dir.get(), "objects.csv"),
             filter="Comma Separated Values (*.csv)"
         )
         if not file_path:
             return
+        else:
+            fd_dir.set(os.path.dirname(file_path))
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

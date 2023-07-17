@@ -95,7 +95,7 @@ class ObjectTableWidget(QDockWidget):
                         "opts":
                         [
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
-                            ("groupfilter_act", "Group fiter...", "", self.setGroupFilter),
+                            ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                             ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
                         ]
                     }

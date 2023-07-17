@@ -422,14 +422,14 @@ class TraceLayer():
     
     def pasteAttributes(self, traces : list[Trace]):
         """Called when the user pressed Ctrl+B."""
-        if len(traces) != 1:
-            return
+        # if len(traces) != 1:
+        #     return
         trace = traces[0]
 
         name, color, tags, mode = trace.name, trace.color, trace.tags, trace.fill_mode
 
         self.section.editTraceAttributes(
-            traces=self.section.selected_traces,
+            traces=self.section.selected_traces.copy(),
             name=name,
             color=color,
             tags=tags,

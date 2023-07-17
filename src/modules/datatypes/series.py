@@ -674,11 +674,12 @@ class Series():
                 obj_name (str): the name of the object to create the ztrace from
                 cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
         """
+        ztrace_name = f"{obj_name}_zlen"
+        ztrace_color = (0, 0, 0) # default to black
+        
         # delete an existing ztrace with the same name
-        if obj_name in self.ztraces:
-            del(self.ztraces[obj_name])
-
-        color = None
+        if ztrace_name in self.ztraces:
+            del(self.ztraces[ztrace_name])
         
         # if cross-sectioned object (if create on midpoints), make one point per section
         if cross_sectioned:
@@ -687,7 +688,6 @@ class Series():
                 message="Creating ztrace..."
             ):
                 if obj_name in section.contours:
-                    if not color: color = section.contours[obj_name][0].color
                     contour = section.contours[obj_name]
                     p = (*contour.getMidpoint(), snum)
                     points.append(p)
@@ -712,7 +712,11 @@ class Series():
             dt_points.sort()
             points = [dtp[2] for dtp in dt_points]
         
-        self.ztraces[obj_name] = Ztrace(obj_name, color, points)
+        self.ztraces[ztrace_name] = Ztrace(
+            ztrace_name,
+            ztrace_color,
+            points
+        )
 
         self.modified = True
     

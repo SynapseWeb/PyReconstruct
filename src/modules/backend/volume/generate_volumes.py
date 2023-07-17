@@ -115,6 +115,7 @@ def generate3DZtraces(series : Series, ztrace_names : list):
     avg_thickness /= len(series.section_thicknesses)
     
     ztrace_items = []
+    extremes = [None, None, None, None, None, None]
     for ztrace in ztraces:
         points = []
         for pt in ztrace.points:
@@ -124,6 +125,15 @@ def generate3DZtraces(series : Series, ztrace_names : list):
             tform = series.section_tforms[snum][series.alignment]
             x, y = tform.map(x, y)
             points.append((x, y, z))
+            # check extremes
+            i = 0
+            for n in (x, y, z):
+                if extremes[i] is None or n < extremes[i]:
+                    extremes[i] = n
+                i += 1
+                if extremes[i] is None or n > extremes[i]:
+                    extremes[i] = n
+                i += 1
         item = gl.GLLinePlotItem(
             pos=points,
             color=[c/255 for c in ztrace.color]+[1],
@@ -132,7 +142,7 @@ def generate3DZtraces(series : Series, ztrace_names : list):
         )
         ztrace_items.append(VolItem(ztrace.name, item, 0))
         
-    return ztrace_items
+    return ztrace_items, extremes
         
 
 

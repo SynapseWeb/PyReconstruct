@@ -5,6 +5,7 @@ from modules.datatypes import (
     ZtraceTableItem
 )
 from modules.gui.table import ZtraceTableWidget
+from modules.gui.popup import Object3DViewer
 
 class ZtraceTableManager():
 
@@ -137,15 +138,16 @@ class ZtraceTableManager():
     def addTo3D(self, names : list):
         """Add a set of ztraces to the 3D scene."""
         # access the object viewer object
-        obj_table_manager = self.mainwindow.field.obj_table_manager
-        if not obj_table_manager:
-            return
-        object_viewer = obj_table_manager.object_viewer
-        if not object_viewer:
-            return
-        
-        object_viewer.remove(names, ztrace=True)
-        object_viewer.addZtraces(names)
+        if not self.mainwindow.viewer or self.mainwindow.viewer.closed:
+            self.mainwindow.viewer = Object3DViewer(
+                self.series,
+                names,
+                self.mainwindow,
+                ztrace=True
+            )
+        else:
+            self.mainwindow.viewer.remove(names, ztrace=True)
+            self.mainwindow.viewer.addZtraces(names)
     
     def remove3D(self, names : list):
         """Remove ztraces from the 3D scene.
@@ -154,14 +156,10 @@ class ZtraceTableManager():
                 names (list): the names of ztraces to remove
         """
         # access the object viewer object
-        obj_table_manager = self.mainwindow.field.obj_table_manager
-        if not obj_table_manager:
-            return
-        object_viewer = obj_table_manager.object_viewer
-        if not object_viewer:
+        if not self.mainwindow.viewer or self.mainwindow.viewer.closed:
             return
         
-        object_viewer.remove(names, ztrace=True)
+        self.mainwindow.viewer.remove(names, ztrace=True)
 
     def delete(self, names : list):
         """Delete a set of ztraces.

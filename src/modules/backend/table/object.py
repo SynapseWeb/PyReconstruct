@@ -25,8 +25,6 @@ class ObjectTableManager():
         self.series = series
         self.mainwindow = mainwindow
 
-        self.object_viewer = None
-
         self.objdict = self.series.loadObjectData(object_table_items=True)
     
     def newTable(self):
@@ -315,11 +313,11 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         
-        if self.object_viewer and not self.object_viewer.closed:
-            self.object_viewer.remove(obj_names)
-            self.object_viewer.addObjects(obj_names)
+        if self.mainwindow.viewer and not self.mainwindow.viewer.closed:
+            self.mainwindow.viewer.remove(obj_names)
+            self.mainwindow.viewer.addObjects(obj_names)
         else:
-            self.object_viewer = Object3DViewer(
+            self.mainwindow.viewer = Object3DViewer(
                 self.series,
                 obj_names,
                 self.mainwindow
@@ -331,8 +329,8 @@ class ObjectTableManager():
             Params:
                 obj_names (list): the object names to remove
         """
-        if self.object_viewer and not self.object_viewer.closed:
-            self.object_viewer.remove(obj_names)
+        if self.mainwindow.viewer and not self.mainwindow.viewer.closed:
+            self.mainwindow.viewer.remove(obj_names)
     
     def edit3D(self, obj_names : list, new_type : str, new_opacity : float):
         """Modify the 3D settings for a set of objects.

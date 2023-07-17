@@ -16,15 +16,16 @@ from modules.gui.utils import populateMenu
 
 class Object3DViewer(gl.GLViewWidget):
 
-    def __init__(self, series : Series, obj_names : list, mainwindow):
+    def __init__(self, series : Series, names : list, mainwindow, ztrace=False):
         """Create the 3D View.
             
             Params:
                 series (Series): the series object
-                obj_names (list): the name of objects to plot
+                names (list): the name of objects or ztraces to plot
                 opacity (int): the opacity of the 3D objects
                 sc_size (float): the size of the scale cube
                 mainwindow (MainWindow): the main window
+                ztrace (bool): True if names are of ztraces
         """
         super().__init__()
 
@@ -77,7 +78,10 @@ class Object3DViewer(gl.GLViewWidget):
         self.established = False
         self.threadpool = ThreadPool()
 
-        self.addObjects(obj_names)
+        if ztrace:
+            self.addZtraces(names)
+        else:
+            self.addObjects(names)
     
     def createContextMenu(self):
         """Create the context menu for the 3D scene."""
@@ -152,6 +156,39 @@ class Object3DViewer(gl.GLViewWidget):
         # execute
         self.threadpool.start(worker)
     
+    def addZtraces(self, ztrace_names):
+        """Add ztraces to the existing scene.
+        
+            Params:
+                ztrace_names (list): the list of ztraces to add to the scene
+        """
+        # get new names and add names to existing set
+        ztrace_names = list(set(ztrace_names).difference(self.ztrace_set))
+        if not ztrace_names:
+            return
+        self.ztrace_set = self.ztrace_set.union(ztrace_names)
+
+        # get the ztrace items
+        z_vol_items, extremes = generate3DZtraces(self.series, ztrace_names)
+
+        # remove existing objects from scene
+        for vol_item in self.vol_items:
+            self.removeItem(vol_item.gl_item)
+        
+        # sort the items by volume
+        self.vol_items += z_vol_items
+        self.vol_items.sort()
+        
+        # add the volumes back to the scene
+        for vol_item in self.vol_items:
+            self.addItem(vol_item.gl_item)
+        
+        if not self.established:
+            self.setScene(extremes)
+        
+        # bring to front
+        self.activateWindow()
+    
     def placeInScene(self, obj_names):
         """Place the items in the scene.
         
@@ -205,36 +242,6 @@ class Object3DViewer(gl.GLViewWidget):
         """Close a progress dialog."""
         self.pbars[0].close()
         self.pbars.pop(0)
-    
-    def addZtraces(self, ztrace_names):
-        """Add ztraces to the existing scene.
-        
-            Params:
-                ztrace_names (list): the list of ztraces to add to the scene
-        """
-        # get new names and add names to existing set
-        ztrace_names = list(set(ztrace_names).difference(self.ztrace_set))
-        if not ztrace_names:
-            return
-        self.ztrace_set = self.ztrace_set.union(ztrace_names)
-
-        # get the ztrace items
-        z_vol_items = generate3DZtraces(self.series, ztrace_names)
-
-        # remove existing objects from scene
-        for vol_item in self.vol_items:
-            self.removeItem(vol_item.gl_item)
-        
-        # sort the items by volume
-        self.vol_items += z_vol_items
-        self.vol_items.sort()
-        
-        # add the volumes back to the scene
-        for vol_item in self.vol_items:
-            self.addItem(vol_item.gl_item)
-        
-        # bring to front
-        self.activateWindow()
     
     def remove(self, names : list, ztrace=False):
         """Remove item(s) from the scene.

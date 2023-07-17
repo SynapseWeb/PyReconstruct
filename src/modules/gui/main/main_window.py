@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
         self.menubar = None
         self.mouse_palette = None  # placeholder for palettes
         self.zarr_palette = None
+        self.viewer = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False

@@ -26,7 +26,7 @@ from PySide6.QtGui import (
 )
 
 from modules.datatypes import Series, Trace, Ztrace
-from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair
+from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
 from modules.backend.view import FieldView
 from modules.backend.table import (
     ObjectTableManager,
@@ -1401,13 +1401,20 @@ class FieldWidget(QWidget, FieldView):
                         least_dist = d
                         least_i = i
 
+                # reverse the trace if closed (to operate same as legacy version)
                 if self.selected_trace.closed:
                     self.mouse_mode = FieldWidget.CLOSEDTRACE
                     self.current_trace = self.current_trace[least_i:] + self.current_trace[:least_i]
                     self.current_trace.reverse()
                 else:
                     self.mouse_mode = FieldWidget.OPENTRACE
-                    self.current_trace = self.current_trace[:least_i+1]
+                    # calculate distance for each segment
+                    seg1 = self.current_trace[:least_i+1]
+                    seg2 = self.current_trace[least_i:]
+                    if lineDistance(seg2, closed=False) > lineDistance(seg1, closed=False):
+                        self.current_trace = seg2[::-1]
+                    else:
+                        self.current_trace = seg1
                 self.is_line_tracing = True
                 self.tracing_trace = self.selected_trace
                 self.update()

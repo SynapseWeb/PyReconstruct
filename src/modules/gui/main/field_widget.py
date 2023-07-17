@@ -1223,7 +1223,7 @@ class FieldWidget(QWidget, FieldView):
             # draw trace on pixmap
             x = event.x()
             y = event.y()
-            if self.closed_trace_mode == "trace":
+            if self.closed_trace_mode == "trace" or self.mouse_mode == FieldWidget.OPENTRACE:
                 self.current_trace.append((x, y))
             elif self.closed_trace_mode == "rect":
                 x1, y1 = self.current_trace[0]

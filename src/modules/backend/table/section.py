@@ -30,7 +30,8 @@ class SectionTableManager():
                 "align_locked": section.align_locked,
                 "calgrid": section.calgrid,
                 "brightness": section.brightness,
-                "contrast": section.contrast
+                "contrast": section.contrast,
+                "image_source": section.src
             }
 
         # add the data to the tables
@@ -69,7 +70,8 @@ class SectionTableManager():
             "align_locked": section.align_locked,
             "calgrid": section.calgrid,
             "brightness": section.brightness,
-            "contrast": section.contrast
+            "contrast": section.contrast,
+            "image_source": section.src
         }
         for table in self.tables:
             table.updateSection(section.n, self.data[section.n])
@@ -158,6 +160,40 @@ class SectionTableManager():
         if self.mainwindow.field.obj_table_manager:
             self.mainwindow.field.obj_table_manager.refresh()
         
+        self.mainwindow.seriesModified(True)
+    
+    def editSrc(self, snum : int, new_src : str):
+        """Set the image source for a single section (and possible for all sections).
+        
+            Params:
+                snum (int): the number of the section to modify (none if edit all sections)
+                new_src (str): the new image source for the section
+                edit_all (bool): True if ALL section sources should be modified
+        """
+        self.mainwindow.saveAllData()
+
+        # edit all sections 
+        if snum is None:
+            s = new_src.split("#")
+            if len(s) != 2:
+                return
+            max_digits = len(str(max(self.series.sections.keys())))
+            for snum, section in self.series.enumerateSections(message="Modifying section image sources..."):
+                section_src = s[0] + str(snum).zfill(max_digits) + s[1]
+                section.src = section_src
+                self.data[snum]["image_source"] = section_src
+                section.save()
+
+        # edit only the current section
+        else:
+            section = self.series.loadSection(snum)
+            section.src = new_src
+            self.data[snum]["image_source"] = new_src
+            section.save()
+
+        self.mainwindow.field.reload()
+        self.mainwindow.field.reloadImage()
+        self.updateTables()
         self.mainwindow.seriesModified(True)
     
     def deleteSections(self, section_numbers : list[int]):

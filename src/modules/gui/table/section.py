@@ -17,7 +17,8 @@ from .copy_table_widget import CopyTableWidget
 from modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    noUndoWarning
+    noUndoWarning,
+    notify
 )
 from modules.gui.dialog import BCDialog
 from modules.constants import fd_dir
@@ -66,6 +67,14 @@ class SectionTableWidget(QDockWidget):
                 [
                     ("export_act", "Export...", "", self.export),
                 ]
+            },
+            {
+                "attr_name": "modifymenu",
+                "text": "Modify",
+                "opts":
+                [
+                    ("modifyallsrc_act", "Section image sources...", "", self.modifyAllSrc)
+                ]
             }
         ]
         # create the menubar object
@@ -89,6 +98,7 @@ class SectionTableWidget(QDockWidget):
                 ]
             },
             ("thickness_act", "Edit thickness...", "", self.editThickness),
+            ("editsrc_act", "Edit image source...", "", self.editSrc),
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -125,6 +135,9 @@ class SectionTableWidget(QDockWidget):
         self.table.setItem(r, 4, QTableWidgetItem(
             str(section_data["contrast"])
         ))
+        self.table.setItem(r, 5, QTableWidgetItem(
+            str(section_data["image_source"])
+        ))
     
     def createTable(self, sectiondict : dict):
         """Create the table widget.
@@ -132,15 +145,16 @@ class SectionTableWidget(QDockWidget):
             Params:
                 sectiondict (dict): section number : (thickness, locked)
         """
+        # establish table headers
+        self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
+
         self.sectiondict = sectiondict
-        self.table = CopyTableWidget(len(sectiondict), 5)
+
+        self.table = CopyTableWidget(len(sectiondict), len(self.horizontal_headers))
 
         # connect table functions
         self.table.contextMenuEvent = self.sectionContextMenu
         self.table.mouseDoubleClickEvent = self.findSection
-
-        # establish table headers
-        self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast"]
 
         # format table
         self.table.setShowGrid(False)  # no grid
@@ -174,7 +188,6 @@ class SectionTableWidget(QDockWidget):
             t = t.split()[0]
             if int(t) == snum:
                 self.setRow(r, snum, section_data)
-
     
     def getSelectedSection(self):
         """Get the section that is selected by the user."""
@@ -260,6 +273,8 @@ class SectionTableWidget(QDockWidget):
             "Enter section thickness (microns):",
             text=sthickness
         )
+        if not confirmed:
+            return
 
         try:
             new_st = float(new_st)
@@ -267,6 +282,27 @@ class SectionTableWidget(QDockWidget):
             return
         
         self.manager.editThickness(section_numbers, new_st)
+    
+    def editSrc(self):
+        """Modify the image source for a single section."""
+        snum = self.getSelectedSection()
+        if not snum:
+            return
+        
+        # get the existing section source
+        src = self.sectiondict[snum]["image_source"]
+
+        # get the new image source from the user
+        new_src, confirmed = QInputDialog.getText(
+            self,
+            "Image source",
+            "Enter image source:",
+            text=src
+        )
+        if not confirmed:
+            return
+        
+        self.manager.editSrc(snum, new_src)
     
     def deleteSections(self):
         """Delete the sections selected by the user."""
@@ -324,3 +360,32 @@ class SectionTableWidget(QDockWidget):
             csv_file.write(",".join(items) + "\n")
         # close file
         csv_file.close()
+    
+    def modifyAllSrc(self):
+        """Modify the image source for all sections."""
+        # attempt to use the last section src as an example
+        snum = max(self.sectiondict.keys())
+        example_src = self.sectiondict[snum]["image_source"]
+        if str(snum) in example_src:
+            example_src = example_src.replace(str(snum), "#", 1)
+        else:
+            example_src = ""
+        
+        # get the new source name from the user
+        new_src = ""
+        while new_src.count("#") != 1:
+            new_src, confirmed = QInputDialog.getText(
+                self,
+                "Rename Image Sources",
+                "New image source name\n(use a single '#' symbol to represent the section number)",
+                text=example_src
+            )
+            if not confirmed:
+                return
+            c = new_src.count("#")
+            if c == 0:
+                notify("Please use a '#' symbol to represent the section number.")
+            elif c > 1:
+                notify("Please use only one '#' symbol to represent the section number.")
+        
+        self.manager.editSrc(None, new_src)

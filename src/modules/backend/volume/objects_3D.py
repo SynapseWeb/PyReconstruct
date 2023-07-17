@@ -137,8 +137,9 @@ class Surface(Object3D):
                 color=color,
                 shader="edgeDarken",
                 glOptions="translucent",
-                smooth=True,
+                smooth=True
         )
+        item.setObjectName(self.name)
 
         # provide volumes to draw opaque items in proper order
         return VolItem(self.name, item, tm.volume)
@@ -181,6 +182,7 @@ class Spheres(Object3D):
                 shader="edgeDarken",
                 glOptions="translucent",
             )
+            item.setObjectName(self.name)
             x, y, s = point
             z = s * section_thickness
             volume = 4/3 * np.pi * radius**3

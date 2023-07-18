@@ -99,9 +99,11 @@ class Contour():
             if i >= len(self):
                 break
             s_trace = self[i]
-            if not s_trace.overlaps(o_trace):
+            if s_trace.overlaps(o_trace):
+                s_trace.mergeTags(o_trace)  # import tags
+            else:
                 break
-        
+
         # gather remaining traces and compare them
         rem_s_traces = self[i:]
         rem_o_traces = other[i:]
@@ -110,6 +112,7 @@ class Contour():
             found_i = None
             for i, s_trace in enumerate(rem_s_traces):
                 if s_trace.overlaps(o_trace):
+                    s_trace.mergeTags(o_trace)  # import tags
                     found = True
                     found_i = i
                     break

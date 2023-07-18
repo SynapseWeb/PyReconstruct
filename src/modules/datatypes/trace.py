@@ -419,6 +419,10 @@ class Trace():
         """Returns True if the trace has no existing history."""
         return not bool(self.history)
 
+    def mergeTags(self, other):
+        """Merge the tags of two traces."""
+        self.tags = self.tags.union(other.tags)
+
 def convertMode(arg):
     """Translate between Reconstruct and PyReconstruct fill modes."""
     if type(arg) is int:

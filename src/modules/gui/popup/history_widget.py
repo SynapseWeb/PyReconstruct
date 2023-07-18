@@ -1,18 +1,12 @@
 from PySide6.QtWidgets import QDockWidget, QPlainTextEdit
 from PySide6.QtCore import Qt
 
-class HistoryWidget(QDockWidget):
+from .text_widget import TextWidget
+
+class HistoryWidget(TextWidget):
 
     def __init__(self, parent, output_str : str):
         """Create a text widget to display history"""
-        super().__init__(parent)
+        super().__init__(parent, output_str)
         self.setWindowTitle("History")
-        self.setFloating(True)
-        self.setAllowedAreas(Qt.NoDockWidgetArea)
-
-        output = QPlainTextEdit(self)
-        output.setWindowTitle("Trace Log")
-        output.setPlainText(output_str)
-
-        self.setWidget(output)
-        self.show()
+        self.output.setWindowTitle("Trace Log")

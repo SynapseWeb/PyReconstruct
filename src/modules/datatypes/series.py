@@ -1068,6 +1068,38 @@ class Series():
             ):
                 g = group
         return g
+    
+    def deleteDuplicateTraces(self):
+        """Delete all duplicate traces in the series (keep tags)."""
+        removed = {}
+        for snum, section in self.enumerateSections(message="Removing duplicate traces..."):
+            found_on_section = False
+            for cname in section.contours:
+                i = 1
+                while i < len(section.contours[cname]):
+                    trace1 = section.contours[cname][i]
+                    # check against all previous traces
+                    for j in range(i-1, -1, -1):
+                        trace2 = section.contours[cname][j]
+                        # if overlaps, remove trace and break
+                        if trace1.overlaps(trace2):
+                            if snum not in removed:
+                                removed[snum] = set()
+                            removed[snum].add(cname)
+                            found_on_section = True
+                            trace1.mergeTags(trace2)
+                            section.contours[cname].remove(trace2)
+                            i -= 1
+                            break
+                    i += 1
+            if found_on_section:
+                section.save()
+        return removed
+
+
+                    
+
+
 
 
 

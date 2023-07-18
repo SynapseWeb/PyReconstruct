@@ -22,7 +22,7 @@ class Object3DDialog(QDialog):
 
         type_text = QLabel(self, text="3D Type:")
         self.type_input = QComboBox(self)
-        type_list = ["surface", "spheres"]
+        type_list = ["surface", "spheres", "contours"]
         if not type3D:
             self.type_input.addItem("")
         self.type_input.addItems(type_list)

@@ -1,6 +1,6 @@
 import pyqtgraph.opengl as gl
 
-from .objects_3D import Surface, Spheres
+from .objects_3D import Surface, Spheres, Contours
 
 from modules.datatypes import Series, VolItem
 
@@ -28,6 +28,9 @@ def generateVolumes(series : Series, obj_names : list):
             obj_data[obj_name] = (Surface(obj_name), opacity)
         elif mode == "spheres":
             obj_data[obj_name] = (Spheres(obj_name), opacity)
+        elif mode == "contours":
+            obj_data[obj_name] = (Contours(obj_name), opacity)
+
 
     # iterate through all sections and gather points (and colors)
     mags = []
@@ -63,6 +66,11 @@ def generateVolumes(series : Series, obj_names : list):
             ))
         elif type(obj_3D) is Spheres:
             vol_items += (obj_3D.generate3D(
+                avg_thickness,
+                opacity
+            ))
+        elif type(obj_3D) is Contours:
+            vol_items.append(obj_3D.generate3D(
                 avg_thickness,
                 opacity
             ))

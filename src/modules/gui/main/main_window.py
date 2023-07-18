@@ -329,7 +329,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
-                    ("mergeobjects_act", "Merge object traces...", "Ctrl+Shift+M", lambda : self.field.mergeSelectedTraces(merge_objects=True)),
+                    ("mergeobjects_act", "Merge attributes...", "Ctrl+Shift+M", lambda : self.field.mergeSelectedTraces(merge_attrs=True)),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),

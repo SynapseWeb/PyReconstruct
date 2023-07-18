@@ -676,7 +676,7 @@ class Series():
         """
         ztrace_name = f"{obj_name}_zlen"
         ztrace_color = (0, 0, 0) # default to black
-        
+
         # delete an existing ztrace with the same name
         if ztrace_name in self.ztraces:
             del(self.ztraces[ztrace_name])
@@ -926,6 +926,9 @@ class Series():
         iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
         for (r_num, r_section), (s_num, s_section) in iterator:
             r_section.importTraces(s_section)
+        
+        # import the group data
+        self.object_groups.merge(other.object_groups)
         
         self.save()
         self.gatherSectionData()

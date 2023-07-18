@@ -103,3 +103,9 @@ class ObjGroupDict():
         """Get a list of objects."""
         return list(self.objects.keys())
     
+    def merge(self, other):
+        """Merge another object group dict into self."""
+        for group in other.getGroupList():
+            for obj in other.getGroupObjects(group):
+                self.add(group, obj)
+    

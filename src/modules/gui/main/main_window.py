@@ -35,7 +35,7 @@ from modules.gui.dialog import (
     PointerDialog,
     ClosedTraceDialog
 )
-from modules.gui.popup import HistoryWidget
+from modules.gui.popup import HistoryWidget, TextWidget
 from modules.gui.utils import (
     progbar,
     populateMenuBar,
@@ -44,7 +44,8 @@ from modules.gui.utils import (
     saveNotify,
     unsavedNotify,
     getSaveLocation,
-    setMainWindow
+    setMainWindow,
+    noUndoWarning
 )
 from modules.backend.func import (
     xmlToJSON,
@@ -244,11 +245,10 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
+                    ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     ("smoothing_act", "Modify 3D smoothing...", "", self.edit3DSmoothing),
-                    None,
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
-                    None,
-                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)  
+                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)
                 ]
             },
             
@@ -2040,6 +2040,25 @@ class MainWindow(QMainWindow):
             return
 
         self.series.options["find_zoom"] = z
+    
+    def deleteDuplicateTraces(self):
+        """Remove all duplicate traces from the series."""
+        self.saveAllData()
+        if not noUndoWarning():
+            return
+        
+        removed = self.series.deleteDuplicateTraces()
+
+        if removed:
+            message = "The following duplicate traces were removed:"
+            for snum in removed:
+                message += f"\nSection {snum}: " + ", ".join(removed[snum])
+            TextWidget(self, message, title="Removed Traces")
+        else:
+            notify("No duplicate traces found.")
+
+        self.field.reload()
+        self.seriesModified(True)
 
     def restart(self):
         self.restart_mainwindow = True

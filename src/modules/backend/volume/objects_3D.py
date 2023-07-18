@@ -5,7 +5,7 @@ import pyqtgraph.opengl as gl
 from skimage.draw import polygon
 import trimesh
 
-from modules.calc import centroid
+from modules.calc import centroid, area
 from modules.datatypes import Trace, Transform, VolItem
 
 class Object3D():
@@ -190,3 +190,78 @@ class Spheres(Object3D):
             items.append(VolItem(self.name, item, volume))
         
         return items
+
+class Contours(Object3D):
+
+    def __init__(self, name):
+        """Create a 3D Surface object."""
+        super().__init__(name)
+        self.color = None
+        self.traces = {}
+    
+    def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
+        """Add a trace to the surface data."""
+        if self.color is None:
+            self.color = tuple([c/255 for c in trace.color])
+        
+        if snum not in self.traces:
+            self.traces[snum] = []
+        
+        pts = []
+        for pt in trace.points:
+            if tform:
+                x, y = tform.map(*pt)
+            else:
+                x, y = pt
+            self.addToExtremes(x, y, snum)
+            pts.append((x, y))
+        
+        if trace.closed:
+            pts.append(pts[0])
+        
+        self.traces[snum].append(pts)
+    
+    def generate3D(self, section_thickness, alpha=1):
+        """Generate trace slabs.
+        """
+        verts = []
+        faces = []
+        volume = 0
+        for snum in self.traces:
+            # get the z values
+            z1 = snum * section_thickness
+            z2 = z1 + section_thickness/2
+            for trace in self.traces[snum]:
+                for i in range(len(trace)-1):
+                    # get the xy coords of the points
+                    x1, y1 = trace[i]
+                    x2, y2 = trace[i+1]
+                    # gather the four points to create the slab section
+                    verts.append([x1, y1, z1])
+                    verts.append([x2, y2, z1])
+                    verts.append([x2, y2, z2])
+                    verts.append([x1, y1, z2])
+                    # create the faces
+                    l = len(verts)
+                    faces.append([l-4, l-3, l-2])
+                    faces.append([l-4, l-2, l-1])
+                volume += section_thickness * area(trace)
+
+        # get color
+        color = self.color + (alpha,)
+
+        # convert to opengl mesh object for pyqtgraph
+        verts = np.array(verts)
+        faces = np.array(faces)
+        item = gl.GLMeshItem(
+                vertexes=verts,
+                faces=faces,
+                color=color,
+                shader="edgeDarken",
+                glOptions="translucent",
+                smooth=True
+        )
+        item.setObjectName(self.name)
+
+        # provide volumes to draw opaque items in proper order
+        return VolItem(self.name, item, volume)

@@ -295,7 +295,7 @@ class TraceLayer():
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
     
-    def mergeSelectedTraces(self, merge_objects=False):
+    def mergeSelectedTraces(self, merge_attrs=False):
         """Merge all selected traces.
         
             Params:
@@ -304,51 +304,48 @@ class TraceLayer():
         if len(self.section.selected_traces) < 2:
             notify("Please select two or more traces to merge.")
             return
-        
-        # if merging objects, decrease the zomming to prevent inlets
-        # factor = 16
-        # if merge_objects:
-        #     original_pd = self.pixmap_dim
-        #     self.pixmap_dim = tuple([round(d/factor) for d in self.pixmap_dim])
 
-        traces = []
-        first_trace = self.section.selected_traces[0]
-        name = first_trace.name
-        max_area = 0
-        for trace in self.section.selected_traces:
-            if merge_objects:
-                a = area(trace.points)
-                if a > max_area:
-                    max_area = a
-                    first_trace = trace
-            elif trace.name != name:
-                notify("Please merge traces with the same name.")
-                return
-            if trace.closed == False:
-                notify("Please merge only closed traces.")
-                return
-            # collect pixel values for trace points
-            pix_points = self.traceToPix(trace)
-            # if merge_objects:
-            #     pix_points = [(round(x*factor), round(y*factor)) for x, y in pix_points]
-            traces.append(pix_points)
-        
-        # restore the section magnification
-        # if merge_objects:
-        #     self.pixmap_dim = original_pd
-        
-        merged_traces = mergeTraces(traces)  # merge the pixel traces
-        # delete the old traces
-        origin_traces = self.section.selected_traces.copy()
-        self.section.deleteTraces()
-        # create new merged trace
-        for trace in merged_traces:
-            self.newTrace(
-                trace,
-                first_trace,
-                log_message="merged",
-                origin_traces=origin_traces
+        # set attributes to be the first object selected
+        if merge_attrs:
+            first_trace = self.section.selected_traces[0].copy()
+            self.section.editTraceAttributes(
+                self.section.selected_traces,
+                name=first_trace.name,
+                color=first_trace.color,
+                tags=first_trace.tags,
+                mode=first_trace.fill_mode
             )
+
+        # merge traces
+        else:
+            traces = []
+            first_trace = self.section.selected_traces[0]
+            name = first_trace.name
+            for trace in self.section.selected_traces:
+                if trace.name != name:
+                    notify("Please merge traces with the same name.")
+                    return
+                if trace.closed == False:
+                    notify("Please merge only closed traces.")
+                    return
+                # collect pixel values for trace points
+                pix_points = self.traceToPix(trace)
+                # if merge_objects:
+                #     pix_points = [(round(x*factor), round(y*factor)) for x, y in pix_points]
+                traces.append(pix_points)
+            
+            merged_traces = mergeTraces(traces)  # merge the pixel traces
+            # delete the old traces
+            origin_traces = self.section.selected_traces.copy()
+            self.section.deleteTraces()
+            # create new merged trace
+            for trace in merged_traces:
+                self.newTrace(
+                    trace,
+                    first_trace,
+                    log_message="merged",
+                    origin_traces=origin_traces
+                )
     
     def cutTrace(self, knife_trace : list):
         """Cuts the selected trace along the knife line.

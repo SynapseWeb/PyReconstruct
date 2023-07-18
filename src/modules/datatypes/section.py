@@ -301,7 +301,7 @@ class Section():
                 mode (tuple): the new fill mode for the traces
                 add_tags (bool): True if tags should be added (rather than replaced)
         """
-        for trace in traces:
+        for trace in traces.copy():
             # check if trace was highlighted
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)

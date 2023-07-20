@@ -331,9 +331,9 @@ class FieldView():
         if contour_name not in self.section.contours or self.section.contours[contour_name].isEmpty():
             return
         
-        # get the minimum window requirements (1:1 screen to image pixels)
-        min_window_w = self.section.mag * self.section_layer.pixmap_dim[0]
-        min_window_h = self.section.mag * self.section_layer.pixmap_dim[1]
+        # # get the minimum window requirements (1:1 screen to image pixels)
+        # min_window_w = self.section.mag * self.section_layer.pixmap_dim[0]
+        # min_window_h = self.section.mag * self.section_layer.pixmap_dim[1]
         
         # get the bounds of the contour and set the window
         contour = self.section.contours[contour_name]
@@ -381,13 +381,13 @@ class FieldView():
         new_x = min_x - ( (new_range_x - range_x) / 2 )
         new_y = min_y - ( (new_range_y - range_y) / 2 )
 
-        # check if minimum requirements are met
-        if new_range_x < min_window_w:
-            new_x -= (min_window_w - new_range_x) / 2
-            new_range_x = min_window_w
-        elif new_range_y < min_window_h:
-            new_y -= (min_window_h - new_range_y) / 2
-            new_range_y = min_window_h
+        # # check if minimum requirements are met
+        # if new_range_x < min_window_w:
+        #     new_x -= (min_window_w - new_range_x) / 2
+        #     new_range_x = min_window_w
+        # elif new_range_y < min_window_h:
+        #     new_y -= (min_window_h - new_range_y) / 2
+        #     new_range_y = min_window_h
         
         self.series.window = [
             

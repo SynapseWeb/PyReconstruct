@@ -1746,10 +1746,7 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         self.removeZarrLayer()
 
-        print("Importing training modules...")
-
-        from autoseg import train, make_mask, model_paths
-        # model_paths = {"a":{"b":"a/b/m.py"}}
+        model_paths = {"a":{"b":"a/b/m.py"}}
 
         opts = self.series.options["autoseg"]
 
@@ -1792,6 +1789,10 @@ class MainWindow(QMainWindow):
             self.field.obj_table_manager.refresh()
 
         print("Starting training....")
+
+        print("Importing training modules...")
+
+        from autoseg import train, make_mask, model_paths
 
         make_mask(data_fp, group_name)
         

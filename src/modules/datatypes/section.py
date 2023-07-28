@@ -201,9 +201,6 @@ class Section():
                 return  # ignore welcome series
         except FileNotFoundError:
             pass
-
-        # update series data
-        self.series.updateSectionData(self)
     
         d = self.getDict()
         with open(self.filepath, "w") as f:

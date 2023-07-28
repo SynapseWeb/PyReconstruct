@@ -23,7 +23,6 @@ class ZtraceTableManager():
     def loadSeries(self):
         """Load the section thicknesses and transforms from the series."""        
         # load the ztrace data
-        self.series.gatherSectionData()
         self.data = {}
         for name, ztrace in self.series.ztraces.items():
             self.data[name] = ZtraceTableItem(

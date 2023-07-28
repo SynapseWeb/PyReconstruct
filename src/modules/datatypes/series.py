@@ -10,6 +10,7 @@ from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .object_table_item import ObjectTableItem
+from .series_data import SeriesData
 
 from modules.constants import (
     createHiddenDir,
@@ -83,11 +84,9 @@ class Series():
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
-        # keep track of transforms, mags, section thicknesses, and obj names
-        self.section_tforms = {}
-        self.section_mags = {}
-        self.section_thicknesses = {}
-        self.objs = set()
+        # keep track of relevant overall series data
+        self.data = SeriesData(self)
+        self.data.refresh()
 
         # default settings
         self.modified_ztraces = []
@@ -98,39 +97,6 @@ class Series():
         self.zarr_overlay_group = None
 
         self.options = series_data["options"]
-
-        # gather thickness, mag, and tforms for each section
-        self.gatherSectionData()
-    
-    def gatherSectionData(self):
-        """Get the mag, thickness, transforms, and object names from each section."""
-        # THIS IS DONE THROUGH THE JSON METHOD TO SPEED IT UP
-        for n, section in self.sections.items():
-            # open the json
-            filepath = os.path.join(
-                self.getwdir(),
-                section
-            )
-            with open(filepath, "r") as f:
-                section_json = json.load(f)
-            # get relevant data
-            self.section_thicknesses[n] = section_json["thickness"]
-            self.section_mags[n] = section_json["mag"]
-            tforms = {}
-            for a in section_json["tforms"]:
-                tforms[a] = Transform(section_json["tforms"][a])
-            self.section_tforms[n] = tforms
-            for cname in section_json["contours"]:
-                self.objs.add(cname)
-    
-    def updateSectionData(self, section : Section):
-        """Get mag, thickness, transforms, and object names from a section."""
-        n = section.n
-        self.section_thicknesses[n] = section.thickness
-        self.section_mags[n] = section.mag
-        self.section_tforms[n] = section.tforms
-        for cname in section.contours.keys():
-            self.objs.add(cname)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -139,6 +105,7 @@ class Series():
         
             Params:
                 fp (str): the filepath
+                series_data (SeriesData): the series data object to store relevant data (opt)
         """
         # check for existing hidden folder
         sdir = os.path.dirname(fp)
@@ -587,10 +554,6 @@ class Series():
                 section_num (int): the section number
         """
         section = Section(section_num, self)
-        # update transform data
-        self.section_tforms[section.n] = section.tforms
-        self.section_mags[section.n] = section.mag
-        self.section_thicknesses[section.n] = section.thickness
         return section
     
     def enumerateSections(self, show_progress=True, message="Loading series data..."):
@@ -660,8 +623,8 @@ class Series():
         """
         zvals = {}
         z = 0
-        for snum in sorted(self.section_thicknesses.keys()):
-            t = self.section_thicknesses[snum]
+        for snum in sorted(self.sections.keys()):
+            t = self.data["sections"][snum]["thickness"]
             z += t
             zvals[snum] = z
         
@@ -957,9 +920,7 @@ class Series():
         for (r_num, r_section), (s_num, s_section) in iterator:
             for a in alignments:
                 r_section.tforms[a] = s_section.tforms[a].copy()
-                r_section.save()
-                self.section_tforms[r_num][a] = s_section.tforms[a].copy()
-                
+                r_section.save()                
         self.save()
     
     def loadObjectData(self, object_table_items=False):
@@ -1095,12 +1056,6 @@ class Series():
             if found_on_section:
                 section.save()
         return removed
-
-
-                    
-
-
-
 
 
 class SeriesIterator():

@@ -54,7 +54,7 @@ from modules.backend.func import (
     importSwiftTransforms
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
-from modules.datatypes import Series, Transform
+from modules.datatypes import Series, Transform, SeriesData
 from modules.constants import welcome_series_dir, assets_dir, img_dir, fd_dir
 
 class MainWindow(QMainWindow):
@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
 
         # misc defaults
         self.series = None
+        self.series_data = None
         self.field = None  # placeholder for field
         self.menubar = None
         self.mouse_palette = None  # placeholder for palettes
@@ -1140,8 +1141,8 @@ class MainWindow(QMainWindow):
             return
         
         # get a list of alignments from the other series
-        o_alignments = list(o_series.section_tforms[other_sections[0]].keys())
-        s_alignments = list(self.series.section_tforms[other_sections[0]].keys())
+        o_alignments = list(o_series.data["sections"][other_sections[0]]["tforms"].keys())
+        s_alignments = list(self.series.data["sections"][other_sections[0]]["tforms"].keys())
 
         # prompt the user to choose an alignment
         chosen_alignments, confirmed = ImportTransformsDialog(self, o_alignments).exec()

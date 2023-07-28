@@ -118,9 +118,9 @@ def generate3DZtraces(series : Series, ztrace_names : list):
     
     # ASSUME UNIFORM SECTION THICKNESS
     avg_thickness = 0
-    for s, t in series.section_thicknesses.items():
-        avg_thickness += t
-    avg_thickness /= len(series.section_thicknesses)
+    for section_data in series.data["sections"].values():
+        avg_thickness += section_data["thickness"]
+    avg_thickness /= len(series.sections)
     
     ztrace_items = []
     extremes = [None, None, None, None, None, None]
@@ -130,7 +130,7 @@ def generate3DZtraces(series : Series, ztrace_names : list):
             x, y, snum = pt
             z = snum * avg_thickness
             # transform point
-            tform = series.section_tforms[snum][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][series.alignment]
             x, y = tform.map(x, y)
             points.append((x, y, z))
             # check extremes

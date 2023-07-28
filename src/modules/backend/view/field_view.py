@@ -518,8 +518,6 @@ class FieldView():
         # refresh all of the tables
         if self.obj_table_manager:
             self.obj_table_manager.refresh()
-        else:
-            self.series.gatherSectionData()
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
         if self.ztrace_table_manager:

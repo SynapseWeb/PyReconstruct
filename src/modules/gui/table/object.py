@@ -15,7 +15,7 @@ from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
 
-from modules.datatypes import Series, ObjectTableItem
+from modules.datatypes import Series
 from modules.gui.utils import (
     populateMenuBar,
     populateMenu,
@@ -32,12 +32,11 @@ from modules.constants import fd_dir
 
 class ObjectTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, objdict : dict, mainwindow : QWidget, manager):
+    def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the object table dock widget.
         
             Params:
                 series (Series): the Series object
-                objdict (dict): contains all object info for the table
                 mainwindow (MainWindow): the main window the dock is connected to
                 manager: the object table manager
         """
@@ -69,7 +68,7 @@ class ObjectTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
-        self.createTable(objdict)
+        self.createTable()
         self.createMenus()
 
         # save manager object
@@ -177,51 +176,51 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def setRow(self, obj_data : ObjectTableItem, row : int):
+    def setRow(self, name : str, row : int):
         """Set the data for a row of the table.
         
             Params:
-                object_data (ObjectTableItem): the object containing the data for the object
+                name (str): the name of the object
                 row (int): the row to enter this data into
         """
-        self.table.setItem(row, 0, QTableWidgetItem(obj_data.name))
+        self.table.setItem(row, 0, QTableWidgetItem(name))
         col = 1
         if self.columns["Range"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getStart())))
+            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getStart(name))))
             col += 1
-            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getEnd())))
+            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getEnd(name))))
             col += 1
         if self.columns["Count"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(obj_data.getCount())))
+            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getCount(name))))
             col += 1
         if self.columns["Flat area"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getFlatArea(), 5))))
+            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getFlatArea(name), 5))))
             col += 1
         if self.columns["Volume"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(obj_data.getVolume(), 5))))
+            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
             col += 1
         if self.columns["Groups"]:
-            groups = self.series.object_groups.getObjectGroups(obj_data.name)
+            groups = self.series.object_groups.getObjectGroups(name)
             groups_str = ", ".join(groups)
             self.table.setItem(row, col, QTableWidgetItem(groups_str))
             col += 1
         if self.columns["Trace tags"]:
-            tags = obj_data.getTags()
+            tags = self.series.data.getTags(name)
             tags_str = ", ".join(tags)
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
         self.table.resizeRowToContents(row)
-            
-    def passesFilters(self, item : ObjectTableItem):
-        """Determine if an object will be displayed in the table based on existing filters.
+    
+    def passesFilters(self, name : str):
+        """Check if an object passes the filters.
         
             Params:
-                item (ObjectTableItem): the item containing the data
+                name (str): the name of the object
         """
         # check groups
         filters_len = len(self.group_filters)
         if filters_len != 0:
-            object_groups = self.series.object_groups.getObjectGroups(item.name)
+            object_groups = self.series.object_groups.getObjectGroups(name)
             groups_len = len(object_groups)
             union_len = len(object_groups.union(self.group_filters))
             if union_len == groups_len + filters_len:  # intersection does not exist
@@ -230,19 +229,29 @@ class ObjectTableWidget(QDockWidget):
         # check tags
         filters_len = len(self.tag_filters)
         if filters_len != 0:
-            object_tags = item.getTags()
+            object_tags = self.series.data.getTags(name)
             object_len = len(object_tags)
             union_len = len(object_tags.union(self.tag_filters))
             if union_len == object_len + filters_len:  # intersection does not exist
                 return False
         
-        # check regex (will only be run if passes tags)
+        # check regex
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, item.name)):
+            if bool(re.fullmatch(re_filter, name)):
                 return True
+        
         return False
-    
-    def createTable(self, objdict : dict):
+
+    def getFilteredObjects(self):
+        """Get the names of the objects that pass the filter."""
+        filtered_object_list = []
+        for name in self.series.data["objects"]:
+            if self.passesFilters(name):
+                filtered_object_list.append(name)
+        
+        return sorted(filtered_object_list)
+
+    def createTable(self):
         """Create the table widget.
         
             Params:
@@ -269,11 +278,7 @@ class ObjectTableWidget(QDockWidget):
             self.horizontal_headers.append("Trace Tags")
         
         # filter the objects
-        sorted_obj_names = sorted(list(objdict.keys()))
-        filtered_obj_names = []
-        for name in sorted_obj_names:
-            if self.passesFilters(objdict[name]) and not objdict[name].isEmpty():
-                filtered_obj_names.append(name)
+        filtered_obj_names = self.getFilteredObjects()
 
         # create the table object
         self.table = CopyTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
@@ -292,7 +297,7 @@ class ObjectTableWidget(QDockWidget):
         
         # fill in object data
         for r, n in enumerate(filtered_obj_names):
-            self.setRow(objdict[n], r)
+            self.setRow(n, r)
 
         # format rows and columns
         self.table.resizeRowsToContents()
@@ -321,29 +326,30 @@ class ObjectTableWidget(QDockWidget):
                 return row_index, False
         return self.table.rowCount(), False
     
-    def updateObject(self, objdata : ObjectTableItem):
-        """Update the data for a specific object.
+    def updateObjects(self, names):
+        """Update the data for a set of objects.
         
             Params:
-                objdata (ObjectTableItem): the object containing the table data
+                names (iterable): the names of the objects to update
         """
-        # check if object passes filters
-        if not self.passesFilters(objdata):
-            # special case: does not pass filter anymore but exists on table
-            row, exists_in_table = self.getRowIndex(objdata.name)
-            if exists_in_table:
-                self.table.removeRow(row)
-            return
+        for name in names:
+            # check if object passes filters
+            if not self.passesFilters(name):
+                # special case: does not pass filter anymore but exists on table
+                row, exists_in_table = self.getRowIndex(name)
+                if exists_in_table:
+                    self.table.removeRow(row)
+                return
 
-        # update if it does
-        row, exists_in_table = self.getRowIndex(objdata.name)
-        if exists_in_table and objdata.isEmpty():  # completely delete object
-            self.table.removeRow(row)
-        elif exists_in_table and not objdata.isEmpty():  # update existing object
-            self.setRow(objdata, row)
-        elif not exists_in_table and not objdata.isEmpty():  # add new object
-            self.table.insertRow(row)
-            self.setRow(objdata, row)
+            # update if it does
+            row, exists_in_table = self.getRowIndex(name)
+            if exists_in_table and name not in self.series.data["objects"]:  # completely delete object
+                self.table.removeRow(row)
+            elif exists_in_table and name in self.series.data["objects"]:  # update existing object
+                self.setRow(name, row)
+            elif not exists_in_table and name in self.series.data["objects"]:  # add new object
+                self.table.insertRow(row)
+                self.setRow(name, row)
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""
@@ -395,7 +401,7 @@ class ObjectTableWidget(QDockWidget):
         # ask the user for the new object name
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
-            tags = self.manager.objdict[obj_names[0]].getTags()
+            tags = self.series.data.getTags(obj_names[0])
         else:
             displayed_name = None
             tags=None
@@ -721,4 +727,9 @@ class ObjectTableWidget(QDockWidget):
         new_type, new_opacity = settings
 
         self.manager.edit3D(obj_names, new_type, new_opacity)
+    
+    def closeEvent(self, event):
+        """Remove self from manager table list."""
+        self.manager.tables.remove(self)
+        super().closeEvent(event)
 

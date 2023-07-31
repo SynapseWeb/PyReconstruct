@@ -119,8 +119,7 @@ class FieldView():
         # update the object table
         if self.obj_table_manager:
             self.obj_table_manager.updateSection(
-                self.section,
-                self.series.current_section
+                self.section
             )
         
         # update the trace table

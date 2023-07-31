@@ -201,6 +201,9 @@ class Section():
                 return  # ignore welcome series
         except FileNotFoundError:
             pass
+
+        # update the series data
+        self.series.data.updateSection(self, update_traces=True)
     
         d = self.getDict()
         with open(self.filepath, "w") as f:
@@ -225,6 +228,13 @@ class Section():
                 align_locked (bool): the new locked status
         """
         self.align_locked = align_locked
+    
+    def getAllModifiedNames(self):
+        """Get the names of all the modified traces."""
+        trace_names = set([t.name for t in self.added_traces])
+        trace_names = trace_names.union(set([t.name for t in self.removed_traces]))
+        trace_names = trace_names.union(set([t.name for t in self.modified_traces]))
+        return trace_names
     
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""

@@ -47,7 +47,7 @@ class ObjectData():
     
     def isEmpty(self):
         """Return True of object data is empty."""
-        return bool(self.traces)
+        return not bool(self.traces)
     
     def addTrace(self, trace : Trace, section : Section, series):
         """Add a trace to the object data.
@@ -57,7 +57,7 @@ class ObjectData():
                 section (Section): the section containing the trace
                 series (Series): the series containing the trace
         """
-        if section.n not in self.traces.keys():
+        if section.n not in self.traces:
             self.traces[section.n] = []
         self.traces[section.n].append(TraceData(trace, section.tforms[series.alignment]))
     
@@ -67,7 +67,8 @@ class ObjectData():
             Params:
                 snum (int): the section number to clear
         """
-        self.traces[snum] = []
+        if snum in self.traces:
+            del(self.traces[snum])
 
 class SeriesData():
 
@@ -114,7 +115,6 @@ class SeriesData():
                 "src": section.src,
                 "mag": section.mag,
                 "tforms": section.tforms,
-                "contours": {}
             }
             self.data["sections"][section.n] = d
         else:
@@ -129,11 +129,9 @@ class SeriesData():
         
         if update_traces:
             # check if there are specific traces to be updated
-            trace_names = set([t.name for t in section.added_traces])
-            trace_names = trace_names.union(set([t.name for t in section.removed_traces]))
-            trace_names = trace_names.union(set([t.name for t in section.modified_traces]))
+            trace_names = section.getAllModifiedNames()
             if not trace_names:
-                trace_names = self.data["objects"].keys()
+                trace_names = section.contours.keys()
 
             # keep track of objects that are newly created/destroyed
             added_objects = set()
@@ -147,8 +145,9 @@ class SeriesData():
                 else:
                     added_objects.add(name)
                 # add new trace data
-                for trace in section.contours[name]:
-                    self.addTrace(trace, section)
+                if name in section.contours:
+                    for trace in section.contours[name]:
+                        self.addTrace(trace, section)
             
             # check for removed objects
             for name in trace_names:
@@ -245,7 +244,7 @@ class SeriesData():
             return None
         
         tags = set()
-        for trace_list in obj_data.trace.values():
+        for trace_list in obj_data.traces.values():
             for trace_data in trace_list:
                 tags = tags.union(trace_data.getTags())
         return tags

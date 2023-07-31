@@ -94,16 +94,15 @@ class SeriesData():
             "objects": {},
         }
         for snum, section in self.series.enumerateSections():
-            self.updateSection(section,update_traces=True)
+            self.updateSection(section, update_traces=True)
     
-    def updateSection(self, section : Section, update_traces=False, trace_names=[]):
+    def updateSection(self, section : Section, update_traces=False):
         """Update the existing section data.
         
             Params:
                 section (Section): the section with data to update
                 series (Series): the series containing the section
                 update_traces (bool): True if traces should also be updated
-                trace_names (list): list of trace names to update (only used if update_traces is True)
         """
         # create/update the data for a section
         if section.n not in self.data["sections"]:
@@ -129,15 +128,34 @@ class SeriesData():
             d["tforms"] = section.tforms
         
         if update_traces:
-            # clear existing trace data on this section
+            # check if there are specific traces to be updated
+            trace_names = set([t.name for t in section.added_traces])
+            trace_names = trace_names.union(set([t.name for t in section.removed_traces]))
+            trace_names = trace_names.union(set([t.name for t in section.modified_traces]))
             if not trace_names:
                 trace_names = self.data["objects"].keys()
+
+            # keep track of objects that are newly created/destroyed
+            added_objects = set()
+            removed_objects = set()
+            # clear existing trace data on this section
             for name in trace_names:
-                obj_data = self.data["objects"][name]
-                obj_data.clearSection(section.n)
+                obj_data = self.data["objects"].get(name)
+                # check if object is newly created
+                if obj_data is not None:
+                    obj_data.clearSection(section.n)
+                else:
+                    added_objects.add(name)
                 # add new trace data
                 for trace in section.contours[name]:
                     self.addTrace(trace, section)
+            
+            # check for removed objects
+            for name in trace_names:
+                obj_data = self.data["objects"][name]
+                if obj_data.isEmpty():
+                    del(self.data["objects"][name])
+                    removed_objects.add(name)
     
     def addTrace(self, trace : Trace, section : Section):
         """Add trace data to the existing object.
@@ -149,7 +167,7 @@ class SeriesData():
                 (bool): True if a new object was just created
         """
         # create the section data if not existing already
-        if section.n not in self.data:
+        if section.n not in self.data["sections"]:
             self.updateSection(section, update_traces=True)
             # ASSUME TRACE IS ALREADY ON THE SECTION
             return

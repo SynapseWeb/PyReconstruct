@@ -130,7 +130,7 @@ class SeriesData():
         if update_traces:
             # check if there are specific traces to be updated
             trace_names = section.getAllModifiedNames()
-            if not trace_names:
+            if not trace_names and not self.series.modified_ztraces:
                 trace_names = section.contours.keys()
 
             # keep track of objects that are newly created/destroyed
@@ -151,10 +151,11 @@ class SeriesData():
             
             # check for removed objects
             for name in trace_names:
-                obj_data = self.data["objects"][name]
-                if obj_data.isEmpty():
-                    del(self.data["objects"][name])
-                    removed_objects.add(name)
+                if name in self.data["objects"]:
+                    obj_data = self.data["objects"][name]
+                    if obj_data.isEmpty():
+                        del(self.data["objects"][name])
+                        removed_objects.add(name)
     
     def addTrace(self, trace : Trace, section : Section):
         """Add trace data to the existing object.
@@ -261,3 +262,14 @@ class SeriesData():
         """
         for obj_data in self.data["objects"].values():
             obj_data.clearSection(snum)
+        
+    def getTraceData(self, name : str, snum : int):
+        """Get the list of trace data objects.
+        
+            Params:
+                name (str): the name of the object/trace
+                snum (int): the section number
+        """
+        if name in self.data["objects"] and snum in self.data["objects"][name].traces:
+            return self.data["objects"][name].traces[snum]
+        return None

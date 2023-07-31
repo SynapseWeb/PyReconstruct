@@ -4,8 +4,7 @@ from modules.gui.table import TraceTableWidget
 from modules.gui.popup import HistoryWidget
 from modules.datatypes import (
     Series,
-    Section,
-    TraceTableItem
+    Section
 )
 
 class TraceTableManager():
@@ -32,57 +31,20 @@ class TraceTableManager():
         """
         if section:
             self.section = section
-        self.data = {}
-        for c in self.section.contours:
-            self.data[c] = []
-            index = 0
-            for trace in self.section.contours[c]:
-                self.data[c].append(
-                    TraceTableItem(
-                        trace,
-                        self.section.tforms[self.series.alignment],
-                        index
-                    )
-                )
-                index += 1
         # add the data to the tables
         for table in self.tables:
-            table.createTable(self.data)
+            table.createTable(self.section)
     
     def update(self):
         """Update the table for a section."""
-        # update removed traces
-        for trace in self.section.removed_traces + self.section.modified_traces:
-            contour = self.data[trace.name]
-            for index, item in enumerate(contour):
-                if item.isTrace(trace):
-                    contour.remove(item)
-                    break
-            for i in range(index, len(contour)):
-                contour[i].index -= 1
-            for table in self.tables:
-                table.removeItem(item)
-        # update added traces
-        for trace in self.section.added_traces + self.section.modified_traces:
-            if trace.name in self.data:
-                contour = self.data[trace.name]
-            else:
-                contour = []
-                self.data[trace.name] = contour
-            item = TraceTableItem(
-                trace,
-                self.section.tforms[self.series.alignment],
-                len(contour)
-            )
-            contour.append(item)
-            for table in self.tables:
-                table.addItem(item)
+        for table in self.tables:
+            table.setContours(self.section.getAllModifiedNames())
     
     def newTable(self):
         """Create a new trace list."""
         new_table = TraceTableWidget(
             self.series,
-            self.data,
+            self.section,
             self.mainwindow,
             self
         )
@@ -103,21 +65,13 @@ class TraceTableManager():
         """Get the trace objects for a list of table items.
         
             Params:
-                items (list): the list of trace table items
+                items (list): the list of trace table items (name, index)
             Returns:
-                (list) the trace objects
+                traces (list): the list of actual trace objects
         """
-        # get the trace indeces in the contour list
-        indeces = {}
-        for item in items:
-            if item.name not in indeces:
-                indeces[item.name] = []
-            indeces[item.name].append(self.data[item.name].index(item))
-        # get the actual trace objects
         traces = []
-        for name in indeces:
-            for i in indeces[name]:
-                traces.append(self.section.contours[name][i])
+        for name, index in items:
+            traces.append(self.section.contours[name][index])
         
         return traces
     
@@ -132,8 +86,8 @@ class TraceTableManager():
                 mode (tuple): the fill mode for the traces
         """
         self.mainwindow.field.section.editTraceAttributes(traces, name, color, tags, mode)
-        self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
     
     def hideTraces(self, traces, hide=True):
         """Hide/unhide a set of traces.
@@ -143,8 +97,8 @@ class TraceTableManager():
                 hide (bool): True if traces should be hidden
         """
         self.mainwindow.field.section.hideTraces(traces, hide)
+        self.mainwindow.field.generateView()
         self.mainwindow.field.saveState()
-        self.mainwindow.field.generateView(generate_image=False)
     
     def editRadius(self, traces : list, new_rad : float):
         """Edit the radius of a set of traces
@@ -154,16 +108,17 @@ class TraceTableManager():
                 new_rad (float): the new radius for the traces
         """
         self.mainwindow.field.section.editTraceRadius(traces, new_rad)
-        self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
     
-    def findTrace(self, item : TraceTableItem):
+    def findTrace(self, item):
         """Find an object in the series.
         
             Params:
-                item (TraceTableItem): the item corresponding to the desired trace
+                item (tuple): the iname, index of the desired trace
         """
-        self.mainwindow.field.findTrace(item.name, item.index)
+        name, index = item
+        self.mainwindow.field.findTrace(name, index)
     
     def deleteTraces(self, traces : list):
         """Delete a set of traces.
@@ -172,8 +127,8 @@ class TraceTableManager():
                 traces (list): the trace to delete
         """
         self.mainwindow.field.section.deleteTraces(traces)
-        self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
     
     def viewHistory(self, traces : list):
         """View the log history of a set of traces.

@@ -84,10 +84,6 @@ class Series():
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
-        # keep track of relevant overall series data
-        self.data = SeriesData(self)
-        self.data.refresh()
-
         # default settings
         self.modified_ztraces = []
         self.leave_open = False
@@ -97,6 +93,10 @@ class Series():
         self.zarr_overlay_group = None
 
         self.options = series_data["options"]
+
+        # keep track of relevant overall series data
+        self.data = SeriesData(self)
+        self.data.refresh()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD

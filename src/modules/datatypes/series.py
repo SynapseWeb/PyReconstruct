@@ -711,6 +711,8 @@ class Series():
             sname = self.sections[snum]
             self.sections[snum] = sname.replace(old_name, new_name)
         self.name = new_name
+
+    # series-wide trace functions
     
     def deleteObjects(self, obj_names : list):
         """Delete object(s) from the series.
@@ -727,6 +729,7 @@ class Series():
             modified = False
             for obj_name in obj_names:
                 if obj_name in section.contours:
+                    section.removed_traces += section.contours[obj_name].getTraces()
                     del(section.contours[obj_name])
                     modified = True
             
@@ -735,7 +738,7 @@ class Series():
         
         self.modified = True
     
-    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, addTrace=None):
+    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None):
         """Edit the attributes of objects on every section.
         
             Params:
@@ -763,10 +766,6 @@ class Series():
                     for obj_name in obj_names:
                         if obj_name in section.contours:
                             traces += section.contours[obj_name].getTraces()
-                # add trace data to table data
-                if addTrace:
-                    for trace in traces:
-                        addTrace(trace, section, snum)
                 section.save()
         
         self.modified = True

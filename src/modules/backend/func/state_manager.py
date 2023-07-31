@@ -87,13 +87,7 @@ class SectionStates():
         # push current state to undo states
         self.undo_states.append(self.current_state)
         # get the names of the updated contours
-        updated_contours = (
-            set([trace.name for trace in section.added_traces]).union(
-                set([trace.name for trace in section.removed_traces]).union(
-                    set([trace.name for trace in section.modified_traces])
-                )
-            )
-        )
+        updated_contours = section.getAllModifiedNames()
         # get the updated ztraces
         updated_ztraces = series.modified_ztraces.copy()
         # set the new current state

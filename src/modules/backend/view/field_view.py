@@ -113,6 +113,9 @@ class FieldView():
         section_states = self.series_states[self.series.current_section]
         section_states.addState(self.section, self.series)
 
+        # update the series data tracker
+        self.series.data.updateSection(self.section, update_traces=True)
+
         # update the object table
         if self.obj_table_manager:
             self.obj_table_manager.updateSection(

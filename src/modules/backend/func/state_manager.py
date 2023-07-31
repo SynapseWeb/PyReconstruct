@@ -164,6 +164,9 @@ class SectionStates():
         self.redo_states.append(self.current_state)
         self.current_state = self.undo_states.pop().copy()
 
+        # add the modified contours to the section object
+        section.modified_contours = section.modified_contours.union(modified_contours)
+
         # return the modified contours and ztraces
         return modified_contours, modified_ztraces
     
@@ -199,6 +202,9 @@ class SectionStates():
         # edit the undo/redo stacks and the current state
         self.undo_states.append(self.current_state)
         self.current_state = self.redo_states.pop()
+
+        # add the modified contours to the section object
+        section.modified_contours = section.modified_contours.union(modified_contours)
 
         # return the modified contours
         return modified_contours, modified_ztraces

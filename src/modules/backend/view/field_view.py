@@ -155,21 +155,20 @@ class FieldView():
             return
         modified_contours, modified_ztraces = modified_data
         
+        # update the series data
+        self.series.data.updateSection(self.section, update_traces=True)
+
         # update the object table
         if self.obj_table_manager:
-            for contour in modified_contours:
-                self.obj_table_manager.updateContour(
-                    contour,
-                    self.section,
-                    self.series.current_section
-                )
+            self.obj_table_manager.updateSection(self.section)
+        
         # update the ztrace table
         if self.ztrace_table_manager:
             self.ztrace_table_manager.updateZtraces(modified_ztraces)
             
         # update the trace table
         if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
+            self.trace_table_manager.update()
         
         self.generateView()
     
@@ -190,21 +189,20 @@ class FieldView():
             return
         modified_contours, modified_ztraces = modified_data
         
+        # update the series data
+        self.series.data.updateSection(self.section, update_traces=True)
+
         # update the object table
         if self.obj_table_manager:
-            for contour in modified_contours:
-                self.obj_table_manager.updateContour(
-                    contour,
-                    self.section,
-                    self.series.current_section
-                )
+            self.obj_table_manager.updateSection(self.section)
+
         # update the ztrace table
         if self.ztrace_table_manager:
             self.ztrace_table_manager.updateZtraces(modified_ztraces)
             
         # update the trace table
         if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
+            self.trace_table_manager.update()
         
         self.generateView()
     
@@ -319,7 +317,10 @@ class FieldView():
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
 
         # set the trace as the only selected trace
-        self.section.selected_traces = [trace]
+        if trace.hidden:
+            self.section.selected_traces = []
+        else:
+            self.section.selected_traces = [trace]
 
         self.generateView()
     
@@ -401,7 +402,10 @@ class FieldView():
         ]
 
         # set the selected traces
-        self.section.selected_traces = contour.getTraces()
+        self.section.selected_traces = []
+        for trace in contour.getTraces():
+            if not trace.hidden:
+                self.section.selected_traces.append(trace)
 
         self.generateView()
     
@@ -526,7 +530,7 @@ class FieldView():
             self.ztrace_table_manager.refresh()
     
     def translateTform(self, dx : float, dy : float):
-        """Trnaslate the transform for the entire section.
+        """Translate the transform for the entire section.
             Params:
                 dx (float): x-translate
                 dy (float): y-translate

@@ -35,7 +35,7 @@ class Section():
 
         self.added_traces = []
         self.removed_traces = []
-        self.modified_traces = []
+        self.modified_contours = set()
 
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
@@ -233,14 +233,14 @@ class Section():
         """Get the names of all the modified traces."""
         trace_names = set([t.name for t in self.added_traces])
         trace_names = trace_names.union(set([t.name for t in self.removed_traces]))
-        trace_names = trace_names.union(set([t.name for t in self.modified_traces]))
+        trace_names = trace_names.union(self.modified_contours)
         return trace_names
     
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
         self.removed_traces = []
-        self.modified_traces = []
+        self.modified_contours = set()
     
     def setMag(self, new_mag : float):
         """Set the magnification for the section.
@@ -467,7 +467,7 @@ class Section():
         for trace in traces:
             modified = True
             trace.setHidden(hide)
-            self.modified_traces.append(trace)
+            self.modified_contours.add(trace.name)
         
         self.selected_traces = []
 
@@ -481,7 +481,7 @@ class Section():
             if hidden:
                 modified = True
                 trace.setHidden(False)
-                self.modified_traces.append(trace)
+                self.modified_contours.add(trace.name)
         
         return modified
     

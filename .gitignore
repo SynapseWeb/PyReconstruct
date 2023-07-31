@@ -3,6 +3,7 @@ env/
 **/__pycache__/
 *.pyc
 run_julian.sh
+convert_to_zarr.sh
 venv/
 pyrightconfig.json
 testing/

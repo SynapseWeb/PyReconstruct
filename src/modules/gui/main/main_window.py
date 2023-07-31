@@ -128,18 +128,23 @@ class MainWindow(QMainWindow):
                 [   
                     ("new_act", "New", "Ctrl+N", self.newSeries),
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
+                    None,
+                    {
+                        "attr_name": "legacymeny",
+                        "text": "Legacy Reconstruct",
+                        "opts":
+                        [
+                            ("fromxml_act", "New from XML series...", "", self.newFromXML),
+                        ]
+                    },
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
                     ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
                     None,
-                    ("fromxml_act", "New from XML series...", "", self.newFromXML),
-                    ("exportxml_act", "Export as XML series...", "", self.exportToXML),
-                    None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
-                    ("restart_act", "Restart", "Ctrl+R", self.restart),
-                    None,
+                    ("restart_act", "Reload", "Ctrl+R", self.restart),
                     ("quit_act", "Quit", "Ctrl+Q", self.close),
                 ]
             },
@@ -177,6 +182,25 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     {
+                        "attr_name": "importmenu",
+                        "text": "Import",
+                        "opts":
+                        [
+                            ("importtraces_act", "Traces...", "", self.importTraces),
+                            ("importzrtraces_act", "Ztraces...", "", self.importZtraces),
+                            ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
+                            ("importseriestransforms_act", "Image transformations...", "", self.importSeriesTransforms)
+                        ]
+		    },
+		    {
+                        "attr_name": "exportmenu",
+                        "text": "Export",
+                        "opts":
+                        [
+			    ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
+                        ]
+		    },
+		    {
                         "attr_name": "imagesmenu",
                         "text": "Images",
                         "opts":
@@ -186,13 +210,16 @@ class MainWindow(QMainWindow):
                             ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False))
                         ]
                     },
-                    None,
-                    ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
-                    None,
-                    ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                    ("history_act", "View series history", "", self.viewSeriesHistory),
-                    None,
+		    {
+                        "attr_name": "listsmenu",
+                        "text": "Lists / History",
+                        "opts":
+                        [
+                            ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
+			    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
+			    ("history_act", "View series history", "", self.viewSeriesHistory),
+                        ]
+                    },
                     {
                         "attr_name": "alignmentsmenu",
                         "text": "Alignments",
@@ -222,7 +249,6 @@ class MainWindow(QMainWindow):
                             }
                         ]
                     },
-                    None,
                     {
                         "attr_name": "serieshidemenu",
                         "text": "Hide",
@@ -232,21 +258,17 @@ class MainWindow(QMainWindow):
                             ("unhidealltraces_act", "Unhide all traces", "", lambda : self.hideSeriesTraces(hidden=False))
                         ]
                     },
-                    None,
-                    {
-                        "attr_name": "importmenu",
-                        "text": "Import",
+		    {
+                        "attr_name": "threedeemenu",
+                        "text": "3D",
                         "opts":
                         [
-                            ("importtraces_act", "Import traces...", "", self.importTraces),
-                            ("importzrtraces_act", "Import ztraces...", "", self.importZtraces),
-                            ("importtracepalette_act", "Import trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Import transforms...", "", self.importSeriesTransforms)
+                            ("smoothing_act", "Change smoothing type...", "", self.edit3DSmoothing),
                         ]
                     },
                     None,
+                    ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
-                    ("smoothing_act", "Modify 3D smoothing...", "", self.edit3DSmoothing),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)
                 ]

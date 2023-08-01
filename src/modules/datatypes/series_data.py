@@ -109,6 +109,7 @@ class SeriesData():
         if section.n not in self.data["sections"]:
             d = {
                 "thickness": section.thickness,
+                "calgrid": section.calgrid,
                 "locked": section.align_locked,
                 "brightness": section.brightness,
                 "contrast": section.contrast,

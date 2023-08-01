@@ -103,16 +103,9 @@ class FieldView():
         if self.b_section is not None:
             self.b_section_layer.loadImage()
         self.generateView()
-
-    def saveState(self):
-        """Save the current traces and transform.
-        
-        ALSO updates the lists.
-        """
-        # save the current state
-        section_states = self.series_states[self.series.current_section]
-        section_states.addState(self.section, self.series)
-
+    
+    def updateData(self, clear_tracking=True):
+        """Update the series data object and the tables."""
         # update the series data tracker
         self.series.data.updateSection(self.section, update_traces=True)
 
@@ -128,11 +121,23 @@ class FieldView():
         
         # update the ztrace table
         if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(self.series.modified_ztraces)
+            self.ztrace_table_manager.update()
         
-        # clear the tracked added/removed traces
-        self.section.clearTracking()
-        self.series.modified_ztraces = []
+        if clear_tracking:
+            self.section.clearTracking()
+            self.series.modified_ztraces = set()
+
+    def saveState(self):
+        """Save the current traces and transform.
+        
+        ALSO updates the lists.
+        """
+        # save the current state
+        section_states = self.series_states[self.series.current_section]
+        section_states.addState(self.section, self.series)
+
+        # update the data/tables
+        self.updateData()
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
@@ -150,25 +155,10 @@ class FieldView():
 
         # get the last undo state
         section_states = self.series_states[self.series.current_section]
-        modified_data = section_states.undoState(self.section, self.series)
-        if modified_data is None:
-            return
-        modified_contours, modified_ztraces = modified_data
-        
-        # update the series data
-        self.series.data.updateSection(self.section, update_traces=True)
+        section_states.undoState(self.section, self.series)
 
-        # update the object table
-        if self.obj_table_manager:
-            self.obj_table_manager.updateSection(self.section)
-        
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(modified_ztraces)
-            
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.update()
+        # update the data/tables
+        self.updateData(clear_tracking=False)
         
         self.generateView()
     
@@ -184,25 +174,10 @@ class FieldView():
 
         # get the last redo state
         section_states = self.series_states[self.series.current_section]
-        modified_data = section_states.redoState(self.section, self.series)
-        if modified_data is None:
-            return
-        modified_contours, modified_ztraces = modified_data
-        
-        # update the series data
-        self.series.data.updateSection(self.section, update_traces=True)
+        section_states.redoState(self.section, self.series)
 
-        # update the object table
-        if self.obj_table_manager:
-            self.obj_table_manager.updateSection(self.section)
-
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(modified_ztraces)
-            
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.update()
+        # update the data/tables
+        self.updateData()
         
         self.generateView()
     

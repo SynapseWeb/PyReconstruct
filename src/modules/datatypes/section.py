@@ -553,7 +553,7 @@ class Section():
             # replace point
             ztrace.points[i] = (x, y, snum)
             # keep track of modified ztrace
-            self.series.modified_ztraces.append(ztrace.name)
+            self.series.modified_ztraces.add(ztrace.name)
     
     def importTraces(self, other):
         """Import the traces from another section.

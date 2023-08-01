@@ -252,7 +252,7 @@ class SeriesData():
 
     def getZtraceDist(self, ztrace_name : str):
         """Get the distance of a ztrace."""
-        return self.series.ztraces[ztrace_name].getDistance()
+        return self.series.ztraces[ztrace_name].getDistance(self.series)
     
     def clearSection(self, snum : int):
         """Clear the object data for a speicified section.

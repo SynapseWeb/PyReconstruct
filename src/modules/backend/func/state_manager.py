@@ -166,9 +166,8 @@ class SectionStates():
 
         # add the modified contours to the section object
         section.modified_contours = section.modified_contours.union(modified_contours)
-
-        # return the modified contours and ztraces
-        return modified_contours, modified_ztraces
+        # add modified ztrace names to the series object
+        series.modified_ztraces = series.modified_ztraces.union(modified_ztraces)
     
     def redoState(self, section : Section, series : Series) -> set:
         """Restore a redo state on the section.
@@ -205,9 +204,8 @@ class SectionStates():
 
         # add the modified contours to the section object
         section.modified_contours = section.modified_contours.union(modified_contours)
-
-        # return the modified contours
-        return modified_contours, modified_ztraces
+        # add modified ztrace names to the series object
+        series.modified_ztraces = series.modified_ztraces.union(modified_ztraces)
 
 def restoreZtraceOnSection(orig_ztrace : Ztrace, new_ztrace : Ztrace, snum : int) -> Ztrace:
     """Restore the ztrace for a specific section.

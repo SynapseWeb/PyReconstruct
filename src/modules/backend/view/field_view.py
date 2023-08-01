@@ -123,6 +123,10 @@ class FieldView():
         if self.ztrace_table_manager:
             self.ztrace_table_manager.update()
         
+        # update the section table
+        if self.section_table_manager:
+            self.section_table_manager.updateSection(self.section.n)
+        
         if clear_tracking:
             self.section.clearTracking()
             self.series.modified_ztraces = set()
@@ -880,15 +884,17 @@ class FieldView():
     
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
+        self.series.data.updateSection(self.section)
         if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section)
+            self.section_table_manager.updateSection(self.section.n)
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
     def changeContrast(self, change):
         self.section_layer.changeContrast(change)
+        self.series.data.updateSection(self.section)
         if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section)
+            self.section_table_manager.updateSection(self.section.n)
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
@@ -905,6 +911,7 @@ class FieldView():
 
         self.section_layer.changeTform(new_tform)
 
+        # BUG: refresh object list?
         # refresh the ztrace list
         if self.ztrace_table_manager:
             self.ztrace_table_manager.refresh()

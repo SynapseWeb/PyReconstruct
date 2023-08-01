@@ -349,3 +349,8 @@ class ZtraceTableWidget(QDockWidget):
 
         # call through manager to update self
         self.manager.updateTable(self)
+    
+    def closeEvent(self, event):
+        """Remove self from manager table list."""
+        self.manager.tables.remove(self)
+        super().closeEvent(event)

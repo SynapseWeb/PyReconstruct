@@ -17,31 +17,11 @@ class SectionTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
-        self.loadSections()
-
-    def loadSections(self):
-        """Load all of the data for each section in the series."""
-        self.data = {}
-        for snum, section in self.series.enumerateSections(
-            message="Loading section data..."
-        ):
-            self.data[snum] = {
-                "thickness": section.thickness,
-                "align_locked": section.align_locked,
-                "calgrid": section.calgrid,
-                "brightness": section.brightness,
-                "contrast": section.contrast,
-                "image_source": section.src
-            }
-
-        # add the data to the tables
-        for table in self.tables:
-            table.createTable(self.data)
     
     def newTable(self):
         """Create a new trace list."""
         new_table = SectionTableWidget(
-            self.data,
+            self.series,
             self.mainwindow,
             self
         )
@@ -57,24 +37,21 @@ class SectionTableManager():
                 table (ObjectTableWidget): the table to update
         """
         for table in self.tables:
-            table.createTable(self.data)
+            table.createTable()
     
-    def updateSection(self, section):
+    def updateSection(self, snum):
         """Update the data for a section.
         
             Params:
-                section (Section): the section with data to update
+                section (Section): the section number with data to update
         """
-        self.data[section.n] = {
-            "thickness": section.thickness,
-            "align_locked": section.align_locked,
-            "calgrid": section.calgrid,
-            "brightness": section.brightness,
-            "contrast": section.contrast,
-            "image_source": section.src
-        }
         for table in self.tables:
-            table.updateSection(section.n, self.data[section.n])
+            table.updateSection(snum)
+    
+    def updateSections(self, section_numbers : list):
+        """Update the tables for a set of sections."""
+        for snum in section_numbers:
+            self.updateSection(snum)
     
     def lockSections(self, section_numbers : list[int], lock : bool):
         """Lock or unlock a set of sections.
@@ -89,15 +66,13 @@ class SectionTableManager():
             section = self.series.loadSection(snum)
             section.align_locked = lock
             section.save()
-            # update the table data
-            self.data[snum]["align_locked"] = lock
         
         # update the field
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.updateTables()
+        self.updateSections(section_numbers)
 
     def setBC(self, section_numbers : list[int], b : int, c : int):
         """Set the brightness and contrast for a set of sections.
@@ -116,16 +91,13 @@ class SectionTableManager():
             if c is not None:
                 section.contrast = c
             section.save()
-            # update table data
-            self.data[snum]["brightness"] = b
-            self.data[snum]["contrast"] = c
         
         # update the field
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.updateTables()
+        self.updateSections(section_numbers)
     
     def matchBC(self, section_numbers : list[int]):
         """Match the brightness and contrast of a set of sections to the current section.
@@ -133,8 +105,8 @@ class SectionTableManager():
             Params:
                 section_numbers (list): the sections to modify
         """
-        b = self.data[self.series.current_section]["brightness"]
-        c = self.data[self.series.current_section]["contrast"]
+        b = self.mainwindow.field.section.brightness
+        c = self.mainwindow.field.section.contrast
         self.setBC(section_numbers, b, c)
 
     def editThickness(self, section_numbers : list[int], thickness : float):
@@ -149,12 +121,9 @@ class SectionTableManager():
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             section.thickness = thickness
-            section.save()
-            # update the table data
-            self.data[snum]["thickness"] = thickness
-        
+            section.save()        
         self.mainwindow.field.reload()
-        self.updateTables()
+        self.updateSections(section_numbers)
 
         # refresh any existing obj table
         if self.mainwindow.field.obj_table_manager:
@@ -181,21 +150,20 @@ class SectionTableManager():
             for snum, section in self.series.enumerateSections(message="Modifying section image sources..."):
                 section_src = s[0] + str(snum).zfill(max_digits) + s[1]
                 section.src = section_src
-                self.data[snum]["image_source"] = section_src
                 section.save()
 
         # edit only the current section
         else:
             section = self.series.loadSection(snum)
             section.src = new_src
-            self.data[snum]["image_source"] = new_src
             section.save()
 
         self.mainwindow.field.reload()
         self.mainwindow.field.reloadImage()
-        self.updateTables()
+        self.updateSection(snum)
         self.mainwindow.seriesModified(True)
     
+    # BUG: MAKE SURE ZTRAACE POINTS GET DELETED
     def deleteSections(self, section_numbers : list[int]):
         """Delete a set of sections.
         
@@ -210,7 +178,11 @@ class SectionTableManager():
             os.remove(os.path.join(self.series.getwdir(), filename))
             # delete link to file
             del(self.series.sections[snum])
-            del(self.data[snum])
+        
+        # refresh the data
+        self.series.data.refresh()
+        if self.mainwindow.field.obj_table_manager:
+            self.mainwindow.field.obj_table_manager.refresh()
         
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:

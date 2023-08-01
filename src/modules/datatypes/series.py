@@ -45,12 +45,13 @@ default_traces = [
 
 class Series():
 
-    def __init__(self, filepath : str, sections : dict):
+    def __init__(self, filepath : str, sections : dict, get_series_data=True):
         """Load the series file.
         
             Params:
                 filepath (str): the filepath for the series JSON file
-                sections (dict): snum : section basename for each section
+                sections (dict): section basename for each section
+                get_series_data (bool): True if serues data should be loaded
         """
         self.filepath = filepath
         self.sections = sections
@@ -85,7 +86,7 @@ class Series():
         self.object_3D_modes = series_data["object_3D_modes"]
 
         # default settings
-        self.modified_ztraces = []
+        self.modified_ztraces = set()
         self.leave_open = False
 
         # possible zarr overlay
@@ -96,7 +97,8 @@ class Series():
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
-        self.data.refresh()
+        if get_series_data:
+            self.data.refresh()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -162,9 +164,11 @@ class Series():
             text="Opening series..."
         )
         progress = 0
-        final_value = 1
+        final_value = 0
         for sdata in jser_data["sections"]:
             if sdata: final_value += 1
+        final_value *= 2  # for loading section data
+        final_value += 1  # unpacking series
 
         # create the hidden directory
         hidden_dir = createHiddenDir(sdir, sname)
@@ -205,8 +209,16 @@ class Series():
                 update(progress/final_value * 100)
         
         # create the series
-        series = Series(series_fp, sections)
+        series = Series(series_fp, sections, get_series_data=False)
         series.jser_fp = fp
+
+        # gather the series data
+        for snum, section in series.enumerateSections(show_progress=False):
+            series.data.updateSection(section, update_traces=True)
+            if canceled and canceled():
+                return None
+            progress += 1
+            if update: update(progress/final_value * 100)
         
         return series
 

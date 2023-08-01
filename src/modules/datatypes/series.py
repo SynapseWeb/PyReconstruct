@@ -28,7 +28,7 @@ try:
 except ImportError:
     prog_imported = False
 
-from modules.backend.threading import ThreadPool
+from modules.backend.threading import ThreadPoolProgBar
 
 default_traces = [
     ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], [], []],
@@ -572,7 +572,7 @@ class Series():
         """Allow iteration through the sections."""
         return SeriesIterator(self, show_progress, message)
 
-    def map(self, fn, *args, message=None):
+    def map(self, fn, *args, message="Modifying series..."):
         """Map a function to every section in the series.
         
             Params:
@@ -584,24 +584,18 @@ class Series():
         def wrapper(snum, fn, *args):
             section = self.loadSection(snum)
             results[snum] = fn(section, *args)
-
-        # create progress bar
-        if message:
-            update, _ = seriesProgbar(text=message, cancel=False)
-            self.threadpool = ThreadPool(update=update)
-        else:
-            self.threadpool = ThreadPool()
         
+        threadpool = ThreadPoolProgBar()
+
         # create and run threadpool
         for snum in self.sections:
-            self.threadpool.createWorker(
+            threadpool.createWorker(
                 wrapper,
                 snum,
                 fn,
                 *args
             )
-        self.threadpool.startAll(finished_fn=None)
-        self.threadpool.waitForDone(-1)
+        threadpool.startAll(message)
 
         return results
 

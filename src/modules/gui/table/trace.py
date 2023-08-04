@@ -170,7 +170,6 @@ class TraceTableWidget(QDockWidget):
             ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
             None,
             ("find_act", "Find", "", self.findTrace),
-            ("history_act", "View history", "", self.viewHistory),
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,

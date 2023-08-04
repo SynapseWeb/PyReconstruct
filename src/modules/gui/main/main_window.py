@@ -192,7 +192,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                    ("history_act", "View series history", "", self.viewSeriesHistory),
                     None,
                     {
                         "attr_name": "alignmentsmenu",
@@ -247,6 +246,7 @@ class MainWindow(QMainWindow):
                     },
                     None,
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
+                    ("converttostamps_act", "Convert appropriate traces to stamps", "", self.tracesToStamps),
                     ("smoothing_act", "Modify 3D smoothing...", "", self.edit3DSmoothing),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)
@@ -1413,32 +1413,32 @@ class MainWindow(QMainWindow):
         
         self.seriesModified()
     
-    def viewSeriesHistory(self):
-        """View the history for the entire series."""
-        # load all log objects from the all traces
-        log_history = []
-        update, canceled = progbar("Object History", "Loading history...")
-        progress = 0
-        final_value = len(self.series.sections)
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            for trace in section.tracesAsList():
-                for log in trace.history:
-                    log_history.append((log, trace.name, snum))
-            if canceled():
-                return
-            progress += 1
-            update(progress/final_value * 100)
+    # def viewSeriesHistory(self):
+    #     """View the history for the entire series."""
+    #     # load all log objects from the all traces
+    #     log_history = []
+    #     update, canceled = progbar("Object History", "Loading history...")
+    #     progress = 0
+    #     final_value = len(self.series.sections)
+    #     for snum in self.series.sections:
+    #         section = self.series.loadSection(snum)
+    #         for trace in section.tracesAsList():
+    #             for log in trace.history:
+    #                 log_history.append((log, trace.name, snum))
+    #         if canceled():
+    #             return
+    #         progress += 1
+    #         update(progress/final_value * 100)
         
-        log_history.sort()
+    #     log_history.sort()
 
-        output_str = "Series History\n"
-        for log, name, snum in log_history:
-            output_str += f"Section {snum} "
-            output_str += name + " "
-            output_str += str(log) + "\n"
+    #     output_str = "Series History\n"
+    #     for log, name, snum in log_history:
+    #         output_str += f"Section {snum} "
+    #         output_str += name + " "
+    #         output_str += str(log) + "\n"
         
-        self.history_widget = HistoryWidget(self, output_str)
+    #     self.history_widget = HistoryWidget(self, output_str)
     
     def openObjectList(self):
         """Open the object list widget."""
@@ -2058,6 +2058,24 @@ class MainWindow(QMainWindow):
             TextWidget(self, message, title="Removed Traces")
         else:
             notify("No duplicate traces found.")
+
+        self.field.reload()
+        self.seriesModified(True)
+    
+    def tracesToStamps(self):
+        """Convert traces that should be stamps to stamps."""
+        self.saveAllData()
+        if not noUndoWarning():
+            return
+        
+        converted = self.series.tracesToStamps()
+
+        if converted:
+            message = "The following traces were converted to stamps:\n"
+            message += "\n".join(converted)
+            TextWidget(self, message, title="Converted Traces")
+        else:
+            notify("No traces that should be stamps were found.")
 
         self.field.reload()
         self.seriesModified(True)

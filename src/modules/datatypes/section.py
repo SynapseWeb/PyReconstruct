@@ -2,7 +2,7 @@ import os
 import json
 
 from .contour import Contour
-from .trace import Trace
+from .trace import Trace, Stamp, traceFromList
 from .transform import Transform
 
 from modules.calc import (
@@ -57,7 +57,7 @@ class Section():
         for name in self.contours:
             trace_list = []
             for trace_data in self.contours[name]:
-                trace = Trace.fromList(trace_data, name)
+                trace = traceFromList(trace_data, series, name)
                 # screen for defective traces
                 l = len(trace.points)
                 if l == 2:
@@ -101,12 +101,14 @@ class Section():
                         trace["negative"],
                         trace["hidden"],
                         trace["mode"],
-                        trace["tags"],
-                        trace["history"]
+                        trace["tags"]
                     ]
                     section_data["contours"][cname][i] = trace
+                # remove history from traces (changed 2023-8-4)
+                if len(trace) == 9:
+                    trace.pop()
                 # check for empty/defective traces
-                if len(trace[0]) < 2:
+                if type(trace[0]) is list and len(trace[0]) < 2:
                     flagged_traces.append(i)
             # remove the flagged defective traces
             for i in sorted(flagged_traces, reverse=True):
@@ -258,7 +260,7 @@ class Section():
         
         self.mag = new_mag
     
-    def addTrace(self, trace : Trace, log_message=None):
+    def addTrace(self, trace : Trace):
         """Add a trace to the trace dictionary.
         
             Params:
@@ -271,14 +273,6 @@ class Section():
         # force trace to be open if only two points
         elif len(trace.points) == 2:
             trace.closed = False
-        # add to the trace history
-        if log_message:
-            trace.addLog(log_message)
-        else:
-            if trace.isNew():
-                trace.addLog("created")
-            else:
-                trace.addLog("modified")
 
         if trace.name in self.contours:
             self.contours[trace.name].append(trace)
@@ -339,7 +333,7 @@ class Section():
                 new_trace.fill_mode = tuple(fill_mode)
             
             # add trace back to scene and highlight if needed
-            self.addTrace(new_trace, "attributes modified")
+            self.addTrace(new_trace)
             if selected:
                 self.selected_traces.append(new_trace)
     
@@ -353,7 +347,7 @@ class Section():
         for trace in traces:
             self.removeTrace(trace)
             trace.resize(new_rad)
-            self.addTrace(trace, "radius modified")
+            self.addTrace(trace)
     
     def editTraceShape(self, traces : list[Trace], new_shape : list):
         """Change the shape of a trace or set of traces.
@@ -365,7 +359,7 @@ class Section():
         for trace in traces:
             self.removeTrace(trace)
             trace.reshape(new_shape)
-            self.addTrace(trace, "shape modified")
+            self.addTrace(trace)
     
     def findClosestTrace(
             self,
@@ -491,7 +485,7 @@ class Section():
         for trace in traces:
             self.removeTrace(trace)
             trace.negative = negative
-            self.addTrace(trace, "made negative")
+            self.addTrace(trace)
     
     def deleteTraces(self, traces : list = None, ztraces_i : list = None):
         """Delete selected traces.
@@ -530,17 +524,24 @@ class Section():
         tform = self.tforms[self.series.alignment]
         for trace in self.selected_traces:
             self.removeTrace(trace)
-            for i, p in enumerate(trace.points):
-                # apply forward transform
-                x, y = tform.map(*p)
-                # apply translate
+            if type(trace) is Trace:
+                for i, p in enumerate(trace.points):
+                    # apply forward transform
+                    x, y = tform.map(*p)
+                    # apply translate
+                    x += dx
+                    y += dy
+                    # apply reverse transform
+                    x, y = tform.map(x, y, inverted=True)
+                    # replace point
+                    trace.points[i] = (x, y)
+            elif type(trace) is Stamp:
+                x, y = tform.map(*trace.center)
                 x += dx
                 y += dy
-                # apply reverse transform
                 x, y = tform.map(x, y, inverted=True)
-                # replace point
-                trace.points[i] = (x, y)
-            self.addTrace(trace, log_message="translated")
+                trace.center = (x, y)
+            self.addTrace(trace)
         for ztrace, i in self.selected_ztraces:
             x, y, snum = ztrace.points[i]
             # apply forward tform

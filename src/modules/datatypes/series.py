@@ -6,7 +6,7 @@ from datetime import datetime
 from .ztrace import Ztrace
 from .section import Section
 from .contour import Contour
-from .trace import Trace
+from .trace import Trace, Stamp
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .object_table_item import ObjectTableItem
@@ -31,16 +31,16 @@ except ImportError:
 from modules.backend.threading import ThreadPoolProgBar
 
 default_traces = [
-    ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], [], []],
-    ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], [], []],
-    ['triangle', [-0.0818157, 0.0818157, 0.0], [-0.0500008, -0.0500008, 0.1], [255, 0, 128], True, False, False, ['none', 'none'], [], []],
-    ['cross', [-0.0707107, -0.0202091, -0.0707107, -0.0404041, 0.0, 0.0404041, 0.0707107, 0.0202091, 0.0707107, 0.0404041, 0.0, -0.0404041], [0.0707107, 0.0, -0.0707107, -0.0707107, -0.0100975, -0.0707107, -0.0707107, 0.0, 0.0707107, 0.0707107, 0.0100975, 0.0707107], [255, 0, 0], True, False, False, ['none', 'none'], [], []],       
-    ['window', [0.0534515, 0.0534515, -0.0570026, -0.0570026, -0.0708093, -0.0708093, 0.0672582, 0.0672582, -0.0708093, -0.0570026], [0.0568051, -0.0536489, -0.0536489, 0.0429984, 0.0568051, -0.0674557, -0.0674557, 0.0706119, 0.0706119, 0.0568051], [255, 255, 0], True, False, False, ['none', 'none'], [], []],
-    ['diamond', [0.0, -0.1, 0.0, 0.1], [0.1, 0.0, -0.1, 0.0], [0, 0, 255], True, False, False, ['none', 'none'], [], []],
-    ['rect', [-0.0707107, 0.0707107, 0.0707107, -0.0707107], [0.0707107, 0.0707107, -0.0707107, -0.0707107], [255, 0, 255], True, False, False, ['none', 'none'], [], []],
-    ['arrow1', [0.0484259, 0.0021048, 0.0021048, 0.0252654, 0.094747, 0.0484259, 0.0252654, -0.0210557, -0.0442163, -0.0442163, -0.0905373, -0.0210557], [-0.0424616, -0.0424616, -0.0193011, 0.0038595, 0.02702, 0.0501806, 0.0965017, 0.0501806, 0.0038595, -0.0424616, -0.0424616, -0.0887827], [255, 0, 0], True, False, False, ['none', 'none'], [], []],
-    ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], [], []],
-    ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], [], []]
+    ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], []],
+    ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], []],
+    ['triangle', [-0.0818157, 0.0818157, 0.0], [-0.0500008, -0.0500008, 0.1], [255, 0, 128], True, False, False, ['none', 'none'], []],
+    ['cross', [-0.0707107, -0.0202091, -0.0707107, -0.0404041, 0.0, 0.0404041, 0.0707107, 0.0202091, 0.0707107, 0.0404041, 0.0, -0.0404041], [0.0707107, 0.0, -0.0707107, -0.0707107, -0.0100975, -0.0707107, -0.0707107, 0.0, 0.0707107, 0.0707107, 0.0100975, 0.0707107], [255, 0, 0], True, False, False, ['none', 'none'], []],       
+    ['window', [0.0534515, 0.0534515, -0.0570026, -0.0570026, -0.0708093, -0.0708093, 0.0672582, 0.0672582, -0.0708093, -0.0570026], [0.0568051, -0.0536489, -0.0536489, 0.0429984, 0.0568051, -0.0674557, -0.0674557, 0.0706119, 0.0706119, 0.0568051], [255, 255, 0], True, False, False, ['none', 'none'], []],
+    ['diamond', [0.0, -0.1, 0.0, 0.1], [0.1, 0.0, -0.1, 0.0], [0, 0, 255], True, False, False, ['none', 'none'], []],
+    ['rect', [-0.0707107, 0.0707107, 0.0707107, -0.0707107], [0.0707107, 0.0707107, -0.0707107, -0.0707107], [255, 0, 255], True, False, False, ['none', 'none'], []],
+    ['arrow1', [0.0484259, 0.0021048, 0.0021048, 0.0252654, 0.094747, 0.0484259, 0.0252654, -0.0210557, -0.0442163, -0.0442163, -0.0905373, -0.0210557], [-0.0424616, -0.0424616, -0.0193011, 0.0038595, 0.02702, 0.0501806, 0.0965017, 0.0501806, 0.0038595, -0.0424616, -0.0424616, -0.0887827], [255, 0, 0], True, False, False, ['none', 'none'], []],
+    ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], []],
+    ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
 ]
 
 class Series():
@@ -84,6 +84,8 @@ class Series():
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
+
+        self.stamp_attrs = series_data["stamp_attrs"]
 
         # default settings
         self.modified_ztraces = set()
@@ -282,8 +284,6 @@ class Series():
         
         if close:
             self.close()
-        else:
-            self.gatherSectionData()
 
         if update: update(100)
     
@@ -379,9 +379,10 @@ class Series():
                 ztraces_dict[name] = ztrace
             series_data["ztraces"] = ztraces_dict
         
-        # check the traces (convert dicts to lists)
+        # check the traces
         for i, trace in enumerate(series_data["palette_traces"]):
             if type(trace) is dict:
+                # convert dicts to lists
                 trace = [
                     trace["name"],
                     trace["x"],
@@ -391,10 +392,12 @@ class Series():
                     trace["negative"],
                     trace["hidden"],
                     trace["mode"],
-                    trace["tags"],
-                    trace["history"]
+                    trace["tags"]
                 ]
                 series_data["palette_traces"][i] = trace
+            # remove history from traces (changed 2023-8-4)
+            if len(trace) == 10:
+                trace.pop()
         trace = series_data["current_trace"]
         if type(trace) is dict:
             trace = [
@@ -406,10 +409,12 @@ class Series():
                 trace["negative"],
                 trace["hidden"],
                 trace["mode"],
-                trace["tags"],
-                trace["history"]
+                trace["tags"]
             ]
             series_data["current_trace"] = trace
+        # remove history from traces (changed 2023-8-4)
+        if len(trace) == 10:
+            trace.pop()
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -438,7 +443,9 @@ class Series():
         d["object_groups"] = self.object_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
 
-        # ADDED SINCE JAN 25TH
+        d["stamp_attrs"] = self.stamp_attrs
+
+        # ADDED 2023-01-25
         d["options"] = self.options
 
         return d
@@ -458,9 +465,9 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
+        series_data["stamp_attrs"] = {}
 
-        # ADDED SINCE JAN 25TH
-
+        # ADDED 2023-01-25
         series_data["options"] = {}
 
         options = series_data["options"]
@@ -664,7 +671,7 @@ class Series():
         # otherwise, make points by trace history by section
         # each trace gets its own point, ztrace points are in chronological order based on trace history
         else:
-            dt_points = []
+            points = []
             for snum, section in self.enumerateSections(
                 message="Creating ztrace..."
             ):
@@ -672,14 +679,9 @@ class Series():
                     contour = section.contours[obj_name]
                     for trace in contour:
                         if not color: color = trace.color
-                        # get the trace creation datetime
-                        dt = trace.history[0].dt
                         # get the midpoint
                         p = (*trace.getMidpoint(), snum)
-                        dt_points.append((snum, dt, p))
-            # sort the points by datetime
-            dt_points.sort()
-            points = [dtp[2] for dtp in dt_points]
+                        points.append(p)
         
         self.ztraces[ztrace_name] = Ztrace(
             ztrace_name,
@@ -899,7 +901,6 @@ class Series():
         self.object_groups.merge(other.object_groups)
         
         self.save()
-        self.gatherSectionData()
     
     def importZtraces(self, other):
         """Import all the ztraces from another series."""
@@ -970,60 +971,60 @@ class Series():
             palette_traces.append(Trace.fromList(l.copy()))
         return palette_traces * 2
 
-    def mergeObjects(self, obj_names : list, new_name : str):
-        """Merge objects on every section.
+    # def mergeObjects(self, obj_names : list, new_name : str):
+    #     """Merge objects on every section.
         
-            Params:
-                obj_names (list): the names of the objects to merge
-                new_name (str): the name for the merged object
-        """
-        # iterate through sections
-        for snum, section in self.enumerateSections(message="Merging objects..."):
-            # get the traces to modify
-            traces = []
-            for name in obj_names:
-                if name in section.contours:
-                    traces += section.contours[name].getTraces()
-                    del(section.contours[name])
-            if not traces:
-                continue
+    #         Params:
+    #             obj_names (list): the names of the objects to merge
+    #             new_name (str): the name for the merged object
+    #     """
+    #     # iterate through sections
+    #     for snum, section in self.enumerateSections(message="Merging objects..."):
+    #         # get the traces to modify
+    #         traces = []
+    #         for name in obj_names:
+    #             if name in section.contours:
+    #                 traces += section.contours[name].getTraces()
+    #                 del(section.contours[name])
+    #         if not traces:
+    #             continue
 
-            # get the color
-            color = traces[0].color
-            fill_mode = traces[0].fill_mode
+    #         # get the color
+    #         color = traces[0].color
+    #         fill_mode = traces[0].fill_mode
 
-            # get the mag
-            if self.screen_mag:
-                mag = self.screen_mag
-            else:
-                mag = section.mag
+    #         # get the mag
+    #         if self.screen_mag:
+    #             mag = self.screen_mag
+    #         else:
+    #             mag = section.mag
 
-            # iterate through and gather pixel points
-            pix_traces = []
-            for trace in traces:
-                trace.name = new_name
-                pix_traces.append(
-                    [(round(x / mag), round(y / mag)) for x, y in trace.points]
-                )
+    #         # iterate through and gather pixel points
+    #         pix_traces = []
+    #         for trace in traces:
+    #             trace.name = new_name
+    #             pix_traces.append(
+    #                 [(round(x / mag), round(y / mag)) for x, y in trace.points]
+    #             )
             
-            # merge the traces
-            new_pix_traces = mergeTraces(pix_traces)
+    #         # merge the traces
+    #         new_pix_traces = mergeTraces(pix_traces)
 
-            # create a new contour from the traces
-            for pix_trace in new_pix_traces:
-                # convert pixels back to field coords
-                field_points = [
-                    (x * mag, y * mag) for x, y in pix_trace
-                ]
-                # create the trace
-                trace = Trace(new_name, color)
-                trace.fill_mode = fill_mode
-                trace.points = field_points
-                # add it to the contour
-                section.addTrace(trace, "Created by merging objects")
+    #         # create a new contour from the traces
+    #         for pix_trace in new_pix_traces:
+    #             # convert pixels back to field coords
+    #             field_points = [
+    #                 (x * mag, y * mag) for x, y in pix_trace
+    #             ]
+    #             # create the trace
+    #             trace = Trace(new_name, color)
+    #             trace.fill_mode = fill_mode
+    #             trace.points = field_points
+    #             # add it to the contour
+    #             section.addTrace(trace, "Created by merging objects")
 
-            # save thes section
-            section.save()
+    #         # save thes section
+    #         section.save()
     
     def getRecentSegGroup(self):
         """Return the most recent segmentation group name."""
@@ -1061,6 +1062,86 @@ class Series():
             if found_on_section:
                 section.save()
         return removed
+    
+    def tracesToStamps(self):
+        """Convert all traces that should be stamps to stamps.
+        
+        Objects are converted to stamps if:
+            - there are two or more traces
+            - every trace has the same area and distance
+        """
+        # get the objects that should be converted to stamps
+        flagged_objs = []
+        # for obj, obj_data in self.data["objects"].items():
+        #     # get the trace data
+        #     trace_data_list = []
+        #     for traces in obj_data.traces.values():
+        #         trace_data_list += traces
+            
+        #     # skip if less than three traces
+        #     if len(trace_data_list) < 2:
+        #         continue
+
+        #     # compare lengths and areas
+        #     l = trace_data_list[0].getLength()
+        #     a = trace_data_list[0].getArea()
+        #     flag = True
+        #     for trace_data in trace_data_list[1:]:
+        #         if (abs(trace_data.getLength() - l) > 1e-5 or
+        #             abs(trace_data.getArea() - a) > 1e-5):
+        #             flag = False
+        #             break
+        #     if flag:
+        #         flagged_objs.append(obj)
+        # if not flagged_objs:
+        #     return
+
+        d = {}
+        for snum, section in self.enumerateSections(message="Checking traces..."):
+            for trace in section.tracesAsList():
+                if type(trace) is Stamp:
+                    d[trace.name] = 0
+                    continue
+                plen = len(trace.points)
+                if trace.name in d:
+                    n = d[trace.name]
+                    if n and n != plen:
+                        d[trace.name] = 0
+                else:
+                    d[trace.name] = plen
+        
+        flagged_objs = []
+        for name, plen in d.items():
+            if plen:
+                flagged_objs.append(name)
+        
+        # convert the flagged objects into stamps
+        for snum, section in self.enumerateSections(message="Converting traces..."):
+            modified = False
+            for name in flagged_objs.copy():
+                if name not in section.contours:
+                    continue
+                traces = section.contours[name].traces.copy()  # make a copy of the contours
+                for trace in traces:
+                    section.removeTrace(trace)
+                    stamp = Stamp.fromTrace(trace, self)
+                    section.addTrace(stamp)
+                    modified = True
+            if modified:
+                section.save()
+        
+        return flagged_objs
+
+
+
+
+
+
+
+
+
+
+
 
 
 class SeriesIterator():

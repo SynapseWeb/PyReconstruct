@@ -157,8 +157,6 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             None,
-            ("history_act", "View history", "", self.viewHistory),
-            None,
             {
                 "attr_name": "ztrace_menu",
                 "text": "Create ztrace",

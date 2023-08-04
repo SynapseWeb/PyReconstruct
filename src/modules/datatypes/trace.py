@@ -1,5 +1,5 @@
 from .transform import Transform
-from .trace_log import TraceLog
+# from .trace_log import TraceLog
 
 from modules.calc import centroid, distance
 from modules.constants import blank_palette_contour
@@ -26,7 +26,6 @@ class Trace():
         self.points = []
         self.hidden = False  # default to False
         self.tags = set()
-        self.history = []
         self.fill_mode = ("none", "none")
     
     def copy(self):
@@ -39,7 +38,6 @@ class Trace():
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
         copy_trace.tags = self.tags.copy()
-        copy_trace.history = [l.copy() for l in self.history]
         return copy_trace
     
     def add(self, point : tuple):
@@ -99,8 +97,8 @@ class Trace():
         """
         self.tags.add(tag)
 
-    def getList(self, include_name=True) -> dict:
-        """Return the trace data as a dictionary.
+    def getList(self, include_name=True) -> list:
+        """Return the trace data as a list.
         
             Params:
                 include_name (bool): True if name should be included in dict
@@ -124,8 +122,7 @@ class Trace():
             self.negative,
             self.hidden,
             self.fill_mode,
-            list(self.tags),
-            [list(l) for l in self.history]
+            list(self.tags)
         ]
 
         return l
@@ -197,13 +194,12 @@ class Trace():
         """Create a trace object from a dictionary.
         
             Params:
-                list (dict): the list trace data
+                l (list): the list trace data
                 name (str): the name of the trace
             Returns:
                 (Trace) a Trace object constructed from the dictionary data
         """
-
-        if not name or len(l) != 9:
+        if not name or len(l) != 8:
             name = l.pop(0)
         
         (
@@ -215,7 +211,6 @@ class Trace():
             hidden,
             fill_mode,
             tags,
-            history
         ) = tuple(l)
 
         new_trace = Trace(name, color, closed)
@@ -224,7 +219,6 @@ class Trace():
         new_trace.hidden = hidden
         new_trace.fill_mode = fill_mode
         new_trace.tags = set(tags)
-        new_trace.history = [TraceLog(l) for l in history]
 
         return new_trace
     
@@ -259,9 +253,6 @@ class Trace():
         new_trace.points = points
         new_trace.fill_mode = convertMode(xml_trace.mode)
         new_trace.negative = negative
-
-        if not palette:
-            new_trace.addLog("Imported")
         
         return new_trace
 
@@ -325,6 +316,22 @@ class Trace():
         """Centers the trace at the origin (ignores transformations)."""
         cx, cy = centroid(self.points)
         self.points = [(x-cx, y-cy) for x,y in self.points]
+    
+    def move(self, new_x, new_y):
+        """Move the center of the trace.
+        
+            Params:
+                new_x (float): the x coord of the new center
+                new_y (float): the y coord of the new center
+        """
+        cx, cy = centroid(self.points)
+        points = [
+            (
+                x - cx + new_x,
+                y - cy + new_y
+            ) for x, y in self.points
+        ]
+        self.points = points
 
     def resize(self, new_radius : float):
         """Resize a trace beased on its radius
@@ -398,30 +405,280 @@ class Trace():
             y *= new_mag / prev_mag
             self.points[i] = (x, y)
     
-    def addLog(self, message : str):
-        """Add a log to the trace history.
+    # def addLog(self, message : str):
+    #     """Add a log to the trace history.
         
-            Params:
-                message (str): the log message
-        """
-        self.history.append(TraceLog(message))
+    #         Params:
+    #             message (str): the log message
+    #     """
+    #     self.history.append(TraceLog(message))
     
-    def mergeHistory(self, other_trace):
-        """Merge the history of two traces.
+    # def mergeHistory(self, other_trace):
+    #     """Merge the history of two traces.
         
-            Params:
-                other_trace (Trace): the trace to merge histories with
-        """
-        self.history += other_trace.history
-        self.history.sort()
+    #         Params:
+    #             other_trace (Trace): the trace to merge histories with
+    #     """
+    #     self.history += other_trace.history
+    #     self.history.sort()
     
-    def isNew(self):
-        """Returns True if the trace has no existing history."""
-        return not bool(self.history)
+    # def isNew(self):
+    #     """Returns True if the trace has no existing history."""
+    #     return not bool(self.history)
 
     def mergeTags(self, other):
         """Merge the tags of two traces."""
         self.tags = self.tags.union(other.tags)
+
+
+class Stamp(Trace):
+
+    def __init__(self, name : str, center : tuple, radius : float, series):
+        """Create a Stamp object.
+        
+            Params:
+                name (str): the name of the stamp
+                points (int): the points that make the stamp
+                center (tuple): the x, y coordinate of the center
+                radius (float): the radius of the stamp
+                series (Series): the series containing the stamp
+                color (tuple): the color of the stamp: (R, G, B) 0-255
+                closed (bool): whether or not the trace is closed
+        """
+        self.n = name
+        self.center = center
+        self.radius = radius
+        self.series = series
+        self.hidden = False
+        self.tags = set()
+
+        # add stamp to series attribute storage
+        if self.n not in self.series.stamp_attrs:
+            d = {}
+            d["color"] = (0, 0, 0)
+            d["closed"] = True
+            d["negative"] = False
+            d["fill_mode"] = ("none", "none")
+            d["shape"] = []
+            self.series.stamp_attrs[self.n] = d
+    
+    # GETTERS AND SETTERS
+
+    @property
+    def name(self):
+        return self.n
+    @name.setter
+    def name(self, value):
+        if value not in self.series.stamp_attrs:
+            self.series.stamp_attrs[value] = self.series.stamp_attrs[self.n].copy()
+        # del(self.series.stamp_attrs[self.n])
+        self.n = value
+    
+    @property
+    def color(self):
+        return self.series.stamp_attrs[self.n]["color"]
+    @color.setter
+    def color(self, value):
+        self.series.stamp_attrs[self.n]["color"] = value
+    
+    @property
+    def closed(self):
+        return self.series.stamp_attrs[self.n]["closed"]
+    @closed.setter
+    def closed(self, value):
+        self.series.stamp_attrs[self.n]["closed"] = value
+    
+    @property
+    def negative(self):
+        return self.series.stamp_attrs[self.n]["negative"]
+    @negative.setter
+    def negative(self, value):
+        self.series.stamp_attrs[self.n]["negative"] = value
+    
+    @property
+    def fill_mode(self):
+        return self.series.stamp_attrs[self.n]["fill_mode"]
+    @fill_mode.setter
+    def fill_mode(self, value):
+        self.series.stamp_attrs[self.n]["fill_mode"] = value
+    
+    @property
+    def shape(self):
+        return self.series.stamp_attrs[self.n]["shape"]
+    @shape.setter
+    def shape(self, value):
+        self.series.stamp_attrs[self.n]["shape"] = value
+    
+    @property
+    def points(self):
+        pts = [
+            (
+                x * self.radius + self.center[0],
+                y * self.radius + self.center[1]
+            ) for x, y in self.shape
+        ]
+        return pts
+    @points.setter
+    def points(self, value):
+        raise Exception("Cannot set the points of a stamp.")
+    
+    # OVERWRITTEN FROM TRACE CLASS
+
+    def copy(self):
+        """Create a copy of the stamp object.
+        
+            Returns:
+                (Stamp): a copy of the object
+        """
+        copy_stamp = Stamp(self.n, self.center, self.radius, self.series)
+        copy_stamp.hidden = self.hidden
+        copy_stamp.tags = self.tags.copy()
+
+        return copy_stamp
+    
+    def add(self, point):
+        raise Exception("Cannot add trace point to stamp.")
+    
+    def getList(self, include_name=True) -> list:
+        """Return the stamp data as a list.
+        
+            Params:
+                include_name (bool): True if name should be included in the list
+            Returns:
+                (list) list containing the stamp data
+        """
+        l = []
+        if include_name:
+            l.append(self.n)
+        
+        l += [
+            self.center[0],
+            self.center[1],
+            self.radius,
+            self.hidden,
+            list(self.tags)
+        ]
+
+        return l
+    
+    # STATIC METHOD
+    def fromList(l : list, series, name : str = None):
+        """Create a stamp object from a dictionary.
+        
+            Params:
+                l (list): the list trace data
+                series (Series): the series containing the stamp
+                name (str): the name of the stamp
+            Returns:
+                (Stamp) a Stamp object constructed from the dictionary data
+        """
+
+        if not name or len(l) != 5:
+            name = l.pop(0)
+        
+        (
+            x,
+            y,
+            radius,
+            hidden,
+            tags
+        ) = tuple(l)
+
+        new_stamp = Stamp(name, (x, y), radius, series)
+        new_stamp.setHidden(hidden)
+        new_stamp.tags = set(tags)
+
+        return new_stamp
+    
+    # STATIC METHOD
+    def fromTrace(t : Trace, series):
+        """Create a stamp from an existing trace.
+        
+            Params:
+                t (Trace): the trace to convert
+                series (Series): the series containing the trace
+        """
+        t = t.copy()
+        center = t.getCentroid()
+        radius = t.getRadius()
+
+        t.centerAtOrigin()
+        t.resize(1)
+        shape = t.points.copy()
+
+        new_stamp = Stamp(t.name, center, radius, series)
+
+        new_stamp.color = t.color
+        new_stamp.closed = t.closed
+        new_stamp.negative = t.negative
+        new_stamp.fill_mode = t.fill_mode
+        new_stamp.shape = shape
+
+        new_stamp.hidden = t.hidden
+        new_stamp.tags = t.tags
+
+        return new_stamp
+
+    def centerAtOrigin(self):
+        """Center the stamp at the origin."""
+        self.center = (0, 0)
+    
+    def getStretched(self, w, h):
+        raise Exception("Cannot stretch a stamp.")
+    
+    def resize(self, new_radius : float):
+        """Resize a stamp radius
+        
+            Params:
+                new_radius (float): the new radius for the trace
+        """
+        self.radius = new_radius
+    
+    def move(self, new_x, new_y):
+        """Move the center of the trace.
+        
+            Params:
+                new_x (float): the x coord of the new center
+                new_y (float): the y coord of the new center
+        """
+        self.center = new_x, new_y
+
+    def reshape(self, new_points : float):
+        """Set the points for a stamp.
+        
+            Params:
+                new_points (float): the new points for the trace
+        """
+        self.shape = new_points
+    
+    def magScale(self, prev_mag : float, new_mag : float):
+        """Scale the stamp to magnification changes.
+        
+            Params:
+                prev_mag (float): the previous magnification
+                new_mag (float): the new magnification
+        """
+        x, y = self.center
+        x *= new_mag / prev_mag
+        y *= new_mag / prev_mag
+        self.center = (x, y)
+        self.radius *= new_mag / prev_mag  
+
+
+def traceFromList(l : list, series, name : str = None):
+    """Return a trace or stamp from a list object.
+    
+        Params:
+            l (list): the list trace data
+            series (Series): the series containing the trace
+            name (str): the name of the trace
+        Returns:
+            (Trace): the trace or stamp created from the list
+    """
+    if len(l) >= 8:
+        return Trace.fromList(l, name)
+    else:
+        return Stamp.fromList(l, series, name)
 
 def convertMode(arg):
     """Translate between Reconstruct and PyReconstruct fill modes."""

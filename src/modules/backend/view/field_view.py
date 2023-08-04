@@ -805,6 +805,9 @@ class FieldView():
         elif len(self.section.selected_traces) > 1:
             notify("Please select only one trace to cut at a time.")
             return
+        elif type(self.section.selected_traces[0]) is not Trace:
+            notify("Please cut only traces.")
+            return
         self.section_layer.cutTrace(scalpel_trace)
         self.generateView(generate_image=False)
         self.saveState()

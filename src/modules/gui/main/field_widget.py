@@ -25,7 +25,7 @@ from PySide6.QtGui import (
     QCursor
 )
 
-from modules.datatypes import Series, Trace, Ztrace
+from modules.datatypes import Series, Trace, Stamp, Ztrace
 from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
 from modules.backend.view import FieldView
 from modules.backend.table import (
@@ -414,6 +414,12 @@ class FieldWidget(QWidget, FieldView):
                             name = closest_trace.name
                             if closest_trace.negative:
                                 name += " (negative)"
+                        elif type(closest_trace) is Stamp:
+                            name = closest_trace.name
+                            if closest_trace.negative:
+                                name += " (stamp; negative)"
+                            else:
+                                name += " (stamp)"
                         elif type(closest_trace) is Ztrace:
                             name = f"{closest_trace.name} (ztrace)"
                         # ztrace tuple returned
@@ -589,6 +595,8 @@ class FieldWidget(QWidget, FieldView):
         elif trace is not None:
             if type(trace) is Trace:
                 self.status_list.append(f"Closest trace: {trace.name}")
+            elif type(trace) is Stamp:
+                self.status_list.append(f"Closest trace: {trace.name} (stamp)")
             elif type(trace) is tuple and type(trace[0]) is Ztrace:
                 self.status_list.append(f"Closest trace: {trace[0].name} (ztrace)")
          
@@ -1017,7 +1025,7 @@ class FieldWidget(QWidget, FieldView):
             # if user selected a trace
             elif self.selected_trace:
                 # if user selected a normal trace
-                if type(self.selected_trace) is Trace:
+                if isinstance(self.selected_trace, Trace):
                     self.selectTrace(self.selected_trace)
                 # if user selected a ztrace
                 elif type(self.selected_trace)is tuple:
@@ -1385,7 +1393,8 @@ class FieldWidget(QWidget, FieldView):
                 self.clicked_x,
                 self.clicked_y
             )
-            if self.selected_trace and type(self.selected_trace) is Trace:
+            if (self.selected_trace and
+                type(self.selected_trace) is Trace):
                 self.is_scissoring = True
                 self.deselectAllTraces()
                 self.section.deleteTraces([self.selected_trace])

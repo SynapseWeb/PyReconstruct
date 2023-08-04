@@ -2,7 +2,7 @@ from .series import Series
 from .section import Section
 from .transform import Transform
 from .contour import Contour
-from .trace import Trace
+from .trace import Trace, Stamp
 from .ztrace import Ztrace
 
 from .obj_group_dict import ObjGroupDict

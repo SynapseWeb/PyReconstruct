@@ -14,6 +14,7 @@ from modules.datatypes import (
     Series, 
     Section,
     Trace,
+    Stamp,
     Ztrace,
     Transform
 )
@@ -182,7 +183,7 @@ class TraceLayer():
         
         return closest_ztrace
 
-    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, origin_traces=None):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -202,18 +203,12 @@ class TraceLayer():
         # create the new trace
         new_trace = base_trace.copy()
         new_trace.points = []
-        new_trace.history = []
 
         # force trace to be open if only two points
         if len(pix_trace) == 2:
             new_trace.closed = False
         else:
             new_trace.closed = closed
-
-        # merge the history of any origin traces
-        if origin_traces:
-            for trace in origin_traces:
-                new_trace.mergeHistory(trace)
 
         # get the points
         tform = self.section.tforms[self.series.alignment]
@@ -223,10 +218,7 @@ class TraceLayer():
             new_trace.add(rtform_point)
         
         # add the trace to the section and select
-        if log_message:
-            self.section.addTrace(new_trace, log_message)
-        else:
-            self.section.addTrace(new_trace)
+        self.section.addTrace(new_trace)
         self.section.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
@@ -243,14 +235,14 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # create new stamp trace
         tform = self.section.tforms[self.series.alignment]
-        new_trace = trace.copy()
-        new_trace.points = []
-        for point in trace.points:
-            field_point = (point[0] + field_x, point[1] + field_y)
-            rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
-            new_trace.add(rtform_point)
-        self.section.addTrace(new_trace)
-        self.section.selected_traces.append(new_trace)
+        x, y = tform.map(field_x, field_y, inverted=True)
+        trace = trace.copy()
+        trace.move(x, y)
+        new_stamp = Stamp.fromTrace(trace, self.series)
+
+        # add it to the section and select
+        self.section.addTrace(new_stamp)
+        self.section.selected_traces.append(new_stamp)
     
     def placeGrid(
         self,
@@ -396,7 +388,10 @@ class TraceLayer():
         for trace in self.section.selected_traces:
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
-            trace.points = [tform.map(*p) for p in trace.points]
+            if type(trace) is Trace:
+                trace.points = [tform.map(*p) for p in trace.points]
+            elif type(trace) is Stamp:
+                trace.center = tform.map(*trace.center)
             copied_traces.append(trace)
         
         if cut:
@@ -413,8 +408,11 @@ class TraceLayer():
         for trace in traces:
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
-            trace.points = [tform.map(*p, inverted=True) for p in trace.points]
-            self.section.addTrace(trace, f"copied/pasted")
+            if type(trace) is Trace:
+                trace.points = [tform.map(*p, inverted=True) for p in trace.points]
+            elif type(trace) is Stamp:
+                trace.center = tform.map(*trace.center, inverted=True)
+            self.section.addTrace(trace)
             self.section.selected_traces.append(trace)
     
     def pasteAttributes(self, traces : list[Trace]):

@@ -484,6 +484,7 @@ class Series():
         options["show_ztraces"] = False
         options["find_zoom"] = 95
         options["autoseg"] = {}
+        options["converted_stamps"] = False
 
         return series_data
     
@@ -512,6 +513,9 @@ class Series():
             hidden_dir = createHiddenDir(wdir, series_name)
 
         series_data = Series.getEmptyDict()
+
+        # unecessary to convert stamps if creating a new series
+        series_data["options"]["converted_stamps"] = True
 
         series_data["src_dir"] = wdir  # the directory of the images
         sections = {}
@@ -1131,17 +1135,6 @@ class Series():
                 section.save()
         
         return flagged_objs
-
-
-
-
-
-
-
-
-
-
-
 
 
 class SeriesIterator():

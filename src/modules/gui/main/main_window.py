@@ -831,6 +831,20 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # convert series stamps if not converted already
+        if not self.series.options["converted_stamps"]:
+            reply = QMessageBox.question(
+                self,
+                "Stamps",
+                "This series might have traces that can be converted to stamps.\nWould you like to convert these traces into stamps?",
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.tracesToStamps()
+            else:
+                self.series.options["converted_stamps"] = True
     
     def newSeries(
         self,
@@ -2078,6 +2092,7 @@ class MainWindow(QMainWindow):
             notify("No traces that should be stamps were found.")
 
         self.field.reload()
+        self.series.options["converted_stamps"] = True
         self.seriesModified(True)
 
     def restart(self):

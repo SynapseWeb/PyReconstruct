@@ -318,6 +318,7 @@ class Trace():
         if tform:
             points = tform.map(points)
         cx, cy = centroid(points)
+        print(self.name, cx, cy)
         r = max([distance(cx, cy, x, y) for x, y in points])
         return r
         

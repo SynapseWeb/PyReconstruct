@@ -37,6 +37,8 @@ def centroid(pts : list) -> tuple:
     if abs(a) > 1e-6:
         if pts[0] != pts[-1]:
             pts = pts + pts[:1]
+        if not ccwpoly(pts):
+            pts = pts[::-1]
         x = [ c[0] for c in pts ]
         y = [ c[1] for c in pts ]
         sx = sy = 0
@@ -144,6 +146,14 @@ def pointInPoly(x : float, y: float, trace : list) -> bool:
     """
     pp_test = cv2.pointPolygonTest(np.array(trace).astype(int), (x, y), measureDist=False)
     return pp_test >= 0
+
+def ccwpoly(pts):
+    s = 0
+    for i in range(len(pts)):
+        x1, y1 = pts[i-1]
+        x2, y2 = pts[i]
+        s += (x2 - x1) * (y2 + y1)
+    return s < 0
 
 # source: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
 def ccw(A,B,C):

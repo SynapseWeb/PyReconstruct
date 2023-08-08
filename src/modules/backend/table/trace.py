@@ -132,8 +132,8 @@ class TraceTableManager():
                 mode (tuple): the fill mode for the traces
         """
         self.mainwindow.field.section.editTraceAttributes(traces, name, color, tags, mode)
-        self.mainwindow.field.saveState()
         self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
     
     def hideTraces(self, traces, hide=True):
         """Hide/unhide a set of traces.
@@ -143,8 +143,8 @@ class TraceTableManager():
                 hide (bool): True if traces should be hidden
         """
         self.mainwindow.field.section.hideTraces(traces, hide)
+        self.mainwindow.field.generateView()
         self.mainwindow.field.saveState()
-        self.mainwindow.field.generateView(generate_image=False)
     
     def editRadius(self, traces : list, new_rad : float):
         """Edit the radius of a set of traces

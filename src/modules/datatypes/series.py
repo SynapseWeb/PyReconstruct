@@ -6,7 +6,7 @@ from datetime import datetime
 from .ztrace import Ztrace
 from .section import Section
 from .contour import Contour
-from .trace import Trace, Stamp
+from .trace import Trace, Stamp, default_traces
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .object_table_item import ObjectTableItem
@@ -29,19 +29,6 @@ except ImportError:
     prog_imported = False
 
 from modules.backend.threading import ThreadPoolProgBar
-
-default_traces = [
-    ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], []],
-    ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], []],
-    ['triangle', [-0.0818157, 0.0818157, 0.0], [-0.0500008, -0.0500008, 0.1], [255, 0, 128], True, False, False, ['none', 'none'], []],
-    ['cross', [-0.0707107, -0.0202091, -0.0707107, -0.0404041, 0.0, 0.0404041, 0.0707107, 0.0202091, 0.0707107, 0.0404041, 0.0, -0.0404041], [0.0707107, 0.0, -0.0707107, -0.0707107, -0.0100975, -0.0707107, -0.0707107, 0.0, 0.0707107, 0.0707107, 0.0100975, 0.0707107], [255, 0, 0], True, False, False, ['none', 'none'], []],       
-    ['window', [0.0534515, 0.0534515, -0.0570026, -0.0570026, -0.0708093, -0.0708093, 0.0672582, 0.0672582, -0.0708093, -0.0570026], [0.0568051, -0.0536489, -0.0536489, 0.0429984, 0.0568051, -0.0674557, -0.0674557, 0.0706119, 0.0706119, 0.0568051], [255, 255, 0], True, False, False, ['none', 'none'], []],
-    ['diamond', [0.0, -0.1, 0.0, 0.1], [0.1, 0.0, -0.1, 0.0], [0, 0, 255], True, False, False, ['none', 'none'], []],
-    ['rect', [-0.0707107, 0.0707107, 0.0707107, -0.0707107], [0.0707107, 0.0707107, -0.0707107, -0.0707107], [255, 0, 255], True, False, False, ['none', 'none'], []],
-    ['arrow1', [0.0484259, 0.0021048, 0.0021048, 0.0252654, 0.094747, 0.0484259, 0.0252654, -0.0210557, -0.0442163, -0.0442163, -0.0905373, -0.0210557], [-0.0424616, -0.0424616, -0.0193011, 0.0038595, 0.02702, 0.0501806, 0.0965017, 0.0501806, 0.0038595, -0.0424616, -0.0424616, -0.0887827], [255, 0, 0], True, False, False, ['none', 'none'], []],
-    ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], []],
-    ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
-]
 
 class Series():
 
@@ -524,7 +511,7 @@ class Series():
 
         series_fp = os.path.join(hidden_dir, series_name + ".ser")
         with open(series_fp, "w") as series_file:
-            series_file.write(json.dumps(series_data, indent=2))
+            series_file.write(json.dumps(series_data))
         
         # create section files (.#)
         for i in range(len(image_locations)):
@@ -560,7 +547,7 @@ class Series():
 
         d = self.getDict()
         with open(self.filepath, "w") as f:
-            f.write(json.dumps(d, indent=1))
+            f.write(json.dumps(d))
     
     def getwdir(self) -> str:
         """Get the working directory of the series.
@@ -1074,49 +1061,32 @@ class Series():
             - there are two or more traces
             - every trace has the same area and distance
         """
-        # get the objects that should be converted to stamps
-        flagged_objs = []
-        # for obj, obj_data in self.data["objects"].items():
-        #     # get the trace data
-        #     trace_data_list = []
-        #     for traces in obj_data.traces.values():
-        #         trace_data_list += traces
+        class PointCounter():
+
+            def __init__(self, n):
+                self.n = n
+                self.count = 0
+                self.valid = True
             
-        #     # skip if less than three traces
-        #     if len(trace_data_list) < 2:
-        #         continue
-
-        #     # compare lengths and areas
-        #     l = trace_data_list[0].getLength()
-        #     a = trace_data_list[0].getArea()
-        #     flag = True
-        #     for trace_data in trace_data_list[1:]:
-        #         if (abs(trace_data.getLength() - l) > 1e-5 or
-        #             abs(trace_data.getArea() - a) > 1e-5):
-        #             flag = False
-        #             break
-        #     if flag:
-        #         flagged_objs.append(obj)
-        # if not flagged_objs:
-        #     return
-
+            def check(self, n):
+                if self.valid:
+                    self.valid = self.n == n
+                self.count += 1
+        
         d = {}
         for snum, section in self.enumerateSections(message="Checking traces..."):
             for trace in section.tracesAsList():
-                if type(trace) is Stamp:
-                    d[trace.name] = 0
+                if trace.name not in d:
+                    d[trace.name] = PointCounter(len(trace.points))
+                if type(trace) is Stamp or not trace.closed:
+                    d[trace.name].valid = False
                     continue
                 plen = len(trace.points)
-                if trace.name in d:
-                    n = d[trace.name]
-                    if n and n != plen:
-                        d[trace.name] = 0
-                else:
-                    d[trace.name] = plen
+                d[trace.name].check(plen)
         
         flagged_objs = []
-        for name, plen in d.items():
-            if plen:
+        for name, pc in d.items():
+            if pc.valid and pc.count >= 3:
                 flagged_objs.append(name)
         
         # convert the flagged objects into stamps

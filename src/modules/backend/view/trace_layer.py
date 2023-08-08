@@ -439,7 +439,7 @@ class TraceLayer():
                 trace (Trace): the trace to draw on the pixmap
             Returns:
                 (bool) if the trace is within the current field window view
-        """        
+        """
         # convert to screen coordinates
         qpoints = self.traceToPix(trace, qpoints=True)
         if not qpoints:

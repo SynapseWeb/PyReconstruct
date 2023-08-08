@@ -9,6 +9,19 @@ from modules.datatypes_legacy import (
     Transform as XMLTransform
 )
 
+default_traces = [
+    ['circle', [-0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, 0.0316285, 0.0948664, 0.0948664], [255, 128, 64], True, False, False, ['none', 'none'], []],
+    ['star', [-0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107, 0.0176777, 0.0, -0.0176777, -0.0707107], [0.0176777, 0.0, -0.0176777, -0.0707107, -0.0353553, -0.0883883, -0.0353553, -0.0707107, -0.0176777, 0.0, 0.0176777, 0.0707107, 0.0353553, 0.0883883, 0.0353553, 0.0707107], [128, 0, 255], True, False, False, ['none', 'none'], []],
+    ['triangle', [-0.0818157, 0.0818157, 0.0], [-0.0500008, -0.0500008, 0.1], [255, 0, 128], True, False, False, ['none', 'none'], []],
+    ['cross', [-0.0707107, -0.0202091, -0.0707107, -0.0404041, 0.0, 0.0404041, 0.0707107, 0.0202091, 0.0707107, 0.0404041, 0.0, -0.0404041], [0.0707107, 0.0, -0.0707107, -0.0707107, -0.0100975, -0.0707107, -0.0707107, 0.0, 0.0707107, 0.0707107, 0.0100975, 0.0707107], [255, 0, 0], True, False, False, ['none', 'none'], []],       
+    ['window', [0.0534515, 0.0534515, -0.0570026, -0.0570026, -0.0708093, -0.0708093, 0.0672582, 0.0672582, -0.0708093, -0.0570026], [0.0568051, -0.0536489, -0.0536489, 0.0429984, 0.0568051, -0.0674557, -0.0674557, 0.0706119, 0.0706119, 0.0568051], [255, 255, 0], True, False, False, ['none', 'none'], []],
+    ['diamond', [0.0, -0.1, 0.0, 0.1], [0.1, 0.0, -0.1, 0.0], [0, 0, 255], True, False, False, ['none', 'none'], []],
+    ['rect', [-0.0707107, 0.0707107, 0.0707107, -0.0707107], [0.0707107, 0.0707107, -0.0707107, -0.0707107], [255, 0, 255], True, False, False, ['none', 'none'], []],
+    ['arrow1', [0.0484259, 0.0021048, 0.0021048, 0.0252654, 0.094747, 0.0484259, 0.0252654, -0.0210557, -0.0442163, -0.0442163, -0.0905373, -0.0210557], [-0.0424616, -0.0424616, -0.0193011, 0.0038595, 0.02702, 0.0501806, 0.0965017, 0.0501806, 0.0038595, -0.0424616, -0.0424616, -0.0887827], [255, 0, 0], True, False, False, ['none', 'none'], []],
+    ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], []],
+    ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
+]
+
 class Trace():
 
     def __init__(self, name : str, color : tuple, closed=True):
@@ -459,7 +472,7 @@ class Stamp(Trace):
             d["closed"] = True
             d["negative"] = False
             d["fill_mode"] = ("none", "none")
-            d["shape"] = []
+            d["shape_index"] = 0
             self.series.stamp_attrs[self.n] = d
     
     # GETTERS AND SETTERS
@@ -504,13 +517,20 @@ class Stamp(Trace):
     
     @property
     def shape(self):
-        return self.series.stamp_attrs[self.n]["shape"]
+        index = self.series.stamp_attrs[self.n]["shape_index"]
+        if not (0 <= index < 10):
+            return []
+        trace_list = default_traces[self.series.stamp_attrs[self.n]["shape_index"]]
+        points = zip([x*10 for x in trace_list[1]], [y*10 for y in trace_list[2]])
+        return points
     @shape.setter
     def shape(self, value):
-        self.series.stamp_attrs[self.n]["shape"] = value
+        index = getDefaultPaletteIndex(value)
+        self.series.stamp_attrs[self.n]["shape_index"] = index
     
     @property
     def points(self):
+        # print("generating points")
         pts = [
             (
                 x * self.radius + self.center[0],
@@ -590,6 +610,36 @@ class Stamp(Trace):
 
         return new_stamp
     
+    def getBounds(self, tform : Transform = None) -> tuple:
+        """Get the most extreme coordinates for the stamp.
+        
+            Params:
+                tform (Transform): optional parameter to find extremeties of transformed trace
+            Returns:
+                (float) min x value
+                (float) min y value
+                (float) max x value
+                (float) max y value
+        """
+        x, y = self.center
+        r = self.radius
+        corners = [
+            (x - r, y - r),
+            (x + r, y - r),
+            (x + r, y + r),
+            (x - r, y + r)
+        ]
+        if tform is None:
+            x = [p[0] for p in corners]
+            y = [p[1] for p in corners]
+        else:
+            tform_points = tform.map(corners)
+            x = [p[0] for p in tform_points]
+            y = [p[1] for p in tform_points]
+        
+        return min(x), min(y), max(x), max(y)
+
+    
     # STATIC METHOD
     def fromTrace(t : Trace, series):
         """Create a stamp from an existing trace.
@@ -613,6 +663,9 @@ class Stamp(Trace):
         new_stamp.negative = t.negative
         new_stamp.fill_mode = t.fill_mode
         new_stamp.shape = shape
+
+        if not new_stamp.shape:
+            return t
 
         new_stamp.hidden = t.hidden
         new_stamp.tags = t.tags
@@ -708,46 +761,54 @@ def convertMode(arg):
                 mode *= -1
         return mode
 
+def getDefaultPaletteIndex(points : list):
+    """Get the index for a trace that matches the default legacy palette."""
+    l = len(points)
+    if l == 3:  # triangle
+        return 2
+    elif l == 4:  # two possibilities
+        x, y = points[1]
+        if x > 0:  # rect
+            return 7
+        else:  # diamond
+            return 6
+    elif l == 7:  # arrow2
+        return 9
+    elif l == 8:  # circle
+        return 0
+    elif l == 10:  # window
+        return 4
+    elif l == 16:  # star
+        return 1
+    elif l == 12:
+        # three possibilities for length 12
+        x, y = points[0]
+        if x < 0 and y > 0:
+            if abs(abs(x) - abs(y) < 1e-6):  # cross
+                return 3
+            else:  # plus
+                return 8
+        else:  # curved arrow
+            return 7
+    
+    return -1
+
 def getLegacyRadius(trace : Trace):
     """Get the legacy radius for a palette trace."""
     legacy_radii = {
-        "circle": 6.324555320336759,
-        "star": 5.656854249492381,
-        "triangle": 7.333333,
-        "cross": 9.899494936611665,
-        "square": 14.485601376004034,
-        "diamond": 7,
-        "curved_arrow": 12.952950706944307,
-        "plus": 12.649110640673518,
-        "straight_arrow": 16.646921637347848
+        0: 6.324555320336759,
+        1: 5.656854249492381,
+        2: 7.333333,
+        3: 9.899494936611665,
+        4: 14.485601376004034,
+        5: 7,
+        7: 12.952950706944307,
+        8: 12.649110640673518,
+        9: 16.646921637347848
     }
-    l = len(trace.points)
-    if l == 3:
-        trace_type = "triangle"
-    elif l == 4:
-        trace_type = "diamond"
-    elif l == 7:
-        trace_type = "straight_arrow"
-    elif l == 8:
-        trace_type = "circle"
-    elif l == 10:
-        trace_type = "square"
-    elif l == 16:
-        trace_type = "star"
-    elif l == 12:
-        # three possibilities for length 12
-        x, y = trace.points[0]
-        if x < 0 and y > 0:
-            if abs(abs(x) - abs(y) < 1e-6):
-                trace_type = "cross"
-            else:
-                trace_type = "plus"
-        else:
-            trace_type = "curved_arrow"
-    else:
-        return 8
-    
-    return legacy_radii[trace_type]
+    t = trace.copy()
+    t.centerAtOrigin()
+    return legacy_radii[getDefaultPaletteIndex(t.points)]
         
 
 

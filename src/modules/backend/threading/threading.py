@@ -3,7 +3,7 @@ import traceback
 
 from PySide6.QtWidgets import QProgressDialog, QApplication
 
-from modules.gui.utils import mainwindow
+from modules.gui.utils import progbar
 
 from PySide6.QtCore import (
     QRunnable,
@@ -106,34 +106,29 @@ class ThreadPool(QThreadPool):
         self.workers.append(w)
         return w
 
-class MemoryInt():
+class MemoryPercent():
 
-    def __init__(self):
+    def __init__(self, final_value):
+        self.fv = final_value
         self.n = 0
     
     def inc(self):
-        self.n += 1
+        self.n += (1 / self.fv) * 100
 
 class ThreadPoolProgBar(ThreadPool):
 
     def startAll(self, text):
         final_value = len(self.workers)
-        progbar = QProgressDialog(
-                text,
-                "Cancel",
-                0,
-                final_value,
-                mainwindow
-            )
-        progbar.setWindowTitle(" ")
-        progbar.setWindowModality(Qt.WindowModal)
-        progbar.setCancelButton(None)
-        progbar.show()
-        counter = MemoryInt()
+        update, canceled = progbar(
+            " ",
+            text,
+            cancel=False
+        )
+        counter = MemoryPercent(final_value)
         for worker in self.workers:
             QApplication.processEvents()
             worker.signals.finished.connect(counter.inc)
-            worker.signals.finished.connect(lambda : progbar.setValue(counter.n))
+            worker.signals.finished.connect(lambda : update(counter.n))
             self.start(worker)
         
         while counter.n < final_value:

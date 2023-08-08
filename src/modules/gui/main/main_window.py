@@ -1336,7 +1336,7 @@ class MainWindow(QMainWindow):
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace
-        self.field.section.save()
+        self.field.section.save(update_series_data=False)  # assume that relevant series data has already been stored
         self.series.save()
     
     def saveToJser(self, notify=False, close=False):

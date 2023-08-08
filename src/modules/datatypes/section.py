@@ -59,10 +59,13 @@ class Section():
             for trace_data in self.contours[name]:
                 trace = traceFromList(trace_data, series, name)
                 # screen for defective traces
-                l = len(trace.points)
-                if l == 2:
-                    trace.closed = False
-                if l > 1:
+                if type(trace) is Trace:
+                    l = len(trace.points)
+                    if l == 2:
+                        trace.closed = False
+                    if l > 1:
+                        trace_list.append(trace)
+                else:
                     trace_list.append(trace)
             self.contours[name] = Contour(
                 name,
@@ -196,7 +199,7 @@ class Section():
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
    
-    def save(self):
+    def save(self, update_series_data=True):
         """Save file into json."""
         try:
             if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
@@ -205,7 +208,8 @@ class Section():
             pass
 
         # update the series data
-        self.series.data.updateSection(self, update_traces=True)
+        if update_series_data:
+            self.series.data.updateSection(self, update_traces=True)
     
         d = self.getDict()
         with open(self.filepath, "w") as f:
@@ -388,7 +392,7 @@ class Section():
         tform = self.tforms[self.series.alignment]
 
         # only check the traces within the view if provided
-        if traces_in_view:
+        if traces_in_view is not None:
             traces = traces_in_view
         else:
             traces = self.tracesAsList()

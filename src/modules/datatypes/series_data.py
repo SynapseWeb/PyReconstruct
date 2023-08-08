@@ -2,7 +2,7 @@ from modules.calc import lineDistance, area
 
 from .section import Section
 from .transform import Transform
-from .trace import Trace
+from .trace import Trace, Stamp
 
 class TraceData():
 
@@ -17,6 +17,7 @@ class TraceData():
         self.closed = trace.closed
         self.negative = trace.negative
         self.tags = trace.tags
+        # if type(trace) is Trace:
         tformed_points = tform.map(trace.points)
         self.length = lineDistance(tformed_points, closed=trace.closed)
         if not self.closed:
@@ -25,6 +26,10 @@ class TraceData():
             self.area = area(tformed_points)
             if self.negative: self.area *= -1
         self.radius = trace.getRadius(tform)
+        # elif type(trace) is Stamp:
+        #     self.length = 0
+        #     self.area = 0
+        #     self.radius = trace.radius
     
     def getTags(self):
         return self.tags
@@ -94,8 +99,26 @@ class SeriesData():
             "sections": {},
             "objects": {},
         }
-        for snum, section in self.series.enumerateSections():
-            self.updateSection(section, update_traces=True)
+        import time
+        iterative_times = []
+        threading_times = []
+        for i in range(100):
+            t = time.time()
+            for snum, section in self.series.enumerateSections():
+                self.updateSection(section, update_traces=True)
+            it = time.time() - t
+            print("Iterative:", it)
+            iterative_times.append(it)
+
+            t = time.time()
+            self.series.map(self.updateSection, (True,))
+            tt = time.time() - t
+            print("Threading:", tt)
+            threading_times.append(tt)
+
+            print(f"Averages: ({len(iterative_times)} iterations)")
+            print("Iterative:", sum(iterative_times) / len(iterative_times))
+            print("Threading:", sum(threading_times) / len(threading_times))
     
     def updateSection(self, section : Section, update_traces=False):
         """Update the existing section data.
@@ -131,7 +154,7 @@ class SeriesData():
         if update_traces:
             # check if there are specific traces to be updated
             trace_names = section.getAllModifiedNames()
-            if not trace_names and not self.series.modified_ztraces:
+            if not trace_names and not self.series.modified_ztraces:  # update all traces if none provided
                 trace_names = section.contours.keys()
 
             # keep track of objects that are newly created/destroyed

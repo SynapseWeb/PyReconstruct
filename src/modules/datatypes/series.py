@@ -3,6 +3,7 @@ import json
 import shutil
 from datetime import datetime
 
+from .log import LogSet
 from .ztrace import Ztrace
 from .section import Section
 from .contour import Contour
@@ -95,10 +96,21 @@ class Series():
 
         self.options = series_data["options"]
 
+        # possible existing log set
+        if "log_set" in series_data:
+            self.log_set = LogSet.fromList(series_data["log_set"])
+        else:
+            self.log_set = LogSet()
+        # last user data
+        self.last_user = series_data["last_user"]
+
         # keep track of relevant overall series data
         self.data = SeriesData(self)
         if get_series_data:
             self.data.refresh()
+        
+        # username
+        self.user = os.getlogin()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -159,6 +171,10 @@ class Series():
             # replace data
             jser_data = updated_jser_data
         
+        # UPDATE TO INCLUDE A LOG
+        if "log" not in jser_data:
+            jser_data["log"] = "Date, Time, User, Obj, Sections, Event"
+        
         # creating loading bar
         update, canceled = seriesProgbar(
             text="Opening series..."
@@ -168,7 +184,7 @@ class Series():
         for sdata in jser_data["sections"]:
             if sdata: final_value += 1
         final_value *= 2  # for loading section data
-        final_value += 1  # unpacking series
+        final_value += 2  # unpacking series and log
 
         # create the hidden directory
         hidden_dir = createHiddenDir(sdir, sname)
@@ -208,6 +224,17 @@ class Series():
             if update:
                 update(progress/final_value * 100)
         
+        # extract the existing log
+        log_str = jser_data["log"]
+        existing_log_fp = os.path.join(hidden_dir, "existing_log.csv")
+        with open(existing_log_fp, "w") as f:
+            f.write(log_str)
+        if canceled and canceled():
+            return None
+        progress += 1
+        if update:
+            update(progress/final_value * 100)
+        
         # create the series
         series = Series(series_fp, sections, get_series_data=False)
         series.jser_fp = fp
@@ -238,21 +265,35 @@ class Series():
         # get the max section number
         sections_len = max(self.sections.keys())+1
         jser_data["sections"] = [None] * sections_len
+        jser_data["series"] = {}
+        jser_data["log"] = ""
 
         for filename in filenames:
             if "." not in filename:  # skip the timer file
                 continue
             ext = filename[filename.rfind(".")+1:]
-            if not (ext.isnumeric() or ext == "ser"):  # skip any other files
-                continue
             fp = os.path.join(self.hidden_dir, filename)
-            with open(fp, "r") as f:
-                filedata = json.load(f)
 
             if ext.isnumeric():
+                with open(fp, "r") as f:
+                    filedata = json.load(f)
                 jser_data["sections"][int(ext)] = filedata
-            else:
+            elif ext == "ser":
+                with open(fp, "r") as f:
+                    filedata = json.load(f)
+                # manually remove the log set from the series data
+                del(filedata["log_set"])
+                # add the log_set string to the log
+                log_set_str = str(self.log_set)
+                if log_set_str:
+                    jser_data["log"] += "\n" + str(self.log_set)
+                # save the series
                 jser_data["series"] = filedata
+            elif filename == "existing_log.csv":
+                with open(fp, "r") as f:
+                    existing_log = f.read()
+                # continue saving the existing log file
+                jser_data["log"] = existing_log + jser_data["log"]
 
             if update: update(progress/final_value * 100)
             progress += 1
@@ -282,8 +323,8 @@ class Series():
         
         if close:
             self.close()
-        else:
-            self.gatherSectionData()
+        # else:
+        #     self.gatherSectionData()
 
         if update: update(100)
     
@@ -441,6 +482,9 @@ class Series():
         # ADDED SINCE JAN 25TH
         d["options"] = self.options
 
+        d["log_set"] = self.log_set.getList()
+        d["last_user"] = self.last_user
+
         return d
     
     # STATIC METHOD
@@ -458,6 +502,7 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
+
 
         # ADDED SINCE JAN 25TH
 
@@ -477,6 +522,8 @@ class Series():
         options["show_ztraces"] = False
         options["find_zoom"] = 95
         options["autoseg"] = {}
+
+        series_data["last_user"] = {}
 
         return series_data
     
@@ -899,7 +946,7 @@ class Series():
         self.object_groups.merge(other.object_groups)
         
         self.save()
-        self.gatherSectionData()
+        # self.gatherSectionData()
     
     def importZtraces(self, other):
         """Import all the ztraces from another series."""
@@ -1061,6 +1108,21 @@ class Series():
             if found_on_section:
                 section.save()
         return removed
+
+    def addLog(self, obj_name : str, snum : int, event : str):
+        """Add a log to the log set.
+        
+            Params:
+                obj_name (str): the name of the modified object
+                snum (int): the section number of the event
+                event (str): the description of the event
+        """
+        self.log_set.addLog(self.user, obj_name, snum, event)
+
+        # update the last user data
+        if obj_name:
+            self.last_user[obj_name] = self.user
+            
 
 
 class SeriesIterator():

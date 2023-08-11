@@ -646,17 +646,14 @@ class MainWindow(QMainWindow):
         if new_name is None:
             new_name, confirmed = QInputDialog.getText(
                 self,
-                "Change Login",
-                "Enter your desired username:",
-                text=os.getlogin()
+                "Username",
+                "Enter your username:",
+                text=self.series.user
             )
             if not confirmed or not new_name:
                 return
-        
-        def getlogin():
-            return new_name
-        
-        os.getlogin = getlogin
+            
+        self.series.user = new_name
     
     def setFillOpacity(self, opacity : float = None):
         """Set the opacity of the trace highlight.
@@ -831,6 +828,9 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # prompt the user for a username
+        self.changeUsername()
     
     def newSeries(
         self,

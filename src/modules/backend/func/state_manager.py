@@ -24,7 +24,10 @@ class FieldState():
         # added another state
         else:
             for contour_name in updated_contours:
-                self.contours[contour_name] = contours[contour_name].copy()
+                if contour_name in contours:
+                    self.contours[contour_name] = contours[contour_name].copy()
+                else:  # empty Contour
+                    self.contours[contour_name] = Contour(contour_name)
         
         # first state made for a section (or copy)
         if updated_ztraces is None:

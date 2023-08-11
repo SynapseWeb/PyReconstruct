@@ -265,6 +265,9 @@ class Section():
                 trace (Trace): the trace to add
                 log_message (str): the history log message to put on the trace
         """
+        # TEST
+        self.series.log_set.addLog(self.series.user, trace.name, self.n, "Create new trace(s)")
+        
         # do not add trace if less than two points
         if len(trace.points) < 2:
             return

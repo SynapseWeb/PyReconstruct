@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 def getDateTime():
@@ -153,7 +154,30 @@ class LogSet():
                 self.dyn_logs[obj_key][event] = l
         else:  # static log
             d, t = getDateTime()
-            self.all_logs.append(Log(d, t, user, obj_name, snum, event))
+            log = Log(d, t, user, obj_name, snum, event)
+
+            # special cases: creating or deleting an object
+            if event == "Create object":
+                # check the previous log to see if traces were created
+                prev_log = self.all_logs[-1]
+                if "Create trace(s)" in prev_log.event:
+                    self.all_logs.insert(len(self.all_logs)-1, log)
+            elif event == "Delete object":
+                # remove object from dynamic log
+                if obj_name in self.dyn_logs:
+                    del(self.dyn_logs[obj_name])
+                self.all_logs.append(log)
+            # non-special cases
+            else:
+                self.all_logs.append(log)
+        
+        # for debugging
+        # Clear console
+        if os.name == 'nt':  # Windows
+            _ = os.system('cls')
+        else:  # Mac and Linux
+            _ = os.system('clear')
+        print(str(self).replace(", ", "\t"))
     
     def addExistingLog(self, log : Log, track_dyn=False):
         """Add an existing log object to the set."""

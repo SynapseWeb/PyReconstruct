@@ -182,7 +182,7 @@ class TraceLayer():
         
         return closest_ztrace
 
-    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_message=None, origin_traces=None):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, origin_traces=None, log_event=True):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -223,10 +223,7 @@ class TraceLayer():
             new_trace.add(rtform_point)
         
         # add the trace to the section and select
-        if log_message:
-            self.section.addTrace(new_trace, log_message)
-        else:
-            self.section.addTrace(new_trace)
+        self.section.addTrace(new_trace, log_event=log_event)
         self.section.selected_traces.append(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
@@ -295,7 +292,7 @@ class TraceLayer():
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
     
-    def mergeSelectedTraces(self, merge_attrs=False):
+    def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
         """Merge all selected traces.
         
             Params:
@@ -313,7 +310,8 @@ class TraceLayer():
                 name=first_trace.name,
                 color=first_trace.color,
                 tags=first_trace.tags,
-                mode=first_trace.fill_mode
+                mode=first_trace.fill_mode,
+                log_event=log_event
             )
 
         # merge traces
@@ -337,17 +335,19 @@ class TraceLayer():
             merged_traces = mergeTraces(traces)  # merge the pixel traces
             # delete the old traces
             origin_traces = self.section.selected_traces.copy()
-            self.section.deleteTraces()
+            self.section.deleteTraces(log_event=False)
             # create new merged trace
             for trace in merged_traces:
                 self.newTrace(
                     trace,
                     first_trace,
-                    log_message="merged",
-                    origin_traces=origin_traces
+                    origin_traces=origin_traces,
+                    log_event=False
                 )
+            if log_event:
+                self.series.addLog(name, self.section.n, "Modify trace(s)")
     
-    def cutTrace(self, knife_trace : list):
+    def cutTrace(self, knife_trace : list, log_event=True):
         """Cuts the selected trace along the knife line.
         
             Params:
@@ -365,9 +365,11 @@ class TraceLayer():
             self.newTrace(
                 piece,
                 trace,
-                log_message="split with knife",
-                origin_traces=origin_traces
+                origin_traces=origin_traces,
+                log_event=False
             )
+        if log_event:
+            self.series.addLog(trace.name, self.section.n, "Modify trace(s)")
     
     def eraseArea(self, pix_x : int, pix_y : int):
         """Erase an area of the field.
@@ -414,7 +416,7 @@ class TraceLayer():
             trace = trace.copy()
             tform = self.section.tforms[self.series.alignment]
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
-            self.section.addTrace(trace, f"copied/pasted")
+            self.section.addTrace(trace)
             self.section.selected_traces.append(trace)
     
     def pasteAttributes(self, traces : list[Trace]):

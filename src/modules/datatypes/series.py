@@ -241,7 +241,7 @@ class Series():
 
         # gather the series data
         for snum, section in series.enumerateSections(show_progress=False):
-            series.data.updateSection(section, update_traces=True)
+            series.data.updateSection(section, update_traces=True, log_events=False)
             if canceled and canceled():
                 return None
             progress += 1
@@ -575,6 +575,9 @@ class Series():
         #     f"{series_name}.jser"
         # )
         # series.saveJser()
+
+        # create the first log
+        series.addLog(None, None, "Create series")
         
         return series
     
@@ -646,7 +649,7 @@ class Series():
 
         return results
 
-    def modifyAlignments(self, add : list = [], remove : list = [], rename : list = []):
+    def modifyAlignments(self, add : list = [], remove : list = [], rename : list = [], log_event=True):
         """Modify the alignments (input from dialog).
         
             Params:
@@ -667,6 +670,14 @@ class Series():
                 if a in section.tforms:
                     del(section.tforms[a])
             section.save()
+
+        if log_event:
+            for a in add:
+                self.addLog(None, None, f"Create alignment {a}")
+            for a in remove:
+                self.addLog(None, None, f"Delete alignment {a}")
+            for a, new_name in rename:
+                self.addLog(None, None, f"Rename alignment {a} to {new_name}")
     
     def getZValues(self):
         """Return the z-values for each section.
@@ -920,7 +931,7 @@ class Series():
         
         self.modified = True
     
-    def hideAllTraces(self, hidden=True):
+    def hideAllTraces(self, hidden=True, log_event=True):
         """Hide all traces in the entire series.
         
             Params:
@@ -931,8 +942,11 @@ class Series():
             for trace in section.tracesAsList():
                 trace.setHidden(hidden)
             section.save()
+        
+        if log_event:
+            self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
-    def importTraces(self, other):
+    def importTraces(self, other, log_event=True):
         """Import all the traces from another series."""
         # ensure that the two series have the same sections
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
@@ -944,20 +958,26 @@ class Series():
         
         # import the group data
         self.object_groups.merge(other.object_groups)
+
+        if log_event:
+            self.addLog(None, None, "Import traces from another series")
         
         self.save()
         # self.gatherSectionData()
     
-    def importZtraces(self, other):
+    def importZtraces(self, other, log_event=True):
         """Import all the ztraces from another series."""
         for o_zname, o_ztrace in other.ztraces.items():
             # only import new ztraces, do NOT replace existing ones
             if o_zname not in self.ztraces:
                 self.ztraces[o_zname] = o_ztrace.copy()
         
+        if log_event:
+            self.addLog(None, None, "Import ztraces from another series")
+        
         self.save()
     
-    def importTransforms(self, other, alignments : list):
+    def importTransforms(self, other, alignments : list, log_event=True):
         """Import transforms from another series.
         
             Params:
@@ -972,7 +992,12 @@ class Series():
         for (r_num, r_section), (s_num, s_section) in iterator:
             for a in alignments:
                 r_section.tforms[a] = s_section.tforms[a].copy()
-                r_section.save()                
+                r_section.save()
+
+        if log_event:
+            alignments_str = ", ".join(alignments)
+            self.addLog(None, None, f"Import alignments {alignments_str} from another series")
+
         self.save()
     
     def loadObjectData(self, object_table_items=False):
@@ -1082,7 +1107,7 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self):
+    def deleteDuplicateTraces(self, log_event=True):
         """Delete all duplicate traces in the series (keep tags)."""
         removed = {}
         for snum, section in self.enumerateSections(message="Removing duplicate traces..."):
@@ -1107,6 +1132,10 @@ class Series():
                     i += 1
             if found_on_section:
                 section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Delete all duplicate traces")
+
         return removed
 
     def addLog(self, obj_name : str, snum : int, event : str):

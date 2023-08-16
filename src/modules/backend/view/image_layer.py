@@ -133,7 +133,7 @@ class ImageLayer():
 
         return bl, tl, tr, br
     
-    def changeBrightness(self, change : int):
+    def changeBrightness(self, change : int, log_event=True):
         """Change the brightness of the section.
         
             Params:
@@ -144,8 +144,11 @@ class ImageLayer():
             self.section.brightness = 100
         elif self.section.brightness < -100:
             self.section.brightness = -100
+        
+        if log_event:
+            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
     
-    def changeContrast(self, change : int):
+    def changeContrast(self, change : int, log_event=True):
         """Change the contrast of the section.
         
             Params:
@@ -155,6 +158,9 @@ class ImageLayer():
             self.section.contrast = 100
         elif self.section.contrast < -100:
             self.section.contrast = -100
+        
+        if log_event:
+            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
     
     def _drawBrightness(self, image_layer):
         """Draw the brightness on the image field.

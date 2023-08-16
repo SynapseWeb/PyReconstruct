@@ -1173,7 +1173,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified()
     
-    def editImage(self, option : str, direction : str):
+    def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.
         
             Params:
@@ -1322,7 +1322,7 @@ class MainWindow(QMainWindow):
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace
-        self.field.section.save()
+        self.field.section.save(update_series_data=False)
         self.series.save()
     
     def saveToJser(self, notify=False, close=False):
@@ -1589,7 +1589,7 @@ class MainWindow(QMainWindow):
             added, removed, renamed = [], [], []
         
         if added or removed or renamed:
-            self.series.modifyAlignments(added, removed, renamed)
+            self.series.modifyAlignments(added, removed, renamed)            
             self.field.reload()
         
         if alignment_name:

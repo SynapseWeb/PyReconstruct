@@ -196,7 +196,7 @@ class FieldView():
             self.stored_tform = Transform([1,0,0,0,1,0])
             self.propogated_sections = [self.series.current_section]
         
-    def propogateTo(self, to_end : bool = True):
+    def propogateTo(self, to_end : bool = True, log_event=True):
         """Propogate the stored transform to the start/end of series.
         
             Params:
@@ -217,6 +217,8 @@ class FieldView():
                 section.tforms[self.series.alignment] = new_tform
                 section.save()
                 self.propogated_sections.append(snum)
+                if log_event:
+                    self.series.addLog(None, snum, "Modify transform")
         
         self.reload()
     
@@ -678,7 +680,7 @@ class FieldView():
         # change the transform
         self.changeTform(a2b_tform)
     
-    def calibrateMag(self, trace_lengths : dict):
+    def calibrateMag(self, trace_lengths : dict, log_event=True):
         """Calibrate the pixel mag based on the lengths of given traces.
 
             Params:
@@ -706,6 +708,9 @@ class FieldView():
         ):
             section.setMag(new_mag)
             section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Calibrate series")
         
         # reload the field
         self.reload()
@@ -809,12 +814,12 @@ class FieldView():
         self.generateView(generate_image=False)
         self.saveState()
     
-    def newTrace(self, pix_trace, tracing_trace, closed=True):
+    def newTrace(self, pix_trace, tracing_trace, closed=True, log_event=True):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             self.generateView(generate_image=False)
             return
-        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed)
+        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed, log_event=log_event)
         self.generateView(generate_image=False)
         self.saveState()
     

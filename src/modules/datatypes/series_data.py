@@ -95,9 +95,9 @@ class SeriesData():
             "objects": {},
         }
         for snum, section in self.series.enumerateSections():
-            self.updateSection(section, update_traces=True)
+            self.updateSection(section, update_traces=True, log_events=False)
     
-    def updateSection(self, section : Section, update_traces=False):
+    def updateSection(self, section : Section, update_traces=False, log_events=True):
         """Update the existing section data.
         
             Params:
@@ -143,7 +143,7 @@ class SeriesData():
                 # check if object is newly created
                 if obj_data is not None:
                     obj_data.clearSection(section.n)
-                else:
+                elif obj_data is None and not section.contours[name].isEmpty():
                     added_objects.add(name)
                 # add new trace data
                 if name in section.contours:
@@ -157,6 +157,13 @@ class SeriesData():
                     if obj_data.isEmpty():
                         del(self.data["objects"][name])
                         removed_objects.add(name)
+            
+            # log the newly created/destroyed objects
+            if log_events:
+                for obj_name in added_objects:
+                    self.series.addLog(obj_name, None, "Create object")
+                for obj_name in removed_objects:
+                    self.series.addLog(obj_name, None, "Delete object")
     
     def addTrace(self, trace : Trace, section : Section):
         """Add trace data to the existing object.

@@ -75,11 +75,14 @@ class SectionLayer(ImageLayer, TraceLayer):
 
         return view
     
-    def changeTform(self, new_tform : Transform):
+    def changeTform(self, new_tform : Transform, log_event=True):
         """Set the transform for the image.
         
             Params:
                 new_tform (Transform): the new transform to set for the section
         """
         self.section.tforms[self.series.alignment] = new_tform
+
+        if log_event:
+            self.series.addLog(None, self.section.n, "Modify transform")
 

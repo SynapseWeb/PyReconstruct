@@ -111,6 +111,17 @@ class TraceTableManager():
         self.mainwindow.field.generateView(generate_image=False)
         self.mainwindow.field.saveState()
     
+    def editShape(self, traces : list, new_shape : float):
+        """Edit the shape of a set of traces
+        
+            Params:
+                traces (list): the list of traces to modify
+                new_rad (float): the new shape for the traces
+        """
+        self.mainwindow.field.section.editTraceShape(traces, new_shape)
+        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
+    
     def findTrace(self, item):
         """Find an object in the series.
         

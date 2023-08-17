@@ -315,7 +315,7 @@ class Section():
                 selected = False
             
             # remove the trace and modify
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             new_trace = trace.copy()
             if name is not None:
                 new_trace.name = name
@@ -349,7 +349,7 @@ class Section():
             if selected:
                 self.selected_traces.append(new_trace)
     
-    def editTraceRadius(self, traces : list[Trace], new_rad : float):
+    def editTraceRadius(self, traces : list[Trace], new_rad : float, log_event=True):
         """Change the radius of a trace or set of traces.
         
             Params:
@@ -357,11 +357,13 @@ class Section():
                 new_rad (float): the new radius for the trace(s)
         """
         for trace in traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             trace.resize(new_rad)
-            self.addTrace(trace, "radius modified")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify radius")
     
-    def editTraceShape(self, traces : list[Trace], new_shape : list):
+    def editTraceShape(self, traces : list[Trace], new_shape : list, log_event=True):
         """Change the shape of a trace or set of traces.
         
             Params:
@@ -369,9 +371,11 @@ class Section():
                 new_shape (list): the new shape for the trace(s)
         """
         for trace in traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             trace.reshape(new_shape)
-            self.addTrace(trace, "shape modified")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify shape")
     
     def findClosestTrace(
             self,
@@ -560,6 +564,9 @@ class Section():
             ztrace.points[i] = (x, y, snum)
             # keep track of modified ztrace
             self.series.modified_ztraces.add(ztrace.name)
+            if log_event:
+                self.series.addLog(ztrace.name, self.n, "Modify ztrace")
+
     
     def importTraces(self, other):
         """Import the traces from another section.

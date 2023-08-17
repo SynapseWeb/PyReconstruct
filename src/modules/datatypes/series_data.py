@@ -139,16 +139,15 @@ class SeriesData():
             removed_objects = set()
             # clear existing trace data on this section
             for name in trace_names:
-                obj_data = self.data["objects"].get(name)
                 # check if object is newly created
-                if obj_data is not None:
-                    obj_data.clearSection(section.n)
-                elif obj_data is None and not section.contours[name].isEmpty():
-                    added_objects.add(name)
+                if name in self.data["objects"]:
+                    self.data["objects"][name].clearSection(section.n)
                 # add new trace data
                 if name in section.contours:
                     for trace in section.contours[name]:
-                        self.addTrace(trace, section)
+                        is_new_object = self.addTrace(trace, section)
+                        if is_new_object:
+                            added_objects.add(name)
             
             # check for removed objects
             for name in trace_names:

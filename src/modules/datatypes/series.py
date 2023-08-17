@@ -694,7 +694,7 @@ class Series():
         
         return zvals
     
-    def createZtrace(self, obj_name : str, cross_sectioned=True):
+    def createZtrace(self, obj_name : str, cross_sectioned=True, log_event=True):
         """Create a ztrace from an existing object in the series.
         
             Params:
@@ -744,6 +744,9 @@ class Series():
             ztrace_color,
             points
         )
+
+        if log_event:
+            self.addLog(ztrace_name, None, "Create ztrace")
 
         self.modified = True
     
@@ -798,11 +801,11 @@ class Series():
                     modified = True
             
             if modified:
-                section.save()
+                section.save()  # deleting object will automatically be logged
         
         self.modified = True
     
-    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None):
+    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, log_event=True):
         """Edit the attributes of objects on every section.
         
             Params:
@@ -812,6 +815,14 @@ class Series():
                 color (tuple): the new color for the objects
                 addTrace (function): for object table updating purposes
         """
+        # preemptively create log
+        if log_event:
+            for obj_name in obj_names:
+                if obj_name != name:
+                    self.addLog(obj_name, None, f"Rename object to {name}")
+                else:
+                    self.addLog(obj_name, None, "Modify object")
+        
         # modify the object on every section
         for snum, section in self.enumerateSections(
             message="Modifying object(s)..."
@@ -821,7 +832,7 @@ class Series():
                 if obj_name in section.contours:
                     traces += section.contours[obj_name].getTraces()
             if traces:
-                section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True)
+                section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True, log_event=False)
                 # gather new traces
                 if name:
                     traces = section.contours[name].getTraces()
@@ -834,7 +845,7 @@ class Series():
         
         self.modified = True
     
-    def editObjectRadius(self, obj_names : list, new_rad : float, addTrace=None):
+    def editObjectRadius(self, obj_names : list, new_rad : float):
         """Change the radii of all traces of an object.
         
             Params:
@@ -851,15 +862,11 @@ class Series():
                     traces += section.contours[name].getTraces()
             if traces:
                 section.editTraceRadius(traces, new_rad)
-                # add trace data to table data
-                if addTrace:
-                    for trace in traces:
-                        addTrace(trace, section, snum)
                 section.save()
         
         self.modified = True
     
-    def editObjectShape(self, obj_names : list, new_shape : float, addTrace=None):
+    def editObjectShape(self, obj_names : list, new_shape : float):
         """Change the shape of all traces of an object.
         
             Params:
@@ -876,15 +883,11 @@ class Series():
                     traces += section.contours[name].getTraces()
             if traces:
                 section.editTraceShape(traces, new_shape)
-                # add trace data to table data
-                if addTrace:
-                    for trace in traces:
-                        addTrace(trace, section, snum)
                 section.save()
         
         self.modified = True
     
-    def removeAllTraceTags(self, obj_names : list):
+    def removeAllTraceTags(self, obj_names : list, log_event=True):
         """Remove all tags from all traces on a set of objects.
         
             Params:
@@ -904,12 +907,17 @@ class Series():
                     color=None,
                     tags=set(),
                     mode=None, 
+                    log_event=False
                 )
                 section.save()
+        
+        if log_event:
+            for name in obj_names:
+                self.addLog(name, None, "Remove all trace tags")
 
         self.modified = True
     
-    def hideObjects(self, obj_names : list, hide=True):
+    def hideObjects(self, obj_names : list, hide=True, log_event=True):
         """Hide all traces of a set of objects throughout the series.
         
             Params:
@@ -928,6 +936,11 @@ class Series():
                         modified = True
             if modified:
                 section.save()
+        
+        if log_event:
+            for name in obj_names:
+                event = f"{'Hide' if hide else 'Unhide'} object"
+                self.addLog(name, None, event)
         
         self.modified = True
     

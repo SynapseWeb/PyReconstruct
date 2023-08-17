@@ -53,7 +53,7 @@ class SectionTableManager():
         for snum in section_numbers:
             self.updateSection(snum)
     
-    def lockSections(self, section_numbers : list[int], lock : bool):
+    def lockSections(self, section_numbers : list[int], lock : bool, log_event=True):
         """Lock or unlock a set of sections.
         
             Params:
@@ -66,6 +66,8 @@ class SectionTableManager():
             section = self.series.loadSection(snum)
             section.align_locked = lock
             section.save()
+            if log_event:
+                self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
         
         # update the field
         self.mainwindow.field.reload()
@@ -74,7 +76,7 @@ class SectionTableManager():
         # update the tables
         self.updateSections(section_numbers)
 
-    def setBC(self, section_numbers : list[int], b : int, c : int):
+    def setBC(self, section_numbers : list[int], b : int, c : int, log_event=True):
         """Set the brightness and contrast for a set of sections.
         
             Params:
@@ -91,6 +93,8 @@ class SectionTableManager():
             if c is not None:
                 section.contrast = c
             section.save()
+            if log_event:
+                self.series.addLog(None, snum, "Modify brightness/contrast")
         
         # update the field
         self.mainwindow.field.reload()
@@ -109,7 +113,7 @@ class SectionTableManager():
         c = self.mainwindow.field.section.contrast
         self.setBC(section_numbers, b, c)
 
-    def editThickness(self, section_numbers : list[int], thickness : float):
+    def editThickness(self, section_numbers : list[int], thickness : float, log_event=True):
         """Set the section thickness for a set of sections.
         
             Params:
@@ -121,7 +125,10 @@ class SectionTableManager():
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             section.thickness = thickness
-            section.save()        
+            section.save()
+            if log_event:
+                self.series.addLog(None, snum, f"Change section thickness to {thickness}")
+                
         self.mainwindow.field.reload()
         self.updateSections(section_numbers)
 
@@ -131,7 +138,7 @@ class SectionTableManager():
         
         self.mainwindow.seriesModified(True)
     
-    def editSrc(self, snum : int, new_src : str):
+    def editSrc(self, snum : int, new_src : str, log_event=True):
         """Set the image source for a single section (and possible for all sections).
         
             Params:
@@ -157,14 +164,17 @@ class SectionTableManager():
             section = self.series.loadSection(snum)
             section.src = new_src
             section.save()
+        
+        if log_event:
+            self.series.addLog(None, snum, f"Change section image source to {new_src}")
 
         self.mainwindow.field.reload()
         self.mainwindow.field.reloadImage()
         self.updateSection(snum)
         self.mainwindow.seriesModified(True)
     
-    # BUG: MAKE SURE ZTRAACE POINTS GET DELETED
-    def deleteSections(self, section_numbers : list[int]):
+    # BUG: MAKE SURE ZTRACE POINTS GET DELETED
+    def deleteSections(self, section_numbers : list[int], log_event=True):
         """Delete a set of sections.
         
             Params:
@@ -178,6 +188,8 @@ class SectionTableManager():
             os.remove(os.path.join(self.series.getwdir(), filename))
             # delete link to file
             del(self.series.sections[snum])
+            if log_event:
+                self.series.addLog(None, snum, "Delete section")
         
         # refresh the data
         self.series.data.refresh()
@@ -187,7 +199,7 @@ class SectionTableManager():
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:
             self.mainwindow.changeSection(sorted(list(self.series.sections.keys()))[0], save=False)
-        
+
         self.updateTables()
 
         self.mainwindow.seriesModified(True)

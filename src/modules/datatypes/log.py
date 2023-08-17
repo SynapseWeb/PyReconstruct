@@ -141,7 +141,7 @@ class LogSet():
             # clear dynamic log if so
             self.dyn_logs = {}
         
-        if snum:  # dynamic log
+        if snum is not None:  # dynamic log
             obj_key = obj_name if obj_name else "-"
             if obj_key in self.dyn_logs and event in self.dyn_logs[obj_key]:
                 self.dyn_logs[obj_key][event].addSection(snum)
@@ -162,6 +162,8 @@ class LogSet():
                 prev_log = self.all_logs[-1]
                 if "Create trace(s)" in prev_log.event:
                     self.all_logs.insert(len(self.all_logs)-1, log)
+                else:
+                    self.all_logs.append(log)
             elif event == "Delete object":
                 # remove object from dynamic log
                 if obj_name in self.dyn_logs:

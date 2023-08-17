@@ -44,8 +44,7 @@ class ObjectTableManager():
         
         # refresh any removed traces
         updated_contours = section.getAllModifiedNames()
-        for table in self.tables:
-            table.updateObjects(updated_contours)
+        self.updateObjects(updated_contours)
 
     # MENU FUNCTIONS
 
@@ -63,6 +62,15 @@ class ObjectTableManager():
                 table (ObjectTableWidget): the table to update
         """
         table.createTable()
+    
+    def updateObjects(self, obj_names : list):
+        """Update the objects each table.
+        
+            Params:
+                obj_names (list): the list objects to update
+        """
+        for table in self.tables:
+            table.updateObjects(obj_names)
     
     def findObject(self, obj_name : str, first=True):
         """Find an object in the series.
@@ -89,8 +97,7 @@ class ObjectTableManager():
         self.series.deleteObjects(obj_names)
 
         # update the dictionary data and tables
-        for table in self.tables:
-            table.updateObjects(obj_names)
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -122,8 +129,7 @@ class ObjectTableManager():
         all_names = set(obj_names + [name])
 
         # update the table data
-        for table in self.tables:
-            table.updateObjects(all_names)
+        self.updateObjects(all_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -145,8 +151,7 @@ class ObjectTableManager():
         )
         
         # update the table data
-        for table in self.tables:
-            table.updateObjects(obj_names)
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -168,8 +173,7 @@ class ObjectTableManager():
         )
         
         # update the table data
-        for table in self.tables:
-            table.updateObjects(obj_names)
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -186,8 +190,7 @@ class ObjectTableManager():
         # iterate through all the sections
         self.series.removeAllTraceTags(obj_names)
 
-        for table in self.tables:
-            table.updateObjects(obj_names)
+        self.updateObjects(obj_names)
 
         # update the view
         self.mainwindow.field.reload()        

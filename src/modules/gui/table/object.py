@@ -483,7 +483,7 @@ class ObjectTableWidget(QDockWidget):
         if obj_names:
             self.manager.remove3D(obj_names)
 
-    def addToGroup(self):
+    def addToGroup(self, log_event=True):
         """Add objects to a group."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
@@ -497,9 +497,13 @@ class ObjectTableWidget(QDockWidget):
         
         for name in obj_names:
             self.series.object_groups.add(group=group_name, obj=name)
-            self.manager.refreshObject(name)
+            if log_event:
+                self.series.addLog(name, None, f"Add to group '{group_name}'")
+        
+        self.manager.updateObjects(obj_names)
+
     
-    def removeFromGroup(self):
+    def removeFromGroup(self, log_event=True):
         """Remove objects from a group."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
@@ -513,9 +517,12 @@ class ObjectTableWidget(QDockWidget):
         
         for name in obj_names:
             self.series.object_groups.remove(group=group_name, obj=name)
-            self.manager.refreshObject(name)
+            if log_event:
+                self.series.addLog(name, None, f"Remove from group '{group_name}'")
+        
+        self.manager.updateObjects(obj_names)
     
-    def removeFromAllGroups(self):
+    def removeFromAllGroups(self, log_event=True):
         """Remove a set of traces from all groups."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
@@ -523,7 +530,10 @@ class ObjectTableWidget(QDockWidget):
         
         for name in obj_names:
             self.series.object_groups.removeObject(name)
-            self.manager.refreshObject(name)
+            if log_event:
+                self.series.addLog(name, None, f"Remove from all object groups")
+            
+        self.manager.updateObjects(obj_names)
     
     def removeAllTags(self):
         """Remove all tags from all traces on selected objects."""

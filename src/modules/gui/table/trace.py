@@ -21,7 +21,7 @@ from modules.datatypes import (
     TraceData
 )
 from modules.gui.utils import populateMenuBar, populateMenu
-from modules.gui.dialog import TableColumnsDialog, TraceDialog
+from modules.gui.dialog import TableColumnsDialog, TraceDialog, ShapesDialog
 from modules.constants import fd_dir
 
 class TraceTableWidget(QDockWidget):
@@ -164,7 +164,15 @@ class TraceTableWidget(QDockWidget):
         # create the right-click menu
         context_menu_list = [
             ("edit_act", "Edit...", "", self.editTraces),
-            ("changeradius_act", "Change radius...", "", self.editRadius),
+            {
+                "attr_name": "stampmenu",
+                "text": "Stamp attributes",
+                "opts":
+                [
+                    ("changeradius_act", "Edit radius...", "", self.editRadius),
+                    ("changeshape_act", "Edit shape...", "", self.editShape)
+                ]
+            },
             None,
             ("hide_act", "Hide", "", self.hideTraces),
             ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
@@ -379,6 +387,21 @@ class TraceTableWidget(QDockWidget):
             return
         
         self.manager.editRadius(traces, new_rad)
+        self.manager.update()
+    
+    def editShape(self):
+        """Modify the shape of the traces on an entire object."""
+        items = self.getSelectedItems()
+        if items is None:
+            return
+        
+        traces = self.manager.getTraces(items)
+        
+        new_shape, confirmed = ShapesDialog(self).exec()
+        if not confirmed:
+            return
+        
+        self.manager.editShape(traces, new_shape)
         self.manager.update()
           
     def findTrace(self, event=None):

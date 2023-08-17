@@ -52,7 +52,7 @@ class ZtraceTableManager():
 
     # MENU-REALTED FUNCTIONS
 
-    def editAttributes(self, name : str, new_name : str, new_color : tuple):
+    def editAttributes(self, name : str, new_name : str, new_color : tuple, log_event=True):
         """Edit the name of a ztrace.
         
             Params:
@@ -70,6 +70,13 @@ class ZtraceTableManager():
         if new_color:
             ztrace.color = new_color
         
+        if log_event:
+            if new_name != name:
+                self.series.addLog(name, None, f"Rename ztrace to {new_name}")
+                self.series.addLog(new_name, None, f"Create ztrace from {name}")
+            else:
+                self.series.addLog(name, None, "Modify ztrace")
+        
         # modify the tables
         if new_name and new_name != name:
             self.series.modified_ztraces.add(new_name)
@@ -80,7 +87,7 @@ class ZtraceTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
     
-    def smooth(self, names : list, smooth : int, newztrace : bool):
+    def smooth(self, names : list, smooth : int, newztrace : bool, log_event=True):
         """Smooth a set of ztraces.
         
             Params:
@@ -100,6 +107,9 @@ class ZtraceTableManager():
                 ztrace = self.series.ztraces[name]
             ztrace.smooth(self.series, smooth)
             self.series.modified_ztraces.add(ztrace.name)
+        
+            if log_event:
+                self.series.addLog(name, None, "Smooth ztrace")
         
         self.update(clear_tracking=True)
         
@@ -133,7 +143,7 @@ class ZtraceTableManager():
         
         self.mainwindow.viewer.remove(names, ztrace=True)
 
-    def delete(self, names : list):
+    def delete(self, names : list, log_event=True):
         """Delete a set of ztraces.
         
             Params:
@@ -145,6 +155,9 @@ class ZtraceTableManager():
         
         self.update(clear_tracking=True)
         self.series.modified_ztraces = set()
+
+        if log_event:
+            self.series.addLog(name, None, "Delete ztrace")
 
         # update the view
         self.mainwindow.field.reload()

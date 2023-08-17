@@ -33,6 +33,16 @@ class Log():
             self.section_ranges = None
         self.event = event
     
+    def __eq__(self, other):
+        return (
+            self.date == other.date and
+            self.time == other.time and
+            self.user == other.user and
+            self.obj_name == other.obj_name and
+            self.section_ranges == other.section_ranges and
+            self.event == other.event
+        )
+    
     def __str__(self):
         if not self.obj_name:
             obj_name = "-"
@@ -159,8 +169,7 @@ class LogSet():
             # special cases: creating or deleting an object
             if event == "Create object":
                 # check the previous log to see if traces were created
-                prev_log = self.all_logs[-1]
-                if "Create trace(s)" in prev_log.event:
+                if self.all_logs and "Create trace(s)" in self.all_logs[-1].event:
                     self.all_logs.insert(len(self.all_logs)-1, log)
                 else:
                     self.all_logs.append(log)

@@ -83,6 +83,7 @@ class SeriesData():
             "sections": {},
             "objects": {},
         }
+        self.supress_logging = False
     
     def __getitem__(self, index):
         """Allow the user to directly index the data dictionary."""
@@ -158,7 +159,7 @@ class SeriesData():
                         removed_objects.add(name)
             
             # log the newly created/destroyed objects
-            if log_events:
+            if log_events and not self.supress_logging:
                 for obj_name in added_objects:
                     self.series.addLog(obj_name, None, "Create object")
                 for obj_name in removed_objects:

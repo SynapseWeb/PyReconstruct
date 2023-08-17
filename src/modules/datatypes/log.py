@@ -173,13 +173,13 @@ class LogSet():
             else:
                 self.all_logs.append(log)
         
-        # for debugging
-        # Clear console
-        if os.name == 'nt':  # Windows
-            _ = os.system('cls')
-        else:  # Mac and Linux
-            _ = os.system('clear')
-        print(str(self).replace(", ", "\t"))
+        # # for debugging
+        # # Clear console
+        # if os.name == 'nt':  # Windows
+        #     _ = os.system('cls')
+        # else:  # Mac and Linux
+        #     _ = os.system('clear')
+        # print(str(self).replace(", ", "\t"))
     
     def addExistingLog(self, log : Log, track_dyn=False):
         """Add an existing log object to the set."""

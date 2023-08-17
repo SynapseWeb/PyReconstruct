@@ -57,7 +57,8 @@ class ObjectTableWidget(QDockWidget):
             "Flat area" : True,
             "Volume": True,
             "Groups": True,
-            "Trace tags": False
+            "Trace tags": False,
+            "Last user": True
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -210,6 +211,13 @@ class ObjectTableWidget(QDockWidget):
             tags_str = ", ".join(tags)
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
+        if self.columns["Last user"]:
+            if name in self.series.last_user:
+                last_user = self.series.last_user[name]
+            else:
+                last_user = ""
+            self.table.setItem(row, col, QTableWidgetItem(last_user))
+            col += 1
         self.table.resizeRowToContents(row)
     
     def passesFilters(self, name : str):
@@ -277,6 +285,8 @@ class ObjectTableWidget(QDockWidget):
             self.horizontal_headers.append("Groups")
         if self.columns["Trace tags"]:
             self.horizontal_headers.append("Trace Tags")
+        if self.columns["Last user"]:
+            self.horizontal_headers.append("Last user")
         
         # filter the objects
         filtered_obj_names = self.getFilteredObjects()

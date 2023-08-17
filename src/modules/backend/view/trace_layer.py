@@ -182,7 +182,7 @@ class TraceLayer():
         
         return closest_ztrace
 
-    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, origin_traces=None, log_event=True):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_event=True):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -190,7 +190,6 @@ class TraceLayer():
                 base_trace (Trace): the trace containing the desired attributes
                 closed (bool): whether or not the new trace is closed
                 log_message (str): the log message for the new trace action
-                origin_traces (list): the traces that the new trace came from (used in the cases of merging and cutting; keeps track of history)
         """
         if len(pix_trace) < 2:  # do not create a new trace if there is only one point
             return
@@ -202,18 +201,12 @@ class TraceLayer():
         # create the new trace
         new_trace = base_trace.copy()
         new_trace.points = []
-        new_trace.history = []
 
         # force trace to be open if only two points
         if len(pix_trace) == 2:
             new_trace.closed = False
         else:
             new_trace.closed = closed
-
-        # merge the history of any origin traces
-        if origin_traces:
-            for trace in origin_traces:
-                new_trace.mergeHistory(trace)
 
         # get the points
         tform = self.section.tforms[self.series.alignment]
@@ -334,14 +327,12 @@ class TraceLayer():
             
             merged_traces = mergeTraces(traces)  # merge the pixel traces
             # delete the old traces
-            origin_traces = self.section.selected_traces.copy()
             self.section.deleteTraces(log_event=False)
             # create new merged trace
             for trace in merged_traces:
                 self.newTrace(
                     trace,
                     first_trace,
-                    origin_traces=origin_traces,
                     log_event=False
                 )
             if log_event:
@@ -357,15 +348,12 @@ class TraceLayer():
         trace_to_cut = self.traceToPix(trace)
         cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
         # delete the old traces
-        origin_traces = self.section.selected_traces.copy()
         self.section.deleteTraces()
         # create new traces
         for piece in cut_traces:
-            # add the trace history to the piece
             self.newTrace(
                 piece,
                 trace,
-                origin_traces=origin_traces,
                 log_event=False
             )
         if log_event:

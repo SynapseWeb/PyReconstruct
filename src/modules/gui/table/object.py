@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
+from .history import HistoryTableWidget
 
 from modules.datatypes import Series
 from modules.gui.utils import (
@@ -553,7 +554,7 @@ class ObjectTableWidget(QDockWidget):
         if not obj_names:
             return
         
-        self.manager.viewHistory(obj_names)
+        HistoryTableWidget(self.series.getFullHistory(), self.mainwindow, obj_names)
     
     def createZtrace(self, cross_sectioned=True):
         """Create a ztrace from selected objects."""

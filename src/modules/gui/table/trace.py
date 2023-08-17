@@ -178,7 +178,6 @@ class TraceTableWidget(QDockWidget):
             ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
             None,
             ("find_act", "Find", "", self.findTrace),
-            ("history_act", "View history", "", self.viewHistory),
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -421,16 +420,6 @@ class TraceTableWidget(QDockWidget):
 
         self.manager.deleteTraces(traces) 
         self.manager.update()
-    
-    def viewHistory(self):
-        """View the history of a set of traces."""
-        items = self.getSelectedItems()
-        if not items:
-            return
-        
-        traces = self.manager.getTraces(items)
-
-        self.manager.viewHistory(traces)
     
     def traceContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify traces."""

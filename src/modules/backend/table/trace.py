@@ -1,7 +1,6 @@
 from PySide6.QtCore import Qt
 
 from modules.gui.table import TraceTableWidget
-from modules.gui.popup import HistoryWidget
 from modules.datatypes import (
     Series,
     Section
@@ -140,29 +139,6 @@ class TraceTableManager():
         self.mainwindow.field.section.deleteTraces(traces)
         self.mainwindow.field.generateView(generate_image=False)
         self.mainwindow.field.saveState()
-    
-    def viewHistory(self, traces : list):
-        """View the log history of a set of traces.
-        
-            Params:
-                traces (list): the traces to view the history of
-        """
-        log_history = []
-        names = set()
-        for trace in traces:
-            names.add(trace.name)
-            for log in trace.history:
-                log_history.append((log, trace.name))
-        log_history.sort()
-        
-        # get the trace names
-        names = sorted(list(names))
-        output_str = "Trace history for: " + ", ".join(names) + "\n"
-        for log, name in log_history:
-            output_str += name + " "
-            output_str += str(log) + "\n"
-        
-        HistoryWidget(self.mainwindow, output_str)
         
     def close(self):
         """Close all tables."""

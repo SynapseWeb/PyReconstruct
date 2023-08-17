@@ -1051,6 +1051,8 @@ class MainWindow(QMainWindow):
         # refresh the object list if needed
         if self.field.obj_table_manager:
             self.field.obj_table_manager.refresh()
+        else:
+            self.series.data.refresh()
     
     def importZtraces(self, jser_fp : str = None):
         """Import ztraces from another jser series.

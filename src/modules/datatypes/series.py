@@ -958,34 +958,74 @@ class Series():
         if log_event:
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
+    def importHistory(self, other, traces=True, ztraces=True):
+        """Import the history from another series."""
+        self_hist = self.getFullHistory()
+        other_hist = other.getFullHistory()
+
+        # filter out similar history
+        while (
+            self_hist.all_logs and other_hist.all_logs and
+            self_hist.all_logs[0] == other_hist.all_logs[0]):
+            self_hist.all_logs.pop(0)
+            other_hist.all_logs.pop(0)
+        
+        for log in other_hist.all_logs:
+            if (
+                log.obj_name and
+                (
+                    (ztraces and "ztrace" in log.event) or
+                    (traces and "ztrace" not in log.event)
+                ) and
+                log not in self_hist.all_logs):
+                self.log_set.addExistingLog(log)            
+    
     def importTraces(self, other, log_event=True):
         """Import all the traces from another series."""
         # ensure that the two series have the same sections
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
             return
         
+        if log_event:
+            self.addLog(None, None, "Begin importing traces from another series")
+        
+        # supress logging for object creation
+        self.data.supress_logging = True
+
         iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
         for (r_num, r_section), (s_num, s_section) in iterator:
             r_section.importTraces(s_section)
         
+        # unsupress logging for object creation
+        self.data.supress_logging = False
+        
         # import the group data
         self.object_groups.merge(other.object_groups)
 
+        # import the history
         if log_event:
-            self.addLog(None, None, "Import traces from another series")
+            self.importHistory(other, ztraces=False)
+
+        if log_event:
+            self.addLog(None, None, "Finish importing traces from another series")
         
         self.save()
-        # self.gatherSectionData()
     
     def importZtraces(self, other, log_event=True):
         """Import all the ztraces from another series."""
+        if log_event:
+            self.addLog(None, None, "Begin importing ztraces from another series")
+
         for o_zname, o_ztrace in other.ztraces.items():
             # only import new ztraces, do NOT replace existing ones
             if o_zname not in self.ztraces:
                 self.ztraces[o_zname] = o_ztrace.copy()
         
+        # import the history
+        self.importHistory(other, traces=False)
+        
         if log_event:
-            self.addLog(None, None, "Import ztraces from another series")
+            self.addLog(None, None, "Finish importing ztraces from another series")
         
         self.save()
     

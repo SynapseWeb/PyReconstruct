@@ -101,10 +101,12 @@ class Section():
                         trace["negative"],
                         trace["hidden"],
                         trace["mode"],
-                        trace["tags"],
-                        trace["history"]
+                        trace["tags"]
                     ]
                     section_data["contours"][cname][i] = trace
+                # remove history from trace if it exists
+                elif len(trace) == 9:
+                    trace.pop()
                 # check for empty/defective traces
                 if len(trace[0]) < 2:
                     flagged_traces.append(i)

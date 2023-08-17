@@ -2,8 +2,7 @@ from PySide6.QtCore import Qt
 
 from modules.gui.table import ObjectTableWidget
 from modules.gui.popup import (
-    Object3DViewer,
-    HistoryWidget
+    Object3DViewer
 )
 from modules.datatypes import (
     Series,
@@ -262,38 +261,6 @@ class ObjectTableManager():
             self.series.object_3D_modes[name] = tuple(obj_settings)
         
         self.mainwindow.seriesModified(True)
-    
-    def viewHistory(self, obj_names : list):
-        """View the log history of a set of objects.
-        
-            Params:
-                obj_names (list): the objects to view the history of
-        """
-        self.mainwindow.saveAllData()
-
-        # load all log objects from the traces
-        log_history = []
-        for snum, section in self.series.enumerateSections(
-            message="Loading history..."
-        ):
-            for name in obj_names:
-                if name in section.contours:
-                    contour = section.contours[name]
-                    for trace in contour:
-                        for log in trace.history:
-                            log_history.append((log, name, snum))
-        
-        # sort the log history by datetime
-        log_history.sort()
-
-        # create the output
-        output_str = "Object history for: " + ", ".join(sorted(obj_names)) + "\n"
-        for log, name, snum in log_history:
-            output_str += f"Section {snum} "
-            output_str += name + " "
-            output_str += str(log) + "\n"
-        
-        self.history_widget = HistoryWidget(self.mainwindow, output_str)
     
     def createZtrace(self, obj_names : list, cross_sectioned : bool):
         """Create ztraces from a set of objects.

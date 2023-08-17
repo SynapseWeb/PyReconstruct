@@ -35,7 +35,7 @@ from modules.gui.dialog import (
     PointerDialog,
     ClosedTraceDialog
 )
-from modules.gui.popup import HistoryWidget, TextWidget
+from modules.gui.popup import TextWidget
 from modules.gui.utils import (
     progbar,
     populateMenuBar,
@@ -47,6 +47,7 @@ from modules.gui.utils import (
     setMainWindow,
     noUndoWarning
 )
+from modules.gui.table import HistoryTableWidget
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -1415,30 +1416,7 @@ class MainWindow(QMainWindow):
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""
-        # load all log objects from the all traces
-        log_history = []
-        update, canceled = progbar("Object History", "Loading history...")
-        progress = 0
-        final_value = len(self.series.sections)
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            for trace in section.tracesAsList():
-                for log in trace.history:
-                    log_history.append((log, trace.name, snum))
-            if canceled():
-                return
-            progress += 1
-            update(progress/final_value * 100)
-        
-        log_history.sort()
-
-        output_str = "Series History\n"
-        for log, name, snum in log_history:
-            output_str += f"Section {snum} "
-            output_str += name + " "
-            output_str += str(log) + "\n"
-        
-        self.history_widget = HistoryWidget(self, output_str)
+        HistoryTableWidget(self.series.getFullHistory(), self)
     
     def openObjectList(self):
         """Open the object list widget."""

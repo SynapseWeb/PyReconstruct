@@ -10,7 +10,6 @@ from .contour import Contour
 from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
-from .object_table_item import ObjectTableItem
 from .series_data import SeriesData
 
 from modules.constants import (
@@ -1051,40 +1050,6 @@ class Series():
             self.addLog(None, None, f"Import alignments {alignments_str} from another series")
 
         self.save()
-    
-    def loadObjectData(self, object_table_items=False):
-        """Load all of the data for each object in the series.
-        
-        Params:
-            object_table_items (bool): True if dictionary values should be ObjectTableItem objects
-        Returns:
-            (dict): object_name : object_data
-        """
-
-        objdict = {}  # object name : ObjectTableItem (contains data on object)
-
-        for snum, section in self.enumerateSections():
-            # iterate through contours
-            for contour_name in section.contours:
-                if contour_name not in objdict:
-                    objdict[contour_name] = ObjectTableItem(contour_name)
-                # iterate through traces
-                for trace in section.contours[contour_name]:
-                    # add to existing data
-                    objdict[contour_name].addTrace(
-                        trace,
-                        section.tforms[self.alignment],
-                        snum,
-                        section.thickness
-                    )
-        
-        if not object_table_items:
-            for name, item in objdict.items():
-                objdict[name] = item.getDict()
-                # add the object group to the data
-                objdict[name]["groups"] = self.object_groups.getObjectGroups(name)
-
-        return objdict
 
     # STATIC METHOD
     def getDefaultPaletteTraces():

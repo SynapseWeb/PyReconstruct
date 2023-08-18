@@ -68,7 +68,7 @@ class CreateZarrDialog(QDialog):
         self.mag_input = QLineEdit(self)
         resizeLineEdit(self.mag_input, "0"*10)
         self.mag_input.setText(
-            str(self.series.section_mags[self.series.current_section])
+            str(self.series.data["sections"][self.series.current_section]["mag"])
         )
         mag_row.addWidget(mag_text)
         mag_row.addWidget(self.mag_input)

@@ -15,23 +15,23 @@ from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
 
-from modules.datatypes import Series, ZtraceTableItem
+from modules.datatypes import Series
 from modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    notify
+    notify,
+    noUndoWarning
 )
 from modules.gui.dialog import ZtraceDialog, SmoothZtraceDialog
 from modules.constants import fd_dir
 
 class ZtraceTableWidget(QDockWidget):
 
-    def __init__(self, series : Series, ztracedict : dict, mainwindow : QWidget, manager):
+    def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the object table dock widget.
         
             Params:
                 series (Series): the series object
-                ztracedict (dict): contains all ztrace info for the table
                 mainwindow (QWidget): the main window the dock is connected to
                 manager: the object table manager
         """
@@ -52,7 +52,7 @@ class ZtraceTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
-        self.createTable(ztracedict)
+        self.createTable()
         self.createMenus()
 
         # save manager object
@@ -60,21 +60,25 @@ class ZtraceTableWidget(QDockWidget):
 
         self.show()
     
-    def setRow(self, ztraceitem : ZtraceTableItem, row : int):
+    def setRow(self, ztrace_name : str, row : int):
         """Populate a row with trace item data.
         
             Params:
-                ztraceitem (ZtraceTableItem): the object contianing the ztrace table data
+                ztrace_name (str): the name of the ztrace
                 row (int): the row to insert the data
         """
-        while row > self.table.rowCount()-1:
-            self.table.insertRow(self.table.rowCount())
-        col = 0
-        self.table.setItem(row, col, QTableWidgetItem(ztraceitem.name))
-        col += 1
-        self.table.setItem(row, col, QTableWidgetItem(
-            str(round(ztraceitem.getDist(), 5))
-        ))
+        if ztrace_name not in self.series.ztraces:
+            self.table.removeRow(row)
+        else:
+            while row > self.table.rowCount()-1:
+                self.table.insertRow(self.table.rowCount())
+            col = 0
+            self.table.setItem(row, col, QTableWidgetItem(ztrace_name))
+            col += 1
+            d = self.series.data.getZtraceDist(ztrace_name)
+            self.table.setItem(row, col, QTableWidgetItem(
+                str(round(d, 5))
+            ))
     
     def createMenus(self):
         """Create the menu for the trace table widget."""
@@ -119,15 +123,15 @@ class ZtraceTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
             
-    def passesFilters(self, item : ZtraceTableItem):
+    def passesFilters(self, ztrace_name):
         """Determine if an object will be displayed in the table based on existing filters.
         
             Params:
-                item (ZtraceTableItem): the item containing the data
+                ztrace_name (str): the name of the ztrace
         """        
         # check regex (will only be run if passes groups and tags)
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, item.name)):
+            if bool(re.fullmatch(re_filter, ztrace_name)):
                 return True
         return False
     
@@ -136,12 +140,8 @@ class ZtraceTableWidget(QDockWidget):
         self.table.resizeRowsToContents()
         self.table.resizeColumnsToContents()
     
-    def createTable(self, ztracedict : dict):
-        """Create the table widget.
-        
-            Params:
-                ztracedict (dict): the dictionary containing the object table data objects
-        """
+    def createTable(self):
+        """Create the table widget."""
         self.table = CopyTableWidget(0, 2)
 
         # connect table functions
@@ -152,12 +152,11 @@ class ZtraceTableWidget(QDockWidget):
         self.horizontal_headers = ["Name", "Distance"]
         
         # filter the objects
-        sorted_ztrace_names = sorted(list(ztracedict.keys()))
-        self.items = []
+        sorted_ztrace_names = sorted(list(self.series.ztraces.keys()))
+        filetered_ztrace_list = []
         for name in sorted_ztrace_names:
-            item = ztracedict[name]
-            if self.passesFilters(item):
-                self.items.append(item)
+            if self.passesFilters(name):
+                filetered_ztrace_list.append(name)
 
         # format table
         self.table.setWordWrap(False)
@@ -168,14 +167,24 @@ class ZtraceTableWidget(QDockWidget):
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in object data
-        for r, item in enumerate(self.items):
-            self.setRow(item, r)
+        for r, name in enumerate(filetered_ztrace_list):
+            self.setRow(name, r)
 
         # format rows and columns
         self.format()
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
+    
+    def updateZtraces(self, ztrace_names : set):
+        """Update the specified ztraces."""
+        for name in ztrace_names:
+            r = 0
+            while self.table.item(r, 0).text() < name:
+                r += 1
+            if self.table.item(r, 0).text() != name:
+                self.table.insertRow(r)
+            self.setRow(name, r)
     
     def getSelectedName(self):
         """Get the trace item that is selected by the user."""
@@ -233,7 +242,7 @@ class ZtraceTableWidget(QDockWidget):
 
         new_name, new_color = attributes
 
-        if new_name != name and new_name in self.manager.data:
+        if new_name != name and new_name in self.series.ztraces:
             notify("This ztrace already exists.")
             return
         
@@ -273,6 +282,10 @@ class ZtraceTableWidget(QDockWidget):
         """Delete a set of ztraces."""
         names = self.getSelectedNames()
         if not names:
+            return
+        
+        # confirm with user
+        if not noUndoWarning():
             return
         
         self.manager.delete(names)
@@ -336,3 +349,8 @@ class ZtraceTableWidget(QDockWidget):
 
         # call through manager to update self
         self.manager.updateTable(self)
+    
+    def closeEvent(self, event):
+        """Remove self from manager table list."""
+        self.manager.tables.remove(self)
+        super().closeEvent(event)

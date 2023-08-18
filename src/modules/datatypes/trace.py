@@ -26,7 +26,6 @@ class Trace():
         self.points = []
         self.hidden = False  # default to False
         self.tags = set()
-        self.history = []
         self.fill_mode = ("none", "none")
     
     def copy(self):
@@ -39,7 +38,6 @@ class Trace():
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
         copy_trace.tags = self.tags.copy()
-        copy_trace.history = [l.copy() for l in self.history]
         return copy_trace
     
     def add(self, point : tuple):
@@ -124,8 +122,7 @@ class Trace():
             self.negative,
             self.hidden,
             self.fill_mode,
-            list(self.tags),
-            [list(l) for l in self.history]
+            list(self.tags)
         ]
 
         return l
@@ -203,7 +200,7 @@ class Trace():
                 (Trace) a Trace object constructed from the dictionary data
         """
 
-        if not name or len(l) != 9:
+        if not name or len(l) == 9:
             name = l.pop(0)
         
         (
@@ -214,8 +211,7 @@ class Trace():
             negative,
             hidden,
             fill_mode,
-            tags,
-            history
+            tags
         ) = tuple(l)
 
         new_trace = Trace(name, color, closed)
@@ -224,7 +220,6 @@ class Trace():
         new_trace.hidden = hidden
         new_trace.fill_mode = fill_mode
         new_trace.tags = set(tags)
-        new_trace.history = [TraceLog(l) for l in history]
 
         return new_trace
     
@@ -259,9 +254,6 @@ class Trace():
         new_trace.points = points
         new_trace.fill_mode = convertMode(xml_trace.mode)
         new_trace.negative = negative
-
-        if not palette:
-            new_trace.addLog("Imported")
         
         return new_trace
 
@@ -398,27 +390,6 @@ class Trace():
             x *= new_mag / prev_mag
             y *= new_mag / prev_mag
             self.points[i] = (x, y)
-    
-    def addLog(self, message : str):
-        """Add a log to the trace history.
-        
-            Params:
-                message (str): the log message
-        """
-        self.history.append(TraceLog(message))
-    
-    def mergeHistory(self, other_trace):
-        """Merge the history of two traces.
-        
-            Params:
-                other_trace (Trace): the trace to merge histories with
-        """
-        self.history += other_trace.history
-        self.history.sort()
-    
-    def isNew(self):
-        """Returns True if the trace has no existing history."""
-        return not bool(self.history)
 
     def mergeTags(self, other):
         """Merge the tags of two traces."""

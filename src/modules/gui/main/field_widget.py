@@ -1269,7 +1269,7 @@ class FieldWidget(QWidget, FieldView):
                 self.current_trace = [(x, y)]
                 self.is_line_tracing = True
     
-    def lineRelease(self, event):
+    def lineRelease(self, event, log_event=True):
         """Called when mouse is released in line mode."""
         if self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
@@ -1280,8 +1280,11 @@ class FieldWidget(QWidget, FieldView):
                 self.newTrace(
                     current_trace_copy,
                     self.tracing_trace,
-                    closed=closed
+                    closed=closed,
+                    log_event=(log_event and (not self.is_scissoring))
                 )
+                if log_event and self.is_scissoring:
+                    self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
             else:
                 self.current_trace = []
                 self.update()

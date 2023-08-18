@@ -24,7 +24,10 @@ class FieldState():
         # added another state
         else:
             for contour_name in updated_contours:
-                self.contours[contour_name] = contours[contour_name].copy()
+                if contour_name in contours:
+                    self.contours[contour_name] = contours[contour_name].copy()
+                else:  # empty Contour
+                    self.contours[contour_name] = Contour(contour_name)
         
         # first state made for a section (or copy)
         if updated_ztraces is None:
@@ -87,13 +90,7 @@ class SectionStates():
         # push current state to undo states
         self.undo_states.append(self.current_state)
         # get the names of the updated contours
-        updated_contours = (
-            set([trace.name for trace in section.added_traces]).union(
-                set([trace.name for trace in section.removed_traces]).union(
-                    set([trace.name for trace in section.modified_traces])
-                )
-            )
-        )
+        updated_contours = section.getAllModifiedNames()
         # get the updated ztraces
         updated_ztraces = series.modified_ztraces.copy()
         # set the new current state
@@ -170,8 +167,10 @@ class SectionStates():
         self.redo_states.append(self.current_state)
         self.current_state = self.undo_states.pop().copy()
 
-        # return the modified contours and ztraces
-        return modified_contours, modified_ztraces
+        # add the modified contours to the section object
+        section.modified_contours = section.modified_contours.union(modified_contours)
+        # add modified ztrace names to the series object
+        series.modified_ztraces = series.modified_ztraces.union(modified_ztraces)
     
     def redoState(self, section : Section, series : Series) -> set:
         """Restore a redo state on the section.
@@ -206,8 +205,10 @@ class SectionStates():
         self.undo_states.append(self.current_state)
         self.current_state = self.redo_states.pop()
 
-        # return the modified contours
-        return modified_contours, modified_ztraces
+        # add the modified contours to the section object
+        section.modified_contours = section.modified_contours.union(modified_contours)
+        # add modified ztrace names to the series object
+        series.modified_ztraces = series.modified_ztraces.union(modified_ztraces)
 
 def restoreZtraceOnSection(orig_ztrace : Ztrace, new_ztrace : Ztrace, snum : int) -> Ztrace:
     """Restore the ztrace for a specific section.

@@ -102,6 +102,9 @@ def xmlToJSON(xml_dir : str) -> Series:
     # )
     # series.saveJser()
 
+    # log create the first log in the series
+    series.addLog(None, None, "Create series from XML files")
+
     return series
 
 def seriesXMLToJSON(series_fp, section_fps, hidden_dir):

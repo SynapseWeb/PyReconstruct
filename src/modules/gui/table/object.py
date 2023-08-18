@@ -295,7 +295,7 @@ class ObjectTableWidget(QDockWidget):
         self.table = CopyTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
         # connect table functions
-        self.table.mouseDoubleClickEvent = self.addTo3D
+        self.table.mouseDoubleClickEvent = self.findFirst
         self.table.contextMenuEvent = self.objectContextMenu
 
         # format table
@@ -482,7 +482,7 @@ class ObjectTableWidget(QDockWidget):
         
         self.manager.hideObjects(obj_names, hide)
 
-    def addTo3D(self, event=None):
+    def addTo3D(self):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:
@@ -702,7 +702,7 @@ class ObjectTableWidget(QDockWidget):
         # call through manager to update self
         self.manager.updateTable(self)
     
-    def findFirst(self):
+    def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
         obj_name = self.getSelectedObject()
         if obj_name is None:

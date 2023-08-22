@@ -308,7 +308,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
-                    ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
                 ]
             },
@@ -1655,12 +1654,6 @@ class MainWindow(QMainWindow):
         
         self.series.options["grid"] = response
         self.seriesModified()
-    
-    def toggleHandedness(self):
-        """Toggle the handedness of the palettes."""
-        self.mouse_palette.toggleHandedness()
-        if self.zarr_palette:
-            self.zarr_palette.toggleHandedness()
     
     def resetTracePalette(self):
         """Reset the trace palette to default traces."""

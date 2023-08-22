@@ -1,10 +1,10 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QPushButton, QStyle
-from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
-from PySide6.QtCore import QSize, QRect
+from PySide6.QtWidgets import QWidget, QStyle
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QSize
 
-from .palette_button import PaletteButton
+from .buttons import PaletteButton, ModeButton, MoveableButton
 from .outlined_label import OutlinedLabel
 
 from modules.datatypes import Series, Trace
@@ -23,14 +23,18 @@ class MousePalette():
                 mainwindow (MainWindow): the parent main window of the dock
         """
         self.mainwindow = mainwindow
-        self.left_handed = False
         
-        self.mbwidth = 40
-        self.mbheight = 40
+        self.mblen = 40  # mode button size
+        self.pblen = 40  # palette button size
+        self.ibw = 90  # inc button width
+        self.ibh = 35  # inc button height
+        self.bcsize = 30  # brightness/contrast button size
 
-        self.pblen = 40
+        self.is_dragging = False
 
         # create mode buttons
+        self.mode_x = 0.99
+        self.mode_y = 0.01
         self.mode_buttons = {}
         self.createModeButton("Pointer", "p", 0, 0)
         self.createModeButton("Pan/Zoom", "z", 1, 1)
@@ -42,6 +46,8 @@ class MousePalette():
         self.createModeButton("Grid", "g", 7, 7)
 
         # create palette buttons
+        self.trace_x = 0.5
+        self.trace_y = 0.99
         self.palette_traces = palette_traces
         self.palette_buttons = [None] * 20
         for i in range(len(palette_traces)):  # create all the palette buttons
@@ -69,33 +75,25 @@ class MousePalette():
         self.corner_buttons = []
 
         # create increment buttons
-        self.ibw = 90
-        self.ibh = 35
+        self.inc_x = 0.99
+        self.inc_y = 0.99
         self.createIncrementButtons()
 
         # create brightness/contrast buttons
-        self.bcsize = 30
+        self.bc_x = 0.99
+        self.bc_y = 0.8
         self.createBCButtons()
-    
-    def toggleHandedness(self):
-        """Toggle the position of the buttons."""
-        self.left_handed = not self.left_handed
-        self.resize()
-        self.mainwindow.field.update()
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
         
             Params:
-                button (ScreenButton): the button to place
+                button (ModeButton): the button to place
                 pos (int): the position of the button
         """
-        if self.left_handed:
-            x = self.mainwindow.field.x() + 10
-        else:
-            x = self.mainwindow.width() - self.mbwidth - 10
-        y = 40 + (10 + self.mbheight) * pos
-        button.setGeometry(x, y, self.mbwidth, self.mbheight)
+        x, y = self.getButtonCoords("mode")
+        y += (10 + self.mblen) * pos
+        button.setGeometry(x, y, self.mblen, self.mblen)
     
     def createModeButton(self, name : str, sc : str, pos : int, mouse_mode : int):
         """Creates a new mouse mode button.
@@ -106,7 +104,7 @@ class MousePalette():
                 pos (int): the position of the button
                 mouse_mode (int): the mode this button is connected to
         """
-        b = ScreenButton(self.mainwindow)
+        b = ModeButton(self.mainwindow, self)
 
         # filter name to get filename
         stripped_name = name
@@ -116,13 +114,13 @@ class MousePalette():
         stripped_name = stripped_name.lower()
         # open the icon file
         icon_fp = os.path.join(loc.img_dir, stripped_name + ".png")
-        pixmap = QPixmap(icon_fp)#.scaled(self.mbheight, self.mbheight)
+        pixmap = QPixmap(icon_fp)
 
         self.placeModeButton(b, pos)
 
         # format the button
         b.setIcon(QIcon(pixmap))
-        b.setIconSize(QSize(self.mbheight, self.mbheight))
+        b.setIconSize(QSize(self.mblen, self.mblen))
         # b.setText(name)
         b.setToolTip(f"{name} ({sc})")
 
@@ -151,20 +149,19 @@ class MousePalette():
                 pos (int): its position
         """
         # place the palette button in the middle of the FIELD (not mainwindow)
+        x, y = self.getButtonCoords("trace")
         if pos % 10 // 5 > 0:
             x_offset = 1
         else:
             x_offset = -1
         x_offset += (-5 + pos % 10) * self.pblen
-        x = self.mainwindow.field.x() + (self.mainwindow.field.width() / 2)
         x += x_offset
 
         if pos//10 > 0:
             y_offset = 1
         else:
             y_offset = -1
-        y_offset += -(-(pos//10) + 2) * self.pblen - 30
-        y = self.mainwindow.height()
+        y_offset += -(-(pos//10) + 1) * self.pblen
         y += y_offset
 
         button.setGeometry(x, y, self.pblen, self.pblen)
@@ -201,9 +198,13 @@ class MousePalette():
     
     def placeLabel(self):
         """Place the trace palette label."""
+        x, y = self.getButtonCoords("trace")
         self.label.resize(self.label.sizeHint())
-        x = self.mainwindow.field.x() + self.mainwindow.field.width() / 2 - self.label.width() / 2
-        y = self.mainwindow.height() - (2 * self.pblen) - self.label.height() - 40
+        x -= self.label.width() / 2
+        if self.trace_y > 0.5:
+            y -= self.pblen + self.label.height() + 5
+        else:
+            y += self.pblen + 5
         self.label.move(x, y)
 
     def updateLabel(self):
@@ -224,6 +225,13 @@ class MousePalette():
             Params:
                 bname (str): the name of the clicked button
         """
+        if self.is_dragging:
+            for name, button_info in self.mode_buttons.items():
+                button, mode, pos = button_info
+                if name == bname:
+                    button.setChecked(not button.isChecked())    
+                    return
+
         for name, button_info in self.mode_buttons.items():
             button, mode, pos = button_info
             if name == bname:
@@ -239,8 +247,17 @@ class MousePalette():
             Params:
                 bpos (int): the position of the palette button
         """
+        if self.is_dragging:
+            for i, button in enumerate(self.palette_buttons):
+                if i == bpos:
+                    button.setChecked(not button.isChecked())    
+                    return
+        
         for i, button in enumerate(self.palette_buttons):
             if i == bpos:
+                if self.is_dragging:
+                    button.setChecked(not button.isChecked())
+                    return
                 button.setChecked(True)
                 self.mainwindow.changeTracingTrace(button.trace)
                 self.selected_trace = button.trace
@@ -290,31 +307,27 @@ class MousePalette():
     
     def placeIncrementButtons(self):
         """Place the increment buttons on the field"""
-        if self.left_handed:
-            x = self.mainwindow.field.x() + 10
-        else:
-            x = self.mainwindow.width() - self.ibw - 10
-        y = self.mainwindow.height() - (self.ibh + 15) * 2 - 20
+        x, y = self.getButtonCoords("inc")
         self.up_bttn.setGeometry(x, y, self.ibw, self.ibh)
-        y = self.mainwindow.height() - (self.ibh + 15) - 20
+        y = y + self.ibh + 15
         self.down_bttn.setGeometry(x, y, self.ibw, self.ibh)
     
     def createIncrementButtons(self):
         """Create the section increment buttons."""        
-        self.up_bttn = ScreenButton(self.mainwindow)
+        self.up_bttn = MoveableButton(self.mainwindow, self, "inc")
         up_icon = self.up_bttn.style().standardIcon(
             QStyle.SP_TitleBarShadeButton
         )
         self.up_bttn.setIcon(up_icon)
-        self.up_bttn.pressed.connect(self.mainwindow.incrementSection)
+        self.up_bttn.clicked.connect(self.incrementSection)
         self.up_bttn.setToolTip("Next section (PgUp)")
 
-        self.down_bttn = ScreenButton(self.mainwindow)
+        self.down_bttn = MoveableButton(self.mainwindow, self, "inc")
         down_icon = self.up_bttn.style().standardIcon(
             QStyle.SP_TitleBarUnshadeButton
         )
         self.down_bttn.setIcon(down_icon)
-        self.down_bttn.pressed.connect(lambda : self.mainwindow.incrementSection(down=True))
+        self.down_bttn.clicked.connect(lambda : self.incrementSection(down=True))
         self.down_bttn.setToolTip("Previous section (PgDown)")
 
         self.placeIncrementButtons()
@@ -325,31 +338,35 @@ class MousePalette():
         self.corner_buttons.append(self.up_bttn)
         self.corner_buttons.append(self.down_bttn)
     
+    def incrementSection(self, down=False):
+        """Increment the section."""
+        if self.is_dragging:
+            return
+        self.mainwindow.incrementSection(down)
+    
     def placeBCButtons(self):
         """Place the brightness/contrast buttons."""
+        bcx, bcy = self.getButtonCoords("bc")
         for i, b in enumerate(self.bc_buttons):
+            x, y = bcx, bcy
             grid_position = (i%2, i//2)
-            if self.left_handed:
-                x = self.mainwindow.field.x() + 10 + (self.bcsize + 10) * grid_position[0]
-            else:
-                x = self.mainwindow.width() - (10 + self.bcsize) * 2
-                x += (self.bcsize + 10) * grid_position[0]
-            y = self.mainwindow.height() - 200 - (20 + self.bcsize) * grid_position[1]
+            x += (self.bcsize + 10) * grid_position[0]
+            y += (20 + self.bcsize) * grid_position[1]
             b.setGeometry(x, y, self.bcsize, self.bcsize)
     
     def createBCButtons(self):
         """Create the brightnes/contrast buttons."""
         self.bc_buttons = []
-        for option in ("contrast", "brightness"):
+        for option in ("brightness", "contrast"):
             for direction in ("down", "up"):
-                b = ScreenButton(self.mainwindow)
+                b = MoveableButton(self.mainwindow, self, "bc")
                 # get the icons
                 icon_fp = os.path.join(loc.img_dir, f"{option}_{direction}.png")
                 pixmap = QPixmap(icon_fp)
                 b.setIcon(QIcon(pixmap))
                 b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
                 # connect to mainwindow function
-                b.pressed.connect(lambda o=option, d=direction: self.mainwindow.editImage(o, d))
+                b.clicked.connect(lambda o=option, d=direction: self.changeBC(o, d))
                 # set the button tool tip
                 if option == "contrast" and direction == "down":
                     tooltip = "Decrease contrast ([)"
@@ -360,9 +377,6 @@ class MousePalette():
                 elif option == "brightness" and direction == "up":
                     tooltip = "Increase brightness (=)"
                 b.setToolTip(tooltip)
-                # set button as continuous
-                b.setAutoRepeat(True)
-                b.setAutoRepeatDelay(0)
                 b.show()
                 self.bc_buttons.append(b)
                 self.corner_buttons.append(b)
@@ -378,6 +392,57 @@ class MousePalette():
             self.show_corner_buttons = True
             for b in self.corner_buttons:
                 b.show()
+    
+    def changeBC(self, option, direction):
+        """Change the brightness/contrast of the field."""
+        if not self.is_dragging:
+            self.mainwindow.editImage(option, direction)
+    
+    def getButtonCoords(self, group):
+        """Get the coordinates for a button group.
+        
+            Params:
+                group (str): the name of the button group.
+        """
+        x1, x2, y1, y2 = self.getBounds()[group]
+        x = getattr(self, f"{group}_x")
+        y = getattr(self, f"{group}_y")
+        x = (x * (x2 - x1)) + x1
+        y = (y * (y2 - y1)) + y1
+        return x, y
+
+    def moveButton(self, dx, dy, group):
+        """Move a button group.
+        
+            Params:
+                dx (int): the x-value movement for the button
+                dy (int): the y-value movement for the button
+                group (str): the name of the button group
+        """
+        x1, x2, y1, y2 = self.getBounds()[group]
+        current_x, current_y = self.getButtonCoords(group)
+        new_x = ((current_x + dx) - x1) / (x2 - x1)
+        if new_x < 0: new_x = 0
+        elif new_x > 1: new_x = 1
+        new_y = ((current_y + dy) - y1) / (y2 - y1)
+        if new_y < 0: new_y = 0
+        elif new_y > 1: new_y = 1
+        setattr(self, f"{group}_x", new_x)
+        setattr(self, f"{group}_y", new_y)
+    
+    def getBounds(self):
+        """Get the bounds for the buttons."""
+        fx1 = self.mainwindow.field.x()
+        fx2 = fx1 + self.mainwindow.field.width()
+        fy1 = self.mainwindow.field.y()
+        fy2 = fy1 + self.mainwindow.field.height()
+
+        return {
+            "mode": (fx1, fx2 - self.mblen, fy1, fy2 - (self.mblen + 10) * len(self.mode_buttons) + 10),
+            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5, fy1 + self.pblen, fy2 - self.pblen),
+            "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
+            "bc": (fx1, fx2 - 2*self.bcsize - 10, fy1, fy2 - 2*self.bcsize - 20)
+        }
 
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -410,16 +475,4 @@ class MousePalette():
         self.label.close()
         for b in self.corner_buttons:
             b.close()
-
-class ScreenButton(QPushButton):
-
-    def paintEvent(self, event):
-        """Add a highlighting border to selected buttons."""
-        super().paintEvent(event)
-        if self.isChecked():
-            painter = QPainter(self)
-            painter.setPen(QPen(QColor(255, 255, 0), 2))
-            painter.setOpacity(1)
-            w, h = self.width(), self.height()
-            painter.drawRect(QRect(0, 0, w, h))
         

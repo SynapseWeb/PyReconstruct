@@ -169,14 +169,22 @@ class LogSet():
             # special cases: creating or deleting an object
             if event == "Create object":
                 # check the previous log to see if traces were created
-                if self.all_logs and "Create trace(s)" in self.all_logs[-1].event:
-                    self.all_logs.insert(len(self.all_logs)-1, log)
+                if (
+                    self.all_logs and
+                    self.all_logs[-1].obj_name == obj_name and 
+                    "Create trace(s)" in self.all_logs[-1].event):
+                    event = self.all_logs[-1].event
+                    self.all_logs[-1].event = event.replace("trace(s)", "object")
                 else:
                     self.all_logs.append(log)
             elif event == "Delete object":
                 # remove object from dynamic log
                 if obj_name in self.dyn_logs:
                     del(self.dyn_logs[obj_name])
+                # remove all previous logs associated with the object
+                for l in self.all_logs.copy():
+                    if l.obj_name == obj_name and "Create object" not in l.event:
+                        self.all_logs.remove(l)
                 self.all_logs.append(log)
             # non-special cases
             else:

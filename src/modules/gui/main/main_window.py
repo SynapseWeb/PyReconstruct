@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
+        self.user = os.getlogin()
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -118,6 +119,9 @@ class MainWindow(QMainWindow):
         setMainWindow(self)
 
         self.show()
+
+        # prompt the user for a username
+        self.changeUsername()
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -670,11 +674,12 @@ class MainWindow(QMainWindow):
                 self,
                 "Username",
                 "Enter your username:",
-                text=self.series.user
+                text=self.series.user,
             )
             if not confirmed or not new_name:
                 return
-            
+        
+        self.user = new_name
         self.series.user = new_name
     
     def setFillOpacity(self, opacity : float = None):
@@ -851,8 +856,8 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
         
-        # prompt the user for a username
-        self.changeUsername()
+        # set the user for the series
+        self.series.user = self.user
     
     def newSeries(
         self,

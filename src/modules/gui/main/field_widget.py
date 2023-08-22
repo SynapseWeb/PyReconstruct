@@ -364,9 +364,6 @@ class FieldWidget(QWidget, FieldView):
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
         
-        # get handedness from mouse palette
-        left_handed = self.mainwindow.mouse_palette.left_handed
-        
         # draw the name of the closest trace on the screen
         # draw the selected traces to the screen
         ct_size = 12
@@ -399,8 +396,7 @@ class FieldWidget(QWidget, FieldView):
                         str(label_id),
                         c,
                         (0,0,0) if black_outline else (255,255,255),
-                        ct_size,
-                        left_handed
+                        ct_size
                     )
                 # if no label found, check for closest traces
                 else:
@@ -430,8 +426,7 @@ class FieldWidget(QWidget, FieldView):
                             name,
                             c,
                             (0,0,0) if black_outline else (255,255,255),
-                            ct_size,
-                            left_handed
+                            ct_size
                         )
             
             # get the names of the selected traces
@@ -466,7 +461,7 @@ class FieldWidget(QWidget, FieldView):
         
         # draw the names of the selected traces
         if self.selected_trace_names:
-            x = self.width() - 10 if left_handed else 10
+            x = 10
             y = 20
             drawOutlinedText(
                 field_painter,
@@ -474,8 +469,7 @@ class FieldWidget(QWidget, FieldView):
                 "Selected Traces:",
                 (255, 255, 255),
                 (0, 0, 0),
-                st_size,
-                not left_handed
+                st_size
             )
             for name, n in self.selected_trace_names.items():
                 y += st_size + 10
@@ -489,14 +483,13 @@ class FieldWidget(QWidget, FieldView):
                     text,
                     (255, 255, 255),
                     (0, 0, 0),
-                    st_size,
-                    not left_handed
+                    st_size
                 )
         
         # draw the names of the selected ztraces
         if self.selected_ztrace_names:
             if not self.selected_trace_names:
-                x = self.width() - 10 if left_handed else 10
+                x = 10
                 y = 20
             else:
                 y += st_size + 20
@@ -506,8 +499,7 @@ class FieldWidget(QWidget, FieldView):
                 "Selected Ztraces:",
                 (255, 255, 255),
                 (0, 0, 0),
-                st_size,
-                not left_handed
+                st_size
             )
             for name, n in self.selected_ztrace_names.items():
                 y += st_size + 10
@@ -521,8 +513,7 @@ class FieldWidget(QWidget, FieldView):
                     text,
                     (255, 255, 255),
                     (0, 0, 0),
-                    st_size,
-                    not left_handed
+                    st_size
                 )
         
         field_painter.end()
@@ -1475,7 +1466,7 @@ class FieldWidget(QWidget, FieldView):
             self.saveState()
 
 
-def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, left_justified=True):
+def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int):
     """Draw outlined text using a QPainter object.
     
         Params:
@@ -1486,11 +1477,8 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
             c1 (tuple): the primary color of the text
             c2 (tuple): the outline color of the text
             size (int): the size of the text
-            left_justified (bool): True if text is left justified
     """
-    # add justification
-    if not left_justified:
-        x -= int(len(text) * (size * 0.812))
+    x -= int(len(text) * (size * 0.812))
     
     w = 1  # outline thickness
     path = QPainterPath()

@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import (
-    QPushButton, 
-    QWidget
+    QPushButton
 )
 from PySide6.QtGui import (
     QPainter, 
@@ -13,17 +12,56 @@ from PySide6.QtCore import QPoint, QRect
 from modules.datatypes import Trace
 from modules.gui.dialog import TraceDialog
 
-class PaletteButton(QPushButton):
+class MoveableButton(QPushButton):
 
-    def __init__(self, parent : QWidget, manager):
-        """Create the palette button.
-        
-            Params:
-                parent (QWidget): the parent containing the button
-                manager: the mananger class for the button
-        """
+    def __init__(self, parent, manager, group_name):
+        """Create the mode button."""
         super().__init__(parent)
         self.manager = manager
+        self.group_name = group_name
+    
+    def mousePressEvent(self, event):
+        """Called when button is pressed."""
+        self.clicked_x = event.globalX()
+        self.clicked_y = event.globalY()
+        super().mousePressEvent(event)
+    
+    def mouseMoveEvent(self, event):
+        """Called when button is moved."""
+        self.manager.is_dragging = True
+        diff_x = event.globalX() - self.clicked_x
+        diff_y = event.globalY() - self.clicked_y
+        self.manager.moveButton(diff_x, diff_y, self.group_name)
+        self.clicked_x = event.globalX()
+        self.clicked_y = event.globalY()
+        self.manager.resize()
+    
+    def mouseReleaseEvent(self, event):
+        """Called when mouse is released."""
+        super().mouseReleaseEvent(event)
+        self.manager.is_dragging = False
+
+
+class ModeButton(MoveableButton):
+
+    def __init__(self, parent, manager):
+        super().__init__(parent, manager, "mode")
+
+    def paintEvent(self, event):
+        """Add a highlighting border to selected buttons."""
+        super().paintEvent(event)
+        if self.isChecked():
+            painter = QPainter(self)
+            painter.setPen(QPen(QColor(255, 255, 0), 2))
+            painter.setOpacity(1)
+            w, h = self.width(), self.height()
+            painter.drawRect(QRect(0, 0, w, h))
+
+
+class PaletteButton(MoveableButton):
+
+    def __init__(self, parent, manager):
+        super().__init__(parent, manager, "trace")
     
     def paintEvent(self, event):
         """Draw the trace on the button."""
@@ -58,7 +96,6 @@ class PaletteButton(QPushButton):
             painter.drawRect(QRect(0, 0, w, h))
 
         painter.end()
-
 
     def setTrace(self, trace : Trace):
         """Create a palette button object.
@@ -123,4 +160,3 @@ class PaletteButton(QPushButton):
         x += self.origin[0]
         y += self.origin[1]
         return (x, y)
-

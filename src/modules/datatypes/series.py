@@ -568,6 +568,10 @@ class Series():
         for i in range(len(image_locations)):
             Section.new(series_name, i, image_locations[i], mag, thickness, hidden_dir)
 
+        # create empty existing_log.csv file
+        with open(os.path.join(hidden_dir, "existing_log.csv"), "w") as f:
+            f.write("Date, Time, User, Obj, Sections, Event")
+
         # create series object
         series = Series(series_fp, sections)
         

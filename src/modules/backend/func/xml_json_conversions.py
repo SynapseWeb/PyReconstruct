@@ -81,6 +81,10 @@ def xmlToJSON(xml_dir : str) -> Series:
         progress += 1
         update(progress/final_value * 100)
     
+    # create an empty log file
+    with open(os.path.join(hidden_dir, "existing_log.csv"), "w") as f:
+        f.write("Date, Time, User, Obj, Sections, Event")
+    
     # open the series file
     series = Series(json_series_fp, sections)
 
@@ -133,7 +137,6 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     series_dict["ztraces"] = {}
     for xml_zcontour in xml_series.zcontours:
         series_dict["ztraces"][xml_zcontour.name] = Ztrace.dictFromXMLObj(xml_zcontour)
-
 
     # get the series filename and save
     fname = os.path.basename(series_fp)

@@ -22,21 +22,23 @@ from modules.gui.utils import (
 )
 from modules.gui.dialog import BCDialog
 from modules.constants import fd_dir
+from modules.datatypes import Series
 
 class SectionTableWidget(QDockWidget):
 
-    def __init__(self, sectiondict : dict, mainwindow : QWidget, manager):
+    def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the trace table dock widget.
         
             Params:
                 series (Series): the series object
-                sectiondict (dict): contains all section info for the table
                 mainwindow (QWidget): the main window the dock is connected to
                 manager: the trace table manager
         """
         # initialize the widget
         super().__init__(mainwindow)
         self.mainwindow = mainwindow
+
+        self.series = series
 
         # set desired format for widget
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
@@ -48,7 +50,7 @@ class SectionTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
-        self.createTable(sectiondict)
+        self.createTable()
         self.createMenus()
 
         # save manager object
@@ -112,14 +114,15 @@ class SectionTableWidget(QDockWidget):
         self.table.resizeRowsToContents()
         self.table.resizeColumnsToContents()
     
-    def setRow(self, r : int, snum : int, section_data : dict):
+    def setRow(self, r : int, snum : int):
         """Set the data for a row.
         
             Params:
                 r (int): the row index
                 snum (int): the section number
-                section_data (dict): the data for the section
         """
+        section_data = self.series.data["sections"][snum]
+
         self.table.setItem(r, 0, QTableWidgetItem(
             str(snum) + (" (calgrid)" if section_data["calgrid"] else "")
         ))
@@ -127,7 +130,7 @@ class SectionTableWidget(QDockWidget):
             str(round(section_data["thickness"], 5))
         ))
         self.table.setItem(r, 2, QTableWidgetItem(
-            "Locked" if section_data["align_locked"] else "Unlocked"
+            "Locked" if section_data["locked"] else "Unlocked"
         ))
         self.table.setItem(r, 3, QTableWidgetItem(
             str(section_data["brightness"])
@@ -136,21 +139,15 @@ class SectionTableWidget(QDockWidget):
             str(section_data["contrast"])
         ))
         self.table.setItem(r, 5, QTableWidgetItem(
-            str(section_data["image_source"])
+            str(section_data["src"])
         ))
     
-    def createTable(self, sectiondict : dict):
-        """Create the table widget.
-        
-            Params:
-                sectiondict (dict): section number : (thickness, locked)
-        """
+    def createTable(self):
+        """Create the table widget."""
         # establish table headers
         self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
 
-        self.sectiondict = sectiondict
-
-        self.table = CopyTableWidget(len(sectiondict), len(self.horizontal_headers))
+        self.table = CopyTableWidget(len(self.series.sections), len(self.horizontal_headers))
 
         # connect table functions
         self.table.contextMenuEvent = self.sectionContextMenu
@@ -165,8 +162,8 @@ class SectionTableWidget(QDockWidget):
         
         # fill in section data
         r = 0
-        for snum in sorted(sectiondict.keys()):
-            self.setRow(r, snum, sectiondict[snum])
+        for snum in sorted(self.series.sections.keys()):
+            self.setRow(r, snum)
             r += 1
 
         self.format()
@@ -174,12 +171,11 @@ class SectionTableWidget(QDockWidget):
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
     
-    def updateSection(self, snum : int, section_data : dict):
+    def updateSection(self, snum : int):
         """Update the tables for a single section.
         
             Params:
                 snum (int): the section number to update
-                sectiondict (dict): the data for the section
         """
 
         # iterate through rows to find section number
@@ -187,7 +183,7 @@ class SectionTableWidget(QDockWidget):
             t = self.table.item(r, 0).text()
             t = t.split()[0]
             if int(t) == snum:
-                self.setRow(r, snum, section_data)
+                self.setRow(r, snum)
     
     def getSelectedSection(self):
         """Get the section that is selected by the user."""
@@ -256,9 +252,9 @@ class SectionTableWidget(QDockWidget):
         
         # get the existing section thickness
         snum = section_numbers[0]
-        sthickness = self.sectiondict[snum]["thickness"]
+        sthickness = self.series.data["sections"][snum]["thickness"]
         for snum in section_numbers[1:]:
-            if self.sectiondict[snum]["thickness"] != sthickness:
+            if self.series.data["sections"][snum]["thickness"] != sthickness:
                 sthickness = 0
                 break
         if sthickness:
@@ -290,7 +286,7 @@ class SectionTableWidget(QDockWidget):
             return
         
         # get the existing section source
-        src = self.sectiondict[snum]["image_source"]
+        src = self.series.data["sections"][snum]["src"]
 
         # get the new image source from the user
         new_src, confirmed = QInputDialog.getText(
@@ -364,8 +360,8 @@ class SectionTableWidget(QDockWidget):
     def modifyAllSrc(self):
         """Modify the image source for all sections."""
         # attempt to use the last section src as an example
-        snum = max(self.sectiondict.keys())
-        example_src = self.sectiondict[snum]["image_source"]
+        snum = max(self.series.sections.keys())
+        example_src = self.series.data["sections"][snum]["src"]
         if str(snum) in example_src:
             example_src = example_src.replace(str(snum), "#", 1)
         else:
@@ -389,3 +385,8 @@ class SectionTableWidget(QDockWidget):
                 notify("Please use only one '#' symbol to represent the section number.")
         
         self.manager.editSrc(None, new_src)
+
+    def closeEvent(self, event):
+        """Remove self from manager table list."""
+        self.manager.tables.remove(self)
+        super().closeEvent(event)

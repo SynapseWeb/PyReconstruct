@@ -103,6 +103,33 @@ class FieldView():
         if self.b_section is not None:
             self.b_section_layer.loadImage()
         self.generateView()
+    
+    def updateData(self, clear_tracking=True):
+        """Update the series data object and the tables."""
+        # update the series data tracker
+        self.series.data.updateSection(self.section, update_traces=True)
+
+        # update the object table
+        if self.obj_table_manager:
+            self.obj_table_manager.updateSection(
+                self.section
+            )
+        
+        # update the trace table
+        if self.trace_table_manager:
+            self.trace_table_manager.update()
+        
+        # update the ztrace table
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.update()
+        
+        # update the section table
+        if self.section_table_manager:
+            self.section_table_manager.updateSection(self.section.n)
+        
+        if clear_tracking:
+            self.section.clearTracking()
+            self.series.modified_ztraces = set()
 
     def saveState(self):
         """Save the current traces and transform.
@@ -113,24 +140,8 @@ class FieldView():
         section_states = self.series_states[self.series.current_section]
         section_states.addState(self.section, self.series)
 
-        # update the object table
-        if self.obj_table_manager:
-            self.obj_table_manager.updateSection(
-                self.section,
-                self.series.current_section
-            )
-        
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.update()
-        
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(self.series.modified_ztraces)
-        
-        # clear the tracked added/removed traces
-        self.section.clearTracking()
-        self.series.modified_ztraces = []
+        # update the data/tables
+        self.updateData()
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
@@ -148,26 +159,10 @@ class FieldView():
 
         # get the last undo state
         section_states = self.series_states[self.series.current_section]
-        modified_data = section_states.undoState(self.section, self.series)
-        if modified_data is None:
-            return
-        modified_contours, modified_ztraces = modified_data
-        
-        # update the object table
-        if self.obj_table_manager:
-            for contour in modified_contours:
-                self.obj_table_manager.updateContour(
-                    contour,
-                    self.section,
-                    self.series.current_section
-                )
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(modified_ztraces)
-            
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
+        section_states.undoState(self.section, self.series)
+
+        # update the data/tables
+        self.updateData(clear_tracking=False)
         
         self.generateView()
     
@@ -183,26 +178,10 @@ class FieldView():
 
         # get the last redo state
         section_states = self.series_states[self.series.current_section]
-        modified_data = section_states.redoState(self.section, self.series)
-        if modified_data is None:
-            return
-        modified_contours, modified_ztraces = modified_data
-        
-        # update the object table
-        if self.obj_table_manager:
-            for contour in modified_contours:
-                self.obj_table_manager.updateContour(
-                    contour,
-                    self.section,
-                    self.series.current_section
-                )
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateZtraces(modified_ztraces)
-            
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
+        section_states.redoState(self.section, self.series)
+
+        # update the data/tables
+        self.updateData()
         
         self.generateView()
     
@@ -217,7 +196,7 @@ class FieldView():
             self.stored_tform = Transform([1,0,0,0,1,0])
             self.propogated_sections = [self.series.current_section]
         
-    def propogateTo(self, to_end : bool = True):
+    def propogateTo(self, to_end : bool = True, log_event=True):
         """Propogate the stored transform to the start/end of series.
         
             Params:
@@ -238,6 +217,8 @@ class FieldView():
                 section.tforms[self.series.alignment] = new_tform
                 section.save()
                 self.propogated_sections.append(snum)
+                if log_event:
+                    self.series.addLog(None, snum, "Modify transform")
         
         self.reload()
     
@@ -317,7 +298,10 @@ class FieldView():
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
 
         # set the trace as the only selected trace
-        self.section.selected_traces = [trace]
+        if trace.hidden:
+            self.section.selected_traces = []
+        else:
+            self.section.selected_traces = [trace]
 
         self.generateView()
     
@@ -399,7 +383,10 @@ class FieldView():
         ]
 
         # set the selected traces
-        self.section.selected_traces = contour.getTraces()
+        self.section.selected_traces = []
+        for trace in contour.getTraces():
+            if not trace.hidden:
+                self.section.selected_traces.append(trace)
 
         self.generateView()
     
@@ -518,15 +505,13 @@ class FieldView():
         # refresh all of the tables
         if self.obj_table_manager:
             self.obj_table_manager.refresh()
-        else:
-            self.series.gatherSectionData()
         if self.trace_table_manager:
             self.trace_table_manager.loadSection()
         if self.ztrace_table_manager:
             self.ztrace_table_manager.refresh()
     
     def translateTform(self, dx : float, dy : float):
-        """Trnaslate the transform for the entire section.
+        """Translate the transform for the entire section.
             Params:
                 dx (float): x-translate
                 dy (float): y-translate
@@ -695,7 +680,7 @@ class FieldView():
         # change the transform
         self.changeTform(a2b_tform)
     
-    def calibrateMag(self, trace_lengths : dict):
+    def calibrateMag(self, trace_lengths : dict, log_event=True):
         """Calibrate the pixel mag based on the lengths of given traces.
 
             Params:
@@ -723,6 +708,9 @@ class FieldView():
         ):
             section.setMag(new_mag)
             section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Calibrate series")
         
         # reload the field
         self.reload()
@@ -826,12 +814,12 @@ class FieldView():
         self.generateView(generate_image=False)
         self.saveState()
     
-    def newTrace(self, pix_trace, tracing_trace, closed=True):
+    def newTrace(self, pix_trace, tracing_trace, closed=True, log_event=True):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             self.generateView(generate_image=False)
             return
-        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed)
+        self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed, log_event=log_event)
         self.generateView(generate_image=False)
         self.saveState()
     
@@ -901,15 +889,17 @@ class FieldView():
     
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
+        self.series.data.updateSection(self.section)
         if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section)
+            self.section_table_manager.updateSection(self.section.n)
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
     def changeContrast(self, change):
         self.section_layer.changeContrast(change)
+        self.series.data.updateSection(self.section)
         if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section)
+            self.section_table_manager.updateSection(self.section.n)
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
@@ -926,6 +916,7 @@ class FieldView():
 
         self.section_layer.changeTform(new_tform)
 
+        # BUG: refresh object list?
         # refresh the ztrace list
         if self.ztrace_table_manager:
             self.ztrace_table_manager.refresh()

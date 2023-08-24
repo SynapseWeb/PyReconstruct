@@ -502,8 +502,14 @@ class Object3DViewer(gl.GLViewWidget):
             return
         
         name, coord = result
+
+        # ASSUME UNIFORM SECTION THICKNESS
+        avg_thickness = 0
+        for section_data in self.series.data["sections"].values():
+            avg_thickness += section_data["thickness"]
+        avg_thickness /= len(self.series.sections)
         
-        snum = round(coord[2] / self.series.section_thicknesses[0])
+        snum = round(coord[2] / avg_thickness)
         x = coord[0]
         y = coord[1]
         self.coord_displayed = (x, y, snum)

@@ -100,7 +100,7 @@ def transforms_as_strings(recon_transforms, output_file=None):
     return output
 
         
-def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False):
+def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False, log_event=True):
 
     new_transforms = make_pyr_transforms(project_fp, scale, cal_grid)
     new_transforms = transforms_as_strings(new_transforms)
@@ -144,5 +144,9 @@ def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_g
         section.tforms[series.alignment] = Transform(tform)
 
         section.save()
+    
+    # log event
+    if log_event:
+        series.addLog(None, None, f"Import SWIFT transforms to alignment {series.alignment}")
 
     print("SWiFT transforms imported!")

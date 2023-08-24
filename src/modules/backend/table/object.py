@@ -2,14 +2,12 @@ from PySide6.QtCore import Qt
 
 from modules.gui.table import ObjectTableWidget
 from modules.gui.popup import (
-    Object3DViewer,
-    HistoryWidget
+    Object3DViewer
 )
 from modules.datatypes import (
     Series,
     Section,
-    Trace,
-    ObjectTableItem
+    Trace
 )
 
 class ObjectTableManager():
@@ -24,112 +22,37 @@ class ObjectTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
-
-        self.objdict = self.series.loadObjectData(object_table_items=True)
     
     def newTable(self):
         """Create a new object list widget."""
         new_table = ObjectTableWidget(
             self.series,
-            self.objdict,
             self.mainwindow,
             self
         )
         self.tables.append(new_table)
         self.mainwindow.addDockWidget(Qt.LeftDockWidgetArea, new_table)
     
-    def updateSection(self, section : Section, section_num : int):
+    def updateSection(self, section : Section):
         """Update the data and the table for a specific section.
         
             Params:
                 section (Section): the section object
                 section_num (int): the section number
         """
-        # add and update and added traces
-        for trace in section.added_traces:
-            self.addTrace(trace, section, section_num)
         
         # refresh any removed traces
-        updated_contours = set()
-        for trace in section.removed_traces:
-            if trace.name not in updated_contours:
-                self.updateContour(trace.name, section, section_num)
-                updated_contours.add(trace.name)
-    
-    def addTrace(self, trace : Trace, section : Section, section_num : int):
-        """Add a trace to the existing object data and update the table.
-        
-            Params:
-                trace (Trace): the trace to add
-                section (Section): the section containing the trace
-                section_num (int): the section number
-        """
-        # get the table item object
-        if trace.name in self.objdict:
-            objdata = self.objdict[trace.name]
-        else:
-            objdata = ObjectTableItem(trace.name)
-            self.objdict[trace.name] = objdata
-        
-        # add trace data
-        objdata.addTrace(
-            trace,
-            section.tforms[self.series.alignment],
-            section_num,
-            section.thickness
-        )
-    
-        # update on the tables
-        for table in self.tables:
-            table.updateObject(objdata)
-
-    def updateContour(self, contour_name : str, section : Section, section_num : int):
-        """Update data and table for a specific contour.
-        
-            Params:
-                contour_name (str): the name of the contour to update
-                section (Section): the section object containing this contour
-                section_num (int): the section number for this contour
-        """
-        # locate the object in the dictionary and clear existing section data
-        if contour_name in self.objdict:
-            objdata = self.objdict[contour_name]
-            objdata.clearSectionData(section_num)
-        else:
-            objdata = ObjectTableItem(contour_name)
-            self.objdict[contour_name] = objdata
-        
-        # update the trace in the dictionary if exists
-        if contour_name in section.contours:
-            for trace in section.contours[contour_name]:
-                objdata.addTrace(
-                    trace,
-                    section.tforms[self.series.alignment],
-                    section_num,
-                    section.thickness
-                )
-        
-        # update the contour on the table(s)
-        for table in self.tables:
-            table.updateObject(objdata)
-    
-    def refreshObject(self, obj_name : str):
-        """Refresh an object's data on the tables.
-        
-            Params:
-                (obj_name): the name of the object to refresh
-        """
-        for table in self.tables:
-            table.updateObject(self.objdict[obj_name])
+        updated_contours = section.getAllModifiedNames()
+        self.updateObjects(updated_contours)
 
     # MENU FUNCTIONS
 
     def refresh(self):
         """Reload all of the section data."""
         self.mainwindow.saveAllData()
-        self.objdict = self.series.loadObjectData(object_table_items=True)
+        self.series.data.refresh()
         for table in self.tables:
-            table.createTable(self.objdict)
+            table.createTable()
     
     def updateTable(self, table : ObjectTableWidget):
         """Updates a table with the current data.
@@ -137,7 +60,16 @@ class ObjectTableManager():
             Params:
                 table (ObjectTableWidget): the table to update
         """
-        table.createTable(self.objdict)
+        table.createTable()
+    
+    def updateObjects(self, obj_names : list):
+        """Update the objects each table.
+        
+            Params:
+                obj_names (list): the list objects to update
+        """
+        for table in self.tables:
+            table.updateObjects(obj_names)
     
     def findObject(self, obj_name : str, first=True):
         """Find an object in the series.
@@ -148,9 +80,9 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         if first:
-            snum = self.objdict[obj_name].getStart()
+            snum = self.series.data.getStart(obj_name)
         else:
-            snum = self.objdict[obj_name].getEnd()
+            snum = self.series.data.getEnd(obj_name)
         self.mainwindow.setToObject(obj_name, snum)
 
     def deleteObjects(self, obj_names : list):
@@ -164,10 +96,7 @@ class ObjectTableManager():
         self.series.deleteObjects(obj_names)
 
         # update the dictionary data and tables
-        for obj_name in obj_names:
-            self.objdict[obj_name].clearAllData()
-            for table in self.tables:
-                table.updateObject(self.objdict[obj_name])
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -182,9 +111,6 @@ class ObjectTableManager():
                 attr_trace (Trace): the trace holding the new attributes
         """
         self.mainwindow.saveAllData()
-        # delete existing trace information
-        for obj_name in obj_names:
-            self.objdict[obj_name] = ObjectTableItem(obj_name)
         
         # modify the object on every section
         t = attr_trace
@@ -196,20 +122,17 @@ class ObjectTableManager():
             name,
             color,
             tags,
-            mode,
-            self.addTrace
+            mode
         )
 
+        all_names = set(obj_names + [name])
+
         # update the table data
-        for table in self.tables:
-            if name:
-                table.updateObject(self.objdict[name])
-            for obj_name in obj_names:
-                table.updateObject(self.objdict[obj_name])
+        self.updateObjects(all_names)
         
         # update the view
         self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)      
+        self.mainwindow.seriesModified(True)   
 
     def editRadius(self, obj_names : list, new_rad : float):
         """Change the radii of all traces of an object.
@@ -219,21 +142,15 @@ class ObjectTableManager():
                 new_rad (float): the new radius for the traces of the object
         """
         self.mainwindow.saveAllData()
-        # delete existing trace information
-        for name in obj_names:
-            self.objdict[name] = ObjectTableItem(name)
         
         # iterate through all sections
         self.series.editObjectRadius(
             obj_names,
-            new_rad,
-            self.addTrace
+            new_rad
         )
         
         # update the table data
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -247,21 +164,15 @@ class ObjectTableManager():
                 new_shape (list): the new shape for the traces of the object
         """
         self.mainwindow.saveAllData()
-        # delete existing trace information
-        for name in obj_names:
-            self.objdict[name] = ObjectTableItem(name)
         
         # iterate through all sections
         self.series.editObjectShape(
             obj_names,
-            new_shape,
-            self.addTrace
+            new_shape
         )
         
         # update the table data
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
+        self.updateObjects(obj_names)
         
         # update the view
         self.mainwindow.field.reload()
@@ -278,13 +189,7 @@ class ObjectTableManager():
         # iterate through all the sections
         self.series.removeAllTraceTags(obj_names)
 
-        # modify the dictionary data
-        for name in obj_names:
-            self.objdict[name].clearTags()
-
-        for table in self.tables:
-            for name in obj_names:
-                table.updateObject(self.objdict[name])
+        self.updateObjects(obj_names)
 
         # update the view
         self.mainwindow.field.reload()        
@@ -298,6 +203,7 @@ class ObjectTableManager():
                 hide (bool): True if object should be hidden
         """
         self.mainwindow.saveAllData()
+
         # iterate through sections and hide the traces
         self.series.hideObjects(obj_names, hide)
             
@@ -355,38 +261,6 @@ class ObjectTableManager():
             self.series.object_3D_modes[name] = tuple(obj_settings)
         
         self.mainwindow.seriesModified(True)
-    
-    def viewHistory(self, obj_names : list):
-        """View the log history of a set of objects.
-        
-            Params:
-                obj_names (list): the objects to view the history of
-        """
-        self.mainwindow.saveAllData()
-
-        # load all log objects from the traces
-        log_history = []
-        for snum, section in self.series.enumerateSections(
-            message="Loading history..."
-        ):
-            for name in obj_names:
-                if name in section.contours:
-                    contour = section.contours[name]
-                    for trace in contour:
-                        for log in trace.history:
-                            log_history.append((log, name, snum))
-        
-        # sort the log history by datetime
-        log_history.sort()
-
-        # create the output
-        output_str = "Object history for: " + ", ".join(sorted(obj_names)) + "\n"
-        for log, name, snum in log_history:
-            output_str += f"Section {snum} "
-            output_str += name + " "
-            output_str += str(log) + "\n"
-        
-        self.history_widget = HistoryWidget(self.mainwindow, output_str)
     
     def createZtrace(self, obj_names : list, cross_sectioned : bool):
         """Create ztraces from a set of objects.

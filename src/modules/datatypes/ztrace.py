@@ -73,7 +73,7 @@ class Ztrace():
         """
         tform_pts = []
         for x, y, snum in self.points:
-            tform = series.section_tforms[snum][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][series.alignment]
             pt = (*tform.map(x, y), snum)
             tform_pts.append(pt)
         
@@ -117,7 +117,7 @@ class Ztrace():
             if pt[2] == section.n:
                 tform = section.tforms[series.alignment]
             else:
-                tform = series.section_tforms[pt[2]][series.alignment]
+                tform = series.data["sections"][pt[2]]["tforms"][series.alignment]
             x, y = tform.map(x, y)
             tformed_pts.append((x, y, snum))
         
@@ -171,7 +171,7 @@ class Ztrace():
 
         real_pts = []
         for x, y, snum in self.points:
-            tform = series.section_tforms[snum][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][series.alignment]
             new_pt = (*tform.map(x, y), zvals[snum])
             real_pts.append(new_pt)
         
@@ -194,7 +194,7 @@ class Ztrace():
         points = []
         for pt in self.points:
             x, y, snum = pt
-            tform = series.section_tforms[snum][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][series.alignment]
             x, y = tform.map(x, y)
             points.append([x, y, snum])
         
@@ -255,6 +255,6 @@ class Ztrace():
         self.points = []
         for pt in points:
             x, y, snum = pt
-            tform = series.section_tforms[snum][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][series.alignment]
             x, y = tform.map(x, y, inverted=True)
             self.points.append((x, y, snum))

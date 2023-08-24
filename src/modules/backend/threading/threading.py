@@ -40,7 +40,7 @@ class WorkerSignals(QObject):
     finished = Signal()
 
 
-class Worker(QRunnable):
+class Worker(QRunnable, QObject):
     '''
     Worker thread
 
@@ -90,7 +90,8 @@ class ThreadPool(QThreadPool):
             update (function): the update functino for a loading bar
         """
         super().__init__()
-        self.setMaxThreadCount(10)
+        if self.maxThreadCount() > 10:
+            self.setMaxThreadCount(10)
         self.workers = []
         self.n_finished = 0
         self.finished_fn = None
@@ -104,26 +105,6 @@ class ThreadPool(QThreadPool):
         w = Worker(fn, *args)
         self.workers.append(w)
         return w
-    
-    def count(self):
-        """Keep track of the number of finished workers."""
-        self.n_finished += 1
-        if self.n_finished == len(self.workers) and self.finished_fn is not None:
-            self.finished_fn(
-                *self.finished_fn_args
-            )
-    
-    def startAll(self, finished_fn, *finished_fn_args):
-        """Start all of the workers in the threadpool.
-        
-            Params:
-                finished_fn (function): the function to run when all the threads are done
-        """
-        self.finished_fn = finished_fn
-        self.finished_fn_args = finished_fn_args
-        for w in self.workers:
-            w.signals.finished.connect(self.count)
-            self.start(w)
 
 class MemoryInt():
 
@@ -150,13 +131,10 @@ class ThreadPoolProgBar(ThreadPool):
         progbar.show()
         counter = MemoryInt()
         for worker in self.workers:
-            fn = worker.fn
-            def wrapper(*args):
-                fn(*args)
-                counter.inc()
-            worker.fn = wrapper
+            QApplication.processEvents()
+            worker.signals.finished.connect(counter.inc)
+            worker.signals.finished.connect(lambda : progbar.setValue(counter.n))
             self.start(worker)
         
         while counter.n < final_value:
-            progbar.setValue(counter.n)
             QApplication.processEvents()

@@ -1,6 +1,6 @@
 from modules.datatypes import Series, Transform
 
-def importTransforms(series : Series, tforms_fp : str):
+def importTransforms(series : Series, tforms_fp : str, log_event=True):
         """Import transforms from a text file.
         
             Params:
@@ -33,3 +33,7 @@ def importTransforms(series : Series, tforms_fp : str):
             tform[5] *= section.mag
             section.tforms[series.alignment] = Transform(tform)
             section.save()
+        
+        # log event
+        if log_event:
+             series.addLog(None, None, f"Import transforms to alignment {series.alignment}")

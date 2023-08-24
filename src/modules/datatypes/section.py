@@ -35,7 +35,7 @@ class Section():
 
         self.added_traces = []
         self.removed_traces = []
-        self.modified_traces = []
+        self.modified_contours = set()
 
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
@@ -101,10 +101,12 @@ class Section():
                         trace["negative"],
                         trace["hidden"],
                         trace["mode"],
-                        trace["tags"],
-                        trace["history"]
+                        trace["tags"]
                     ]
                     section_data["contours"][cname][i] = trace
+                # remove history from trace if it exists
+                elif len(trace) == 9:
+                    trace.pop()
                 # check for empty/defective traces
                 if len(trace[0]) < 2:
                     flagged_traces.append(i)
@@ -194,7 +196,7 @@ class Section():
         with open(section_fp, "w") as section_file:
             section_file.write(json.dumps(section_data, indent=2))
    
-    def save(self):
+    def save(self, update_series_data=True):
         """Save file into json."""
         try:
             if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
@@ -202,8 +204,9 @@ class Section():
         except FileNotFoundError:
             pass
 
-        # update series data
-        self.series.updateSectionData(self)
+        # update the series data
+        if update_series_data:
+            self.series.data.updateSection(self, update_traces=True)
     
         d = self.getDict()
         with open(self.filepath, "w") as f:
@@ -229,11 +232,18 @@ class Section():
         """
         self.align_locked = align_locked
     
+    def getAllModifiedNames(self):
+        """Get the names of all the modified traces."""
+        trace_names = set([t.name for t in self.added_traces])
+        trace_names = trace_names.union(set([t.name for t in self.removed_traces]))
+        trace_names = trace_names.union(self.modified_contours)
+        return trace_names
+    
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
         self.removed_traces = []
-        self.modified_traces = []
+        self.modified_contours = set()
     
     def setMag(self, new_mag : float):
         """Set the magnification for the section.
@@ -251,27 +261,22 @@ class Section():
         
         self.mag = new_mag
     
-    def addTrace(self, trace : Trace, log_message=None):
+    def addTrace(self, trace : Trace, log_event=True):
         """Add a trace to the trace dictionary.
         
             Params:
                 trace (Trace): the trace to add
-                log_message (str): the history log message to put on the trace
-        """
+                log_event (bool): true if the event should be logged
+        """        
         # do not add trace if less than two points
         if len(trace.points) < 2:
             return
         # force trace to be open if only two points
         elif len(trace.points) == 2:
             trace.closed = False
-        # add to the trace history
-        if log_message:
-            trace.addLog(log_message)
-        else:
-            if trace.isNew():
-                trace.addLog("created")
-            else:
-                trace.addLog("modified")
+        # add to log
+        if log_event:
+            self.series.addLog(trace.name, self.n, "Create trace(s)")
 
         if trace.name in self.contours:
             self.contours[trace.name].append(trace)
@@ -280,7 +285,7 @@ class Section():
         
         self.added_traces.append(trace)
     
-    def removeTrace(self, trace : Trace):
+    def removeTrace(self, trace : Trace, log_event=True):
         """Remove a trace from the trace dictionary.
         
             Params:
@@ -289,8 +294,10 @@ class Section():
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
             self.removed_traces.append(trace.copy())
+        if log_event:
+            self.series.addLog(trace.name, self.n, "Delete trace(s)")
 
-    def editTraceAttributes(self, traces : list[Trace], name : str, color : tuple, tags : set, mode : tuple, add_tags=False):
+    def editTraceAttributes(self, traces : list[Trace], name : str, color : tuple, tags : set, mode : tuple, add_tags=False, log_event=True):
         """Change the name and/or color of a trace or set of traces.
         
             Params:
@@ -310,7 +317,7 @@ class Section():
                 selected = False
             
             # remove the trace and modify
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             new_trace = trace.copy()
             if name is not None:
                 new_trace.name = name
@@ -331,12 +338,20 @@ class Section():
                     fill_mode[1] = condition
                 new_trace.fill_mode = tuple(fill_mode)
             
+            # log the event
+            if log_event:
+                if trace.name != new_trace.name:
+                    self.series.addLog(trace.name, self.n, f"Rename to {new_trace.name}")
+                    self.series.addLog(new_trace.name, self.n, f"Create trace(s) from {trace.name}")
+                else:
+                    self.series.addLog(new_trace.name, self.n, f"Modify trace(s)")
+            
             # add trace back to scene and highlight if needed
-            self.addTrace(new_trace, "attributes modified")
+            self.addTrace(new_trace, log_event=False)
             if selected:
                 self.selected_traces.append(new_trace)
     
-    def editTraceRadius(self, traces : list[Trace], new_rad : float):
+    def editTraceRadius(self, traces : list[Trace], new_rad : float, log_event=True):
         """Change the radius of a trace or set of traces.
         
             Params:
@@ -344,11 +359,13 @@ class Section():
                 new_rad (float): the new radius for the trace(s)
         """
         for trace in traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             trace.resize(new_rad)
-            self.addTrace(trace, "radius modified")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify radius")
     
-    def editTraceShape(self, traces : list[Trace], new_shape : list):
+    def editTraceShape(self, traces : list[Trace], new_shape : list, log_event=True):
         """Change the shape of a trace or set of traces.
         
             Params:
@@ -356,9 +373,11 @@ class Section():
                 new_shape (list): the new shape for the trace(s)
         """
         for trace in traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             trace.reshape(new_shape)
-            self.addTrace(trace, "shape modified")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify shape")
     
     def findClosestTrace(
             self,
@@ -445,7 +464,7 @@ class Section():
         """Select all traces."""
         self.selected_traces = self.tracesAsList()
     
-    def hideTraces(self, traces : list = None, hide=True):
+    def hideTraces(self, traces : list = None, hide=True, log_event=True):
         """Hide traces.
         
             Params:
@@ -460,13 +479,15 @@ class Section():
         for trace in traces:
             modified = True
             trace.setHidden(hide)
-            self.modified_traces.append(trace)
+            self.modified_contours.add(trace.name)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify trace(s)")
         
         self.selected_traces = []
 
         return modified
     
-    def unhideAllTraces(self):
+    def unhideAllTraces(self, log_event):
         """Unhide all traces on the section."""
         modified = False
         for trace in self.tracesAsList():
@@ -474,46 +495,42 @@ class Section():
             if hidden:
                 modified = True
                 trace.setHidden(False)
-                self.modified_traces.append(trace)
+                self.modified_contours.add(trace.name)
+                if log_event:
+                    self.series.addLog(trace.name, self.n, "Modify trace(s)")
         
         return modified
     
-    def makeNegative(self, negative=True):
+    def makeNegative(self, negative=True, log_event=True):
         """Make a set of traces negative."""
         traces = self.selected_traces
         for trace in traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             trace.negative = negative
-            self.addTrace(trace, "made negative")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify trace(s)")
     
-    def deleteTraces(self, traces : list = None, ztraces_i : list = None):
+    def deleteTraces(self, traces : list = None, log_event=True):
         """Delete selected traces.
         
             Params:
                 traces (list): a list of traces to delete (default is selected traces)
-                ztraces (list): a list of ztrace, index pair points to delete
         """
         modified = False
 
         if traces is None:
             traces = self.selected_traces.copy()
-        if ztraces_i is None:
-            ztraces_i = self.selected_ztraces.copy()
 
         for trace in traces:
             modified = True
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event)
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
-        # for ztrace_i in ztraces_i:
-        #     ztrace, i = ztrace_i
-        #     del(ztrace.points[i])
-        #     if ztrace_i in self.selected_ztraces:
-        #         self.selected_ztraces.remove(ztrace_i)
 
         return modified
     
-    def translateTraces(self, dx : float, dy : float):
+    def translateTraces(self, dx : float, dy : float, log_event=True):
         """Translate the selected traces.
         
             Params:
@@ -522,7 +539,7 @@ class Section():
         """
         tform = self.tforms[self.series.alignment]
         for trace in self.selected_traces:
-            self.removeTrace(trace)
+            self.removeTrace(trace, log_event=False)
             for i, p in enumerate(trace.points):
                 # apply forward transform
                 x, y = tform.map(*p)
@@ -533,7 +550,9 @@ class Section():
                 x, y = tform.map(x, y, inverted=True)
                 # replace point
                 trace.points[i] = (x, y)
-            self.addTrace(trace, log_message="translated")
+            self.addTrace(trace, log_event=False)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify trace(s)")
         for ztrace, i in self.selected_ztraces:
             x, y, snum = ztrace.points[i]
             # apply forward tform
@@ -546,7 +565,10 @@ class Section():
             # replace point
             ztrace.points[i] = (x, y, snum)
             # keep track of modified ztrace
-            self.series.modified_ztraces.append(ztrace.name)
+            self.series.modified_ztraces.add(ztrace.name)
+            if log_event:
+                self.series.addLog(ztrace.name, self.n, "Modify ztrace")
+
     
     def importTraces(self, other):
         """Import the traces from another section.

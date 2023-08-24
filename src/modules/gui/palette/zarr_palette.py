@@ -16,7 +16,6 @@ class ZarrPalette():
             group_names.remove("raw")
         
         self.mainwindow = mainwindow
-        self.left_handed = self.mainwindow.mouse_palette.left_handed
         
         self.lbl = OutlinedLabel(self.mainwindow)
         self.lbl.setText("Zarr Groups")
@@ -52,13 +51,7 @@ class ZarrPalette():
             widgets = (self.lbl, self.cb)
 
         for widget in widgets:
-            if self.left_handed:
-                x = (
-                    self.mainwindow.field.x() + self.mainwindow.field.width() -
-                    (widget.width() + 10)
-                )
-            else:
-                x = self.mainwindow.field.x() + 10
+            x = self.mainwindow.field.x() + 10
             widget.move(x, y)
             y += 5 + widget.height()
 
@@ -74,12 +67,6 @@ class ZarrPalette():
             self.bttn.hide()
         self.placeWidgets()
         self.mainwindow.setLayerGroup(group_name)
-    
-    def toggleHandedness(self):
-        """Toggle the position of the buttons."""
-        self.left_handed = not self.left_handed
-        self.placeWidgets()
-        self.mainwindow.field.update()
     
     def close(self):
         """Close all widgets."""

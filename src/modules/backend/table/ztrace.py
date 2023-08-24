@@ -1,8 +1,7 @@
 from PySide6.QtCore import Qt
 
 from modules.datatypes import (
-    Series,
-    ZtraceTableItem
+    Series
 )
 from modules.gui.table import ZtraceTableWidget
 from modules.gui.popup import Object3DViewer
@@ -18,22 +17,11 @@ class ZtraceTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
-        self.loadSeries()
-    
-    def loadSeries(self):
-        """Load the section thicknesses and transforms from the series."""        
-        # load the ztrace data
-        self.series.gatherSectionData()
-        self.data = {}
-        for name, ztrace in self.series.ztraces.items():
-            self.data[name] = ZtraceTableItem(
-                ztrace,
-                self.series
-            )
     
     def refresh(self):
         """Refresh the series data."""
-        self.loadSeries()
+        self.mainwindow.saveAllData()
+        self.series.data.refresh()
         for table in self.tables:
             self.updateTable(table)
     
@@ -41,7 +29,6 @@ class ZtraceTableManager():
         """Create a new ztrace list."""
         new_table = ZtraceTableWidget(
             self.series,
-            self.data,
             self.mainwindow,
             self
         )
@@ -54,26 +41,18 @@ class ZtraceTableManager():
             Params:
                 table: the table to update
         """
-        table.createTable(self.data)
+        table.createTable()
     
-    def updateZtraces(self, ztrace_names : list):
-        """Update the data for a set of ztraces.
-        
-            Params:
-                ztrace_names (str): the names of the ztraces to update
-        """
-        # load the ztrace data
-        for name in ztrace_names:
-            self.data[name] = ZtraceTableItem(
-                self.series.ztraces[name],
-                self.series
-            )
+    def update(self, clear_tracking=False):
+        """Update the data for a set of ztraces."""
         for table in self.tables:
-            self.updateTable(table)
+            table.updateZtraces(self.series.modified_ztraces)
+        if clear_tracking:
+            self.series.modified_ztraces = set()
 
     # MENU-REALTED FUNCTIONS
 
-    def editAttributes(self, name : str, new_name : str, new_color : tuple):
+    def editAttributes(self, name : str, new_name : str, new_color : tuple, log_event=True):
         """Edit the name of a ztrace.
         
             Params:
@@ -91,19 +70,24 @@ class ZtraceTableManager():
         if new_color:
             ztrace.color = new_color
         
+        if log_event:
+            if new_name != name:
+                self.series.addLog(name, None, f"Rename ztrace to {new_name}")
+                self.series.addLog(new_name, None, f"Create ztrace from {name}")
+            else:
+                self.series.addLog(name, None, "Modify ztrace")
+        
         # modify the tables
         if new_name and new_name != name:
-            self.data[new_name] = self.data[name]
-            self.data[new_name].name = new_name
-            del(self.data[name])
-            for table in self.tables:
-                table.createTable(self.data)
+            self.series.modified_ztraces.add(new_name)
+            self.series.modified_ztraces.add(name)
+            self.update(clear_tracking=True)
         
         # update the view
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
     
-    def smooth(self, names : list, smooth : int, newztrace : bool):
+    def smooth(self, names : list, smooth : int, newztrace : bool, log_event=True):
         """Smooth a set of ztraces.
         
             Params:
@@ -122,14 +106,12 @@ class ZtraceTableManager():
             else:
                 ztrace = self.series.ztraces[name]
             ztrace.smooth(self.series, smooth)
-            # update the table data
-            self.data[ztrace.name] = ZtraceTableItem(
-                ztrace,
-                self.series
-            )
+            self.series.modified_ztraces.add(ztrace.name)
         
-        for table in self.tables:
-            table.createTable(self.data)
+            if log_event:
+                self.series.addLog(name, None, "Smooth ztrace")
+        
+        self.update(clear_tracking=True)
         
         # update the view
         self.mainwindow.field.reload()
@@ -161,7 +143,7 @@ class ZtraceTableManager():
         
         self.mainwindow.viewer.remove(names, ztrace=True)
 
-    def delete(self, names : list):
+    def delete(self, names : list, log_event=True):
         """Delete a set of ztraces.
         
             Params:
@@ -169,10 +151,13 @@ class ZtraceTableManager():
         """
         for name in names:
             del(self.series.ztraces[name])
-            del(self.data[name])
+            self.series.modified_ztraces.add(name)
         
-        for table in self.tables:
-            table.createTable(self.data)
+        self.update(clear_tracking=True)
+        self.series.modified_ztraces = set()
+
+        if log_event:
+            self.series.addLog(name, None, "Delete ztrace")
 
         # update the view
         self.mainwindow.field.reload()

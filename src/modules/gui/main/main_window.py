@@ -35,7 +35,7 @@ from modules.gui.dialog import (
     PointerDialog,
     ClosedTraceDialog
 )
-from modules.gui.popup import HistoryWidget, TextWidget
+from modules.gui.popup import TextWidget
 from modules.gui.utils import (
     progbar,
     populateMenuBar,
@@ -47,6 +47,7 @@ from modules.gui.utils import (
     setMainWindow,
     noUndoWarning
 )
+from modules.gui.table import HistoryTableWidget
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -79,6 +80,7 @@ class MainWindow(QMainWindow):
 
         # misc defaults
         self.series = None
+        self.series_data = None
         self.field = None  # placeholder for field
         self.menubar = None
         self.mouse_palette = None  # placeholder for palettes
@@ -87,6 +89,7 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
+        self.user = os.getlogin()
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -116,6 +119,9 @@ class MainWindow(QMainWindow):
         setMainWindow(self)
 
         self.show()
+
+        # prompt the user for a username
+        self.changeUsername()
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -306,7 +312,6 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
-                    ("paletteside_act", "Palette to other side", "Shift+L", self.toggleHandedness),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
                 ]
             },
@@ -667,17 +672,15 @@ class MainWindow(QMainWindow):
         if new_name is None:
             new_name, confirmed = QInputDialog.getText(
                 self,
-                "Change Login",
-                "Enter your desired username:",
-                text=os.getlogin()
+                "Username",
+                "Enter your username:",
+                text=self.series.user,
             )
             if not confirmed or not new_name:
                 return
         
-        def getlogin():
-            return new_name
-        
-        os.getlogin = getlogin
+        self.user = new_name
+        self.series.user = new_name
     
     def setFillOpacity(self, opacity : float = None):
         """Set the opacity of the trace highlight.
@@ -852,6 +855,9 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # set the user for the series
+        self.series.user = self.user
     
     def newSeries(
         self,
@@ -1071,6 +1077,8 @@ class MainWindow(QMainWindow):
         # refresh the object list if needed
         if self.field.obj_table_manager:
             self.field.obj_table_manager.refresh()
+        else:
+            self.series.data.refresh()
     
     def importZtraces(self, jser_fp : str = None):
         """Import ztraces from another jser series.
@@ -1162,8 +1170,8 @@ class MainWindow(QMainWindow):
             return
         
         # get a list of alignments from the other series
-        o_alignments = list(o_series.section_tforms[other_sections[0]].keys())
-        s_alignments = list(self.series.section_tforms[other_sections[0]].keys())
+        o_alignments = list(o_series.data["sections"][other_sections[0]]["tforms"].keys())
+        s_alignments = list(self.series.data["sections"][other_sections[0]]["tforms"].keys())
 
         # prompt the user to choose an alignment
         chosen_alignments, confirmed = ImportTransformsDialog(self, o_alignments).exec()
@@ -1194,7 +1202,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified()
     
-    def editImage(self, option : str, direction : str):
+    def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.
         
             Params:
@@ -1343,7 +1351,7 @@ class MainWindow(QMainWindow):
             self.series.palette_traces.append(button.trace)
             if button.isChecked():
                 self.series.current_trace = button.trace
-        self.field.section.save()
+        self.field.section.save(update_series_data=False)
         self.series.save()
     
     def saveToJser(self, notify=False, close=False):
@@ -1436,30 +1444,7 @@ class MainWindow(QMainWindow):
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""
-        # load all log objects from the all traces
-        log_history = []
-        update, canceled = progbar("Object History", "Loading history...")
-        progress = 0
-        final_value = len(self.series.sections)
-        for snum in self.series.sections:
-            section = self.series.loadSection(snum)
-            for trace in section.tracesAsList():
-                for log in trace.history:
-                    log_history.append((log, trace.name, snum))
-            if canceled():
-                return
-            progress += 1
-            update(progress/final_value * 100)
-        
-        log_history.sort()
-
-        output_str = "Series History\n"
-        for log, name, snum in log_history:
-            output_str += f"Section {snum} "
-            output_str += name + " "
-            output_str += str(log) + "\n"
-        
-        self.history_widget = HistoryWidget(self, output_str)
+        HistoryTableWidget(self.series.getFullHistory(), self)
     
     def openObjectList(self):
         """Open the object list widget."""
@@ -1610,7 +1595,7 @@ class MainWindow(QMainWindow):
             added, removed, renamed = [], [], []
         
         if added or removed or renamed:
-            self.series.modifyAlignments(added, removed, renamed)
+            self.series.modifyAlignments(added, removed, renamed)            
             self.field.reload()
         
         if alignment_name:
@@ -1674,12 +1659,6 @@ class MainWindow(QMainWindow):
         
         self.series.options["grid"] = response
         self.seriesModified()
-    
-    def toggleHandedness(self):
-        """Toggle the handedness of the palettes."""
-        self.mouse_palette.toggleHandedness()
-        if self.zarr_palette:
-            self.zarr_palette.toggleHandedness()
     
     def resetTracePalette(self):
         """Reset the trace palette to default traces."""

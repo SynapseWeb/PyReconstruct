@@ -1478,7 +1478,7 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
             c2 (tuple): the outline color of the text
             size (int): the size of the text
     """
-    x -= int(len(text) * (size * 0.812))
+    # x -= int(len(text) * (size * 0.812))
     
     w = 1  # outline thickness
     path = QPainterPath()

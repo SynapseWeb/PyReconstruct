@@ -102,6 +102,11 @@ class Series():
             self.log_set = LogSet()
         # last user data
         self.last_user = series_data["last_user"]
+        # curate data
+        self.curation = series_data["curation"]
+
+        # store the keys fro object attrs
+        self.obj_attrs_keys = ("object_groups", "object_3D_modes", "curation")
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
@@ -489,6 +494,7 @@ class Series():
 
         d["log_set"] = self.log_set.getList()
         d["last_user"] = self.last_user
+        d["curation"] = self.curation
 
         return d
     
@@ -529,6 +535,7 @@ class Series():
         options["autoseg"] = {}
 
         series_data["last_user"] = {}
+        series_data["curation"] = {}
 
         return series_data
     
@@ -809,6 +816,40 @@ class Series():
         
         self.modified = True
     
+    def removeObjAttrs(self, name):
+        """Delete all attrs associated with an object name."""
+        # object groups
+        self.object_groups.removeObject(name)
+
+        # object 3D modes
+        if name in self.object_3D_modes:
+            del(self.object_3D_modes[name])
+
+        # curation
+        if name in self.curation:
+            del(self.curation[name])
+    
+    def renameObjAttrs(self, old_name, new_name):
+        """Change the attibutes for an object that was renamed."""
+        if new_name in self.data["objects"]:
+            return  # do not overwrite if object exists
+        
+        # object groups
+        groups = self.object_groups.getObjectGroups(old_name)
+        for group in groups:
+            self.object_groups.add(group, new_name)
+        
+        # object 3D modes
+        if old_name in self.object_3D_modes:
+            self.object_3D_modes[new_name] = self.object_3D_modes[old_name]
+
+        # curation
+        if old_name in self.curation:
+            self.curation[new_name] = self.curation[old_name]
+        
+        # delete old_name
+        self.removeObjAttrs(old_name)
+    
     def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, log_event=True):
         """Edit the attributes of objects on every section.
         
@@ -825,6 +866,8 @@ class Series():
                 if obj_name != name:
                     self.addLog(obj_name, None, f"Rename object to {name}")
                     self.addLog(name, None, f"Create trace(s) from {obj_name}")
+                    # move object attrs
+                    self.renameObjAttrs(obj_name, name)
                 else:
                     self.addLog(obj_name, None, "Modify object")
         

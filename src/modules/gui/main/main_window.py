@@ -89,7 +89,10 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
-        self.user = os.getlogin()
+        try:  # os.getlogin() fails on TACC
+            self.user = os.getlogin()
+        except:
+            self.user = ""
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()

@@ -461,7 +461,13 @@ class FieldWidget(QWidget, FieldView):
         
         # draw the names of the selected traces
         if self.selected_trace_names:
-            x = 10
+            # place text on other side of mode palette
+            if self.mainwindow.mouse_palette.mode_x > .5:
+                x = 10
+                right_justified = False
+            else:
+                x = self.width() - 10
+                right_justified = True
             y = 20
             drawOutlinedText(
                 field_painter,
@@ -469,7 +475,8 @@ class FieldWidget(QWidget, FieldView):
                 "Selected Traces:",
                 (255, 255, 255),
                 (0, 0, 0),
-                st_size
+                st_size,
+                right_justified
             )
             for name, n in self.selected_trace_names.items():
                 y += st_size + 10
@@ -483,7 +490,8 @@ class FieldWidget(QWidget, FieldView):
                     text,
                     (255, 255, 255),
                     (0, 0, 0),
-                    st_size
+                    st_size,
+                    right_justified
                 )
         
         # draw the names of the selected ztraces
@@ -1466,7 +1474,7 @@ class FieldWidget(QWidget, FieldView):
             self.saveState()
 
 
-def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int):
+def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
     """Draw outlined text using a QPainter object.
     
         Params:
@@ -1478,7 +1486,8 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
             c2 (tuple): the outline color of the text
             size (int): the size of the text
     """
-    # x -= int(len(text) * (size * 0.812))
+    if right_justify:
+        x -= int(len(text) * (size * 0.812))
     
     w = 1  # outline thickness
     path = QPainterPath()

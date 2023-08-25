@@ -429,7 +429,11 @@ class MousePalette():
         elif new_y > 1: new_y = 1
         setattr(self, f"{group}_x", new_x)
         setattr(self, f"{group}_y", new_y)
-    
+
+        # special case: move selected traces if needed
+        if group == "mode":
+            self.mainwindow.field.update()
+
     def getBounds(self):
         """Get the bounds for the buttons."""
         fx1 = self.mainwindow.field.x()

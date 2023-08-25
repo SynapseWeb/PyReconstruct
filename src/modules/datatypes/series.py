@@ -108,8 +108,11 @@ class Series():
         if get_series_data:
             self.data.refresh()
         
-        # username
-        self.user = os.getlogin()
+        # username (os.getlogin failes on TACC)
+        try:
+            self.user = os.getlogin()
+        except:
+            self.user = ""
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD

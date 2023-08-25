@@ -68,6 +68,13 @@ class MainWindow(QMainWindow):
     def process_finished(self):
         
         self.message("Zarr processing finished.")
+
+        if sys.platform == "linux":
+            self.message("Changing file permissions...")
+            zarr = sys.argv[2]
+            os.system(f"find {zarr} -type d -exec chmod g+rwx {{}} +")
+            os.system(f"find {zarr} -type f -exec chmod g+rw {{}} +")
+        
         self.message("You can close this window.")
         self.heading.setText("Zarr processing done. You can safely close this window now.")
         self.p = None

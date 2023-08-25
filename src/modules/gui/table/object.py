@@ -4,8 +4,7 @@ import os
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidgetItem, 
-    QAbstractItemView, 
+    QTableWidgetItem,  
     QWidget, 
     QInputDialog, 
     QMenu, 
@@ -53,12 +52,13 @@ class ObjectTableWidget(QDockWidget):
         # set defaults
         self.columns = {
             "Range" : True,
-            "Count" : True,
-            "Flat area" : True,
-            "Volume": True,
+            "Count" : False,
+            "Flat area" : False,
+            "Volume": False,
             "Groups": True,
             "Trace tags": False,
-            "Last user": True
+            "Last user": True,
+            "Curate": True
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -70,6 +70,7 @@ class ObjectTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
+        self.process_check_event = False
         self.createTable()
         self.createMenus()
 
@@ -137,6 +138,17 @@ class ObjectTableWidget(QDockWidget):
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
             None,
             {
+                "attr_name": "curatemenu",
+                "text": "Set curation",
+                "opts":
+                [
+                    ("blankcurate_act", "Blank", "", lambda : self.bulkCurate("")),
+                    ("needscuration_act", "Needs curation", "", lambda : self.bulkCurate("Needs curation")),
+                    ("curated_act", "Curated", "", lambda : self.bulkCurate("Curated"))
+                ]
+            },
+            None,
+            {
                 "attr_name": "menu_3D",
                 "text": "3D",
                 "opts":
@@ -185,6 +197,7 @@ class ObjectTableWidget(QDockWidget):
                 name (str): the name of the object
                 row (int): the row to enter this data into
         """
+        self.process_check_event = False
         self.table.setItem(row, 0, QTableWidgetItem(name))
         col = 1
         if self.columns["Range"]:
@@ -218,7 +231,26 @@ class ObjectTableWidget(QDockWidget):
                 last_user = ""
             self.table.setItem(row, col, QTableWidgetItem(last_user))
             col += 1
+        if self.columns["Curate"]:
+            item = QTableWidgetItem("")
+            item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+
+            if name not in self.series.curation:
+                item.setCheckState(Qt.CheckState.Unchecked)
+            else:
+                curated, user = self.series.curation[name]
+                if curated:
+                    item.setCheckState(Qt.CheckState.Checked)
+                    item.setText(f"Curated ({user})")
+                else:
+                    item.setCheckState(Qt.CheckState.PartiallyChecked)
+                    item.setText(f"Needs curation ({user})")
+
+            self.table.setItem(row, col, item)
+            col += 1
+
         self.table.resizeRowToContents(row)
+        self.process_check_event = True
     
     def passesFilters(self, name : str):
         """Check if an object passes the filters.
@@ -272,21 +304,20 @@ class ObjectTableWidget(QDockWidget):
 
         # establish table headers
         self.horizontal_headers = ["Name"]
-        if self.columns["Range"]:
+        if self.columns["Range"]:  # custom case for range
             self.horizontal_headers.append("Start")
             self.horizontal_headers.append("End")
-        if self.columns["Count"]:
-            self.horizontal_headers.append("Count")
-        if self.columns["Flat area"]:
-            self.horizontal_headers.append("Flat Area")
-        if self.columns["Volume"]:
-            self.horizontal_headers.append("Volume")
-        if self.columns["Groups"]:
-            self.horizontal_headers.append("Groups")
-        if self.columns["Trace tags"]:
-            self.horizontal_headers.append("Trace Tags")
-        if self.columns["Last user"]:
-            self.horizontal_headers.append("Last user")
+        for key, b in self.columns.items():
+            if key == "Range":
+                continue
+            if b:
+                self.horizontal_headers.append(key)
+        
+        # save the curate column
+        if self.columns["Curate"]:
+            self.curate_column = self.horizontal_headers.index("Curate")
+        else:
+            self.curate_column = None
         
         # filter the objects
         filtered_obj_names = self.getFilteredObjects()
@@ -297,12 +328,13 @@ class ObjectTableWidget(QDockWidget):
         # connect table functions
         self.table.mouseDoubleClickEvent = self.findFirst
         self.table.contextMenuEvent = self.objectContextMenu
+        self.table.itemChanged.connect(self.checkCurate)
 
         # format table
         # self.table.setWordWrap(False)
         self.table.setShowGrid(False)  # no grid
         self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
+        # self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header
         
@@ -394,6 +426,36 @@ class ObjectTableWidget(QDockWidget):
             r = i.row()
             obj_names.append(self.table.item(r, 0).text())
         return obj_names
+
+    def checkCurate(self, item : QTableWidgetItem):
+        """User checked a curate checkbox."""
+        # check for curation
+        if (not self.process_check_event or 
+            self.curate_column is None or 
+            item.column() != self.curate_column):
+            return
+
+        r = item.row()
+        name = self.table.item(r, 0).text()
+        state = item.checkState()
+        if state == Qt.CheckState.Unchecked:
+            if name in self.series.curation:
+                del(self.series.curation[name])
+            self.series.log_set.removeCuration(name)
+        elif state == Qt.CheckState.PartiallyChecked:
+            self.series.curation[name] = (False, self.series.user)
+            self.series.addLog(name, None, "Mark as needs curation")
+        elif state == Qt.CheckState.Checked:
+            self.series.curation[name] = (True, self.series.user)
+            self.series.addLog(name, None, "Mark as curated")
+        self.setRow(name, r)
+
+        self.table.resizeColumnToContents(self.curate_column)
+        self.table.resizeRowToContents(r)
+
+        self.manager.updateObjects([name])
+
+        self.mainwindow.seriesModified(True)
 
     # RIGHT CLICK FUNCTIONS
 
@@ -748,6 +810,41 @@ class ObjectTableWidget(QDockWidget):
         new_type, new_opacity = settings
 
         self.manager.edit3D(obj_names, new_type, new_opacity)
+    
+    def bulkCurate(self, curation_status : str):
+        """Set the curation status for multiple selected objects.
+        
+            Params:
+                curation_status (str): "", "Needs curation" or "Curated"
+        """
+        names = self.getSelectedObjects()
+        if not names:
+            return
+        
+        if self.curate_column is None:  # only modify series if curation is not being shown
+            for name in names:
+                if curation_status == "" and name in self.series.curation:
+                    del(self.series.curation[name])
+                    self.series.log_set.removeCuration(name)
+                elif curation_status == "Needs curation":
+                    self.series.curation[name] = (False, self.series.user)
+                elif curation_status == "Curated":
+                    self.series.curation[name] = (True, self.series.user)
+            self.manager.updateObjects(names)
+                
+        else:
+            for name in names:
+                r = self.getRowIndex(name)[0]
+                item = self.table.item(r, self.curate_column)
+                if curation_status == "":
+                    state = Qt.CheckState.Unchecked
+                elif curation_status == "Needs curation":
+                    state = Qt.CheckState.PartiallyChecked
+                elif curation_status == "Curated":
+                    state = Qt.CheckState.Checked
+                
+                if item.checkState() != state:
+                    item.setCheckState(state)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

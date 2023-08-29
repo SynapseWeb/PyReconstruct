@@ -35,7 +35,7 @@ from modules.gui.dialog import (
     PointerDialog,
     ClosedTraceDialog
 )
-from modules.gui.popup import TextWidget
+from modules.gui.popup import TextWidget, CustomPlotter
 from modules.gui.utils import (
     progbar,
     populateMenuBar,
@@ -2064,6 +2064,29 @@ class MainWindow(QMainWindow):
 
         self.field.reload()
         self.seriesModified(True)
+
+    def addObjectsTo3D(self, obj_names):
+        """Generate the 3D view for a list of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        self.saveAllData()
+        
+        if not self.viewer or self.viewer.is_closed:
+            self.viewer = CustomPlotter(self)
+        self.viewer.addObjects(obj_names)
+            
+    def removeObjectsFrom3D(self, obj_names):
+        """Remove objects from 3D viewer.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        self.saveAllData()
+        if not self.viewer or self.viewer.is_closed:
+            return
+        self.viewer.removeObjects(obj_names)
 
     def restart(self):
         self.restart_mainwindow = True

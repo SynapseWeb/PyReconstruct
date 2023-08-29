@@ -1,3 +1,5 @@
+import time
+
 from PySide6.QtWidgets import (
     QPushButton
 )
@@ -19,15 +21,21 @@ class MoveableButton(QPushButton):
         super().__init__(parent)
         self.manager = manager
         self.group_name = group_name
+        self.click_time = None
+        self.clicked_x = None
+        self.clicked_y = None
     
     def mousePressEvent(self, event):
         """Called when button is pressed."""
+        self.click_time = time.time()
         self.clicked_x = event.globalX()
         self.clicked_y = event.globalY()
         super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
         """Called when button is moved."""
+        if time.time() - self.click_time < self.manager.mainwindow.field.max_click_time:
+            return
         self.manager.is_dragging = True
         diff_x = event.globalX() - self.clicked_x
         diff_y = event.globalY() - self.clicked_y

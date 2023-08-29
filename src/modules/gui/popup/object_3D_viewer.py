@@ -201,19 +201,24 @@ class Object3DViewer(gl.GLViewWidget):
             obj_names
         )
 
-        # remove existing objects from scene
-        for vol_item in self.vol_items:
-            self.removeItem(vol_item.gl_item)
-        
-        # sort the objects
-        self.vol_items += new_vol_items
-        self.vol_items.sort()
+        import vedo
+        plt = vedo.Plotter()
+        plt.show(*new_vol_items)
 
-        # add all objects to scene
-        for vol_item in self.vol_items:
-            self.addItem(vol_item.gl_item)
+
+        # # remove existing objects from scene
+        # for vol_item in self.vol_items:
+        #     self.removeItem(vol_item.gl_item)
         
-        return extremes
+        # # sort the objects
+        # self.vol_items += new_vol_items
+        # self.vol_items.sort()
+
+        # # add all objects to scene
+        # for vol_item in self.vol_items:
+        #     self.addItem(vol_item.gl_item)
+        
+        # return extremes
     
     def setScene(self, extremes):
         """Set up the 3D scene (unrelated to objects)."""

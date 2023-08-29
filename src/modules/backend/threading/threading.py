@@ -116,13 +116,17 @@ class MemoryInt():
 
 class ThreadPoolProgBar(ThreadPool):
 
-    def startAll(self, text):
+    def startAll(self, text, show_percent=True):
         final_value = len(self.workers)
+        if show_percent:
+            maximum = final_value
+        else:
+            maximum = 0
         progbar = QProgressDialog(
                 text,
                 "Cancel",
                 0,
-                final_value,
+                maximum,
                 mainwindow
             )
         progbar.setWindowTitle(" ")
@@ -138,3 +142,6 @@ class ThreadPoolProgBar(ThreadPool):
         
         while counter.n < final_value:
             QApplication.processEvents()
+        
+        if not show_percent:
+            progbar.close()

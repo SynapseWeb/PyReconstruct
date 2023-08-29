@@ -1,1 +1,1 @@
-from .threading import ThreadPool, ThreadPoolProgBar
+from .threading import ThreadPool, ThreadPoolProgBar, Worker

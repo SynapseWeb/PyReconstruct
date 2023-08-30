@@ -195,10 +195,10 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            ("importtraces_act", "Traces...", "", self.importTraces),
-                            ("importzrtraces_act", "Ztraces...", "", self.importZtraces),
+                            ("importtraces_act", "All traces...", "", self.importTraces),
+                            ("importzrtraces_act", "All ztraces...", "", self.importZtraces),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Image transformations...", "", self.importSeriesTransforms)
+                            ("importseriestransforms_act", "Jser transformations...", "", self.importSeriesTransforms)
                         ]
 		    },
 		    {
@@ -1011,6 +1011,10 @@ class MainWindow(QMainWindow):
             return
         else:
             fd_dir.set(os.path.dirname(tforms_fp))
+
+        if not noUndoWarning():
+            return
+        
         # import the transforms
         importTransforms(self.series, tforms_fp)
         # reload the section
@@ -1067,6 +1071,9 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
+        if not noUndoWarning():
+            return
+
         # open the other series
         o_series = Series.openJser(jser_fp)
 
@@ -1102,6 +1109,9 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
+        if not noUndoWarning():
+            return
+
         # open the other series
         o_series = Series.openJser(jser_fp)
 
@@ -1135,6 +1145,9 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
+        if not noUndoWarning():
+            return
+
         # open the other series
         o_series = Series.openJser(jser_fp)
 
@@ -1162,6 +1175,9 @@ class MainWindow(QMainWindow):
         else: fd_dir.set(os.path.dirname(jser_fp))
 
         self.saveAllData()
+
+        if not noUndoWarning():
+            return
 
         # open the other series
         o_series = Series.openJser(jser_fp)

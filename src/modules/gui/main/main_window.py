@@ -195,10 +195,17 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            ("importtraces_act", "All traces...", "", self.importTraces),
-                            ("importzrtraces_act", "All ztraces...", "", self.importZtraces),
-                            ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Jser transformations...", "", self.importSeriesTransforms)
+                            {
+                                "attr_name": "importjser",
+                                "text": "From jser file",
+                                "opts":
+                                [
+                                    ("importtraces_act", "All traces...", "", self.importTraces),
+                                    ("importzrtraces_act", "All z-traces...", "", self.importZtraces),
+                                    ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
+                                    ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms)
+                                ]
+                            }
                         ]
 		    },
 		    {
@@ -239,6 +246,7 @@ class MainWindow(QMainWindow):
                                 "text": "Import alignments",
                                 "opts":
                                 [
+                                    ("importjsertransforms_act", "jser file", "", self.importSeriesTransforms),
                                     ("importtransforms_act", ".txt file", "", self.importTransforms),
                                     ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
                                 ]

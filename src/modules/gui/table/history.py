@@ -65,7 +65,7 @@ class HistoryTableWidget(QDockWidget):
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in section data
-        for r, log in enumerate(log_set.all_logs):
+        for r, log in enumerate(reversed(log_set.all_logs)):
             self.setRow(r, log)
         
         # format the table

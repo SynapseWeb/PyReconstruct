@@ -22,6 +22,7 @@ class CustomPlotter(vedo.Plotter):
 
         self.selected_text = vedo.Text2D(pos="top-left", font="Courier", s=1.5)
         self.add(self.selected_text)
+        self.selected_names = []
 
         self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier", s=1.5)
         self.add(self.pos_text)
@@ -45,7 +46,7 @@ class CustomPlotter(vedo.Plotter):
     def mouseMoveEvent(self, event):
         """Called when mouse is moved -- display coordinates."""
         msh = event.actor
-        if not msh:
+        if not msh or msh.metadata["name"] is None:
             self.pos_text.text("")
             self.render()
             return                       # mouse hits nothing, return.
@@ -61,13 +62,24 @@ class CustomPlotter(vedo.Plotter):
 
         self.render()
     
+    def updateSelectedText(self):
+        """Update the selected names text."""
+        if not self.selected_names:
+            self.selected_text.text("")
+            return
+        name_str = "\n".join(self.selected_names[:5])
+        if len(self.selected_names) > 5:
+            name_str += "\n..."
+        self.selected_text.text(f"Selected:\n{name_str}")
+        self.render()
+    
     def leftButtonClickEvent(self, event):
         """Called when left mouse button is clicked."""
         # record the time of click
         prev_click_time = self.click_time
         self.click_time = event.time
         # check for double clicks
-        if prev_click_time is not None and self.click_time - prev_click_time < 0.5:
+        if prev_click_time is not None and self.click_time - prev_click_time < 0.25:
             msh = event.actor
             if not msh:
                 return                       # mouse hits nothing, return.
@@ -81,11 +93,15 @@ class CustomPlotter(vedo.Plotter):
             self.mainwindow.activateWindow()
         
         msh = event.actor
-        if not msh:
+        if not msh or msh.metadata["name"] is None:
             return
         name = msh.metadata["name"][0]
-        self.selected_text.text(f"Selected: {name}")
-        self.render()
+        if name in self.selected_names:
+            self.selected_names.remove(name)
+        else:
+            self.selected_names.append(name)
+        
+        self.updateSelectedText()
     
     def _keypress(self, iren, event):
         """Called when a key is pressed."""
@@ -105,40 +121,69 @@ class CustomPlotter(vedo.Plotter):
         
         overwrite = False
 
+        if key in ("Left", "Right", "Up", "Down", "Ctrl+Up", "Ctrl+Down"):
+            overwrite = True
+
         if key == "c":
             if self.sc is None:
                 pos = []
                 for i in (1, 3, 5):
                     pos.append((self.extremes[i] + self.extremes[i-1]) / 2)
-                self.sc = vedo.Cube(tuple(pos), c="gray3")
+                self.sc = vedo.Cube(tuple(pos), c="gray5")
                 self.sc.metadata["name"] = "Scale Cube"
                 self.add(self.sc)
-                self.render()
+                # self.render()
             else:
                 self.remove(self.sc)
                 self.sc = None
 
-        elif key == "Shift+Left" and self.sc is not None:
+        elif key == "Left" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.x(x - 0.1)
-        elif key == "Shift+Right" and self.sc is not None:
+        elif key == "Right" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.x(x + 0.1)
-        elif key == "Shift+Up" and self.sc is not None:
+        elif key == "Up" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.y(y + 0.1)
-        elif key == "Shift+Down" and self.sc is not None:
+        elif key == "Down" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.y(y - 0.1)
-        elif key == "Ctrl+Shift+Up" and self.sc is not None:
+        elif key == "Ctrl+Up" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.z(z + 0.1)
-        elif key == "Ctrl+Shift+Down" and self.sc is not None:
+        elif key == "Ctrl+Down" and self.sc is not None:
             x, y, z = self.sc.pos()
             self.sc.z(z - 0.1)
+        
+        # custom opacity changer
+        elif key == "bracketleft" or key == "bracketright":
+            for actor in self.getMeshes():
+                name = actor.metadata["name"][0]
+                if name in self.selected_names:
+                    new_opacity = actor.alpha() + 0.05 * (-1 if key == "bracketleft" else 1)
+                    actor.alpha(new_opacity)
+                    # set the opacity in series 3D options
+                    if name in self.series.object_3D_modes:
+                        type_3D = self.series.object_3D_modes[name][0]
+                    else:
+                        type_3D = "surface"
+                    self.series.object_3D_modes[name] = type_3D, new_opacity
+        
+        # select/deselect all
+        elif key == "Ctrl+d":
+            self.selected_names = []
+            self.updateSelectedText()
+        elif key == "Ctrl+a":
+            self.selected_names = []
+            for actor in self.getMeshes():
+                name = actor.metadata["name"][0]
+                if name is not None:
+                    self.selected_names.append(name)
+            self.updateSelectedText()
 
         if not overwrite:
-            return super()._keypress(iren, event)
+            super()._keypress(iren, event)
     
     def addObjects(self, obj_names):
         """Add objects to the scene."""
@@ -154,7 +199,7 @@ class CustomPlotter(vedo.Plotter):
         self.threadpool = ThreadPoolProgBar()
         worker = self.threadpool.createWorker(generateVolumes, self.series, obj_names)
         worker.signals.result.connect(self.placeInScene)
-        self.threadpool.startAll(text="Generating 3D...", show_percent=False)
+        self.threadpool.startAll(text="Generating 3D...", status_bar=self.mainwindow.statusbar)
         self.checkShowing()
     
     def placeInScene(self, result):
@@ -184,9 +229,9 @@ class CustomPlotter(vedo.Plotter):
             notify("Please wait for existing process to finish.")
             return
         
-        for actor in self.actors.copy():
+        for actor in self.getMeshes().copy():
             try:
-                if actor.metadata["name"][0] in obj_names:
+                if actor.metadata["name"] is not None and actor.metadata["name"][0] in obj_names:
                     self.remove(actor)
             except AttributeError or TypeError:
                 pass

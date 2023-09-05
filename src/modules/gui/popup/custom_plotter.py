@@ -161,6 +161,7 @@ class CustomPlotter(vedo.Plotter):
                 self.sc = vedo.Cube(tuple(pos), c="gray5")
                 self.sc_side = 1
                 self.sc.metadata["name"] = "Scale Cube"
+                self.sc.metadata["type"] = "scale_cube"
                 self.add(self.sc)
             else:
                 self.remove(self.sc)
@@ -200,6 +201,7 @@ class CustomPlotter(vedo.Plotter):
                         else:
                             type_3D = "surface"
                         self.series.object_3D_modes[name] = type_3D, new_opacity
+                        self.mainwindow.seriesModified(True)
         
         # select/deselect all
         elif key == "Ctrl+d":

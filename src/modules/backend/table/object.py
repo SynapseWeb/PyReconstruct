@@ -1,9 +1,6 @@
 from PySide6.QtCore import Qt
 
 from modules.gui.table import ObjectTableWidget
-from modules.gui.popup import (
-    Object3DViewer
-)
 from modules.datatypes import (
     Series,
     Section,
@@ -210,15 +207,6 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
-    
-    def remove3D(self, obj_names : list):
-        """Remove objects from the 3D scene.
-        
-            Params:
-                obj_names (list): the object names to remove
-        """
-        if self.mainwindow.viewer and not self.mainwindow.viewer.closed:
-            self.mainwindow.viewer.remove(obj_names)
     
     def edit3D(self, obj_names : list, new_type : str, new_opacity : float):
         """Modify the 3D settings for a set of objects.

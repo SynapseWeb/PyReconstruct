@@ -548,13 +548,13 @@ class ObjectTableWidget(QDockWidget):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.mainwindow.addObjectsTo3D(obj_names)
+            self.mainwindow.addTo3D(obj_names)
     
     def remove3D(self):
         """Remove object(s) from the scene."""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.mainwindow.removeObjectsFrom3D(obj_names)
+            self.mainwindow.removeFrom3D(obj_names)
 
     def addToGroup(self, log_event=True):
         """Add objects to a group."""

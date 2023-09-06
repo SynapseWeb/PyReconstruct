@@ -363,8 +363,18 @@ class MainWindow(QMainWindow):
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                    None,
-                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
+                    # None,
+                    # ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
+                ]
+            },
+            {
+                "attr_name": "curatemenu",
+                "text": "Set curation",
+                "opts":
+                [
+                    ("blankcurate_act", "Blank", "", lambda : self.field.setCuration("")),
+                    ("needscuration_act", "Needs curation", "", lambda : self.field.setCuration("Needs curation")),
+                    ("curated_act", "Curated", "", lambda : self.field.setCuration("Curated"))
                 ]
             },
             None,

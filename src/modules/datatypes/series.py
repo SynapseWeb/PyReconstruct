@@ -43,6 +43,12 @@ default_traces = [
     ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
 ]
 
+def getDateTime():
+    dt = datetime.now()
+    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
+    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    return d, t
+
 class Series():
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
@@ -1229,6 +1235,25 @@ class Series():
             full_hist.addExistingLog(log)
         
         return full_hist
+
+    def setCuration(self, names : list, cr_status : str, assign_to : str = ""):
+        """Set the curation status for a set of objects.
+        
+            Params:
+                names (list): the object names to mark as curated
+                cr_status(str): the curation state to set
+                asign_to (str): the user to assign to if Needs Curation
+        """
+        for name in names:
+            if cr_status == "" and name in self.curation:
+                del(self.curation[name])
+                self.log_set.removeCuration(name)
+            elif cr_status == "Needs curation":
+                self.curation[name] = (False, assign_to, getDateTime()[0])
+                self.addLog(name, None, "Mark as needs curation")
+            elif cr_status == "Curated":
+                self.curation[name] = (True, self.user, getDateTime()[0])
+                self.addLog(name, None, "Mark as curated")
         
 
 class SeriesIterator():

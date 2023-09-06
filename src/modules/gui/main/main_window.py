@@ -135,7 +135,15 @@ class MainWindow(QMainWindow):
                 "text": "File",
                 "opts":
                 [   
-                    ("new_act", "New", "Ctrl+N", self.newSeries),
+                    {
+                        "attr_name": "newseriesmenu",
+                        "text": "New",
+                        "opts":
+                        [
+                            ("newfromimages_act", "From images...", "Ctrl+N", self.newSeries),
+                            ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True))
+                        ]
+                    },
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
                     None,
                     {
@@ -875,26 +883,51 @@ class MainWindow(QMainWindow):
         image_locations : list = None,
         series_name : str = None,
         mag : float = None,
-        thickness : float = None
+        thickness : float = None,
+        from_zarr : bool = False
     ):
         """Create a new series from a set of images.
         
             Params:
-                image_locations (list): the filpaths for the section images.
+                image_locations (list): the filepaths for the section images.
         """
         # get images from user
         if not image_locations:
             global fd_dir
-            image_locations, extensions = QFileDialog.getOpenFileNames(
-                self,
-                "Select Images",
-                dir=fd_dir.get(),
-                filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
-            )
-            if len(image_locations) == 0:
-                return
+            if from_zarr:
+                valid_zarr = False
+                while not valid_zarr:
+                    zarr_fp = QFileDialog.getExistingDirectory(
+                        self,
+                        "Select Zarr",
+                        dir=fd_dir.get(),
+                    )
+                    if not zarr_fp:
+                        return
+                    else:
+                        fd_dir.set(os.path.dirname(zarr_fp))
+                    
+                    # get the image names in the zarr
+                    if "scale_1" in os.listdir(zarr_fp):
+                        valid_zarr = True
+                        image_locations = []
+                        for f in os.listdir(os.path.join(zarr_fp, "scale_1")):
+                            if not f.startswith("."):
+                                image_locations.append(os.path.join(zarr_fp, "scale_1", f))
+                    else:
+                        notify("Please select a valid zarr file.")                
             else:
-                fd_dir.set(os.path.dirname(image_locations[0]))
+                image_locations, extensions = QFileDialog.getOpenFileNames(
+                    self,
+                    "Select Images",
+                    dir=fd_dir.get(),
+                    filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
+                )
+                if len(image_locations) == 0:
+                    return
+                else:
+                    fd_dir.set(os.path.dirname(image_locations[0]))
+        
         # get the name of the series from user
         if series_name is None:
             series_name, confirmed = QInputDialog.getText(

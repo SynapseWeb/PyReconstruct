@@ -1,12 +1,10 @@
 import numpy as np
 
-import pyqtgraph.opengl as gl
-
 from skimage.draw import polygon
 import trimesh
 
-from modules.calc import centroid, area
-from modules.datatypes import Trace, Transform, VolItem
+from modules.calc import centroid
+from modules.datatypes import Trace, Transform
 
 class Object3D():
 
@@ -103,6 +101,12 @@ class Surface(Object3D):
 
         # generate trimesh
         tm = trimesh.voxel.ops.matrix_to_marching_cubes(volume)
+        tm : trimesh.base.Trimesh
+
+        # add metadata
+        tm.metadata["name"] = self.name
+        tm.metadata["color"] = self.color
+        tm.metadata["alpha"] = alpha
 
         # smooth trimesh
         if smoothing == "humphrey":
@@ -120,29 +124,16 @@ class Surface(Object3D):
         verts[:,1] += ymin
         verts[:,2] += smin
         verts[:,2] *= section_thickness
-        
-        # # export trimesh
-        # export_fp = 'export.obj'
-        # tm.export(export_fp)
-        # print('Object exported to', export_fp, 'with smoothing =', smoothing)
-        # print('Volume =', tm.volume) 
 
-        # get color
-        color = self.color + (alpha,)
+        mesh_data = {
+            "name": self.name,
+            "color": self.color,
+            "alpha": alpha,
+            "vertices": verts,
+            "faces": faces
+        }
 
-        # convert to opengl mesh object for pyqtgraph
-        item = gl.GLMeshItem(
-                vertexes=verts,
-                faces=faces,
-                color=color,
-                shader="edgeDarken",
-                glOptions="translucent",
-                smooth=True
-        )
-        item.setObjectName(self.name)
-
-        # provide volumes to draw opaque items in proper order
-        return VolItem(self.name, item, tm.volume)
+        return mesh_data
 
 
 class Spheres(Object3D):
@@ -168,28 +159,27 @@ class Spheres(Object3D):
     
     def generate3D(self, section_thickness : float, alpha=1):
         """Generate the opengl meshes for the spheres."""
-        items = []
-        for color, point, radius in zip(
-            self.colors,
+        verts = []
+        faces = []
+        for point, radius in zip(
             self.centroids,
             self.radii
         ):
-            sphere = gl.MeshData.sphere(rows=6, cols=6, radius=radius)
-            item = gl.GLMeshItem(
-                meshdata=sphere,
-                smooth=True,
-                color=(*color, alpha),
-                shader="edgeDarken",
-                glOptions="translucent",
-            )
-            item.setObjectName(self.name)
             x, y, s = point
             z = s * section_thickness
-            volume = 4/3 * np.pi * radius**3
-            item.translate(x, y, z)
-            items.append(VolItem(self.name, item, volume))
+            sphere = trimesh.primitives.Sphere(radius=radius, center=(x,y,z), subdivisions=1)
+            faces += (sphere.faces + len(verts)).tolist()
+            verts += sphere.vertices.tolist()
         
-        return items
+        mesh_data = {
+            "name": self.name,
+            "color": self.colors[0],
+            "alpha": alpha,
+            "vertices": np.array(verts),
+            "faces": np.array(faces)
+        }
+        
+        return mesh_data
 
 class Contours(Object3D):
 
@@ -226,7 +216,6 @@ class Contours(Object3D):
         """
         verts = []
         faces = []
-        volume = 0
         for snum in self.traces:
             # get the z values
             z1 = snum * section_thickness
@@ -245,23 +234,13 @@ class Contours(Object3D):
                     l = len(verts)
                     faces.append([l-4, l-3, l-2])
                     faces.append([l-4, l-2, l-1])
-                volume += section_thickness * area(trace)
+        
+        mesh_data = {
+            "name": self.name,
+            "color": self.color,
+            "alpha": alpha,
+            "vertices": np.array(verts),
+            "faces": np.array(faces)
+        }
 
-        # get color
-        color = self.color + (alpha,)
-
-        # convert to opengl mesh object for pyqtgraph
-        verts = np.array(verts)
-        faces = np.array(faces)
-        item = gl.GLMeshItem(
-                vertexes=verts,
-                faces=faces,
-                color=color,
-                shader="edgeDarken",
-                glOptions="translucent",
-                smooth=True
-        )
-        item.setObjectName(self.name)
-
-        # provide volumes to draw opaque items in proper order
-        return VolItem(self.name, item, volume)
+        return mesh_data

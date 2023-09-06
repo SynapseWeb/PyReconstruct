@@ -18,3 +18,4 @@ from .smoothing import SmoothingDialog
 from .pointer import PointerDialog
 from .closed_trace import ClosedTraceDialog
 from .shapes import ShapesDialog
+from .curate_filters import CurateFiltersDialog

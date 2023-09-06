@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QInputDialog, 
     QMenu, 
     QFileDialog,
-    QAbstractItemView
 )
 from PySide6.QtCore import Qt
 
@@ -28,7 +27,8 @@ from modules.gui.dialog import (
     TableColumnsDialog,
     Object3DDialog,
     TraceDialog,
-    ShapesDialog
+    ShapesDialog,
+    CurateFiltersDialog
 )
 from modules.constants import fd_dir
 
@@ -54,7 +54,7 @@ class ObjectTableWidget(QDockWidget):
         self.mainwindow = mainwindow
 
         # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
+        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
         self.setWindowTitle("Object List")
 
         # set defaults
@@ -71,6 +71,12 @@ class ObjectTableWidget(QDockWidget):
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
+        self.cr_status_filter = {
+            "Blank": True,
+            "Needs curation": True,
+            "Curated": True
+        }
+        self.cr_user_filters = set()
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -106,7 +112,9 @@ class ObjectTableWidget(QDockWidget):
                         [
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
                             ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
-                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
+                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
+                            None,
+                            ("crstatusfilter_act", "Curation filter", "", self.setCRFilter)
                         ]
                     }
                 ]
@@ -297,12 +305,26 @@ class ObjectTableWidget(QDockWidget):
             if union_len == object_len + filters_len:  # intersection does not exist
                 return False
         
+        # check curation status and user
+        if name in self.series.curation:
+            cr_status, user, date = self.series.curation[name]
+            cr_status = "Curated" if cr_status else "Needs curation"
+            if not self.cr_status_filter[cr_status]:
+                return False
+            if self.cr_user_filters and user not in self.cr_user_filters:
+                return False          
+        else:
+            if not self.cr_status_filter["Blank"]:
+                return False
+            if self.cr_user_filters:
+                return False
+        
         # check regex
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, name)):
-                return True
+            if not bool(re.fullmatch(re_filter, name)):
+                return False
         
-        return False
+        return True
 
     def getFilteredObjects(self):
         """Get the names of the objects that pass the filter."""
@@ -465,7 +487,7 @@ class ObjectTableWidget(QDockWidget):
             assign_to, confirmed = QInputDialog.getText(
                 self,
                 "Assign to",
-                "Assign curation to username:"
+                "Assign curation to username:\n(press enter to leave blank)" 
             )
             if not confirmed:
                 item.setCheckState(Qt.CheckState.Unchecked)
@@ -789,6 +811,21 @@ class ObjectTableWidget(QDockWidget):
         else:
             self.tag_filters = set(self.tag_filters)
         
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
+    def setCRFilter(self):
+        """Set the filter for curation."""
+        response, confirmed = CurateFiltersDialog(
+            self, 
+            self.cr_status_filter, 
+            self.cr_user_filters
+        ).exec()
+        if not confirmed:
+            return
+        
+        self.cr_status_filter, self.cr_user_filters = response
+
         # call through manager to update self
         self.manager.updateTable(self)
     

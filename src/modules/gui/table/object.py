@@ -198,7 +198,7 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def setRow(self, name : str, row : int):
+    def setRow(self, name : str, row : int, resize_columns=True):
         """Set the data for a row of the table.
         
             Params:
@@ -269,6 +269,8 @@ class ObjectTableWidget(QDockWidget):
                 self.table.setItem(row, col, item)
                 col += 1
         # self.table.resizeRowToContents(row)
+        if resize_columns:
+            self.table.resizeColumnsToContents()
         self.process_check_event = True
     
     def passesFilters(self, name : str):
@@ -358,7 +360,7 @@ class ObjectTableWidget(QDockWidget):
         
         # fill in object data
         for r, n in enumerate(filtered_obj_names):
-            self.setRow(n, r)
+            self.setRow(n, r, resize_columns=False)
 
         # format rows and columns
         self.table.resizeRowsToContents()
@@ -458,15 +460,19 @@ class ObjectTableWidget(QDockWidget):
         name = self.table.item(r, 0).text()
         state = item.checkState()
         if state == Qt.CheckState.Unchecked:
-            if name in self.series.curation:
-                del(self.series.curation[name])
-            self.series.log_set.removeCuration(name)
+            self.series.setCuration([name], "")
         elif state == Qt.CheckState.PartiallyChecked:
-            self.series.curation[name] = (False, "", "")
-            self.series.addLog(name, None, "Mark as needs curation")
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:"
+            )
+            if not confirmed:
+                item.setCheckState(Qt.CheckState.Unchecked)
+                return
+            self.series.setCuration([name], "Needs curation", assign_to)
         elif state == Qt.CheckState.Checked:
-            self.series.curation[name] = (True, self.series.user, getDateTime()[0])
-            self.series.addLog(name, None, "Mark as curated")
+            self.series.setCuration([name], "Curated")
         self.setRow(name, r)
         self.table.resizeColumnToContents(c + 1)
         self.table.resizeColumnToContents(c + 2)
@@ -843,30 +849,21 @@ class ObjectTableWidget(QDockWidget):
         if not names:
             return
         
-        if self.curate_column is None:  # only modify series if curation is not being shown
-            for name in names:
-                if curation_status == "" and name in self.series.curation:
-                    del(self.series.curation[name])
-                    self.series.log_set.removeCuration(name)
-                elif curation_status == "Needs curation":
-                    self.series.curation[name] = (False, "", "")
-                elif curation_status == "Curated":
-                    self.series.curation[name] = (True, self.series.user, getDateTime()[0])
-            self.manager.updateObjects(names)
-                
+        # prompt assign to
+        if curation_status == "Needs curation":
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:"
+            )
+            if not confirmed:
+                return
         else:
-            for name in names:
-                r = self.getRowIndex(name)[0]
-                item = self.table.item(r, self.curate_column)
-                if curation_status == "":
-                    state = Qt.CheckState.Unchecked
-                elif curation_status == "Needs curation":
-                    state = Qt.CheckState.PartiallyChecked
-                elif curation_status == "Curated":
-                    state = Qt.CheckState.Checked
-                
-                if item.checkState() != state:
-                    item.setCheckState(state)
+            assign_to = ""
+        
+        self.series.setCuration(names, curation_status, assign_to)
+        self.manager.updateObjects(names)
+        self.mainwindow.seriesModified(True)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

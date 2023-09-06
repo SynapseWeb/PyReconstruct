@@ -1452,6 +1452,34 @@ class FieldWidget(QWidget, FieldView):
         self.current_trace = []
         self.update()
     
+    def setCuration(self, cr_status : str, traces : list = None):
+        """Set the curation for the selected traces.
+        
+            Params:
+                cr_status (str): the curation status to set for the traces
+                traces (list): the list of traces to set
+        """
+        if not traces:
+            traces = self.section.selected_traces.copy()
+
+        if cr_status == "Needs curation":
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:"
+            )
+            if not confirmed:
+                return
+        else:
+            assign_to = ""
+        
+        self.series.setCuration([t.name for t in traces], cr_status, assign_to)
+
+        # manually mark as edited
+        [self.section.modified_contours.add(t.name) for t in traces]
+
+        self.saveState()
+    
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing or self.current_trace:
@@ -1498,3 +1526,4 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
     brush = QBrush(QColor(*c1))
     painter.strokePath(path, pen)
     painter.fillPath(path, brush)
+

@@ -244,29 +244,30 @@ class ObjectTableWidget(QDockWidget):
             status_item = QTableWidgetItem("")
             user_item = QTableWidgetItem("")
             date_item = QTableWidgetItem("")
+            cr_items = [check_item, status_item, user_item, date_item]
             check_item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
 
             if name not in self.series.curation:
                 check_item.setCheckState(Qt.CheckState.Unchecked)
+                cr_color = None
             else:
                 curated, user, date = self.series.curation[name]
                 if curated:
                     check_item.setCheckState(Qt.CheckState.Checked)
                     status_item.setText("Curated")
+                    cr_color = Qt.cyan
                 else:
                     check_item.setCheckState(Qt.CheckState.PartiallyChecked)
                     status_item.setText(f"Needs curation")
+                    cr_color = Qt.yellow
                 user_item.setText(user)
                 date_item.setText(date)
             
-            self.table.setItem(row, col, check_item)
-            col += 1
-            self.table.setItem(row, col, status_item)
-            col += 1
-            self.table.setItem(row, col, user_item)
-            col += 1
-            self.table.setItem(row, col, date_item)
-            col += 1
+            for item in cr_items:
+                if cr_color:
+                    item.setBackground(cr_color)
+                self.table.setItem(row, col, item)
+                col += 1
         # self.table.resizeRowToContents(row)
         self.process_check_event = True
     

@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from PySide6.QtWidgets import QProgressDialog, QApplication
+from PySide6.QtWidgets import QProgressDialog, QProgressBar, QApplication, QLabel
 
 from modules.gui.utils import mainwindow
 
@@ -116,19 +116,31 @@ class MemoryInt():
 
 class ThreadPoolProgBar(ThreadPool):
 
-    def startAll(self, text):
+    def startAll(self, text="", status_bar=None):
         final_value = len(self.workers)
-        progbar = QProgressDialog(
-                text,
-                "Cancel",
-                0,
-                final_value,
-                mainwindow
-            )
-        progbar.setWindowTitle(" ")
-        progbar.setWindowModality(Qt.WindowModal)
-        progbar.setCancelButton(None)
-        progbar.show()
+        maximum = final_value if final_value >= 4 else 0
+        if status_bar is None:
+            progbar = QProgressDialog(
+                    text,
+                    "Cancel",
+                    0,
+                    maximum,
+                    mainwindow
+                )
+            progbar.setWindowTitle(" ")
+            progbar.setWindowModality(Qt.WindowModal)
+            progbar.setCancelButton(None)
+            progbar.show()
+        else:
+            lbl = QLabel()
+            lbl.setText(text)
+            progbar = QProgressBar()
+            progbar.setMaximumHeight(status_bar.height() - 6)
+            progbar.setMinimum(0)
+            progbar.setMaximum(0)
+            status_bar.addPermanentWidget(lbl)
+            status_bar.addPermanentWidget(progbar)
+        
         counter = MemoryInt()
         for worker in self.workers:
             QApplication.processEvents()
@@ -138,3 +150,8 @@ class ThreadPoolProgBar(ThreadPool):
         
         while counter.n < final_value:
             QApplication.processEvents()
+        
+        if maximum == 0:
+            progbar.close()
+        if status_bar:
+            lbl.close()

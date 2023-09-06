@@ -177,9 +177,24 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     section_dict = Section.getEmptyDict()
 
     # get image data
-    image = xml_section.images[0] # assume only one image
-    section_dict["src"] = image.src
-    section_dict["mag"] = image.mag
+    if xml_section.images:
+        image = xml_section.images[0] # assume only one image
+    else:
+        image = None
+    
+    if image:
+        section_dict["src"] = image.src
+        section_dict["mag"] = image.mag
+        xml_tform = image.transform
+        tform = Transform(
+            list(xml_tform.tform()[:2,:].reshape(6))
+        )
+    else:
+        print(f"Section: {fname} does not contain any image data.")
+        section_dict["src"] = ""
+        section_dict["mag"] = 0.00254
+        xml_tform = XMLTransform(xcoef=[1, 0, 0, 0, 0, 0], ycoef=[0, 1, 0, 0, 0, 0])
+        tform = Transform([1, 0, 0, 0, 1, 0])
 
     # get thickness
     section_dict["thickness"] = xml_section.thickness
@@ -190,10 +205,7 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
         section_dict["tforms"] = alignment_dict[fname]
     else:
         section_dict["tforms"] = {}
-
-    tform = Transform(
-        list(image.transform.tform()[:2,:].reshape(6))
-    )
+    
     section_dict["tforms"]["default"] = tform.getList()
     section_dict["align_locked"] = xml_section.alignLocked
 
@@ -202,7 +214,7 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     for xml_contour in xml_section.contours:
         trace = Trace.fromXMLObj(
             xml_contour,
-            image.transform,
+            xml_tform,
         )
         # reduce the points on the trace
         trace.points = reducePoints(

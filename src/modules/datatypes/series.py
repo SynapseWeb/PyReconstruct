@@ -544,7 +544,6 @@ class Series():
             Returns:
                 (Series): the newly created series object
         """
-        print(image_locations)
         try:
             wdir = os.path.dirname(image_locations[0])
             if ".zarr" in wdir:  # create series adjacent to zarr if needed
@@ -552,7 +551,6 @@ class Series():
                 wdir = os.path.dirname(src_dir)
             else:
                 src_dir = wdir
-            print(f"dir: {wdir}")
             hidden_dir = createHiddenDir(wdir, series_name)
         except PermissionError:
             print("Series cannot be created adjacent to images due to permissions; \

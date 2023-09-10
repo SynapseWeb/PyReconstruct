@@ -1106,6 +1106,23 @@ class Series():
             self.addLog(None, None, f"Import alignments {alignments_str} from another series")
 
         self.save()
+    
+    def importBC(self, other, log_event=True):
+        """Import the brightness/contrast settings from another series."""
+        # ensure that the two series have the same sections
+        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
+            return
+        
+        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
+        for (r_num, r_section), (s_num, s_section) in iterator:
+            r_section.brightness = s_section.brightness
+            r_section.contrast = s_section.contrast
+            r_section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Import brightness/contrast from another series")
+        
+        self.save()
 
     # STATIC METHOD
     def getDefaultPaletteTraces():

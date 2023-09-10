@@ -29,6 +29,11 @@ class SectionTableManager():
         self.mainwindow.addDockWidget(Qt.LeftDockWidgetArea, new_table)
 
     # MENU-RELATED FUNCTIONS
+
+    def refresh(self):
+        """Refresh the section data."""
+        self.series.data.refresh()
+        self.updateTables()
     
     def updateTables(self):
         """Updates a table with the current data.

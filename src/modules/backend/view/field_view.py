@@ -84,6 +84,8 @@ class FieldView():
         self.section.selected_traces = []
         if self.b_section:
             self.b_section.selected_traces = []
+        # update the palette
+        self.mainwindow.mouse_palette.updateBC()
         
         self.generateView()
 

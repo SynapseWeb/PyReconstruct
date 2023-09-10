@@ -318,6 +318,7 @@ class MainWindow(QMainWindow):
                     ("togglepalette_act", "Toggle trace palette", "Shift+P", self.mouse_palette.togglePalette),
                     ("toggleinc_act",  "Toggle section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
                     ("togglebc_act", "Toggle brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
+                    ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
                 ]

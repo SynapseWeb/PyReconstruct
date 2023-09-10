@@ -400,6 +400,7 @@ class MousePalette():
         self.mainwindow.field.section_layer.setBrightness(b)
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)
+        self.mainwindow.seriesModified(True)
     
     def setContrast(self, c : int):
         """Set the contrast for the current section."""
@@ -407,6 +408,7 @@ class MousePalette():
         self.mainwindow.field.section_layer.setContrast(c)
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)
+        self.mainwindow.seriesModified(True)
     
     def getButtonCoords(self, group):
         """Get the coordinates for a button group.
@@ -476,6 +478,23 @@ class MousePalette():
         for b, s in self.bc_widgets:
             b.hide() if self.bc_hidden else b.show()
             s.hide() if self.bc_hidden else s.show()
+    
+    def resetPos(self):
+        """Reset the positions of the buttons."""
+        self.mode_x = 0.99
+        self.mode_y = 0.01
+        
+        self.trace_x = 0.5
+        self.trace_y = 0.99
+
+        self.inc_x = 0.99
+        self.inc_y = 0.99
+
+        self.bc_x = 0.99
+        self.bc_y = 0.8
+
+        self.resize()
+
 
     def resize(self):
         """Move the buttons to fit the main window."""

@@ -315,6 +315,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
+                    ("togglepalette_act", "Toggle palette", "Shift+P", self.mouse_palette.toggleHide),
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)

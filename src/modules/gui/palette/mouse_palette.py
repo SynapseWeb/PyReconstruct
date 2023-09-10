@@ -83,6 +83,8 @@ class MousePalette():
         self.bc_x = 0.99
         self.bc_y = 0.8
         self.createBCButtons()
+
+        self.hidden = False
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
@@ -447,6 +449,16 @@ class MousePalette():
             "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
             "bc": (fx1, fx2 - 2*self.bcsize - 10, fy1, fy2 - 2*self.bcsize - 20)
         }
+
+    def toggleHide(self):
+        """Hide/Unhide the mouse palette."""
+        self.hidden = not self.hidden
+        for w in (
+            [t[0] for t in self.mode_buttons.values()] + 
+            self.palette_buttons + 
+            self.corner_buttons + 
+            [self.label]):
+            w.hide() if self.hidden else w.show()
 
     def resize(self):
         """Move the buttons to fit the main window."""

@@ -198,7 +198,8 @@ class MainWindow(QMainWindow):
                             ("importtraces_act", "Traces...", "", self.importTraces),
                             ("importzrtraces_act", "Ztraces...", "", self.importZtraces),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Image transformations...", "", self.importSeriesTransforms)
+                            ("importseriestransforms_act", "Image transformations...", "", self.importSeriesTransforms),
+                            ("importbc_act", "Brightness/contrast...", "", self.importBC)
                         ]
 		    },
 		    {
@@ -1219,6 +1220,39 @@ class MainWindow(QMainWindow):
         
         self.field.reload()
         self.seriesModified()
+    
+    def importBC(self, jser_fp : str = None):
+        """Import the brightness/contrast settings from another jser series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            global fd_dir
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=fd_dir.get(),
+                filter="*.jser"
+            )
+        if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # import the traces and close the other series
+        self.series.importBC(o_series)
+        o_series.close()
+
+        # reload the field to update the traces
+        self.field.reload()
+
+        # refresh the object list if needed
+        if self.field.section_table_manager:
+            self.field.section_table_manager.refresh()
     
     def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.

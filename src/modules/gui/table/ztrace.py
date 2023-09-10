@@ -75,6 +75,16 @@ class ZtraceTableWidget(QDockWidget):
             col = 0
             self.table.setItem(row, col, QTableWidgetItem(ztrace_name))
             col += 1
+            s = self.series.data.getZtraceStart(ztrace_name)
+            self.table.setItem(row, col, QTableWidgetItem(
+                str(s)
+            ))
+            col += 1
+            e = self.series.data.getZtraceEnd(ztrace_name)
+            self.table.setItem(row, col, QTableWidgetItem(
+                str(e)
+            ))
+            col += 1
             d = self.series.data.getZtraceDist(ztrace_name)
             self.table.setItem(row, col, QTableWidgetItem(
                 str(round(d, 5))
@@ -142,14 +152,14 @@ class ZtraceTableWidget(QDockWidget):
     
     def createTable(self):
         """Create the table widget."""
-        self.table = CopyTableWidget(0, 2)
+        # establish table headers
+        self.horizontal_headers = ["Name", "Start", "End", "Distance"]
+
+        self.table = CopyTableWidget(0, len(self.horizontal_headers))
 
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu
         self.table.mouseDoubleClickEvent = self.addTo3D
-
-        # establish table headers
-        self.horizontal_headers = ["Name", "Distance"]
         
         # filter the objects
         sorted_ztrace_names = sorted(list(self.series.ztraces.keys()))

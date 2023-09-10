@@ -181,7 +181,15 @@ class Ztrace():
             x2, y2, z2 = real_pts[i+1]
             dist += distance3D(x1, y1, z1, x2, y2, z2)
 
-        return dist   
+        return dist
+
+    def getStart(self):
+        """Get the first section of the ztrace."""
+        return min([s for x, y, s in self.points])
+
+    def getEnd(self):
+        """Get the last section of the ztrace."""
+        return max([s for x, y, s in self.points])   
 
     def smooth(self, series, smooth=10):
         """Smooth z-trace (based on legacy Reconstruct algorithm).

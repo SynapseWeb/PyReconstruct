@@ -316,6 +316,8 @@ class MainWindow(QMainWindow):
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
                     ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    None,
+                    ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
                 ]
             },
             {
@@ -2105,6 +2107,11 @@ class MainWindow(QMainWindow):
             self.viewer.removeZtraces(obj_names)
         else:
             self.viewer.removeObjects(obj_names)
+    
+    def toggleCuration(self):
+        """Quick shortcut to toggle curation on/off for the tables."""
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.toggleCuration()
 
     def restart(self):
         self.restart_mainwindow = True

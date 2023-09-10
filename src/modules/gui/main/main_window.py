@@ -315,8 +315,9 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
-                    ("togglepalette_act", "Toggle palette", "Shift+P", self.mouse_palette.toggleHide),
-                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    ("togglepalette_act", "Toggle trace palette", "Shift+P", self.mouse_palette.togglePalette),
+                    ("toggleinc_act",  "Toggle section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
+                    ("togglebc_act", "Toggle brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
                 ]
@@ -1289,6 +1290,8 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
+        # update the mouse palette
+        self.mouse_palette.updateBC()
     
     def flickerSections(self):
         """Switch between the current and b sections."""

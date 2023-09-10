@@ -59,10 +59,10 @@ class FieldView():
         self.show_all_traces = False
         self.hide_image = False
 
-        # propogate tform defaults
-        self.propogate_tform = False
+        # propagate tform defaults
+        self.propagate_tform = False
         self.stored_tform = Transform([1,0,0,0,1,0])
-        self.propogated_sections = []
+        self.propagated_sections = []
 
         # copy/paste clipboard
         self.clipboard = []
@@ -185,22 +185,22 @@ class FieldView():
         
         self.generateView()
     
-    def setPropogationMode(self, propogate : bool):
-        """Set the propogation mode.
+    def setPropagationMode(self, propagate : bool):
+        """Set the propagation mode.
         
             Params:
-                propogate (bool): whether to begin or finish propogating
+                propagate (bool): whether to begin or finish propagating
         """
-        self.propogate_tform = propogate
-        if self.propogate_tform:
+        self.propagate_tform = propagate
+        if self.propagate_tform:
             self.stored_tform = Transform([1,0,0,0,1,0])
-            self.propogated_sections = [self.series.current_section]
+            self.propagated_sections = [self.series.current_section]
         
-    def propogateTo(self, to_end : bool = True, log_event=True):
-        """Propogate the stored transform to the start/end of series.
+    def propagateTo(self, to_end : bool = True, log_event=True):
+        """Propagate the stored transform to the start/end of series.
         
             Params:
-                to_end (bool): True propogates to the end, False propogates to beginning
+                to_end (bool): True propagates to the end, False propagates to beginning
         """
         # save the current section
         self.section.save()
@@ -216,7 +216,7 @@ class FieldView():
                 new_tform = self.stored_tform * section.tforms[self.series.alignment]
                 section.tforms[self.series.alignment] = new_tform
                 section.save()
-                self.propogated_sections.append(snum)
+                self.propagated_sections.append(snum)
                 if log_event:
                     self.series.addLog(None, snum, "Modify transform")
         
@@ -265,12 +265,12 @@ class FieldView():
         if self.trace_table_manager:
             self.trace_table_manager.loadSection(self.section)
         
-        # propogate transform if requested
-        if self.propogate_tform and new_section_num not in self.propogated_sections:
+        # propagate transform if requested
+        if self.propagate_tform and new_section_num not in self.propagated_sections:
             current_tform = self.section.tforms[self.series.alignment]
             new_tform = self.stored_tform * current_tform
             self.section_layer.changeTform(new_tform)
-            self.propogated_sections.append(new_section_num)
+            self.propagated_sections.append(new_section_num)
 
         # generate view and update status bar
         self.generateView()
@@ -497,8 +497,8 @@ class FieldView():
         """
         self.series.alignment = new_alignment
 
-        # turn off propogation
-        self.setPropogationMode(False)
+        # turn off propagation
+        self.setPropagationMode(False)
         
         self.reload()
 
@@ -908,8 +908,8 @@ class FieldView():
         if self.section.align_locked:
             return
 
-        # check if propogating
-        if self.propogate_tform:
+        # check if propagating
+        if self.propagate_tform:
             current_tform = self.section_layer.section.tforms[self.series.alignment]
             dtform = new_tform * current_tform.inverted()
             self.stored_tform = dtform * self.stored_tform

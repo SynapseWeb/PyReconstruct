@@ -261,15 +261,15 @@ class MainWindow(QMainWindow):
                             },
                             ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
                             {
-                                "attr_name": "propogatemenu",
-                                "text": "Propogate transform",
+                                "attr_name": "propagatemenu",
+                                "text": "Propagate transform",
                                 "opts":
                                 [
-                                    ("startpt_act", "Begin propogation", "", lambda : self.field.setPropogationMode(True)),
-                                    ("endpt_act", "Finish propogation", "", lambda : self.field.setPropogationMode(False)),
+                                    ("startpt_act", "Begin propagation", "", lambda : self.field.setPropagationMode(True)),
+                                    ("endpt_act", "Finish propagation", "", lambda : self.field.setPropagationMode(False)),
                                     None,
-                                    ("proptostart_act", "Propogate to start", "", lambda : self.field.propogateTo(False)),
-                                    ("proptoend_act", "Propogate to end", "", lambda : self.field.propogateTo(True))
+                                    ("proptostart_act", "Propagate to start", "", lambda : self.field.propagateTo(False)),
+                                    ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))
                                 ]
                             }
                         ]

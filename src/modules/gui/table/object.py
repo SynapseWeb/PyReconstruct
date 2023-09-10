@@ -66,7 +66,7 @@ class ObjectTableWidget(QDockWidget):
             "Groups": True,
             "Trace tags": False,
             "Last user": True,
-            "Curate": True
+            "Curate": False
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -113,8 +113,7 @@ class ObjectTableWidget(QDockWidget):
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
                             ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                             ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
-                            None,
-                            ("crstatusfilter_act", "Curation filter", "", self.setCRFilter)
+                            ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
                         ]
                     }
                 ]

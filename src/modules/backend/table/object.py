@@ -41,6 +41,13 @@ class ObjectTableManager():
         # refresh any removed traces
         updated_contours = section.getAllModifiedNames()
         self.updateObjects(updated_contours)
+    
+    def toggleCuration(self):
+        """Quick shortcut to toggle curation on/off for the tables."""
+        cr_on = all([table.columns["Curate"] for table in self.tables])
+        for table in self.tables:
+            table.columns["Curate"] = not cr_on
+            self.updateTable(table)
 
     # MENU FUNCTIONS
 

@@ -237,6 +237,14 @@ class LogSet():
             log_set.addExistingLog(log)
         
         return log_set
+    
+    def removeCuration(self, obj_name : str):
+        """Remove all curation logs in the session."""
+        for log in self.all_logs.copy():
+            if (obj_name == log.obj_name and 
+                ("curated" in log.event or "curation" in log.event)):
+                self.all_logs.remove(log)
+
 
 
         

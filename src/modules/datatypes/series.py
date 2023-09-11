@@ -43,6 +43,12 @@ default_traces = [
     ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
 ]
 
+def getDateTime():
+    dt = datetime.now()
+    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
+    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    return d, t
+
 class Series():
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
@@ -102,6 +108,11 @@ class Series():
             self.log_set = LogSet()
         # last user data
         self.last_user = series_data["last_user"]
+        # curate data
+        self.curation = series_data["curation"]
+
+        # store the keys fro object attrs
+        self.obj_attrs_keys = ("object_groups", "object_3D_modes", "curation")
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
@@ -489,6 +500,7 @@ class Series():
 
         d["log_set"] = self.log_set.getList()
         d["last_user"] = self.last_user
+        d["curation"] = self.curation
 
         return d
     
@@ -529,6 +541,7 @@ class Series():
         options["autoseg"] = {}
 
         series_data["last_user"] = {}
+        series_data["curation"] = {}
 
         return series_data
     
@@ -814,6 +827,40 @@ class Series():
         
         self.modified = True
     
+    def removeObjAttrs(self, name):
+        """Delete all attrs associated with an object name."""
+        # object groups
+        self.object_groups.removeObject(name)
+
+        # object 3D modes
+        if name in self.object_3D_modes:
+            del(self.object_3D_modes[name])
+
+        # curation
+        if name in self.curation:
+            del(self.curation[name])
+    
+    def renameObjAttrs(self, old_name, new_name):
+        """Change the attibutes for an object that was renamed."""
+        if new_name in self.data["objects"]:
+            return  # do not overwrite if object exists
+        
+        # object groups
+        groups = self.object_groups.getObjectGroups(old_name)
+        for group in groups:
+            self.object_groups.add(group, new_name)
+        
+        # object 3D modes
+        if old_name in self.object_3D_modes:
+            self.object_3D_modes[new_name] = self.object_3D_modes[old_name]
+
+        # curation
+        if old_name in self.curation:
+            self.curation[new_name] = self.curation[old_name]
+        
+        # delete old_name
+        self.removeObjAttrs(old_name)
+    
     def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, log_event=True):
         """Edit the attributes of objects on every section.
         
@@ -830,6 +877,8 @@ class Series():
                 if obj_name != name:
                     self.addLog(obj_name, None, f"Rename object to {name}")
                     self.addLog(name, None, f"Create trace(s) from {obj_name}")
+                    # move object attrs
+                    self.renameObjAttrs(obj_name, name)
                 else:
                     self.addLog(obj_name, None, "Modify object")
         
@@ -1062,6 +1111,23 @@ class Series():
             self.addLog(None, None, f"Import alignments {alignments_str} from another series")
 
         self.save()
+    
+    def importBC(self, other, log_event=True):
+        """Import the brightness/contrast settings from another series."""
+        # ensure that the two series have the same sections
+        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
+            return
+        
+        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
+        for (r_num, r_section), (s_num, s_section) in iterator:
+            r_section.brightness = s_section.brightness
+            r_section.contrast = s_section.contrast
+            r_section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Import brightness/contrast from another series")
+        
+        self.save()
 
     # STATIC METHOD
     def getDefaultPaletteTraces():
@@ -1191,6 +1257,25 @@ class Series():
             full_hist.addExistingLog(log)
         
         return full_hist
+
+    def setCuration(self, names : list, cr_status : str, assign_to : str = ""):
+        """Set the curation status for a set of objects.
+        
+            Params:
+                names (list): the object names to mark as curated
+                cr_status(str): the curation state to set
+                asign_to (str): the user to assign to if Needs Curation
+        """
+        for name in names:
+            if cr_status == "" and name in self.curation:
+                del(self.curation[name])
+                self.log_set.removeCuration(name)
+            elif cr_status == "Needs curation":
+                self.curation[name] = (False, assign_to, getDateTime()[0])
+                self.addLog(name, None, "Mark as needs curation")
+            elif cr_status == "Curated":
+                self.curation[name] = (True, self.user, getDateTime()[0])
+                self.addLog(name, None, "Mark as curated")
         
 
 class SeriesIterator():

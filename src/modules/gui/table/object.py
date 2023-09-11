@@ -1,15 +1,15 @@
 import re
 import os
+from datetime import datetime
 
 from PySide6.QtWidgets import (
     QMainWindow, 
     QDockWidget, 
-    QTableWidgetItem, 
-    QAbstractItemView, 
+    QTableWidgetItem,  
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog
+    QFileDialog,
 )
 from PySide6.QtCore import Qt
 
@@ -27,9 +27,16 @@ from modules.gui.dialog import (
     TableColumnsDialog,
     Object3DDialog,
     TraceDialog,
-    ShapesDialog
+    ShapesDialog,
+    CurateFiltersDialog
 )
 from modules.constants import fd_dir
+
+def getDateTime():
+    dt = datetime.now()
+    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
+    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    return d, t
 
 class ObjectTableWidget(QDockWidget):
 
@@ -47,22 +54,29 @@ class ObjectTableWidget(QDockWidget):
         self.mainwindow = mainwindow
 
         # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
+        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
         self.setWindowTitle("Object List")
 
         # set defaults
         self.columns = {
             "Range" : True,
-            "Count" : True,
-            "Flat area" : True,
-            "Volume": True,
+            "Count" : False,
+            "Flat area" : False,
+            "Volume": False,
             "Groups": True,
             "Trace tags": False,
-            "Last user": True
+            "Last user": True,
+            "Curate": False
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
+        self.cr_status_filter = {
+            "Blank": True,
+            "Needs curation": True,
+            "Curated": True
+        }
+        self.cr_user_filters = set()
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -70,6 +84,7 @@ class ObjectTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
+        self.process_check_event = False
         self.createTable()
         self.createMenus()
 
@@ -97,7 +112,8 @@ class ObjectTableWidget(QDockWidget):
                         [
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
                             ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
-                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
+                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
+                            ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
                         ]
                     }
                 ]
@@ -135,6 +151,17 @@ class ObjectTableWidget(QDockWidget):
             None,
             ("hideobj_act", "Hide", "", self.hideObj),
             ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
+            None,
+            {
+                "attr_name": "curatemenu",
+                "text": "Set curation",
+                "opts":
+                [
+                    ("blankcurate_act", "Blank", "", lambda : self.bulkCurate("")),
+                    ("needscuration_act", "Needs curation", "", lambda : self.bulkCurate("Needs curation")),
+                    ("curated_act", "Curated", "", lambda : self.bulkCurate("Curated"))
+                ]
+            },
             None,
             {
                 "attr_name": "menu_3D",
@@ -178,13 +205,14 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def setRow(self, name : str, row : int):
+    def setRow(self, name : str, row : int, resize_columns=True):
         """Set the data for a row of the table.
         
             Params:
                 name (str): the name of the object
                 row (int): the row to enter this data into
         """
+        self.process_check_event = False
         self.table.setItem(row, 0, QTableWidgetItem(name))
         col = 1
         if self.columns["Range"]:
@@ -218,7 +246,39 @@ class ObjectTableWidget(QDockWidget):
                 last_user = ""
             self.table.setItem(row, col, QTableWidgetItem(last_user))
             col += 1
-        self.table.resizeRowToContents(row)
+        if self.columns["Curate"]:
+            check_item = QTableWidgetItem("")
+            status_item = QTableWidgetItem("")
+            user_item = QTableWidgetItem("")
+            date_item = QTableWidgetItem("")
+            cr_items = [check_item, status_item, user_item, date_item]
+            check_item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+
+            if name not in self.series.curation:
+                check_item.setCheckState(Qt.CheckState.Unchecked)
+                cr_color = None
+            else:
+                curated, user, date = self.series.curation[name]
+                if curated:
+                    check_item.setCheckState(Qt.CheckState.Checked)
+                    status_item.setText("Curated")
+                    cr_color = Qt.cyan
+                else:
+                    check_item.setCheckState(Qt.CheckState.PartiallyChecked)
+                    status_item.setText(f"Needs curation")
+                    cr_color = Qt.yellow
+                user_item.setText(user)
+                date_item.setText(date)
+            
+            for item in cr_items:
+                if cr_color:
+                    item.setBackground(cr_color)
+                self.table.setItem(row, col, item)
+                col += 1
+        # self.table.resizeRowToContents(row)
+        if resize_columns:
+            self.table.resizeColumnsToContents()
+        self.process_check_event = True
     
     def passesFilters(self, name : str):
         """Check if an object passes the filters.
@@ -244,12 +304,27 @@ class ObjectTableWidget(QDockWidget):
             if union_len == object_len + filters_len:  # intersection does not exist
                 return False
         
+        # check curation status and user
+        if self.columns["Curate"]:
+            if name in self.series.curation:
+                cr_status, user, date = self.series.curation[name]
+                cr_status = "Curated" if cr_status else "Needs curation"
+                if not self.cr_status_filter[cr_status]:
+                    return False
+                if self.cr_user_filters and user not in self.cr_user_filters:
+                    return False          
+            else:
+                if not self.cr_status_filter["Blank"]:
+                    return False
+                if self.cr_user_filters:
+                    return False
+        
         # check regex
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, name)):
-                return True
+            if not bool(re.fullmatch(re_filter, name)):
+                return False
         
-        return False
+        return True
 
     def getFilteredObjects(self):
         """Get the names of the objects that pass the filter."""
@@ -271,22 +346,20 @@ class ObjectTableWidget(QDockWidget):
             self.table.close()
 
         # establish table headers
+        self.curate_column = None
         self.horizontal_headers = ["Name"]
-        if self.columns["Range"]:
-            self.horizontal_headers.append("Start")
-            self.horizontal_headers.append("End")
-        if self.columns["Count"]:
-            self.horizontal_headers.append("Count")
-        if self.columns["Flat area"]:
-            self.horizontal_headers.append("Flat Area")
-        if self.columns["Volume"]:
-            self.horizontal_headers.append("Volume")
-        if self.columns["Groups"]:
-            self.horizontal_headers.append("Groups")
-        if self.columns["Trace tags"]:
-            self.horizontal_headers.append("Trace Tags")
-        if self.columns["Last user"]:
-            self.horizontal_headers.append("Last user")
+        for key, b in self.columns.items():
+            if b and key == "Range":
+                self.horizontal_headers.append("Start")
+                self.horizontal_headers.append("End")
+            elif b and key == "Curate":
+                self.curate_column = len(self.horizontal_headers)
+                self.horizontal_headers.append("CR")
+                self.horizontal_headers.append("Status")
+                self.horizontal_headers.append("User")
+                self.horizontal_headers.append("Date")
+            elif b:
+                self.horizontal_headers.append(key)
         
         # filter the objects
         filtered_obj_names = self.getFilteredObjects()
@@ -297,18 +370,19 @@ class ObjectTableWidget(QDockWidget):
         # connect table functions
         self.table.mouseDoubleClickEvent = self.findFirst
         self.table.contextMenuEvent = self.objectContextMenu
+        self.table.itemChanged.connect(self.checkCurate)
 
         # format table
         # self.table.setWordWrap(False)
         self.table.setShowGrid(False)  # no grid
         self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
+        # self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in object data
         for r, n in enumerate(filtered_obj_names):
-            self.setRow(n, r)
+            self.setRow(n, r, resize_columns=False)
 
         # format rows and columns
         self.table.resizeRowsToContents()
@@ -394,6 +468,44 @@ class ObjectTableWidget(QDockWidget):
             r = i.row()
             obj_names.append(self.table.item(r, 0).text())
         return obj_names
+
+    def checkCurate(self, item : QTableWidgetItem):
+        """User checked a curate checkbox."""
+        # check for curation
+        if (not self.process_check_event or 
+            self.curate_column is None or 
+            item.column() != self.curate_column):
+            return
+
+        r = item.row()
+        c = item.column()
+        name = self.table.item(r, 0).text()
+        state = item.checkState()
+        if state == Qt.CheckState.Unchecked:
+            self.series.setCuration([name], "")
+        elif state == Qt.CheckState.PartiallyChecked:
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:\n(press enter to leave blank)" 
+            )
+            if not confirmed:
+                item.setCheckState(Qt.CheckState.Unchecked)
+                return
+            self.series.setCuration([name], "Needs curation", assign_to)
+        elif state == Qt.CheckState.Checked:
+            self.series.setCuration([name], "Curated")
+        self.setRow(name, r)
+        self.table.resizeColumnToContents(c + 1)
+        self.table.resizeColumnToContents(c + 2)
+        self.table.resizeColumnToContents(c + 3)
+
+        self.table.resizeColumnToContents(self.curate_column)
+        # self.table.resizeRowToContents(r)
+
+        self.manager.updateObjects([name])
+
+        self.mainwindow.seriesModified(True)
 
     # RIGHT CLICK FUNCTIONS
 
@@ -486,13 +598,13 @@ class ObjectTableWidget(QDockWidget):
         """Generate a 3D view of an object"""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.manager.generate3D(obj_names)
+            self.mainwindow.addTo3D(obj_names)
     
     def remove3D(self):
         """Remove object(s) from the scene."""
         obj_names = self.getSelectedObjects()
         if obj_names:
-            self.manager.remove3D(obj_names)
+            self.mainwindow.removeFrom3D(obj_names)
 
     def addToGroup(self, log_event=True):
         """Add objects to a group."""
@@ -702,6 +814,21 @@ class ObjectTableWidget(QDockWidget):
         # call through manager to update self
         self.manager.updateTable(self)
     
+    def setCRFilter(self):
+        """Set the filter for curation."""
+        response, confirmed = CurateFiltersDialog(
+            self, 
+            self.cr_status_filter, 
+            self.cr_user_filters
+        ).exec()
+        if not confirmed:
+            return
+        
+        self.cr_status_filter, self.cr_user_filters = response
+
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
         obj_name = self.getSelectedObject()
@@ -748,6 +875,32 @@ class ObjectTableWidget(QDockWidget):
         new_type, new_opacity = settings
 
         self.manager.edit3D(obj_names, new_type, new_opacity)
+    
+    def bulkCurate(self, curation_status : str):
+        """Set the curation status for multiple selected objects.
+        
+            Params:
+                curation_status (str): "", "Needs curation" or "Curated"
+        """
+        names = self.getSelectedObjects()
+        if not names:
+            return
+        
+        # prompt assign to
+        if curation_status == "Needs curation":
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:\n(press enter to leave blank)"
+            )
+            if not confirmed:
+                return
+        else:
+            assign_to = ""
+        
+        self.series.setCuration(names, curation_status, assign_to)
+        self.manager.updateObjects(names)
+        self.mainwindow.seriesModified(True)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

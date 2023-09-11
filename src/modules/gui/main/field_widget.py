@@ -1466,7 +1466,7 @@ class FieldWidget(QWidget, FieldView):
             assign_to, confirmed = QInputDialog.getText(
                 self,
                 "Assign to",
-                "Assign curation to username:"
+                "Assign curation to username:\n(press enter to leave blank)"
             )
             if not confirmed:
                 return

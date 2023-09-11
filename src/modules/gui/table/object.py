@@ -305,18 +305,19 @@ class ObjectTableWidget(QDockWidget):
                 return False
         
         # check curation status and user
-        if name in self.series.curation:
-            cr_status, user, date = self.series.curation[name]
-            cr_status = "Curated" if cr_status else "Needs curation"
-            if not self.cr_status_filter[cr_status]:
-                return False
-            if self.cr_user_filters and user not in self.cr_user_filters:
-                return False          
-        else:
-            if not self.cr_status_filter["Blank"]:
-                return False
-            if self.cr_user_filters:
-                return False
+        if self.columns["Curate"]:
+            if name in self.series.curation:
+                cr_status, user, date = self.series.curation[name]
+                cr_status = "Curated" if cr_status else "Needs curation"
+                if not self.cr_status_filter[cr_status]:
+                    return False
+                if self.cr_user_filters and user not in self.cr_user_filters:
+                    return False          
+            else:
+                if not self.cr_status_filter["Blank"]:
+                    return False
+                if self.cr_user_filters:
+                    return False
         
         # check regex
         for re_filter in self.re_filters:
@@ -890,7 +891,7 @@ class ObjectTableWidget(QDockWidget):
             assign_to, confirmed = QInputDialog.getText(
                 self,
                 "Assign to",
-                "Assign curation to username:"
+                "Assign curation to username:\n(press enter to leave blank)"
             )
             if not confirmed:
                 return

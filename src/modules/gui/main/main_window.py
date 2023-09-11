@@ -316,9 +316,17 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
-                    ("togglepalette_act", "Toggle trace palette", "Shift+P", self.mouse_palette.togglePalette),
-                    ("toggleinc_act",  "Toggle section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
-                    ("togglebc_act", "Toggle brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
+                    {
+                        "attr_name": "togglepalettemenu",
+                        "text": "Toggle palette",
+                        "opts":
+                        [
+                            ("togglepalette_act", "Trace palette", "Shift+P", self.mouse_palette.togglePalette),
+                            ("toggleinc_act",  "Section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
+                            ("togglebc_act", "Brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
+
+                        ]
+                    },
                     ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)

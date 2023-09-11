@@ -1,9 +1,9 @@
 import vedo
-import numpy as np
 
 from PySide6.QtWidgets import QInputDialog
 
 from modules.gui.utils import notify
+from modules.gui.table import Help3DWidget
 from modules.backend.volume import generateVolumes
 from modules.backend.threading import ThreadPoolProgBar
 
@@ -33,6 +33,8 @@ class CustomPlotter(vedo.Plotter):
         self.click_time = None
 
         self.add_callback("RightButtonClick", self.rightButtonClickEvent)
+
+        self.help_widget = None
 
     def getSectionFromZ(self, z):
         """Get the section number from a z coordinate."""
@@ -138,6 +140,8 @@ class CustomPlotter(vedo.Plotter):
 
         if "_L" in key or "_R" in key:
             return
+        
+        key = key.capitalize()
 
         if iren.GetShiftKey():
             key = "Shift+" + key
@@ -150,10 +154,11 @@ class CustomPlotter(vedo.Plotter):
         
         overwrite = False
 
-        if key in ("Left", "Right", "Up", "Down", "Ctrl+Up", "Ctrl+Down"):
+        if key in ("Left", "Right", "Up", "Down", "Ctrl+Up", "Ctrl+Down",
+                   "Shift+S", "Shift+E", "Shift+F"):
             overwrite = True
 
-        if key == "c":
+        if key == "C":
             if self.sc is None:
                 pos = []
                 for i in (1, 3, 5):
@@ -187,7 +192,7 @@ class CustomPlotter(vedo.Plotter):
             self.sc.z(z - 0.1)
         
         # custom opacity changer
-        elif key == "bracketleft" or key == "bracketright":
+        elif key == "Bracketleft" or key == "Bracketright":
             for actor in self.get_meshes():
                 name = actor.metadata["name"][0]
                 t = actor.metadata["type"][0]
@@ -204,16 +209,22 @@ class CustomPlotter(vedo.Plotter):
                         self.mainwindow.seriesModified(True)
         
         # select/deselect all
-        elif key == "Ctrl+d":
+        elif key == "Ctrl+D":
             self.selected_names = []
             self.updateSelected()
-        elif key == "Ctrl+a":
+        elif key == "Ctrl+A":
             self.selected_names = []
             for actor in self.get_meshes():
                 name = actor.metadata["name"][0]
                 if name is not None:
                     self.selected_names.append(name)
             self.updateSelected()
+        
+        # help menu
+        if key == "H":
+            overwrite = True
+            if not self.help_widget or self.help_widget.closed:
+                self.help_widget = Help3DWidget()
 
         if not overwrite:
             super()._keypress(iren, event)

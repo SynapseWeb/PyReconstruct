@@ -13,6 +13,7 @@ class Help3DWidget(QDockWidget):
             ("Middle-click", "pan scene"),
             ("Right-click", "zoom scene in or out"),
             ("Ctrl-click", "rotate scene"),
+            ("Double-click", "move to point in 2D field"),
             None,
             ("C", "toggle scale cube"),
             ("Up/Down/Left/Right", "move scale cube in XY"),

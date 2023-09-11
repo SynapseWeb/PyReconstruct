@@ -1,9 +1,6 @@
 from PySide6.QtCore import Qt
 
 from modules.gui.table import ObjectTableWidget
-from modules.gui.popup import (
-    Object3DViewer
-)
 from modules.datatypes import (
     Series,
     Section,
@@ -44,6 +41,13 @@ class ObjectTableManager():
         # refresh any removed traces
         updated_contours = section.getAllModifiedNames()
         self.updateObjects(updated_contours)
+    
+    def toggleCuration(self):
+        """Quick shortcut to toggle curation on/off for the tables."""
+        cr_on = all([table.columns["Curate"] for table in self.tables])
+        for table in self.tables:
+            table.columns["Curate"] = not cr_on
+            self.updateTable(table)
 
     # MENU FUNCTIONS
 
@@ -210,33 +214,6 @@ class ObjectTableManager():
         # update the view
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
-    
-    def generate3D(self, obj_names):
-        """Generate the 3D view for a list of objects.
-        
-            Params:
-                obj_names (list): a list of object names
-        """
-        self.mainwindow.saveAllData()
-        
-        if self.mainwindow.viewer and not self.mainwindow.viewer.closed:
-            self.mainwindow.viewer.remove(obj_names)
-            self.mainwindow.viewer.addObjects(obj_names)
-        else:
-            self.mainwindow.viewer = Object3DViewer(
-                self.series,
-                obj_names,
-                self.mainwindow
-            )
-    
-    def remove3D(self, obj_names : list):
-        """Remove objects from the 3D scene.
-        
-            Params:
-                obj_names (list): the object names to remove
-        """
-        if self.mainwindow.viewer and not self.mainwindow.viewer.closed:
-            self.mainwindow.viewer.remove(obj_names)
     
     def edit3D(self, obj_names : list, new_type : str, new_opacity : float):
         """Modify the 3D settings for a set of objects.

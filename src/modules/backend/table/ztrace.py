@@ -4,7 +4,6 @@ from modules.datatypes import (
     Series
 )
 from modules.gui.table import ZtraceTableWidget
-from modules.gui.popup import Object3DViewer
 
 class ZtraceTableManager():
 
@@ -116,32 +115,6 @@ class ZtraceTableManager():
         # update the view
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
-        
-    def addTo3D(self, names : list):
-        """Add a set of ztraces to the 3D scene."""
-        # access the object viewer object
-        if not self.mainwindow.viewer or self.mainwindow.viewer.closed:
-            self.mainwindow.viewer = Object3DViewer(
-                self.series,
-                names,
-                self.mainwindow,
-                ztrace=True
-            )
-        else:
-            self.mainwindow.viewer.remove(names, ztrace=True)
-            self.mainwindow.viewer.addZtraces(names)
-    
-    def remove3D(self, names : list):
-        """Remove ztraces from the 3D scene.
-        
-            Params:
-                names (list): the names of ztraces to remove
-        """
-        # access the object viewer object
-        if not self.mainwindow.viewer or self.mainwindow.viewer.closed:
-            return
-        
-        self.mainwindow.viewer.remove(names, ztrace=True)
 
     def delete(self, names : list, log_event=True):
         """Delete a set of ztraces.

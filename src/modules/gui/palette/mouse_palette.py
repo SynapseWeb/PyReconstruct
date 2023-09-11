@@ -1,8 +1,8 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QStyle
+from PySide6.QtWidgets import QWidget, QStyle, QSlider
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 
 from .buttons import PaletteButton, ModeButton, MoveableButton
 from .outlined_label import OutlinedLabel
@@ -60,7 +60,6 @@ class MousePalette():
         
         self.selected_mode = "pointer"
         self.selected_trace = selected_trace
-        self.show_corner_buttons = True
 
         # create label
         self.label = OutlinedLabel(self.mainwindow)
@@ -72,8 +71,6 @@ class MousePalette():
         self.updateLabel()
         self.label.show()
 
-        self.corner_buttons = []
-
         # create increment buttons
         self.inc_x = 0.99
         self.inc_y = 0.99
@@ -83,6 +80,10 @@ class MousePalette():
         self.bc_x = 0.99
         self.bc_y = 0.8
         self.createBCButtons()
+
+        self.palette_hidden = False
+        self.inc_hidden = False
+        self.bc_hidden = False
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
@@ -335,8 +336,7 @@ class MousePalette():
         self.up_bttn.show()
         self.down_bttn.show()
 
-        self.corner_buttons.append(self.up_bttn)
-        self.corner_buttons.append(self.down_bttn)
+        self.inc_buttons = [self.up_bttn, self.down_bttn]
     
     def incrementSection(self, down=False):
         """Increment the section."""
@@ -347,56 +347,68 @@ class MousePalette():
     def placeBCButtons(self):
         """Place the brightness/contrast buttons."""
         bcx, bcy = self.getButtonCoords("bc")
-        for i, b in enumerate(self.bc_buttons):
+        for i, (bttn, slider) in enumerate(self.bc_widgets):
             x, y = bcx, bcy
-            grid_position = (i%2, i//2)
-            x += (self.bcsize + 10) * grid_position[0]
-            y += (20 + self.bcsize) * grid_position[1]
-            b.setGeometry(x, y, self.bcsize, self.bcsize)
+            y += (self.bcsize + 20) * i
+            bttn.setGeometry(x, y, self.bcsize*2, self.bcsize)
+            slider.setGeometry(x + self.bcsize*2 + 5, y, self.bcsize*4, self.bcsize)
+        self.updateBC()
+    
+    def updateBC(self):
+        """Update the brightness/contrast on the slider to the section."""
+        b = self.mainwindow.field.section.brightness
+        c = self.mainwindow.field.section.contrast
+
+        b_slider_value = round((abs(b)/100) ** (1/2) * 100) * (-1 if b < 0 else 1)
+        c_slider_value = round((abs(c)/100) ** (1/2) * 100) * (-1 if c < 0 else 1)
+
+        b_bttn, b_slider = self.bc_widgets[0]
+        b_bttn.setText(str(b))
+        b_slider.setValue(b_slider_value)
+
+        c_bttn, c_slider = self.bc_widgets[1]
+        c_bttn.setText(str(c))
+        c_slider.setValue(c_slider_value)
     
     def createBCButtons(self):
         """Create the brightnes/contrast buttons."""
-        self.bc_buttons = []
+        # create the brightness/contrast button/slider
+        self.bc_widgets = []
         for option in ("brightness", "contrast"):
-            for direction in ("down", "up"):
-                b = MoveableButton(self.mainwindow, self, "bc")
-                # get the icons
-                icon_fp = os.path.join(loc.img_dir, f"{option}_{direction}.png")
-                pixmap = QPixmap(icon_fp)
-                b.setIcon(QIcon(pixmap))
-                b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
-                # connect to mainwindow function
-                b.clicked.connect(lambda o=option, d=direction: self.changeBC(o, d))
-                # set the button tool tip
-                if option == "contrast" and direction == "down":
-                    tooltip = "Decrease contrast ([)"
-                elif option == "contrast" and direction == "up":
-                    tooltip = "Increase contrast (])"
-                elif option == "brightness" and direction == "down":
-                    tooltip = "Decrease brightness (-)"
-                elif option == "brightness" and direction == "up":
-                    tooltip = "Increase brightness (=)"
-                b.setToolTip(tooltip)
-                b.show()
-                self.bc_buttons.append(b)
-                self.corner_buttons.append(b)
-        self.placeBCButtons()
+            # create button
+            b = MoveableButton(self.mainwindow, self, "bc")
+            icon_fp = os.path.join(loc.img_dir, f"{option}_up.png")
+            pixmap = QPixmap(icon_fp)
+            b.setIcon(QIcon(pixmap))
+            b.setIconSize(QSize(self.bcsize*2/3, self.bcsize*2/3))
+            b.show()
+            # create slider
+            s = QSlider(Qt.Horizontal, self.mainwindow)
+            s.setMinimum(-100)
+            s.setMaximum(100)
+            s.valueChanged.connect(
+                self.setBrightness
+                if option == "brightness" else
+                self.setContrast
+            )
+            s.show()
+            self.bc_widgets.append((b, s))
     
-    def toggleCornerButtons(self):
-        """Toggle whether the corner buttons are shown."""
-        if self.show_corner_buttons:
-            self.show_corner_buttons = False
-            for b in self.corner_buttons:
-                b.hide()
-        else:
-            self.show_corner_buttons = True
-            for b in self.corner_buttons:
-                b.show()
+    def setBrightness(self, b : int):
+        """Set the brightness for the current section."""
+        b = round((b/100) ** 2 * 100) * (-1 if b < 0 else 1)
+        self.mainwindow.field.section_layer.setBrightness(b)
+        self.updateBC()
+        self.mainwindow.field.generateView(generate_traces=False)
+        self.mainwindow.seriesModified(True)
     
-    def changeBC(self, option, direction):
-        """Change the brightness/contrast of the field."""
-        if not self.is_dragging:
-            self.mainwindow.editImage(option, direction)
+    def setContrast(self, c : int):
+        """Set the contrast for the current section."""
+        c = round((c/100) ** 2 * 100) * (-1 if c < 0 else 1)
+        self.mainwindow.field.section_layer.setContrast(c)
+        self.updateBC()
+        self.mainwindow.field.generateView(generate_traces=False)
+        self.mainwindow.seriesModified(True)
     
     def getButtonCoords(self, group):
         """Get the coordinates for a button group.
@@ -445,8 +457,44 @@ class MousePalette():
             "mode": (fx1, fx2 - self.mblen, fy1, fy2 - (self.mblen + 10) * len(self.mode_buttons) + 10),
             "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5, fy1 + self.pblen, fy2 - self.pblen),
             "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
-            "bc": (fx1, fx2 - 2*self.bcsize - 10, fy1, fy2 - 2*self.bcsize - 20)
+            "bc": (fx1, fx2 - 6*self.bcsize - 5, fy1, fy2 - 2*self.bcsize - 20)
         }
+
+    def togglePalette(self):
+        """Hide/Unhide the mouse palette."""
+        self.palette_hidden = not self.palette_hidden
+        for w in (self.palette_buttons + [self.label]):
+            w.hide() if self.palette_hidden else w.show()
+    
+    def toggleIncrement(self):
+        """Hide/Unhide the increment buttons."""
+        self.inc_hidden = not self.inc_hidden
+        for b in self.inc_buttons:
+            b.hide() if self.inc_hidden else b.show()
+    
+    def toggleBC(self):
+        """Hide/Unhide the brightness/contrast buttons."""
+        self.bc_hidden = not self.bc_hidden
+        for b, s in self.bc_widgets:
+            b.hide() if self.bc_hidden else b.show()
+            s.hide() if self.bc_hidden else s.show()
+    
+    def resetPos(self):
+        """Reset the positions of the buttons."""
+        self.mode_x = 0.99
+        self.mode_y = 0.01
+        
+        self.trace_x = 0.5
+        self.trace_y = 0.99
+
+        self.inc_x = 0.99
+        self.inc_y = 0.99
+
+        self.bc_x = 0.99
+        self.bc_y = 0.8
+
+        self.resize()
+
 
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -477,6 +525,9 @@ class MousePalette():
         for pb in self.palette_buttons:
             pb.close()
         self.label.close()
-        for b in self.corner_buttons:
+        for b in self.inc_buttons:
             b.close()
+        for b, s in self.bc_widgets:
+            b.close()
+            s.close()
         

@@ -272,21 +272,17 @@ class ZtraceTableWidget(QDockWidget):
         
         self.manager.smooth(names, smooth, newztrace)
     
-    def addTo3D(self, event=None):
-        """Add the ztrace to the 3D scene."""
-        names = self.getSelectedNames()
-        if not names:
-            return
-        
-        self.manager.addTo3D(names)
+    def addTo3D(self):
+        """Generate a 3D view of an object"""
+        ztrace_names = self.getSelectedNames()
+        if ztrace_names:
+            self.mainwindow.addTo3D(ztrace_names, ztraces=True)
     
     def remove3D(self):
-        """Remove the ztrace from the 3D scene."""
-        names = self.getSelectedNames()
-        if not names:
-            return
-        
-        self.manager.remove3D(names)
+        """Remove object(s) from the scene."""
+        ztrace_names = self.getSelectedNames()
+        if ztrace_names:
+            self.mainwindow.removeFrom3D(ztrace_names, ztraces=True)
     
     def delete(self):
         """Delete a set of ztraces."""

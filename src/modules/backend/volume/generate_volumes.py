@@ -15,8 +15,6 @@ def generateVolumes(series : Series, obj_names : list):
             (list): the 3D item objects
             (tuple): xmin, xmax, ymin, ymax, zmin, zmax
     """
-    # load the data from the series
-
     # create the 3D objects
     obj_data = {}
     for obj_name in obj_names:
@@ -30,7 +28,6 @@ def generateVolumes(series : Series, obj_names : list):
             obj_data[obj_name] = (Spheres(obj_name), opacity)
         elif mode == "contours":
             obj_data[obj_name] = (Contours(obj_name), opacity)
-
 
     # iterate through all sections and gather points (and colors)
     mags = []
@@ -49,7 +46,7 @@ def generateVolumes(series : Series, obj_names : list):
                     obj_data[obj_name][0].addTrace(trace, snum, tform)
 
     # iterate through all objects and create 3D meshes
-    vol_items = []
+    mesh_data_list = []
     extremes = []
     avg_mag = sum(mags) / len(mags)
     avg_thickness = sum(thicknesses) / len(thicknesses)
@@ -58,19 +55,19 @@ def generateVolumes(series : Series, obj_names : list):
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
-            vol_items.append(obj_3D.generate3D(
+            mesh_data_list.append(obj_3D.generate3D(
                 avg_mag,
                 avg_thickness,
                 opacity,
                 series.options["3D_smoothing"]
             ))
         elif type(obj_3D) is Spheres:
-            vol_items += (obj_3D.generate3D(
+            mesh_data_list.append(obj_3D.generate3D(
                 avg_thickness,
                 opacity
             ))
         elif type(obj_3D) is Contours:
-            vol_items.append(obj_3D.generate3D(
+            mesh_data_list.append(obj_3D.generate3D(
                 avg_thickness,
                 opacity
             ))
@@ -82,7 +79,7 @@ def generateVolumes(series : Series, obj_names : list):
     # return list tuples (volume, opengl objects)
     # return global bounding box to set view
     return (
-        vol_items,
+        mesh_data_list,
         tuple(extremes)
     )
 

@@ -35,7 +35,7 @@ from modules.gui.dialog import (
     PointerDialog,
     ClosedTraceDialog
 )
-from modules.gui.popup import TextWidget
+from modules.gui.popup import TextWidget, CustomPlotter
 from modules.gui.utils import (
     progbar,
     populateMenuBar,
@@ -211,7 +211,8 @@ class MainWindow(QMainWindow):
                                     ("importtraces_act", "All traces...", "", self.importTraces),
                                     ("importzrtraces_act", "All z-traces...", "", self.importZtraces),
                                     ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                                    ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms)
+                                    ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
+                                    ("importbc_act", "Brightness/contrast...", "", self.importBC)
                                 ]
                             }
                         ]
@@ -331,7 +332,20 @@ class MainWindow(QMainWindow):
                     None,
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
-                    ("cornerbuttons_act",  "Toggle corner buttons", "Shift+T", self.mouse_palette.toggleCornerButtons),
+                    {
+                        "attr_name": "togglepalettemenu",
+                        "text": "Toggle palette",
+                        "opts":
+                        [
+                            ("togglepalette_act", "Trace palette", "Shift+P", self.mouse_palette.togglePalette),
+                            ("toggleinc_act",  "Section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
+                            ("togglebc_act", "Brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
+
+                        ]
+                    },
+                    ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
+                    None,
+                    ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
                 ]
             },
             {
@@ -379,8 +393,18 @@ class MainWindow(QMainWindow):
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                    None,
-                    ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
+                    # None,
+                    # ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
+                ]
+            },
+            {
+                "attr_name": "curatemenu",
+                "text": "Set curation",
+                "opts":
+                [
+                    ("blankcurate_act", "Blank", "", lambda : self.field.setCuration("")),
+                    ("needscuration_act", "Needs curation", "", lambda : self.field.setCuration("Needs curation")),
+                    ("curated_act", "Curated", "", lambda : self.field.setCuration("Curated"))
                 ]
             },
             None,
@@ -1262,6 +1286,39 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified()
     
+    def importBC(self, jser_fp : str = None):
+        """Import the brightness/contrast settings from another jser series.
+        
+            Params:
+                jser_fp (str): the filepath with the series to import data from
+        """
+        if jser_fp is None:
+            global fd_dir
+            jser_fp, extension = QFileDialog.getOpenFileName(
+                self,
+                "Select Series",
+                dir=fd_dir.get(),
+                filter="*.jser"
+            )
+        if jser_fp == "": return  # exit function if user does not provide series
+        else: fd_dir.set(os.path.dirname(jser_fp))
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # import the traces and close the other series
+        self.series.importBC(o_series)
+        o_series.close()
+
+        # reload the field to update the traces
+        self.field.reload()
+
+        # refresh the object list if needed
+        if self.field.section_table_manager:
+            self.field.section_table_manager.refresh()
+    
     def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.
         
@@ -1333,6 +1390,8 @@ class MainWindow(QMainWindow):
         self.field.changeSection(section_num)
         # update status bar
         self.field.updateStatusBar()
+        # update the mouse palette
+        self.mouse_palette.updateBC()
     
     def flickerSections(self):
         """Switch between the current and b sections."""
@@ -2121,6 +2180,42 @@ class MainWindow(QMainWindow):
 
         self.field.reload()
         self.seriesModified(True)
+
+    def addTo3D(self, obj_names, ztraces=False):
+        """Generate the 3D view for a list of objects.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        self.saveAllData()
+        
+        if not self.viewer or self.viewer.is_closed:
+            self.viewer = CustomPlotter(self)
+        
+        if ztraces:
+            self.viewer.addZtraces(obj_names)
+        else:
+            self.viewer.addObjects(obj_names)
+            
+    def removeFrom3D(self, obj_names, ztraces=False):
+        """Remove objects from 3D viewer.
+        
+            Params:
+                obj_names (list): a list of object names
+        """
+        self.saveAllData()
+        if not self.viewer or self.viewer.is_closed:
+            return
+        
+        if ztraces:
+            self.viewer.removeZtraces(obj_names)
+        else:
+            self.viewer.removeObjects(obj_names)
+    
+    def toggleCuration(self):
+        """Quick shortcut to toggle curation on/off for the tables."""
+        if self.field.obj_table_manager:
+            self.field.obj_table_manager.toggleCuration()
 
     def restart(self):
         self.restart_mainwindow = True

@@ -393,6 +393,7 @@ class MousePalette():
             )
             s.show()
             self.bc_widgets.append((b, s))
+        self.placeBCButtons()
     
     def setBrightness(self, b : int):
         """Set the brightness for the current section."""

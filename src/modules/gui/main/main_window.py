@@ -337,9 +337,9 @@ class MainWindow(QMainWindow):
                         "text": "Toggle palette",
                         "opts":
                         [
-                            ("togglepalette_act", "Trace palette", "Shift+P", self.mouse_palette.togglePalette),
-                            ("toggleinc_act",  "Section increment buttons", "Shift+S", self.mouse_palette.toggleIncrement),
-                            ("togglebc_act", "Brightness/contrast sliders", "Shift+I", self.mouse_palette.toggleBC),
+                            ("togglepalette_act", "Trace palette", "checkbox", self.mouse_palette.togglePalette),
+                            ("toggleinc_act",  "Section increment buttons", "checkbox", self.mouse_palette.toggleIncrement),
+                            ("togglebc_act", "Brightness/contrast sliders", "checkbox", self.mouse_palette.toggleBC),
 
                         ]
                     },
@@ -528,6 +528,11 @@ class MainWindow(QMainWindow):
 
         # check for backup directory
         self.backup_act.setChecked(bool(self.series.options["backup_dir"]))
+
+        # check for palette
+        self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
+        self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
+        self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
 
         # undo/redo
         states = self.field.series_states[self.series.current_section]

@@ -90,13 +90,16 @@ def xmlToJSON(xml_dir : str) -> Series:
 
     # modify the ztraces
     for ztrace in series.ztraces.values():
-        for i, point in enumerate(ztrace.points):
+        new_points = []
+        for point in ztrace.points:
             x, y, snum = point
-            new_point = (
-                *section_tforms[snum].map(x, y, inverted=True),
-                snum
-            )
-            ztrace.points[i] = new_point
+            if snum in section_tforms:
+                new_point = (
+                    *section_tforms[snum].map(x, y, inverted=True),
+                    snum
+                )
+                new_points.append(new_point)
+        ztrace.points = new_points
     
     # save the jser file
     # series.save()

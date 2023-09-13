@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
+from .str_helper import sortList
 
 from modules.datatypes import (
     Series,
@@ -71,7 +72,7 @@ class TraceTableWidget(QDockWidget):
 
         self.show()
     
-    def setRow(self, name : str, index : int, trace_data : TraceData, row : int):
+    def setRow(self, name : str, index : int, trace_data : TraceData, row : int, resize_columns=True):
         """Populate a row with trace item data.
         
             Params:
@@ -101,35 +102,34 @@ class TraceTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(str(round(trace_data.getRadius(), 5))))
             col += 1
     
-    def setContours(self, names):
+    def setContours(self, names, resize=True):
         """Set the table data for a set of contours.
         
             Params:
                 name (iterable): the names of contours to update
         """
         for name in names:
-            # remove all existing traces associated with the contour in the table
-            r = 0
-            insert_row = None  # keep track of index where contours should be inserted
-            while r < self.table.rowCount():
-                trace_name = self.table.item(r, 0).text()
-                if trace_name == name:
+            r, is_in_table = self.table.getRowIndex(name)
+
+            # remove existing instances
+            if is_in_table:
+                while self.table.item(r, 0).text() == name:
                     self.table.removeRow(r)
-                else:
-                    if insert_row is None and trace_name > name:
-                        insert_row = r
-                    r += 1
-            if insert_row is None:
-                insert_row = self.table.rowCount()
             
             # insert the new contour data
             trace_data_list = self.series.data.getTraceData(name, self.section.n)
+            modified_rows = []
             if trace_data_list:
-                first_row = insert_row
+                first_row = r
                 for trace_data in trace_data_list:
-                    self.table.insertRow(insert_row)
-                    self.setRow(name, insert_row - first_row, trace_data, insert_row)
-                    insert_row += 1
+                    self.table.insertRow(r)
+                    self.setRow(name, r - first_row, trace_data, r)
+                    modified_rows.append(r)
+                    r += 1            
+            if resize:
+                self.table.resizeColumnsToContents()
+                for r in modified_rows:
+                    self.table.resizeRowToContents(r)
     
     def createMenus(self):
         """Create the menu for the trace table widget."""
@@ -224,15 +224,7 @@ class TraceTableWidget(QDockWidget):
             if self.passesFilters(name):
                 filtered_object_list.append(name)
         
-        return sorted(filtered_object_list)
-    
-    def format(self):
-        """Format the rows and columns of the table."""
-        self.table.resizeRowsToContents()
-        for c in range(self.table.columnCount()):
-            header = self.table.horizontalHeaderItem(c)
-            if header != "Tags":
-                self.table.resizeColumnToContents(c)
+        return sortList(filtered_object_list)
     
     def createTable(self, section : Section):
         """Create the table widget.
@@ -267,10 +259,11 @@ class TraceTableWidget(QDockWidget):
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in trace data
-        self.setContours(filtered_trace_names)
+        self.setContours(filtered_trace_names, resize=False)
 
         # format rows and columns
-        self.format()
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)

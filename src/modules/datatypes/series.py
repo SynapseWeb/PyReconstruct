@@ -559,8 +559,8 @@ class Series():
         """
         try:
             wdir = os.path.dirname(image_locations[0])
-            if ".zarr" in wdir:  # create series adjacent to zarr if needed
-                src_dir = wdir[:wdir.rfind(".zarr") + len(".zarr")]
+            if "zarr" in wdir:  # create series adjacent to zarr if needed
+                src_dir = wdir[:wdir.rfind("zarr") + len("zarr")]
                 wdir = os.path.dirname(src_dir)
             else:
                 src_dir = wdir

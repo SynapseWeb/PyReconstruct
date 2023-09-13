@@ -15,6 +15,7 @@ from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
 from .history import HistoryTableWidget
+from .str_helper import sortList
 
 from modules.datatypes import Series
 from modules.gui.utils import (
@@ -205,7 +206,7 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def setRow(self, name : str, row : int, resize_columns=True):
+    def setRow(self, name : str, row : int, resize=True):
         """Set the data for a row of the table.
         
             Params:
@@ -275,9 +276,9 @@ class ObjectTableWidget(QDockWidget):
                     item.setBackground(cr_color)
                 self.table.setItem(row, col, item)
                 col += 1
-        # self.table.resizeRowToContents(row)
-        if resize_columns:
+        if resize:
             self.table.resizeColumnsToContents()
+            self.table.resizeRowToContents(row)
         self.process_check_event = True
     
     def passesFilters(self, name : str):
@@ -333,7 +334,7 @@ class ObjectTableWidget(QDockWidget):
             if self.passesFilters(name):
                 filtered_object_list.append(name)
         
-        return sorted(filtered_object_list)
+        return sortList(filtered_object_list)
 
     def createTable(self):
         """Create the table widget.
@@ -382,34 +383,14 @@ class ObjectTableWidget(QDockWidget):
         
         # fill in object data
         for r, n in enumerate(filtered_obj_names):
-            self.setRow(n, r, resize_columns=False)
+            self.setRow(n, r, resize=False)
 
         # format rows and columns
+        self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
-        for c in range(self.table.columnCount()):
-            header = self.table.horizontalHeaderItem(c)
-            if not (header == "Name" or header == "Groups"):
-                self.table.resizeColumnToContents(c)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
-
-    def getRowIndex(self, obj_name : str):
-        """Get the row index of an object in the table (or where it SHOULD be on the table).
-        
-            Parmas:
-                obj_name (str): the name of the object
-            Returns:
-                (int): the row index for that object in the table
-                (bool): whether or not the object actually exists in the table
-        """
-        for row_index in range(self.table.rowCount()):
-            row_name = self.table.item(row_index, 0).text()
-            if obj_name == row_name:
-                return row_index, True
-            elif obj_name < row_name:
-                return row_index, False
-        return self.table.rowCount(), False
     
     def updateObjects(self, names):
         """Update the data for a set of objects.
@@ -421,13 +402,13 @@ class ObjectTableWidget(QDockWidget):
             # check if object passes filters
             if not self.passesFilters(name):
                 # special case: does not pass filter anymore but exists on table
-                row, exists_in_table = self.getRowIndex(name)
+                row, exists_in_table = self.table.getRowIndex(name)
                 if exists_in_table:
                     self.table.removeRow(row)
                 return
 
             # update if it does
-            row, exists_in_table = self.getRowIndex(name)
+            row, exists_in_table = self.table.getRowIndex(name)
             if exists_in_table and name not in self.series.data["objects"]:  # completely delete object
                 self.table.removeRow(row)
             elif exists_in_table and name in self.series.data["objects"]:  # update existing object
@@ -496,12 +477,6 @@ class ObjectTableWidget(QDockWidget):
         elif state == Qt.CheckState.Checked:
             self.series.setCuration([name], "Curated")
         self.setRow(name, r)
-        self.table.resizeColumnToContents(c + 1)
-        self.table.resizeColumnToContents(c + 2)
-        self.table.resizeColumnToContents(c + 3)
-
-        self.table.resizeColumnToContents(self.curate_column)
-        # self.table.resizeRowToContents(r)
 
         self.manager.updateObjects([name])
 

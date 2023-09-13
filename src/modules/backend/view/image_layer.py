@@ -44,7 +44,7 @@ class ImageLayer():
     def loadImage(self):
         """Load the image."""
         # get the image path
-        self.is_zarr_file = self.series.src_dir.endswith(".zarr")
+        self.is_zarr_file = self.series.src_dir.endswith("zarr")
         self.is_scaled = False
         self.selected_scale = 1
         

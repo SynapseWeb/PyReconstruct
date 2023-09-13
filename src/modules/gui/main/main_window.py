@@ -646,7 +646,7 @@ class MainWindow(QMainWindow):
         if not new_src_dir:
             return
         else:
-            if new_src_dir.endswith(".zarr"):
+            if new_src_dir.endswith("zarr"):
                 fd_dir.set(os.path.dirname(new_src_dir))
             else:
                 fd_dir.set(new_src_dir)

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
+from .str_helper import sortList
 
 from modules.datatypes import Series
 from modules.gui.utils import (
@@ -60,7 +61,7 @@ class ZtraceTableWidget(QDockWidget):
 
         self.show()
     
-    def setRow(self, ztrace_name : str, row : int):
+    def setRow(self, ztrace_name : str, row : int, resize=True):
         """Populate a row with trace item data.
         
             Params:
@@ -89,6 +90,9 @@ class ZtraceTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(
                 str(round(d, 5))
             ))
+            if resize:
+                self.table.resizeColumnsToContents()
+                self.table.resizeRowToContents(row)
     
     def createMenus(self):
         """Create the menu for the trace table widget."""
@@ -145,11 +149,6 @@ class ZtraceTableWidget(QDockWidget):
                 return True
         return False
     
-    def format(self):
-        """Format the rows and columns of the table."""
-        self.table.resizeRowsToContents()
-        self.table.resizeColumnsToContents()
-    
     def createTable(self):
         """Create the table widget."""
         # establish table headers
@@ -162,11 +161,11 @@ class ZtraceTableWidget(QDockWidget):
         self.table.mouseDoubleClickEvent = self.addTo3D
         
         # filter the objects
-        sorted_ztrace_names = sorted(list(self.series.ztraces.keys()))
-        filetered_ztrace_list = []
-        for name in sorted_ztrace_names:
+        filtered_ztrace_list = []
+        for name in self.series.ztraces.keys():
             if self.passesFilters(name):
-                filetered_ztrace_list.append(name)
+                filtered_ztrace_list.append(name)
+        filtered_ztrace_list = sortList(filtered_ztrace_list)
 
         # format table
         self.table.setWordWrap(False)
@@ -177,11 +176,12 @@ class ZtraceTableWidget(QDockWidget):
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in object data
-        for r, name in enumerate(filetered_ztrace_list):
-            self.setRow(name, r)
+        for r, name in enumerate(filtered_ztrace_list):
+            self.setRow(name, r, resize=True)
 
         # format rows and columns
-        self.format()
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
@@ -189,10 +189,8 @@ class ZtraceTableWidget(QDockWidget):
     def updateZtraces(self, ztrace_names : set):
         """Update the specified ztraces."""
         for name in ztrace_names:
-            r = 0
-            while self.table.item(r, 0).text() < name:
-                r += 1
-            if self.table.item(r, 0).text() != name:
+            r, is_in_table = self.table.getRowIndex(name)
+            if not is_in_table:
                 self.table.insertRow(r)
             self.setRow(name, r)
     

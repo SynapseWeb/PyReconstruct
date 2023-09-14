@@ -1595,15 +1595,16 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         self.field.openSectionList()
     
-    def setToObject(self, obj_name : str, section_num : str):
+    def setToObject(self, obj_name : str, section_num : int):
         """Focus the field on an object from a specified section.
         
             Params:
                 obj_name (str): the name of the object
-                section_num (str): the section the object is located
+                section_num (int): the section the object is located
         """
-        self.changeSection(section_num)
-        self.field.findContour(obj_name)
+        if obj_name is not None and section_num is not None:
+            self.changeSection(section_num)
+            self.field.findContour(obj_name)
     
     def findObjectFirst(self, obj_name=None):
         """Find the first or last contour in the series.
@@ -1621,14 +1622,7 @@ class MainWindow(QMainWindow):
                 return
 
         # find the contour
-        if self.field.obj_table_manager:
-            self.field.obj_table_manager.findObject(obj_name, first=True)
-        else:
-            for snum, section in self.series.enumerateSections(
-                show_progress=False):
-                if obj_name in section.contours:
-                    self.setToObject(obj_name, snum)
-                    return
+        self.setToObject(obj_name, self.series.data.getStart(obj_name))
     
     def changeTform(self, new_tform_list : list = None):
         """Open a dialog to change the transform of a section."""

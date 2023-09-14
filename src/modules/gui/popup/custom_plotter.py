@@ -197,7 +197,7 @@ class CustomPlotter(vedo.Plotter):
                 name = actor.metadata["name"][0]
                 t = actor.metadata["type"][0]
                 if name in self.selected_names:
-                    new_opacity = actor.alpha() + 0.05 * (-1 if key == "bracketleft" else 1)
+                    new_opacity = actor.alpha() + 0.05 * (-1 if key == "Bracketleft" else 1)
                     actor.alpha(new_opacity)
                     # set the opacity in series 3D options
                     if t == "object":

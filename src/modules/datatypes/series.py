@@ -262,7 +262,7 @@ class Series():
         
         return series
 
-    def saveJser(self, close=False):
+    def saveJser(self, save_fp=None, close=False):
         """Save the jser file."""
         jser_data = {}
 
@@ -313,11 +313,12 @@ class Series():
         
         save_str = json.dumps(jser_data)
 
-        with open(self.jser_fp, "w") as f:
+        jser_fp = self.jser_fp if not save_fp else save_fp
+        with open(jser_fp, "w") as f:
             f.write(save_str)
-        
+
         # backup the series if requested
-        if self.options["backup_dir"] and os.path.isdir(self.options["backup_dir"]):
+        if save_fp is None and self.options["backup_dir"] and os.path.isdir(self.options["backup_dir"]):
             # get the file name
             fn = os.path.basename(self.jser_fp)
             # create the new file name

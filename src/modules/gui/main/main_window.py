@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from datetime import datetime
 import subprocess
 
 from PySide6.QtWidgets import (
@@ -222,7 +223,8 @@ class MainWindow(QMainWindow):
                         "text": "Export",
                         "opts":
                         [
-			    ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
+                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
+                            ("exportjser_act", "as backup jser file...", "Ctrl+Shift+B", self.manualBackup)
                         ]
 		    },
 		    {
@@ -1565,6 +1567,29 @@ class MainWindow(QMainWindow):
             self.series.options["backup_dir"] = ""
         
         self.seriesModified()
+    
+    def manualBackup(self):
+        """Back up the series to a specified location."""
+        self.saveAllData()
+        dt = datetime.now()
+        d = f"{dt.year % 1000}{dt.month:02d}{dt.day:02d}"
+        series_basename = f"{self.series.name}-{d}-{self.series.user}.jser"
+
+        global fd_dir
+        backup_fp, ext = QFileDialog.getSaveFileName(
+            self,
+            "Backup Series",
+            os.path.join(fd_dir.get(), series_basename),
+            filter="Series file (*.jser)"
+        )
+        if not backup_fp:
+            return
+        else:
+            fd_dir.set(backup_fp, dirname=True)
+        
+        self.series.saveJser(save_fp=backup_fp)
+        
+
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

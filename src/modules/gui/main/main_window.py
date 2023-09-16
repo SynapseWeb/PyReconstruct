@@ -142,19 +142,11 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("newfromimages_act", "From images...", "Ctrl+N", self.newSeries),
-                            ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True))
+                            ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True)),
+                            ("newfromxml_act", "From legacy .ser...", "", self.newFromXML)
                         ]
                     },
                     ("open_act", "Open", "Ctrl+O", self.openSeries),
-                    None,
-                    {
-                        "attr_name": "legacymeny",
-                        "text": "Legacy Reconstruct",
-                        "opts":
-                        [
-                            ("fromxml_act", "New from XML series...", "", self.newFromXML),
-                        ]
-                    },
                     None,  # None acts as menu divider
                     ("save_act", "Save", "Ctrl+S", self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
@@ -223,8 +215,8 @@ class MainWindow(QMainWindow):
                         "text": "Export",
                         "opts":
                         [
-                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
-                            ("exportjser_act", "as backup jser file...", "Ctrl+Shift+B", self.manualBackup)
+                            ("exportjser_act", "as backup jser...", "Ctrl+Shift+B", self.manualBackup),
+                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
                         ]
 		    },
 		    {
@@ -1571,8 +1563,7 @@ class MainWindow(QMainWindow):
     def manualBackup(self):
         """Back up the series to a specified location."""
         self.saveAllData()
-        dt = datetime.now()
-        d = f"{dt.year % 1000}{dt.month:02d}{dt.day:02d}"
+        d = datetime.now().strftime('%Y%m%d')
         series_basename = f"{self.series.name}-{d}-{self.series.user}.jser"
 
         global fd_dir
@@ -1588,8 +1579,6 @@ class MainWindow(QMainWindow):
             fd_dir.set(backup_fp, dirname=True)
         
         self.series.saveJser(save_fp=backup_fp)
-        
-
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

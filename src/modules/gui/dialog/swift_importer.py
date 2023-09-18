@@ -1,4 +1,3 @@
-import os
 import json
 
 from PySide6.QtWidgets import (
@@ -6,19 +5,12 @@ from PySide6.QtWidgets import (
     QDialog, 
     QDialogButtonBox, 
     QLabel, 
-    QLineEdit,
     QVBoxLayout,
     QGridLayout,
     QComboBox
 )
-from numpy import ScalarType
-
-from .helper import BrowseWidget
 
 from modules.gui.utils import notify
-
-from modules.datatypes import Series
-
 
 def get_available_scales(project_filepath):
     """Return scales in a project file as a list of ints."""

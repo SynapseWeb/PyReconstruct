@@ -34,7 +34,7 @@ from modules.backend.table import (
     TraceTableManager,
     ZtraceTableManager
 )
-from modules.gui.dialog import TraceDialog, ZtraceDialog
+from modules.gui.dialog import TraceDialog, QuickDialog
 from modules.gui.utils import notify
 from modules.constants import locations as loc
 
@@ -639,15 +639,15 @@ class FieldWidget(QWidget, FieldView):
         
         name = first_ztrace.name
         color = first_ztrace.color
-        new_attr, confirmed = ZtraceDialog(
-            self,
-            name,
-            color
-        ).exec()
+        structure = [
+            ["Name:", ("text", name)],
+            ["Color:", ("color", color)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Set Attributes")
         if not confirmed:
             return
         
-        new_name, new_color = new_attr
+        new_name, new_color = response
         self.series.editZtraceAttributes(
             ztrace,
             new_name,

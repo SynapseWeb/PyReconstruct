@@ -21,11 +21,12 @@ def resizeLineEdit(le : QLineEdit, text : str):
 
 class BrowseWidget(QWidget):
 
-    def __init__(self, parent, type="file"):
+    def __init__(self, parent, type="file", default_fp="", filter=None):
         """Create the browse widget."""
         super().__init__(parent)
         self.type = type
-        self.le = QLineEdit(self)
+        self.filter = filter
+        self.le = QLineEdit(self, text=default_fp)
         self.bttn = QPushButton(self, text="Browse")
         self.bttn.clicked.connect(self.browse)
         layout = QHBoxLayout()
@@ -41,7 +42,8 @@ class BrowseWidget(QWidget):
             response = QFileDialog.getOpenFileName(
                 self,
                 "Find File",
-                dir=fd_dir.get()
+                dir=fd_dir.get(),
+                filter=self.filter
             )[0]
         elif self.type == "dir":
             response = QFileDialog.getExistingDirectory(

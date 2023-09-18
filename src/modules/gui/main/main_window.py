@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import subprocess
 
 from PySide6.QtWidgets import (
@@ -29,11 +30,7 @@ from modules.gui.dialog import (
     TrainDialog,
     SegmentDialog,
     PredictDialog,
-    SwiftDialog,
-    ImportTransformsDialog,
-    SmoothingDialog,
-    PointerDialog,
-    ClosedTraceDialog
+    QuickDialog
 )
 from modules.gui.popup import TextWidget, CustomPlotter
 from modules.gui.utils import (
@@ -1090,15 +1087,13 @@ class MainWindow(QMainWindow):
         # reload the section
         self.field.reload()
 
-    def importSwiftTransforms(self, tforms_fp : str = None):
+    def importSwiftTransforms(self, swift_fp=None):
         """Import transforms from a text file.
         
             Params:
-                tforms_file (str): the filepath for the transforms file
+                swift_fp (str): the filepath for the transforms file
         """
         self.saveAllData()
-
-        swift_fp = None  # Ummmmm, not sure about this?
         
         # get file from user
         if swift_fp is None:
@@ -1112,8 +1107,24 @@ class MainWindow(QMainWindow):
         if not swift_fp: return
         else: fd_dir.set(os.path.dirname(swift_fp))
 
-        response, confirmed = SwiftDialog(self, swift_fp).exec()
-        scale, cal_grid = response
+        # get the scales from the swift file
+        with open(swift_fp, "r") as fp: swift_json = json.load(fp)
+        scales_data = swift_json["data"]["scales"]
+        scale_names = list(scales_data.keys())
+        scales_available = [int(scale.split("_")[1]) for scale in scale_names]
+        scales_available.sort()
+        print(f'Available SWiFT project scales: {scales_available}')
+
+        structure = [
+            ["Scale:", (True, "combo", [str(s) for s in scales_available])],
+            [("check", ("Includes cal grid", False))]
+        ]
+
+        response, confirmed = QuickDialog.get(self, structure, "Import SWiFT Transforms")
+        if not confirmed:
+            return
+        scale = response[0]
+        cal_grid = response[1][0][1]
 
         # import transforms
         print(f'Importing SWiFT transforms at scale {scale}...')
@@ -1263,10 +1274,22 @@ class MainWindow(QMainWindow):
         s_alignments = list(self.series.data["sections"][other_sections[0]]["tforms"].keys())
 
         # prompt the user to choose an alignment
-        chosen_alignments, confirmed = ImportTransformsDialog(self, o_alignments).exec()
-        if not confirmed or not chosen_alignments:
+        structure = [
+            [(
+                "check",
+                *((a, False) for a in o_alignments)
+            )]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Import Transforms")
+        if not confirmed:
+            o_series.close()
             return
         
+        chosen_alignments = [a for a, was_chosen in response[0] if was_chosen]
+        if not chosen_alignments:
+            o_series.close()
+            return
+
         overlap_alignments = []
         for a in chosen_alignments:
             if a in s_alignments:
@@ -1283,10 +1306,11 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.No:
                 notify("Import transforms canceled.")
+                o_series.close()
                 return
         
-        if chosen_alignments:
-            self.series.importTransforms(o_series, chosen_alignments)
+        self.series.importTransforms(o_series, chosen_alignments)
+        o_series.close()
         
         self.field.reload()
         self.seriesModified()
@@ -1353,9 +1377,25 @@ class MainWindow(QMainWindow):
     def changeClosedTraceMode(self, new_mode=None):
         """Change the closed trace mode (trace, rectangle, circle)."""
         if new_mode not in ["trace", "rect", "circle"]:
-            new_mode, confirmed = ClosedTraceDialog(self, self.field.closed_trace_mode).exec()
+            current_mode = self.field.closed_trace_mode
+            structure = [
+                [("radio",
+                  ("Trace", current_mode == "trace"),
+                  ("Rectangle", current_mode == "rect"),
+                  ("Ellipse", current_mode == "circle")
+                )]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
             if not confirmed:
                 return
+            
+            if response[0][1][1]:
+                new_mode = "rect"
+            elif response[0][2][1]:
+                new_mode = "circle"
+            else:
+                new_mode = "trace"
+        
         self.field.closed_trace_mode = new_mode
 
     def changeTracingTrace(self, trace):
@@ -1763,13 +1803,20 @@ class MainWindow(QMainWindow):
     
     def modifyPointer(self, event=None):
         """Modify the pointer properties."""
-        response, confirmed = PointerDialog(
-            self,
-            tuple(self.series.options["pointer"])
-        ).exec()
+        s, t = self.series.options["pointer"]
+        structure = [
+            ["Shape:"],
+            [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
+            ["Type:"],
+            [("radio", ("Include selected traces", t=="inc"), ("Exclude selected traces", t=="exc"))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:
             return
-        self.series.options["pointer"] = response
+        
+        s = "rect" if response[0][0][1] else "lasso"
+        t = "inc" if response[1][0][1] else "exc"
+        self.series.options["pointer"] = s, t
         self.seriesModified()
     
     def modifyGrid(self, event=None):
@@ -2131,9 +2178,22 @@ class MainWindow(QMainWindow):
                 smoothing_alg (str): the name of the smoothing algorithm to use
         """
         if not smoothing_alg:
-            smoothing_alg, confirmed = SmoothingDialog(self, self.series.options["3D_smoothing"]).exec()
+            structure = [
+                [("radio",
+                  ("Laplacian (most smooth)", self.series.options["3D_smoothing"] == "laplacian"),
+                  ("Humphrey (less smooth)", self.series.options["3D_smoothing"] == "humphrey"),
+                  ("None (blocky)", self.series.options["3D_smoothing"] == "none"))]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "3D Smoothing")
             if not confirmed:
                 return
+            
+            if response[0][0][1]:
+                smoothing_alg = "laplacian"
+            elif response[0][1][1]:
+                smoothing_alg = "humphrey"
+            elif response[0][2][1]:
+                smoothing_alg = "none"
         
         if smoothing_alg not in ["laplacian", "humphrey", "none"]:
             return

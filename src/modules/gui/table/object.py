@@ -25,11 +25,9 @@ from modules.gui.utils import (
 )
 from modules.gui.dialog import (
     ObjectGroupDialog,
-    TableColumnsDialog,
-    Object3DDialog,
     TraceDialog,
     ShapesDialog,
-    CurateFiltersDialog
+    QuickDialog
 )
 from modules.constants import fd_dir
 
@@ -679,13 +677,13 @@ class ObjectTableWidget(QDockWidget):
     
     def setColumns(self):
         """Set the columns to display."""
-        new_cols, confirmed = TableColumnsDialog(
-            self,
-            self.columns
-        ).exec()
+        structure = [
+            [("check", *tuple(self.columns.items()))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Table Columns")
         if not confirmed:
             return
-        self.columns = new_cols
+        self.columns = dict(response[0])
         
         self.manager.updateTable(self)
     
@@ -791,15 +789,21 @@ class ObjectTableWidget(QDockWidget):
     
     def setCRFilter(self):
         """Set the filter for curation."""
-        response, confirmed = CurateFiltersDialog(
-            self, 
-            self.cr_status_filter, 
-            self.cr_user_filters
-        ).exec()
+        structure = [
+            ["Curation status:"],
+            [(
+                "check",
+                *((s,c) for s, c in self.cr_status_filter.items())
+            )],
+            ["Users (separate with comma and space):"],
+            [("text", ", ".join(self.cr_user_filters))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Curation Filters")
         if not confirmed:
             return
         
-        self.cr_status_filter, self.cr_user_filters = response
+        self.cr_status_filter = dict(response[0])
+        self.cr_user_filters = set(response[1].split(", "))
 
         # call through manager to update self
         self.manager.updateTable(self)
@@ -838,16 +842,16 @@ class ObjectTableWidget(QDockWidget):
                 type_3D = None
             if opacity != new_opacity:
                 opacity = None
-
-        settings, confirmed = Object3DDialog(
-            self,
-            type3D=type_3D,
-            opacity=opacity
-        ).exec()
+        
+        structure = [
+            ["3D Type:", ("combo", ["surface", "spheres", "contours"], type_3D)],
+            ["Opacity (0-1):", ("float", opacity, (0,1))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "3D Object Settings")
         if not confirmed:
             return
         
-        new_type, new_opacity = settings
+        new_type, new_opacity = response
 
         self.manager.edit3D(obj_names, new_type, new_opacity)
     

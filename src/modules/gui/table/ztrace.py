@@ -23,7 +23,7 @@ from modules.gui.utils import (
     notify,
     noUndoWarning
 )
-from modules.gui.dialog import ZtraceDialog, SmoothZtraceDialog
+from modules.gui.dialog import QuickDialog
 from modules.constants import fd_dir
 
 class ZtraceTableWidget(QDockWidget):
@@ -239,16 +239,15 @@ class ZtraceTableWidget(QDockWidget):
             return
         ztrace = self.series.ztraces[name]
 
-        attributes, confirmed = ZtraceDialog(
-            self,
-            name=name,
-            color=ztrace.color
-        ).exec()
-
+        structure = [
+            ["Name:", ("text", name)],
+            ["Color:", ("color", ztrace.color)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Set Attributes")
         if not confirmed:
             return
 
-        new_name, new_color = attributes
+        new_name, new_color = response
 
         if new_name != name and new_name in self.series.ztraces:
             notify("This ztrace already exists.")
@@ -261,12 +260,18 @@ class ZtraceTableWidget(QDockWidget):
         names = self.getSelectedNames()
         if not names:
             return
+
+        structure = [
+            ["Smoothing factor:", ("int", 10)],
+            [("check", ("Create new ztrace", False))]
+        ]
         
-        response, confirmed = SmoothZtraceDialog(self).exec()
+        response, confirmed = QuickDialog.get(self, structure, "Smooth Ztrace")
         if not confirmed:
             return
         
-        smooth, newztrace = response
+        smooth = response[0]
+        newztrace = response[1][0][1]
         
         self.manager.smooth(names, smooth, newztrace)
     

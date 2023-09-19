@@ -1140,13 +1140,31 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
-            global fd_dir
-            jser_fp, extension = QFileDialog.getOpenFileName(
-                self,
-                "Select Series",
-                dir=fd_dir.get(),
-                filter="*.jser"
-            )
+            structure = [
+                ["Series:", (True, "file", "", "*.jser")],
+                ["Object regex filters (separate with a comma and space):"],
+                [("text", "")],
+                [
+                    "From section",
+                    ("int", min(self.series.sections.keys())),
+                    "to",
+                    ("int", max(self.series.sections.keys()))
+                ]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Import Traces")
+            if not confirmed:
+                return
+            
+            jser_fp = response[0]
+            if response[1]:
+                regex_filters = response[1].split(", ")
+            else:
+                regex_filters = []
+            sections = tuple(range(response[2], response[3]+1))
+        else:
+            sections = self.series.sections.keys()
+            regex_filters = []
+
         if jser_fp == "": return  # exit function if user does not provide series
         else: fd_dir.set(os.path.dirname(jser_fp))
 
@@ -1159,7 +1177,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series)
+        self.series.importTraces(o_series, sections, regex_filters)
         o_series.close()
 
         # reload the field to update the traces
@@ -1177,16 +1195,21 @@ class MainWindow(QMainWindow):
             Params:
                 jser_fp (str): the filepath with the series to import data from
         """
+        regex_filters = []
         if jser_fp is None:
+            structure = [
+                ["Series:", (True, "file", "", "*.jser")],
+                ["Ztrace regex filters (separate with a comma and space):"],
+                [("text", "")]
+            ]
             global fd_dir
-            jser_fp, extension = QFileDialog.getOpenFileName(
-                self,
-                "Select Series",
-                dir=fd_dir.get(),
-                filter="*.jser"
-            )
-        if jser_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(jser_fp))
+            response, confirmed = QuickDialog.get(self, structure, "Import Ztraces")
+            if not confirmed:
+                return
+            jser_fp = response[0]
+            fd_dir.set(os.path.dirname(jser_fp))
+            if response[1]:
+                regex_filters = response[1].split(", ")
 
         self.saveAllData()
 
@@ -1197,7 +1220,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the ztraces and close the other series
-        self.series.importZtraces(o_series)
+        self.series.importZtraces(o_series, regex_filters)
         o_series.close()
 
         # reload the field to update the ztraces
@@ -1321,14 +1344,24 @@ class MainWindow(QMainWindow):
             Params:
                 jser_fp (str): the filepath with the series to import data from
         """
+        sections = list(self.series.sections.keys())
         if jser_fp is None:
-            global fd_dir
-            jser_fp, extension = QFileDialog.getOpenFileName(
-                self,
-                "Select Series",
-                dir=fd_dir.get(),
-                filter="*.jser"
-            )
+            structure = [
+                ["Series:", (True, "file", "", "*.jser")],
+                [
+                    "From section",
+                    ("int", min(self.series.sections.keys())),
+                    "to",
+                    ("int", max(self.series.sections.keys()))
+                ]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Import Brightness/Contrast")
+            if not confirmed:
+                return
+            
+            jser_fp = response[0]
+            sections = tuple(range(response[1], response[2]+1))
+        
         if jser_fp == "": return  # exit function if user does not provide series
         else: fd_dir.set(os.path.dirname(jser_fp))
 
@@ -1338,7 +1371,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importBC(o_series)
+        self.series.importBC(o_series, sections)
         o_series.close()
 
         # reload the field to update the traces
@@ -1363,6 +1396,7 @@ class MainWindow(QMainWindow):
             self.field.changeContrast(2)
         elif option == "contrast" and direction == "down":
             self.field.changeContrast(-2)
+        self.mouse_palette.updateBC()
     
     def changeMouseMode(self, new_mode):
         """Change the mouse mode of the field (pointer, panzoom, tracing...).

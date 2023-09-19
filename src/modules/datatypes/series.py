@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import shutil
 from datetime import datetime
@@ -1040,11 +1041,18 @@ class Series():
                 log not in self_hist.all_logs):
                 self.log_set.addExistingLog(log)            
     
-    def importTraces(self, other, log_event=True):
-        """Import all the traces from another series."""
-        # ensure that the two series have the same sections
-        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
-            return
+    def importTraces(self, other, sections=None, regex_filters=[], log_event=True):
+        """Import all the traces from another series.
+        
+            Params:
+                other (Series): the series to import from
+                section (list): the list of sections to include in import
+                regex_filters (list): the filters for the objects to import
+                log_event (bool): True if event should be logged
+        """
+        # # ensure that the two series have the same sections
+        # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
+        #     return
         
         if log_event:
             self.addLog(None, None, "Begin importing traces from another series")
@@ -1052,9 +1060,14 @@ class Series():
         # supress logging for object creation
         self.data.supress_logging = True
 
-        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
-        for (r_num, r_section), (s_num, s_section) in iterator:
-            r_section.importTraces(s_section)
+        if sections is None:
+            sections = self.sections.keys()
+        
+        for snum, section in self.enumerateSections(message="Importing traces..."):
+            if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
+                continue
+            s_section = other.loadSection(snum)  # sending section
+            section.importTraces(s_section, regex_filters)
         
         # unsupress logging for object creation
         self.data.supress_logging = False
@@ -1065,13 +1078,11 @@ class Series():
         # import the history
         if log_event:
             self.importHistory(other, ztraces=False)
-
-        if log_event:
             self.addLog(None, None, "Finish importing traces from another series")
         
         self.save()
     
-    def importZtraces(self, other, log_event=True):
+    def importZtraces(self, other, regex_filters=[], log_event=True):
         """Import all the ztraces from another series."""
         if log_event:
             self.addLog(None, None, "Begin importing ztraces from another series")
@@ -1079,7 +1090,12 @@ class Series():
         for o_zname, o_ztrace in other.ztraces.items():
             # only import new ztraces, do NOT replace existing ones
             if o_zname not in self.ztraces:
-                self.ztraces[o_zname] = o_ztrace.copy()
+                passes_filters = False if regex_filters else True
+                for rf in regex_filters:
+                    if bool(re.fullmatch(rf, o_zname)):
+                        passes_filters = True
+                if passes_filters:
+                    self.ztraces[o_zname] = o_ztrace.copy()
         
         # import the history
         self.importHistory(other, traces=False)
@@ -1100,7 +1116,7 @@ class Series():
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
             return
         
-        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
+        iterator = zip(self.enumerateSections(message="Importing transforms..."), other.enumerateSections(show_progress=False))
         for (r_num, r_section), (s_num, s_section) in iterator:
             for a in alignments:
                 r_section.tforms[a] = s_section.tforms[a].copy()
@@ -1112,17 +1128,22 @@ class Series():
 
         self.save()
     
-    def importBC(self, other, log_event=True):
+    def importBC(self, other, sections=None, log_event=True):
         """Import the brightness/contrast settings from another series."""
-        # ensure that the two series have the same sections
-        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
-            return
+        # # ensure that the two series have the same sections
+        # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
+        #     return
         
-        iterator = zip(self.enumerateSections(), other.enumerateSections(show_progress=False))
-        for (r_num, r_section), (s_num, s_section) in iterator:
-            r_section.brightness = s_section.brightness
-            r_section.contrast = s_section.contrast
-            r_section.save()
+        if sections is None:
+            sections = self.sections.keys()
+        
+        for snum, section in self.enumerateSections(message="Importing brightness/contrast..."):
+            if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
+                continue
+            s_section = other.loadSection(snum)
+            section.brightness = s_section.brightness
+            section.contrast = s_section.contrast
+            section.save()
         
         if log_event:
             self.addLog(None, None, "Import brightness/contrast from another series")

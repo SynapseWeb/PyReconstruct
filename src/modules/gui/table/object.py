@@ -319,9 +319,12 @@ class ObjectTableWidget(QDockWidget):
                     return False
         
         # check regex
+        passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
-            if not bool(re.fullmatch(re_filter, name)):
-                return False
+            if bool(re.fullmatch(re_filter, name)):
+                passes_filters = True
+        if not passes_filters:
+            return False
         
         return True
 

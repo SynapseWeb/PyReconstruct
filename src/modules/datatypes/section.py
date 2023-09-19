@@ -1,4 +1,5 @@
 import os
+import re
 import json
 
 from .contour import Contour
@@ -570,16 +571,23 @@ class Section():
                 self.series.addLog(ztrace.name, self.n, "Modify ztrace")
 
     
-    def importTraces(self, other):
+    def importTraces(self, other, regex_filters=[]):
         """Import the traces from another section.
         
             Params:
                 other (Section): the section with traces to import
+                regex_filters (list): the list of regex filters for objects
         """
         for cname, contour in other.contours.items():
-            if cname in self.contours:
-                self.contours[cname].importTraces(contour)
-            else:
-                self.contours[cname] = contour.copy()
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, cname)):
+                    passes_filters = True
+
+            if passes_filters:
+                if cname in self.contours:
+                    self.contours[cname].importTraces(contour)
+                else:
+                    self.contours[cname] = contour.copy()
         
         self.save()

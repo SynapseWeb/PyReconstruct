@@ -1931,11 +1931,6 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         self.removeZarrLayer()
 
-        if not self.series.jser_fp:
-            self.saveAsToJser()
-            if not self.series.jser_fp:
-                return
-
         inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
 
         if not dialog_confirmed: return

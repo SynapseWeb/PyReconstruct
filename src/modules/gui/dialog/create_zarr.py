@@ -26,9 +26,6 @@ class CreateZarrDialog(QDialog):
         """
         self.series = series
 
-        # save the series to jser file
-        self.series.saveJser()
-
         super().__init__(parent)
 
         self.setWindowTitle("Create Zarr")
@@ -88,7 +85,7 @@ class CreateZarrDialog(QDialog):
         """Overwritten from QDialog."""        
         # check that border object is valid
         bobj = self.bobj_input.text()
-        if bobj not in self.series.objs:
+        if bobj not in self.series.data["objects"]:
             notify("Border object not in series.")
             return
         

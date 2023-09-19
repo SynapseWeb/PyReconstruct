@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog
+    QFileDialog,
 )
 from PySide6.QtCore import Qt
 
@@ -20,7 +20,7 @@ from modules.gui.utils import (
     noUndoWarning,
     notify
 )
-from modules.gui.dialog import BCDialog
+from modules.gui.dialog import QuickDialog
 from modules.constants import fd_dir
 from modules.datatypes import Series
 
@@ -228,13 +228,15 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
-        response, confirmed = BCDialog(self).exec()
+        structure = [
+            ["Brightness (-100 - 100):", ("int", None, tuple(range(-100, 101)))],
+            ["Contrast (-100 - 100):", ("int", None, tuple(range(-100, 100)))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Set brightness/contrast")
         if not confirmed:
             return
-        
-        b, c = response
-        if b is not None and c is not None:
-            self.manager.setBC(section_numbers, b, c)
+
+        self.manager.setBC(section_numbers, *response)
     
     def matchBC(self):
         """Match the brightness/contrast of the selected sections with the current section."""

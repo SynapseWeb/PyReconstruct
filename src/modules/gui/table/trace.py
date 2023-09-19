@@ -22,7 +22,7 @@ from modules.datatypes import (
     TraceData
 )
 from modules.gui.utils import populateMenuBar, populateMenu
-from modules.gui.dialog import TableColumnsDialog, TraceDialog, ShapesDialog
+from modules.gui.dialog import TraceDialog, ShapesDialog, QuickDialog
 from modules.constants import fd_dir
 
 class TraceTableWidget(QDockWidget):
@@ -211,11 +211,14 @@ class TraceTableWidget(QDockWidget):
                 return False
         
         # check regex
+        passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
             if bool(re.fullmatch(re_filter, name)):
-                return True
+                passes_filters = True
+        if not passes_filters:
+            return False
         
-        return False
+        return True
 
     def getFilteredObjects(self):
         """Get the names of the objects that pass the filter."""
@@ -424,14 +427,14 @@ class TraceTableWidget(QDockWidget):
     
     def setColumns(self):
         """Set the columns to display."""
-        new_cols, confirmed = TableColumnsDialog(
-            self,
-            self.columns
-        ).exec()
+        structure = [
+            [("check", *tuple(self.columns.items()))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Table Columns")
         if not confirmed:
             return
-        self.columns = new_cols
         
+        self.columns = dict(response[0])
         self.manager.updateTable(self)
     
     def export(self):

@@ -5,7 +5,7 @@ from .shapes import ShapesDialog, shapeToIcon
 class ShapeButton(QPushButton):
 
     def __init__(self, points : list, parent):
-        """Create the color button widget.
+        """Create the shape button widget.
         
             Params:
                 color (tuple): the color for the button
@@ -16,7 +16,7 @@ class ShapeButton(QPushButton):
         self.clicked.connect(self.selectShape)
 
     def selectShape(self):
-        """Called when button is clicked: prompts user to change color"""
+        """Called when button is clicked: prompts user to change shape"""
         points, confirmed = ShapesDialog(self).exec()
         if confirmed:
             self.setShape(points)

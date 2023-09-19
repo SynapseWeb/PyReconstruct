@@ -206,8 +206,8 @@ class MainWindow(QMainWindow):
                                 "text": "From jser file",
                                 "opts":
                                 [
-                                    ("importtraces_act", "All traces...", "", self.importTraces),
-                                    ("importzrtraces_act", "All z-traces...", "", self.importZtraces),
+                                    ("importtraces_act", "Traces...", "", self.importTraces),
+                                    ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
                                     ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
                                     ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
                                     ("importbc_act", "Brightness/contrast...", "", self.importBC)

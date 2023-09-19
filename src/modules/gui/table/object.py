@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QInputDialog, 
     QMenu, 
     QFileDialog,
+    QAbstractItemView
 )
 from PySide6.QtCore import Qt
 
@@ -378,7 +379,7 @@ class ObjectTableWidget(QDockWidget):
         # self.table.setWordWrap(False)
         self.table.setShowGrid(False)  # no grid
         self.table.setAlternatingRowColors(True)  # alternate row colors
-        # self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header
         

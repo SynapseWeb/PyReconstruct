@@ -58,7 +58,7 @@ class TraceTableManager():
             Params:
                 table (ObjectTableWidget): the table to update
         """
-        table.createTable(self.data)
+        table.createTable(self.section)
     
     def getTraces(self, items : list) -> list:
         """Get the trace objects for a list of table items.

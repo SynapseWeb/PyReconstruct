@@ -308,6 +308,11 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
+        for snum in section_numbers:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Cannot delete locked sections.")
+                return
+        
         if not noUndoWarning():
             return
         

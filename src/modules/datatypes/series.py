@@ -225,6 +225,8 @@ class Series():
             section_fp = os.path.join(hidden_dir, filename)
 
             Section.updateJSON(section_data)  # update any missing attributes
+            
+            section_data["align_locked"] = True  # lock the section
 
             # gather the section numbers and section filenames
             sections[snum] = filename

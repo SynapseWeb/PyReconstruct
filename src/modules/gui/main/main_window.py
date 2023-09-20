@@ -700,7 +700,7 @@ class MainWindow(QMainWindow):
         else:
 
             convert_cmd = " ".join(convert_cmd)
-            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None, preexec_fn=os.setpgrp)
+            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
 
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.

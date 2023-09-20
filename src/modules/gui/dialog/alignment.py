@@ -25,7 +25,9 @@ class AlignmentList(QTableWidget):
 
         # create the table
         for i, a in enumerate(self.alignments):
-            self.setItem(i, 0, QTableWidgetItem(a)) 
+            self.setItem(i, 0, QTableWidgetItem(a))
+        
+        self.resizeColumnsToContents()
     
     def getSelectedAlignments(self) -> list[str]:
         """Get the name of the objects highlighted by the user.
@@ -54,6 +56,7 @@ class AlignmentList(QTableWidget):
         i = self.alignments.index(alignment)
         self.insertRow(i)
         self.setItem(i, 0, QTableWidgetItem(alignment))
+        self.resizeColumnsToContents()
     
     def removeAlignment(self, alignment : str):
         """Remove an alignment from the list.
@@ -67,6 +70,7 @@ class AlignmentList(QTableWidget):
         i = self.alignments.index(alignment)
         self.alignments.remove(alignment)
         self.removeRow(i)
+        self.resizeColumnsToContents()
     
     def renameAlignment(self, alignment : str, new_name : str):
         """Rename an alignment on the list.
@@ -77,6 +81,7 @@ class AlignmentList(QTableWidget):
         """
         self.removeAlignment(alignment)
         self.addAlignment(new_name)
+        self.resizeColumnsToContents()
 
 class AlignmentDialog(QDialog):
 

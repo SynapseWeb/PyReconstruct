@@ -31,7 +31,7 @@ def importTransforms(series : Series, tforms_fp : str, log_event=True):
             # multiply pixel translations by magnification of section
             tform[2] *= section.mag
             tform[5] *= section.mag
-            section.tforms[series.alignment] = Transform(tform)
+            section.tform = Transform(tform)
             section.save()
         
         # log event

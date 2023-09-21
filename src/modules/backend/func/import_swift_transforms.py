@@ -1,4 +1,6 @@
+import os
 import json
+from datetime import datetime
 import numpy as np
 
 from modules.datatypes import Series, Transform
@@ -11,6 +13,11 @@ class IncorrectFormatError(Exception):
 class IncorrectSecNumError(Exception):
     pass
 
+def getDateTime():
+    dt = datetime.now()
+    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
+    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    return d, t
 
 def cafm_to_matrix(t):
     """Convert c_afm to Numpy matrix."""
@@ -133,6 +140,11 @@ def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_g
             raise IncorrectFormatError("Incorrect project file format.")
         
     # set tforms
+    fname = os.path.basename(project_fp)
+    fname = fname[:fname.rfind(".")]
+    d, t = getDateTime()
+    new_alignment_name = f"{fname}-{d}"
+    
     for section_num, tform in tforms.items():
         
         section = series.loadSection(section_num)
@@ -141,9 +153,12 @@ def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_g
         tform[2] *= section.mag
         tform[5] *= section.mag
 
-        section.tform = Transform(tform)
+        section.tforms[new_alignment_name] = Transform(tform)
 
         section.save()
+    
+    series.alignment = new_alignment_name
+    series.save()
     
     # log event
     if log_event:

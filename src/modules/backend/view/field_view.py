@@ -215,6 +215,8 @@ class FieldView():
             )
             if modify_section:
                 section = self.series.loadSection(snum)
+                if section.align_locked:
+                    continue
                 new_tform = self.stored_tform * section.tform
                 section.tform = new_tform
                 section.save()
@@ -268,7 +270,9 @@ class FieldView():
             self.trace_table_manager.loadSection(self.section)
         
         # propagate transform if requested
-        if self.propagate_tform and new_section_num not in self.propagated_sections:
+        if (not self.section.align_locked and
+            self.propagate_tform and
+            new_section_num not in self.propagated_sections):
             current_tform = self.section.tform
             new_tform = self.stored_tform * current_tform
             self.section_layer.changeTform(new_tform)

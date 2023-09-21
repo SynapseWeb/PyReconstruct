@@ -178,7 +178,6 @@ class SectionTableManager():
         self.updateSection(snum)
         self.mainwindow.seriesModified(True)
     
-    # BUG: MAKE SURE ZTRACE POINTS GET DELETED
     def deleteSections(self, section_numbers : list[int], log_event=True):
         """Delete a set of sections.
         
@@ -195,11 +194,13 @@ class SectionTableManager():
             del(self.series.sections[snum])
             if log_event:
                 self.series.addLog(None, snum, "Delete section")
-        
+                
         # refresh the data
         self.series.data.refresh()
         if self.mainwindow.field.obj_table_manager:
-            self.mainwindow.field.obj_table_manager.refresh()
+            self.mainwindow.field.obj_table_manager.updateTables()
+        if self.mainwindow.field.ztrace_table_manager:
+            self.mainwindow.field.ztrace_table_manager.updateTables()
         
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:
@@ -208,6 +209,60 @@ class SectionTableManager():
         self.updateTables()
 
         self.mainwindow.seriesModified(True)
+    
+    def reorderSections(self):
+        """Reorder the sections in the series."""
+        self.mainwindow.saveAllData()
+
+        d = dict(tuple((snum, i) for i, snum in enumerate(self.series.sections.keys())))
+        self.series.reorderSections(d)
+        self.series.addLog(None, None, "Reorder sections")
+        
+        self.series.data.refresh()
+        if self.mainwindow.field.obj_table_manager:
+            self.mainwindow.field.obj_table_manager.updateTables()
+        if self.mainwindow.field.ztrace_table_manager:
+            self.mainwindow.field.ztrace_table_manager.updateTables()
+        
+        # clear the field section states
+        self.mainwindow.field.series_states = {}
+
+        self.updateTables()
+
+        self.mainwindow.field.reload()
+    
+    def insertSection(self, index : int, src : str, mag : float, thickness : float):
+        """Create a new section.
+        
+            Params:
+                index (int): the index of the new section
+                src (str): the path to the image for the new section
+                mag (float): the mag of the new section
+                thickness (float): the thickness of the new section
+        """
+        self.mainwindow.saveAllData()
+        
+        self.series.insertSection(
+            index,
+            src,
+            mag,
+            thickness
+        )
+        self.series.addLog(None, index, "Insert section")
+
+        # refresh the data
+        self.series.data.refresh()
+        if self.mainwindow.field.obj_table_manager:
+            self.mainwindow.field.obj_table_manager.updateTables()
+        if self.mainwindow.field.ztrace_table_manager:
+            self.mainwindow.field.ztrace_table_manager.updateTables()
+        
+        # clear the field section states
+        self.mainwindow.field.series_states = {}
+
+        self.updateTables()
+
+        self.mainwindow.field.reload()
             
     def findSection(self, section_number : int):
         """Focus the view on a specific section.
@@ -221,5 +276,3 @@ class SectionTableManager():
         """Close all tables."""
         for table in self.tables:
             table.close()
-
-

@@ -162,7 +162,10 @@ class QuickDialog(QDialog):
                             le = QLineEdit("", self)
                         else:
                             le = QLineEdit(str(n), self)
-                        resizeLineEdit(le, "000000")
+                        if widget_type == "int":
+                            resizeLineEdit(le, "000000")
+                        elif widget_type == "float":
+                            resizeLineEdit(le, "000000000")
                         row_layout.addWidget(le)
                         self.inputs.append(InputField(widget_type, le, options, required=required))
                     elif widget_type == "combo":

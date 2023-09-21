@@ -1300,7 +1300,75 @@ class Series():
             elif cr_status == "Curated":
                 self.curation[name] = (True, self.user, getDateTime()[0])
                 self.addLog(name, None, "Mark as curated")
+    
+    def reorderSections(self, d : dict = None):
+        """Reorder the sections.
         
+            Params:
+                d (dict): old_snum : new_snum for every section
+        """
+        if not d:
+            d = dict(tuple((snum, i) for i, snum in enumerate(self.sections.keys())))
+        
+        # rename the section files
+        for old_snum, new_snum in d.items():
+            os.rename(
+                os.path.join(self.hidden_dir, f"{self.name}.{old_snum}"),
+                os.path.join(self.hidden_dir, f"{self.name}.{new_snum}.temp")
+            )
+        # remove temp ext
+        for f in os.listdir(self.hidden_dir):
+            if f.endswith(".temp"):
+                updated_f = f[:-len(".temp")]
+                os.rename(
+                    os.path.join(self.hidden_dir, f),
+                    os.path.join(self.hidden_dir, updated_f)
+                )
+        
+        # update the ztraces
+        for ztrace in self.ztraces.values():
+            pts = []
+            for pt in ztrace.points:
+                pts.append((pt[0], pt[1], d[pt[2]]))
+            ztrace.points = pts
+                
+        # create the new sections dict
+        self.sections = {}
+        for snum in sorted(d.values()):
+            self.sections[snum] = f"{self.name}.{snum}"
+
+        self.current_section = d[self.current_section]
+    
+    def insertSection(self, index : int, src : str, mag : float, thickness : float):
+        """Create a new section.
+        
+            Params:
+                index (int): the index of the new section
+                src (str): the path to the image for the new section
+                mag (float): the mag of the new section
+                thickness (float): the thickness of the new section
+        """
+        # create the new section object
+        max_snum = max(self.sections.keys()) + 1
+        Section.new(
+            self.name,
+            max_snum,
+            src,
+            mag,
+            thickness,
+            self.hidden_dir
+        )
+        self.sections[max_snum] = f"{self.name}.{max_snum}"
+
+        # reorder the sections
+        if index in self.sections:
+            reorder = dict(
+                (n, n + 1 if n >= index else 0) for n in self.sections
+            )
+        else:
+            reorder = dict((n, n) for n in self.sections)
+        reorder[max_snum] = index
+
 
 class SeriesIterator():
 

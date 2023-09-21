@@ -1720,7 +1720,7 @@ class MainWindow(QMainWindow):
         
         if new_tform_list is None:
             current_tform = " ".join(
-                [str(round(n, 5)) for n in self.field.section.tforms[self.series.alignment].getList()]
+                [str(round(n, 5)) for n in self.field.section.tform.getList()]
             )
             new_tform_list, confirmed = QInputDialog.getText(
                 self, "New Transform", "Enter the desired section transform:", text=current_tform)

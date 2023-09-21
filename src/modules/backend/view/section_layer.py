@@ -81,7 +81,7 @@ class SectionLayer(ImageLayer, TraceLayer):
             Params:
                 new_tform (Transform): the new transform to set for the section
         """
-        self.section.tforms[self.series.alignment] = new_tform
+        self.section.tform = new_tform
 
         if log_event:
             self.series.addLog(None, self.section.n, "Modify transform")

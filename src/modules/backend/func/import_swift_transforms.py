@@ -141,7 +141,7 @@ def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_g
         tform[2] *= section.mag
         tform[5] *= section.mag
 
-        section.tforms[series.alignment] = Transform(tform)
+        section.tform = Transform(tform)
 
         section.save()
     

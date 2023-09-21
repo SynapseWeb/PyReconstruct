@@ -180,7 +180,7 @@ class Section():
         
             Params:
                 series_name (str): the name for the series
-                snum (int): the sectino number
+                snum (int): the section number
                 image_location (str): the file path for the image
                 mag (float): microns per pixel for the section
                 thickness (float): the section thickness in microns

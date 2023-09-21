@@ -66,6 +66,11 @@ class ObjectTableManager():
         """
         table.createTable()
     
+    def updateTables(self):
+        """Update all tables."""
+        for table in self.tables:
+            table.createTable()
+    
     def updateObjects(self, obj_names : list):
         """Update the objects each table.
         

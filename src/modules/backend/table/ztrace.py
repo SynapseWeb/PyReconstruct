@@ -42,6 +42,11 @@ class ZtraceTableManager():
         """
         table.createTable()
     
+    def updateTables(self):
+        """Update all the ztrace tables."""
+        for table in self.tables:
+            table.createTable()
+    
     def update(self, clear_tracking=False):
         """Update the data for a set of ztraces."""
         for table in self.tables:

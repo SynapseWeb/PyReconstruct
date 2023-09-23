@@ -696,7 +696,10 @@ class FieldWidget(QWidget, FieldView):
                 trace (Trace): the new trace to use as refernce for further tracing
         """
         self.endPendingEvents()
-        self.tracing_trace = trace       
+        t = trace.copy()
+        for c in "{}":
+            t.name = t.name.replace(c, "")
+        self.tracing_trace = t
 
     def event(self, event):
         """Overwritten from QWidget.event.

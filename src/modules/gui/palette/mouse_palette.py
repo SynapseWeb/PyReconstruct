@@ -1,7 +1,8 @@
 import os
+import re
 
 from PySide6.QtWidgets import QWidget, QStyle, QSlider
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QFont
 from PySide6.QtCore import QSize, Qt
 
 from .buttons import PaletteButton, ModeButton, MoveableButton
@@ -49,14 +50,16 @@ class MousePalette():
         self.trace_x = 0.5
         self.trace_y = 0.99
         self.palette_traces = palette_traces
-        self.palette_buttons = [None] * 20
-        for i in range(len(palette_traces)):  # create all the palette buttons
+        self.palette_buttons = [None] * len(self.palette_traces)
+        for i in range(len(self.palette_traces)):  # create all the palette buttons
             trace = palette_traces[i]
             self.createPaletteButton(trace, i)
         for button in self.palette_buttons:  # highlight the first match for the selected trace
             if button.trace.isSameTrace(selected_trace):
                 button.setChecked(True)
                 break
+        # create palette increments
+        self.createPaletteIncButtons()
         
         self.selected_mode = "pointer"
         self.selected_trace = selected_trace
@@ -162,10 +165,20 @@ class MousePalette():
             y_offset = 1
         else:
             y_offset = -1
-        y_offset += -(-(pos//10) + 1) * self.pblen
+        y_offset += (pos//10 - 1) * self.pblen
         y += y_offset
 
         button.setGeometry(x, y, self.pblen, self.pblen)
+    
+    def placePaletteIncButtons(self):
+        x, y = self.getButtonCoords("trace")
+
+        x += 3 + 5 * self.pblen
+        y += 1 - self.pblen
+
+        for b in self.palette_inc_buttons:
+            b.setGeometry(x, y, self.pblen // 2, self.pblen // 2)
+            y += self.pblen // 2 + 1
     
     def setPaletteButtonTip(self, b : PaletteButton, pos : int):
         """Set the tool tip for a palette button.
@@ -197,6 +210,23 @@ class MousePalette():
         self.palette_buttons[pos] = b
         b.show()
     
+    def createPaletteIncButtons(self):
+        """Create the palette increment buttons."""
+        b_up = MoveableButton(self.mainwindow, self, "trace")
+        b_up.setText("+")
+        f = b_up.font()
+        f.setBold(True)
+        b_up.setFont(f)
+        b_up.clicked.connect(lambda : self.incrementPalette(True))
+
+        b_down = MoveableButton(self.mainwindow, self, "trace")
+        b_down.setText("-")
+        b_down.setFont(f)
+        b_down.clicked.connect(lambda : self.incrementPalette(False))
+
+        self.palette_inc_buttons = [b_up, b_down]
+        self.placePaletteIncButtons()
+    
     def placeLabel(self):
         """Place the trace palette label."""
         x, y = self.getButtonCoords("trace")
@@ -210,7 +240,11 @@ class MousePalette():
 
     def updateLabel(self):
         """Update the name of the trace palette label."""
-        self.label.setText(self.selected_trace.name)
+        n = self.selected_trace.name
+        for c in "{}":
+            n = n.replace(c, "")
+        self.label.setText(n)
+
         c = self.selected_trace.color
         self.label.setTextColor(c)
         black_outline = c[0] + 3*c[1] + c[2] > 400
@@ -456,7 +490,7 @@ class MousePalette():
 
         return {
             "mode": (fx1, fx2 - self.mblen, fy1, fy2 - (self.mblen + 10) * len(self.mode_buttons) + 10),
-            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5, fy1 + self.pblen, fy2 - self.pblen),
+            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5.5 - 3, fy1 + self.pblen, fy2 - self.pblen),
             "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
             "bc": (fx1, fx2 - 6*self.bcsize - 5, fy1, fy2 - 2*self.bcsize - 20)
         }
@@ -495,7 +529,32 @@ class MousePalette():
         self.bc_y = 0.8
 
         self.resize()
+    
+    def incrementPalette(self, up):
+        """Increment the palette.
+            
+            Params:
+                up (bool): True if increment higher, False if increment lower
+        """
+        def incStr(s):
+            min = 0
+            max = 10**len(s) - 1
+            n = int(s) + (1 if up else -1)
+            if n < min: n = max
+            elif n > max: n = min
+            return str(n).rjust(len(s), "0")
+        
+        def replace(match):
+            return "{" + incStr(match.group(1)) + "}"
+        
+        pattern = r"\{(\d+)\}"
 
+        for w in self.palette_buttons:
+            n = re.sub(pattern, replace, w.trace.name)
+            new_trace = w.trace.copy()
+            new_trace.name = n
+            w.setTrace(new_trace)
+            self.paletteButtonChanged(w)
 
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -504,6 +563,7 @@ class MousePalette():
             self.placeModeButton(button, pos)
         for i, pb in enumerate(self.palette_buttons):
             self.placePaletteButton(pb, i)
+        self.placePaletteIncButtons()
         self.placeLabel()
         self.placeIncrementButtons()
         self.placeBCButtons()

@@ -10,11 +10,14 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QCheckBox,
-    QRadioButton
+    QRadioButton,
+    QGridLayout,
+    QTabWidget
 )
 
 from .helper import resizeLineEdit, BrowseWidget
 from .color_button import ColorButton
+from .shape_button import ShapeButton
 
 from modules.gui.utils import notify
 
@@ -113,29 +116,60 @@ class InputField():
                     return None, True
             else:
                 return c, True
+        elif self.type == "shape":
+            s = self.widget.getShape()
+            if not s:
+                if self.required:
+                    notify("Please select a shape.")
+                    return None, False
+                else:
+                    return None, True
+            else:
+                return s, True
 
 
 class QuickDialog(QDialog):
 
-    def __init__(self, parent, structure : list, title : str):
+    def __init__(self, parent, structure : list, title : str, grid=False):
         """Create a quick dialog from a given structure.
         
             Params:
                 parent (QWidget): the widget containing the dialog
                 structure (list): the structure of the dialog
                 title (str): the title of the dialog
+                grid (bool): True if structure should be grid-style
         """
-        super().__init__(parent)
-
+        QDialog.__init__(self, parent)
+        
         self.setWindowTitle(title)
+
+        vlayout, self.inputs = self.getLayout(structure, grid)
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
+
+        vlayout.addWidget(buttonbox)
+
+        self.setLayout(vlayout)
+    
+    def getLayout(self, structure : list, grid : bool):
+        """Return the layout for a given structure."""
+        inputs = []
+
+        if grid:
+            grid_layout = QGridLayout()
+            r = 0
+            c = 0
         vlayout = QVBoxLayout()
-        self.inputs = []
 
         for row_structure in structure:
-            row_layout = QHBoxLayout()
+            if not grid:
+                row_layout = QHBoxLayout()
             for item in row_structure:
                 if type(item) is str:  # Label
-                    row_layout.addWidget(QLabel(self, text=item))
+                    w = QLabel(self, text=item)
                 else:
                     # checking for leading bool to mark required status
                     if type(item[0]) is bool:
@@ -148,9 +182,8 @@ class QuickDialog(QDialog):
                     if widget_type == "text":  # Text input
                         # Params structure: str
                         text = params[0]
-                        le = QLineEdit(text, self)
-                        row_layout.addWidget(le)
-                        self.inputs.append(InputField(widget_type, le, required=required))
+                        w = QLineEdit(text, self)
+                        inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "int" or widget_type == "float": 
                         # Params structure: int, optional: list[int]
                         n = params[0]
@@ -159,40 +192,41 @@ class QuickDialog(QDialog):
                         else:
                             options = None
                         if n is None:
-                            le = QLineEdit("", self)
+                            w = QLineEdit("", self)
                         else:
-                            le = QLineEdit(str(n), self)
+                            w = QLineEdit(str(n), self)
                         if widget_type == "int":
-                            resizeLineEdit(le, "000000")
+                            resizeLineEdit(w, "000000")
                         elif widget_type == "float":
-                            resizeLineEdit(le, "000000000")
-                        row_layout.addWidget(le)
-                        self.inputs.append(InputField(widget_type, le, options, required=required))
+                            resizeLineEdit(w, "000000000")
+                        inputs.append(InputField(widget_type, w, options, required=required))
                     elif widget_type == "combo":
                         # Params structure: list[str], optional: str
                         options = params[0]
-                        combo = QComboBox(self)
-                        combo.addItems([""] + list(options))
                         if len(params) > 1:
                             selected = params[1]
-                            if selected:
-                                combo.setCurrentText(selected)
-                        row_layout.addWidget(combo)
-                        self.inputs.append(InputField(widget_type, combo, required=required))
+                        else:
+                            selected = None
+                        w = QComboBox(self)
+                        if not required or selected is None:
+                            w.addItem("")
+                        w.addItems(list(options))
+                        if selected:
+                            w.setCurrentText(selected)
+                        inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "check" or widget_type == "radio":
                         # Params structure list[(str, bool)]
-                        container = QWidget(self)
+                        w = QWidget(self)
                         vl = QVBoxLayout()
                         for text, checked in params:
                             if widget_type == "check":
-                                bttn = QCheckBox(text, container)
+                                bttn = QCheckBox(text, w)
                             else:
-                                bttn = QRadioButton(text, container)
+                                bttn = QRadioButton(text, w)
                             bttn.setChecked(checked)
                             vl.addWidget(bttn)
-                        container.setLayout(vl)
-                        row_layout.addWidget(container)
-                        self.inputs.append(InputField(widget_type, container, required=required))
+                        w.setLayout(vl)
+                        inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "file" or widget_type == "dir":
                         # Params structure: str (default filepath), str (filter; only for file)
                         fp = params[0]
@@ -200,26 +234,38 @@ class QuickDialog(QDialog):
                             filter = params[1]
                         else:
                             filter = None
-                        bw = BrowseWidget(self, type=widget_type, default_fp=fp, filter=filter)
-                        row_layout.addWidget(bw)
-                        self.inputs.append(InputField(widget_type, bw, required=required))
+                        w = BrowseWidget(self, type=widget_type, default_fp=fp, filter=filter)
+                        inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "color":
-                        # Params structure: tuple (optional)
+                        # Params structure: tuple
                         color = params[0]
-                        cb = ColorButton(color, self)
-                        row_layout.addWidget(cb)
-                        self.inputs.append(InputField(widget_type, cb, required=required))
+                        w = ColorButton(color, self)
+                        inputs.append(InputField(widget_type, w, required=required))
+                    elif widget_type == "shape":
+                        # Params structure: list
+                        points = params[0]
+                        if not points:
+                            points = []
+                        w = ShapeButton(points, self)
+                        inputs.append(InputField(widget_type, w, required=required))
+                    
+                if grid:
+                    grid_layout.addWidget(w, r, c)
+                    c += 1
+                else:
+                    row_layout.addWidget(w)
 
-            vlayout.addLayout(row_layout)
+            if grid:
+                r += 1
+                c = 0
+            else:
+                vlayout.addLayout(row_layout)
+        
+        if grid:
+            vlayout.addLayout(grid_layout)
+        
+        return vlayout, inputs
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        buttonbox = QDialogButtonBox(QBtn)
-        buttonbox.accepted.connect(self.accept)
-        buttonbox.rejected.connect(self.reject)
-        vlayout.addWidget(buttonbox)
-
-        self.setLayout(vlayout)
-    
     def accept(self):
         """Overwritten from parent class."""
         self.responses = []
@@ -229,23 +275,91 @@ class QuickDialog(QDialog):
                 return
             else:
                 self.responses.append(r)
+        self.responses = tuple(self.responses)
         
-        super().accept()
+        QDialog.accept(self)
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
         if confirmed:
-            return tuple(self.responses), True
+            return self.responses, True
         else:
             return None, False
     
-    def get(parent : QWidget, structure : list, title="Dialog"):
+    def get(parent : QWidget, structure : list, title="Dialog", grid=False):
         """Create a quick dialog and return the inputs.
         
             Params:
                 parent (QWidget): the parent of the input dialog
                 structure (list): the structure of the input dialog
                 title (str): the title of the dialog
+                grid (bool): True if grid layout
         """
-        return QuickDialog(parent, structure, title).exec()
+        return QuickDialog(parent, structure, title, grid).exec()
+
+
+class QuickTabDialog(QuickDialog):
+
+    def __init__(self, parent, structures : dict, title="Dialog", grid=False):
+        """Create a quick dialog and return the inputs.
+        
+            Params:
+                parent (QWidget): the parent of the input dialog
+                structure (dict): the structure of the input dialog
+                title (str): the title of the dialog
+                grid (bool): True if grid layout
+        """
+        QDialog.__init__(self, parent)
+
+        self.setWindowTitle(title)
+        
+        self.inputs = {}
+
+        self.tab_widget = QTabWidget(self)
+
+        for n, s in structures.items():
+            vlayout, inputs = self.getLayout(s, grid)
+            self.inputs[n] = inputs
+            w = QWidget(self)
+            w.setLayout(vlayout)
+            self.tab_widget.addTab(w, n)
+
+        full_vlayout = QVBoxLayout()        
+        full_vlayout.addWidget(self.tab_widget)    
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
+
+        full_vlayout.addWidget(buttonbox)
+
+        self.setLayout(full_vlayout)
+    
+    def get(parent : QWidget, structures : list, title="Dialog", grid=False):
+        """Create a quick dialog with tabs and return the inputs.
+        
+            Params:
+                parent (QWidget): the parent of the input dialog
+                structures (list): the structure of the input dialog
+                title (str): the title of the dialog
+                grid (bool): True if grid layout
+        """
+        return QuickTabDialog(parent, structures, title, grid).exec()
+
+    def accept(self):
+        """Overwritten from parent class."""
+        self.responses = {"current_tab_text": self.tab_widget.tabText(self.tab_widget.currentIndex())}
+
+        for tab_name, inputs in self.inputs.items():
+            self.responses[tab_name] = []
+            for input in inputs:
+                r, is_valid = input.getResponse()
+                if not is_valid:
+                    return
+                else:
+                    self.responses[tab_name].append(r)
+        
+        QDialog.accept(self)
+

@@ -77,12 +77,11 @@ class Series():
         self.src_dir = series_data["src_dir"]
         self.screen_mag = 0  # default value for screen mag (will be calculated when generateView called)
         self.window = series_data["window"]
-        self.palette_traces = series_data["palette_traces"]
-
-        for i in range(len(self.palette_traces)):
-            self.palette_traces[i] = Trace.fromList(self.palette_traces[i])
-
-        self.current_trace = Trace.fromList(series_data["current_trace"])
+        self.palette_traces = dict((
+            (name, [Trace.fromList(trace) for trace in palette_group])
+            for name, palette_group in series_data["palette_traces"].items()
+        ))
+        self.palette_index = series_data["palette_index"]
 
         self.ztraces = series_data["ztraces"]
         for name in self.ztraces:
@@ -437,40 +436,31 @@ class Series():
                 ztraces_dict[name] = ztrace
             series_data["ztraces"] = ztraces_dict
         
-        # check the traces (convert dicts to lists)
-        for i, trace in enumerate(series_data["palette_traces"]):
-            if type(trace) is dict:
-                trace = [
-                    trace["name"],
-                    trace["x"],
-                    trace["y"],
-                    trace["color"],
-                    trace["closed"],
-                    trace["negative"],
-                    trace["hidden"],
-                    trace["mode"],
-                    trace["tags"],
-                ]
-                series_data["palette_traces"][i] = trace
-            # remove history from trace if it exists
-            elif len(trace) == 10:
-                trace.pop()
-        trace = series_data["current_trace"]
-        if type(trace) is dict:
-            trace = [
-                trace["name"],
-                trace["x"],
-                trace["y"],
-                trace["color"],
-                trace["closed"],
-                trace["negative"],
-                trace["hidden"],
-                trace["mode"],
-                trace["tags"],
-            ]
-            series_data["current_trace"] = trace
-        elif len(trace) == 10:
-            trace.pop()
+        # check the traces (convert dicts to lists) if old format of trace palette (single trace palette)
+        if type(series_data["palette_traces"]) is list:
+            for i, trace in enumerate(series_data["palette_traces"]):
+                if type(trace) is dict:
+                    trace = [
+                        trace["name"],
+                        trace["x"],
+                        trace["y"],
+                        trace["color"],
+                        trace["closed"],
+                        trace["negative"],
+                        trace["hidden"],
+                        trace["mode"],
+                        trace["tags"],
+                    ]
+                    series_data["palette_traces"][i] = trace
+                # remove history from trace if it exists
+                elif len(trace) == 10:
+                    trace.pop()
+
+        # check for palette reformatting
+        if "current_trace" in series_data:
+            del(series_data["current_trace"])
+            series_data["palette_traces"] = {"palette1": series_data["palette_traces"]}
+            series_data["palette_index"] = ["palette1", 0]
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -480,16 +470,15 @@ class Series():
         """
         d = {}
         
-        # d["sections"] = self.sections
         d["current_section"] = self.current_section
         d["src_dir"] = self.src_dir
         d["window"] = self.window
-        d["palette_traces"] = []
         
-        for trace in self.palette_traces:
-            d["palette_traces"].append(trace.getList())
-            
-        d["current_trace"] = self.current_trace.getList()
+        d["palette_traces"] = dict((
+            (name, [trace.getList() for trace in palette_group])
+            for name, palette_group in self.palette_traces.items()
+        ))
+        d["palette_index"] = self.palette_index
 
         d["ztraces"] = {}
         for name in self.ztraces:
@@ -517,8 +506,10 @@ class Series():
         series_data["current_section"] = 0  # last section left off
         series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
-        series_data["palette_traces"] = [t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]
-        series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["palette_traces"] = {
+            "palette1": [[t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]]
+        }
+        series_data["palette_index"] = ["1", 0]
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}

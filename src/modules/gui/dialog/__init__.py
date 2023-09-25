@@ -8,5 +8,5 @@ from .train import TrainDialog
 from .segment import SegmentDialog
 from .predict import PredictDialog
 from .shapes import ShapesDialog
-
-from .quick_dialog import QuickDialog
+from .trace_palette import TracePaletteDialog
+from .quick_dialog import QuickDialog, QuickTabDialog

@@ -306,7 +306,7 @@ def exportTraces(data_zg,
             # add the traces of interest back in
             for trace in traces:
                 trace.setHidden(True)
-                section.addTrace(trace, log_message="retained from segmentation data")
+                section.addTrace(trace)
             section.save()
 
 def importSection(data_zg, group, snum, series, ids=None):
@@ -410,7 +410,7 @@ def importSection(data_zg, group, snum, series, ids=None):
             trace = Trace(name=f"autoseg_{id}", color=tuple(map(int, colorize(id))))
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
-            section.addTrace(trace, log_message="Imported from autoseg data")
+            section.addTrace(trace)
         # add trace to group
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 

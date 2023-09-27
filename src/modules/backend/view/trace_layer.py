@@ -189,7 +189,6 @@ class TraceLayer():
                 pix_trace (list): pixel coordinates for the new trace
                 base_trace (Trace): the trace containing the desired attributes
                 closed (bool): whether or not the new trace is closed
-                log_message (str): the log message for the new trace action
         """
         if len(pix_trace) < 2:  # do not create a new trace if there is only one point
             return

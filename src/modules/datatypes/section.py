@@ -499,7 +499,7 @@ class Section():
 
         return modified
     
-    def unhideAllTraces(self, log_event):
+    def unhideAllTraces(self, log_event=True):
         """Unhide all traces on the section."""
         modified = False
         for trace in self.tracesAsList():

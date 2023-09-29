@@ -1143,6 +1143,24 @@ class Series():
             self.addLog(None, None, "Import brightness/contrast from another series")
         
         self.save()
+    
+    def importPalettes(self, other, log_event=True):
+        """Import the palettes from another series."""
+        for name, palette in other.palette_traces.items():
+            if name not in self.palette_traces:
+                self.palette_traces[name] = palette.copy()
+            else:
+                n = 1
+                new_name = f"{name}-{n}"
+                while new_name in self.palette_traces:
+                    n += 1
+                    new_name = f"{name}-{n}"
+                self.palette_traces[new_name] = palette.copy()
+        
+        if log_event:
+            self.addLog(None, None, "Import palettes from another series")
+        
+        self.save()
 
     # STATIC METHOD
     def getDefaultPaletteTraces():

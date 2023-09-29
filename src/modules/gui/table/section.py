@@ -76,7 +76,7 @@ class SectionTableWidget(QDockWidget):
                 "opts":
                 [
                     ("modifyallsrc_act", "Section image sources...", "", self.modifyAllSrc),
-                    ("reordersections_act", "Reorder the sections", "", self.reorderSections)
+                    ("reordersections_act", "Reorder sections", "", self.reorderSections)
                 ]
             }
         ]

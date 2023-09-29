@@ -59,7 +59,7 @@ class MousePalette():
         self.palette_buttons[self.series.palette_index[1]].setChecked(True)
 
         # create palette increments
-        self.createPaletteIncButtons()
+        self.createPaletteSideButtons()
         
         self.selected_mode = "pointer"
 
@@ -169,15 +169,20 @@ class MousePalette():
 
         button.setGeometry(x, y, self.pblen, self.pblen)
     
-    def placePaletteIncButtons(self):
+    def placePaletteSideButtons(self):
         x, y = self.getButtonCoords("trace")
 
-        x += 3 + 5 * self.pblen
-        y += 1 - self.pblen
+        up, down, opts = tuple(self.palette_side_buttons)
 
-        for b in self.palette_inc_buttons:
-            b.setGeometry(x, y, self.pblen // 2, self.pblen // 2)
-            y += self.pblen // 2 + 1
+        x1 = x + 3 + 5 * self.pblen
+        y1 = y + 1 - self.pblen
+        
+        up.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+        y1 += self.pblen // 2 + 1
+        down.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+
+        y1 = y + 1 + self.pblen // 2
+        opts.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
     
     def setPaletteButtonTip(self, b : PaletteButton, pos : int):
         """Set the tool tip for a palette button.
@@ -209,7 +214,7 @@ class MousePalette():
         self.palette_buttons[pos] = b
         b.show()
     
-    def createPaletteIncButtons(self):
+    def createPaletteSideButtons(self):
         """Create the palette increment buttons."""
         b_up = MoveableButton(self.mainwindow, self, "trace")
         b_up.setText("+")
@@ -223,8 +228,12 @@ class MousePalette():
         b_down.setFont(f)
         b_down.clicked.connect(lambda : self.incrementPalette(False))
 
-        self.palette_inc_buttons = [b_up, b_down]
-        self.placePaletteIncButtons()
+        b_opts = MoveableButton(self.mainwindow, self, "trace")
+        b_opts.setText("☰")
+        b_opts.clicked.connect(self.modifyAllPaletteButtons)
+
+        self.palette_side_buttons = [b_up, b_down, b_opts]
+        self.placePaletteSideButtons()
     
     def placeLabel(self):
         """Place the trace palette label."""
@@ -575,7 +584,7 @@ class MousePalette():
             self.placeModeButton(button, pos)
         for i, pb in enumerate(self.palette_buttons):
             self.placePaletteButton(pb, i)
-        self.placePaletteIncButtons()
+        self.placePaletteSideButtons()
         self.placeLabel()
         self.placeIncrementButtons()
         self.placeBCButtons()

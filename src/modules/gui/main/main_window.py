@@ -288,8 +288,8 @@ class MainWindow(QMainWindow):
                         "text": "Trace Palette",
                         "opts":
                         [
-                            ("modifytracepalette_act", "Modify all...", "Ctrl+Shift+P", self.mouse_palette.modifyAllPaletteButtons),
-                            ("resetpalette_act", "Reset", "", self.resetTracePalette)
+                            ("modifytracepalette_act", "All palettes...", "Ctrl+Shift+P", self.mouse_palette.modifyAllPaletteButtons),
+                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
                         ]
                     },
                     None,
@@ -1261,7 +1261,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the trace palette
-        self.mouse_palette.modifyPalette(o_series.palette_traces)
+        self.series.importPalettes(o_series)
         self.saveAllData()
 
         o_series.close()

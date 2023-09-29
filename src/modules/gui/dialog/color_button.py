@@ -34,6 +34,7 @@ class ColorButton(QPushButton):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        painter = QPainter(self)
-        painter.fillRect(4, 4, self.width()-8, self.height()-8, QColor(*self.color))
-        painter.end()
+        if self.color:
+            painter = QPainter(self)
+            painter.fillRect(4, 4, self.width()-8, self.height()-8, QColor(*self.color))
+            painter.end()

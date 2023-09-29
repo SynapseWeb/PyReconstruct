@@ -263,7 +263,7 @@ class ImageLayer():
         ]
         
         # get transforms
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
 
         # convert corners to image pixel coordinates
         for i in range(len(window_corners)):

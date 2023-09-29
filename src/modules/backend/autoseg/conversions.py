@@ -37,7 +37,7 @@ def seriesToZarr(
     y_vals = []
     for snum in range(*srange):
         section = series.loadSection(snum)
-        tform = section.tforms[series.alignment]
+        tform = section.tform
         if border_obj in section.contours:
             xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
             x_vals += [xmin, xmax]

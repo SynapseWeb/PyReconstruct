@@ -59,7 +59,7 @@ class TraceLayer():
         x, y = tuple(pt)
         if apply_tform:
             if tform is None:
-                tform = self.section.tforms[self.series.alignment]
+                tform = self.section.tform
             x, y = tform.map(x, y)
         x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
 
@@ -208,7 +208,7 @@ class TraceLayer():
             new_trace.closed = closed
 
         # get the points
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         for point in pix_trace:
             field_point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.window, self.section.mag)
             rtform_point = tform.map(*field_point, inverted=True) # apply the inverse tform to fix trace to base image
@@ -231,7 +231,7 @@ class TraceLayer():
         # get mouse coords and convert to field coords
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         # create new stamp trace
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         new_trace = trace.copy()
         new_trace.points = []
         for point in trace.points:
@@ -268,7 +268,7 @@ class TraceLayer():
         # stretch the trace to desired size
         trace = trace.getStretched(w, h)
 
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         for c in range(nx):
             for r in range(ny):
                 # create new trace
@@ -384,7 +384,7 @@ class TraceLayer():
         copied_traces = []
         for trace in self.section.selected_traces:
             trace = trace.copy()
-            tform = self.section.tforms[self.series.alignment]
+            tform = self.section.tform
             trace.points = [tform.map(*p) for p in trace.points]
             copied_traces.append(trace)
         
@@ -401,7 +401,7 @@ class TraceLayer():
         """
         for trace in traces:
             trace = trace.copy()
-            tform = self.section.tforms[self.series.alignment]
+            tform = self.section.tform
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
             self.section.addTrace(trace)
             self.section.selected_traces.append(trace)

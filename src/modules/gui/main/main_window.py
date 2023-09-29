@@ -283,11 +283,19 @@ class MainWindow(QMainWindow):
                             ("smoothing_act", "Change smoothing type...", "", self.edit3DSmoothing),
                         ]
                     },
+                    {
+                        "attr_name": "traepalette_menu",
+                        "text": "Trace Palette",
+                        "opts":
+                        [
+                            ("modifytracepalette_act", "All palettes...", "Ctrl+Shift+P", self.mouse_palette.modifyAllPaletteButtons),
+                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
+                        ]
+                    },
                     None,
                     ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
-                    ("resetpalette_act", "Reset trace palette", "", self.resetTracePalette)
                 ]
             },
             
@@ -862,11 +870,14 @@ class MainWindow(QMainWindow):
 
         # create mouse palette
         if self.mouse_palette: # close previous mouse dock
-            self.mouse_palette.reset(self.series.palette_traces, self.series.current_trace)
+            self.mouse_palette.reset()
         else:
-            self.mouse_palette = MousePalette(self.series.palette_traces, self.series.current_trace, self)
+            self.mouse_palette = MousePalette(self)
             self.createPaletteShortcuts()
-        self.changeTracingTrace(self.series.current_trace) # set the current trace
+        palette_group, index = tuple(self.series.palette_index)
+        self.changeTracingTrace(
+            self.series.palette_traces[palette_group][index]
+        ) # set the current trace
 
         # ensure that images are found
         if not self.field.section_layer.image_found:
@@ -1250,7 +1261,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the trace palette
-        self.mouse_palette.modifyPalette(o_series.palette_traces)
+        self.series.importPalettes(o_series)
         self.saveAllData()
 
         o_series.close()
@@ -1434,7 +1445,6 @@ class MainWindow(QMainWindow):
             Params:
                 trace: the new tracing trace to set
         """
-        self.series.current_trace = trace
         self.field.setTracingTrace(trace)
     
     def changeSection(self, section_num : int = None, save=True):
@@ -1537,12 +1547,12 @@ class MainWindow(QMainWindow):
         """Write current series and section data into backend JSON files."""
         if self.series.isWelcomeSeries():
             return
-        # save the trace palette
-        self.series.palette_traces = []
-        for button in self.mouse_palette.palette_buttons:  # get trace palette
-            self.series.palette_traces.append(button.trace)
-            if button.isChecked():
-                self.series.current_trace = button.trace
+        # # save the trace palette
+        # self.series.palette_traces = []
+        # for button in self.mouse_palette.palette_buttons:  # get trace palette
+        #     self.series.palette_traces.append(button.trace)
+        #     if button.isChecked():
+        #         self.series.current_trace = button.trace
         self.field.section.save(update_series_data=False)
         self.series.save()
     
@@ -1720,7 +1730,7 @@ class MainWindow(QMainWindow):
         
         if new_tform_list is None:
             current_tform = " ".join(
-                [str(round(n, 5)) for n in self.field.section.tforms[self.series.alignment].getList()]
+                [str(round(n, 5)) for n in self.field.section.tform.getList()]
             )
             new_tform_list, confirmed = QInputDialog.getText(
                 self, "New Transform", "Enter the desired section transform:", text=current_tform)

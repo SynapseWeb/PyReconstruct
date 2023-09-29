@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import QPushButton, QColorDialog
-from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPainter
 
 class ColorButton(QPushButton):
 
@@ -28,18 +27,14 @@ class ColorButton(QPushButton):
     def setColor(self, color):
         """Sets the visual color for the button."""
         self.color = color
-        self.pixmap = QPixmap(self.size())
-        if self.color is None:
-            self.pixmap.fill(Qt.transparent)
-        else:
-            self.pixmap.fill(QColor(*self.color))
-        self.setIcon(QIcon(self.pixmap))
+        self.update()
     
     def getColor(self):
         return self.color
-    
-    def resizeEvent(self, event):
-        """Called when button is resized."""
-        super().resizeEvent(event)
-        self.setColor(self.color)
 
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.color:
+            painter = QPainter(self)
+            painter.fillRect(4, 4, self.width()-8, self.height()-8, QColor(*self.color))
+            painter.end()

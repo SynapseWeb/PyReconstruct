@@ -37,7 +37,7 @@ def generateVolumes(series : Series, obj_names : list):
         # ASSUME SOMEWHAT UNIFORM THICKNESS
         thicknesses.append(section.thickness)
         mags.append(section.mag)
-        tform = section.tforms[series.alignment]
+        tform = section.tform
 
         for obj_name in obj_names:
             if obj_name in section.contours:

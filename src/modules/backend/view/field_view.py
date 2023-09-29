@@ -215,8 +215,10 @@ class FieldView():
             )
             if modify_section:
                 section = self.series.loadSection(snum)
-                new_tform = self.stored_tform * section.tforms[self.series.alignment]
-                section.tforms[self.series.alignment] = new_tform
+                if section.align_locked:
+                    continue
+                new_tform = self.stored_tform * section.tform
+                section.tform = new_tform
                 section.save()
                 self.propagated_sections.append(snum)
                 if log_event:
@@ -268,8 +270,10 @@ class FieldView():
             self.trace_table_manager.loadSection(self.section)
         
         # propagate transform if requested
-        if self.propagate_tform and new_section_num not in self.propagated_sections:
-            current_tform = self.section.tforms[self.series.alignment]
+        if (not self.section.align_locked and
+            self.propagate_tform and
+            new_section_num not in self.propagated_sections):
+            current_tform = self.section.tform
             new_tform = self.stored_tform * current_tform
             self.section_layer.changeTform(new_tform)
             self.propagated_sections.append(new_section_num)
@@ -293,7 +297,7 @@ class FieldView():
             return
         
         # set the window to frame the object
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         min_x, min_y, max_x, max_y = trace.getBounds(tform)
         range_x = max_x - min_x
         range_y = max_y - min_y
@@ -323,7 +327,7 @@ class FieldView():
         
         # get the bounds of the contour and set the window
         contour = self.section.contours[contour_name]
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         vals = [trace.getBounds(tform) for trace in contour]
         
         min_x = min([v[0] for v in vals])
@@ -341,7 +345,7 @@ class FieldView():
             # This should probably be a stand alone function
             # It is used vertbatim in home method below
         
-            tform = self.section.tforms[self.series.alignment]
+            tform = self.section.tform
             xvals = []
             yvals = []
         
@@ -398,7 +402,7 @@ class FieldView():
         if not self.section_layer.image_found:
             return
         
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         xvals = []
         yvals = []
         # get the field location of the image
@@ -518,7 +522,7 @@ class FieldView():
                 dx (float): x-translate
                 dy (float): y-translate
         """
-        new_tform = self.section.tforms[self.series.alignment].getList()
+        new_tform = self.section.tform.getList()
         new_tform[2] += dx
         new_tform[5] += dy
         new_tform = Transform(new_tform)
@@ -526,7 +530,7 @@ class FieldView():
     
     def rotateTform(self, cc=True):
         """Rotate the section transform."""
-        tform = self.section.tforms[self.series.alignment]
+        tform = self.section.tform
         tform_list = tform.getList()
         x, y = pixmapPointToField(
             self.mouse_x,
@@ -670,7 +674,7 @@ class FieldView():
             if trace in a_traces:
                 centsA.append(centroid(trace.points))
         centsB = []
-        tformB = self.b_section.tforms[self.series.alignment]
+        tformB = self.b_section.tform
         for trace in self.b_section.contours[contour_name]:
             if trace in b_traces:
                 pts = tformB.map(trace.points)
@@ -694,7 +698,7 @@ class FieldView():
         for cname in trace_lengths:
             for trace in self.section.contours[cname]:
                 # get the length of the trace with the given transform
-                tform = self.section.tforms[self.series.alignment]
+                tform = self.section.tform
                 d = lineDistance(tform.map(trace.points), closed=False)
                 # scaling = expected / actual
                 sum_scaling += trace_lengths[trace.name] / d
@@ -912,7 +916,7 @@ class FieldView():
 
         # check if propagating
         if self.propagate_tform:
-            current_tform = self.section_layer.section.tforms[self.series.alignment]
+            current_tform = self.section_layer.section.tform
             dtform = new_tform * current_tform.inverted()
             self.stored_tform = dtform * self.stored_tform
 

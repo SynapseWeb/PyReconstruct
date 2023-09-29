@@ -18,14 +18,15 @@ class AlignmentList(QTableWidget):
     def __init__(self, parent : QWidget, alignment_names : list):
         """Create an alignment list widget."""
         self.alignments = sorted(alignment_names)
-        super().__init__(len(self.alignments), 1, parent)
+        super().__init__(len(self.alignments)+1, 1, parent)
         self.setShowGrid(False)
         self.verticalHeader().hide()
         self.horizontalHeader().hide()
 
         # create the table
+        self.setItem(0, 0, QTableWidgetItem("no-alignment"))
         for i, a in enumerate(self.alignments):
-            self.setItem(i, 0, QTableWidgetItem(a))
+            self.setItem(i+1, 0, QTableWidgetItem(a))
         
         self.resizeColumnsToContents()
     
@@ -137,7 +138,7 @@ class AlignmentDialog(QDialog):
         new_alignment, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
         if not confirmed:
             return
-        if new_alignment in self.table.alignments:
+        if new_alignment in self.table.alignments or new_alignment == "no-alignment":
             notify("This alignment already exists")
             return
         self.table.addAlignment(new_alignment)
@@ -149,6 +150,10 @@ class AlignmentDialog(QDialog):
     def removeAlignments(self):
         """Remove selected alignments from the list."""
         alignments = self.table.getSelectedAlignments()
+        if "no-alignment" in alignments:
+            notify("Cannot remove no-alignment setting.")
+            return
+        
         for a in alignments:
             self.table.removeAlignment(a)
             if a in self.added:
@@ -168,6 +173,10 @@ class AlignmentDialog(QDialog):
         elif len(alignments) == 0:
             return
         a = alignments[0]
+        if a == "no-alignment":
+            notify("Cannot rename no-alignment setting.")
+            return
+        
         
         new_name, confirmed = QInputDialog.getText(self, "Rename Alignment", "New alignment name:")
         if not confirmed:

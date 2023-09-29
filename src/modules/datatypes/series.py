@@ -77,12 +77,11 @@ class Series():
         self.src_dir = series_data["src_dir"]
         self.screen_mag = 0  # default value for screen mag (will be calculated when generateView called)
         self.window = series_data["window"]
-        self.palette_traces = series_data["palette_traces"]
-
-        for i in range(len(self.palette_traces)):
-            self.palette_traces[i] = Trace.fromList(self.palette_traces[i])
-
-        self.current_trace = Trace.fromList(series_data["current_trace"])
+        self.palette_traces = dict((
+            (name, [Trace.fromList(trace) for trace in palette_group])
+            for name, palette_group in series_data["palette_traces"].items()
+        ))
+        self.palette_index = series_data["palette_index"]
 
         self.ztraces = series_data["ztraces"]
         for name in self.ztraces:
@@ -437,40 +436,31 @@ class Series():
                 ztraces_dict[name] = ztrace
             series_data["ztraces"] = ztraces_dict
         
-        # check the traces (convert dicts to lists)
-        for i, trace in enumerate(series_data["palette_traces"]):
-            if type(trace) is dict:
-                trace = [
-                    trace["name"],
-                    trace["x"],
-                    trace["y"],
-                    trace["color"],
-                    trace["closed"],
-                    trace["negative"],
-                    trace["hidden"],
-                    trace["mode"],
-                    trace["tags"],
-                ]
-                series_data["palette_traces"][i] = trace
-            # remove history from trace if it exists
-            elif len(trace) == 10:
-                trace.pop()
-        trace = series_data["current_trace"]
-        if type(trace) is dict:
-            trace = [
-                trace["name"],
-                trace["x"],
-                trace["y"],
-                trace["color"],
-                trace["closed"],
-                trace["negative"],
-                trace["hidden"],
-                trace["mode"],
-                trace["tags"],
-            ]
-            series_data["current_trace"] = trace
-        elif len(trace) == 10:
-            trace.pop()
+        # check the traces (convert dicts to lists) if old format of trace palette (single trace palette)
+        if type(series_data["palette_traces"]) is list:
+            for i, trace in enumerate(series_data["palette_traces"]):
+                if type(trace) is dict:
+                    trace = [
+                        trace["name"],
+                        trace["x"],
+                        trace["y"],
+                        trace["color"],
+                        trace["closed"],
+                        trace["negative"],
+                        trace["hidden"],
+                        trace["mode"],
+                        trace["tags"],
+                    ]
+                    series_data["palette_traces"][i] = trace
+                # remove history from trace if it exists
+                elif len(trace) == 10:
+                    trace.pop()
+
+        # check for palette reformatting
+        if "current_trace" in series_data:
+            del(series_data["current_trace"])
+            series_data["palette_traces"] = {"palette1": series_data["palette_traces"]}
+            series_data["palette_index"] = ["palette1", 0]
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -480,16 +470,15 @@ class Series():
         """
         d = {}
         
-        # d["sections"] = self.sections
         d["current_section"] = self.current_section
         d["src_dir"] = self.src_dir
         d["window"] = self.window
-        d["palette_traces"] = []
         
-        for trace in self.palette_traces:
-            d["palette_traces"].append(trace.getList())
-            
-        d["current_trace"] = self.current_trace.getList()
+        d["palette_traces"] = dict((
+            (name, [trace.getList() for trace in palette_group])
+            for name, palette_group in self.palette_traces.items()
+        ))
+        d["palette_index"] = self.palette_index
 
         d["ztraces"] = {}
         for name in self.ztraces:
@@ -517,8 +506,10 @@ class Series():
         series_data["current_section"] = 0  # last section left off
         series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
-        series_data["palette_traces"] = [t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]
-        series_data["current_trace"] = series_data["palette_traces"][0]
+        series_data["palette_traces"] = {
+            "palette1": [[t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]]
+        }
+        series_data["palette_index"] = ["1", 0]
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
@@ -1152,6 +1143,24 @@ class Series():
             self.addLog(None, None, "Import brightness/contrast from another series")
         
         self.save()
+    
+    def importPalettes(self, other, log_event=True):
+        """Import the palettes from another series."""
+        for name, palette in other.palette_traces.items():
+            if name not in self.palette_traces:
+                self.palette_traces[name] = palette.copy()
+            else:
+                n = 1
+                new_name = f"{name}-{n}"
+                while new_name in self.palette_traces:
+                    n += 1
+                    new_name = f"{name}-{n}"
+                self.palette_traces[new_name] = palette.copy()
+        
+        if log_event:
+            self.addLog(None, None, "Import palettes from another series")
+        
+        self.save()
 
     # STATIC METHOD
     def getDefaultPaletteTraces():
@@ -1300,7 +1309,75 @@ class Series():
             elif cr_status == "Curated":
                 self.curation[name] = (True, self.user, getDateTime()[0])
                 self.addLog(name, None, "Mark as curated")
+    
+    def reorderSections(self, d : dict = None):
+        """Reorder the sections.
         
+            Params:
+                d (dict): old_snum : new_snum for every section
+        """
+        if not d:
+            d = dict(tuple((snum, i) for i, snum in enumerate(self.sections.keys())))
+        
+        # rename the section files
+        for old_snum, new_snum in d.items():
+            os.rename(
+                os.path.join(self.hidden_dir, f"{self.name}.{old_snum}"),
+                os.path.join(self.hidden_dir, f"{self.name}.{new_snum}.temp")
+            )
+        # remove temp ext
+        for f in os.listdir(self.hidden_dir):
+            if f.endswith(".temp"):
+                updated_f = f[:-len(".temp")]
+                os.rename(
+                    os.path.join(self.hidden_dir, f),
+                    os.path.join(self.hidden_dir, updated_f)
+                )
+        
+        # update the ztraces
+        for ztrace in self.ztraces.values():
+            pts = []
+            for pt in ztrace.points:
+                pts.append((pt[0], pt[1], d[pt[2]]))
+            ztrace.points = pts
+                
+        # create the new sections dict
+        self.sections = {}
+        for snum in sorted(d.values()):
+            self.sections[snum] = f"{self.name}.{snum}"
+
+        self.current_section = d[self.current_section]
+    
+    def insertSection(self, index : int, src : str, mag : float, thickness : float):
+        """Create a new section.
+        
+            Params:
+                index (int): the index of the new section
+                src (str): the path to the image for the new section
+                mag (float): the mag of the new section
+                thickness (float): the thickness of the new section
+        """
+        # create the new section object
+        max_snum = max(self.sections.keys()) + 1
+        Section.new(
+            self.name,
+            max_snum,
+            src,
+            mag,
+            thickness,
+            self.hidden_dir
+        )
+        self.sections[max_snum] = f"{self.name}.{max_snum}"
+
+        # reorder the sections
+        if index in self.sections:
+            reorder = dict(
+                (n, n + 1 if n >= index else 0) for n in self.sections
+            )
+        else:
+            reorder = dict((n, n) for n in self.sections)
+        reorder[max_snum] = index
+
 
 class SeriesIterator():
 

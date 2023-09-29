@@ -1,4 +1,13 @@
+import os
+from datetime import datetime
+
 from modules.datatypes import Series, Transform
+
+def getDateTime():
+    dt = datetime.now()
+    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
+    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    return d, t
 
 def importTransforms(series : Series, tforms_fp : str, log_event=True):
         """Import transforms from a text file.
@@ -26,13 +35,19 @@ def importTransforms(series : Series, tforms_fp : str, log_event=True):
                 return
         
         # set tforms
+        fname = os.path.basename(tforms_fp)
+        fname = fname[:fname.rfind(".")]
+        d, t = getDateTime()
+        new_alignment_name = f"{fname}-{d}"
         for section_num, tform in tforms.items():
             section = series.loadSection(section_num)
             # multiply pixel translations by magnification of section
             tform[2] *= section.mag
             tform[5] *= section.mag
-            section.tforms[series.alignment] = Transform(tform)
+            section.tforms[new_alignment_name] = Transform(tform)
             section.save()
+        series.alignment = new_alignment_name
+        series.save()
         
         # log event
         if log_event:

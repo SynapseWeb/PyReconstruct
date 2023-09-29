@@ -75,7 +75,8 @@ class SectionTableWidget(QDockWidget):
                 "text": "Modify",
                 "opts":
                 [
-                    ("modifyallsrc_act", "Section image sources...", "", self.modifyAllSrc)
+                    ("modifyallsrc_act", "Section image sources...", "", self.modifyAllSrc),
+                    ("reordersections_act", "Reorder sections", "", self.reorderSections)
                 ]
             }
         ]
@@ -101,6 +102,15 @@ class SectionTableWidget(QDockWidget):
             },
             ("thickness_act", "Edit thickness...", "", self.editThickness),
             ("editsrc_act", "Edit image source...", "", self.editSrc),
+            {
+                "attr_name": "insertmenu",
+                "text": "Insert",
+                "opts":
+                [
+                    ("insertabove_act", "Above", "", self.insertSection),
+                    ("insertbelow_act", "Below", "", lambda : self.insertSection(False))
+                ]
+            },
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -392,6 +402,34 @@ class SectionTableWidget(QDockWidget):
                 notify("Please use only one '#' symbol to represent the section number.")
         
         self.manager.editSrc(None, new_src)
+    
+    def reorderSections(self):
+        """Reorder the sections so that they are in order."""
+        if not noUndoWarning():
+            return
+        
+        self.manager.reorderSections()
+    
+    def insertSection(self, before=True):
+        """Insert a section into the series."""
+        if before:
+            index = min(self.getSelectedSections())
+        else:
+            index = max(self.getSelectedSections()) + 1
+        structure = [
+            ["Image:", ("file", "", "*.jpg *.jpeg *.png *.tif *.tiff *.bmp")],
+            ["Section number:", ("int", index)],
+            ["Calibration (μm/px):", ("float", self.mainwindow.field.section.mag)],
+            ["Thickness (μm):", ("float", self.mainwindow.field.section.thickness)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Create Section")
+        if not confirmed:
+            return
+        
+        src, index, mag, thickness = response
+        src = os.path.basename(src)
+
+        self.manager.insertSection(index, src, mag, thickness)
 
     def closeEvent(self, event):
         """Remove self from manager table list."""

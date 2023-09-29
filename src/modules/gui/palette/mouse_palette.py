@@ -1,4 +1,5 @@
 import os
+import re
 
 from PySide6.QtWidgets import QWidget, QStyle, QSlider
 from PySide6.QtGui import QIcon, QPixmap
@@ -11,10 +12,11 @@ from modules.datatypes import Series, Trace
 from modules.constants import (
     locations as loc
 )
+from modules.gui.dialog import TracePaletteDialog
 
 class MousePalette():
 
-    def __init__(self, palette_traces : list, selected_trace : Trace, mainwindow : QWidget, ):
+    def __init__(self, mainwindow : QWidget):
         """Create the mouse dock widget object.
         
             Params:
@@ -23,6 +25,8 @@ class MousePalette():
                 mainwindow (MainWindow): the parent main window of the dock
         """
         self.mainwindow = mainwindow
+        self.series = self.mainwindow.series
+        self.series : Series
         
         self.mblen = 40  # mode button size
         self.pblen = 40  # palette button size
@@ -48,18 +52,16 @@ class MousePalette():
         # create palette buttons
         self.trace_x = 0.5
         self.trace_y = 0.99
-        self.palette_traces = palette_traces
-        self.palette_buttons = [None] * 20
-        for i in range(len(palette_traces)):  # create all the palette buttons
-            trace = palette_traces[i]
+        traces = self.series.palette_traces[self.series.palette_index[0]]
+        self.palette_buttons = [None] * len(traces)
+        for i, trace in enumerate(traces):  # create all the palette buttons
             self.createPaletteButton(trace, i)
-        for button in self.palette_buttons:  # highlight the first match for the selected trace
-            if button.trace.isSameTrace(selected_trace):
-                button.setChecked(True)
-                break
+        self.palette_buttons[self.series.palette_index[1]].setChecked(True)
+
+        # create palette increments
+        self.createPaletteSideButtons()
         
         self.selected_mode = "pointer"
-        self.selected_trace = selected_trace
 
         # create label
         self.label = OutlinedLabel(self.mainwindow)
@@ -162,10 +164,25 @@ class MousePalette():
             y_offset = 1
         else:
             y_offset = -1
-        y_offset += -(-(pos//10) + 1) * self.pblen
+        y_offset += (pos//10 - 1) * self.pblen
         y += y_offset
 
         button.setGeometry(x, y, self.pblen, self.pblen)
+    
+    def placePaletteSideButtons(self):
+        x, y = self.getButtonCoords("trace")
+
+        up, down, opts = tuple(self.palette_side_buttons)
+
+        x1 = x + 3 + 5 * self.pblen
+        y1 = y + 1 - self.pblen
+        
+        up.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+        y1 += self.pblen // 2 + 1
+        down.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+
+        y1 = y + 1 + self.pblen // 2
+        opts.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
     
     def setPaletteButtonTip(self, b : PaletteButton, pos : int):
         """Set the tool tip for a palette button.
@@ -197,6 +214,27 @@ class MousePalette():
         self.palette_buttons[pos] = b
         b.show()
     
+    def createPaletteSideButtons(self):
+        """Create the palette increment buttons."""
+        b_up = MoveableButton(self.mainwindow, self, "trace")
+        b_up.setText("+")
+        f = b_up.font()
+        f.setBold(True)
+        b_up.setFont(f)
+        b_up.clicked.connect(lambda : self.incrementPalette(True))
+
+        b_down = MoveableButton(self.mainwindow, self, "trace")
+        b_down.setText("-")
+        b_down.setFont(f)
+        b_down.clicked.connect(lambda : self.incrementPalette(False))
+
+        b_opts = MoveableButton(self.mainwindow, self, "trace")
+        b_opts.setText("☰")
+        b_opts.clicked.connect(self.modifyAllPaletteButtons)
+
+        self.palette_side_buttons = [b_up, b_down, b_opts]
+        self.placePaletteSideButtons()
+    
     def placeLabel(self):
         """Place the trace palette label."""
         x, y = self.getButtonCoords("trace")
@@ -210,8 +248,14 @@ class MousePalette():
 
     def updateLabel(self):
         """Update the name of the trace palette label."""
-        self.label.setText(self.selected_trace.name)
-        c = self.selected_trace.color
+        g, i = tuple(self.series.palette_index)
+        selected_trace = self.series.palette_traces[g][i]
+        n = selected_trace.name
+        for c in "{}":
+            n = n.replace(c, "")
+        self.label.setText(n)
+
+        c = selected_trace.color
         self.label.setTextColor(c)
         black_outline = c[0] + 3*c[1] + c[2] > 400
         if black_outline:
@@ -261,19 +305,10 @@ class MousePalette():
                     return
                 button.setChecked(True)
                 self.mainwindow.changeTracingTrace(button.trace)
-                self.selected_trace = button.trace
+                self.series.palette_index[1] = i
                 self.updateLabel()
             else:
                 button.setChecked(False)
-    
-    def modifyPaletteButton(self, bpos : int):
-        """Opens dialog to modify palette button.
-        
-            Params:
-                bpos (int): the position of the palette button
-        """
-        b = self.palette_buttons[bpos]
-        b.openDialog()
     
     def paletteButtonChanged(self, button : PaletteButton):
         """Executed when user changes palette trace: ensure that tracing pencil is updated.
@@ -286,8 +321,22 @@ class MousePalette():
                 self.setPaletteButtonTip(b, pos)
                 if b.isChecked():
                     self.mainwindow.changeTracingTrace(button.trace)
-                    self.selected_trace = b.trace
         self.updateLabel()
+    
+    def modifyPaletteButton(self, bpos : int, trace : Trace = None):
+        """Opens dialog to modify palette button.
+        
+            Params:
+                bpos (int): the position of the palette button
+        """
+        b = self.palette_buttons[bpos]
+        if not trace:
+            b.openDialog()
+        else:
+            b.setTrace(trace)
+            self.paletteButtonChanged(b)
+        g = self.series.palette_index[0]
+        self.series.palette_traces[g][bpos] = b.trace
     
     def modifyPalette(self, trace_list : list):
         """Modify all of the palette traces.
@@ -295,12 +344,9 @@ class MousePalette():
             Params:
                 trace_list (list): the list of traces to set the palette buttons
         """
-        if len(trace_list) != len(self.palette_traces):
-            return
-        self.palette_traces = trace_list
-        for b, t in zip(self.palette_buttons, self.palette_traces):
-            b.setTrace(t)
-        self.activatePaletteButton(0)
+        for bpos, trace in enumerate(trace_list):
+            self.modifyPaletteButton(bpos, trace)
+        self.activatePaletteButton(self.series.palette_index[1])
     
     def resetPalette(self):
         """Reset the palette to the default traces."""
@@ -456,7 +502,7 @@ class MousePalette():
 
         return {
             "mode": (fx1, fx2 - self.mblen, fy1, fy2 - (self.mblen + 10) * len(self.mode_buttons) + 10),
-            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5, fy1 + self.pblen, fy2 - self.pblen),
+            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*5.5 - 3, fy1 + self.pblen, fy2 - self.pblen),
             "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
             "bc": (fx1, fx2 - 6*self.bcsize - 5, fy1, fy2 - 2*self.bcsize - 20)
         }
@@ -495,8 +541,42 @@ class MousePalette():
         self.bc_y = 0.8
 
         self.resize()
+    
+    def incrementPalette(self, up):
+        """Increment the palette.
+            
+            Params:
+                up (bool): True if increment higher, False if increment lower
+        """
+        def incStr(s):
+            min = 0
+            max = 10**len(s) - 1
+            n = int(s) + (1 if up else -1)
+            if n < min: n = max
+            elif n > max: n = min
+            return str(n).rjust(len(s), "0")
+        
+        def replace(match):
+            return "{" + incStr(match.group(1)) + "}"
+        
+        pattern = r"\{(\d+)\}"
 
-
+        for bpos, w in enumerate(self.palette_buttons):
+            n = re.sub(pattern, replace, w.trace.name)
+            new_trace = w.trace.copy()
+            new_trace.name = n
+            self.modifyPaletteButton(bpos, new_trace)
+        
+    def modifyAllPaletteButtons(self):
+        """Modify all the palette buttons through a single dialog."""        
+        # run the widget
+        response, confirmed = TracePaletteDialog(self.mainwindow, self.series).exec()
+        if not confirmed:
+            return
+        
+        self.modifyPalette(self.series.palette_traces[self.series.palette_index[0]])
+        self.activatePaletteButton(self.series.palette_index[1])
+        
     def resize(self):
         """Move the buttons to fit the main window."""
         for mbname in self.mode_buttons:
@@ -504,19 +584,15 @@ class MousePalette():
             self.placeModeButton(button, pos)
         for i, pb in enumerate(self.palette_buttons):
             self.placePaletteButton(pb, i)
+        self.placePaletteSideButtons()
         self.placeLabel()
         self.placeIncrementButtons()
         self.placeBCButtons()
     
-    def reset(self, palette_traces : list, selected_trace : Trace):
-        """Reset the mouse palette when opening a new series.
-        
-            Params:
-                palette_traces (list): the new palette traces
-                selected_trace (trace): the new selected trace on the palette
-        """
+    def reset(self):
+        """Reset the mouse palette when opening a new series."""
         self.close()
-        self.__init__(palette_traces, selected_trace, self.mainwindow)
+        self.__init__(self.mainwindow)
 
     def close(self):
         """Close all buttons"""

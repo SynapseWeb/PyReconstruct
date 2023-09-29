@@ -59,7 +59,7 @@ class ObjectData():
         """
         if section.n not in self.traces:
             self.traces[section.n] = []
-        self.traces[section.n].append(TraceData(trace, section.tforms[series.alignment]))
+        self.traces[section.n].append(TraceData(trace, section.tform))
     
     def clearSection(self, snum : int):
         """Clear the traces on a specific section.
@@ -118,6 +118,7 @@ class SeriesData():
                 "mag": section.mag,
                 "tforms": section.tforms,
             }
+            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
             self.data["sections"][section.n] = d
         else:
             d = self.data["sections"][section.n]
@@ -128,6 +129,7 @@ class SeriesData():
             d["src"] = section.src
             d["mag"] = section.mag
             d["tforms"] = section.tforms
+            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
         
         if update_traces:
             # check if there are specific traces to be updated

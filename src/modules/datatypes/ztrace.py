@@ -115,7 +115,7 @@ class Ztrace():
         for pt in self.points:
             x, y, snum = pt
             if pt[2] == section.n:
-                tform = section.tforms[series.alignment]
+                tform = section.tform
             else:
                 tform = series.data["sections"][pt[2]]["tforms"][series.alignment]
             x, y = tform.map(x, y)

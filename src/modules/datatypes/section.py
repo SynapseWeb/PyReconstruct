@@ -74,6 +74,17 @@ class Section():
 
         self.calgrid = section_data["calgrid"]
     
+    @property
+    def tform(self):
+        if self.series.alignment != "no-alignment":
+            return self.tforms[self.series.alignment]
+        else:
+            return Transform([1, 0, 0, 0, 1, 0])
+    @tform.setter
+    def tform(self, new_tform):
+        if self.series.alignment != "no-alignment":
+            self.tforms[self.series.alignment] = new_tform
+    
     # STATIC METHOD
     def updateJSON(section_data):
         """Add missing attributes to section JSON."""
@@ -180,7 +191,7 @@ class Section():
         
             Params:
                 series_name (str): the name for the series
-                snum (int): the sectino number
+                snum (int): the section number
                 image_location (str): the file path for the image
                 mag (float): microns per pixel for the section
                 thickness (float): the section thickness in microns
@@ -404,7 +415,7 @@ class Section():
         closest_trace = None
         min_interior_distance = -1
         closest_trace_interior = None
-        tform = self.tforms[self.series.alignment]
+        tform = self.tform
 
         # only check the traces within the view if provided
         if traces_in_view:
@@ -488,7 +499,7 @@ class Section():
 
         return modified
     
-    def unhideAllTraces(self, log_event):
+    def unhideAllTraces(self, log_event=True):
         """Unhide all traces on the section."""
         modified = False
         for trace in self.tracesAsList():
@@ -538,7 +549,7 @@ class Section():
                 dx (float): x-translate
                 dy (float): y-translate
         """
-        tform = self.tforms[self.series.alignment]
+        tform = self.tform
         for trace in self.selected_traces:
             self.removeTrace(trace, log_event=False)
             for i, p in enumerate(trace.points):

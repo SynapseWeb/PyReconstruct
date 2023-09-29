@@ -1,7 +1,6 @@
 import vedo
 
-from PySide6.QtWidgets import QInputDialog
-
+from modules.gui.dialog import QuickDialog
 from modules.gui.utils import notify
 from modules.gui.table import Help3DWidget
 from modules.backend.volume import generateVolumes
@@ -19,7 +18,10 @@ class CustomPlotter(vedo.Plotter):
         self.is_showing = False
 
         self.extremes = None
+
         self.sc = None
+        self.sc_color = (150, 150, 150)
+        self.sc_side = 1
 
         self.selected_text = vedo.Text2D(pos="top-left", font="Courier", s=1.5)
         self.add(self.selected_text)
@@ -47,6 +49,21 @@ class CustomPlotter(vedo.Plotter):
             snum = all_sections[diffs.index(min(diffs))]
         
         return snum
+    
+    def createScaleCube(self):
+        """Create the scale cube in the 3D scene."""
+        if self.sc is None:
+            pos = []
+            for i in (1, 3, 5):
+                pos.append((self.extremes[i] + self.extremes[i-1]) / 2)
+        else:
+            pos = self.sc.pos()
+            self.remove(self.sc)
+        self.sc = vedo.Cube(tuple(pos), self.sc_side, c=self.sc_color)
+        self.sc.metadata["name"] = "Scale Cube"
+        self.sc.metadata["type"] = "scale_cube"
+        self.sc.lw(5)
+        self.add(self.sc)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved -- display coordinates."""
@@ -115,23 +132,15 @@ class CustomPlotter(vedo.Plotter):
             return
         name = msh.metadata["name"][0]
         if name == "Scale Cube":
-            new_r, confirmed = QInputDialog.getDouble(
-                None,
-                "Scale Cube",
-                "Scale cube side length (µm):",
-                value=self.sc_side,
-                minValue=0,
-                decimals=2
-            )
+            structure = [
+                ["Side length:", ("float", self.sc_side)],
+                ["Color:", ("color", self.sc_color)]
+            ]
+            response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
             if not confirmed:
                 return
-            self.remove(self.sc)
-            pos = self.sc.pos()
-            self.sc_side = new_r
-            self.sc = vedo.Cube(pos, self.sc_side, c="gray5")
-            self.sc.metadata["name"] = "Scale Cube"
-            self.sc.metadata["type"] = "scale_cube"
-            self.add(self.sc)
+            self.sc_side, self.sc_color = response
+            self.createScaleCube()
             self.render()
 
     def _keypress(self, iren, event):
@@ -160,14 +169,7 @@ class CustomPlotter(vedo.Plotter):
 
         if key == "C":
             if self.sc is None:
-                pos = []
-                for i in (1, 3, 5):
-                    pos.append((self.extremes[i] + self.extremes[i-1]) / 2)
-                self.sc = vedo.Cube(tuple(pos), c="gray5")
-                self.sc_side = 1
-                self.sc.metadata["name"] = "Scale Cube"
-                self.sc.metadata["type"] = "scale_cube"
-                self.add(self.sc)
+                self.createScaleCube()
             else:
                 self.remove(self.sc)
                 self.sc = None

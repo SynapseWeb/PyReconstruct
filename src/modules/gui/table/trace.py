@@ -108,6 +108,7 @@ class TraceTableWidget(QDockWidget):
             Params:
                 name (iterable): the names of contours to update
         """
+        filters_len = len(self.tag_filters)  # use to later check tags
         for name in names:
             r, is_in_table = self.table.getRowIndex(name)
 
@@ -122,6 +123,13 @@ class TraceTableWidget(QDockWidget):
             if trace_data_list:
                 first_row = r
                 for trace_data in trace_data_list:
+                    # check for tags
+                    if filters_len != 0:
+                        trace_tags = trace_data.getTags()
+                        trace_len = len(trace_tags)
+                        union_len = len(trace_tags.union(self.tag_filters))
+                        if union_len == trace_len + filters_len:  # intersection does not exist
+                            continue
                     self.table.insertRow(r)
                     self.setRow(name, r - first_row, trace_data, r)
                     modified_rows.append(r)

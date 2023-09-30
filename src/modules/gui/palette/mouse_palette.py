@@ -231,6 +231,7 @@ class MousePalette():
         b_opts = MoveableButton(self.mainwindow, self, "trace")
         b_opts.setText("☰")
         b_opts.clicked.connect(self.modifyAllPaletteButtons)
+        b_opts.setToolTip("Modify all palettes")
 
         self.palette_side_buttons = [b_up, b_down, b_opts]
         self.placePaletteSideButtons()
@@ -548,6 +549,9 @@ class MousePalette():
             Params:
                 up (bool): True if increment higher, False if increment lower
         """
+        if self.is_dragging:
+            return
+        
         def incStr(s):
             min = 0
             max = 10**len(s) - 1
@@ -568,7 +572,10 @@ class MousePalette():
             self.modifyPaletteButton(bpos, new_trace)
         
     def modifyAllPaletteButtons(self):
-        """Modify all the palette buttons through a single dialog."""        
+        """Modify all the palette buttons through a single dialog."""
+        if self.is_dragging:
+            return
+               
         # run the widget
         response, confirmed = TracePaletteDialog(self.mainwindow, self.series).exec()
         if not confirmed:

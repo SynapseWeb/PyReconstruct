@@ -304,6 +304,9 @@ class FieldWidget(QWidget, FieldView):
         # add magenta border if image is hidden
         if self.hide_image:
             self.drawBorder(field_painter, (255, 0, 255))
+        # add cyan border if sections are being blended
+        if self.blend_sections:
+            self.drawBorder(field_painter, (0, 255, 255))
 
         # draw the working trace on the screen
         if self.current_trace:
@@ -459,16 +462,32 @@ class FieldWidget(QWidget, FieldView):
                     counter += 1
             self.selected_ztrace_names = names
         
+        # place text on other side of mode palette (if applicable)
+        if self.mainwindow.mouse_palette.mode_x > .5:
+            x = 10
+            right_justified = False
+        else:
+            x = self.width() - 10
+            right_justified = True
+        y = 0
+
+        # draw the names of the blended sections
+        if self.blend_sections:
+            y += 20
+            drawOutlinedText(
+                field_painter,
+                x, y,
+                f"Blended sections: {self.b_section.n} and {self.section.n}",
+                (255, 255, 255),
+                (0, 0, 0),
+                st_size,
+                right_justified
+            )
+            y += st_size
+        
         # draw the names of the selected traces
         if self.selected_trace_names:
-            # place text on other side of mode palette
-            if self.mainwindow.mouse_palette.mode_x > .5:
-                x = 10
-                right_justified = False
-            else:
-                x = self.width() - 10
-                right_justified = True
-            y = 20
+            y += 20
             drawOutlinedText(
                 field_painter,
                 x, y,
@@ -493,21 +512,19 @@ class FieldWidget(QWidget, FieldView):
                     st_size,
                     right_justified
                 )
+            y += st_size
         
         # draw the names of the selected ztraces
         if self.selected_ztrace_names:
-            if not self.selected_trace_names:
-                x = 10
-                y = 20
-            else:
-                y += st_size + 20
+            y += 20
             drawOutlinedText(
                 field_painter,
                 x, y,
                 "Selected Ztraces:",
                 (255, 255, 255),
                 (0, 0, 0),
-                st_size
+                st_size,
+                right_justified
             )
             for name, n in self.selected_ztrace_names.items():
                 y += st_size + 10
@@ -521,8 +538,10 @@ class FieldWidget(QWidget, FieldView):
                     text,
                     (255, 255, 255),
                     (0, 0, 0),
-                    st_size
+                    st_size,
+                    right_justified
                 )
+            y += st_size
         
         field_painter.end()
 

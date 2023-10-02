@@ -26,6 +26,7 @@ class TraceDialog(QDialog):
             color=None,
             tags=None,
             is_palette=False,
+            inc_sec_range=False,
             pos=None):
         """Create an attribute dialog.
         

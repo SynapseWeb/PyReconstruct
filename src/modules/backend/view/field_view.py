@@ -716,7 +716,7 @@ class FieldView():
             section.save()
         
         if log_event:
-            self.addLog(None, None, "Calibrate series")
+            self.series.addLog(None, None, "Calibrate series")
         
         # reload the field
         self.reload()

@@ -472,7 +472,7 @@ class FieldWidget(QWidget, FieldView):
         y = 0
 
         # draw the names of the blended sections
-        if self.blend_sections:
+        if self.blend_sections and self.b_section:
             y += 20
             drawOutlinedText(
                 field_painter,

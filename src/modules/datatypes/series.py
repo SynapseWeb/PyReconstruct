@@ -507,9 +507,9 @@ class Series():
         series_data["src_dir"] = ""  # the directory of the images
         series_data["window"] = [0, 0, 1, 1] # x, y, w, h of reconstruct window in field coordinates
         series_data["palette_traces"] = {
-            "palette1": [[t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]]
+            "palette1": [t.getList(include_name=True) for t in Series.getDefaultPaletteTraces()]
         }
-        series_data["palette_index"] = ["1", 0]
+        series_data["palette_index"] = ["palette1", 0]
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}

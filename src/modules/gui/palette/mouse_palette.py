@@ -222,16 +222,19 @@ class MousePalette():
         f.setBold(True)
         b_up.setFont(f)
         b_up.clicked.connect(lambda : self.incrementPalette(True))
+        b_up.show()
 
         b_down = MoveableButton(self.mainwindow, self, "trace")
         b_down.setText("-")
         b_down.setFont(f)
         b_down.clicked.connect(lambda : self.incrementPalette(False))
+        b_down.show()
 
         b_opts = MoveableButton(self.mainwindow, self, "trace")
         b_opts.setText("☰")
         b_opts.clicked.connect(self.modifyAllPaletteButtons)
         b_opts.setToolTip("Modify all palettes")
+        b_opts.show()
 
         self.palette_side_buttons = [b_up, b_down, b_opts]
         self.placePaletteSideButtons()
@@ -608,6 +611,8 @@ class MousePalette():
             button.close()
         for pb in self.palette_buttons:
             pb.close()
+        for b in self.palette_side_buttons:
+            b.close()
         self.label.close()
         for b in self.inc_buttons:
             b.close()

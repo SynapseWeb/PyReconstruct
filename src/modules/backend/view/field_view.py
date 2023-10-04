@@ -155,6 +155,9 @@ class FieldView():
         if self.hide_trace_layer:
             return
         
+        # end any pending events
+        self.endPendingEvents()  # function extended in inherited class
+        
         # clear selected straces
         self.section.selected_traces = []
         self.section.selected_ztraces = []
@@ -173,6 +176,9 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
+        
+        # end any pending events
+        self.endPendingEvents()  # function extended in inherited class
         
         # clear the selected traces
         self.section.selected_traces = []

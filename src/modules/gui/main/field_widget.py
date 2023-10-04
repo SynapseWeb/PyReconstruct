@@ -1231,6 +1231,7 @@ class FieldWidget(QWidget, FieldView):
         elif self.isSingleClicking():
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
+            self.mainwindow.checkActions()
         # user is not line tracing
         elif not self.is_line_tracing:
             self.pencilRelease(event)
@@ -1286,13 +1287,10 @@ class FieldWidget(QWidget, FieldView):
             if self.is_line_tracing:  # continue trace
                 self.current_trace.append((x, y))
                 self.update()
-            else:  # start new trace
-                self.current_trace = [(x, y)]
-                self.is_line_tracing = True
     
-    def lineRelease(self, event, log_event=True):
+    def lineRelease(self, event=None, override=False, log_event=True):
         """Called when mouse is released in line mode."""
-        if self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
+        if override or self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
             self.is_line_tracing = False
             if len(self.current_trace) > 1:
@@ -1312,7 +1310,9 @@ class FieldWidget(QWidget, FieldView):
             if self.is_scissoring:
                 self.is_scissoring = False
                 self.setMouseMode(FieldWidget.SCISSORS)
-                self.setTracingTrace(self.mainwindow.mouse_palette.selected_trace)
+                self.setTracingTrace(
+                    self.series.palette_traces[self.series.palette_index[0]][self.series.palette_index[1]]
+                )
     
     def backspace(self):
         """Called when backspace OR Del is pressed: either delete traces or undo line trace."""
@@ -1440,6 +1440,7 @@ class FieldWidget(QWidget, FieldView):
                     else:
                         self.current_trace = seg1
                 self.is_line_tracing = True
+                self.mainwindow.checkActions()
                 self.tracing_trace = self.selected_trace
                 self.update()
 
@@ -1504,25 +1505,8 @@ class FieldWidget(QWidget, FieldView):
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
-        if self.is_line_tracing or self.current_trace:
-            if len(self.current_trace) > 1:
-                if self.mouse_mode == FieldWidget.CLOSEDTRACE:
-                    self.section_layer.newTrace(
-                        self.current_trace,
-                        self.tracing_trace,
-                        closed=True
-                    )
-                elif self.mouse_mode == FieldWidget.OPENTRACE:
-                    self.section_layer.newTrace(
-                        self.current_trace,
-                        self.tracing_trace,
-                        closed=False
-                )
-            self.is_line_tracing = False
-            self.current_trace = []
-            self.generateView(generate_image=False)
-            self.saveState()
-
+        if self.is_line_tracing:
+            self.lineRelease(override=True)
 
 def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
     """Draw outlined text using a QPainter object.

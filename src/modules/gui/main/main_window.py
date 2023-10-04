@@ -535,7 +535,7 @@ class MainWindow(QMainWindow):
 
         # undo/redo
         states = self.field.series_states[self.series.current_section]
-        has_undo_states = bool(states.undo_states)
+        has_undo_states = bool(states.undo_states) or self.field.is_line_tracing
         has_redo_states = bool(states.redo_states)
         self.undo_act.setEnabled(has_undo_states)
         self.redo_act.setEnabled(has_redo_states)

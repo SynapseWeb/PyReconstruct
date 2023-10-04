@@ -130,16 +130,20 @@ def notify(message):
         QMessageBox.Ok
     )
 
-def noUndoWarning():
-    """Inform the user of an action that can't be undone."""
+def notifyConfirm(message):
+    """Notify the user and give option to OK or cancel."""
     response = QMessageBox.warning(
         mainwindow,
-        "",
-        "WARNING: This action cannot be undone.",
+        " ",
+        message,
         QMessageBox.Ok,
         QMessageBox.Cancel
     )
     return response == QMessageBox.Ok
+
+def noUndoWarning():
+    """Inform the user of an action that can't be undone."""
+    return notifyConfirm("WARNING: This action cannot be undone.")
 
 def saveNotify():
     response = QMessageBox.question(

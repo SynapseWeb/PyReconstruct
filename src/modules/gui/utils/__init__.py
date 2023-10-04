@@ -8,6 +8,7 @@ from .utils import (
     progbar,
     setMainWindow,
     notify,
+    notifyConfirm,
     noUndoWarning,
     saveNotify,
     unsavedNotify,

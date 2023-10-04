@@ -15,7 +15,7 @@ from modules.calc import (
     lineDistance,
     pixmapPointToField
 )
-from modules.gui.utils import notify
+from modules.gui.utils import notify, notifyConfirm
 
 class FieldView():
 
@@ -207,22 +207,30 @@ class FieldView():
         # save the current section
         self.section.save()
         
+        included_sections = []
         for snum in self.series.sections:
             modify_section = (
                 (to_end and snum > self.series.current_section)
                 or
                 (not to_end and snum < self.series.current_section)
             )
-            if modify_section:
-                section = self.series.loadSection(snum)
-                if section.align_locked:
-                    continue
-                new_tform = self.stored_tform * section.tform
-                section.tform = new_tform
-                section.save()
-                self.propagated_sections.append(snum)
-                if log_event:
-                    self.series.addLog(None, snum, "Modify transform")
+            if modify_section: included_sections.append(snum)
+        
+        for snum in included_sections:
+            section = self.series.loadSection(snum)
+            if section.align_locked:
+                if not notifyConfirm("Locked sections will not be modified.\nWould you still like to propagate the transform?"):
+                    return
+                break
+        
+        for snum in included_sections:
+            section = self.series.loadSection(snum)
+            new_tform = self.stored_tform * section.tform
+            section.tform = new_tform
+            section.save()
+            self.propagated_sections.append(snum)
+            if log_event:
+                self.series.addLog(None, snum, "Modify transform")
         
         self.reload()
     

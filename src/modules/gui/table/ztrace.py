@@ -263,7 +263,7 @@ class ZtraceTableWidget(QDockWidget):
 
         structure = [
             ["Smoothing factor:", ("int", 10)],
-            [("check", ("Create new ztrace", False))]
+            [("check", ("Create new ztrace", True))]
         ]
         
         response, confirmed = QuickDialog.get(self, structure, "Smooth Ztrace")

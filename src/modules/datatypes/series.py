@@ -856,7 +856,15 @@ class Series():
         # delete old_name
         self.removeObjAttrs(old_name)
     
-    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, log_event=True):
+    def editObjectAttributes(
+            self, 
+            obj_names : list, 
+            name : str = None, 
+            color : tuple = None, 
+            tags : set = None, 
+            mode : tuple = None, 
+            sections : list = None, 
+            log_event=True):
         """Edit the attributes of objects on every section.
         
             Params:
@@ -881,6 +889,8 @@ class Series():
         for snum, section in self.enumerateSections(
             message="Modifying object(s)..."
         ):
+            if snum not in sections:  # skip sections that are not included
+                continue
             traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:

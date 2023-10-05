@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from .color_button import ColorButton
 from .shape_button import ShapeButton
+from .helper import resizeLineEdit
 
 from modules.datatypes import Trace
 from modules.gui.utils import notify
@@ -26,7 +27,7 @@ class TraceDialog(QDialog):
             color=None,
             tags=None,
             is_palette=False,
-            inc_sec_range=False,
+            is_obj_list=False,
             pos=None):
         """Create an attribute dialog.
         
@@ -42,6 +43,7 @@ class TraceDialog(QDialog):
             self.move(*pos)
 
         self.is_palette = is_palette
+        self.is_obj_list = is_obj_list
 
         # get the display values if traces have been provided
         if traces:
@@ -153,6 +155,23 @@ class TraceDialog(QDialog):
             self.stamp_size_input.setText(str(round(trace.getRadius(), 6)))
             stamp_size_row.addWidget(stamp_size_text)
             stamp_size_row.addWidget(self.stamp_size_input)
+        
+        if self.is_obj_list:
+            range_row = QHBoxLayout()
+            range_text1 = QLabel(self, text="From section")
+            range_text2 = QLabel(self, text="to")
+
+            self.range_input1 = QLineEdit(self)
+            self.range_input1.setText(str(min(parent.series.sections.keys())))
+            resizeLineEdit(self.range_input1, "0000")
+            self.range_input2 = QLineEdit(self)
+            self.range_input2.setText(str(max(parent.series.sections.keys())))
+            resizeLineEdit(self.range_input2, "0000")
+
+            range_row.addWidget(range_text1)
+            range_row.addWidget(self.range_input1)
+            range_row.addWidget(range_text2)
+            range_row.addWidget(self.range_input2)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -169,6 +188,7 @@ class TraceDialog(QDialog):
         vlayout.addWidget(self.selected_input)
         vlayout.addWidget(self.unselected_input)
         if self.is_palette: vlayout.addLayout(stamp_size_row)
+        if self.is_obj_list: vlayout.addLayout(range_row)
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
@@ -196,6 +216,16 @@ class TraceDialog(QDialog):
                 return
             if r < 0:
                 notify("Please enter a positive number.")
+                return
+        if self.is_obj_list:
+            try:
+                r1 = int(self.range_input1.text())
+                r2 = int(self.range_input2.text())
+            except ValueError:
+                notify("Please enter a valid integer")
+                return
+            if r1 < 0 or r2 < 0 or r1 > r2:
+                notify("Please enter a valid range.")
                 return
         
         super().accept()
@@ -262,8 +292,17 @@ class TraceDialog(QDialog):
             if self.is_palette:
                 stamp_size = float(self.stamp_size_input.text())
                 trace.resize(stamp_size)
+            
+            # section range
+            if self.is_obj_list:
+                r1 = int(self.range_input1.text())
+                r2 = int(self.range_input2.text())
+                sections = tuple(range(r1, r2+1))
 
-            return trace, True
+            if self.is_obj_list:
+                return (trace, sections),  True
+            else:
+                return trace, True
         
         # user pressed cancel
         else:

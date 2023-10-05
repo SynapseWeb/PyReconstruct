@@ -506,7 +506,12 @@ class ObjectTableWidget(QDockWidget):
             displayed_name = None
             tags=None
         
-        attr_trace, confirmed = TraceDialog(self, name=displayed_name, tags=tags).exec()
+        response, confirmed = TraceDialog(
+            self, 
+            name=displayed_name, 
+            tags=tags, 
+            is_obj_list=True
+        ).exec()
 
         if not confirmed:
             return
@@ -515,7 +520,9 @@ class ObjectTableWidget(QDockWidget):
         if not noUndoWarning():
             return
         
-        self.manager.editAttributes(obj_names, attr_trace)
+        attr_trace, sections = response
+        
+        self.manager.editAttributes(obj_names, attr_trace, sections)
     
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""

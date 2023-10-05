@@ -114,23 +114,64 @@ class MemoryInt():
     def inc(self):
         self.n += 1
 
+class BasicProgbar():
+    def __init__(self, text : str, maximum=100):
+        """Create a 'vanilla' progress indicator.
+        
+        Params:
+            text (str): the text to display by the indicator
+        """
+        self.text = text
+        self.max = maximum
+        if self.max == 0:
+            print(f"{text} | Loading...", end="\r")
+        else:
+            print(f"{text} | 0.0%", end="\r")
+    
+    def update(self, p):
+        """Update the progress indicator.
+        
+            Params:
+                p (float): the percentage of progress made
+        """
+        if self.max == 0:
+            return
+        print(f"{self.text} | {p / self.max * 100 :.1f}%", end="\r")
+        if p == self.max:
+            self.close()
+    
+    def setValue(self, p):
+        """Update the progress indicator."""
+        self.update(p)
+    
+    def canceled(self):
+        """Dummy function -- do nothing!"""
+        return False
+    
+    def close(self):
+        """Force finish the progbar."""
+        print()
+
 class ThreadPoolProgBar(ThreadPool):
 
     def startAll(self, text="", status_bar=None):
         final_value = len(self.workers)
         maximum = final_value if final_value >= 4 else 0
         if status_bar is None:
-            progbar = QProgressDialog(
-                    text,
-                    "Cancel",
-                    0,
-                    maximum,
-                    mainwindow
-                )
-            progbar.setWindowTitle(" ")
-            progbar.setWindowModality(Qt.WindowModal)
-            progbar.setCancelButton(None)
-            progbar.show()
+            try:
+                progbar = QProgressDialog(
+                        text,
+                        "Cancel",
+                        0,
+                        maximum,
+                        mainwindow
+                    )
+                progbar.setWindowTitle(" ")
+                progbar.setWindowModality(Qt.WindowModal)
+                progbar.setCancelButton(None)
+                progbar.show()
+            except:
+                progbar = BasicProgbar(text, maximum)
         else:
             lbl = QLabel()
             lbl.setText(text)

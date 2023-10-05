@@ -270,7 +270,7 @@ def seriesJSONtoXML(series : Series, new_dir : str):
     xml_text = xml_text.replace("[SECTION_NUM]", str(series.current_section))
 
     xml_palette = []
-    for trace in series.palette_traces:
+    for trace in series.palette_traces[series.palette_index[0]]:
         xml_palette.append(trace.getXMLObj(legacy_format=True))
     all_contours = '\n'.join(xml_palette)
 

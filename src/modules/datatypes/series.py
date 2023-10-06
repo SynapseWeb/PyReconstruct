@@ -82,6 +82,7 @@ class Series():
 
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
+        self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
         # default settings
@@ -103,9 +104,6 @@ class Series():
         self.last_user = series_data["last_user"]
         # curate data
         self.curation = series_data["curation"]
-
-        # store the keys fro object attrs
-        self.obj_attrs_keys = ("object_groups", "object_3D_modes", "curation")
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
@@ -477,6 +475,7 @@ class Series():
             
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
+        d["ztrace_groups"] = self.ztrace_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
 
         # ADDED SINCE JAN 25TH
@@ -504,6 +503,7 @@ class Series():
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
+        series_data["ztrace_groups"] = {}
         series_data["object_3D_modes"] = {}
 
 

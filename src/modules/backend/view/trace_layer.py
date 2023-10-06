@@ -100,7 +100,7 @@ class TraceLayer():
         window_size = max(self.window[2:])
         radius = window_size * (0.05)
 
-        return self.section.findClosestTrace(
+        return self.section.findClosest(
             field_x,
             field_y,
             radius=radius,
@@ -141,17 +141,17 @@ class TraceLayer():
             if not inc and inside_poly:
                 traces_in_poly.append(trace)
         
-        ztraces_in_poly = []
-        if self.series.options["show_ztraces"]:
-            for ztrace in self.series.ztraces.values():
-                # check if point is inside polygon
-                for i, (x, y, snum) in enumerate(ztrace.points):
-                    if snum == self.section.n:
-                        pix_point = self.pointToPix((x, y))
-                        if pointInPoly(*pix_point, pix_poly):
-                            ztraces_in_poly.append((ztrace, i))
+        # ztraces_in_poly = []
+        # if self.series.options["show_ztraces"]:
+        #     for ztrace in self.series.ztraces.values():
+        #         # check if point is inside polygon
+        #         for i, (x, y, snum) in enumerate(ztrace.points):
+        #             if snum == self.section.n:
+        #                 pix_point = self.pointToPix((x, y))
+        #                 if pointInPoly(*pix_point, pix_poly):
+        #                     ztraces_in_poly.append((ztrace, i))
 
-        return traces_in_poly, ztraces_in_poly
+        return traces_in_poly
 
     def getZsegment(self, pix_x : float, pix_y : float, radius = 10):
         """Find the closest ztrace segment (does not have a point on the section).

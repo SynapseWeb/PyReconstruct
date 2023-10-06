@@ -391,7 +391,7 @@ class Section():
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify shape")
     
-    def findClosestTrace(
+    def findClosest(
             self,
             field_x : float,
             field_y : float,
@@ -399,7 +399,7 @@ class Section():
             traces_in_view : list[Trace] = None,
             include_hidden=False,
             include_ztraces=True):
-        """Find closest trace to field coordinates in a given radius.
+        """Find closest trace/ztrace to field coordinates in a given radius.
         
             Params:
                 field_x (float): x coordinate of search center
@@ -412,7 +412,8 @@ class Section():
                 None if no trace points are found within the radius
         """
         min_distance = -1
-        closest_trace = None
+        closest = None
+        closest_type = None
         min_interior_distance = -1
         closest_trace_interior = None
         tform = self.tform
@@ -441,9 +442,10 @@ class Section():
                 factor=1/self.mag,
                 absolute=False
             )
-            if closest_trace is None or abs(dist) < min_distance:
+            if closest is None or abs(dist) < min_distance:
                 min_distance = abs(dist)
-                closest_trace = trace
+                closest = trace
+                closest_type = "trace"
             
             # check if the point is inside any filled trace
             if (
@@ -461,11 +463,16 @@ class Section():
                     if pt[2] == self.n:
                         x, y = tform.map(*pt[:2])
                         dist = distance(field_x, field_y, x, y)
-                        if closest_trace is None or dist < min_distance:
+                        if closest is None or dist < min_distance:
                             min_distance = dist
-                            closest_trace = (ztrace, i)
+                            closest = (ztrace, i)
+                            closest_type = "ztrace_pt"
         
-        return closest_trace if min_distance <= radius else closest_trace_interior
+        if min_distance > radius and closest_trace_interior:
+            closest = closest_trace_interior
+            closest_type = "trace"
+
+        return closest, closest_type
     
     def deselectAllTraces(self):
         """Deselect all traces."""

@@ -371,21 +371,20 @@ class FieldWidget(QWidget, FieldView):
         # draw the selected traces to the screen
         ct_size = 12
         st_size = 14
-        status_bar_trace = None
+        closest = None
+        closest_type = None
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
         ):
             # get closest trace
-            closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
-            status_bar_trace = closest_trace
+            closest, closest_type = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
 
             # get zarr label
             if self.zarr_layer:
                 label_id = self.zarr_layer.getID(self.mouse_x, self.mouse_y)
             else:
                 label_id = None
-
 
             if self.mouse_mode == FieldWidget.POINTER:
                 # prioritize showing label name
@@ -404,24 +403,25 @@ class FieldWidget(QWidget, FieldView):
                 # if no label found, check for closest traces
                 else:
                     # check for ztrace segments
-                    if not closest_trace:
-                        closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+                    if not closest:
+                        closest = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+                        closest_type = "ztrace_seg"
                     
                     # draw name of closest trace
-                    if closest_trace:
-                        if type(closest_trace) is Trace:
-                            name = closest_trace.name
-                            if closest_trace.negative:
+                    if closest:
+                        if closest_type == "trace":
+                            name = closest.name
+                            if closest.negative:
                                 name += " (negative)"
-                        elif type(closest_trace) is Ztrace:
-                            name = f"{closest_trace.name} (ztrace)"
+                        elif closest_type == "ztrace_seg":
+                            name = f"{closest.name} (ztrace)"
                         # ztrace tuple returned
-                        elif type(closest_trace) is tuple:
-                            closest_trace = closest_trace[0]
-                            name = f"{closest_trace.name} (ztrace)"
+                        elif closest_type == "ztrace_pt":
+                            closest = closest[0]
+                            name = f"{closest.name} (ztrace)"
                         
                         pos = self.mouse_x, self.mouse_y
-                        c = closest_trace.color
+                        c = closest.color
                         black_outline = c[0] + 3*c[1] + c[2] > 400
                         drawOutlinedText(
                             field_painter,
@@ -547,7 +547,7 @@ class FieldWidget(QWidget, FieldView):
 
         # update the status bar
         if not self.is_panzooming:
-            self.updateStatusBar(status_bar_trace)
+            self.updateStatusBar(closest)
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -607,8 +607,8 @@ class FieldWidget(QWidget, FieldView):
         elif trace is not None:
             if type(trace) is Trace:
                 self.status_list.append(f"Closest trace: {trace.name}")
-            elif type(trace) is tuple and type(trace[0]) is Ztrace:
-                self.status_list.append(f"Closest trace: {trace[0].name} (ztrace)")
+            elif type(trace) is Ztrace:
+                self.status_list.append(f"Closest trace: {trace.name} (ztrace)")
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
@@ -800,7 +800,7 @@ class FieldWidget(QWidget, FieldView):
             clicked_label = None
             if self.zarr_layer:
                 clicked_label = self.zarr_layer.getID(event.x(), event.y())
-            clicked_trace = self.section_layer.getTrace(event.x(), event.y())
+            clicked_trace, clicked_type = self.section_layer.getTrace(event.x(), event.y())
             self.mainwindow.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
             if clicked_label:
@@ -954,7 +954,7 @@ class FieldWidget(QWidget, FieldView):
             self.is_moving_trace = False
             self.is_selecting_traces = False
             self.clicked_x, self.clicked_y = event.x(), event.y()
-            self.selected_trace = self.section_layer.getTrace(
+            self.selected_trace, self.selected_type = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
@@ -1038,10 +1038,10 @@ class FieldWidget(QWidget, FieldView):
             # if user selected a trace
             elif self.selected_trace:
                 # if user selected a normal trace
-                if type(self.selected_trace) is Trace:
+                if self.selected_type == "trace":
                     self.selectTrace(self.selected_trace)
                 # if user selected a ztrace
-                elif type(self.selected_trace)is tuple:
+                elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
         
         # user moved traces
@@ -1059,10 +1059,9 @@ class FieldWidget(QWidget, FieldView):
         # user selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
-            selected = self.section_layer.getTraces(self.current_trace)
-            if selected:
-                traces, ztraces = selected
-                self.selectTraces(traces, ztraces)
+            selected_traces = self.section_layer.getTraces(self.current_trace)
+            if selected_traces:
+                self.selectTraces(selected_traces, [])
         
         # clear any traces made
         self.current_trace = []
@@ -1405,11 +1404,11 @@ class FieldWidget(QWidget, FieldView):
         """Identifies the nearest trace and allows user to poly edit it."""
         # select, deselect or move
         if self.lclick:
-            self.selected_trace = self.section_layer.getTrace(
+            self.selected_trace, self.selected_type = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
-            if self.selected_trace and type(self.selected_trace) is Trace:
+            if self.selected_type == "trace":
                 self.is_scissoring = True
                 self.deselectAllTraces()
                 self.section.deleteTraces([self.selected_trace])

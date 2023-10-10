@@ -8,14 +8,17 @@ from PySide6.QtGui import (
     QPen,
     QColor,
     QPainter,
-    QBrush
+    QBrush,
+    QPainterPath,
+    QFont
 )
 from modules.datatypes import (
     Series, 
     Section,
     Trace,
     Ztrace,
-    Transform
+    Transform,
+    Flag
 )
 from modules.calc import (
     pointInPoly,
@@ -563,6 +566,28 @@ class TraceLayer():
             )]
         painter.end()
     
+    def _drawFlag(self, trace_layer : QPixmap, flag : Flag):
+        """Draw the flag on the field.
+        
+            Params:
+                flag (Flag): the flag to draw on the field
+        """
+        x, y = self.pointToPix((flag.x, flag.y))
+        c = flag.color
+        black_outline = c[0] + 3*c[1] + c[2] > 400
+
+        painter = QPainter(trace_layer)
+        drawOutlinedText(
+            painter,
+            x,
+            y,
+            "⚑",
+            c,
+            (0, 0, 0) if black_outline else (255, 255, 255),
+            10
+        )
+        painter.end()
+    
     def _drawZtraceHighlights(self, trace_layer : QPixmap):
         """Draw highlighted points on the current trace layer.
         
@@ -647,6 +672,12 @@ class TraceLayer():
                 if ztrace not in self.section.temp_hide:
                     self._drawZtrace(trace_layer, ztrace)
             self._drawZtraceHighlights(trace_layer)
+        
+        # draw flags
+        self.flags_in_view = []
+        for flag in self.section.flags:
+            if flag not in self.section.temp_hide:
+                self._drawFlag(trace_layer, flag)
                 
         return trace_layer
 
@@ -820,5 +851,30 @@ def drawArrow(painter : QPainter, line : QLine, p1_arrow=True, p2_arrow=True):
             drawArrowHead(painter, line.p1(), theta)
         if p2_arrow:
             drawArrowHead(painter, line.p2(), theta)
+
+def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
+    """Draw outlined text using a QPainter object.
+    
+        Params:
+            painter (QPainter): the QPainter object to use
+            x (int): the x-pos of the text
+            y (int): the y-pos of the text
+            text (str): the text to write to the screen
+            c1 (tuple): the primary color of the text
+            c2 (tuple): the outline color of the text
+            size (int): the size of the text
+    """
+    if right_justify:
+        x -= int(len(text) * (size * 0.812))
+    
+    w = 1  # outline thickness
+    path = QPainterPath()
+    font = QFont("Courier New", size, QFont.Bold)
+    path.addText(x, y, font, text)
+
+    pen = QPen(QColor(*c2), w * 2)
+    brush = QBrush(QColor(*c1))
+    painter.strokePath(path, pen)
+    painter.fillPath(path, brush)
 
         

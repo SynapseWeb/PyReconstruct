@@ -4,6 +4,7 @@ import json
 
 from .contour import Contour
 from .trace import Trace
+from .flag import Flag
 from .transform import Transform
 
 from modules.calc import (
@@ -70,7 +71,7 @@ class Section():
                 trace_list
             )
         
-        # ADDED SINCE JAN 25TH
+        self.flags = [Flag.fromList(l) for l in section_data["flags"]]
 
         self.calgrid = section_data["calgrid"]
     
@@ -160,7 +161,7 @@ class Section():
                     trace.getList(include_name=False) for trace in self.contours[contour_name]
                 ]
         
-        # ADDED SINCE JAN 25TH
+        d["flags"] = [f.getList() for f in self.flags]
 
         d["calgrid"] = self.calgrid
 
@@ -178,9 +179,7 @@ class Section():
         section_data["tforms"] = {}  
         section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
         section_data["contours"] = {}
-
-        # ADDED SINCE JAN 25TH
-
+        section_data["flags"] = []
         section_data["calgrid"] = False
 
         return section_data
@@ -587,7 +586,6 @@ class Section():
             self.series.modified_ztraces.add(ztrace.name)
             if log_event:
                 self.series.addLog(ztrace.name, self.n, "Modify ztrace")
-
     
     def importTraces(self, other, regex_filters=[]):
         """Import the traces from another section.

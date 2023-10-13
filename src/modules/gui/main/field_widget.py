@@ -75,6 +75,7 @@ class FieldWidget(QWidget, FieldView):
         self.single_click = False
         self.mouse_x = 0
         self.mouse_y = 0
+        self.mouse_boundary_timer = None
 
         self.createField(series)
 
@@ -936,6 +937,45 @@ class FieldWidget(QWidget, FieldView):
         self.mclick = False
         self.single_click = False
     
+    def checkMouseBoundary(self):
+        """Move the window if the mouse is close to the boundary."""
+        x, y = self.mouse_x, self.mouse_y
+
+        # check if mouse is is wthin 2% of screen boundary
+        xmin, xmax = round(self.width() * 0.02), round(self.width() * .98)
+        ymin, ymax = round(self.height() * 0.02), round(self.height() * .98)
+
+        shift = [0, 0]
+
+        if x <= xmin:
+            shift[0] -= xmin
+        elif x >= xmax:
+            shift[0] += xmin
+        if y <= ymin:
+            shift[1] -= ymin
+        elif y >= ymax:
+            shift[1] += ymin
+        
+        # move the window and current trace
+        if shift[0] or shift[1]:
+            s = self.section.mag / self.section_layer.scaling
+            w = self.series.window
+            w[0] += shift[0] * s
+            w[1] -= shift[1] * s
+            self.current_trace = [(x-shift[0], y-shift[1]) for x, y in self.current_trace]
+            self.generateView()
+    
+    def activateMouseBoundaryTimer(self):
+        """Activate the timer to check the mouse boundary."""
+        self.mouse_boundary_timer = QTimer(self)
+        self.mouse_boundary_timer.timeout.connect(self.checkMouseBoundary)
+        self.mouse_boundary_timer.start(100)
+    
+    def deactivateMouseBoundaryTimer(self):
+        """Deactivate the timer to check the mouse near boundary."""
+        if self.mouse_boundary_timer:
+            self.mouse_boundary_timer.stop()
+    
     def isSingleClicking(self):
         """Check if user is single-clicking.
         
@@ -1012,6 +1052,7 @@ class FieldWidget(QWidget, FieldView):
         else:
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
+                self.activateMouseBoundaryTimer()
             if self.series.options["pointer"][0] == "rect":
                 x1, y1 = self.current_trace[0]
                 x2, y2 = event.x(), event.y()
@@ -1025,7 +1066,8 @@ class FieldWidget(QWidget, FieldView):
                 x = event.x()
                 y = event.y()
                 self.current_trace.append((x, y))
-            # draw the trace on the screen
+
+            # draw to screen
             self.update()
     
     def pointerRelease(self, event):
@@ -1062,6 +1104,7 @@ class FieldWidget(QWidget, FieldView):
         # user selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
+            self.deactivateMouseBoundaryTimer()
             selected = self.section_layer.getTraces(self.current_trace)
             if selected:
                 traces, ztraces = selected
@@ -1234,6 +1277,7 @@ class FieldWidget(QWidget, FieldView):
         elif self.isSingleClicking():
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
+            self.activateMouseBoundaryTimer()
             self.mainwindow.checkActions()
         # user is not line tracing
         elif not self.is_line_tracing:
@@ -1296,6 +1340,7 @@ class FieldWidget(QWidget, FieldView):
         if override or self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
             closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
             self.is_line_tracing = False
+            self.deactivateMouseBoundaryTimer()
             if len(self.current_trace) > 1:
                 current_trace_copy = self.current_trace.copy()
                 self.current_trace = []
@@ -1324,6 +1369,7 @@ class FieldWidget(QWidget, FieldView):
             self.update()
         elif len(self.current_trace) == 1:
             self.is_line_tracing = False
+            self.deactivateMouseBoundaryTimer()
             self.update()
         else:
             self.deleteTraces()
@@ -1443,6 +1489,7 @@ class FieldWidget(QWidget, FieldView):
                     else:
                         self.current_trace = seg1
                 self.is_line_tracing = True
+                self.activateMouseBoundaryTimer()
                 self.mainwindow.checkActions()
                 self.tracing_trace = self.selected_trace
                 self.update()

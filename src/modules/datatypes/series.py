@@ -455,6 +455,9 @@ class Series():
                 # remove history from trace if it exists
                 elif len(trace) == 10:
                     trace.pop()
+                # check for trace mode
+                if type(trace[7]) is not list:
+                    trace[7] = ["none", "none"]
 
         # check for palette reformatting
         if "current_trace" in series_data:

@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QRadioButton,
     QGridLayout,
-    QTabWidget
+    QTabWidget,
+    QScrollArea
 )
 
 from .helper import resizeLineEdit, BrowseWidget
@@ -301,7 +302,7 @@ class QuickDialog(QDialog):
 
 class QuickTabDialog(QuickDialog):
 
-    def __init__(self, parent, structures : dict, title="Dialog", grid=False):
+    def __init__(self, parent, structures : dict, title="Dialog", grid=False, scrollable=False):
         """Create a quick dialog and return the inputs.
         
             Params:
@@ -325,8 +326,14 @@ class QuickTabDialog(QuickDialog):
             w.setLayout(vlayout)
             self.tab_widget.addTab(w, n)
 
-        full_vlayout = QVBoxLayout()        
-        full_vlayout.addWidget(self.tab_widget)    
+        full_vlayout = QVBoxLayout()
+        if scrollable:
+            qsa = QScrollArea(self)
+            qsa.setWidget(self.tab_widget)
+            qsa.setHorizontalScrollBar(None)
+            full_vlayout.addWidget(qsa)
+        else:
+            full_vlayout.addWidget(self.tab_widget)    
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)

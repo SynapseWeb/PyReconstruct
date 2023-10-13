@@ -1860,7 +1860,7 @@ class MainWindow(QMainWindow):
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
-            [("radio", ("Include selected traces", t=="inc"), ("Exclude selected traces", t=="exc"))]
+            [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:

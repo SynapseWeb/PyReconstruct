@@ -129,11 +129,11 @@ class MousePalette():
 
         # manually enter dialog function for pointer and grid
         if name == "Pointer":
-            b.contextMenuEvent = self.mainwindow.modifyPointer
+            b.setRightClickEvent(self.mainwindow.modifyPointer)
         elif name == "Closed Trace":
-            b.contextMenuEvent = self.mainwindow.changeClosedTraceMode
+            b.setRightClickEvent(self.mainwindow.changeClosedTraceMode)
         elif name == "Grid":
-            b.contextMenuEvent = self.mainwindow.modifyGrid
+            b.setRightClickEvent(self.mainwindow.modifyGrid)
 
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default

@@ -737,18 +737,24 @@ class FieldWidget(QWidget, FieldView):
 
         if g.state() == Qt.GestureState.GestureStarted:
             self.is_gesturing = True
-            p = self.mapFromGlobal(g.centerPoint())
+            p = g.centerPoint()
+            if os.name == "nt":
+                p = self.mapFromGlobal(p)
             self.clicked_x, self.clicked_y = p.x(), p.y()
             self.panzoomPress(self.clicked_x, self.clicked_y)
 
         elif g.state() == Qt.GestureState.GestureUpdated:
-            p = self.mapFromGlobal(g.centerPoint())
+            p = g.centerPoint()
+            if os.name == "nt":
+                p = self.mapFromGlobal(p)
             x, y = p.x(), p.y()
             self.panzoomMove(x, y, g.totalScaleFactor())
 
         elif g.state() == Qt.GestureState.GestureFinished:
             self.is_gesturing = False
-            p = self.mapFromGlobal(g.centerPoint())
+            p = g.centerPoint()
+            if os.name == "nt":
+                p = self.mapFromGlobal(p)
             x, y = p.x(), p.y()
             self.panzoomRelease(x, y, g.totalScaleFactor())
         

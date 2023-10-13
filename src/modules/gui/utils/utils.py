@@ -7,9 +7,18 @@ from PySide6.QtWidgets import (
     QMenu,
     QProgressDialog,
     QMessageBox,
-    QFileDialog
+    QFileDialog,
+    QLabel
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import (
+    QAction,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QBrush,
+    QColor,
+    QFont
+)
 from PySide6.QtCore import Qt
 
 from modules.constants import fd_dir
@@ -189,3 +198,33 @@ def getSaveLocation(series):
     else:
         fd_dir.set(os.path.dirname(file_path))
         return file_path, True
+
+def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
+    """Draw outlined text using a QPainter object.
+    
+        Params:
+            painter (QPainter): the QPainter object to use
+            x (int): the x-pos of the text
+            y (int): the y-pos of the text
+            text (str): the text to write to the screen
+            c1 (tuple): the primary color of the text
+            c2 (tuple): the outline color of the text
+            size (int): the size of the text
+    """
+    font = QFont("Courier New", size, QFont.Bold)
+
+    if right_justify:
+        l = QLabel(text=text)
+        l.setFont(font)
+        l.adjustSize()
+        x -= l.width()
+        l.close()
+    
+    w = 1  # outline thickness
+    path = QPainterPath()
+    path.addText(x, y, font, text)
+
+    pen = QPen(QColor(*c2), w * 2)
+    brush = QBrush(QColor(*c1))
+    painter.strokePath(path, pen)
+    painter.fillPath(path, brush)

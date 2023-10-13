@@ -13,5 +13,6 @@ from .utils import (
     saveNotify,
     unsavedNotify,
     getSaveLocation,
-    mainwindow
+    mainwindow,
+    drawOutlinedText
 )

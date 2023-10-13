@@ -119,6 +119,9 @@ class Section():
                 # remove history from trace if it exists
                 elif len(trace) == 9:
                     trace.pop()
+                # check for trace mode
+                if type(trace[6]) is not list:
+                    trace[6] = ["none", "none"]
                 # check for empty/defective traces
                 if len(trace[0]) < 2:
                     flagged_traces.append(i)

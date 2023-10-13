@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QWidget, 
     QMainWindow, 
     QInputDialog, 
-    QGestureEvent
+    QGestureEvent,
 )
 from PySide6.QtCore import (
     Qt, 
@@ -16,11 +16,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QPixmap, 
     QPen,
-    QBrush,
     QColor,
-    QFont, 
     QPainter, 
-    QPainterPath,
     QPointingDevice,
     QCursor
 )
@@ -35,7 +32,7 @@ from modules.backend.table import (
     ZtraceTableManager
 )
 from modules.gui.dialog import TraceDialog, QuickDialog
-from modules.gui.utils import notify
+from modules.gui.utils import notify, drawOutlinedText
 from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
@@ -367,6 +364,15 @@ class FieldWidget(QWidget, FieldView):
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
         
+        # place text on other side of mode palette (if applicable)
+        if self.mainwindow.mouse_palette.mode_x > .5:
+            x = 10
+            right_justified = False
+        else:
+            x = self.width() - 10
+            right_justified = True
+        y = 0
+        
         # draw the name of the closest trace on the screen
         # draw the selected traces to the screen
         ct_size = 12
@@ -461,15 +467,6 @@ class FieldWidget(QWidget, FieldView):
                     names[ztrace.name] = 1
                     counter += 1
             self.selected_ztrace_names = names
-        
-        # place text on other side of mode palette (if applicable)
-        if self.mainwindow.mouse_palette.mode_x > .5:
-            x = 10
-            right_justified = False
-        else:
-            x = self.width() - 10
-            right_justified = True
-        y = 0
 
         # draw the names of the blended sections
         if self.blend_sections and self.b_section:
@@ -1507,29 +1504,4 @@ class FieldWidget(QWidget, FieldView):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             self.lineRelease(override=True)
-
-def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
-    """Draw outlined text using a QPainter object.
-    
-        Params:
-            painter (QPainter): the QPainter object to use
-            x (int): the x-pos of the text
-            y (int): the y-pos of the text
-            text (str): the text to write to the screen
-            c1 (tuple): the primary color of the text
-            c2 (tuple): the outline color of the text
-            size (int): the size of the text
-    """
-    if right_justify:
-        x -= int(len(text) * (size * 0.812))
-    
-    w = 1  # outline thickness
-    path = QPainterPath()
-    font = QFont("Courier New", size, QFont.Bold)
-    path.addText(x, y, font, text)
-
-    pen = QPen(QColor(*c2), w * 2)
-    brush = QBrush(QColor(*c1))
-    painter.strokePath(path, pen)
-    painter.fillPath(path, brush)
 

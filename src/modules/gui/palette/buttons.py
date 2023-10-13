@@ -7,9 +7,10 @@ from PySide6.QtGui import (
     QPainter, 
     QPen, 
     QColor,
-    QBrush
+    QBrush,
+    QAction
 )
-from PySide6.QtCore import QPoint, QRect
+from PySide6.QtCore import QPoint, QRect, Qt
 
 from modules.datatypes import Trace
 from modules.gui.dialog import TraceDialog
@@ -24,12 +25,15 @@ class MoveableButton(QPushButton):
         self.click_time = None
         self.clicked_x = None
         self.clicked_y = None
+        self.right_clicked = False
+        self.rc_act = None
     
     def mousePressEvent(self, event):
         """Called when button is pressed."""
         self.click_time = time.time()
         self.clicked_x = event.globalX()
         self.clicked_y = event.globalY()
+        self.right_clicked = event.buttons() == Qt.RightButton
         super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
@@ -48,6 +52,13 @@ class MoveableButton(QPushButton):
         """Called when mouse is released."""
         super().mouseReleaseEvent(event)
         self.manager.is_dragging = False
+
+        if self.rc_act and self.right_clicked:
+            self.rc_act.trigger()
+    
+    def setRightClickEvent(self, fn):
+        self.rc_act = QAction(self)
+        self.rc_act.triggered.connect(fn)
 
 
 class ModeButton(MoveableButton):
@@ -70,6 +81,7 @@ class PaletteButton(MoveableButton):
 
     def __init__(self, parent, manager):
         super().__init__(parent, manager, "trace")
+        self.setRightClickEvent(self.openDialog)
     
     def paintEvent(self, event):
         """Draw the trace on the button."""
@@ -113,10 +125,6 @@ class PaletteButton(MoveableButton):
         """
         self.trace = trace
         self.update()
-        
-    def contextMenuEvent(self, event):
-        """Executed when button is right-clicked: pulls up menu for user to edit button."""
-        self.openDialog()
     
     def openDialog(self):
         """Change the attributes of a trace on the palette."""

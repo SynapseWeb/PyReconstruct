@@ -2,7 +2,8 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QToolButton,
     QMessageBox,
-    QWidget
+    QWidget,
+    QScrollArea
 )
 from PySide6.QtCore import Qt
 

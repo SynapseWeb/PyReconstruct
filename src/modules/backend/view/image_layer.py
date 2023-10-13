@@ -236,17 +236,19 @@ class ImageLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_x, window_y, window_w, window_h = tuple(window) 
 
+        # scaling: ratio of screen pixels to actual image pixels (should be equal)
+        x_scaling = pixmap_w / (window_w / self.section.mag)
+        y_scaling = pixmap_h / (window_h / self.section.mag)
+        self.scaling = x_scaling
+        # assert(abs(x_scaling - y_scaling) < 1e-6)
+
         # return blank if image was not found
         if not self.image_found:
             blank_pixmap = QPixmap(pixmap_w, pixmap_h)
             blank_pixmap.fill(Qt.black)
             return blank_pixmap
 
-        # scaling: ratio of screen pixels to actual image pixels (should be equal)
-        x_scaling = pixmap_w / (window_w / self.section.mag)
-        y_scaling = pixmap_h / (window_h / self.section.mag)
-        self.scaling = x_scaling
-        # assert(abs(x_scaling - y_scaling) < 1e-6)
+        # get the applicable zarr scale if using zarr file for images
         scale_level = 1
         if self.is_zarr_file:
             for s in self.scales:

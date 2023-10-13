@@ -20,6 +20,7 @@ from PySide6.QtCore import (
 )
 
 from modules.datatypes.series import Series
+from modules.calc import centroid
 
 class ShapesDialog(QDialog):
 
@@ -36,8 +37,6 @@ class ShapesDialog(QDialog):
         vlayout = QVBoxLayout()
 
         self.traces = Series.getDefaultPaletteTraces()[:10]
-        for trace in self.traces:
-            trace.resize(1)
         self.rbs = []
         size = 30
 
@@ -74,7 +73,7 @@ def shapeToIcon(points : list, size=30):
             points (list): the list of points describing the shape
             size (int): the side length of the icon
     """
-    pts = points.copy()
+    pts = resizeShape(points)
     r = (size-2)//2
     pts = [QPoint(round(x*r + size/2), round(size-(y*r + size/2))) for x, y in pts]
 
@@ -88,3 +87,25 @@ def shapeToIcon(points : list, size=30):
     icon = QIcon(pixmap)
 
     return icon
+
+def resizeShape(points : list):
+    """Modify a set of points so that they have a radius of 1 centered about the origin.
+    
+        Params:
+            points (list): the set of points describing the shape
+    """
+    points = points.copy()
+
+    # center around origin and calculate the radius
+    cx, cy = centroid(points)
+    max_dist = 0
+    for i, (x, y) in enumerate(points):
+        x, y = x-cx, y-cy
+        points[i] = (x, y)
+        d = (x**2 + y**2) ** (0.5)
+        if d > max_dist: max_dist = d
+    
+    # modify radius to equal zero
+    points = [(x/max_dist, y/max_dist) for x, y in points]
+
+    return points

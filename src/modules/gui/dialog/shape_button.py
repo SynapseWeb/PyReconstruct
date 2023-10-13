@@ -34,4 +34,3 @@ class ShapeButton(QPushButton):
         """Called when button is resized."""
         super().resizeEvent(event)
         self.setShape(self.points)
-

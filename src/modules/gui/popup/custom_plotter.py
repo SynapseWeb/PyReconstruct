@@ -234,7 +234,9 @@ class CustomPlotter(vedo.Plotter):
             self.render()
     
     def removeObjects(self, obj_names):
-        """Remove objects from the scene."""        
+        """Remove objects from the scene."""
+        if not self.is_showing:
+            return    
         for actor in self.getObjects():
             name = actor.metadata["name"][0]
             if name in obj_names:
@@ -271,6 +273,8 @@ class CustomPlotter(vedo.Plotter):
     
     def removeZtraces(self, ztrace_names):
         """Remove ztraces from the scene."""
+        if not self.is_showing:
+            return
         for actor in self.getZtraces():
             name = actor.metadata["name"][0]
             if name in ztrace_names:
@@ -325,7 +329,7 @@ class CustomPlotter(vedo.Plotter):
         if not self.is_showing:
             self.is_showing = True
             self.window.ShowWindowOn()
-            self.show(*self.actors).close()
+            self.show(*self.actors)
         else:
             self.render()
     

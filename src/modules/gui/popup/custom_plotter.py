@@ -1,3 +1,4 @@
+import os
 import vedo
 
 from modules.gui.dialog import QuickDialog
@@ -329,7 +330,11 @@ class CustomPlotter(vedo.Plotter):
         if not self.is_showing:
             self.is_showing = True
             self.window.ShowWindowOn()
-            self.show(*self.actors)
+            # stopgap for apple machines
+            if os.name == "posix":
+                self.show(*self.actors)
+            else:
+                self.show(*self.actors).close()
         else:
             self.render()
     

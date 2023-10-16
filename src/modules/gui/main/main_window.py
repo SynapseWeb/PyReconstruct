@@ -2303,7 +2303,7 @@ class MainWindow(QMainWindow):
         
         if not self.viewer or self.viewer.is_closed:
             self.viewer = CustomPlotter(self)
-        
+                
         if ztraces:
             self.viewer.addZtraces(obj_names)
         else:

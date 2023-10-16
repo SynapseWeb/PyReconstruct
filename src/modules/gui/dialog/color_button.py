@@ -27,8 +27,9 @@ class ColorButton(QPushButton):
     def setColor(self, color):
         """Sets the visual color for the button."""
         self.color = color
-        s = f"({','.join(map(str,self.color))})"
-        self.setStyleSheet(f"background-color:rgb{s}")
+        if color:
+            s = f"({','.join(map(str,self.color))})"
+            self.setStyleSheet(f"background-color:rgb{s}")
     
     def getColor(self):
         return self.color

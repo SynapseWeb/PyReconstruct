@@ -35,7 +35,6 @@ from modules.gui.dialog import (
 )
 from modules.gui.popup import TextWidget, CustomPlotter
 from modules.gui.utils import (
-    progbar,
     populateMenuBar,
     populateMenu,
     notify,

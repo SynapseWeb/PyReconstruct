@@ -7,7 +7,8 @@ from .zarr_layer import ZarrLayer
 from modules.datatypes import (
     Series,
     Transform,
-    Trace
+    Trace,
+    Flag
 )
 from modules.backend.func import SectionStates
 from modules.calc import (
@@ -488,7 +489,25 @@ class FieldView():
         else:
             self.section.selected_ztraces.append(ztrace_i)
         
-        self.generateView(generate_image=False)            
+        self.generateView(generate_image=False)
+
+    def selectFlag(self, flag : Flag):
+        """Select/deselect a single flag.
+        
+            Params:
+                flag (Flag): the flag to select
+        """
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        
+        # check if flag has been selected
+        if flag in self.section.selected_flags:
+            self.section.selected_flags.remove(flag)
+        else:
+            self.section.selected_flags.append(flag)
+        
+        self.generateView(generate_image=False)
     
     def selectTraces(self, traces : list[Trace], ztraces_i : list):
         """Select/deselect a set of traces.
@@ -860,15 +879,6 @@ class FieldView():
         )
         self.generateView(generate_image=False)
         self.saveState()
-
-    
-    def findClosestTrace(self, field_x, field_y, radius=0.5):
-        return self.section.findClosestTrace(
-            field_x,
-            field_y,
-            radius,
-            self.section_layer.traces_in_view
-        )
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden

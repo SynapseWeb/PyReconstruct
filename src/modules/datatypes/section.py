@@ -32,6 +32,7 @@ class Section():
 
         self.selected_traces = []
         self.selected_ztraces = []
+        self.selected_flags = []
 
         self.temp_hide = []
 
@@ -307,6 +308,17 @@ class Section():
             self.removed_traces.append(trace.copy())
         if log_event:
             self.series.addLog(trace.name, self.n, "Delete trace(s)")
+    
+    def removeFlag(self, flag : Flag, log_event=True):
+        """Remove a flag from the section.
+        
+            Params:
+                flag (Flag): the flag to remove from the section
+        """
+        if flag in self.flags:
+            self.flags.remove(flag)
+            if log_event:
+                self.series.addLog(None, self.n, "Delete flag(s)")
 
     def editTraceAttributes(self, traces : list[Trace], name : str, color : tuple, tags : set, mode : tuple, add_tags=False, log_event=True):
         """Change the name and/or color of a trace or set of traces.
@@ -397,7 +409,8 @@ class Section():
             radius=0.5,
             traces_in_view : list[Trace] = None,
             include_hidden=False,
-            include_ztraces=True):
+            include_ztraces=True,
+            include_flags=True):
         """Find closest trace/ztrace to field coordinates in a given radius.
         
             Params:
@@ -467,9 +480,24 @@ class Section():
                             closest = (ztrace, i)
                             closest_type = "ztrace_pt"
         
-        if min_distance > radius and closest_trace_interior:
-            closest = closest_trace_interior
-            closest_type = "trace"
+        # check for flags close by
+        if include_flags:
+            for flag in self.flags:
+                x, y = tform.map(flag.x, flag.y)
+                dist = distance(field_x, field_y, x, y)
+                if closest is None or dist < min_distance:
+                    min_distance = dist
+                    closest = flag
+                    closest_type = "flag"
+        
+        # check for radius and if pointer is in interior
+        if min_distance > radius:
+            if closest_trace_interior:
+                closest = closest_trace_interior
+                closest_type = "trace"
+            else:
+                closest = None
+                closest_type = None
 
         return closest, closest_type
     
@@ -477,6 +505,7 @@ class Section():
         """Deselect all traces."""
         self.selected_traces = []
         self.selected_ztraces = []
+        self.selected_flags = []
     
     def selectAllTraces(self):
         """Select all traces."""
@@ -529,11 +558,12 @@ class Section():
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify trace(s)")
     
-    def deleteTraces(self, traces : list = None, log_event=True):
+    def deleteTraces(self, traces : list = None, flags : list = None, log_event=True):
         """Delete selected traces.
         
             Params:
                 traces (list): a list of traces to delete (default is selected traces)
+                flags (list): a list of flags to delete (default is selected flags)
         """
         modified = False
 
@@ -545,6 +575,15 @@ class Section():
             self.removeTrace(trace, log_event)
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
+        
+        if flags is None:
+            flags = self.selected_flags.copy()
+        
+        for flag in flags:
+            modified = True
+            self.removeFlag(flag, log_event)
+            if flag in self.selected_flags:
+                self.selected_flags.remove(flag)
 
         return modified
     
@@ -556,6 +595,7 @@ class Section():
                 dy (float): y-translate
         """
         tform = self.tform
+
         for trace in self.selected_traces:
             self.removeTrace(trace, log_event=False)
             for i, p in enumerate(trace.points):
@@ -571,6 +611,7 @@ class Section():
             self.addTrace(trace, log_event=False)
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify trace(s)")
+        
         for ztrace, i in self.selected_ztraces:
             x, y, snum = ztrace.points[i]
             # apply forward tform
@@ -586,6 +627,20 @@ class Section():
             self.series.modified_ztraces.add(ztrace.name)
             if log_event:
                 self.series.addLog(ztrace.name, self.n, "Modify ztrace")
+        
+        for flag in self.selected_flags:
+            # apply forward tform
+            x, y = tform.map(flag.x, flag.y)
+            # apply translate
+            x += dx
+            y += dy
+            # apply reverse tform
+            x, y = tform.map(x, y, inverted=True)
+            # replace point
+            flag.x, flag.y = x, y
+            # keep track of modified flag
+            if log_event:
+                self.series.addLog(None, self.n, "Modify flag")
     
     def importTraces(self, other, regex_filters=[]):
         """Import the traces from another section.

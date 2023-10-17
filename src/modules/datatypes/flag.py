@@ -18,3 +18,6 @@ class Flag():
         ) = tuple(l)
         return Flag(x, y, color, comment)
     
+    def copy(self):
+        return Flag(self.x, self.y, self.color, self.comment)
+    

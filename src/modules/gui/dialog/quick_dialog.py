@@ -31,7 +31,7 @@ class InputField():
         self.required = required
     
     def getResponse(self):
-        if self.type == "text" or "textbox":
+        if self.type == "text" or self.type == "textbox":
             t = self.widget.text() if self.type == "text" else self.widget.toPlainText()
             if not t and self.required:
                 notify("Please enter a response.")
@@ -183,7 +183,7 @@ class QuickDialog(QDialog):
                     if widget_type == "text" or widget_type == "textbox":  # Text input
                         # Params structure: str
                         text = params[0]
-                        w = QLineEdit(text, self) if widget_type == "text" else QTextEdit(text, self)
+                        w = QLineEdit(text, self) if widget_type == "text" else QTextEdit(text.replace("\n", "<br/>"), self)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "int" or widget_type == "float": 
                         # Params structure: int, optional: list[int]

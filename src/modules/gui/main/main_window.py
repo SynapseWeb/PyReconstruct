@@ -445,8 +445,7 @@ class MainWindow(QMainWindow):
             self.hidetraces_act,
             self.cut_act,
             self.copy_act,
-            self.pasteattributes_act,
-            self.deletetraces_act
+            self.pasteattributes_act
         ]
         self.ztrace_actions = [
             self.edittrace_act

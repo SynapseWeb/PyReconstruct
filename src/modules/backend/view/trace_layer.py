@@ -110,7 +110,8 @@ class TraceLayer():
             radius=radius,
             traces_in_view=self.traces_in_view,
             include_hidden=self.show_all_traces,
-            include_ztraces=self.series.options["show_ztraces"]
+            include_ztraces=self.series.options["show_ztraces"],
+            include_flags=self.series.options["show_flags"]
         )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
@@ -287,6 +288,21 @@ class TraceLayer():
                     new_trace.add(rtform_point)
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
+        
+    def placeFlag(self, pix_x : int, pix_y : int, color : tuple, comment : str):
+        """Create a flag on the section.
+        
+            Params:
+                pix_x (float): the x-coord of the mouse location
+                pix_y (float): the y-coord of the mouse location
+                color (tuple): the color of the flag
+                comment (str): the flag comment
+        """
+        # get field coords then fix to image
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        x, y = self.section.tform.map(field_x, field_y, inverted=True)
+        # create flag
+        self.section.addFlag(Flag(x, y, color, comment, self.series.user))
     
     def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
         """Merge all selected traces.
@@ -606,7 +622,6 @@ class TraceLayer():
         """
         x, y = self.pointToPix((flag.x, flag.y))
         c = flag.color
-        black_outline = c[0] + 3*c[1] + c[2] > 400
 
         painter = QPainter(trace_layer)
         drawOutlinedText(
@@ -615,13 +630,13 @@ class TraceLayer():
             y,
             "⚑",
             c,
-            (0, 0, 0) if black_outline else (255, 255, 255),
-            14
+            None,
+            self.series.options["flag_size"]
         )
         # draw highlight if necessary
         if flag in self.section.selected_flags:
             lbl = QLabel()
-            lbl.setFont(QFont("Courier New", 14, QFont.Bold))
+            lbl.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
             lbl.adjustSize()
             w, h = lbl.width(), lbl.height()
             center = QPoint(round(x + w/2), round(y - h/2))
@@ -686,9 +701,10 @@ class TraceLayer():
         
         # draw flags
         self.flags_in_view = []
-        for flag in self.section.flags:
-            if flag not in self.section.temp_hide:
-                self._drawFlag(trace_layer, flag)
+        if self.series.options["show_flags"]:
+            for flag in self.section.flags:
+                if flag not in self.section.temp_hide:
+                    self._drawFlag(trace_layer, flag)
                 
         return trace_layer
 

@@ -203,7 +203,23 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
     
     w = 1  # outline thickness
     path = QPainterPath()
-    path.addText(x, y, font, text)
+    if "\n" in text:
+        l = QLabel(text="X")
+        l.setFont(font)
+        l.adjustSize()
+        h = l.height()
+        l.close()
+        split_text = text.split("\n")
+        for line in split_text:
+            path.addText(x, y, font, line)
+            y += h + 1
+    else:
+        path.addText(x, y, font, text)
+    
+    # determine outline color if not provided
+    if not c2:
+        black_outline = c1[0] + 3*c1[1] + c1[2] > 400
+        c2 = (0, 0, 0) if black_outline else (255, 255, 255)
 
     pen = QPen(QColor(*c2), w * 2)
     brush = QBrush(QColor(*c1))

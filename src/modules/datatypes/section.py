@@ -312,6 +312,16 @@ class Section():
         if log_event:
             self.series.addLog(trace.name, self.n, "Delete trace(s)")
     
+    def addFlag(self, flag : Flag, log_event=True):
+        """Add a flag to the section.
+        
+            Params:
+                flag (Flag): the flag to add to the section
+        """
+        self.flags.append(flag)
+        if log_event:
+            self.series.addLog(None, self.n, "Create flag(s)")
+    
     def removeFlag(self, flag : Flag, log_event=True):
         """Remove a flag from the section.
         

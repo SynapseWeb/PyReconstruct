@@ -528,6 +528,9 @@ class Series():
         options["show_ztraces"] = False
         options["find_zoom"] = 95
         options["autoseg"] = {}
+        options["show_flags"] = True
+        options["flag_color"] = (255, 0, 0)
+        options["flag_size"] = 14
 
         series_data["last_user"] = {}
         series_data["curation"] = {}

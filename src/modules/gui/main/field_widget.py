@@ -366,6 +366,12 @@ class FieldWidget(QWidget, FieldView):
                 field_painter.setPen(QPen(QColor(*color), 6))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
+            # redraw flag with translation
+            for (x, y), color in self.moving_flags:
+                field_painter.setPen(QPen(QColor(*color), 6))
+                field_painter.setFont(QFont("Courier New", 14, QFont.Bold))
+                qpoint = QPoint(x+dx, y+dy)
+                field_painter.drawText(qpoint, "⚑")
         
         # draw the name of the closest trace on the screen
         # draw the selected traces to the screen
@@ -419,7 +425,10 @@ class FieldWidget(QWidget, FieldView):
                         elif closest_type == "ztrace_pt":
                             closest = closest[0]
                             name = f"{closest.name} (ztrace)"
-                        
+                        # flag returned
+                        elif closest_type == "flag":
+                            name = "Flag (right-click to view comment)"
+                                                
                         pos = self.mouse_x, self.mouse_y
                         c = closest.color
                         black_outline = c[0] + 3*c[1] + c[2] > 400
@@ -547,7 +556,10 @@ class FieldWidget(QWidget, FieldView):
 
         # update the status bar
         if not self.is_panzooming:
-            self.updateStatusBar(closest)
+            if closest_type == "flag":
+                self.updateStatusBar()
+            else:
+                self.updateStatusBar(closest)
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -806,7 +818,17 @@ class FieldWidget(QWidget, FieldView):
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
-                self.mainwindow.field_menu.exec(event.globalPos())
+                if clicked_type == "flag":
+                    structure = [
+                        [("textbox", clicked_trace.comment)]
+                    ]
+                    response, confirmed = QuickDialog.get(self, structure, "Flag Comment")
+                    if confirmed:
+                        print(response)
+                        clicked_trace.comment = response[0]
+                    self.saveState()
+                else:
+                    self.mainwindow.field_menu.exec(event.globalPos())
             self.mainwindow.checkActions()
             return
 
@@ -974,7 +996,8 @@ class FieldWidget(QWidget, FieldView):
         if (
             self.is_moving_trace or 
             self.selected_trace in self.section.selected_traces or
-            self.selected_trace in self.section.selected_ztraces
+            self.selected_trace in self.section.selected_ztraces or
+            self.selected_trace in self.section.selected_flags
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
@@ -983,6 +1006,7 @@ class FieldWidget(QWidget, FieldView):
                 # get pixel points
                 self.moving_traces = []
                 self.moving_points = []
+                self.moving_flags = []
                 for trace in self.section.selected_traces:
                     # hide the trace
                     self.section.temp_hide.append(trace)
@@ -999,6 +1023,13 @@ class FieldWidget(QWidget, FieldView):
                     pix_point = self.section_layer.pointToPix(point)
                     color = ztrace.color
                     self.moving_points.append((pix_point, color))
+                for flag in self.section.selected_flags:
+                    # hide the flag
+                    self.section.temp_hide.append(flag)
+                    # get point and other data
+                    pix_point = self.section_layer.pointToPix((flag.x, flag.y))
+                    color = flag.color
+                    self.moving_flags.append((pix_point, color))
 
                 self.generateView(update=False)
             
@@ -1043,6 +1074,9 @@ class FieldWidget(QWidget, FieldView):
                 # if user selected a ztrace
                 elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
+                # if user selected a flag
+                elif self.selected_type == "flag":
+                    self.selectFlag(self.selected_trace)
         
         # user moved traces
         elif self.lclick and self.is_moving_trace:

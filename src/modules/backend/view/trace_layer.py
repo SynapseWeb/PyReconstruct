@@ -2,6 +2,7 @@ import math
 import numpy as np
 from skimage.draw import polygon
 
+from PySide6.QtWidgets import QLabel
 from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
     QPixmap,
@@ -565,29 +566,7 @@ class TraceLayer():
                 ztrace
             )]
         painter.end()
-    
-    def _drawFlag(self, trace_layer : QPixmap, flag : Flag):
-        """Draw the flag on the field.
-        
-            Params:
-                flag (Flag): the flag to draw on the field
-        """
-        x, y = self.pointToPix((flag.x, flag.y))
-        c = flag.color
-        black_outline = c[0] + 3*c[1] + c[2] > 400
 
-        painter = QPainter(trace_layer)
-        drawOutlinedText(
-            painter,
-            x,
-            y,
-            "⚑",
-            c,
-            (0, 0, 0) if black_outline else (255, 255, 255),
-            10
-        )
-        painter.end()
-    
     def _drawZtraceHighlights(self, trace_layer : QPixmap):
         """Draw highlighted points on the current trace layer.
         
@@ -617,6 +596,38 @@ class TraceLayer():
         for qpoint, color in zip(qpoints, colors):
             painter.setPen(QPen(QColor(*color), 15))
             painter.drawPoint(qpoint)
+        painter.end()
+    
+    def _drawFlag(self, trace_layer : QPixmap, flag : Flag):
+        """Draw the flag on the field.
+        
+            Params:
+                flag (Flag): the flag to draw on the field
+        """
+        x, y = self.pointToPix((flag.x, flag.y))
+        c = flag.color
+        black_outline = c[0] + 3*c[1] + c[2] > 400
+
+        painter = QPainter(trace_layer)
+        drawOutlinedText(
+            painter,
+            x,
+            y,
+            "⚑",
+            c,
+            (0, 0, 0) if black_outline else (255, 255, 255),
+            14
+        )
+        # draw highlight if necessary
+        if flag in self.section.selected_flags:
+            lbl = QLabel()
+            lbl.setFont(QFont("Courier New", 14, QFont.Bold))
+            lbl.adjustSize()
+            w, h = lbl.width(), lbl.height()
+            center = QPoint(round(x + w/2), round(y - h/2))
+            painter.setBrush(QBrush(QColor(*flag.color)))
+            painter.setOpacity(self.series.options["fill_opacity"])
+            painter.drawEllipse(center, w, h)
         painter.end()
    
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:

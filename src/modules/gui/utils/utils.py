@@ -106,25 +106,6 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     for menu_dict in menubar_list:
         newMenu(widget, menu, menu_dict)
 
-def progbar(title : str, text : str, cancel=True):
-    """Create an easy progress dialog."""
-    # check if PySide6 has benn initialized
-    if not QApplication.instance():
-        return None, None
-    else:
-        progbar = QProgressDialog(
-                text,
-                "Cancel",
-                0, 100,
-                mainwindow
-            )
-        progbar.setMinimumDuration(1500)
-        progbar.setWindowTitle(title)
-        progbar.setWindowModality(Qt.WindowModal)
-        if not cancel:
-            progbar.setCancelButton(None)
-        return progbar.setValue, progbar.wasCanceled
-
 def setMainWindow(mw):
     """Set the main window for the gui functions."""
     global mainwindow
@@ -228,3 +209,73 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
     brush = QBrush(QColor(*c1))
     painter.strokePath(path, pen)
     painter.fillPath(path, brush)
+
+# PROGRESS BAR
+
+class BasicProgbar():
+    def __init__(self, text : str, maximum=100):
+        """Create a 'vanilla' progress indicator.
+        
+        Params:
+            text (str): the text to display by the indicator
+        """
+        self.text = text
+        self.max = maximum
+        if self.max == 0:
+            print(f"{text} | Loading...", end="\r")
+        else:
+            print(f"{text} | 0.0%", end="\r")
+    
+    def setValue(self, n):
+        """Update the progress indicator.
+        
+            Params:
+                p (float): the percentage of progress made
+        """
+        if self.max == 0:
+            return
+        print(f"{self.text} | {n / self.max * 100 :.1f}%", end="\r")
+        if n == self.max:
+            self.close()
+    
+    def wasCanceled(self):
+        """Dummy function -- do nothing!"""
+        return False
+    
+    def close(self):
+        """Force finish the progbar."""
+        print()
+
+def getProgbar(text, cancel=True, maximum=100):
+    """Create a progress bar (either for pyqt or in cmd text).
+    
+        Params:
+            text (str): the text for the progress bar
+            cancel (bool): True if progress bar is cancelable
+            maximum (int): the max value for the progress bar
+    """
+    use_basic = False
+
+     # check if PySide6 has benn initialized
+    if not QApplication.instance():
+        use_basic = True
+    else:
+        try:
+            progbar = QProgressDialog(
+                    text,
+                    "Cancel",
+                    0, maximum,
+                    mainwindow
+                )
+            progbar.setMinimumDuration(1500)
+            progbar.setWindowTitle(" ")
+            progbar.setWindowModality(Qt.WindowModal)
+            if not cancel:
+                progbar.setCancelButton(None)
+        except:
+            use_basic = True
+
+    if use_basic:
+        progbar = BasicProgbar(text, maximum)
+    
+    return progbar

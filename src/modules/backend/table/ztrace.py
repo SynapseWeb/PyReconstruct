@@ -68,9 +68,14 @@ class ZtraceTableManager():
         ztrace = self.series.ztraces[name]
         if new_name:
             ztrace.name = new_name
-            if new_name != name:
+            if new_name != name:  # if renamed
                 del(self.series.ztraces[name])
                 self.series.ztraces[new_name] = ztrace
+                # update group data
+                groups = self.series.ztrace_groups.getObjectGroups(name)
+                for g in groups:
+                    self.series.ztrace_groups.add(g, new_name)
+                self.series.ztrace_groups.removeObject(name)
         if new_color:
             ztrace.color = new_color
         
@@ -130,6 +135,8 @@ class ZtraceTableManager():
         for name in names:
             del(self.series.ztraces[name])
             self.series.modified_ztraces.add(name)
+            # update the group data
+            self.series.ztrace_groups.removeObject(name)
         
         self.update(clear_tracking=True)
         self.series.modified_ztraces = set()

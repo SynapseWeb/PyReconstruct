@@ -5,7 +5,6 @@ from .utils import (
     addItem,
     populateMenu,
     populateMenuBar,
-    progbar,
     setMainWindow,
     notify,
     notifyConfirm,
@@ -14,5 +13,6 @@ from .utils import (
     unsavedNotify,
     getSaveLocation,
     mainwindow,
-    drawOutlinedText
+    drawOutlinedText,
+    getProgbar
 )

@@ -25,7 +25,7 @@ class ObjectGroupDialog(QDialog):
         """
         super().__init__(parent)
 
-        self.setWindowTitle("Object Group")
+        self.setWindowTitle("Group")
 
         group_row = QHBoxLayout()
         group_text = QLabel(self, text="Group:")

@@ -38,7 +38,7 @@ from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(8)
+    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG = range(9)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -368,7 +368,7 @@ class FieldWidget(QWidget, FieldView):
             # redraw flag with translation
             for (x, y), color in self.moving_flags:
                 field_painter.setPen(QPen(QColor(*color), 6))
-                field_painter.setFont(QFont("Courier New", 14, QFont.Bold))
+                field_painter.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawText(qpoint, "⚑")
         
@@ -405,13 +405,12 @@ class FieldWidget(QWidget, FieldView):
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
                     c = colorize(label_id)
-                    black_outline = c[0] + 3*c[1] + c[2] > 400
                     drawOutlinedText(
                         field_painter,
                         *pos,
                         str(label_id),
                         c,
-                        (0,0,0) if black_outline else (255,255,255),
+                        None,
                         ct_size
                     )
                 # if no label found, check for closest traces
@@ -435,17 +434,16 @@ class FieldWidget(QWidget, FieldView):
                             name = f"{closest.name} (ztrace)"
                         # flag returned
                         elif closest_type == "flag":
-                            name = "Flag (right-click to view comment)"
+                            name = formatAsParagraph(closest.user + ":\n" + closest.comment)
                                                 
                         pos = self.mouse_x, self.mouse_y
                         c = closest.color
-                        black_outline = c[0] + 3*c[1] + c[2] > 400
                         drawOutlinedText(
                             field_painter,
                             *pos,
                             name,
                             c,
-                            (0,0,0) if black_outline else (255,255,255),
+                            None,
                             ct_size
                         )
             
@@ -455,7 +453,7 @@ class FieldWidget(QWidget, FieldView):
             height = self.height()
             for trace in self.section.selected_traces:
                 # check for max number
-                if counter * (st_size + 10) + 20 > height / 2:
+                if counter * (st_size + 10) + 20 > height / 3:
                     names["..."] = 1
                     break
                 if trace.name in names:
@@ -469,7 +467,7 @@ class FieldWidget(QWidget, FieldView):
             counter = 0
             for ztrace, i in self.section.selected_ztraces:
                 # check for max number
-                if counter * (st_size + 10) + 20 > height / 2:
+                if counter * (st_size + 10) + 20 > height / 3:
                     names["..."] = 1
                     break
                 if ztrace.name in names:
@@ -486,6 +484,21 @@ class FieldWidget(QWidget, FieldView):
                 field_painter,
                 x, y,
                 f"Blended sections: {self.b_section.n} and {self.section.n}",
+                (255, 255, 255),
+                (0, 0, 0),
+                st_size,
+                right_justified
+            )
+            y += st_size
+        
+        # draw the number of selected flags
+        if self.section.selected_flags:
+            y += 20
+            l = len(self.section.selected_flags)
+            drawOutlinedText(
+                field_painter,
+                x, y,
+                f"{l} flag{'s' if l > 1 else ''} selected",
                 (255, 255, 255),
                 (0, 0, 0),
                 st_size,
@@ -717,6 +730,8 @@ class FieldWidget(QWidget, FieldView):
             cursor = QCursor(Qt.CrossCursor)
         elif mode == FieldWidget.SCISSORS:
             cursor = QCursor(Qt.CrossCursor)
+        elif mode == FieldWidget.FLAG:
+            cursor = QCursor(Qt.WhatsThisCursor)
         self.setCursor(cursor)
     
     def setTracingTrace(self, trace : Trace):
@@ -825,13 +840,15 @@ class FieldWidget(QWidget, FieldView):
             else:
                 if clicked_type == "flag":
                     structure = [
+                        ["Color:", ("color", clicked_trace.color)],
                         [("textbox", clicked_trace.comment)]
                     ]
                     response, confirmed = QuickDialog.get(self, structure, "Flag Comment")
                     if confirmed:
-                        print(response)
-                        clicked_trace.comment = response[0]
-                    self.saveState()
+                        clicked_trace.color = response[0]
+                        clicked_trace.comment = response[1]
+                        self.generateView(generate_image=False)
+                        self.saveState()
                 else:
                     self.mainwindow.field_menu.exec(event.globalPos())
             self.mainwindow.checkActions()
@@ -954,6 +971,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampRelease(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridRelease(event)
+        elif self.mouse_mode == FieldWidget.FLAG:
+            self.flagRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -1559,6 +1578,26 @@ class FieldWidget(QWidget, FieldView):
         self.current_trace = []
         self.update()
     
+    def flagRelease(self, event):
+        """Called when mouse is released in flag mode."""
+        if self.lclick and self.series.options["show_flags"]:
+            structure = [
+                [("textbox", "")]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Flag Comment")
+            if not confirmed:
+                return
+            
+            pix_x, pix_y = event.x(), event.y()
+            comment = response[0]
+            self.placeFlag(
+                pix_x, pix_y,
+                self.series.options["flag_color"],
+                comment
+            )
+
+        self.update()
+    
     def setCuration(self, cr_status : str, traces : list = None):
         """Set the curation for the selected traces.
         
@@ -1591,4 +1630,33 @@ class FieldWidget(QWidget, FieldView):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             self.lineRelease(override=True)
+
+
+def formatAsParagraph(text : str, per_line=50, max_lines=20):
+    """Format text as a paragraph.
+    
+        Params: 
+            text (str): the text to format
+            per_line (int): the characters per line
+            max_lines (int): max number of lines in paragraph
+    """
+    text = text.replace("\n", "\n ")
+    text_split = text.split(" ")
+    num_chars = 0
+    final_str = ""
+    for word in text_split:
+        if num_chars + len(word) > per_line:
+            final_str += "\n"
+            num_chars = 0
+        if "\n" in word:
+            num_chars = 0
+        else:
+            word += " "
+        final_str += word
+        num_chars += len(word) + 1
+        
+        if max_lines and final_str.count("\n") >= max_lines:
+            return final_str + "..."
+    return final_str
+
 

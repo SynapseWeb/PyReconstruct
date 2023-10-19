@@ -1,4 +1,3 @@
-import os
 import vedo
 
 from modules.gui.dialog import QuickDialog
@@ -7,16 +6,15 @@ from modules.gui.table import Help3DWidget
 from modules.backend.volume import generateVolumes
 from modules.backend.threading import ThreadPoolProgBar
 
-class CustomPlotter(vedo.Plotter):
+from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
-    def __init__(self, mainwindow, *args, **kwargs):
-        self.mainwindow = mainwindow
+class VPlotter(vedo.Plotter):
+
+    def __init__(self, qt_parent, *args, **kwargs):
+        self.qt_parent = qt_parent
+        self.mainwindow = qt_parent.mainwindow
         self.series = self.mainwindow.series
         super().__init__(*args, **kwargs)
-        self.is_closed = False
-
-        self.window.ShowWindowOff()
-        self.is_showing = False
 
         self.extremes = None
 
@@ -24,11 +22,11 @@ class CustomPlotter(vedo.Plotter):
         self.sc_color = (150, 150, 150)
         self.sc_side = 1
 
-        self.selected_text = vedo.Text2D(pos="top-left", font="Courier", s=1.5)
+        self.selected_text = vedo.Text2D(pos="top-left", font="Courier")
         self.add(self.selected_text)
         self.selected_names = []
 
-        self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier", s=1.5)
+        self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier")
         self.add(self.pos_text)
         self.add_callback("MouseMove", self.mouseMoveEvent)
 
@@ -80,7 +78,7 @@ class CustomPlotter(vedo.Plotter):
         x = round(pt[0], 3)
         y = round(pt[1], 3)
         section = self.getSectionFromZ(pt[2])
-        txt = f"{name} | section {section} | x={x:.3f} y={y:.3f}"
+        txt = f"{name}\nsection {section}\nx={x:.3f} y={y:.3f}"
         self.pos_text.text(txt)                    # update text message
 
         self.render()
@@ -236,8 +234,6 @@ class CustomPlotter(vedo.Plotter):
     
     def removeObjects(self, obj_names):
         """Remove objects from the scene."""
-        if not self.is_showing:
-            return    
         for actor in self.getObjects():
             name = actor.metadata["name"][0]
             if name in obj_names:
@@ -248,17 +244,17 @@ class CustomPlotter(vedo.Plotter):
         self.updateSelected()
         self.render()
     
-    def addObjects(self, obj_names):
+    def addObjects(self, obj_names, remove_first=True):
         """Add objects to the scene."""
         # remove existing object from scene
-        self.removeObjects(obj_names)
+        if remove_first:
+            self.removeObjects(obj_names)
 
         # create threadpool
         self.threadpool = ThreadPoolProgBar()
         worker = self.threadpool.createWorker(generateVolumes, self.series, obj_names)
         worker.signals.result.connect(self.placeInScene)
         self.threadpool.startAll(text="Generating 3D...", status_bar=self.mainwindow.statusbar)
-        self.checkShowing()
     
     def placeInScene(self, result):
         """Called by addObjects after thread is completed"""
@@ -271,11 +267,10 @@ class CustomPlotter(vedo.Plotter):
             vm.metadata["name"] = md["name"]
             vm.metadata["type"] = "object"
             self.add(vm)
+        self.render()
     
     def removeZtraces(self, ztrace_names):
         """Remove ztraces from the scene."""
-        if not self.is_showing:
-            return
         for actor in self.getZtraces():
             name = actor.metadata["name"][0]
             if name in ztrace_names:
@@ -286,10 +281,11 @@ class CustomPlotter(vedo.Plotter):
         self.updateSelected()
         self.render()
     
-    def addZtraces(self, ztrace_names):
+    def addZtraces(self, ztrace_names, remove_first=True):
         """Add ztraces to the scene."""
         # remove existing ztraces from the scene
-        self.removeZtraces(ztrace_names)
+        if remove_first:
+            self.removeZtraces(ztrace_names)
 
         extremes = []
         for name in ztrace_names:
@@ -319,24 +315,10 @@ class CustomPlotter(vedo.Plotter):
             curve.metadata["name"] = name
             curve.metadata["type"] = "ztrace"
             self.add(curve)
+        self.render()
         
         if not self.extremes:
             self.extremes = extremes
-        
-        self.checkShowing()
-    
-    def checkShowing(self):
-        """Check if the window is showing."""
-        if not self.is_showing:
-            self.is_showing = True
-            self.window.ShowWindowOn()
-            # stopgap for apple machines
-            if os.name == "posix":
-                self.show(*self.actors)
-            else:
-                self.show(*self.actors).close()
-        else:
-            self.render()
     
     def getObjects(self):
         """Return all mesh objects in the scene."""
@@ -353,7 +335,52 @@ class CustomPlotter(vedo.Plotter):
             if msh.metadata["type"][0] == "ztrace":
                 ztraces.append(msh)
         return ztraces
+
+    def getSelected(self, objects=True, ztraces=True):
+        """Return all of the selected meshes."""
+        selected_meshes = []
+        for msh in self.getObjects() + self.getZtraces():
+            if msh.metadata["name"][0] in self.selected_names:
+                selected_meshes.append(msh)
+        return selected_meshes
+
+
+class CustomPlotter(QVTKRenderWindowInteractor):
+
+    def __init__(self, mainwindow, obj_names, ztraces=False):
+        super().__init__()
+        self.mainwindow = mainwindow
+        self.series = self.mainwindow.series
+
+        self.extremes = None
+        self.is_closed = False
+        self.help_widget = None
+        self.mouse_x = 0
+        self.mouse_y = 0
+
+        # Create vedo renderer
+        self.plt = VPlotter(self, qt_widget=self)
+
+        # connect functions
+        self.addObjects = self.plt.addObjects
+        self.removeObjects = self.plt.removeObjects
+        self.addZtraces = self.plt.addZtraces
+        self.removeZtraces = self.plt.removeZtraces
+
+        # gerenate objects and display
+        if ztraces:
+            self.addZtraces(obj_names, remove_first=False)
+        else:
+            self.addObjects(obj_names, remove_first=False)
+        
+        self.plt.show(*self.plt.actors)
+        self.show()
     
-    def close_window(self):
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+        self.plt._keypress(self, event)
+    
+    def closeEvent(self, event):
+        self.plt.close()
         self.is_closed = True
-        return super().close_window()
+        super().closeEvent(event)

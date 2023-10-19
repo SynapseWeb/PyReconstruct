@@ -2302,12 +2302,12 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         
         if not self.viewer or self.viewer.is_closed:
-            self.viewer = CustomPlotter(self)
-                
-        if ztraces:
-            self.viewer.addZtraces(obj_names)
-        else:
-            self.viewer.addObjects(obj_names)
+            self.viewer = CustomPlotter(self, obj_names, ztraces)
+        else:                
+            if ztraces:
+                self.viewer.addZtraces(obj_names)
+            else:
+                self.viewer.addObjects(obj_names)
             
     def removeFrom3D(self, obj_names, ztraces=False):
         """Remove objects from 3D viewer.

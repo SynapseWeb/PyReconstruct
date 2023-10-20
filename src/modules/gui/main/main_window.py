@@ -2351,4 +2351,6 @@ class MainWindow(QMainWindow):
             if response == "cancel":
                 event.ignore()
                 return
+        if self.viewer and not self.viewer.is_closed:
+            self.viewer.close()
         event.accept()

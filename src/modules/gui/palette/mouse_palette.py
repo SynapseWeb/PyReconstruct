@@ -615,7 +615,7 @@ class MousePalette():
             self.mainwindow.field.generateView(generate_image=False)
         
         button = self.mode_buttons["Flag"][0]
-        button.setFont(QFont("Courier New", font_size, QFont.Bold))
+        button.setFont(QFont("Courier New", 20, QFont.Bold))
         button.setText("⚑")
         s = f"({','.join(map(str, color))})"
         button.setStyleSheet(f"color:rgb{s}")

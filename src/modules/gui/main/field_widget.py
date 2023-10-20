@@ -20,7 +20,8 @@ from PySide6.QtGui import (
     QPainter, 
     QPointingDevice,
     QCursor,
-    QFont
+    QFont,
+    QTransform
 )
 
 from modules.datatypes import Series, Trace, Ztrace
@@ -32,7 +33,7 @@ from modules.backend.table import (
     TraceTableManager,
     ZtraceTableManager
 )
-from modules.gui.dialog import TraceDialog, QuickDialog
+from modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
 from modules.gui.utils import notify, drawOutlinedText
 from modules.constants import locations as loc
 
@@ -77,6 +78,15 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_x = 0
         self.mouse_y = 0
         self.mouse_boundary_timer = None
+        pencil_pm = QPixmap(os.path.join(loc.img_dir, "pencil.cur"))
+        self.pencil_r = QCursor(
+            pencil_pm,
+            hotX=5, hotY=5
+        )
+        self.pencil_l = QCursor(
+            pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
+            hotX=pencil_pm.width()-5, hotY=5
+        )
 
         self.createField(series)
 
@@ -380,6 +390,11 @@ class FieldWidget(QWidget, FieldView):
             x = self.width() - 10
             right_justified = True
         y = 0
+        # adjust handedness of the cursor
+        if (self.mouse_mode == FieldWidget.OPENTRACE or
+            self.mouse_mode == FieldWidget.CLOSEDTRACE):
+            cursor = self.pencil_l if right_justified else self.pencil_r
+            if cursor != self.cursor(): self.setCursor(cursor)
         
         # draw the name of the closest trace on the screen
         # draw the selected traces to the screen
@@ -434,7 +449,8 @@ class FieldWidget(QWidget, FieldView):
                             name = f"{closest.name} (ztrace)"
                         # flag returned
                         elif closest_type == "flag":
-                            name = formatAsParagraph(closest.user + ":\n" + closest.comment)
+                            user, comment = closest.comments[-1]
+                            name = formatAsParagraph(f"{user}: {comment}")
                                                 
                         pos = self.mouse_x, self.mouse_y
                         c = closest.color
@@ -444,7 +460,8 @@ class FieldWidget(QWidget, FieldView):
                             name,
                             c,
                             None,
-                            ct_size
+                            ct_size,
+                            not right_justified
                         )
             
             # get the names of the selected traces
@@ -721,10 +738,7 @@ class FieldWidget(QWidget, FieldView):
             )
         elif (mode == FieldWidget.OPENTRACE or
               mode == FieldWidget.CLOSEDTRACE):
-            cursor = QCursor(
-                QPixmap(os.path.join(loc.img_dir, "pencil.cur")),
-                hotX=5, hotY=5
-            )
+            cursor = self.pencil_r
         elif (mode == FieldWidget.STAMP or
               mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
@@ -839,14 +853,9 @@ class FieldWidget(QWidget, FieldView):
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
                 if clicked_type == "flag":
-                    structure = [
-                        ["Color:", ("color", clicked_trace.color)],
-                        [("textbox", clicked_trace.comment)]
-                    ]
-                    response, confirmed = QuickDialog.get(self, structure, "Flag Comment")
+                    response, confirmed = FlagDialog(self, clicked_trace, self.series).exec()
                     if confirmed:
-                        clicked_trace.color = response[0]
-                        clicked_trace.comment = response[1]
+                        clicked_trace.color, clicked_trace.comments = response
                         self.generateView(generate_image=False)
                         self.saveState()
                 else:

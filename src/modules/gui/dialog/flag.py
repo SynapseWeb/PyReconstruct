@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout, 
     QTextEdit,
     QPushButton,
-    QStyle
+    QStyle,
+    QLineEdit
 )
 
 from modules.datatypes import Flag, Series
@@ -32,6 +33,12 @@ class FlagDialog(QDialog):
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setSpacing(10)
+
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(QLabel(self, text="Title:"))
+        self.title_input = QLineEdit(self, text=flag.title)
+        hlayout.addWidget(self.title_input)
+        self.vlayout.addLayout(hlayout)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(QLabel(self, text="Color:"))
@@ -117,6 +124,7 @@ class FlagDialog(QDialog):
 
         confirmed = super().exec()
         if confirmed:
+            title = self.title_input.text()
             color = self.color_bttn.getColor()
             comments = []
             for index in sorted(self.fields.keys()):
@@ -125,6 +133,6 @@ class FlagDialog(QDialog):
             new_comment = self.new_comment.toPlainText()
             if new_comment:
                 comments.append((self.series.user, new_comment))
-            return (color, comments), True
+            return (title, color, comments), True
         else:
             return None, False

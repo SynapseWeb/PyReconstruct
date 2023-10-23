@@ -880,12 +880,12 @@ class FieldView():
         self.generateView(generate_image=False)
         self.saveState()
     
-    def placeFlag(self, pix_x, pix_y, color, comment):
+    def placeFlag(self, title, pix_x, pix_y, color, comment):
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
         self.section_layer.placeFlag(
-            pix_x, pix_y, color, comment
+            title, pix_x, pix_y, color, comment
         )
         self.generateView(generate_image=False)
         self.saveState()

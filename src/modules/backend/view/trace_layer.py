@@ -289,10 +289,11 @@ class TraceLayer():
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
         
-    def placeFlag(self, pix_x : int, pix_y : int, color : tuple, comment : str):
+    def placeFlag(self, title : str, pix_x : int, pix_y : int, color : tuple, comment : str):
         """Create a flag on the section.
         
             Params:
+                title (str): the title of the flag
                 pix_x (float): the x-coord of the mouse location
                 pix_y (float): the y-coord of the mouse location
                 color (tuple): the color of the flag
@@ -302,7 +303,7 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         x, y = self.section.tform.map(field_x, field_y, inverted=True)
         # create flag
-        self.section.addFlag(Flag(x, y, color, [(self.series.user, comment)]))
+        self.section.addFlag(Flag(title, x, y, color, [(self.series.user, comment)]))
     
     def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
         """Merge all selected traces.

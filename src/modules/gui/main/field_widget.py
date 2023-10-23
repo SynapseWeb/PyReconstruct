@@ -449,14 +449,15 @@ class FieldWidget(QWidget, FieldView):
                             name = f"{closest.name} (ztrace)"
                         # flag returned
                         elif closest_type == "flag":
-                            user, comment = closest.comments[-1]
-                            name = formatAsParagraph(f"{user}: {comment}")
+                            name = closest.title
+                            # name = formatAsParagraph(closest.title)
                                                 
-                        pos = self.mouse_x, self.mouse_y
+                        mouse_x, mouse_y = self.mouse_x, self.mouse_y
+                        if right_justified: mouse_x += 10
                         c = closest.color
                         drawOutlinedText(
                             field_painter,
-                            *pos,
+                            mouse_x, mouse_y,
                             name,
                             c,
                             None,
@@ -853,9 +854,10 @@ class FieldWidget(QWidget, FieldView):
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
                 if clicked_type == "flag":
-                    response, confirmed = FlagDialog(self, clicked_trace, self.series).exec()
+                    f = clicked_trace
+                    response, confirmed = FlagDialog(self, f, self.series).exec()
                     if confirmed:
-                        clicked_trace.color, clicked_trace.comments = response
+                        f.title, f.color, f.comments = response
                         self.generateView(generate_image=False)
                         self.saveState()
                 else:
@@ -1591,15 +1593,19 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in flag mode."""
         if self.lclick and self.series.options["show_flags"]:
             structure = [
+                ["Title:", ("text", "")],
+                ["Comment:"],
                 [("textbox", "")]
             ]
-            response, confirmed = QuickDialog.get(self, structure, "Flag Comment")
+            response, confirmed = QuickDialog.get(self, structure, "Flag")
             if not confirmed:
                 return
             
             pix_x, pix_y = event.x(), event.y()
-            comment = response[0]
+            title = response[0]
+            comment = response[1]
             self.placeFlag(
+                title,
                 pix_x, pix_y,
                 self.series.options["flag_color"],
                 comment

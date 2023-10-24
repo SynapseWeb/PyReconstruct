@@ -169,7 +169,10 @@ class QuickDialog(QDialog):
             if not grid:
                 row_layout = QHBoxLayout()
             for item in row_structure:
-                if type(item) is str:  # Label
+                if not item and not grid:  # Spacer
+                    row_layout.addStretch()
+                    continue
+                elif type(item) is str:  # Label
                     w = QLabel(self, text=item)
                 else:
                     # checking for leading bool to mark required status

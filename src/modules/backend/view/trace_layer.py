@@ -303,7 +303,11 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         x, y = self.section.tform.map(field_x, field_y, inverted=True)
         # create flag
-        self.section.addFlag(Flag(title, x, y, color, [(self.series.user, comment)]))
+        if comment:
+            comments = [(self.series.user, comment)]
+        else:
+            comments = []
+        self.section.addFlag(Flag(title, x, y, color, comments))
     
     def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
         """Merge all selected traces.

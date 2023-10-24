@@ -120,7 +120,6 @@ class FlagDialog(QDialog):
             te = hlayout.itemAt(2).widget()
             te.setFixedHeight(te.document().size().toSize().height() + 3)
         self.resizeNewComment()
-        self.move(self.parent().rect().center() - self.rect().center())
 
         confirmed = super().exec()
         if confirmed:

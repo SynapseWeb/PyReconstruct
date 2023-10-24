@@ -52,7 +52,7 @@ from modules.backend.func import (
     importSwiftTransforms
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
-from modules.datatypes import Series, Transform
+from modules.datatypes import Series, Transform, Flag
 from modules.constants import welcome_series_dir, assets_dir, img_dir, fd_dir
 
 class MainWindow(QMainWindow):
@@ -231,8 +231,9 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-			    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-			    ("history_act", "View series history", "", self.viewSeriesHistory),
+                            ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
+                            ("flaglist_act", "Flag list", "", self.openFlagList),
+                            ("history_act", "View series history", "", self.viewSeriesHistory),
                         ]
                     },
                     {
@@ -430,6 +431,8 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
             None,
+            ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
+            None,
             ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
         ]
         self.field_menu = QMenu(self)
@@ -445,7 +448,8 @@ class MainWindow(QMainWindow):
             self.hidetraces_act,
             self.cut_act,
             self.copy_act,
-            self.pasteattributes_act
+            self.pasteattributes_act,
+            self.createflag_act
         ]
         self.ztrace_actions = [
             self.edittrace_act
@@ -1676,6 +1680,11 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         self.field.openZtraceList()
     
+    def openFlagList(self):
+        """Open the flag widget."""
+        self.saveAllData()
+        self.field.openFlagList()
+    
     def toggleZtraces(self):
         """Toggle whether ztraces are shown."""
         self.field.deselectAllTraces()
@@ -1701,6 +1710,17 @@ class MainWindow(QMainWindow):
         if obj_name is not None and section_num is not None:
             self.changeSection(section_num)
             self.field.findContour(obj_name)
+    
+    def setToFlag(self, snum : int, flag : Flag):
+        """Focus the field on a flag.
+        
+            Params:
+                snum (int): the section number
+                flag (Flag): the flag
+        """
+        if snum is not None and flag is not None:
+            self.changeSection(snum)
+            self.field.findFlag(flag)
     
     def findObjectFirst(self, obj_name=None):
         """Find the first or last contour in the series.

@@ -24,14 +24,15 @@ from PySide6.QtGui import (
     QTransform
 )
 
-from modules.datatypes import Series, Trace, Ztrace
+from modules.datatypes import Series, Trace, Ztrace, Flag
 from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
 from modules.backend.view import FieldView
 from modules.backend.table import (
     ObjectTableManager,
     SectionTableManager,
     TraceTableManager,
-    ZtraceTableManager
+    ZtraceTableManager,
+    FlagTableManager
 )
 from modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
 from modules.gui.utils import notify, drawOutlinedText
@@ -69,6 +70,7 @@ class FieldWidget(QWidget, FieldView):
         self.ztrace_table_manager = None
         self.trace_table_manager = None
         self.section_table_manager = None
+        self.flag_table_manager = None
 
         # misc defaults
         self.current_trace = []
@@ -77,6 +79,7 @@ class FieldWidget(QWidget, FieldView):
         self.single_click = False
         self.mouse_x = 0
         self.mouse_y = 0
+        self.clicked_trace = None
         self.mouse_boundary_timer = None
         pencil_pm = QPixmap(os.path.join(loc.img_dir, "pencil.cur"))
         self.pencil_r = QCursor(
@@ -235,6 +238,17 @@ class FieldWidget(QWidget, FieldView):
             )
         # create a new table
         self.ztrace_table_manager.newTable()
+    
+    def openFlagList(self):
+        """Open a flag list."""
+        # create manager if not already
+        if self.flag_table_manager is None:
+            self.flag_table_manager = FlagTableManager(
+                self.series,
+                self.mainwindow
+            )
+        # create a new table
+        self.flag_table_manager.newTable()
     
     def openTraceList(self):
         """Open a trace list."""
@@ -847,14 +861,14 @@ class FieldWidget(QWidget, FieldView):
             clicked_label = None
             if self.zarr_layer:
                 clicked_label = self.zarr_layer.getID(event.x(), event.y())
-            clicked_trace, clicked_type = self.section_layer.getTrace(event.x(), event.y())
-            self.mainwindow.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
+            self.clicked_trace, clicked_type = self.section_layer.getTrace(event.x(), event.y())
+            self.mainwindow.checkActions(context_menu=True, clicked_trace=self.clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
                 if clicked_type == "flag":
-                    f = clicked_trace
+                    f = self.clicked_trace
                     response, confirmed = FlagDialog(self, f, self.series).exec()
                     if confirmed:
                         f.title, f.color, f.comments = response
@@ -1593,7 +1607,7 @@ class FieldWidget(QWidget, FieldView):
         """Called when mouse is released in flag mode."""
         if self.lclick and self.series.options["show_flags"]:
             structure = [
-                ["Title:", ("text", "")],
+                ["Title:", (True, "text", "")],
                 ["Comment:"],
                 [("textbox", "")]
             ]
@@ -1613,6 +1627,37 @@ class FieldWidget(QWidget, FieldView):
 
         self.update()
     
+    def createTraceFlag(self, trace : Trace = None):
+        """Create a flag associated with a trace."""
+        if trace is None and self.clicked_trace:
+            trace = self.clicked_trace
+            if not trace:
+                return
+        
+        structure = [
+            ["Title:", (True, "text", f"{trace.name}")],
+            ["Color:", ("color", trace.color), ""],
+            ["Comment:"],
+            [("textbox", "")]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Flag")
+        if not confirmed:
+            return
+        
+        x, y = trace.getCentroid()
+        title = response[0]
+        color = response[1]
+        comment = response[2]
+        if comment:
+            comments = [(self.series.user, comment)]
+        else:
+            comments = []
+
+        self.section.addFlag(Flag(title, x, y, color, comments))
+
+        self.saveState()
+        self.generateView(generate_image=False)
+
     def setCuration(self, cr_status : str, traces : list = None):
         """Set the curation for the selected traces.
         
@@ -1640,7 +1685,7 @@ class FieldWidget(QWidget, FieldView):
         [self.section.modified_contours.add(t.name) for t in traces]
 
         self.saveState()
-    
+
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:

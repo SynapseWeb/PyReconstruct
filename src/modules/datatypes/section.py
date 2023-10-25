@@ -134,6 +134,10 @@ class Section():
         # remove flagged contours
         for cname in flagged_contours:
             del(section_data["contours"][cname])
+        
+        # remove no-alignment if present
+        if "no-alignment" in section_data["tforms"]:
+            del(section_data["tforms"]["no-alignment"])
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.

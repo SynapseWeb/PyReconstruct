@@ -674,35 +674,48 @@ class Series():
 
         return results
 
-    def modifyAlignments(self, add : list = [], remove : list = [], rename : list = [], log_event=True):
+    def modifyAlignments(self, alignment_dict : dict, log_event=True):
         """Modify the alignments (input from dialog).
         
             Params:
-                add (list): the alignments to add
-                remove (list): the alignments to remove
-                rename (list): the alignments to rename (old, new)
+                alignment_dict (dict): returned from the alignment dialog
         """
-        if not (add or remove or rename):
-            return
-        for snum, section in self.enumerateSections(message="Modifying alignments..."):
-            for a in add:
-                section.tforms[a] = section.tforms[self.alignment]
-            for a, new_name in rename:
-                if a in section.tforms:
-                    section.tforms[new_name] = section.tforms[a]
-                    del(section.tforms[a])
-            for a in remove:
-                if a in section.tforms:
-                    del(section.tforms[a])
-            section.save()
+        # change the current alignment if necessary
+        if alignment_dict[self.alignment] is None:
+            found = False
+            for new_a, old_a in alignment_dict.items():
+                if old_a == self.alignment:
+                    self.alignment = new_a
+                    found = True
+                    break
+            if not found:
+                self.alignment = "no-alignment"
 
+        for snum, section in self.enumerateSections(message="Modifying alignments..."):
+            old_tforms = section.tforms.copy()
+            new_tforms = {}
+            for new_a, old_a in alignment_dict.items():
+                if old_a is None:
+                    continue
+                elif old_a not in old_tforms:
+                    continue
+                elif old_a == "no-alignment":
+                    new_tforms[new_a] = Transform([1, 0, 0, 0, 1, 0])
+                else:
+                    new_tforms[new_a] = old_tforms[old_a]
+            section.tforms = new_tforms
+            section.save()
+        
         if log_event:
-            for a in add:
-                self.addLog(None, None, f"Create alignment {a}")
-            for a in remove:
-                self.addLog(None, None, f"Delete alignment {a}")
-            for a, new_name in rename:
-                self.addLog(None, None, f"Rename alignment {a} to {new_name}")
+            for new_a, old_a in alignment_dict.items():
+                if new_a == old_a:
+                    continue
+                if old_a is None and new_a in old_tforms and new_a not in alignment_dict.values():
+                    self.addLog(None, None, f"Delete alignment {new_a}")
+                elif old_a == self.alignment:
+                    self.addLog(None, None, f"Create alignment {new_a} from {old_a}")
+                elif old_a in old_tforms and new_a not in old_tforms:
+                    self.addLog(None, None, f"Rename alignment {old_a} to {new_a}")
     
     def getZValues(self):
         """Return the z-values for each section.

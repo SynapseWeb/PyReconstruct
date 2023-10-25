@@ -15,19 +15,35 @@ from modules.gui.utils import notify
 
 class AlignmentList(QTableWidget):
 
-    def __init__(self, parent : QWidget, alignment_names : list):
+    def __init__(self, parent : QWidget, alignment_names : list, current_alignment : str):
         """Create an alignment list widget."""
-        self.alignments = sorted(alignment_names)
-        super().__init__(len(self.alignments)+1, 1, parent)
+        self.adict = {}
+        for a in sorted(alignment_names):
+            self.adict[a] = a
+        self.current_alignment = current_alignment
+
+        super().__init__(0, 1, parent)
         self.setShowGrid(False)
         self.verticalHeader().hide()
         self.horizontalHeader().hide()
 
-        # create the table
+        self.createTable()
+            
+    def createTable(self):
+        """Create the table."""
+        # remove rows
+        while self.rowCount():
+            self.removeRow(0)
+        # create the rows
+        r = 0
+        self.insertRow(r)
+        r += 1
         self.setItem(0, 0, QTableWidgetItem("no-alignment"))
-        for i, a in enumerate(self.alignments):
-            self.setItem(i+1, 0, QTableWidgetItem(a))
-        
+        for i, a in enumerate(sorted(self.adict.keys())):
+            if self.adict[a] is not None:
+                self.insertRow(r)
+                self.setItem(r, 0, QTableWidgetItem(str(a)))
+                r += 1
         self.resizeColumnsToContents()
     
     def getSelectedAlignments(self) -> list[str]:
@@ -49,15 +65,10 @@ class AlignmentList(QTableWidget):
             Params:
                 alignment (str): the name for the new alignment
         """
-        if alignment in self.alignments:
+        if alignment in self.adict and self.adict[alignment] is not None:
             return
-        
-        self.alignments.append(alignment)
-        self.alignments.sort()
-        i = self.alignments.index(alignment)
-        self.insertRow(i)
-        self.setItem(i, 0, QTableWidgetItem(alignment))
-        self.resizeColumnsToContents()
+        self.adict[alignment] = self.current_alignment
+        self.createTable()
     
     def removeAlignment(self, alignment : str):
         """Remove an alignment from the list.
@@ -65,13 +76,10 @@ class AlignmentList(QTableWidget):
             Params:
                 alignment(str): the name of the alignment to remove
         """
-        if alignment not in self.alignments:
+        if alignment not in self.adict or alignment == "no-alignment":
             return
-        
-        i = self.alignments.index(alignment)
-        self.alignments.remove(alignment)
-        self.removeRow(i)
-        self.resizeColumnsToContents()
+        self.adict[alignment] = None
+        self.createTable()
     
     def renameAlignment(self, alignment : str, new_name : str):
         """Rename an alignment on the list.
@@ -80,13 +88,17 @@ class AlignmentList(QTableWidget):
                 alignment (str): the alignment to rename
                 new_name (str): the new name for the alignment
         """
-        self.removeAlignment(alignment)
-        self.addAlignment(new_name)
-        self.resizeColumnsToContents()
+        if (alignment not in self.adict or 
+            (new_name in self.adict and self.adict[alignment] is not None) or 
+            alignment == "no-alignment"):
+            return
+        self.adict[new_name] = self.adict[alignment]
+        self.adict[alignment] = None
+        self.createTable()
 
 class AlignmentDialog(QDialog):
 
-    def __init__(self, parent : QWidget, alignment_names : list):
+    def __init__(self, parent : QWidget, alignment_names : list, current_alignment : str):
         """Create an object group dialog.
         
             Params:
@@ -99,7 +111,7 @@ class AlignmentDialog(QDialog):
 
         title_text = QLabel(self, text="Switch to Alignment")
 
-        self.table = AlignmentList(self, alignment_names)
+        self.table = AlignmentList(self, alignment_names, current_alignment)
 
         remove_bttn = QPushButton(self, "remove", text="Remove")
         remove_bttn.clicked.connect(self.removeAlignments)
@@ -128,24 +140,16 @@ class AlignmentDialog(QDialog):
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
-
-        self.added = []
-        self.removed = []
-        self.renamed = []
     
     def newAlignment(self):
         """Add a new alignment to the list."""
         new_alignment, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
         if not confirmed:
             return
-        if new_alignment in self.table.alignments or new_alignment == "no-alignment":
+        if (new_alignment in self.table.adict and self.table.adict[new_alignment] is not None) or new_alignment == "no-alignment":
             notify("This alignment already exists")
             return
         self.table.addAlignment(new_alignment)
-        if new_alignment in self.removed:
-            self.removed.remove(new_alignment)
-        else:
-            self.added.append(new_alignment)
     
     def removeAlignments(self):
         """Remove selected alignments from the list."""
@@ -156,13 +160,6 @@ class AlignmentDialog(QDialog):
         
         for a in alignments:
             self.table.removeAlignment(a)
-            if a in self.added:
-                self.added.remove(a)
-            else:
-                self.removed.append(a)
-            newly_renamed = [i[1] for i in self.renamed]
-            if a in newly_renamed:
-                self.renamed.pop(newly_renamed.index(a))
     
     def renameAlignment(self):
         """Rename a selected alignment."""
@@ -177,16 +174,14 @@ class AlignmentDialog(QDialog):
             notify("Cannot rename no-alignment setting.")
             return
         
-        
         new_name, confirmed = QInputDialog.getText(self, "Rename Alignment", "New alignment name:")
         if not confirmed:
             return
-        if new_name in self.table.alignments:
+        if new_name in self.table.adict:
             notify("This alignment already exists.")
             return
         
         self.table.renameAlignment(a, new_name)
-        self.renamed.append((a, new_name))
         
     def accept(self):
         """Overwritten from parent class."""
@@ -207,9 +202,7 @@ class AlignmentDialog(QDialog):
         if confirmed:
             return (
                 a,
-                self.added,
-                self.removed,
-                self.renamed
+                self.table.adict
             ), True
         else:
             return None, False

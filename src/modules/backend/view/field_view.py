@@ -589,6 +589,8 @@ class FieldView():
         """
         # get dimensions of field window and pixmap
         window_x, window_y, window_w, window_h = tuple(self.series.window)
+        if window_w == 0: window_w = 1e-3
+        if window_h == 0: window_h = 1e-3  # prevent dividing by zero
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_ratio = window_w/window_h
         pixmap_ratio = pixmap_w / pixmap_h

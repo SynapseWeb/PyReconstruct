@@ -8,7 +8,9 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QPushButton,
     QStyle,
-    QLineEdit
+    QLineEdit,
+    QScrollArea,
+    QApplication
 )
 
 from modules.datatypes import Flag, Series
@@ -29,15 +31,15 @@ class FlagDialog(QDialog):
 
         super().__init__(parent)
 
-        self.setWindowTitle("Flag Comments")
+        self.setWindowTitle("Flag")
 
         self.vlayout = QVBoxLayout()
         self.vlayout.setSpacing(10)
 
         hlayout = QHBoxLayout()
-        hlayout.addWidget(QLabel(self, text="Title:"))
-        self.title_input = QLineEdit(self, text=flag.title)
-        hlayout.addWidget(self.title_input)
+        hlayout.addWidget(QLabel(self, text="Name:"))
+        self.name_input = QLineEdit(self, text=flag.name)
+        hlayout.addWidget(self.name_input)
         self.vlayout.addLayout(hlayout)
 
         hlayout = QHBoxLayout()
@@ -48,13 +50,23 @@ class FlagDialog(QDialog):
         self.vlayout.addLayout(hlayout)
 
         self.vlayout.addWidget(QLabel(self, text="Comments:"))
+        vlayout = QVBoxLayout()
         self.fields = {}
         for index, (user, comment) in enumerate(flag.comments):
             hlayout = self.createRow(user, comment, index)
             self.fields[index] = (hlayout, (user, comment))
-            self.vlayout.addLayout(hlayout)
+            vlayout.addLayout(hlayout)
+        vlayout.addStretch()
+        w = QWidget(self)
+        w.setLayout(vlayout)
+        qsa = QScrollArea()
+        self.screen_height = QApplication.primaryScreen().size().height()
+        qsa.setMinimumHeight(self.screen_height / 4)
+        qsa.setWidgetResizable(True)
+        qsa.setWidget(w)
+        self.vlayout.addWidget(qsa)
         
-        self.vlayout.addWidget(QLabel(self, text="New Comment:"))
+        self.vlayout.addWidget(QLabel(self, text="Add Comment (opt):"))
         self.new_comment = QTextEdit(self)
         self.new_comment.textChanged.connect(self.resizeNewComment)
         self.vlayout.addWidget(self.new_comment)
@@ -106,13 +118,17 @@ class FlagDialog(QDialog):
             self.new_comment.setText("X")
             h = self.new_comment.document().size().toSize().height()
             self.new_comment.setText("")
+        elif h > self.screen_height / 5:
+            h = self.screen_height / 5
         self.new_comment.setFixedHeight(h + 3)
         self.resizeToContents()
     
     def resizeToContents(self):
         """Adjust the size of the dialog to fit its contents"""
         self.adjustSize()
-        self.resize(self.width(), self.minimumHeight())       
+        self.resize(self.width(), self.minimumHeight())
+        if self.y() + self.height() > self.screen_height:
+            self.resize(self.width(), self.screen_height - self.y())
 
     def exec(self):
         """Run the dialog."""
@@ -123,7 +139,7 @@ class FlagDialog(QDialog):
 
         confirmed = super().exec()
         if confirmed:
-            title = self.title_input.text()
+            title = self.name_input.text()
             color = self.color_bttn.getColor()
             comments = []
             for index in sorted(self.fields.keys()):

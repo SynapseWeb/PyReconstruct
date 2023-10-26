@@ -464,6 +464,13 @@ class Series():
             del(series_data["current_trace"])
             series_data["palette_traces"] = {"palette1": series_data["palette_traces"]}
             series_data["palette_index"] = ["palette1", 0]
+        
+        # check the window
+        window = series_data["window"]
+        if window[2] == 0:  # width
+            window[2] = 1
+        if window[3] == 0:  # height
+            window[3] == 1
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -517,7 +524,6 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["object_3D_modes"] = {}
-
 
         # ADDED SINCE JAN 25TH
 

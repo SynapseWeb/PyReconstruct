@@ -213,7 +213,7 @@ class Trace():
             tags
         ) = tuple(l)
 
-        new_trace = Trace(name, color, closed)
+        new_trace = Trace(name.strip(), color, closed)  # strip trace name
         new_trace.negative = negative
         new_trace.points = list(zip(x, y))
         new_trace.hidden = hidden

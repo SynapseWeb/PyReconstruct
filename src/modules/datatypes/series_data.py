@@ -297,3 +297,10 @@ class SeriesData():
         if name in self.data["objects"] and snum in self.data["objects"][name].traces:
             return self.data["objects"][name].traces[snum]
         return None
+
+    def getFlagCount(self):
+        """Get the number of flags in the series."""
+        c = 0
+        for data in self.data["sections"].values():
+            c += len(data["flags"])
+        return c

@@ -529,6 +529,7 @@ class Series():
         options["find_zoom"] = 95
         options["autoseg"] = {}
         options["show_flags"] = True
+        options["flag_name"] = ""
         options["flag_color"] = (255, 0, 0)
         options["flag_size"] = 14
 

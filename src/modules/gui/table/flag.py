@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
     QInputDialog, 
     QMenu, 
     QFileDialog,
-    QAbstractItemView
+    QAbstractItemView,
+    QColorDialog
 )
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
@@ -51,11 +52,12 @@ class FlagTableWidget(QDockWidget):
         # set defaults
         self.columns = {
             "Section": True,
-            "Title": True,
+            "Flag": True,
             "Color": True,
             "Last Comment": True
         }
         self.re_filters = set([".*"])
+        self.color_filter = None
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -89,7 +91,17 @@ class FlagTableWidget(QDockWidget):
                         "text": "Filter",
                         "opts":
                         [
-                            ("refilter_act", "Regex filter...", "", self.setREFilter)
+                            ("refilter_act", "Regex filter...", "", self.setREFilter),
+                            {
+                                "attr_name": "colormenu",
+                                "text": "Color filter",
+                                "opts":
+                                [
+                                    ("colorfilter_act", "Set filter...", "", lambda : self.setColorFilter(False)),
+                                    ("removecolor_act", "Remove filter...", "", self.removeColorFilter)
+                                ]
+                            }
+                            
                         ]
                     }
                 ]
@@ -103,7 +115,8 @@ class FlagTableWidget(QDockWidget):
 
         # create the right-click menu
         context_menu_list = [
-            ("editattribtues_act", "Edit attributes...", "", self.editFlag),
+            ("editattribtues_act", "View / Edit...", "", self.editFlag),
+            ("flagcolorfilter_act", "Use as color filter", "", self.setColorFilter),
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -124,8 +137,8 @@ class FlagTableWidget(QDockWidget):
         if self.columns["Section"]:
             self.table.setItem(row, col, QTableWidgetItem(str(snum)))
             col += 1
-        if self.columns["Title"]:
-            self.table.setItem(row, col, QTableWidgetItem(flag.title))
+        if self.columns["Flag"]:
+            self.table.setItem(row, col, QTableWidgetItem(flag.name))
             col += 1
         if self.columns["Color"]:
             item = QTableWidgetItem(" ")
@@ -144,7 +157,7 @@ class FlagTableWidget(QDockWidget):
             self.table.resizeColumnsToContents()
             self.table.resizeRowToContents(row)
             
-    def passesFilters(self, name : str):
+    def passesFilters(self, flag : Flag):
         """Check if an object passes the filters.
         
             Params:
@@ -153,9 +166,12 @@ class FlagTableWidget(QDockWidget):
         # check regex
         passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, name)):
+            if bool(re.fullmatch(re_filter, flag.name)):
                 passes_filters = True
         if not passes_filters:
+            return False
+        
+        if self.color_filter and tuple(flag.color) != self.color_filter:
             return False
         
         return True
@@ -169,7 +185,7 @@ class FlagTableWidget(QDockWidget):
             else:
                 flags = data["flags"]
             for flag in flags:
-                if self.passesFilters(flag.title):
+                if self.passesFilters(flag):
                     self.passing_flags.append((snum, flag))
         self.passing_flags.sort()
     
@@ -231,7 +247,7 @@ class FlagTableWidget(QDockWidget):
             row, exists_in_table = self.table.getRowIndex(str(section.n))
         
         for flag in sorted(section.flags):
-            if self.passesFilters(flag.title):
+            if self.passesFilters(flag):
                 self.table.insertRow(row)
                 self.setRow(section.n, flag, row)
                 row += 1
@@ -285,7 +301,7 @@ class FlagTableWidget(QDockWidget):
             return
         
         nf = flag.copy()
-        nf.title, nf.color, nf.comments = response
+        nf.name, nf.color, nf.comments = response
 
         self.manager.editFlag(snum, flag, nf)
 
@@ -366,6 +382,32 @@ class FlagTableWidget(QDockWidget):
 
         # call through manager to update self
         self.manager.updateTable(self)
+    
+    def setColorFilter(self, use_selected=True):
+        """Set the color filter for the list."""
+        if use_selected:
+            snum, flag = self.getSelectedFlag()
+            if not flag:
+                notify("Please select one flag to set the color filter.")
+                return
+            self.color_filter = tuple(flag.color)
+        else:
+            if self.color_filter:
+                c = QColorDialog.getColor(
+                    QColor(*self.color_filter)
+                )
+            else:
+                c = QColorDialog.getColor()
+            if not c:
+                return
+            self.color_filter = (c.red(), c.green(), c.blue())
+
+        self.createTable()
+    
+    def removeColorFilter(self):
+        """Remove the color filter."""
+        self.color_filter = None
+        self.createTable()
     
     def find(self, event=None):
         """Focus the field on a flag in the series."""

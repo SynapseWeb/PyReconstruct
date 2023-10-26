@@ -592,9 +592,12 @@ class MousePalette():
         self.modifyPalette(self.series.palette_traces[self.series.palette_index[0]])
         self.activatePaletteButton(self.series.palette_index[1])
     
-    def setFlag(self, color : tuple = None, font_size : int = None, display_flags : bool = None):
-        """Set the color of the flag in the palette."""
+    def setFlag(self, name : str = None, color : tuple = None, font_size : int = None, display_flags : bool = None):
+        """Set the default flag in the palette."""
         regenerate_view = False
+        if name is not None:
+            self.series.options["flag_name"] = name
+        
         if color is None:
             color = self.series.options["flag_color"]
         else:
@@ -621,9 +624,10 @@ class MousePalette():
         button.setStyleSheet(f"color:rgb{s}")
     
     def modifyFlag(self):
-        """Modify the color of the flag."""
+        """Modify the default flag."""
         structure = [
-            ["Color:", ("color", self.series.options["flag_color"])],
+            ["Default name:", ("text", self.series.options["flag_name"])],
+            ["Default color:", ("color", self.series.options["flag_color"])],
             ["Size of all flags: ", ("int", self.series.options["flag_size"], tuple(range(1, 100)))],
             [("check", ("Display flags in field", self.series.options["show_flags"]))]
         ]
@@ -631,7 +635,7 @@ class MousePalette():
         if not confirmed:
             return
         
-        self.setFlag(response[0], response[1], response[2][0][1])
+        self.setFlag(response[0], response[1], response[2], response[3][0][1])
         
     def resize(self):
         """Move the buttons to fit the main window."""

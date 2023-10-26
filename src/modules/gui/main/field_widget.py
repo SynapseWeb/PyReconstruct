@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QMainWindow, 
     QInputDialog, 
     QGestureEvent,
+    QTextEdit
 )
 from PySide6.QtCore import (
     Qt, 
@@ -89,6 +90,15 @@ class FieldWidget(QWidget, FieldView):
         self.pencil_l = QCursor(
             pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
             hotX=pencil_pm.width()-5, hotY=5
+        )
+
+        # set up the flag display
+        self.flag_display = None
+        self.displayed_flag = None
+        self.flag_display_timer = QTimer(self)
+        self.flag_display_timer.setSingleShot(True)
+        self.flag_display_timer.timeout.connect(
+            self.displayFlagComments
         )
 
         self.createField(series)
@@ -305,6 +315,48 @@ class FieldWidget(QWidget, FieldView):
         for i in range(len(points)):
             painter.drawLine(*points[i-1], *points[i])
         self.border_exists = True
+    
+    def closeFlagComments(self):
+        """Close the flag comments display."""
+        if self.flag_display:
+            self.flag_display.close()
+            self.flag_display = None
+        self.displayed_flag = None
+        if self.flag_display_timer.isActive():
+            self.flag_display_timer.stop()
+    
+    def displayFlagComments(self):
+        """Display the comments an a flag that has been hovered over."""
+        # create text edit display
+        text = "\n\n".join([f"{c[0]}: {c[1]}" for c in self.displayed_flag.comments])
+        self.flag_display = QTextEdit(self.mainwindow, text=text)
+        # show
+        self.flag_display.show()
+        # adjust the width and height
+        self.flag_display.resize(self.width() // 5, 1)
+        h = self.flag_display.document().size().toSize().height() + 3
+        if h == 3:
+            self.flag_display.setText("X")
+            h = self.flag_display.document().size().toSize().height()
+            self.flag_display.setText("")
+        elif h > self.height() - 6:
+            h = self.height() - 6
+        self.flag_display.resize(self.width() // 5, h)
+        # move to proper location
+        right_justified = self.mainwindow.mouse_palette.mode_x <= .5
+        if right_justified:
+            self.flag_display.move(
+                self.x() + self.width() - self.flag_display.width() - 3,
+                self.y() + self.height() - self.flag_display.height() - 3
+            )
+        else:
+            self.flag_display.move(
+                self.x() + 3,
+                self.y() + self.height() - self.flag_display.height() - 3
+            )
+        # scroll all the way down
+        sb = self.flag_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
     def paintEvent(self, event):
         """Called when self.update() and various other functions are run.
@@ -416,6 +468,7 @@ class FieldWidget(QWidget, FieldView):
         st_size = 14
         closest = None
         closest_type = None
+        close_flag_display = True
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
@@ -463,9 +516,13 @@ class FieldWidget(QWidget, FieldView):
                             name = f"{closest.name} (ztrace)"
                         # flag returned
                         elif closest_type == "flag":
-                            name = closest.title
-                            # name = formatAsParagraph(closest.title)
-                                                
+                            name = closest.name
+                            close_flag_display = False
+                            if closest != self.displayed_flag:
+                                self.closeFlagComments()
+                                self.displayed_flag = closest
+                                self.flag_display_timer.start(1000)
+
                         mouse_x, mouse_y = self.mouse_x, self.mouse_y
                         if right_justified: mouse_x += 10
                         c = closest.color
@@ -597,6 +654,10 @@ class FieldWidget(QWidget, FieldView):
             y += st_size
         
         field_painter.end()
+
+        # close the flag display if needed
+        if close_flag_display:
+            self.closeFlagComments()
 
         # update the status bar
         if not self.is_panzooming:
@@ -868,12 +929,7 @@ class FieldWidget(QWidget, FieldView):
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
                 if clicked_type == "flag":
-                    f = self.clicked_trace
-                    response, confirmed = FlagDialog(self, f, self.series).exec()
-                    if confirmed:
-                        f.title, f.color, f.comments = response
-                        self.generateView(generate_image=False)
-                        self.saveState()
+                    self.editFlag(self.clicked_trace)
                 else:
                     self.mainwindow.field_menu.exec(event.globalPos())
             self.mainwindow.checkActions()
@@ -1606,9 +1662,15 @@ class FieldWidget(QWidget, FieldView):
     def flagRelease(self, event):
         """Called when mouse is released in flag mode."""
         if self.lclick and self.series.options["show_flags"]:
+            default_name = self.series.options["flag_name"]
+            if not default_name:
+                self.section.save()  # ensure all flags are in the series data object
+                flag_count = self.series.data.getFlagCount()
+                default_name = f"flag_{flag_count + 1}"
             structure = [
-                ["Title:", (True, "text", "")],
-                ["Comment:"],
+                ["Name:", (True, "text", default_name)],
+                ["Color:", ("color", self.series.options["flag_color"]), ""],
+                ["Comment (opt):"],
                 [("textbox", "")]
             ]
             response, confirmed = QuickDialog.get(self, structure, "Flag")
@@ -1617,15 +1679,28 @@ class FieldWidget(QWidget, FieldView):
             
             pix_x, pix_y = event.x(), event.y()
             title = response[0]
-            comment = response[1]
+            color = response[1]
+            comment = response[2]
             self.placeFlag(
                 title,
                 pix_x, pix_y,
-                self.series.options["flag_color"],
+                color,
                 comment
             )
 
         self.update()
+    
+    def editFlag(self, flag : Flag):
+        """Edit a flag."""
+        # close flag display
+        self.closeFlagComments()
+        self.displayed_flag = flag
+        response, confirmed = FlagDialog(self, flag, self.series).exec()
+        if confirmed:
+            flag.name, flag.color, flag.comments = response
+            self.generateView(generate_image=False)
+            self.saveState()
+        self.displayed_flag = None
     
     def createTraceFlag(self, trace : Trace = None):
         """Create a flag associated with a trace."""
@@ -1635,7 +1710,7 @@ class FieldWidget(QWidget, FieldView):
                 return
         
         structure = [
-            ["Title:", (True, "text", f"{trace.name}")],
+            ["Name:", (True, "text", f"{trace.name}")],
             ["Color:", ("color", trace.color), ""],
             ["Comment:"],
             [("textbox", "")]

@@ -33,3 +33,7 @@ class ColorButton(QPushButton):
     
     def getColor(self):
         return self.color
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.setMaximumWidth(self.height() * 2)

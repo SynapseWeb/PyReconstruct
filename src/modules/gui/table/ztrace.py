@@ -195,6 +195,7 @@ class ZtraceTableWidget(QDockWidget):
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu
         self.table.mouseDoubleClickEvent = self.addTo3D
+        self.table.backspace = self.delete
         
         # filter the objects
         filtered_ztrace_list = []

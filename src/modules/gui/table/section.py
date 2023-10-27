@@ -162,6 +162,7 @@ class SectionTableWidget(QDockWidget):
         # connect table functions
         self.table.contextMenuEvent = self.sectionContextMenu
         self.table.mouseDoubleClickEvent = self.findSection
+        self.table.backspace = self.deleteSections
 
         # format table
         self.table.setShowGrid(False)  # no grid

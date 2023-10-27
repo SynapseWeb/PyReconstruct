@@ -228,6 +228,7 @@ class FlagTableWidget(QDockWidget):
         # connect table functions
         self.table.mouseDoubleClickEvent = self.find
         self.table.contextMenuEvent = self.flagContextMenu
+        self.table.backspace = self.deleteFlags
 
         # format table
         # self.table.setWordWrap(False)
@@ -266,7 +267,6 @@ class FlagTableWidget(QDockWidget):
                 row += 1
         
         self.filterFlags()
-        print(self.passing_flags)
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""
@@ -322,6 +322,8 @@ class FlagTableWidget(QDockWidget):
     def deleteFlags(self):
         """Delete an object or objects on every section."""
         self.mainwindow.saveAllData()
+        if not noUndoWarning():
+            return
         selected_flags = self.getSelectedFlags()
         self.manager.deleteFlags(selected_flags)
 

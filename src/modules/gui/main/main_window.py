@@ -44,7 +44,7 @@ from modules.gui.utils import (
     setMainWindow,
     noUndoWarning
 )
-from modules.gui.table import HistoryTableWidget
+from modules.gui.table import HistoryTableWidget, CopyTableWidget
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -433,7 +433,7 @@ class MainWindow(QMainWindow):
             None,
             ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
             None,
-            ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
+            ("deletetraces_act", "Delete traces", "Del", self.backspace)
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
@@ -563,7 +563,7 @@ class MainWindow(QMainWindow):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
         shortcuts = [
-            ("Backspace", self.field.backspace),
+            ("Backspace", self.backspace),
 
             ("/", self.flickerSections),
 
@@ -2348,6 +2348,15 @@ class MainWindow(QMainWindow):
         """Quick shortcut to toggle curation on/off for the tables."""
         if self.field.obj_table_manager:
             self.field.obj_table_manager.toggleCuration()
+    
+    def backspace(self):
+        w = self.focusWidget()
+        if isinstance(w, CopyTableWidget):
+            w.backspace()
+        else:
+            self.field.backspace()
+
+        self.field.backspace()
 
     def restart(self):
         self.restart_mainwindow = True

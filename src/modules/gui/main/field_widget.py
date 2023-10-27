@@ -896,6 +896,7 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        self.setFocus()
         self.mouse_x = event.x()
         self.mouse_y = event.y()
         if not self.is_gesturing:

@@ -373,6 +373,7 @@ class ObjectTableWidget(QDockWidget):
         # connect table functions
         self.table.mouseDoubleClickEvent = self.findFirst
         self.table.contextMenuEvent = self.objectContextMenu
+        self.table.backspace = self.deleteObjects
         self.table.itemChanged.connect(self.checkCurate)
 
         # format table
@@ -678,7 +679,7 @@ class ObjectTableWidget(QDockWidget):
         if not noUndoWarning():
             return
         
-        self.manager.deleteObjects(obj_names) 
+        self.manager.deleteObjects(obj_names)
 
     # MENU-RELATED FUNCTIONS
 

@@ -304,10 +304,7 @@ class TraceLayer():
         x, y = self.section.tform.map(field_x, field_y, inverted=True)
         # create flag
         f = Flag(title, x, y, color)
-        print(f.comments)
         if comment: f.addComment(self.series.user, comment)
-        print(f.comments)
-        print()
         self.section.addFlag(f)
     
     def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
@@ -641,10 +638,10 @@ class TraceLayer():
         )
         # draw highlight if necessary
         if flag in self.section.selected_flags:
-            lbl = QLabel()
+            lbl = QLabel(text="⚑")
             lbl.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
             lbl.adjustSize()
-            w, h = lbl.width(), lbl.height()
+            w, h = lbl.width(), lbl.height() * 3/4
             center = QPoint(round(x + w/2), round(y - h/2))
             painter.setBrush(QBrush(QColor(*flag.color)))
             painter.setOpacity(self.series.options["fill_opacity"])

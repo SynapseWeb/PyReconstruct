@@ -368,7 +368,7 @@ class TraceLayer():
         """
         trace = self.section.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
-        cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
+        cut_traces = cutTraces(trace_to_cut, knife_trace, self.series.options["knife_del_threshold"])  # merge the pixel traces
         # delete the old traces
         self.section.deleteTraces()
         # create new traces

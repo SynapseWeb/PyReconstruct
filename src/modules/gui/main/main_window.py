@@ -1903,6 +1903,20 @@ class MainWindow(QMainWindow):
         self.series.options["grid"] = response
         self.seriesModified()
     
+    def modifyKnife(self, event=None):
+        """Modify the knife properties."""
+        structure = [
+            ["When using the knife, objects smaller than this percent"],
+            ["of the original trace area will be automatically deleted."],
+            ["Knife delete threshold (%):", ("float", self.series.options["knife_del_threshold"], (0, 100))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Knife")
+        if not confirmed:
+            return
+        
+        self.series.options["knife_del_threshold"] = response[0]
+        self.seriesModified()
+    
     def resetTracePalette(self):
         """Reset the trace palette to default traces."""
         self.mouse_palette.resetPalette()

@@ -538,6 +538,7 @@ class Series():
         options["flag_name"] = ""
         options["flag_color"] = (255, 0, 0)
         options["flag_size"] = 14
+        options["knife_del_threshold"] = 1
 
         series_data["last_user"] = {}
         series_data["curation"] = {}

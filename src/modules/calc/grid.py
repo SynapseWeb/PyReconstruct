@@ -260,7 +260,7 @@ def mergeTraces(trace_list : list) -> list:
         new_traces[i] = reducePoints(new_traces[i])
     return new_traces
 
-def cutTraces(trace, cut_trace : list) -> list:
+def cutTraces(trace, cut_trace : list, del_threshold : float) -> list:
     """Cut a set of traces.
     
         Params:
@@ -269,7 +269,7 @@ def cutTraces(trace, cut_trace : list) -> list:
         Returns:
             (list) the newly cut traces
     """
-    threshold = area(trace) * 0.01
+    threshold = area(trace) * (del_threshold / 100)
     grid = Grid([trace], cut_trace)
     interiors = grid.getInteriors()
     new_traces = []

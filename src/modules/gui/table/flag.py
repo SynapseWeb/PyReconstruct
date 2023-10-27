@@ -58,6 +58,7 @@ class FlagTableWidget(QDockWidget):
         }
         self.re_filters = set([".*"])
         self.color_filter = None
+        self.comment_filter = None
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -100,7 +101,8 @@ class FlagTableWidget(QDockWidget):
                                     ("colorfilter_act", "Set filter...", "", lambda : self.setColorFilter(False)),
                                     ("removecolor_act", "Remove filter...", "", self.removeColorFilter)
                                 ]
-                            }
+                            },
+                            ("commentfilter_act", "Comment text...", "", self.setCommentFilter)
                             
                         ]
                     }
@@ -147,7 +149,7 @@ class FlagTableWidget(QDockWidget):
             col += 1
         if self.columns["Last Comment"]:
             if flag.comments:
-                comment = flag.comments[-1][1]
+                comment = flag.comments[-1].text
             else:
                 comment = ""
             self.table.setItem(row, col, QTableWidgetItem(comment))
@@ -171,8 +173,19 @@ class FlagTableWidget(QDockWidget):
         if not passes_filters:
             return False
         
+        # check color
         if self.color_filter and tuple(flag.color) != self.color_filter:
             return False
+        
+        # check comments
+        if self.comment_filter:
+            text_found = False
+            for comment in flag.comments:
+                if self.comment_filter in comment.text:
+                    text_found = True
+                    break
+            if not text_found:
+                return False
         
         return True
     
@@ -296,12 +309,13 @@ class FlagTableWidget(QDockWidget):
         if not flag:
             notify("Please edit one flag at a time.")
         
-        response, confirmed = FlagDialog(self.mainwindow, flag, self.series).exec()
+        response, confirmed = FlagDialog(self.mainwindow, flag).exec()
         if not confirmed:
             return
         
         nf = flag.copy()
-        nf.name, nf.color, nf.comments = response
+        nf.name, nf.color, nf.comments, new_comment = response
+        if new_comment: nf.addComment(self.series.user, new_comment)
 
         self.manager.editFlag(snum, flag, nf)
 
@@ -365,8 +379,8 @@ class FlagTableWidget(QDockWidget):
         re_filter_str = ", ".join(self.re_filters)
         new_re_filter, confirmed = QInputDialog.getText(
             self,
-            "Filter Objects",
-            "Enter the object filters:",
+            "Filter Flags",
+            "Enter the flag name filters:",
             text=re_filter_str
         )
         if not confirmed:
@@ -403,6 +417,23 @@ class FlagTableWidget(QDockWidget):
             self.color_filter = (c.red(), c.green(), c.blue())
 
         self.createTable()
+    
+    def setCommentFilter(self):
+        """Set a new regex filter for the comments."""
+        # get a new filter from the user
+        new_filter, confirmed = QInputDialog.getText(
+            self,
+            "Filter Comments",
+            "Enter the text to find in the flag comments:",
+            text=self.comment_filter
+        )
+        if not confirmed:
+            return
+        
+        self.comment_filter = new_filter
+
+        # call through manager to update self
+        self.manager.updateTable(self)
     
     def removeColorFilter(self):
         """Remove the color filter."""

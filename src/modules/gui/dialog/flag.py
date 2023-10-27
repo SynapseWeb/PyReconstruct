@@ -13,21 +13,19 @@ from PySide6.QtWidgets import (
     QApplication
 )
 
-from modules.datatypes import Flag, Series
+from modules.datatypes import Flag
 
 from .color_button import ColorButton
 
 class FlagDialog(QDialog):
 
-    def __init__(self, parent : QWidget, flag : Flag, series : Series):
+    def __init__(self, parent : QWidget, flag : Flag):
         """Create a zarr dialog.
         
             Params:
                 parent (QWidget): the parent widget
                 flag (Flag): the flag to edit
-                series (Series): the series
         """
-        self.series = series
 
         super().__init__(parent)
 
@@ -52,9 +50,9 @@ class FlagDialog(QDialog):
         self.vlayout.addWidget(QLabel(self, text="Comments:"))
         vlayout = QVBoxLayout()
         self.fields = {}
-        for index, (user, comment) in enumerate(flag.comments):
-            hlayout = self.createRow(user, comment, index)
-            self.fields[index] = (hlayout, (user, comment))
+        for index, comment in enumerate(flag.comments):
+            hlayout = self.createRow(comment, index)
+            self.fields[index] = (hlayout, comment)
             vlayout.addLayout(hlayout)
         vlayout.addStretch()
         w = QWidget(self)
@@ -82,7 +80,7 @@ class FlagDialog(QDialog):
         self.show()
         self.hide()
     
-    def createRow(self, user, comment, index):
+    def createRow(self, comment, index):
         """Create a row of the dialog."""
         hlayout = QHBoxLayout()
 
@@ -93,10 +91,10 @@ class FlagDialog(QDialog):
         bttn.clicked.connect(lambda : self.removeRow(index=index))
         hlayout.addWidget(bttn)
 
-        lbl = QLabel(self, text=user)
+        lbl = QLabel(self, text=comment.user + "\n" + comment.date)
         hlayout.addWidget(lbl)
 
-        te = QTextEdit(comment.replace("\n", "<br/>"), self)
+        te = QTextEdit(comment.text.replace("\n", "<br/>"), self)
         te.setEnabled(False)
         hlayout.addWidget(te)
 
@@ -146,8 +144,6 @@ class FlagDialog(QDialog):
                 hlayout, comment = self.fields[index]
                 comments.append(comment)
             new_comment = self.new_comment.toPlainText()
-            if new_comment:
-                comments.append((self.series.user, new_comment))
-            return (title, color, comments), True
+            return (title, color, comments, new_comment), True
         else:
             return None, False

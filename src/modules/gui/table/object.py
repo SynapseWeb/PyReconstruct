@@ -523,7 +523,14 @@ class ObjectTableWidget(QDockWidget):
         
         attr_trace, sections = response
         
+        # keep track of scroll bar position
+        vscroll = self.table.verticalScrollBar()
+        scroll_pos = vscroll.value()
+
         self.manager.editAttributes(obj_names, attr_trace, sections)
+        
+        # reset scroll bar position
+        vscroll.setValue(scroll_pos)
     
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""

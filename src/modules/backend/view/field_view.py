@@ -64,7 +64,7 @@ class FieldView():
         # propagate tform defaults
         self.propagate_tform = False
         self.stored_tform = Transform([1,0,0,0,1,0])
-        self.propagated_sections = []
+        self.propagated_sections = set()
 
         # copy/paste clipboard
         self.clipboard = []
@@ -208,7 +208,8 @@ class FieldView():
         self.propagate_tform = propagate
         if self.propagate_tform:
             self.stored_tform = Transform([1,0,0,0,1,0])
-            self.propagated_sections = [self.series.current_section]
+            self.propagated_sections = set([self.series.current_section])
+        self.update()
         
     def propagateTo(self, to_end : bool = True, log_event=True):
         """Propagate the stored transform to the start/end of series.
@@ -221,12 +222,13 @@ class FieldView():
         
         included_sections = []
         for snum in self.series.sections:
-            modify_section = (
-                (to_end and snum > self.series.current_section)
-                or
-                (not to_end and snum < self.series.current_section)
-            )
-            if modify_section: included_sections.append(snum)
+            if snum not in self.propagated_sections:
+                modify_section = (
+                    (to_end and snum > self.series.current_section)
+                    or
+                    (not to_end and snum < self.series.current_section)
+                )
+                if modify_section: included_sections.append(snum)
         
         for snum in included_sections:
             section = self.series.loadSection(snum)
@@ -240,7 +242,7 @@ class FieldView():
             new_tform = self.stored_tform * section.tform
             section.tform = new_tform
             section.save()
-            self.propagated_sections.append(snum)
+            self.propagated_sections.add(snum)
             if log_event:
                 self.series.addLog(None, snum, "Modify transform")
         
@@ -290,13 +292,13 @@ class FieldView():
             self.trace_table_manager.loadSection(self.section)
         
         # propagate transform if requested
-        if (not self.section.align_locked and
-            self.propagate_tform and
+        if (self.propagate_tform and
+            not self.section.align_locked and
             new_section_num not in self.propagated_sections):
             current_tform = self.section.tform
             new_tform = self.stored_tform * current_tform
             self.section_layer.changeTform(new_tform)
-            self.propagated_sections.append(new_section_num)
+            self.propagated_sections.add(new_section_num)
 
         # generate view and update status bar
         self.generateView()

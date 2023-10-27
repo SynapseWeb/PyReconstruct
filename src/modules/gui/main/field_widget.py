@@ -357,18 +357,14 @@ class FieldWidget(QWidget, FieldView):
         # scroll all the way down
         sb = self.flag_display.verticalScrollBar()
         sb.setValue(sb.maximum())
-
-    def paintEvent(self, event):
-        """Called when self.update() and various other functions are run.
+    
+    def paintBorder(self, field_painter : QPainter):
+        """Paint the borders for the field."""
+        # draw record dot on the screen if recording transforms
+        if self.propagate_tform:
+            field_painter.setBrush(QColor(255, 0, 0))
+            field_painter.drawEllipse(20, 20, 40, 40)
         
-        Overwritten from QWidget.
-        Paints self.field_pixmap onto self (the widget).
-        """
-        field_painter = QPainter(self)
-
-        # draw the field
-        field_painter.drawPixmap(0, 0, self.field_pixmap)
-
         # add red border if trace layer is hidden
         self.border_exists = False
         if self.hide_trace_layer:
@@ -382,7 +378,9 @@ class FieldWidget(QWidget, FieldView):
         # add cyan border if sections are being blended
         if self.blend_sections:
             self.drawBorder(field_painter, (0, 255, 255))
-
+    
+    def paintWorkingTrace(self, field_painter : QPainter):
+        """Paint the work trace on the field."""
         # draw the working trace on the screen
         if self.current_trace:
             pen = None
@@ -447,7 +445,9 @@ class FieldWidget(QWidget, FieldView):
                 field_painter.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawText(qpoint, "⚑")
-        
+
+    def paintText(self, field_painter : QPainter):
+        """Paint the corner text onto the field."""
         # place text on other side of mode palette (if applicable)
         if self.mainwindow.mouse_palette.mode_x > .5:
             x = 10
@@ -653,8 +653,6 @@ class FieldWidget(QWidget, FieldView):
                 )
             y += st_size
         
-        field_painter.end()
-
         # close the flag display if needed
         if close_flag_display:
             self.closeFlagComments()
@@ -665,6 +663,22 @@ class FieldWidget(QWidget, FieldView):
                 self.updateStatusBar()
             else:
                 self.updateStatusBar(closest)
+
+    def paintEvent(self, event):
+        """Called when self.update() and various other functions are run.
+        
+        Overwritten from QWidget.
+        Paints self.field_pixmap onto self (the widget).
+        """
+        field_painter = QPainter(self)
+
+        # draw the field
+        field_painter.drawPixmap(0, 0, self.field_pixmap)
+        self.paintBorder(field_painter)
+        self.paintWorkingTrace(field_painter)
+        self.paintText(field_painter)
+
+        field_painter.end()
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.

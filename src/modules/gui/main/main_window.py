@@ -257,8 +257,8 @@ class MainWindow(QMainWindow):
                                 "text": "Propagate transform",
                                 "opts":
                                 [
-                                    ("startpt_act", "Begin propagation", "", lambda : self.field.setPropagationMode(True)),
-                                    ("endpt_act", "Finish propagation", "", lambda : self.field.setPropagationMode(False)),
+                                    ("startpt_act", "Start propagation recording", "", lambda : self.field.setPropagationMode(True)),
+                                    ("endpt_act", "End propagation recording", "", lambda : self.field.setPropagationMode(False)),
                                     None,
                                     ("proptostart_act", "Propagate to start", "", lambda : self.field.propagateTo(False)),
                                     ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))

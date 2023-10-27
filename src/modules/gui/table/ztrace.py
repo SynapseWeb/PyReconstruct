@@ -290,7 +290,14 @@ class ZtraceTableWidget(QDockWidget):
             notify("This ztrace already exists.")
             return
         
+        # keep track of scroll bar position
+        vscroll = self.table.verticalScrollBar()
+        scroll_pos = vscroll.value()
+
         self.manager.editAttributes(name, new_name, new_color)
+        
+        # reset scroll bar position
+        vscroll.setValue(scroll_pos)
     
     def smooth(self):
         """Smooth a set of ztraces."""

@@ -7,7 +7,8 @@ from .zarr_layer import ZarrLayer
 from modules.datatypes import (
     Series,
     Transform,
-    Trace
+    Trace,
+    Flag
 )
 from modules.backend.func import SectionStates
 from modules.calc import (
@@ -53,6 +54,7 @@ class FieldView():
         self.ztrace_table_manager = None
         self.trace_table_manager = None
         self.section_table_manager = None
+        self.flag_table_manager = None
 
         # hide/show defaults
         self.hide_trace_layer = False
@@ -128,6 +130,10 @@ class FieldView():
         # update the section table
         if self.section_table_manager:
             self.section_table_manager.updateSection(self.section.n)
+
+        # update the flag table
+        if self.flag_table_manager:
+            self.flag_table_manager.updateSection(self.section)
         
         if clear_tracking:
             self.section.clearTracking()
@@ -410,6 +416,91 @@ class FieldView():
 
         self.generateView()
     
+    def findFlag(self, flag : Flag):
+        """Find a flag on the current section"""
+        # check if flag exists
+        found = False
+        for f in self.section.flags:
+            if flag.equals(f):
+                flag = f
+                found = True
+        if not found:
+            return
+        
+        # # get the minimum window requirements (1:1 screen to image pixels)
+        # min_window_w = self.section.mag * self.section_layer.pixmap_dim[0]
+        # min_window_h = self.section.mag * self.section_layer.pixmap_dim[1]
+        
+        # get the bounds of the contour and set the window
+        tform = self.section.tform
+        x, y = tform.map(flag.x, flag.y)
+        
+        min_x = max_x = x
+        min_y = max_y = y
+        
+        range_x = max_x - min_x
+        range_y = max_y - min_y
+
+        # Get values of image (if exists) in order to figure out what 100% zoom means
+
+        if self.section_layer.image_found:
+
+            # This should probably be a stand alone function
+            # It is used vertbatim in home method below
+        
+            tform = self.section.tform
+            xvals = []
+            yvals = []
+        
+            # get the field location of the image
+            for p in self.section_layer.base_corners:
+            
+                x, y = [n * self.section.mag for n in p]
+                x, y = tform.map(x, y)
+                xvals.append(x)
+                yvals.append(y)
+
+            max_img_dist = max(xvals + yvals)
+
+        else: # default to some arbitrary large size
+
+            max_img_dist = 50
+
+        zoom = self.series.options["find_zoom"]
+
+        # modifier for flags: cap at 99% zoom
+        if zoom > 99:
+            zoom = 99
+
+        new_range_x = range_x + ((100 - zoom)/100 * (max_img_dist - range_x))
+        new_range_y = range_y + ((100 - zoom)/100 * (max_img_dist - range_y))
+
+        new_x = min_x - ( (new_range_x - range_x) / 2 )
+        new_y = min_y - ( (new_range_y - range_y) / 2 )
+
+        # # check if minimum requirements are met
+        # if new_range_x < min_window_w:
+        #     new_x -= (min_window_w - new_range_x) / 2
+        #     new_range_x = min_window_w
+        # elif new_range_y < min_window_h:
+        #     new_y -= (min_window_h - new_range_y) / 2
+        #     new_range_y = min_window_h
+        
+        self.series.window = [
+            
+            new_x,
+            new_y,
+            new_range_x,
+            new_range_y
+            
+        ]
+
+        # set the selected traces
+        if self.series.options["show_flags"]:
+            self.section.selected_flags = [flag]
+
+        self.generateView()
+    
     def home(self):
         """Set the view to the image."""
         # check is an image has been loaded
@@ -488,7 +579,25 @@ class FieldView():
         else:
             self.section.selected_ztraces.append(ztrace_i)
         
-        self.generateView(generate_image=False)            
+        self.generateView(generate_image=False)
+
+    def selectFlag(self, flag : Flag):
+        """Select/deselect a single flag.
+        
+            Params:
+                flag (Flag): the flag to select
+        """
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        
+        # check if flag has been selected
+        if flag in self.section.selected_flags:
+            self.section.selected_flags.remove(flag)
+        else:
+            self.section.selected_flags.append(flag)
+        
+        self.generateView(generate_image=False)
     
     def selectTraces(self, traces : list[Trace], ztraces_i : list):
         """Select/deselect a set of traces.
@@ -862,15 +971,16 @@ class FieldView():
         )
         self.generateView(generate_image=False)
         self.saveState()
-
     
-    def findClosestTrace(self, field_x, field_y, radius=0.5):
-        return self.section.findClosestTrace(
-            field_x,
-            field_y,
-            radius,
-            self.section_layer.traces_in_view
+    def placeFlag(self, title, pix_x, pix_y, color, comment):
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        self.section_layer.placeFlag(
+            title, pix_x, pix_y, color, comment
         )
+        self.generateView(generate_image=False)
+        self.saveState()
     
     def deselectAllTraces(self):
         # disable if trace layer is hidden

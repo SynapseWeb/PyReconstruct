@@ -20,15 +20,8 @@ from modules.constants import (
 )
 
 from modules.calc import mergeTraces
-
 from modules.constants import welcome_series_dir
-
-try:
-    from modules.gui.utils import progbar
-    prog_imported = True
-except ImportError:
-    prog_imported = False
-
+from modules.gui.utils import getProgbar
 from modules.backend.threading import ThreadPoolProgBar
 
 default_traces = [
@@ -89,6 +82,7 @@ class Series():
 
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
+        self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
         self.object_3D_modes = series_data["object_3D_modes"]
 
         # default settings
@@ -110,9 +104,6 @@ class Series():
         self.last_user = series_data["last_user"]
         # curate data
         self.curation = series_data["curation"]
-
-        # store the keys fro object attrs
-        self.obj_attrs_keys = ("object_groups", "object_3D_modes", "curation")
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
@@ -189,7 +180,7 @@ class Series():
             jser_data["log"] = "Date, Time, User, Obj, Sections, Event"
         
         # creating loading bar
-        update, canceled = seriesProgbar(
+        progbar = getProgbar(
             text="Opening series..."
         )
         progress = 0
@@ -204,14 +195,16 @@ class Series():
         
         # extract JSON series data
         series_data = jser_data["series"]
+        # add empty log_set for opening/saving purposes
+        series_data["log_set"] = []
         Series.updateJSON(series_data)
         series_fp = os.path.join(hidden_dir, sname + ".ser")
         with open(series_fp, "w") as f:
             json.dump(series_data, f)
-        if canceled and canceled():
+        if progbar.wasCanceled():
             return None
         progress += 1
-        if update: update(progress/final_value * 100)
+        progbar.setValue(progress/final_value * 100)
 
         # extract JSON section data
         sections = {}
@@ -233,22 +226,20 @@ class Series():
             with open(section_fp, "w") as f:
                 json.dump(section_data, f)
             
-            if canceled and canceled():
+            if progbar.wasCanceled():
                 return None
             progress += 1
-            if update:
-                update(progress/final_value * 100)
+            progbar.setValue(progress/final_value * 100)
         
         # extract the existing log
         log_str = jser_data["log"]
         existing_log_fp = os.path.join(hidden_dir, "existing_log.csv")
         with open(existing_log_fp, "w") as f:
             f.write(log_str)
-        if canceled and canceled():
+        if progbar.wasCanceled():
             return None
         progress += 1
-        if update:
-            update(progress/final_value * 100)
+        progbar.setValue(progress/final_value * 100)
         
         # create the series
         series = Series(series_fp, sections, get_series_data=False)
@@ -257,10 +248,10 @@ class Series():
         # gather the series data
         for snum, section in series.enumerateSections(show_progress=False):
             series.data.updateSection(section, update_traces=True, log_events=False)
-            if canceled and canceled():
+            if progbar.wasCanceled():
                 return None
             progress += 1
-            if update: update(progress/final_value * 100)
+            progbar.setValue(progress/final_value * 100)
         
         return series
 
@@ -270,7 +261,7 @@ class Series():
 
         filenames = os.listdir(self.hidden_dir)
 
-        update, canceled = seriesProgbar(
+        progbar = getProgbar(
             text="Saving series...",
             cancel=False
         )
@@ -310,7 +301,7 @@ class Series():
                 # continue saving the existing log file
                 jser_data["log"] = existing_log + jser_data["log"]
 
-            if update: update(progress/final_value * 100)
+            progbar.setValue(progress/final_value * 100)
             progress += 1
         
         save_str = json.dumps(jser_data)
@@ -339,10 +330,8 @@ class Series():
         
         if close:
             self.close()
-        # else:
-        #     self.gatherSectionData()
 
-        if update: update(100)
+        progbar.setValue(100)
     
     def move(self, new_jser_fp : str, section : Section, b_section : Section):
         """Move/rename the series to its jser filepath.
@@ -496,6 +485,7 @@ class Series():
             
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
+        d["ztrace_groups"] = self.ztrace_groups.getGroupDict()
         d["object_3D_modes"] = self.object_3D_modes
 
         # ADDED SINCE JAN 25TH
@@ -523,6 +513,7 @@ class Series():
         series_data["ztraces"] = []
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
+        series_data["ztrace_groups"] = {}
         series_data["object_3D_modes"] = {}
 
         # ADDED SINCE JAN 25TH
@@ -543,6 +534,10 @@ class Series():
         options["show_ztraces"] = False
         options["find_zoom"] = 95
         options["autoseg"] = {}
+        options["show_flags"] = True
+        options["flag_name"] = ""
+        options["flag_color"] = (255, 0, 0)
+        options["flag_size"] = 14
 
         series_data["last_user"] = {}
         series_data["curation"] = {}
@@ -878,7 +873,15 @@ class Series():
         # delete old_name
         self.removeObjAttrs(old_name)
     
-    def editObjectAttributes(self, obj_names : list, name : str = None, color : tuple = None, tags : set = None, mode : tuple = None, log_event=True):
+    def editObjectAttributes(
+            self, 
+            obj_names : list, 
+            name : str = None, 
+            color : tuple = None, 
+            tags : set = None, 
+            mode : tuple = None, 
+            sections : list = None, 
+            log_event=True):
         """Edit the attributes of objects on every section.
         
             Params:
@@ -903,6 +906,8 @@ class Series():
         for snum, section in self.enumerateSections(
             message="Modifying object(s)..."
         ):
+            if snum not in sections:  # skip sections that are not included
+                continue
             traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:
@@ -1419,7 +1424,7 @@ class SeriesIterator():
         self.section_numbers = sorted(list(self.series.sections.keys()))
         self.sni = 0
         if self.show_progress:
-            self.update, canceled = seriesProgbar(
+            self.progbar = getProgbar(
                 text=self.message,
                 cancel=False
             )
@@ -1429,61 +1434,12 @@ class SeriesIterator():
         """Return the next section."""
         if self.sni < len(self.section_numbers):
             if self.show_progress:
-                if self.update:
-                    self.update(self.sni / len(self.section_numbers) * 100)
+                    self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             snum = self.section_numbers[self.sni]
             section = self.series.loadSection(snum)
             self.sni += 1
             return snum, section
         else:
             if self.show_progress:
-                if self.update:
-                    self.update(self.sni / len(self.section_numbers) * 100)
+                self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             raise StopIteration
-
-
-class BasicProgbar():
-    def __init__(self, text : str):
-        """Create a 'vanilla' progress indicator.
-        
-        Params:
-            text (str): the text to display by the indicator
-        """
-        self.text = text
-        print(f"{text} | 0.0%", end="\r")
-    
-    def update(self, p):
-        """Update the progress indicator.
-        
-            Params:
-                p (float): the percentage of progress made
-        """
-        print(f"{self.text} | {p:.1f}%", end="\r")
-        if p == 100:
-            print()
-    
-    def canceled(self):
-        """Dummy function -- do nothing!"""
-        return False
-
-def seriesProgbar(text : str, cancel : bool = True):
-    """Return the appropriate progress bar for the situation.
-    
-        text (str): the text to display on the progress bar
-        cancel (bool): True if progress can be canceled
-    """
-    use_basic = not prog_imported
-    if prog_imported:
-        update, canceled = progbar(
-            title=" ",
-            text=text,
-            cancel=cancel
-        )
-        if update is None:
-            use_basic = True
-    if use_basic:
-        pbar = BasicProgbar(text)
-        update = pbar.update
-        canceled = pbar.canceled
-    
-    return update, canceled

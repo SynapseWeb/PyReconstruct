@@ -4,7 +4,7 @@ import json
 from modules.calc import reducePoints
 
 from modules.constants import blank_section, blank_series_no_contours
-from modules.gui.utils import progbar
+from modules.gui.utils import getProgbar
 from modules.constants import createHiddenDir
 from modules.datatypes import (
     Series,
@@ -46,8 +46,7 @@ def xmlToJSON(xml_dir : str) -> Series:
     hidden_dir = createHiddenDir(xml_dir, sname)
 
     # set up progress
-    update, canceled = progbar(
-        "XML Series",
+    progbar = getProgbar(
         "Converting series..."
     )
     progress = 0
@@ -56,18 +55,18 @@ def xmlToJSON(xml_dir : str) -> Series:
     
     # convert the series file
     json_series_fp = seriesXMLToJSON(series_fp, section_fps, hidden_dir)
-    if canceled(): return
+    if progbar.wasCanceled(): return
     progress += 1
-    update(progress/final_value * 100)
+    progbar.setValue(progress/final_value * 100)
 
     # get the reconcropper data
     if json_fp:
         alignment_dict = getReconcropperData(json_fp)
     else:
         alignment_dict = None
-    if canceled(): return
+    if progbar.wasCanceled(): return
     progress += 1
-    update(progress/final_value * 100)
+    progbar.setValue(progress/final_value * 100)
 
     # convert the section files and gather section names and tforms
     sections = {}
@@ -77,9 +76,9 @@ def xmlToJSON(xml_dir : str) -> Series:
         tform = sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
         sections[snum] = f"{sname}.{snum}"
         section_tforms[snum] = tform
-        if canceled(): return
+        if progbar.wasCanceled(): return
         progress += 1
-        update(progress/final_value * 100)
+        progbar.setValue(progress/final_value * 100)
     
     # create an empty log file
     with open(os.path.join(hidden_dir, "existing_log.csv"), "w") as f:
@@ -243,26 +242,13 @@ def jsonToXML(series : Series, new_dir : str):
         Params:
             original_series (Series): the series to convert
             new_dir (str): the directory to store the new files
-    """    
-    update, canceled = progbar(
-        "Export Series",
-        "Exporting series as XML..."
-    )
-    progress = 0
-    final_value = len(series.sections) + 1
-
-    # convert the sections
-    for snum, section in series.enumerateSections(show_progress=False):
-        sectionJSONtoXML(series, section, new_dir)
-        if canceled(): return
-        progress += 1
-        update(progress/final_value * 100)
-    
+    """
     # convert the series
     seriesJSONtoXML(series, new_dir)
-    if canceled(): return
-    progress += 1
-    update(progress/final_value * 100)
+
+    # convert the sections
+    for snum, section in series.enumerateSections(message="Exporting series as XML..."):
+        sectionJSONtoXML(series, section, new_dir)
 
 def seriesJSONtoXML(series : Series, new_dir : str):
     # create the blank series and replace text as needed

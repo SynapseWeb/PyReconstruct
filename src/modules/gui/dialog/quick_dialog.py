@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox, 
     QLabel, 
     QLineEdit,
+    QTextEdit,
     QComboBox,
     QVBoxLayout,
     QHBoxLayout,
@@ -19,7 +20,6 @@ from PySide6.QtWidgets import (
 from .helper import resizeLineEdit, BrowseWidget
 from .color_button import ColorButton
 from .shape_button import ShapeButton
-
 from modules.gui.utils import notify
 
 class InputField():
@@ -31,8 +31,8 @@ class InputField():
         self.required = required
     
     def getResponse(self):
-        if self.type == "text":
-            t = self.widget.text()
+        if self.type == "text" or self.type == "textbox":
+            t = self.widget.text() if self.type == "text" else self.widget.toPlainText()
             if not t and self.required:
                 notify("Please enter a response.")
                 return None, False
@@ -169,7 +169,10 @@ class QuickDialog(QDialog):
             if not grid:
                 row_layout = QHBoxLayout()
             for item in row_structure:
-                if type(item) is str:  # Label
+                if not item and not grid:  # Spacer
+                    row_layout.addStretch()
+                    continue
+                elif type(item) is str:  # Label
                     w = QLabel(self, text=item)
                 else:
                     # checking for leading bool to mark required status
@@ -180,10 +183,10 @@ class QuickDialog(QDialog):
                         required = False
                     widget_type = item[0]
                     params = item[1:]
-                    if widget_type == "text":  # Text input
+                    if widget_type == "text" or widget_type == "textbox":  # Text input
                         # Params structure: str
                         text = params[0]
-                        w = QLineEdit(text, self)
+                        w = QLineEdit(text, self) if widget_type == "text" else QTextEdit(text.replace("\n", "<br/>"), self)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "int" or widget_type == "float": 
                         # Params structure: int, optional: list[int]

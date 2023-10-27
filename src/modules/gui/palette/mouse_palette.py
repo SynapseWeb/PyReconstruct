@@ -146,6 +146,8 @@ class MousePalette():
             b.setRightClickEvent(self.modifyFlag)
             # manually set the flag text and color
             self.setFlag()
+        elif name == "Knife":
+            b.setRightClickEvent(self.mainwindow.modifyKnife)
 
         b.show()
     

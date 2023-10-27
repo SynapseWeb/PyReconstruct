@@ -260,6 +260,7 @@ class TraceTableWidget(QDockWidget):
         # connect table functions
         self.table.contextMenuEvent = self.traceContextMenu
         self.table.mouseDoubleClickEvent = self.findTrace
+        self.table.backspace = self.deleteTraces
 
         # format table
         self.table.setWordWrap(False)

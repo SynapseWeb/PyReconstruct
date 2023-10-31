@@ -328,7 +328,13 @@ class FieldWidget(QWidget, FieldView):
     def displayFlagComments(self):
         """Display the comments an a flag that has been hovered over."""
         # create text edit display
-        text = "\n\n".join([f"{c.user} ({c.date}):\n{c.text}" for c in self.displayed_flag.comments])
+        comments = []
+        for c in self.displayed_flag.comments:
+            t = c.text.replace("\n", "<br>")
+            comments.append(
+                f"<b>{c.user}</b> ({c.date}):<br>{t}"
+            )
+        text = "<hr>".join(comments)
         self.flag_display = QTextEdit(self.mainwindow, text=text)
         # show
         self.flag_display.show()
@@ -1736,15 +1742,14 @@ class FieldWidget(QWidget, FieldView):
             return
         
         x, y = trace.getCentroid()
-        title = response[0]
+        name = response[0]
         color = response[1]
         comment = response[2]
+        f = Flag(name, x, y, color)
         if comment:
-            comments = [(self.series.user, comment)]
-        else:
-            comments = []
+            f.addComment(self.series.user, comment)
+        self.section.addFlag(f)
 
-        self.section.addFlag(Flag(title, x, y, color, comments))
 
         self.saveState()
         self.generateView(generate_image=False)

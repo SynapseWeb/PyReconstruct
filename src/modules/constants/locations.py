@@ -24,19 +24,5 @@ welcome_series_dir = os.path.join(assets_dir, "welcome_series", ".welcome")
 checker_dir = os.path.join(assets_dir, "checker")
 img_dir = os.path.join(assets_dir, "img")
 
-class Pathstr():
-    def __init__(self):
-        self.path = str(Path.home())
-    
-    def set(self, new_path, dirname=False):
-        if dirname:
-            new_path = os.path.dirname(new_path)
-        self.path = new_path
-    
-    def get(self):
-        return self.path
-
-fd_dir = Pathstr()
-
 # Clean up
 del fp

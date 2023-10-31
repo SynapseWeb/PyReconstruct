@@ -11,7 +11,6 @@ from .utils import (
     noUndoWarning,
     saveNotify,
     unsavedNotify,
-    getSaveLocation,
     mainwindow,
     drawOutlinedText,
     getProgbar

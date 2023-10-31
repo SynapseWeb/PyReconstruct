@@ -10,5 +10,4 @@ from .locations import (
     assets_dir,
     img_dir,
     welcome_series_dir,
-    fd_dir
 )

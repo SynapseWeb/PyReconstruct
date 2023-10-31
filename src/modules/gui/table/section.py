@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog,
 )
 from PySide6.QtCore import Qt
 
@@ -20,8 +19,7 @@ from modules.gui.utils import (
     noUndoWarning,
     notify
 )
-from modules.gui.dialog import QuickDialog
-from modules.constants import fd_dir
+from modules.gui.dialog import QuickDialog, FileDialog
 from modules.datatypes import Series
 
 class SectionTableWidget(QDockWidget):
@@ -348,17 +346,14 @@ class SectionTableWidget(QDockWidget):
     def export(self):
         """Export the trace list as a csv file."""
         # get the location from the user
-        global fd_dir
-        file_path, ext = QFileDialog.getSaveFileName(
+        file_path = FileDialog.get(
+            "save",
             self,
-            "Save Trace List",
-            os.path.join(fd_dir.get(), "traces.csv"),
+            "Save Section List",
+            file_name="sections.csv",
             filter="Comma Separated Values (*.csv)"
         )
-        if not file_path:
-            return
-        else:
-            fd_dir.set(os.path.dirname(file_path))
+        if not file_path: return
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

@@ -1,5 +1,3 @@
-import os
-
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -7,7 +5,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QProgressDialog,
     QMessageBox,
-    QFileDialog,
     QLabel
 )
 from PySide6.QtGui import (
@@ -20,8 +17,6 @@ from PySide6.QtGui import (
     QFont
 )
 from PySide6.QtCore import Qt
-
-from modules.constants import fd_dir
 
 mainwindow = None
 
@@ -164,21 +159,6 @@ def unsavedNotify():
     )
 
     return response == QMessageBox.Yes
-
-def getSaveLocation(series):
-    # prompt user to pick a location to save the jser file
-    global fd_dir
-    file_path, ext = QFileDialog.getSaveFileName(
-        mainwindow,
-        "Save Series",
-        os.path.join(fd_dir.get(), f"{series.name}.jser"),
-        filter="JSON Series (*.jser)"
-    )
-    if not file_path:
-        return None, False
-    else:
-        fd_dir.set(os.path.dirname(file_path))
-        return file_path, True
 
 def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
     """Draw outlined text using a QPainter object.

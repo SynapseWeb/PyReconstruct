@@ -166,6 +166,9 @@ class MainWindow(QMainWindow):
                     ("paste_act", "Paste", "Ctrl+V", self.field.paste),
                     ("pasteattributes_act", "Paste attributes", "Ctrl+B", self.field.pasteAttributes),
                     None,
+                    ("pastetopalette_act", "Paste attributes to palette", "Shift+G", self.pasteAttributesToPalette),
+                    ("pastetopalettewithshape_act", "Paste attributes to palette (include shape)", "Ctrl+Shift+G", lambda : self.pasteAttributesToPalette(True)),
+                    None,
                     {
                         "attr_name": "bcmenu",
                         "text": "Brightness/contrast",
@@ -2322,6 +2325,16 @@ class MainWindow(QMainWindow):
             self.field.backspace()
 
         self.field.backspace()
+    
+    def pasteAttributesToPalette(self, use_shape=False):
+        """Paste the attributes from the first clipboard trace to the selected palette button."""
+        if not self.field.clipboard and not self.field.section.selected_traces:
+            return
+        elif not self.field.clipboard:
+            trace = self.field.section.selected_traces[0]
+        else:
+            trace = self.field.clipboard[0]
+        self.mouse_palette.pasteAttributesToButton(trace, use_shape)
 
     def restart(self):
         self.restart_mainwindow = True

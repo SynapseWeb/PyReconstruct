@@ -334,6 +334,26 @@ class MousePalette():
                     self.mainwindow.changeTracingTrace(button.trace)
         self.updateLabel()
     
+    def pasteAttributesToButton(self, trace : Trace, use_shape=False):
+        """Paste the attributes of a trace to the current button.
+        
+            Params:
+                trace (Trace): the trace to paste
+        """
+        bpos = self.series.palette_index[1]
+        if use_shape:
+            t = trace.copy()
+            t.centerAtOrigin()
+        else:
+            name = trace.name
+            color = trace.color
+            radius = trace.getRadius()
+            bttn = self.palette_buttons[bpos]
+            t = bttn.trace.copy()
+            t.name, t.color = name, color
+            t.resize(radius)
+        self.modifyPaletteButton(bpos, t)
+    
     def modifyPaletteButton(self, bpos : int, trace : Trace = None):
         """Opens dialog to modify palette button.
         
@@ -345,9 +365,9 @@ class MousePalette():
             b.openDialog()
         else:
             b.setTrace(trace)
-            self.paletteButtonChanged(b)
         g = self.series.palette_index[0]
         self.series.palette_traces[g][bpos] = b.trace
+        self.paletteButtonChanged(b)
     
     def modifyPalette(self, trace_list : list):
         """Modify all of the palette traces.

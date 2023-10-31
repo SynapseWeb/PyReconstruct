@@ -456,4 +456,3 @@ class FlagTableWidget(QDockWidget):
         """Remove self from manager table list."""
         self.manager.tables.remove(self)
         super().closeEvent(event)
-

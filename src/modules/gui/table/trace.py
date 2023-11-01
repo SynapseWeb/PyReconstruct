@@ -242,6 +242,22 @@ class TraceTableWidget(QDockWidget):
                 filtered_object_list.append(name)
         
         return sortList(filtered_object_list)
+
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_tag = bool(self.tag_filters)
+        is_group = bool(self.group_filters)
+
+        title = "Trace List "
+        if any((is_regex, is_tag, is_group)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_tag: strs.append("tags")
+            if is_group: strs.append("groups")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
     
     def createTable(self, section : Section):
         """Create the table widget.
@@ -250,6 +266,8 @@ class TraceTableWidget(QDockWidget):
                 tracedict (dict): the dictionary containing the object table data objects
         """
         self.section = section
+
+        self.updateTitle()
 
         # establish table headers
         self.horizontal_headers = ["Name"]

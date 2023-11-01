@@ -186,11 +186,27 @@ class ZtraceTableWidget(QDockWidget):
             return False
 
         return True
+
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_group = bool(self.group_filters)
+
+        title = "Ztrace List "
+        if any((is_regex, is_group)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_group: strs.append("groups")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
     
     def createTable(self):
         """Create the table widget."""
         # establish table headers
         self.horizontal_headers = ["Name", "Start", "End", "Distance", "Groups"]
+
+        self.updateTitle()
 
         self.table = CopyTableWidget(0, len(self.horizontal_headers))
 

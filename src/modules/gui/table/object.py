@@ -204,6 +204,26 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_tag = bool(self.tag_filters)
+        is_group = bool(self.group_filters)
+        is_cr = self.columns["Curate"] and (
+            bool(self.cr_user_filters) or not all(self.cr_status_filter.values())
+        )
+
+        title = "Object List "
+        if any((is_regex, is_tag, is_group, is_cr)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_tag: strs.append("tags")
+            if is_group: strs.append("groups")
+            if is_cr: strs.append("curation")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
+    
     def setRow(self, name : str, row : int, resize=True):
         """Set the data for a row of the table.
         
@@ -346,6 +366,9 @@ class ObjectTableWidget(QDockWidget):
         # close an existing table if one exists
         if self.table is not None:
             self.table.close()
+
+        # create the table title
+        self.updateTitle()
 
         # establish table headers
         self.curate_column = None

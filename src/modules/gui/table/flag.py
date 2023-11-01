@@ -201,6 +201,22 @@ class FlagTableWidget(QDockWidget):
                     self.passing_flags.append((snum, flag))
         self.passing_flags.sort()
     
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_color = bool(self.color_filter)
+        is_comment = bool(self.comment_filter)
+
+        title = "Flag List "
+        if any((is_regex, is_color, is_comment)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_color: strs.append("color")
+            if is_comment: strs.append("comments")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
+    
     def createTable(self):
         """Create the table widget.
         
@@ -210,6 +226,8 @@ class FlagTableWidget(QDockWidget):
         # close an existing table if one exists
         if self.table is not None:
             self.table.close()
+        
+        self.updateTitle()
 
         # establish table headers
         self.horizontal_headers = []

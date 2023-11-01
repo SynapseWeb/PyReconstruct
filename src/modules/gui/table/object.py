@@ -807,7 +807,10 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.cr_status_filter = dict(response[0])
-        self.cr_user_filters = set(response[1].split(", "))
+        if response[1]:
+            self.cr_user_filters = set(response[1].split(", "))
+        else:
+            self.cr_user_filters = set()
 
         # call through manager to update self
         self.manager.updateTable(self)

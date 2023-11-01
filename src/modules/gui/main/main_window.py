@@ -162,7 +162,7 @@ class MainWindow(QMainWindow):
                     ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
-                    ("copy_act", "Copy", "Ctrl+C", self.field.copy),
+                    ("copy_act", "Copy", "Ctrl+C", self.copy),
                     ("paste_act", "Paste", "Ctrl+V", self.field.paste),
                     ("pasteattributes_act", "Paste attributes", "Ctrl+B", self.field.pasteAttributes),
                     None,
@@ -2318,14 +2318,21 @@ class MainWindow(QMainWindow):
             self.field.obj_table_manager.toggleCuration()
     
     def backspace(self):
+        """Called when backspace is pressed."""
         w = self.focusWidget()
         if isinstance(w, CopyTableWidget):
             w.backspace()
         else:
             self.field.backspace()
-
-        self.field.backspace()
     
+    def copy(self):
+        """Called when Ctrl+C is pressed."""
+        w = self.focusWidget()
+        if isinstance(w, CopyTableWidget):
+            w.copy()
+        else:
+            self.field.copy()
+        
     def pasteAttributesToPalette(self, use_shape=False):
         """Paste the attributes from the first clipboard trace to the selected palette button."""
         if not self.field.clipboard and not self.field.section.selected_traces:

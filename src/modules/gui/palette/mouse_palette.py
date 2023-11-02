@@ -2,7 +2,7 @@ import os
 import re
 
 from PySide6.QtWidgets import QWidget, QStyle, QSlider
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QColor, QFont
 from PySide6.QtCore import QSize, Qt
 
 from .buttons import PaletteButton, ModeButton, MoveableButton
@@ -12,7 +12,7 @@ from modules.datatypes import Series, Trace
 from modules.constants import (
     locations as loc
 )
-from modules.gui.dialog import TracePaletteDialog
+from modules.gui.dialog import TracePaletteDialog, QuickDialog
 
 class MousePalette():
 
@@ -48,6 +48,7 @@ class MousePalette():
         self.createModeButton("Open Trace", "o", 5, 5)
         self.createModeButton("Stamp", "s", 6, 6)
         self.createModeButton("Grid", "g", 7, 7)
+        self.createModeButton("Flag", "f", 8, 8)
 
         # create palette buttons
         self.trace_x = 0.5
@@ -127,6 +128,13 @@ class MousePalette():
         # b.setText(name)
         b.setToolTip(f"{name} ({sc})")
 
+        b.setCheckable(True)
+        if pos == 0:  # make the first button selected by default
+            b.setChecked(True)
+        b.clicked.connect(lambda : self.activateModeButton(name))
+        # dictionary -- name : (button object, mouse mode, position)
+        self.mode_buttons[name] = (b, mouse_mode, pos)
+
         # manually enter dialog function for pointer and grid
         if name == "Pointer":
             b.setRightClickEvent(self.mainwindow.modifyPointer)
@@ -134,13 +142,12 @@ class MousePalette():
             b.setRightClickEvent(self.mainwindow.changeClosedTraceMode)
         elif name == "Grid":
             b.setRightClickEvent(self.mainwindow.modifyGrid)
-
-        b.setCheckable(True)
-        if pos == 0:  # make the first button selected by default
-            b.setChecked(True)
-        b.clicked.connect(lambda : self.activateModeButton(name))
-        # dictionary -- name : (button object, mouse mode, position)
-        self.mode_buttons[name] = (b, mouse_mode, pos)
+        elif name == "Flag":
+            b.setRightClickEvent(self.modifyFlag)
+            # manually set the flag text and color
+            self.setFlag()
+        elif name == "Knife":
+            b.setRightClickEvent(self.mainwindow.modifyKnife)
 
         b.show()
     
@@ -327,6 +334,26 @@ class MousePalette():
                     self.mainwindow.changeTracingTrace(button.trace)
         self.updateLabel()
     
+    def pasteAttributesToButton(self, trace : Trace, use_shape=False):
+        """Paste the attributes of a trace to the current button.
+        
+            Params:
+                trace (Trace): the trace to paste
+        """
+        bpos = self.series.palette_index[1]
+        if use_shape:
+            t = trace.copy()
+            t.centerAtOrigin()
+        else:
+            name = trace.name
+            color = trace.color
+            radius = trace.getRadius()
+            bttn = self.palette_buttons[bpos]
+            t = bttn.trace.copy()
+            t.name, t.color = name, color
+            t.resize(radius)
+        self.modifyPaletteButton(bpos, t)
+    
     def modifyPaletteButton(self, bpos : int, trace : Trace = None):
         """Opens dialog to modify palette button.
         
@@ -338,9 +365,9 @@ class MousePalette():
             b.openDialog()
         else:
             b.setTrace(trace)
-            self.paletteButtonChanged(b)
         g = self.series.palette_index[0]
         self.series.palette_traces[g][bpos] = b.trace
+        self.paletteButtonChanged(b)
     
     def modifyPalette(self, trace_list : list):
         """Modify all of the palette traces.
@@ -586,6 +613,51 @@ class MousePalette():
         
         self.modifyPalette(self.series.palette_traces[self.series.palette_index[0]])
         self.activatePaletteButton(self.series.palette_index[1])
+    
+    def setFlag(self, name : str = None, color : tuple = None, font_size : int = None, display_flags : bool = None):
+        """Set the default flag in the palette."""
+        regenerate_view = False
+        if name is not None:
+            self.series.options["flag_name"] = name
+        
+        if color is None:
+            color = self.series.options["flag_color"]
+        else:
+            self.series.options["flag_color"] = color
+        
+        if font_size is None:
+            font_size = self.series.options["flag_size"]
+        elif font_size != self.series.options["flag_size"]:
+            self.series.options["flag_size"] = font_size
+            regenerate_view = True
+        
+        if display_flags is not None and display_flags != self.series.options["show_flags"]:
+            self.series.options["show_flags"] = display_flags
+            self.mainwindow.field.section.selected_flags = []
+            regenerate_view = True
+        
+        if regenerate_view:
+            self.mainwindow.field.generateView(generate_image=False)
+        
+        button = self.mode_buttons["Flag"][0]
+        button.setFont(QFont("Courier New", 20, QFont.Bold))
+        button.setText("⚑")
+        s = f"({','.join(map(str, color))})"
+        button.setStyleSheet(f"color:rgb{s}")
+    
+    def modifyFlag(self):
+        """Modify the default flag."""
+        structure = [
+            ["Default name:", ("text", self.series.options["flag_name"])],
+            ["Default color:", ("color", self.series.options["flag_color"])],
+            ["Size of all flags: ", ("int", self.series.options["flag_size"], tuple(range(1, 100)))],
+            [("check", ("Display flags in field", self.series.options["show_flags"]))]
+        ]
+        response, confirmed = QuickDialog.get(self.mainwindow, structure, "Flag")
+        if not confirmed:
+            return
+        
+        self.setFlag(response[0], response[1], response[2], response[3][0][1])
         
     def resize(self):
         """Move the buttons to fit the main window."""

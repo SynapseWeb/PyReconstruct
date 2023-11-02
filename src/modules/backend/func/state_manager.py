@@ -7,7 +7,7 @@ from modules.datatypes import (
 
 class FieldState():
 
-    def __init__(self, contours : dict, ztraces : dict, tforms : dict, updated_contours=None, updated_ztraces=None):
+    def __init__(self, contours : dict, ztraces : dict, tforms : dict, flags : list, updated_contours=None, updated_ztraces=None):
         """Create a field state with traces and the transform.
         
             Params:
@@ -42,9 +42,14 @@ class FieldState():
         self.tforms = {}
         for alignment_name in tforms:
             self.tforms[alignment_name] = tforms[alignment_name].copy()
+        
+        # save flags
+        self.flags = []
+        for flag in flags:
+            self.flags.append(flag.copy())
     
     def copy(self):
-        return FieldState(self.contours, self.ztraces, self.tforms)
+        return FieldState(self.contours, self.ztraces, self.tforms, self.flags)
     
     def getContours(self):
         contours = {}
@@ -67,6 +72,9 @@ class FieldState():
     def getTforms(self):
         return self.tforms.copy()
 
+    def getFlags(self):
+        return self.flags.copy()
+
 class SectionStates():
 
     def __init__(self, section : Section, series : Series):
@@ -75,7 +83,7 @@ class SectionStates():
             Params:
                 section (Section): the sectin object to store states for
         """
-        self.current_state = FieldState(section.contours, series.ztraces, section.tforms)
+        self.current_state = FieldState(section.contours, series.ztraces, section.tforms, section.flags)
         self.undo_states = []
         self.redo_states = []
     
@@ -98,6 +106,7 @@ class SectionStates():
             section.contours,
             series.ztraces,
             section.tforms,
+            section.flags,
             updated_contours,
             updated_ztraces
         )
@@ -163,6 +172,10 @@ class SectionStates():
         restored_tforms = self.undo_states[-1].getTforms()
         section.tforms = restored_tforms
 
+        # restore the flags
+        restored_flags = self.undo_states[-1].getFlags()
+        section.flags = restored_flags
+
         # edit the undo/redo stacks and the current state
         self.redo_states.append(self.current_state)
         self.current_state = self.undo_states.pop().copy()
@@ -200,6 +213,9 @@ class SectionStates():
         
         # restore the transforms
         section.tforms = redo_state.getTforms()
+
+        # restore the flags
+        section.flags = redo_state.getFlags()
 
         # edit the undo/redo stacks and the current state
         self.undo_states.append(self.current_state)

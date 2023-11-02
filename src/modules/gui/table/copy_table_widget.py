@@ -45,3 +45,9 @@ class CopyTableWidget(QTableWidget):
             elif name == row_name:
                 return row_index, True
         return self.rowCount(), False
+
+    def backspace(self):
+        """Called when backspace is pressed.
+        Extended in container classes.
+        """
+        return

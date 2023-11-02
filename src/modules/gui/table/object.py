@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog,
     QAbstractItemView
 )
 from PySide6.QtCore import Qt
@@ -28,9 +27,9 @@ from modules.gui.dialog import (
     ObjectGroupDialog,
     TraceDialog,
     ShapesDialog,
-    QuickDialog
+    QuickDialog,
+    FileDialog
 )
-from modules.constants import fd_dir
 
 def getDateTime():
     dt = datetime.now()
@@ -205,6 +204,26 @@ class ObjectTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_tag = bool(self.tag_filters)
+        is_group = bool(self.group_filters)
+        is_cr = self.columns["Curate"] and (
+            bool(self.cr_user_filters) or not all(self.cr_status_filter.values())
+        )
+
+        title = "Object List "
+        if any((is_regex, is_tag, is_group, is_cr)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_tag: strs.append("tags")
+            if is_group: strs.append("groups")
+            if is_cr: strs.append("curation")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
+    
     def setRow(self, name : str, row : int, resize=True):
         """Set the data for a row of the table.
         
@@ -348,6 +367,9 @@ class ObjectTableWidget(QDockWidget):
         if self.table is not None:
             self.table.close()
 
+        # create the table title
+        self.updateTitle()
+
         # establish table headers
         self.curate_column = None
         self.horizontal_headers = ["Name"]
@@ -373,6 +395,7 @@ class ObjectTableWidget(QDockWidget):
         # connect table functions
         self.table.mouseDoubleClickEvent = self.findFirst
         self.table.contextMenuEvent = self.objectContextMenu
+        self.table.backspace = self.deleteObjects
         self.table.itemChanged.connect(self.checkCurate)
 
         # format table
@@ -506,7 +529,12 @@ class ObjectTableWidget(QDockWidget):
             displayed_name = None
             tags=None
         
-        attr_trace, confirmed = TraceDialog(self, name=displayed_name, tags=tags).exec()
+        response, confirmed = TraceDialog(
+            self, 
+            name=displayed_name, 
+            tags=tags, 
+            is_obj_list=True
+        ).exec()
 
         if not confirmed:
             return
@@ -515,7 +543,16 @@ class ObjectTableWidget(QDockWidget):
         if not noUndoWarning():
             return
         
-        self.manager.editAttributes(obj_names, attr_trace)
+        attr_trace, sections = response
+        
+        # keep track of scroll bar position
+        vscroll = self.table.verticalScrollBar()
+        scroll_pos = vscroll.value()
+
+        self.manager.editAttributes(obj_names, attr_trace, sections)
+        
+        # reset scroll bar position
+        vscroll.setValue(scroll_pos)
     
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
@@ -671,7 +708,7 @@ class ObjectTableWidget(QDockWidget):
         if not noUndoWarning():
             return
         
-        self.manager.deleteObjects(obj_names) 
+        self.manager.deleteObjects(obj_names)
 
     # MENU-RELATED FUNCTIONS
 
@@ -694,17 +731,14 @@ class ObjectTableWidget(QDockWidget):
     def export(self):
         """Export the object list as a csv file."""
         # get the location from the user
-        global fd_dir
-        file_path, ext = QFileDialog.getSaveFileName(
+        file_path = FileDialog.get(
+            "save",
             self,
             "Save Object List",
-            os.path.join(fd_dir.get(), "objects.csv"),
+            file_name="objects.csv",
             filter="Comma Separated Values (*.csv)"
         )
-        if not file_path:
-            return
-        else:
-            fd_dir.set(os.path.dirname(file_path))
+        if not file_path: return
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first

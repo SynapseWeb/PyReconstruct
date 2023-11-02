@@ -288,8 +288,6 @@ def exportTraces(data_zg,
                     if tag in trace.tags:
                         traces.append(trace)
     
-    print(snum, traces)
-
     data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
             pixmap_dim,
             window,

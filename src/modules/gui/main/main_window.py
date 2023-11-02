@@ -7,7 +7,6 @@ import subprocess
 
 from PySide6.QtWidgets import (
     QMainWindow, 
-    QFileDialog,
     QInputDialog, 
     QApplication,
     QMessageBox, 
@@ -18,7 +17,7 @@ from PySide6.QtGui import (
     QShortcut,
     QPixmap
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSettings
 
 from .field_widget import FieldWidget
 
@@ -27,25 +26,23 @@ from modules.gui.dialog import (
     AlignmentDialog,
     GridDialog,
     CreateZarrDialog,
-    AddToZarrDialog,
     TrainDialog,
     SegmentDialog,
     PredictDialog,
-    QuickDialog
+    QuickDialog,
+    FileDialog
 )
 from modules.gui.popup import TextWidget, CustomPlotter
 from modules.gui.utils import (
-    progbar,
     populateMenuBar,
     populateMenu,
     notify,
     saveNotify,
     unsavedNotify,
-    getSaveLocation,
     setMainWindow,
     noUndoWarning
 )
-from modules.gui.table import HistoryTableWidget
+from modules.gui.table import HistoryTableWidget, CopyTableWidget
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -53,8 +50,8 @@ from modules.backend.func import (
     importSwiftTransforms
 )
 from modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
-from modules.datatypes import Series, Transform
-from modules.constants import welcome_series_dir, assets_dir, img_dir, fd_dir
+from modules.datatypes import Series, Transform, Flag
+from modules.constants import welcome_series_dir, assets_dir, img_dir
 
 class MainWindow(QMainWindow):
 
@@ -165,9 +162,12 @@ class MainWindow(QMainWindow):
                     ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
-                    ("copy_act", "Copy", "Ctrl+C", self.field.copy),
+                    ("copy_act", "Copy", "Ctrl+C", self.copy),
                     ("paste_act", "Paste", "Ctrl+V", self.field.paste),
                     ("pasteattributes_act", "Paste attributes", "Ctrl+B", self.field.pasteAttributes),
+                    None,
+                    ("pastetopalette_act", "Paste attributes to palette", "Shift+G", self.pasteAttributesToPalette),
+                    ("pastetopalettewithshape_act", "Paste attributes to palette (include shape)", "Ctrl+Shift+G", lambda : self.pasteAttributesToPalette(True)),
                     None,
                     {
                         "attr_name": "bcmenu",
@@ -232,8 +232,9 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-			    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-			    ("history_act", "View series history", "", self.viewSeriesHistory),
+                            ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
+                            ("flaglist_act", "Flag list", "", self.openFlagList),
+                            ("history_act", "View series history", "", self.viewSeriesHistory),
                         ]
                     },
                     {
@@ -257,8 +258,8 @@ class MainWindow(QMainWindow):
                                 "text": "Propagate transform",
                                 "opts":
                                 [
-                                    ("startpt_act", "Begin propagation", "", lambda : self.field.setPropagationMode(True)),
-                                    ("endpt_act", "Finish propagation", "", lambda : self.field.setPropagationMode(False)),
+                                    ("startpt_act", "Start propagation recording", "", lambda : self.field.setPropagationMode(True)),
+                                    ("endpt_act", "End propagation recording", "", lambda : self.field.setPropagationMode(False)),
                                     None,
                                     ("proptostart_act", "Propagate to start", "", lambda : self.field.propagateTo(False)),
                                     ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))
@@ -431,7 +432,9 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
             ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
             None,
-            ("deletetraces_act", "Delete traces", "Del", self.field.backspace)
+            ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
+            None,
+            ("deletetraces_act", "Delete traces", "Del", self.backspace)
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
@@ -447,7 +450,7 @@ class MainWindow(QMainWindow):
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,
-            self.deletetraces_act
+            self.createflag_act
         ]
         self.ztrace_actions = [
             self.edittrace_act
@@ -561,7 +564,7 @@ class MainWindow(QMainWindow):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
         shortcuts = [
-            ("Backspace", self.field.backspace),
+            ("Backspace", self.backspace),
 
             ("/", self.flickerSections),
 
@@ -636,19 +639,13 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.No:
                 return
         if new_src_dir is None:
-            global fd_dir
-            new_src_dir = QFileDialog.getExistingDirectory(
+            new_src_dir = FileDialog.get(
+                "dir",
                 self,
                 "Select folder containing images",
-                dir=fd_dir.get()
             )
-        if not new_src_dir:
-            return
-        else:
-            if new_src_dir.endswith("zarr"):
-                fd_dir.set(os.path.dirname(new_src_dir))
-            else:
-                fd_dir.set(new_src_dir)
+        if not new_src_dir: return
+        
         self.series.src_dir = new_src_dir
         if self.field:
             self.field.reloadImage()
@@ -682,17 +679,14 @@ class MainWindow(QMainWindow):
             return
         
         if create_new:
-            global fd_dir
-            zarr_fp, ext = QFileDialog.getSaveFileName(
+            zarr_fp = FileDialog.get(
+                "save",
                 self,
                 "Convert Images to Zarr",
-                os.path.join(fd_dir.get(), f"{self.series.name}_images.zarr"),
+                file_name=f"{self.series.name}_images.zarr",
                 filter="Zarr Directory (*.zarr)"
             )
-            if not zarr_fp:
-                return
-            else:
-                fd_dir.set(os.path.dirname(zarr_fp))
+            if not zarr_fp: return
 
         python_bin = sys.executable
         zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
@@ -762,19 +756,12 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
-        global fd_dir
         if not series_obj:  # if series is not provided            
             # get the new series
             new_series = None
             if not jser_fp:
-                jser_fp, extension = QFileDialog.getOpenFileName(
-                    self,
-                    "Select Series",
-                    dir=fd_dir.get(),
-                    filter="*.jser"
-                )
-                if jser_fp == "": return  # exit function if user does not provide series
-                else: fd_dir.set(os.path.dirname(jser_fp))
+                jser_fp = FileDialog.get("file", self, "Open Series", filter="*.jser")
+                if not jser_fp: return  # exit function if user does not provide series
             
             # user has opened an existing series
             if self.series:
@@ -859,7 +846,8 @@ class MainWindow(QMainWindow):
 
         # set the explorer filepath
         if not self.series.isWelcomeSeries():
-            fd_dir.set(os.path.dirname(self.series.jser_fp))
+            settings = QSettings("KHLab", "PyReconstruct")
+            settings.setValue("last_folder", os.path.dirname(self.series.jser_fp))
 
         # create field
         if self.field is not None:  # close previous field widget
@@ -924,19 +912,15 @@ class MainWindow(QMainWindow):
         """
         # get images from user
         if not image_locations:
-            global fd_dir
             if from_zarr:
                 valid_zarr = False
                 while not valid_zarr:
-                    zarr_fp = QFileDialog.getExistingDirectory(
+                    zarr_fp = FileDialog.get(
+                        "dir",
                         self,
-                        "Select Zarr",
-                        dir=fd_dir.get(),
+                        "Select Zarr"
                     )
-                    if not zarr_fp:
-                        return
-                    else:
-                        fd_dir.set(os.path.dirname(zarr_fp))
+                    if not zarr_fp: return
                     
                     # get the image names in the zarr
                     if "scale_1" in os.listdir(zarr_fp):
@@ -948,16 +932,13 @@ class MainWindow(QMainWindow):
                     else:
                         notify("Please select a valid zarr file.")                
             else:
-                image_locations, extensions = QFileDialog.getOpenFileNames(
+                image_locations = FileDialog.get(
+                    "files",
                     self,
                     "Select Images",
-                    dir=fd_dir.get(),
                     filter="*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
                 )
-                if len(image_locations) == 0:
-                    return
-                else:
-                    fd_dir.set(os.path.dirname(image_locations[0]))
+                if len(image_locations) == 0: return
         
         # get the name of the series from user
         if series_name is None:
@@ -1001,15 +982,13 @@ class MainWindow(QMainWindow):
 
         # get xml series filepath from the user
         if not series_fp:
-            global fd_dir
-            series_fp, ext = QFileDialog.getOpenFileName(
+            series_fp = FileDialog.get(
+                "file",
                 self,
                 "Select XML Series",
-                dir=fd_dir.get(),
                 filter="*.ser"
             )
-        if series_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(series_fp))
+            if not series_fp: return  # exit function if user does not provide series
 
         # save and clear the existing backend series
         self.saveToJser(notify=True, close=True)
@@ -1036,17 +1015,14 @@ class MainWindow(QMainWindow):
 
         # get the new xml series filepath from the user
         if not export_fp:
-            global fd_dir
-            export_fp, ext = QFileDialog.getSaveFileName(
+            export_fp = FileDialog.get(
+                "save",
                 self,
                 "Export Series",
-                os.path.join(fd_dir.get(), f"{self.series.name}.ser"),
+                filename=f"{self.series.name}.ser",
                 filter="XML Series (*.ser)"
             )
-            if not export_fp:
-                return False
-            else:
-                fd_dir.set(os.path.dirname(export_fp))
+            if not export_fp: return False
         
         # convert the series
         jsonToXML(self.series, os.path.dirname(export_fp))
@@ -1073,16 +1049,12 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         # get file from user
         if tforms_fp is None:
-            global fd_dir
-            tforms_fp, ext = QFileDialog.getOpenFileName(
+            tforms_fp = FileDialog.get(
+                "file",
                 self,
-                "Select file containing transforms",
-                dir=fd_dir.get()
+                "Select file containing transforms"
             )
-        if not tforms_fp:
-            return
-        else:
-            fd_dir.set(os.path.dirname(tforms_fp))
+        if not tforms_fp: return
 
         if not noUndoWarning():
             return
@@ -1102,15 +1074,12 @@ class MainWindow(QMainWindow):
         
         # get file from user
         if swift_fp is None:
-            global fd_dir
-            swift_fp, ext = QFileDialog.getOpenFileName(
+            swift_fp = FileDialog.get(
+                "file",
                 self,
                 "Select SWiFT project file",
-                dir=fd_dir.get()
             )
-
         if not swift_fp: return
-        else: fd_dir.set(os.path.dirname(swift_fp))
 
         # get the scales from the swift file
         with open(swift_fp, "r") as fp: swift_json = json.load(fp)
@@ -1170,8 +1139,7 @@ class MainWindow(QMainWindow):
             sections = self.series.sections.keys()
             regex_filters = []
 
-        if jser_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(jser_fp))
+        if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
 
@@ -1207,12 +1175,10 @@ class MainWindow(QMainWindow):
                 ["Ztrace regex filters (separate with a comma and space):"],
                 [("text", "")]
             ]
-            global fd_dir
             response, confirmed = QuickDialog.get(self, structure, "Import Ztraces")
             if not confirmed:
                 return
             jser_fp = response[0]
-            fd_dir.set(os.path.dirname(jser_fp))
             if response[1]:
                 regex_filters = response[1].split(", ")
 
@@ -1242,15 +1208,13 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
-            global fd_dir
-            jser_fp, extension = QFileDialog.getOpenFileName(
+            jser_fp = FileDialog.get(
+                "file",
                 self,
                 "Select Series",
-                dir=fd_dir.get(),
                 filter="*.jser"
             )
-        if jser_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(jser_fp))
+        if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
 
@@ -1273,15 +1237,13 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
-            global fd_dir
-            jser_fp, extension = QFileDialog.getOpenFileName(
+            jser_fp = FileDialog.get(
+                "file",
                 self,
                 "Select Series",
-                dir=fd_dir.get(),
                 filter="*.jser"
             )
-        if jser_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(jser_fp))
+            if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
 
@@ -1367,8 +1329,7 @@ class MainWindow(QMainWindow):
             jser_fp = response[0]
             sections = tuple(range(response[1], response[2]+1))
         
-        if jser_fp == "": return  # exit function if user does not provide series
-        else: fd_dir.set(os.path.dirname(jser_fp))
+        if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
 
@@ -1604,9 +1565,14 @@ class MainWindow(QMainWindow):
             return
 
         # get location from user
-        new_jser_fp, confirmed = getSaveLocation(self.series)
-        if not confirmed:
-            return
+        new_jser_fp = FileDialog.get(
+            "save",
+            self,
+            "Save Series",
+            filter="*.jser",
+            file_name=f"{self.series.name}.jser"
+        )
+        if not new_jser_fp: return
         
         # move the working hidden folder to the new jser directory
         self.series.move(
@@ -1626,17 +1592,14 @@ class MainWindow(QMainWindow):
         # user checked the option
         if self.backup_act.isChecked():
             # prompt the user to find a folder to store backups
-            global fd_dir
-            new_dir = QFileDialog.getExistingDirectory(
+            new_dir = FileDialog.get(
+                "dir",
                 self,
                 "Select folder to contain backup files",
-                dir=fd_dir.get()
             )
             if not new_dir:
                 self.backup_act.setChecked(False)
                 return
-            else:
-                fd_dir.set(new_dir)
             self.series.options["backup_dir"] = new_dir
         # user unchecked the option
         else:
@@ -1650,17 +1613,14 @@ class MainWindow(QMainWindow):
         d = datetime.now().strftime('%Y%m%d')
         series_basename = f"{self.series.name}-{d}-{self.series.user}.jser"
 
-        global fd_dir
-        backup_fp, ext = QFileDialog.getSaveFileName(
+        backup_fp = FileDialog.get(
+            "save",
             self,
             "Backup Series",
-            os.path.join(fd_dir.get(), series_basename),
+            file_name=series_basename,
             filter="Series file (*.jser)"
         )
-        if not backup_fp:
-            return
-        else:
-            fd_dir.set(backup_fp, dirname=True)
+        if not backup_fp: return
         
         self.series.saveJser(save_fp=backup_fp)
     
@@ -1677,6 +1637,11 @@ class MainWindow(QMainWindow):
         """Open the ztrace list widget."""
         self.saveAllData()
         self.field.openZtraceList()
+    
+    def openFlagList(self):
+        """Open the flag widget."""
+        self.saveAllData()
+        self.field.openFlagList()
     
     def toggleZtraces(self):
         """Toggle whether ztraces are shown."""
@@ -1703,6 +1668,17 @@ class MainWindow(QMainWindow):
         if obj_name is not None and section_num is not None:
             self.changeSection(section_num)
             self.field.findContour(obj_name)
+    
+    def setToFlag(self, snum : int, flag : Flag):
+        """Focus the field on a flag.
+        
+            Params:
+                snum (int): the section number
+                flag (Flag): the flag
+        """
+        if snum is not None and flag is not None:
+            self.changeSection(snum)
+            self.field.findFlag(flag)
     
     def findObjectFirst(self, obj_name=None):
         """Find the first or last contour in the series.
@@ -1885,6 +1861,20 @@ class MainWindow(QMainWindow):
         self.series.options["grid"] = response
         self.seriesModified()
     
+    def modifyKnife(self, event=None):
+        """Modify the knife properties."""
+        structure = [
+            ["When using the knife, objects smaller than this percent"],
+            ["of the original trace area will be automatically deleted."],
+            ["Knife delete threshold (%):", ("float", self.series.options["knife_del_threshold"], (0, 100))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Knife")
+        if not confirmed:
+            return
+        
+        self.series.options["knife_del_threshold"] = response[0]
+        self.seriesModified()
+    
     def resetTracePalette(self):
         """Reset the trace palette to default traces."""
         self.mouse_palette.resetPalette()
@@ -1894,16 +1884,12 @@ class MainWindow(QMainWindow):
     def setZarrLayer(self, zarr_dir=None):
         """Set a zarr layer."""
         if not zarr_dir:
-            global fd_dir
-            zarr_dir = QFileDialog.getExistingDirectory(
+            zarr_dir = FileDialog.get(
+                "dir",
                 self,
                 "Select overlay zarr",
-                dir=fd_dir.get()
             )
-            if not zarr_dir:
-                return
-            else:
-                fd_dir.set(os.path.dirname(zarr_dir))
+            if not zarr_dir: return
 
         self.series.zarr_overlay_fp = zarr_dir
         self.series.zarr_overlay_group = None
@@ -2330,6 +2316,32 @@ class MainWindow(QMainWindow):
         """Quick shortcut to toggle curation on/off for the tables."""
         if self.field.obj_table_manager:
             self.field.obj_table_manager.toggleCuration()
+    
+    def backspace(self):
+        """Called when backspace is pressed."""
+        w = self.focusWidget()
+        if isinstance(w, CopyTableWidget):
+            w.backspace()
+        else:
+            self.field.backspace()
+    
+    def copy(self):
+        """Called when Ctrl+C is pressed."""
+        w = self.focusWidget()
+        if isinstance(w, CopyTableWidget):
+            w.copy()
+        else:
+            self.field.copy()
+        
+    def pasteAttributesToPalette(self, use_shape=False):
+        """Paste the attributes from the first clipboard trace to the selected palette button."""
+        if not self.field.clipboard and not self.field.section.selected_traces:
+            return
+        elif not self.field.clipboard:
+            trace = self.field.section.selected_traces[0]
+        else:
+            trace = self.field.clipboard[0]
+        self.mouse_palette.pasteAttributesToButton(trace, use_shape)
 
     def restart(self):
         self.restart_mainwindow = True

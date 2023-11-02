@@ -10,3 +10,5 @@ from .predict import PredictDialog
 from .shapes import ShapesDialog
 from .trace_palette import TracePaletteDialog
 from .quick_dialog import QuickDialog, QuickTabDialog
+from .flag import FlagDialog
+from .file_dialog import FileDialog

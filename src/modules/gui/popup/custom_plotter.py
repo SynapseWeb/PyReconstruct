@@ -2,7 +2,7 @@ import vedo
 
 from modules.gui.dialog import QuickDialog
 from modules.gui.utils import notify
-from modules.gui.table import Help3DWidget
+from modules.gui.table import HelpWidget
 from modules.backend.volume import generateVolumes
 from modules.backend.threading import ThreadPoolProgBar
 
@@ -225,7 +225,7 @@ class VPlotter(vedo.Plotter):
         if key == "H":
             overwrite = True
             if not self.help_widget or self.help_widget.closed:
-                self.help_widget = Help3DWidget()
+                self.help_widget = HelpWidget("3D")
 
         if not overwrite:
             super()._keypress(iren, event)

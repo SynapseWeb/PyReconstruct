@@ -42,7 +42,7 @@ from modules.gui.utils import (
     setMainWindow,
     noUndoWarning
 )
-from modules.gui.table import HistoryTableWidget, CopyTableWidget
+from modules.gui.table import HistoryTableWidget, CopyTableWidget, HelpWidget
 from modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         self.mouse_palette = None  # placeholder for palettes
         self.zarr_palette = None
         self.viewer = None
+        self.shortcuts_widget = None
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
@@ -368,6 +369,14 @@ class MainWindow(QMainWindow):
                         ]
                     }
                 ]
+            },
+            {
+                "attr_name": "helpmenu",
+                "text": "Help",
+                "opts":
+                [
+                    ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts)
+                ]
             }
         ]
 
@@ -615,7 +624,9 @@ class MainWindow(QMainWindow):
             ("k", lambda : self.mouse_palette.activateModeButton("Knife")),
             ("c", lambda : self.mouse_palette.activateModeButton("Closed Trace")),
             ("o", lambda : self.mouse_palette.activateModeButton("Open Trace")),
-            ("s", lambda : self.mouse_palette.activateModeButton("Stamp"))
+            ("s", lambda : self.mouse_palette.activateModeButton("Stamp")),
+            ("g", lambda : self.mouse_palette.activateModeButton("Grid")),
+            ("f", lambda : self.mouse_palette.activateModeButton("Flag"))
         ]
   
         for kbd, act in (mode_shortcuts + trace_shortcuts):
@@ -2342,6 +2353,11 @@ class MainWindow(QMainWindow):
         else:
             trace = self.field.clipboard[0]
         self.mouse_palette.pasteAttributesToButton(trace, use_shape)
+    
+    def displayShortcuts(self):
+        """Display the shortcuts."""
+        if not self.shortcuts_widget or self.shortcuts_widget.closed:
+            self.shortcuts_widget = HelpWidget("shortcuts")
 
     def restart(self):
         self.restart_mainwindow = True

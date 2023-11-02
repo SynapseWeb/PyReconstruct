@@ -2,20 +2,24 @@ import math
 import numpy as np
 from skimage.draw import polygon
 
+from PySide6.QtWidgets import QLabel
 from PySide6.QtCore import Qt, QPoint, QLine
 from PySide6.QtGui import (
     QPixmap,
     QPen,
     QColor,
     QPainter,
-    QBrush
+    QBrush,
+    QPainterPath,
+    QFont
 )
 from modules.datatypes import (
     Series, 
     Section,
     Trace,
     Ztrace,
-    Transform
+    Transform,
+    Flag
 )
 from modules.calc import (
     pointInPoly,
@@ -28,7 +32,7 @@ from modules.calc import (
     cutTraces,
     area
 )
-from modules.gui.utils import notify
+from modules.gui.utils import notify, drawOutlinedText
 
 class TraceLayer():
 
@@ -100,13 +104,14 @@ class TraceLayer():
         window_size = max(self.window[2:])
         radius = window_size * (0.05)
 
-        return self.section.findClosestTrace(
+        return self.section.findClosest(
             field_x,
             field_y,
             radius=radius,
             traces_in_view=self.traces_in_view,
             include_hidden=self.show_all_traces,
-            include_ztraces=self.series.options["show_ztraces"]
+            include_ztraces=self.series.options["show_ztraces"],
+            include_flags=self.series.options["show_flags"]
         )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
@@ -141,17 +146,17 @@ class TraceLayer():
             if not inc and inside_poly:
                 traces_in_poly.append(trace)
         
-        ztraces_in_poly = []
-        if self.series.options["show_ztraces"]:
-            for ztrace in self.series.ztraces.values():
-                # check if point is inside polygon
-                for i, (x, y, snum) in enumerate(ztrace.points):
-                    if snum == self.section.n:
-                        pix_point = self.pointToPix((x, y))
-                        if pointInPoly(*pix_point, pix_poly):
-                            ztraces_in_poly.append((ztrace, i))
+        # ztraces_in_poly = []
+        # if self.series.options["show_ztraces"]:
+        #     for ztrace in self.series.ztraces.values():
+        #         # check if point is inside polygon
+        #         for i, (x, y, snum) in enumerate(ztrace.points):
+        #             if snum == self.section.n:
+        #                 pix_point = self.pointToPix((x, y))
+        #                 if pointInPoly(*pix_point, pix_poly):
+        #                     ztraces_in_poly.append((ztrace, i))
 
-        return traces_in_poly, ztraces_in_poly
+        return traces_in_poly
 
     def getZsegment(self, pix_x : float, pix_y : float, radius = 10):
         """Find the closest ztrace segment (does not have a point on the section).
@@ -283,6 +288,24 @@ class TraceLayer():
                     new_trace.add(rtform_point)
                 self.section.addTrace(new_trace)
                 self.section.selected_traces.append(new_trace)
+        
+    def placeFlag(self, title : str, pix_x : int, pix_y : int, color : tuple, comment : str):
+        """Create a flag on the section.
+        
+            Params:
+                title (str): the title of the flag
+                pix_x (float): the x-coord of the mouse location
+                pix_y (float): the y-coord of the mouse location
+                color (tuple): the color of the flag
+                comment (str): the flag comment
+        """
+        # get field coords then fix to image
+        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
+        x, y = self.section.tform.map(field_x, field_y, inverted=True)
+        # create flag
+        f = Flag(title, x, y, color)
+        if comment: f.addComment(self.series.user, comment)
+        self.section.addFlag(f)
     
     def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
         """Merge all selected traces.
@@ -345,7 +368,7 @@ class TraceLayer():
         """
         trace = self.section.selected_traces[0]
         trace_to_cut = self.traceToPix(trace)
-        cut_traces = cutTraces(trace_to_cut, knife_trace)  # merge the pixel traces
+        cut_traces = cutTraces(trace_to_cut, knife_trace, self.series.options["knife_del_threshold"])  # merge the pixel traces
         # delete the old traces
         self.section.deleteTraces()
         # create new traces
@@ -562,7 +585,7 @@ class TraceLayer():
                 ztrace
             )]
         painter.end()
-    
+
     def _drawZtraceHighlights(self, trace_layer : QPixmap):
         """Draw highlighted points on the current trace layer.
         
@@ -592,6 +615,40 @@ class TraceLayer():
         for qpoint, color in zip(qpoints, colors):
             painter.setPen(QPen(QColor(*color), 15))
             painter.drawPoint(qpoint)
+        painter.end()
+    
+    def _drawFlag(self, trace_layer : QPixmap, flag : Flag):
+        """Draw the flag on the field.
+        
+            Params:
+                flag (Flag): the flag to draw on the field
+        """
+        x, y = self.pointToPix((flag.x, flag.y))
+        c = flag.color
+
+        painter = QPainter(trace_layer)
+        drawOutlinedText(
+            painter,
+            x,
+            y,
+            "⚑",
+            c,
+            None,
+            self.series.options["flag_size"]
+        )
+        # draw highlight if necessary
+        if flag in self.section.selected_flags:
+            painter.setPen(QPen(QColor(*flag.color), 2))
+            painter.setOpacity(1)
+            painter.setBrush(Qt.transparent)
+            lbl = QLabel(text="⚑")
+            lbl.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
+            lbl.adjustSize()
+            w, h = lbl.width(), lbl.height() * 3/4
+            x += -w/2 - (h - w)
+            y += 4 - 3*h/2
+            h *= 2
+            painter.drawRect(x, y, h, h)
         painter.end()
    
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:
@@ -647,6 +704,13 @@ class TraceLayer():
                 if ztrace not in self.section.temp_hide:
                     self._drawZtrace(trace_layer, ztrace)
             self._drawZtraceHighlights(trace_layer)
+        
+        # draw flags
+        self.flags_in_view = []
+        if self.series.options["show_flags"]:
+            for flag in self.section.flags:
+                if flag not in self.section.temp_hide:
+                    self._drawFlag(trace_layer, flag)
                 
         return trace_layer
 

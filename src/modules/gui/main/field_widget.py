@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QMainWindow, 
     QInputDialog, 
     QGestureEvent,
+    QTextEdit
 )
 from PySide6.QtCore import (
     Qt, 
@@ -19,25 +20,28 @@ from PySide6.QtGui import (
     QColor,
     QPainter, 
     QPointingDevice,
-    QCursor
+    QCursor,
+    QFont,
+    QTransform
 )
 
-from modules.datatypes import Series, Trace, Ztrace
+from modules.datatypes import Series, Trace, Ztrace, Flag
 from modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
 from modules.backend.view import FieldView
 from modules.backend.table import (
     ObjectTableManager,
     SectionTableManager,
     TraceTableManager,
-    ZtraceTableManager
+    ZtraceTableManager,
+    FlagTableManager
 )
-from modules.gui.dialog import TraceDialog, QuickDialog
+from modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
 from modules.gui.utils import notify, drawOutlinedText
 from modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID = range(8)
+    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG = range(9)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -67,6 +71,7 @@ class FieldWidget(QWidget, FieldView):
         self.ztrace_table_manager = None
         self.trace_table_manager = None
         self.section_table_manager = None
+        self.flag_table_manager = None
 
         # misc defaults
         self.current_trace = []
@@ -75,7 +80,26 @@ class FieldWidget(QWidget, FieldView):
         self.single_click = False
         self.mouse_x = 0
         self.mouse_y = 0
+        self.clicked_trace = None
         self.mouse_boundary_timer = None
+        pencil_pm = QPixmap(os.path.join(loc.img_dir, "pencil.cur"))
+        self.pencil_r = QCursor(
+            pencil_pm,
+            hotX=5, hotY=5
+        )
+        self.pencil_l = QCursor(
+            pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
+            hotX=pencil_pm.width()-5, hotY=5
+        )
+
+        # set up the flag display
+        self.flag_display = None
+        self.displayed_flag = None
+        self.flag_display_timer = QTimer(self)
+        self.flag_display_timer.setSingleShot(True)
+        self.flag_display_timer.timeout.connect(
+            self.displayFlagComments
+        )
 
         self.createField(series)
 
@@ -225,6 +249,17 @@ class FieldWidget(QWidget, FieldView):
         # create a new table
         self.ztrace_table_manager.newTable()
     
+    def openFlagList(self):
+        """Open a flag list."""
+        # create manager if not already
+        if self.flag_table_manager is None:
+            self.flag_table_manager = FlagTableManager(
+                self.series,
+                self.mainwindow
+            )
+        # create a new table
+        self.flag_table_manager.newTable()
+    
     def openTraceList(self):
         """Open a trace list."""
         # create the manager if not already
@@ -280,18 +315,62 @@ class FieldWidget(QWidget, FieldView):
         for i in range(len(points)):
             painter.drawLine(*points[i-1], *points[i])
         self.border_exists = True
-
-    def paintEvent(self, event):
-        """Called when self.update() and various other functions are run.
+    
+    def closeFlagComments(self):
+        """Close the flag comments display."""
+        if self.flag_display:
+            self.flag_display.close()
+            self.flag_display = None
+        self.displayed_flag = None
+        if self.flag_display_timer.isActive():
+            self.flag_display_timer.stop()
+    
+    def displayFlagComments(self):
+        """Display the comments an a flag that has been hovered over."""
+        # create text edit display
+        comments = []
+        for c in self.displayed_flag.comments:
+            t = c.text.replace("\n", "<br>")
+            comments.append(
+                f"<b>{c.user}</b> ({c.date}):<br>{t}"
+            )
+        text = "<hr>".join(comments)
+        self.flag_display = QTextEdit(self.mainwindow, text=text)
+        # show
+        self.flag_display.show()
+        # adjust the width and height
+        self.flag_display.resize(self.width() // 5, 1)
+        h = self.flag_display.document().size().toSize().height() + 3
+        if h == 3:
+            self.flag_display.setText("X")
+            h = self.flag_display.document().size().toSize().height()
+            self.flag_display.setText("")
+        elif h > self.height() - 6:
+            h = self.height() - 6
+        self.flag_display.resize(self.width() // 5, h)
+        # move to proper location
+        right_justified = self.mainwindow.mouse_palette.mode_x <= .5
+        if right_justified:
+            self.flag_display.move(
+                self.x() + self.width() - self.flag_display.width() - 3,
+                self.y() + self.height() - self.flag_display.height() - 3
+            )
+        else:
+            self.flag_display.move(
+                self.x() + 3,
+                self.y() + self.height() - self.flag_display.height() - 3
+            )
+        # scroll all the way down
+        sb = self.flag_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+    
+    def paintBorder(self, field_painter : QPainter):
+        """Paint the borders for the field."""
+        # draw record dot on the screen if recording transforms
+        if self.propagate_tform:
+            field_painter.setBrush(QColor(255, 0, 0))
+            field_painter.drawEllipse(20, 20, 40, 40)
         
-        Overwritten from QWidget.
-        Paints self.field_pixmap onto self (the widget).
-        """
-        field_painter = QPainter(self)
-
-        # draw the field
-        field_painter.drawPixmap(0, 0, self.field_pixmap)
-
         # add red border if trace layer is hidden
         self.border_exists = False
         if self.hide_trace_layer:
@@ -305,7 +384,9 @@ class FieldWidget(QWidget, FieldView):
         # add cyan border if sections are being blended
         if self.blend_sections:
             self.drawBorder(field_painter, (0, 255, 255))
-
+    
+    def paintWorkingTrace(self, field_painter : QPainter):
+        """Paint the work trace on the field."""
         # draw the working trace on the screen
         if self.current_trace:
             pen = None
@@ -364,7 +445,15 @@ class FieldWidget(QWidget, FieldView):
                 field_painter.setPen(QPen(QColor(*color), 6))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawPoint(qpoint)
-        
+            # redraw flag with translation
+            for (x, y), color in self.moving_flags:
+                field_painter.setPen(QPen(QColor(*color), 6))
+                field_painter.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
+                qpoint = QPoint(x+dx, y+dy)
+                field_painter.drawText(qpoint, "⚑")
+
+    def paintText(self, field_painter : QPainter):
+        """Paint the corner text onto the field."""
         # place text on other side of mode palette (if applicable)
         if self.mainwindow.mouse_palette.mode_x > .5:
             x = 10
@@ -373,19 +462,25 @@ class FieldWidget(QWidget, FieldView):
             x = self.width() - 10
             right_justified = True
         y = 0
+        # adjust handedness of the cursor
+        if (self.mouse_mode == FieldWidget.OPENTRACE or
+            self.mouse_mode == FieldWidget.CLOSEDTRACE):
+            cursor = self.pencil_l if right_justified else self.pencil_r
+            if cursor != self.cursor(): self.setCursor(cursor)
         
         # draw the name of the closest trace on the screen
         # draw the selected traces to the screen
         ct_size = 12
         st_size = 14
-        status_bar_trace = None
+        closest = None
+        closest_type = None
+        close_flag_display = True
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
         ):
             # get closest trace
-            closest_trace = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
-            status_bar_trace = closest_trace
+            closest, closest_type = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
 
             # get zarr label
             if self.zarr_layer:
@@ -393,50 +488,58 @@ class FieldWidget(QWidget, FieldView):
             else:
                 label_id = None
 
-
             if self.mouse_mode == FieldWidget.POINTER:
                 # prioritize showing label name
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
                     c = colorize(label_id)
-                    black_outline = c[0] + 3*c[1] + c[2] > 400
                     drawOutlinedText(
                         field_painter,
                         *pos,
                         str(label_id),
                         c,
-                        (0,0,0) if black_outline else (255,255,255),
+                        None,
                         ct_size
                     )
                 # if no label found, check for closest traces
                 else:
                     # check for ztrace segments
-                    if not closest_trace:
-                        closest_trace = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+                    if not closest:
+                        closest = self.section_layer.getZsegment(self.mouse_x, self.mouse_y)
+                        closest_type = "ztrace_seg"
                     
                     # draw name of closest trace
-                    if closest_trace:
-                        if type(closest_trace) is Trace:
-                            name = closest_trace.name
-                            if closest_trace.negative:
+                    if closest:
+                        if closest_type == "trace":
+                            name = closest.name
+                            if closest.negative:
                                 name += " (negative)"
-                        elif type(closest_trace) is Ztrace:
-                            name = f"{closest_trace.name} (ztrace)"
+                        elif closest_type == "ztrace_seg":
+                            name = f"{closest.name} (ztrace)"
                         # ztrace tuple returned
-                        elif type(closest_trace) is tuple:
-                            closest_trace = closest_trace[0]
-                            name = f"{closest_trace.name} (ztrace)"
-                        
-                        pos = self.mouse_x, self.mouse_y
-                        c = closest_trace.color
-                        black_outline = c[0] + 3*c[1] + c[2] > 400
+                        elif closest_type == "ztrace_pt":
+                            closest = closest[0]
+                            name = f"{closest.name} (ztrace)"
+                        # flag returned
+                        elif closest_type == "flag":
+                            name = closest.name
+                            close_flag_display = False
+                            if closest != self.displayed_flag:
+                                self.closeFlagComments()
+                                self.displayed_flag = closest
+                                self.flag_display_timer.start(1000)
+
+                        mouse_x, mouse_y = self.mouse_x, self.mouse_y
+                        if right_justified: mouse_x += 10
+                        c = closest.color
                         drawOutlinedText(
                             field_painter,
-                            *pos,
+                            mouse_x, mouse_y,
                             name,
                             c,
-                            (0,0,0) if black_outline else (255,255,255),
-                            ct_size
+                            None,
+                            ct_size,
+                            not right_justified
                         )
             
             # get the names of the selected traces
@@ -445,7 +548,7 @@ class FieldWidget(QWidget, FieldView):
             height = self.height()
             for trace in self.section.selected_traces:
                 # check for max number
-                if counter * (st_size + 10) + 20 > height / 2:
+                if counter * (st_size + 10) + 20 > height / 3:
                     names["..."] = 1
                     break
                 if trace.name in names:
@@ -459,7 +562,7 @@ class FieldWidget(QWidget, FieldView):
             counter = 0
             for ztrace, i in self.section.selected_ztraces:
                 # check for max number
-                if counter * (st_size + 10) + 20 > height / 2:
+                if counter * (st_size + 10) + 20 > height / 3:
                     names["..."] = 1
                     break
                 if ztrace.name in names:
@@ -476,6 +579,21 @@ class FieldWidget(QWidget, FieldView):
                 field_painter,
                 x, y,
                 f"Blended sections: {self.b_section.n} and {self.section.n}",
+                (255, 255, 255),
+                (0, 0, 0),
+                st_size,
+                right_justified
+            )
+            y += st_size
+        
+        # draw the number of selected flags
+        if self.section.selected_flags:
+            y += 20
+            l = len(self.section.selected_flags)
+            drawOutlinedText(
+                field_painter,
+                x, y,
+                f"{l} flag{'s' if l > 1 else ''} selected",
                 (255, 255, 255),
                 (0, 0, 0),
                 st_size,
@@ -541,11 +659,32 @@ class FieldWidget(QWidget, FieldView):
                 )
             y += st_size
         
-        field_painter.end()
+        # close the flag display if needed
+        if close_flag_display:
+            self.closeFlagComments()
 
         # update the status bar
         if not self.is_panzooming:
-            self.updateStatusBar(status_bar_trace)
+            if closest_type == "flag":
+                self.updateStatusBar()
+            else:
+                self.updateStatusBar(closest)
+
+    def paintEvent(self, event):
+        """Called when self.update() and various other functions are run.
+        
+        Overwritten from QWidget.
+        Paints self.field_pixmap onto self (the widget).
+        """
+        field_painter = QPainter(self)
+
+        # draw the field
+        field_painter.drawPixmap(0, 0, self.field_pixmap)
+        self.paintBorder(field_painter)
+        self.paintWorkingTrace(field_painter)
+        self.paintText(field_painter)
+
+        field_painter.end()
     
     def resizeEvent(self, event):
         """Scale field window if main window size changes.
@@ -605,8 +744,8 @@ class FieldWidget(QWidget, FieldView):
         elif trace is not None:
             if type(trace) is Trace:
                 self.status_list.append(f"Closest trace: {trace.name}")
-            elif type(trace) is tuple and type(trace[0]) is Ztrace:
-                self.status_list.append(f"Closest trace: {trace[0].name} (ztrace)")
+            elif type(trace) is Ztrace:
+                self.status_list.append(f"Closest trace: {trace.name} (ztrace)")
          
         s = "  |  ".join(self.status_list)
         self.mainwindow.statusbar.showMessage(s)
@@ -695,15 +834,14 @@ class FieldWidget(QWidget, FieldView):
             )
         elif (mode == FieldWidget.OPENTRACE or
               mode == FieldWidget.CLOSEDTRACE):
-            cursor = QCursor(
-                QPixmap(os.path.join(loc.img_dir, "pencil.cur")),
-                hotX=5, hotY=5
-            )
+            cursor = self.pencil_r
         elif (mode == FieldWidget.STAMP or
               mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
         elif mode == FieldWidget.SCISSORS:
             cursor = QCursor(Qt.CrossCursor)
+        elif mode == FieldWidget.FLAG:
+            cursor = QCursor(Qt.WhatsThisCursor)
         self.setCursor(cursor)
     
     def setTracingTrace(self, trace : Trace):
@@ -764,6 +902,7 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        self.setFocus()
         self.mouse_x = event.x()
         self.mouse_y = event.y()
         if not self.is_gesturing:
@@ -804,13 +943,16 @@ class FieldWidget(QWidget, FieldView):
             clicked_label = None
             if self.zarr_layer:
                 clicked_label = self.zarr_layer.getID(event.x(), event.y())
-            clicked_trace = self.section_layer.getTrace(event.x(), event.y())
-            self.mainwindow.checkActions(context_menu=True, clicked_trace=clicked_trace, clicked_label=clicked_label)
+            self.clicked_trace, clicked_type = self.section_layer.getTrace(event.x(), event.y())
+            self.mainwindow.checkActions(context_menu=True, clicked_trace=self.clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
             else:
-                self.mainwindow.field_menu.exec(event.globalPos())
+                if clicked_type == "flag":
+                    self.editFlag(self.clicked_trace)
+                else:
+                    self.mainwindow.field_menu.exec(event.globalPos())
             self.mainwindow.checkActions()
             return
 
@@ -931,6 +1073,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampRelease(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridRelease(event)
+        elif self.mouse_mode == FieldWidget.FLAG:
+            self.flagRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -997,7 +1141,7 @@ class FieldWidget(QWidget, FieldView):
             self.is_moving_trace = False
             self.is_selecting_traces = False
             self.clicked_x, self.clicked_y = event.x(), event.y()
-            self.selected_trace = self.section_layer.getTrace(
+            self.selected_trace, self.selected_type = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
@@ -1017,7 +1161,8 @@ class FieldWidget(QWidget, FieldView):
         if (
             self.is_moving_trace or 
             self.selected_trace in self.section.selected_traces or
-            self.selected_trace in self.section.selected_ztraces
+            self.selected_trace in self.section.selected_ztraces or
+            self.selected_trace in self.section.selected_flags
         ): 
             if not self.is_moving_trace:  # user has just decided to move the trace
                 self.is_moving_trace = True
@@ -1026,6 +1171,7 @@ class FieldWidget(QWidget, FieldView):
                 # get pixel points
                 self.moving_traces = []
                 self.moving_points = []
+                self.moving_flags = []
                 for trace in self.section.selected_traces:
                     # hide the trace
                     self.section.temp_hide.append(trace)
@@ -1042,6 +1188,13 @@ class FieldWidget(QWidget, FieldView):
                     pix_point = self.section_layer.pointToPix(point)
                     color = ztrace.color
                     self.moving_points.append((pix_point, color))
+                for flag in self.section.selected_flags:
+                    # hide the flag
+                    self.section.temp_hide.append(flag)
+                    # get point and other data
+                    pix_point = self.section_layer.pointToPix((flag.x, flag.y))
+                    color = flag.color
+                    self.moving_flags.append((pix_point, color))
 
                 self.generateView(update=False)
             
@@ -1083,11 +1236,14 @@ class FieldWidget(QWidget, FieldView):
             # if user selected a trace
             elif self.selected_trace:
                 # if user selected a normal trace
-                if type(self.selected_trace) is Trace:
+                if self.selected_type == "trace":
                     self.selectTrace(self.selected_trace)
                 # if user selected a ztrace
-                elif type(self.selected_trace)is tuple:
+                elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
+                # if user selected a flag
+                elif self.selected_type == "flag":
+                    self.selectFlag(self.selected_trace)
         
         # user moved traces
         elif self.lclick and self.is_moving_trace:
@@ -1105,10 +1261,9 @@ class FieldWidget(QWidget, FieldView):
         elif self.lclick and self.is_selecting_traces:
             self.is_selecting_traces = False
             self.deactivateMouseBoundaryTimer()
-            selected = self.section_layer.getTraces(self.current_trace)
-            if selected:
-                traces, ztraces = selected
-                self.selectTraces(traces, ztraces)
+            selected_traces = self.section_layer.getTraces(self.current_trace)
+            if selected_traces:
+                self.selectTraces(selected_traces, [])
         
         # clear any traces made
         self.current_trace = []
@@ -1454,11 +1609,11 @@ class FieldWidget(QWidget, FieldView):
         """Identifies the nearest trace and allows user to poly edit it."""
         # select, deselect or move
         if self.lclick:
-            self.selected_trace = self.section_layer.getTrace(
+            self.selected_trace, self.selected_type = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
-            if self.selected_trace and type(self.selected_trace) is Trace:
+            if self.selected_type == "trace":
                 self.is_scissoring = True
                 self.deselectAllTraces()
                 self.section.deleteTraces([self.selected_trace])
@@ -1525,6 +1680,80 @@ class FieldWidget(QWidget, FieldView):
         self.current_trace = []
         self.update()
     
+    def flagRelease(self, event):
+        """Called when mouse is released in flag mode."""
+        if self.lclick and self.series.options["show_flags"]:
+            default_name = self.series.options["flag_name"]
+            if not default_name:
+                self.section.save()  # ensure all flags are in the series data object
+                flag_count = self.series.data.getFlagCount()
+                default_name = f"flag_{flag_count + 1}"
+            structure = [
+                ["Name:", (True, "text", default_name)],
+                ["Color:", ("color", self.series.options["flag_color"]), ""],
+                ["Comment (opt):"],
+                [("textbox", "")]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Flag")
+            if not confirmed:
+                return
+            
+            pix_x, pix_y = event.x(), event.y()
+            title = response[0]
+            color = response[1]
+            comment = response[2]
+            self.placeFlag(
+                title,
+                pix_x, pix_y,
+                color,
+                comment
+            )
+
+        self.update()
+    
+    def editFlag(self, flag : Flag):
+        """Edit a flag."""
+        # close flag display
+        self.closeFlagComments()
+        self.displayed_flag = flag
+        response, confirmed = FlagDialog(self, flag).exec()
+        if confirmed:
+            flag.name, flag.color, flag.comments, new_comment = response
+            if new_comment: flag.addComment(self.series.user, new_comment)
+            self.generateView(generate_image=False)
+            self.saveState()
+        self.displayed_flag = None
+    
+    def createTraceFlag(self, trace : Trace = None):
+        """Create a flag associated with a trace."""
+        if trace is None and self.clicked_trace:
+            trace = self.clicked_trace
+            if not trace:
+                return
+        
+        structure = [
+            ["Name:", (True, "text", f"{trace.name}")],
+            ["Color:", ("color", trace.color), ""],
+            ["Comment:"],
+            [("textbox", "")]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Flag")
+        if not confirmed:
+            return
+        
+        x, y = trace.getCentroid()
+        name = response[0]
+        color = response[1]
+        comment = response[2]
+        f = Flag(name, x, y, color)
+        if comment:
+            f.addComment(self.series.user, comment)
+        self.section.addFlag(f)
+
+
+        self.saveState()
+        self.generateView(generate_image=False)
+
     def setCuration(self, cr_status : str, traces : list = None):
         """Set the curation for the selected traces.
         
@@ -1552,9 +1781,38 @@ class FieldWidget(QWidget, FieldView):
         [self.section.modified_contours.add(t.name) for t in traces]
 
         self.saveState()
-    
+
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             self.lineRelease(override=True)
+
+
+def formatAsParagraph(text : str, per_line=50, max_lines=20):
+    """Format text as a paragraph.
+    
+        Params: 
+            text (str): the text to format
+            per_line (int): the characters per line
+            max_lines (int): max number of lines in paragraph
+    """
+    text = text.replace("\n", "\n ")
+    text_split = text.split(" ")
+    num_chars = 0
+    final_str = ""
+    for word in text_split:
+        if num_chars + len(word) > per_line:
+            final_str += "\n"
+            num_chars = 0
+        if "\n" in word:
+            num_chars = 0
+        else:
+            word += " "
+        final_str += word
+        num_chars += len(word) + 1
+        
+        if max_lines and final_str.count("\n") >= max_lines:
+            return final_str + "..."
+    return final_str
+
 

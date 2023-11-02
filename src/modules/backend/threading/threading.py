@@ -3,7 +3,7 @@ import traceback
 
 from PySide6.QtWidgets import QProgressDialog, QProgressBar, QApplication, QLabel
 
-from modules.gui.utils import mainwindow
+from modules.gui.utils import getProgbar
 
 from PySide6.QtCore import (
     QRunnable,
@@ -120,18 +120,8 @@ class ThreadPoolProgBar(ThreadPool):
         final_value = len(self.workers)
         maximum = final_value if final_value >= 4 else 0
         if status_bar is None:
-            progbar = QProgressDialog(
-                    text,
-                    "Cancel",
-                    0,
-                    maximum,
-                    mainwindow
-                )
-            progbar.setWindowTitle(" ")
-            progbar.setWindowModality(Qt.WindowModal)
-            progbar.setCancelButton(None)
-            progbar.show()
-        else:
+            progbar = getProgbar(text, cancel=False, maximum=maximum)
+        else:  # custom progbar for status bar
             lbl = QLabel()
             lbl.setText(text)
             progbar = QProgressBar()

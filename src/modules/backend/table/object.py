@@ -111,13 +111,14 @@ class ObjectTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
 
-    def editAttributes(self, obj_names : list, attr_trace : Trace):
+    def editAttributes(self, obj_names : list, attr_trace : Trace, sections : list):
         """Edit objects on every section.
         
             Params:
                 series (Series): the series object
                 obj_names (list): the names of the objects to rename
                 attr_trace (Trace): the trace holding the new attributes
+                section (list): the sections to modify attributes for
         """
         self.mainwindow.saveAllData()
         
@@ -131,7 +132,8 @@ class ObjectTableManager():
             name,
             color,
             tags,
-            mode
+            mode,
+            sections
         )
 
         all_names = set(obj_names + [name])

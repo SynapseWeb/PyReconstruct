@@ -116,7 +116,8 @@ class SeriesData():
                 "contrast": section.contrast,
                 "src": section.src,
                 "mag": section.mag,
-                "tforms": section.tforms.copy(),
+                "flags": [f.copy() for f in section.flags],
+                "tforms": section.tforms.copy()
             }
             d["tforms"]["no-alignment"] = Transform([1, 0, 0, 1, 0, 0])
             self.data["sections"][section.n] = d
@@ -128,6 +129,7 @@ class SeriesData():
             d["contrast"] = section.contrast
             d["src"] = section.src
             d["mag"] = section.mag
+            d["flags"] = [f.copy() for f in section.flags]
             d["tforms"] = section.tforms.copy()
             d["tforms"]["no-alignment"] = Transform([1, 0, 0, 1, 0, 0])
         
@@ -295,3 +297,10 @@ class SeriesData():
         if name in self.data["objects"] and snum in self.data["objects"][name].traces:
             return self.data["objects"][name].traces[snum]
         return None
+
+    def getFlagCount(self):
+        """Get the number of flags in the series."""
+        c = 0
+        for data in self.data["sections"].values():
+            c += len(data["flags"])
+        return c

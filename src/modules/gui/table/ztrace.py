@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QFileDialog
 )
 from PySide6.QtCore import Qt
 
@@ -23,8 +22,11 @@ from modules.gui.utils import (
     notify,
     noUndoWarning
 )
-from modules.gui.dialog import QuickDialog
-from modules.constants import fd_dir
+from modules.gui.dialog import (
+    QuickDialog,
+    ObjectGroupDialog,
+    FileDialog
+)
 
 class ZtraceTableWidget(QDockWidget):
 
@@ -46,6 +48,7 @@ class ZtraceTableWidget(QDockWidget):
         self.setWindowTitle("Ztrace List")
 
         self.re_filters = set([".*"])
+        self.group_filters = set()
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -90,6 +93,10 @@ class ZtraceTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(
                 str(round(d, 5))
             ))
+            col += 1
+            g = self.series.ztrace_groups.getObjectGroups(ztrace_name)
+            g = ", ".join(g)
+            self.table.setItem(row, col, QTableWidgetItem(g))
             if resize:
                 self.table.resizeColumnsToContents()
                 self.table.resizeRowToContents(row)
@@ -105,7 +112,15 @@ class ZtraceTableWidget(QDockWidget):
                 [
                     ("refresh_act", "Refresh", "", self.refresh),
                     ("export_act", "Export...", "", self.export),
-                    ("refilter_act", "Regex filter...", "", self.setREFilter),
+                    {
+                        "attr_name": "filtermenu",
+                        "text": "Filter",
+                        "opts":
+                        [
+                            ("refilter_act", "Regex filter...", "", self.setREFilter),
+                            ("groupfilter_act", "Group filter...", "", self.setGroupFilter)
+                        ]
+                    }
                 ]
             }
         ]
@@ -129,6 +144,16 @@ class ZtraceTableWidget(QDockWidget):
                     ("remove3D_act", "Remove from scene", "", self.remove3D)
                 ]
             },
+            {
+                "attr_name" : "group_menu",
+                "text": "Group",
+                "opts":
+                [
+                    ("addgroup_act", "Add to group...", "", self.addToGroup),
+                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
+                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
+                ]
+            },
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -137,28 +162,58 @@ class ZtraceTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
             
-    def passesFilters(self, ztrace_name):
+    def passesFilters(self, name):
         """Determine if an object will be displayed in the table based on existing filters.
         
             Params:
                 ztrace_name (str): the name of the ztrace
-        """        
-        # check regex (will only be run if passes groups and tags)
+        """
+        # check groups
+        filters_len = len(self.group_filters)
+        if filters_len != 0:
+            groups = self.series.ztrace_groups.getObjectGroups(name)
+            groups_len = len(groups)
+            union_len = len(groups.union(self.group_filters))
+            if union_len == groups_len + filters_len:  # intersection does not exist
+                return False
+        
+        # check regex
+        passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, ztrace_name)):
-                return True
-        return False
+            if bool(re.fullmatch(re_filter, name)):
+                passes_filters = True
+        if not passes_filters:
+            return False
+
+        return True
+
+    def updateTitle(self):
+        """Update the title of the table."""
+        is_regex = tuple(self.re_filters) != (".*",)
+        is_group = bool(self.group_filters)
+
+        title = "Ztrace List "
+        if any((is_regex, is_group)):
+            strs = []
+            if is_regex: strs.append("regex")
+            if is_group: strs.append("groups")
+            title += f"(Filtered by: {', '.join(strs)})"
+        
+        self.setWindowTitle(title)
     
     def createTable(self):
         """Create the table widget."""
         # establish table headers
-        self.horizontal_headers = ["Name", "Start", "End", "Distance"]
+        self.horizontal_headers = ["Name", "Start", "End", "Distance", "Groups"]
+
+        self.updateTitle()
 
         self.table = CopyTableWidget(0, len(self.horizontal_headers))
 
         # connect table functions
         self.table.contextMenuEvent = self.ztraceContextMenu
         self.table.mouseDoubleClickEvent = self.addTo3D
+        self.table.backspace = self.delete
         
         # filter the objects
         filtered_ztrace_list = []
@@ -253,7 +308,14 @@ class ZtraceTableWidget(QDockWidget):
             notify("This ztrace already exists.")
             return
         
+        # keep track of scroll bar position
+        vscroll = self.table.verticalScrollBar()
+        scroll_pos = vscroll.value()
+
         self.manager.editAttributes(name, new_name, new_color)
+        
+        # reset scroll bar position
+        vscroll.setValue(scroll_pos)
     
     def smooth(self):
         """Smooth a set of ztraces."""
@@ -287,6 +349,60 @@ class ZtraceTableWidget(QDockWidget):
         if ztrace_names:
             self.mainwindow.removeFrom3D(ztrace_names, ztraces=True)
     
+    def addToGroup(self, log_event=True):
+        """Add objects to a group."""
+        ztrace_names = self.getSelectedNames()
+        if not ztrace_names:
+            return
+        
+        # ask the user for the group
+        group_name, confirmed = ObjectGroupDialog(self, self.series.ztrace_groups).exec()
+
+        if not confirmed:
+            return
+        
+        for name in ztrace_names:
+            self.series.ztrace_groups.add(group=group_name, obj=name)
+            if log_event:
+                self.series.addLog(name, None, f"Add to group '{group_name}'")
+            self.series.modified_ztraces.add(name)
+        
+        self.manager.update(clear_tracking=True)
+    
+    def removeFromGroup(self, log_event=True):
+        """Remove objects from a group."""
+        ztrace_names = self.getSelectedNames()
+        if not ztrace_names:
+            return
+        
+        # ask the user for the group
+        group_name, confirmed = ObjectGroupDialog(self, self.series.ztrace_groups, new_group=False).exec()
+
+        if not confirmed:
+            return
+        
+        for name in ztrace_names:
+            self.series.ztrace_groups.remove(group=group_name, obj=name)
+            if log_event:
+                self.series.addLog(name, None, f"Remove from group '{group_name}'")
+            self.series.modified_ztraces.add(name)
+        
+        self.manager.update(clear_tracking=True)
+    
+    def removeFromAllGroups(self, log_event=True):
+        """Remove a set of traces from all groups."""
+        ztrace_names = self.getSelectedNames()
+        if not ztrace_names:
+            return
+        
+        for name in ztrace_names:
+            self.series.ztrace_groups.removeObject(name)
+            if log_event:
+                self.series.addLog(name, None, f"Remove from all object groups")
+            self.series.modified_ztraces.add(name)
+            
+        self.manager.update(clear_tracking=True)
+    
     def delete(self):
         """Delete a set of ztraces."""
         names = self.getSelectedNames()
@@ -308,17 +424,14 @@ class ZtraceTableWidget(QDockWidget):
     def export(self):
         """Export the trace list as a csv file."""
         # get the location from the user
-        global fd_dir
-        file_path, ext = QFileDialog.getSaveFileName(
+        file_path = FileDialog.get(
+            "save",
             self,
             "Save Ztrace List",
-            os.path.join(fd_dir.get(), "ztraces.csv"),
+            file_name="ztraces.csv",
             filter="Comma Separated Values (*.csv)"
         )
-        if not file_path:
-            return
-        else:
-            fd_dir.set(os.path.dirname(file_path))
+        if not file_path: return
         # unload the table into the csv file
         csv_file = open(file_path, "w")
         # headers first
@@ -356,6 +469,29 @@ class ZtraceTableWidget(QDockWidget):
             self.re_filters[i] = filter.replace("#", "[0-9]")
         self.re_filters = set(self.re_filters)
 
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
+    def setGroupFilter(self):
+        """Set a new group filter for the list."""
+        # get a new filter from the user
+        group_filter_str = ", ".join(self.group_filters)
+        new_group_filter, confirmed = QInputDialog.getText(
+            self,
+            "Filter Ztraces",
+            "Enter the group filters:",
+            text=group_filter_str
+        )
+        if not confirmed:
+            return
+
+        # get the new group filter for the list
+        self.group_filters = new_group_filter.split(", ")
+        if self.group_filters == [""]:
+            self.group_filters = set()
+        else:
+            self.group_filters = set(self.group_filters)
+        
         # call through manager to update self
         self.manager.updateTable(self)
     

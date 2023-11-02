@@ -726,11 +726,12 @@ class MainWindow(QMainWindow):
                 self,
                 "Username",
                 "Enter your username:",
-                text=self.series.user,
+                text=QSettings("KHLab", "PyReconstruct").value("username", self.series.user),
             )
             if not confirmed or not new_name:
                 return
         
+        QSettings("KHLab", "PyReconstruct").setValue("username", new_name)
         self.user = new_name
         self.series.user = new_name
     

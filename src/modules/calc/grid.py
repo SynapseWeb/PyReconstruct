@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .quantification import area
+from .quantification import area, lineDistance
 
 class Grid():
 
@@ -260,7 +260,7 @@ def mergeTraces(trace_list : list) -> list:
         new_traces[i] = reducePoints(new_traces[i])
     return new_traces
 
-def cutTraces(trace, cut_trace : list, del_threshold : float) -> list:
+def cutTraces(trace, cut_trace : list, del_threshold : float, closed=True) -> list:
     """Cut a set of traces.
     
         Params:
@@ -269,14 +269,87 @@ def cutTraces(trace, cut_trace : list, del_threshold : float) -> list:
         Returns:
             (list) the newly cut traces
     """
-    threshold = area(trace) * (del_threshold / 100)
-    grid = Grid([trace], cut_trace)
-    interiors = grid.getInteriors()
-    new_traces = []
-    for i in range(len(interiors)):
-        if area(interiors[i]) >= threshold: # exclude traces that are smaller than 1% of the original trace area
-            new_traces.append(reducePoints(interiors[i]))
-
+    if closed:
+        threshold = area(trace) * (del_threshold / 100)
+        grid = Grid([trace], cut_trace)
+        interiors = grid.getInteriors()
+        new_traces = []
+        for i in range(len(interiors)):
+            if area(interiors[i]) >= threshold: # exclude traces that are smaller than 1% of the original trace area
+                new_traces.append(reducePoints(interiors[i]))
+    else:
+        threshold = lineDistance(trace, closed=False) * (del_threshold / 100)
+        new_traces = cutOpenTrace(trace, cut_trace)
+        for t in new_traces.copy():
+            if lineDistance(t, closed=False) < threshold:
+                new_traces.remove(t)
+    
     return new_traces
+
+# Function to check if two line segments intersect
+def intersection(line1, line2):
+    (x1, y1), (x2, y2) = tuple(line1)
+    (x3, y3), (x4, y4) = tuple(line2)
+
+    # Calculate the slopes of the lines
+    m1 = (y2 - y1) / (x2 - x1) if x2 - x1 != 0 else float('inf')
+    m2 = (y4 - y3) / (x4 - x3) if x4 - x3 != 0 else float('inf')
+
+    # Check if the lines are parallel
+    if m1 == m2:
+        return None  # The lines do not intersect
+
+    # Calculate the intersection point
+    if m1 == float('inf'):  # Line1 is vertical
+        x_intersection = x1
+        y_intersection = m2 * (x1 - x3) + y3
+    elif m2 == float('inf'):  # Line2 is vertical
+        x_intersection = x3
+        y_intersection = m1 * (x3 - x1) + y1
+    else:
+        x_intersection = (m1 * x1 - y1 - m2 * x3 + y3) / (m1 - m2)
+        y_intersection = m1 * (x_intersection - x1) + y1
+
+    # Check if the intersection point is within the line segments
+    if (
+        min(x1, x2) <= x_intersection <= max(x1, x2)
+        and min(x3, x4) <= x_intersection <= max(x3, x4)
+        and min(y1, y2) <= y_intersection <= max(y1, y2)
+        and min(y3, y4) <= y_intersection <= max(y3, y4)
+    ):
+        return (x_intersection, y_intersection)
+    else:
+        return None  # The lines do not intersect within the line segments
+
+def cutOpenTrace(trace : list, cut_trace : list):
+    """Cut an open trace.
+    
+        Params:
+            trace (list): the trace to cut
+            cut_trace (list): the trace used to cut
+    """
+    # insert interect points into trace
+    new_trace = []
+    cut_indexes = []
+    for i in range(len(trace) - 1):
+        new_trace.append(trace[i])
+        for j in range(len(cut_trace) - 1):
+            line1 = [trace[i], trace[i+1]]
+            line2 = [cut_trace[j], cut_trace[j+1]]
+            pt = intersection(line1, line2)
+            if pt:
+                cut_indexes.append(len(new_trace))
+                new_trace.append(pt)
+    new_trace.append(trace[-1])
+    
+    # split up the trace
+    last_i = 0
+    traces = []
+    for i in cut_indexes:
+        traces.append(new_trace[last_i : i+1])
+        last_i = i
+    traces.append(new_trace[last_i:])
+
+    return traces
         
 

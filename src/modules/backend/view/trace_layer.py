@@ -307,21 +307,24 @@ class TraceLayer():
         if comment: f.addComment(self.series.user, comment)
         self.section.addFlag(f)
     
-    def mergeSelectedTraces(self, merge_attrs=False, log_event=True):
+    def mergeSelectedTraces(self, traces : list = None, merge_attrs=False, log_event=True):
         """Merge all selected traces.
         
             Params:
-                merge_objects (bool): True if traces with different names can be merged
+                merge_attrs (bool): True if only trace attributes should be merged
         """
         if len(self.section.selected_traces) < 2:
             notify("Please select two or more traces to merge.")
             return
+        
+        if not traces:
+            traces = self.section.selected_traces.copy()
 
         # set attributes to be the first object selected
         if merge_attrs:
-            first_trace = self.section.selected_traces[0].copy()
+            first_trace = traces[0].copy()
             self.section.editTraceAttributes(
-                self.section.selected_traces,
+                traces,
                 name=first_trace.name,
                 color=first_trace.color,
                 tags=first_trace.tags,
@@ -331,10 +334,10 @@ class TraceLayer():
 
         # merge traces
         else:
-            traces = []
-            first_trace = self.section.selected_traces[0]
+            pix_traces = []
+            first_trace = traces[0]
             name = first_trace.name
-            for trace in self.section.selected_traces:
+            for trace in traces:
                 if trace.name != name:
                     notify("Please merge traces with the same name.")
                     return
@@ -345,11 +348,11 @@ class TraceLayer():
                 pix_points = self.traceToPix(trace)
                 # if merge_objects:
                 #     pix_points = [(round(x*factor), round(y*factor)) for x, y in pix_points]
-                traces.append(pix_points)
+                pix_traces.append(pix_points)
             
-            merged_traces = mergeTraces(traces)  # merge the pixel traces
+            merged_traces = mergeTraces(pix_traces)  # merge the pixel traces
             # delete the old traces
-            self.section.deleteTraces(log_event=False)
+            self.section.deleteTraces(traces, log_event=False)
             # create new merged trace
             for trace in merged_traces:
                 self.newTrace(

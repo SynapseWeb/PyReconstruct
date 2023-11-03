@@ -1395,7 +1395,8 @@ class MainWindow(QMainWindow):
                   ("Trace", current_mode == "trace"),
                   ("Rectangle", current_mode == "rect"),
                   ("Ellipse", current_mode == "circle")
-                )]
+                )],
+                [("check", ("Automatically merge selected traces", self.series.options["auto_merge"]))]
             ]
             response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
             if not confirmed:
@@ -1407,6 +1408,8 @@ class MainWindow(QMainWindow):
                 new_mode = "circle"
             else:
                 new_mode = "trace"
+            
+            self.series.options["auto_merge"] = response[1][0][1]
         
         self.field.closed_trace_mode = new_mode
 

@@ -1130,6 +1130,18 @@ class FieldWidget(QWidget, FieldView):
             return True
         else:
             return False
+    
+    def autoMerge(self):
+        """Automatically merge the selected traces of the same name."""
+        # merge with existing selected traces of the same name
+        if not self.series.options["auto_merge"]:
+            return
+        traces_to_merge = []
+        for t in self.section.selected_traces:
+            if t.name == self.tracing_trace.name and t.closed:
+                traces_to_merge.append(t)
+        if len(traces_to_merge) > 1:
+            self.mergeSelectedTraces(traces_to_merge)
 
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
@@ -1477,6 +1489,8 @@ class FieldWidget(QWidget, FieldView):
                 self.tracing_trace,
                 closed=closed
             )
+            if closed and len(self.current_trace) > 2:
+                self.autoMerge()
             self.current_trace = []
     
     def linePress(self, event):
@@ -1498,7 +1512,6 @@ class FieldWidget(QWidget, FieldView):
             self.deactivateMouseBoundaryTimer()
             if len(self.current_trace) > 1:
                 current_trace_copy = self.current_trace.copy()
-                self.current_trace = []
                 self.newTrace(
                     current_trace_copy,
                     self.tracing_trace,
@@ -1507,6 +1520,9 @@ class FieldWidget(QWidget, FieldView):
                 )
                 if log_event and self.is_scissoring:
                     self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
+                if closed and len(self.current_trace) > 2:
+                    self.autoMerge()
+                self.current_trace = []
             else:
                 self.current_trace = []
                 self.update()

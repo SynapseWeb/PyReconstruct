@@ -187,7 +187,7 @@ class TraceLayer():
         
         return closest_ztrace
 
-    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, log_event=True):
+    def newTrace(self, pix_trace : list, base_trace : Trace, closed=True, reduce_points=True, log_event=True):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -199,7 +199,7 @@ class TraceLayer():
             return
         if closed:
             pix_trace = getExterior(pix_trace)  # get exterior if closed (will reduce points)
-        else:
+        elif reduce_points:
             pix_trace = reducePoints(pix_trace, closed=False)  # only reduce points if trace is open
 
         # create the new trace
@@ -370,8 +370,14 @@ class TraceLayer():
                 knife_trace (list): the knife trace in pixmap points
         """
         trace = self.section.selected_traces[0]
+        closed = trace.closed
         trace_to_cut = self.traceToPix(trace)
-        cut_traces = cutTraces(trace_to_cut, knife_trace, self.series.options["knife_del_threshold"])  # merge the pixel traces
+        cut_traces = cutTraces(
+            trace_to_cut, 
+            knife_trace, 
+            self.series.options["knife_del_threshold"], 
+            closed=closed
+        )  # merge the pixel traces
         # delete the old traces
         self.section.deleteTraces()
         # create new traces
@@ -379,6 +385,8 @@ class TraceLayer():
             self.newTrace(
                 piece,
                 trace,
+                closed=closed,
+                reduce_points=False,
                 log_event=False
             )
         if log_event:

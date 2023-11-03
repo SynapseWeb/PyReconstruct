@@ -30,6 +30,7 @@ class ObjectGroupDialog(QDialog):
         group_row = QHBoxLayout()
         group_text = QLabel(self, text="Group:")
         self.group_input = QComboBox(self)
+        self.group_input.setMinimumWidth(100)
         self.group_input.addItem("")
         self.group_input.addItems(sorted(objgroupdict.getGroupList()))
         self.group_input.resize(self.group_input.sizeHint())

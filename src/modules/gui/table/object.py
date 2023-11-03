@@ -21,7 +21,8 @@ from modules.datatypes import Series
 from modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    noUndoWarning
+    noUndoWarning,
+    notify
 )
 from modules.gui.dialog import (
     ObjectGroupDialog,
@@ -125,6 +126,16 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("findfirst_act", "First", "", self.findFirst),
                     ("findlast_act", "Last", "", self.findLast)
+                ]
+            },
+
+            {
+                "attr_name": "groupmenu",
+                "text": "Groups",
+                "opts":
+                [
+                    ("renamegroup_act", "Rename group...", "", self.renameGroup),
+                    ("deletegroup_act", "Delete group...", "", self.deleteGroup)
                 ]
             }
         ]
@@ -921,6 +932,41 @@ class ObjectTableWidget(QDockWidget):
         self.series.setCuration(names, curation_status, assign_to)
         self.manager.updateObjects(names)
         self.mainwindow.seriesModified(True)
+    
+    def renameGroup(self):
+        """Rename an object group."""
+        structure = [
+            ["Group:", (True, "combo", self.series.object_groups.getGroupList())],
+            ["New name:", (True, "text", "")]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Rename Group")
+        if not confirmed:
+            return
+        
+        group = response[0]
+        new_group = response[1]
+        if new_group in self.series.object_groups.getGroupList():
+            notify("This group already exists.")
+            return
+        
+        objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
+        self.series.object_groups.renameGroup(group, new_group)
+        self.updateObjects(objs_to_update)
+    
+    def deleteGroup(self):
+        """Delete an object group."""
+        structure = [
+            ["Group:", (True, "combo", self.series.object_groups.getGroupList())]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Delete Group")
+        if not confirmed:
+            return
+        
+        group = response[0]
+        if group in self.series.object_groups.getGroupList():
+            objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
+            self.series.object_groups.removeGroup(group)
+            self.updateObjects(objs_to_update)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

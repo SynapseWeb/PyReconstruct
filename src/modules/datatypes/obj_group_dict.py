@@ -65,6 +65,18 @@ class ObjGroupDict():
         for obj in self.getGroupObjects(group).copy():
             self.remove(group, obj)
     
+    def renameGroup(self, group : str, new_group : str):
+        """Rename a group.
+        
+            Params:
+                group (str): the group to rename
+                new_group (str): the new name for the group
+        """
+        objs = self.getGroupObjects(group).copy()
+        self.removeGroup(group)
+        for obj in objs:
+            self.add(new_group, obj)
+    
     def getObjectGroups(self, obj : str = None) -> set:
         """Get the groups for a given object.
         

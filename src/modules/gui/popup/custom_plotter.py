@@ -202,11 +202,8 @@ class VPlotter(vedo.Plotter):
                     actor.alpha(new_opacity)
                     # set the opacity in series 3D options
                     if t == "object":
-                        if name in self.series.object_3D_modes:
-                            type_3D = self.series.object_3D_modes[name][0]
-                        else:
-                            type_3D = "surface"
-                        self.series.object_3D_modes[name] = type_3D, new_opacity
+                        type_3D = self.series.getObjAttr(name, "3D_modes")[0]
+                        self.series.setObjAttr(name, "3D_modes", [type_3D, new_opacity])
                         self.mainwindow.seriesModified(True)
         
         # select/deselect all

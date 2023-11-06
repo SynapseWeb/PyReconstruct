@@ -83,7 +83,8 @@ class Series():
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
-        self.object_3D_modes = series_data["object_3D_modes"]
+        # self.object_3D_modes = series_data["object_3D_modes"]
+        self.obj_attrs = series_data["obj_attrs"]
 
         # default settings
         self.modified_ztraces = set()
@@ -100,10 +101,6 @@ class Series():
             self.log_set = LogSet.fromList(series_data["log_set"])
         else:
             self.log_set = LogSet()
-        # last user data
-        self.last_user = series_data["last_user"]
-        # curate data
-        self.curation = series_data["curation"]
 
         # keep track of relevant overall series data
         self.data = SeriesData(self)
@@ -460,6 +457,26 @@ class Series():
             window[2] = 1
         if window[3] == 0:  # height
             window[3] == 1
+        
+        # check for separate obj attrs
+        if "obj_attrs" not in series_data:
+            series_data["obj_attrs"] = {}
+            obj_attrs = series_data["obj_attrs"]
+            if "object_3D_modes" in series_data:
+                for obj_name, modes in series_data["object_3D_modes"].items():
+                    if obj_name not in obj_attrs:
+                        obj_attrs[obj_name] = {}
+                    obj_attrs[obj_name]["3D_modes"] = modes
+            if "last_user" in series_data:
+                for obj_name, last_user in series_data["last_user"].items():
+                    if obj_name not in obj_attrs:
+                        obj_attrs[obj_name] = {}
+                    obj_attrs[obj_name]["last_user"] = last_user
+            if "curation" in series_data:
+                for obj_name, curation in series_data["curation"].items():
+                    if obj_name not in obj_attrs:
+                        obj_attrs[obj_name] = {}
+                    obj_attrs[obj_name]["curation"] = curation
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -486,14 +503,12 @@ class Series():
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         d["ztrace_groups"] = self.ztrace_groups.getGroupDict()
-        d["object_3D_modes"] = self.object_3D_modes
+        d["obj_attrs"] = self.obj_attrs
 
         # ADDED SINCE JAN 25TH
         d["options"] = self.options
 
         d["log_set"] = self.log_set.getList()
-        d["last_user"] = self.last_user
-        d["curation"] = self.curation
 
         return d
     
@@ -514,7 +529,6 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["ztrace_groups"] = {}
-        series_data["object_3D_modes"] = {}
 
         # ADDED SINCE JAN 25TH
 
@@ -541,8 +555,13 @@ class Series():
         options["knife_del_threshold"] = 1
         options["auto_merge"] = False
 
-        series_data["last_user"] = {}
-        series_data["curation"] = {}
+        series_data["obj_attrs"] = {}
+        
+        obj_attrs = series_data["obj_attrs"]
+        obj_attrs["last_user"] = {}
+        obj_attrs["3D_modes"] = {}
+        obj_attrs["curation"] = {}
+        obj_attrs["comments"] = {}
 
         return series_data
     
@@ -840,40 +859,6 @@ class Series():
                 section.save()  # deleting object will automatically be logged
         
         self.modified = True
-    
-    def removeObjAttrs(self, name):
-        """Delete all attrs associated with an object name."""
-        # object groups
-        self.object_groups.removeObject(name)
-
-        # object 3D modes
-        if name in self.object_3D_modes:
-            del(self.object_3D_modes[name])
-
-        # curation
-        if name in self.curation:
-            del(self.curation[name])
-    
-    def renameObjAttrs(self, old_name, new_name):
-        """Change the attibutes for an object that was renamed."""
-        if new_name in self.data["objects"]:
-            return  # do not overwrite if object exists
-        
-        # object groups
-        groups = self.object_groups.getObjectGroups(old_name)
-        for group in groups:
-            self.object_groups.add(group, new_name)
-        
-        # object 3D modes
-        if old_name in self.object_3D_modes:
-            self.object_3D_modes[new_name] = self.object_3D_modes[old_name]
-
-        # curation
-        if old_name in self.curation:
-            self.curation[new_name] = self.curation[old_name]
-        
-        # delete old_name
-        self.removeObjAttrs(old_name)
     
     def editObjectAttributes(
             self, 
@@ -1307,7 +1292,7 @@ class Series():
 
         # update the last user data
         if obj_name:
-            self.last_user[obj_name] = self.user
+            self.setObjAttr(obj_name, "last_user", self.user)
     
     def getFullHistory(self):
         """Get all the logs for the series."""
@@ -1329,14 +1314,14 @@ class Series():
                 asign_to (str): the user to assign to if Needs Curation
         """
         for name in names:
-            if cr_status == "" and name in self.curation:
-                del(self.curation[name])
+            if cr_status == "":
+                self.setObjAttr(name, "curation", None)
                 self.log_set.removeCuration(name)
             elif cr_status == "Needs curation":
-                self.curation[name] = (False, assign_to, getDateTime()[0])
+                self.setObjAttr(name, "curation", (False, assign_to, getDateTime()[0]))
                 self.addLog(name, None, "Mark as needs curation")
             elif cr_status == "Curated":
-                self.curation[name] = (True, self.user, getDateTime()[0])
+                self.setObjAttr(name, "curation", (True, self.user, getDateTime()[0]))
                 self.addLog(name, None, "Mark as curated")
     
     def reorderSections(self, d : dict = None):
@@ -1406,6 +1391,69 @@ class Series():
         else:
             reorder = dict((n, n) for n in self.sections)
         reorder[max_snum] = index
+    
+    def getObjAttr(self, obj_name : str, attr_name : str):
+        """Get the attributes for an object in the series.
+        
+            Params:
+                obj_name (str): the name of the object
+                attr_name (str): the name of the attribute to get
+        """
+        if not obj_name in self.obj_attrs or attr_name not in self.obj_attrs[obj_name]:
+            # return defaults if not set
+            if attr_name == "3D_modes":
+                return ["surface", 1]
+            elif attr_name == "last_user":
+                return ""
+            elif attr_name == "curation":
+                return None
+            elif attr_name == "comment":
+                return ""
+            else:
+                return
+        else:
+            return self.obj_attrs[obj_name][attr_name]
+    
+    def setObjAttr(self, obj_name : str, attr_name : str, value):
+        """Set the attributes for an object in the series.
+        
+            Params:
+                obj_name (str): the name of the object
+                attr_name (str): the name of the attribute to set
+                value: the value to set for the attributes
+        """
+        if obj_name not in self.obj_attrs:
+            self.obj_attrs[obj_name] = {}
+        self.obj_attrs[obj_name][attr_name] = value
+        if value is None:
+            del(self.obj_attrs[obj_name][attr_name])
+            if not self.obj_attrs[obj_name]:
+                del(self.obj_attrs[obj_name])
+    
+    def removeObjAttrs(self, name):
+        """Delete all attrs associated with an object name."""
+        # object groups
+        self.object_groups.removeObject(name)
+
+        # obj_attrs
+        del(self.obj_attrs[name])
+
+    def renameObjAttrs(self, old_name, new_name):
+        """Change the attibutes for an object that was renamed."""
+        if new_name in self.data["objects"]:
+            return  # do not overwrite if object exists
+        
+        # object groups
+        groups = self.object_groups.getObjectGroups(old_name)
+        for group in groups:
+            self.object_groups.add(group, new_name)
+        
+        # obj_attrs
+        if old_name in self.obj_attrs:
+            self.obj_attrs[new_name] = self.obj_attrs[old_name].copy()
+        
+        # delete old_name
+        self.removeObjAttrs(old_name)
 
 
 class SeriesIterator():

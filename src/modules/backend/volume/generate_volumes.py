@@ -18,10 +18,7 @@ def generateVolumes(series : Series, obj_names : list):
     # create the 3D objects
     obj_data = {}
     for obj_name in obj_names:
-        if obj_name in series.object_3D_modes:
-            mode, opacity = series.object_3D_modes[obj_name]
-        else:
-            mode, opacity = "surface", 1
+        mode, opacity = tuple(series.getObjAttr(obj_name, "3D_modes"))
         if mode == "surface":
             obj_data[obj_name] = (Surface(obj_name), opacity)
         elif mode == "spheres":

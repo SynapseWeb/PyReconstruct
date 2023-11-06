@@ -66,7 +66,8 @@ class ObjectTableWidget(QDockWidget):
             "Groups": True,
             "Trace tags": False,
             "Last user": True,
-            "Curate": False
+            "Curate": False,
+            "Comment": True
         }
         self.re_filters = set([".*"])
         self.tag_filters = set()
@@ -148,6 +149,7 @@ class ObjectTableWidget(QDockWidget):
         # create the right-click menu
         context_menu_list = [
             ("editattribtues_act", "Edit attributes...", "", self.editAttributes),
+            ("editcomment_act", "Comment...", "", self.editComment),
             {
                 "attr_name": "stampmenu",
                 "text": "Stamp attributes",
@@ -270,10 +272,7 @@ class ObjectTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
         if self.columns["Last user"]:
-            if name in self.series.last_user:
-                last_user = self.series.last_user[name]
-            else:
-                last_user = ""
+            last_user = self.series.getObjAttr(name, "last_user")
             self.table.setItem(row, col, QTableWidgetItem(last_user))
             col += 1
         if self.columns["Curate"]:
@@ -284,11 +283,12 @@ class ObjectTableWidget(QDockWidget):
             cr_items = [check_item, status_item, user_item, date_item]
             check_item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
 
-            if name not in self.series.curation:
+            obj_curation = self.series.getObjAttr(name, "curation")
+            if not obj_curation:
                 check_item.setCheckState(Qt.CheckState.Unchecked)
                 cr_color = None
             else:
-                curated, user, date = self.series.curation[name]
+                curated, user, date = obj_curation
                 if curated:
                     check_item.setCheckState(Qt.CheckState.Checked)
                     status_item.setText("Curated")
@@ -305,6 +305,10 @@ class ObjectTableWidget(QDockWidget):
                     item.setBackground(cr_color)
                 self.table.setItem(row, col, item)
                 col += 1
+        if self.columns["Comment"]:
+            comment = self.series.getObjAttr(name, "comment")
+            self.table.setItem(row, col, QTableWidgetItem(comment))
+            col += 1
         if resize:
             self.table.resizeColumnsToContents()
             self.table.resizeRowToContents(row)
@@ -336,8 +340,9 @@ class ObjectTableWidget(QDockWidget):
         
         # check curation status and user
         if self.columns["Curate"]:
-            if name in self.series.curation:
-                cr_status, user, date = self.series.curation[name]
+            obj_curation = self.series.getObjAttr(name, "curation")
+            if obj_curation:
+                cr_status, user, date = tuple(obj_curation)
                 cr_status = "Curated" if cr_status else "Needs curation"
                 if not self.cr_status_filter[cr_status]:
                     return False
@@ -564,6 +569,27 @@ class ObjectTableWidget(QDockWidget):
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
+    
+    def editComment(self):
+        """Edit the comment of the object."""
+        obj_name = self.getSelectedObject()
+        if not obj_name:
+            notify("Please select one object to edit.")
+            return
+        
+        comment = self.series.getObjAttr(obj_name, "comment")
+        new_comment, confirmed = QInputDialog.getText(
+            self,
+            "Object Comment",
+            "Comment:",
+            text=comment
+        )
+        if not confirmed:
+            return
+        
+        self.series.setObjAttr(obj_name, "comment", new_comment)
+        self.series.addLog(obj_name, None, "Edit object comment")
+        self.updateObjects([obj_name])
     
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
@@ -881,15 +907,9 @@ class ObjectTableWidget(QDockWidget):
             return
         
         # check for object names and opacities
-        if obj_names[0] in self.series.object_3D_modes:
-            type_3D, opacity = self.series.object_3D_modes[obj_names[0]]
-        else:
-            type_3D, opacity= "surface", 1
+        type_3D, opacity = tuple(self.series.getObjAttr(obj_names[0], "3D_modes"))
         for name in obj_names[1:]:
-            if name in self.series.object_3D_modes:
-                new_type, new_opacity = self.series.object_3D_modes[name]
-            else:
-                new_type, new_opacity = "surface", 1
+            new_type, new_opacity = tuple(self.series.getObjAttr(name, "3D_modes"))
             if type_3D != new_type:
                 type_3D = None
             if opacity != new_opacity:

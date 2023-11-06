@@ -168,8 +168,6 @@ class SeriesData():
                     self.series.addLog(obj_name, None, "Create object")
                 for obj_name in removed_objects:
                     self.series.addLog(obj_name, None, "Delete object")
-                    # remove the object from last_user checking
-                    del(self.series.last_user[obj_name])
                     # remove object from object attributes dicts
                     self.series.removeObjAttrs(obj_name)
     

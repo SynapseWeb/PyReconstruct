@@ -498,7 +498,9 @@ class FieldView():
         ]
 
         # set the selected traces
-        if self.series.options["show_flags"]:
+        show_flags = self.series.options["show_flags"]
+        if (show_flags == "all" or
+            (show_flags == "unresolved" and not flag.resolved)):
             self.section.selected_flags = [flag]
 
         self.generateView()

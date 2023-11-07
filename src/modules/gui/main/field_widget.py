@@ -1698,7 +1698,7 @@ class FieldWidget(QWidget, FieldView):
     
     def flagRelease(self, event):
         """Called when mouse is released in flag mode."""
-        if self.lclick and self.series.options["show_flags"]:
+        if self.lclick and self.series.options["show_flags"] != "none":
             default_name = self.series.options["flag_name"]
             if not default_name:
                 self.section.save()  # ensure all flags are in the series data object
@@ -1734,7 +1734,7 @@ class FieldWidget(QWidget, FieldView):
         self.displayed_flag = flag
         response, confirmed = FlagDialog(self, flag).exec()
         if confirmed:
-            flag.name, flag.color, flag.comments, new_comment = response
+            flag.name, flag.color, flag.comments, new_comment, flag.resolved = response
             if new_comment: flag.addComment(self.series.user, new_comment)
             self.generateView(generate_image=False)
             self.saveState()

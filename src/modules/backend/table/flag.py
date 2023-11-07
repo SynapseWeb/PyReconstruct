@@ -116,6 +116,29 @@ class FlagTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
     
+    def markResolved(self, flags : list, resolved : bool):
+        """Edit the resolved status of a flag.
+        
+            Params:
+                flags (list): the list of flags to modify
+                resolved (bool): the resolve status to set for the flag
+        """
+        self.mainwindow.saveAllData()
+
+        for snum, flag in flags:
+            section = self.series.loadSection(snum)
+            for i, f in enumerate(section.flags):
+                if flag.equals(f):
+                    f.resolved = resolved
+                    break
+            section.save()
+
+        self.updateSection(section)
+
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+    
     def close(self):
         """Close all tables."""
         for table in self.tables:

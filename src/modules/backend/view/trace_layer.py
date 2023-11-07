@@ -109,9 +109,7 @@ class TraceLayer():
             field_y,
             radius=radius,
             traces_in_view=self.traces_in_view,
-            include_hidden=self.show_all_traces,
-            include_ztraces=self.series.options["show_ztraces"],
-            include_flags=self.series.options["show_flags"]
+            include_hidden=self.show_all_traces
         )
     
     def getTraces(self, pix_poly : list) -> list[Trace]:
@@ -718,8 +716,10 @@ class TraceLayer():
         
         # draw flags
         self.flags_in_view = []
-        if self.series.options["show_flags"]:
+        if self.series.options["show_flags"] != "none":
             for flag in self.section.flags:
+                if self.series.options["show_flags"] == "unresolved" and flag.resolved:
+                    continue
                 if flag not in self.section.temp_hide:
                     self._drawFlag(trace_layer, flag)
                 

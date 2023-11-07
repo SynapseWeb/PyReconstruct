@@ -1414,6 +1414,8 @@ class Series():
                 return None
             elif attr_name == "comment":
                 return ""
+            elif attr_name == "alignment":
+                return None
             else:
                 return
         else:

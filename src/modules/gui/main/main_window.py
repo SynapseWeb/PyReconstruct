@@ -1783,6 +1783,8 @@ class MainWindow(QMainWindow):
             Params:
                 alignment_name (str): the name of the alignment ro switch to
         """
+        self.saveAllData()
+        
         alignments = list(self.field.section.tforms.keys())
 
         response, confirmed = AlignmentDialog(

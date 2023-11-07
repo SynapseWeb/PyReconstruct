@@ -67,6 +67,7 @@ class ObjectTableWidget(QDockWidget):
             "Trace tags": False,
             "Last user": True,
             "Curate": False,
+            "Alignment": False,
             "Comment": True
         }
         self.re_filters = set([".*"])
@@ -197,6 +198,7 @@ class ObjectTableWidget(QDockWidget):
                     ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
                 ]
             },
+            ("setalignment_act", "Set alignment for object(s)...", "", self.editAlignment),
             None,
             ("history_act", "View history", "", self.viewHistory),
             None,
@@ -305,6 +307,11 @@ class ObjectTableWidget(QDockWidget):
                     item.setBackground(cr_color)
                 self.table.setItem(row, col, item)
                 col += 1
+        if self.columns["Alignment"]:
+            alignment = self.series.getObjAttr(name, "alignment")
+            if alignment is None: alignment = ""
+            self.table.setItem(row, col, QTableWidgetItem(alignment))
+            col += 1
         if self.columns["Comment"]:
             comment = self.series.getObjAttr(name, "comment")
             self.table.setItem(row, col, QTableWidgetItem(comment))
@@ -591,6 +598,27 @@ class ObjectTableWidget(QDockWidget):
         self.series.addLog(obj_name, None, "Edit object comment")
         self.updateObjects([obj_name])
     
+    def editAlignment(self):
+        """Edit alignment for object(s)."""
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
+            notify("Please select one object to edit.")
+            return
+        
+        structure = [
+            ["Alignment:", (True, "combo", self.mainwindow.field.section.tforms.keys())]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
+        if not confirmed:
+            return
+        
+        alignment = response[0]
+        for obj_name in obj_names:
+            self.series.setObjAttr(obj_name, "alignment", alignment)
+            self.series.addLog(obj_name, None, "Edit default alignment")
+        
+        self.refresh()
+        
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
         obj_names = self.getSelectedObjects()

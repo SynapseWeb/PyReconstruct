@@ -53,8 +53,10 @@ class FlagTableWidget(QDockWidget):
             "Section": True,
             "Flag": True,
             "Color": True,
+            "Resolved": False,
             "Last Comment": True
         }
+        self.show_resolved = False
         self.re_filters = set([".*"])
         self.color_filter = None
         self.comment_filter = None
@@ -91,6 +93,7 @@ class FlagTableWidget(QDockWidget):
                         "text": "Filter",
                         "opts":
                         [
+                            ("displayresolved_act", "Display resolved flags", "checkbox", self.toggleDisplayResolved),
                             ("refilter_act", "Regex filter...", "", self.setREFilter),
                             {
                                 "attr_name": "colormenu",
@@ -102,7 +105,6 @@ class FlagTableWidget(QDockWidget):
                                 ]
                             },
                             ("commentfilter_act", "Comment text...", "", self.setCommentFilter)
-                            
                         ]
                     }
                 ]
@@ -118,6 +120,16 @@ class FlagTableWidget(QDockWidget):
         context_menu_list = [
             ("editattribtues_act", "View / Edit...", "", self.editFlag),
             ("flagcolorfilter_act", "Use as color filter", "", self.setColorFilter),
+            None,
+            {
+                "attr_name": "resolvemenu",
+                "text": "Resolve",
+                "opts":
+                [
+                    ("resolve_act", "Mark as resolved", "", self.markResolved),
+                    ("unresolved_act", "Mark as unresolved", "", lambda : self.markResolved(False))
+                ]
+            },
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -146,6 +158,9 @@ class FlagTableWidget(QDockWidget):
             item.setBackground(QColor(*flag.color))
             self.table.setItem(row, col, item)
             col += 1
+        if self.columns["Resolved"]:
+            resolved = "Resolved" if flag.resolved else "Unresolved"
+            self.table.setItem(row, col, QTableWidgetItem(resolved))
         if self.columns["Last Comment"]:
             if flag.comments:
                 comment = flag.comments[-1].text
@@ -163,7 +178,11 @@ class FlagTableWidget(QDockWidget):
         
             Params:
                 name (str): the name of the object
-        """        
+        """
+        # check resolved
+        if not self.show_resolved and flag.resolved:
+            return False
+        
         # check regex
         passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
@@ -325,13 +344,14 @@ class FlagTableWidget(QDockWidget):
         snum, flag = self.getSelectedFlag()
         if not flag:
             notify("Please edit one flag at a time.")
+            return
         
         response, confirmed = FlagDialog(self.mainwindow, flag).exec()
         if not confirmed:
             return
         
         nf = flag.copy()
-        nf.name, nf.color, nf.comments, new_comment = response
+        nf.name, nf.color, nf.comments, new_comment, nf.resolved = response
         if new_comment: nf.addComment(self.series.user, new_comment)
 
         # keep track of scroll bar position
@@ -342,6 +362,18 @@ class FlagTableWidget(QDockWidget):
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
+    
+    def markResolved(self, resolved=True):
+        """Mark a flag as resolved or unresolved.
+            
+            Params:
+                resolved (bool): the resolved status
+        """
+        flags = self.getSelectedFlag()
+        if not flags:
+            return
+        
+        self.manager.markResolved(flags, resolved)
 
     def deleteFlags(self):
         """Delete an object or objects on every section."""
@@ -394,7 +426,12 @@ class FlagTableWidget(QDockWidget):
                 items.append(self.table.item(r, c).text())
             csv_file.write(",".join(items) + "\n")
         # close file
-        csv_file.close()        
+        csv_file.close()
+    
+    def toggleDisplayResolved(self):
+        """Toggle whether or not resolved flags are displayed in the table."""
+        self.show_resolved = self.displayresolved_act.isChecked()
+        self.createTable()
     
     def setREFilter(self):
         """Set a new regex filter for the list."""

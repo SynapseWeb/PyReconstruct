@@ -149,6 +149,11 @@ class Section():
         # remove no-alignment if present
         if "no-alignment" in section_data["tforms"]:
             del(section_data["tforms"]["no-alignment"])
+        
+        # iterate through flags and add resolved status
+        for flag in section_data["flags"]:
+            if len(flag) == 5:
+                flag.append(False)
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.
@@ -434,9 +439,7 @@ class Section():
             field_y : float,
             radius=0.5,
             traces_in_view : list[Trace] = None,
-            include_hidden=False,
-            include_ztraces=True,
-            include_flags=True):
+            include_hidden=False):
         """Find closest trace/ztrace to field coordinates in a given radius.
         
             Params:
@@ -495,7 +498,7 @@ class Section():
                 closest_trace_interior = trace
         
         # check for ztrace points close by
-        if include_ztraces:
+        if self.series.options["show_ztraces"]:
             for ztrace in self.series.ztraces.values():
                 for i, pt in enumerate(ztrace.points):
                     if pt[2] == self.n:
@@ -507,8 +510,11 @@ class Section():
                             closest_type = "ztrace_pt"
         
         # check for flags close by
-        if include_flags:
+        show_flags = self.series.options["show_flags"]
+        if show_flags != "none":
             for flag in self.flags:
+                if show_flags == "unresolved" and flag.resolved:
+                    continue
                 x, y = tform.map(flag.x, flag.y)
                 dist = distance(field_x, field_y, x, y)
                 if closest is None or dist < min_distance:

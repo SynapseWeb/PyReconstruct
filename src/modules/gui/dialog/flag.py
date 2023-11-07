@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QStyle,
     QLineEdit,
     QScrollArea,
-    QApplication
+    QApplication,
+    QCheckBox
 )
 
 from modules.datatypes import Flag
@@ -68,6 +69,10 @@ class FlagDialog(QDialog):
         self.new_comment = QTextEdit(self)
         self.new_comment.textChanged.connect(self.resizeNewComment)
         self.vlayout.addWidget(self.new_comment)
+
+        self.resolved = QCheckBox(self, text="Resolved")
+        self.resolved.setChecked(flag.resolved)
+        self.vlayout.addWidget(self.resolved)
         
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
@@ -144,6 +149,7 @@ class FlagDialog(QDialog):
                 hlayout, comment = self.fields[index]
                 comments.append(comment)
             new_comment = self.new_comment.toPlainText()
-            return (title, color, comments, new_comment), True
+            resolved = self.resolved.isChecked()
+            return (title, color, comments, new_comment, resolved), True
         else:
             return None, False

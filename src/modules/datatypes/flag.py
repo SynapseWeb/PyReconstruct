@@ -2,7 +2,7 @@ from datetime import datetime
 
 class Flag():
 
-    def __init__(self, name, x, y, color, comments=None):
+    def __init__(self, name, x, y, color, comments=None, resolved=False):
         self.name = name
         self.x = x
         self.y = y
@@ -11,12 +11,13 @@ class Flag():
             self.comments = comments
         else:
             self.comments = []
+        self.resolved = resolved
     
     def addComment(self, user, text):
         self.comments.append(Comment(user, text))
     
     def getList(self):
-        return [self.name, self.x, self.y, self.color, [c.getList() for c in self.comments]]
+        return [self.name, self.x, self.y, self.color, [c.getList() for c in self.comments], self.resolved]
     
     def fromList(l):
         (
@@ -24,10 +25,11 @@ class Flag():
             x,
             y,
             color,
-            comments
+            comments,
+            resolved
         ) = tuple(l)
         comments = [Comment.fromList(c) for c in comments]
-        return Flag(title, x, y, color, comments)
+        return Flag(title, x, y, color, comments, resolved)
     
     def copy(self):
         return Flag(
@@ -35,21 +37,22 @@ class Flag():
             self.x, 
             self.y, 
             self.color, 
-            [c.copy() for c in self.comments]
+            [c.copy() for c in self.comments],
+            self.resolved
         )
 
     def __lt__(self, other):
         return self.name < other.name
 
     def equals(self, other):
-
         return (
             self.name == other.name and
             abs(self.x - other.x) < 1e-6 and
             abs(self.y - other.y) < 1e-6 and
             self.color == other.color and
             len(self.comments) == len(other.comments) and
-            all([sc.equals(oc) for sc, oc in zip(self.comments, other.comments)])
+            all([sc.equals(oc) for sc, oc in zip(self.comments, other.comments)]),
+            self.resolved == other.resolved
         )
 
 def getDateTime():

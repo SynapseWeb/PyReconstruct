@@ -614,7 +614,7 @@ class MousePalette():
         self.modifyPalette(self.series.palette_traces[self.series.palette_index[0]])
         self.activatePaletteButton(self.series.palette_index[1])
     
-    def setFlag(self, name : str = None, color : tuple = None, font_size : int = None, display_flags : bool = None):
+    def setFlag(self, name : str = None, color : tuple = None, font_size : int = None, display_flags : str = None):
         """Set the default flag in the palette."""
         regenerate_view = False
         if name is not None:
@@ -651,13 +651,22 @@ class MousePalette():
             ["Default name:", ("text", self.series.options["flag_name"])],
             ["Default color:", ("color", self.series.options["flag_color"])],
             ["Size of all flags: ", ("int", self.series.options["flag_size"], tuple(range(1, 100)))],
-            [("check", ("Display flags in field", self.series.options["show_flags"]))]
+            ["Display"],
+            [("radio",
+              ("All flags", self.series.options["show_flags"] == "all"),
+              ("Only unresolved flags", self.series.options["show_flags"] == "unresolved"),
+              ("No flags", self.series.options["show_flags"] == "none")
+            )]
         ]
         response, confirmed = QuickDialog.get(self.mainwindow, structure, "Flag")
         if not confirmed:
             return
         
-        self.setFlag(response[0], response[1], response[2], response[3][0][1])
+        if response[3][0][1]: show_flags = "all"
+        elif response[3][2][1]: show_flags = "none"
+        else: show_flags = "unresolved"
+        
+        self.setFlag(response[0], response[1], response[2], show_flags)
         
     def resize(self):
         """Move the buttons to fit the main window."""

@@ -477,6 +477,11 @@ class Series():
                     if obj_name not in obj_attrs:
                         obj_attrs[obj_name] = {}
                     obj_attrs[obj_name]["curation"] = curation
+        
+        # check series option for flags
+        show_flags = series_data["options"]["show_flags"]
+        if type(show_flags) is bool:
+            series_data["options"]["show_flags"] = "unresolved" if show_flags else "none"
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -548,7 +553,7 @@ class Series():
         options["show_ztraces"] = False
         options["find_zoom"] = 95
         options["autoseg"] = {}
-        options["show_flags"] = True
+        options["show_flags"] = "unresolved"
         options["flag_name"] = ""
         options["flag_color"] = (255, 0, 0)
         options["flag_size"] = 14

@@ -61,11 +61,14 @@ class ObjectData():
             self.traces[section.n] = []
         alignment = series.getObjAttr(trace.name, "alignment")
         if alignment is None: alignment = series.alignment
+
+        if alignment == "no-alignment":
+            tform = Transform([1, 0, 0, 0, 1, 0])
+        else:
+            tform = section.tforms[alignment]
+
         self.traces[section.n].append(
-            TraceData(
-                trace,
-                section.tforms[alignment]
-            )
+            TraceData(trace, tform)
         )
     
     def clearSection(self, snum : int):
@@ -173,6 +176,7 @@ class SeriesData():
             if log_events and not self.supress_logging:
                 for obj_name in added_objects:
                     self.series.addLog(obj_name, None, "Create object")
+                    self.series.setObjAttr(obj_name, "alignment", self.series.alignment)  # set the fixed alignment of the object to creation
                 for obj_name in removed_objects:
                     self.series.addLog(obj_name, None, "Delete object")
                     # remove object from object attributes dicts

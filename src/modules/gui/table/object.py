@@ -198,7 +198,7 @@ class ObjectTableWidget(QDockWidget):
                     ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
                 ]
             },
-            ("setalignment_act", "Set alignment for object(s)...", "", self.editAlignment),
+            ("setalignment_act", "Change object alignment...", "", self.editAlignment),
             None,
             ("history_act", "View history", "", self.viewHistory),
             None,
@@ -606,7 +606,7 @@ class ObjectTableWidget(QDockWidget):
             return
         
         structure = [
-            ["Alignment:", (True, "combo", self.mainwindow.field.section.tforms.keys())]
+            ["Alignment:", (True, "combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
         if not confirmed:

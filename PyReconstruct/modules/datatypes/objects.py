@@ -15,7 +15,7 @@ class Objects():
         """
         return SeriesObject(self.series, obj_name)
 
-    def __repr__(self):
+    def getNames(self):
         """Return all of the object names."""
         return list(sorted(self.series.data["objects"].keys()))
 
@@ -37,7 +37,7 @@ class Objects():
             out_str += f"{self.series.data.getFlatArea(obj_name)},"
             out_str += f"{self.series.data.getVolume(obj_name)},"
             out_str += f"{':'.join(self.series.object_groups.getObjectGroups(obj_name))},"
-            out_str += f"{self.series.data.getTags(obj_name)},"
+            out_str += f"{':'.join(self.series.data.getTags(obj_name))},"
             out_str += f"{self.series.getObjAttr(obj_name, 'last_user')},"
             curation = self.series.getObjAttr(obj_name, "curation")
             if curation:

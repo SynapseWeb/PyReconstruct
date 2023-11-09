@@ -12,6 +12,7 @@ from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
+from .objects import Objects
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
@@ -114,6 +115,9 @@ class Series():
             self.user = os.getlogin()
         except:
             self.user = ""
+
+        # objects for non-GUI users
+        self.objects = Objects(self)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD

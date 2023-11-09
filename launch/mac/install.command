@@ -16,7 +16,7 @@ chmod u+x ./launch/mac/run.command
 # Make virtual environment and install dependencies
 python -m venv env
 source ./env/bin/activate
-pip install -r ./src/requirements.txt
+pip install -r ./PyReconstruct/requirements.txt
 deactivate
 
 echo "Installation complete. Please close this window."

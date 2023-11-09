@@ -19,5 +19,5 @@ if [ ! -f "env/bin/activate" ]; then
 fi
 
 source env/bin/activate
-pip install -r src/requirements.txt
-python src/PyReconstruct.py
+pip install -r PyReconstruct/requirements.txt
+python PyReconstruct/run.py

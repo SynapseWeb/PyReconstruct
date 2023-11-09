@@ -350,21 +350,3 @@ class SeriesData():
         for data in self.data["sections"].values():
             c += len(data["flags"])
         return c
-
-    def exportQuantCSV(self, out_fp : str):
-        """Export a CSV containing the quantitative data for all objects.
-        
-            Params:
-                out_fp (str): the filepath for the newly created CSV
-        """
-        out_str = "Name,Start,End,Count,Flat_Area,Volume\n"
-        for obj_name in sorted(self.data["objects"].keys()):
-            out_str += f"{obj_name},"
-            out_str += f"{self.getStart(obj_name)},"
-            out_str += f"{self.getEnd(obj_name)},"
-            out_str += f"{self.getCount(obj_name)},"
-            out_str += f"{self.getFlatArea(obj_name)},"
-            out_str += f"{self.getVolume(obj_name)}\n"
-        
-        with open(out_fp, "w") as f:
-            f.write(out_str)

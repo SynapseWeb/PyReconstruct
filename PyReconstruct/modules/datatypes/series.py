@@ -1576,6 +1576,11 @@ class Series():
         
         # delete old_name
         self.removeObjAttrs(old_name)
+    
+    def getAlignments(self) -> list:
+        """Return a list of alignment names."""
+        example_section = self.sections[list(self.sections.keys())[0]]
+        return list(example_section.tforms.keys())
 
 
 class SeriesIterator():

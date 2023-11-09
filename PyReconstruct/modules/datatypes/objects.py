@@ -15,6 +15,51 @@ class Objects():
         """
         return SeriesObject(self.series, obj_name)
 
+    def __repr__(self):
+        """Return all of the object names."""
+        return list(sorted(self.series.data["objects"].keys()))
+
+    def exportCSV(self, out_fp : str = None):
+        """Export a CSV containing the quantitative data for all objects.
+        
+            Params:
+                out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
+        """
+        out_str = "Name,Start,End,Count,Flat_Area,Volume,Groups,"
+        out_str += "Trace_Tags,Last_User,Curation_Status,Curation_User,"
+        out_str += "Curation_Date,Alignment,Comment\n"
+
+        for obj_name in sorted(self.data["objects"].keys()):
+            out_str += f"{obj_name},"
+            out_str += f"{self.series.data.getStart(obj_name)},"
+            out_str += f"{self.series.data.getEnd(obj_name)},"
+            out_str += f"{self.series.data.getCount(obj_name)},"
+            out_str += f"{self.series.data.getFlatArea(obj_name)},"
+            out_str += f"{self.series.data.getVolume(obj_name)},"
+            out_str += f"{':'.join(self.series.object_groups.getObjectGroups(obj_name))},"
+            out_str += f"{self.series.data.getTags(obj_name)},"
+            out_str += f"{self.series.getObjAttr(obj_name, 'last_user')},"
+            curation = self.series.getObjAttr(obj_name, "curation")
+            if curation:
+                status, user, date = tuple(curation)
+                if status:
+                    status = "Curated"
+                else:
+                    status = "Needs Curation"
+            else:
+                status = user = date = ""
+            out_str += f"{status},{user},{date},"
+            alignment = self.series.getObjAttr(obj_name, "alignment")
+            if not alignment: alignment = ""
+            out_str += f"{alignment},"
+            out_str += f"{self.series.getObjAttr(obj_name, 'comment')}\n"
+            
+        if out_fp:
+            with open(out_fp, "w") as f:
+                f.write(out_str)
+        else:
+            return out_str
+
 class SeriesObject():
 
     def __init__(self, series, obj_name : str):
@@ -85,3 +130,8 @@ class SeriesObject():
     @alignment.setter
     def alignment(self, value):
         self.series.getObjAttr(self.name, "alignment", value)
+        self.series.data.refresh()  # refresh the series data
+    
+    @property
+    def groups(self):
+        return self.series.object_groups.getObjectGroups(self.name)

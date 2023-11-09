@@ -15,6 +15,7 @@ if __name__ == "__main__":
 import PyReconstruct.modules.gui.main as main
 
 def runPyReconstruct(filename=None):
+    print("Hello Andrea :)")
     # STOPGAP FOR WAYLAND QT ISSUE
     # https://stackoverflow.com/questions/68417682/qt-and-opencv-app-not-working-in-virtual-environment
 

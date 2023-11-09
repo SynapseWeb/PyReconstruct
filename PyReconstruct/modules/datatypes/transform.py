@@ -86,6 +86,7 @@ class Transform():
         return Transform.fromQTransform(t)
     
     def copy(self):
+        """Returns a copy of the transform."""
         return Transform(self.tform.copy())
     
     def __mul__(self, other):
@@ -104,7 +105,12 @@ class Transform():
         self.tform[5] *= new_mag / prev_mag
     
     def estimateLinearTform(pts1, pts2):
-        """Estimate the transform that converts pts1 to pts2."""
+        """Estimate the transform that converts pts1 to pts2.
+        
+            Params:
+                pts1 (list): the list of original points
+                pts2 (list): the list of points to transform into
+        """
         combs = tuple(combinations(range(len(pts1)), 3))
         sum_mat = np.zeros((2, 3), dtype=np.float32)
         for c in combs:

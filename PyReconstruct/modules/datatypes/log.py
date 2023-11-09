@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 def getDateTime():
@@ -34,6 +33,11 @@ class Log():
         self.event = event
     
     def __eq__(self, other):
+        """Compare log objects.
+        
+            Params:
+                other (Log): the log to compare to
+        """
         return (
             self.date == other.date and
             self.time == other.time and
@@ -145,7 +149,14 @@ class LogSet():
         self.all_logs = []
     
     def addLog(self, user : str, obj_name : str, snum : int, event : str):
-        """Add a log to the set."""
+        """Add a log to the set.
+        
+            Params:
+                user (str): the user creating the log
+                obj_name (str): the name of the object associated with the log
+                snum (int): the section number associated with the log
+                event (str): the description of the event
+        """
         # compare the user to the last log
         if self.all_logs and user != self.all_logs[-1].user:
             # clear dynamic log if so
@@ -199,7 +210,12 @@ class LogSet():
         # print(str(self).replace(", ", "\t"))
     
     def addExistingLog(self, log : Log, track_dyn=False):
-        """Add an existing log object to the set."""
+        """Add an existing log object to the set.
+        
+            Params:
+                log (Log): the log to add to the set
+                track_dyn (bool): True if log should be dynamically tracked
+        """
         self.all_logs.append(log)
         if track_dyn:
             if log.section_ranges:
@@ -209,7 +225,13 @@ class LogSet():
                 self.dyn_logs[obj_key][log.event] = log
     
     def getLogList(self, as_str=False):
-        """Return the stored logs as a list."""
+        """Return the stored logs as a list.
+        
+            Params:
+                as_str (bool): True if the log should be returned in str format
+            Returns:
+                the log list in list or str format
+        """
         if as_str:
             logs_str = []
             for log in self.all_logs:
@@ -221,8 +243,8 @@ class LogSet():
     def __str__(self):
         return self.getLogList(as_str=True)
 
-    def getList(self):
-        """Return log set as a list."""
+    def getList(self) -> list:
+        """Return log set as a list"""
         log_list = self.getLogList()
         for i, log in enumerate(log_list):
             log_list[i] = str(log)
@@ -230,7 +252,11 @@ class LogSet():
         return log_list
     
     def fromList(log_list : list):
-        """Get a log set from a list."""
+        """Get a log set from a list.
+        
+            Params:
+                log_list (list): the list representation of the logs
+        """
         log_set = LogSet()
         for log_str in log_list:
             log = Log.fromStr(log_str)
@@ -239,15 +265,12 @@ class LogSet():
         return log_set
     
     def removeCuration(self, obj_name : str):
-        """Remove all curation logs in the session."""
+        """Remove all curation logs in the session.
+        
+            Params:
+                obj_name (str): the name of the object to remove curation for
+        """
         for log in self.all_logs.copy():
             if (obj_name == log.obj_name and 
                 ("curated" in log.event or "curation" in log.event)):
                 self.all_logs.remove(log)
-
-
-
-        
-
-
-        

@@ -2199,29 +2199,29 @@ class MainWindow(QMainWindow):
         self.field.zarr_layer.mergeLabels()
         self.field.generateView()
     
-    def mergeObjects(self, new_name=None):
-        """Merge full objects across the series.
+    # def mergeObjects(self, new_name=None):
+    #     """Merge full objects across the series.
         
-            Params:
-                new_name (str): the new name for the merged objects
-        """            
-        names = set()
-        for trace in self.field.section.selected_traces:
-            names.add(trace.name)
-        names = list(names)
+    #         Params:
+    #             new_name (str): the new name for the merged objects
+    #     """            
+    #     names = set()
+    #     for trace in self.field.section.selected_traces:
+    #         names.add(trace.name)
+    #     names = list(names)
         
-        if not new_name:
-            new_name, confirmed = QInputDialog.getText(
-                self,
-                "Object Name",
-                "Enter the desired name for the merged object:",
-                text=names[0]
-            )
-            if not confirmed or not new_name:
-                return
+    #     if not new_name:
+    #         new_name, confirmed = QInputDialog.getText(
+    #             self,
+    #             "Object Name",
+    #             "Enter the desired name for the merged object:",
+    #             text=names[0]
+    #         )
+    #         if not confirmed or not new_name:
+    #             return
         
-        self.series.mergeObjects(names, new_name)
-        self.field.reload()
+    #     self.series.mergeObjects(names, new_name)
+    #     self.field.reload()
     
     def edit3DSmoothing(self, smoothing_alg : str = ""):
         """Modify the algorithm used for 3D smoothing.

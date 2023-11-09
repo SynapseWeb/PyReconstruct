@@ -12,7 +12,6 @@ class TraceData():
             Params:
                 trace (Trace): the trace object for the trace
                 tform (Transform): the transform applied to the trace
-                index (int): the index of the trace in the contour
         """
         self.closed = trace.closed
         self.negative = trace.negative
@@ -45,7 +44,7 @@ class ObjectData():
         """Create an object data object."""
         self.traces = {}
     
-    def isEmpty(self):
+    def isEmpty(self) -> bool:
         """Return True of object data is empty."""
         return not bool(self.traces)
     
@@ -113,8 +112,8 @@ class SeriesData():
         
             Params:
                 section (Section): the section with data to update
-                series (Series): the series containing the section
-                update_traces (bool): True if traces should also be updated
+                update_traces (bool): True if all traces should also be updated
+                log_events (bool): True if events (creating and deleting objects) should be logged
         """
         # create/update the data for a section
         if section.n not in self.data["sections"]:
@@ -209,24 +208,36 @@ class SeriesData():
 
         return new_object
     
-    def getStart(self, obj_name : str):
-        """Get the first section of the object."""
+    def getStart(self, obj_name : str) -> int:
+        """Get the first section of the object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None or obj_data.isEmpty():
             return None
         
         return min(obj_data.traces.keys())
         
-    def getEnd(self, obj_name : str):
-        """Get the last section of the object."""
+    def getEnd(self, obj_name : str) -> int:
+        """Get the last section of the object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None or obj_data.isEmpty():
             return None
         
         return max(obj_data.traces.keys())
     
-    def getCount(self, obj_name : str):
-        """Get the number of traces associated with the object."""
+    def getCount(self, obj_name : str) -> int:
+        """Get the number of traces associated with the object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None:
             return None
@@ -236,8 +247,12 @@ class SeriesData():
             c += len(trace_list)
         return c
     
-    def getFlatArea(self, obj_name : str):
-        """Get the flat area of the object."""
+    def getFlatArea(self, obj_name : str) -> float:
+        """Get the flat area of the object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None:
             return None
@@ -251,8 +266,12 @@ class SeriesData():
                     fa += trace_data.getLength() * self.data["sections"][snum]["thickness"]
         return fa
 
-    def getVolume(self, obj_name : str):
-        """Get the volume of the object."""
+    def getVolume(self, obj_name : str) -> float:
+        """Get the volume of the object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None:
             return None
@@ -263,8 +282,12 @@ class SeriesData():
                 v += trace_data.getArea() * self.data["sections"][snum]["thickness"]
         return v
     
-    def getTags(self, obj_name : str):
-        """Get the tags associated with an object."""
+    def getTags(self, obj_name : str) -> set:
+        """Get the tags associated with an object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
         obj_data = self.data["objects"].get(obj_name)
         if obj_data is None:
             return None
@@ -275,16 +298,28 @@ class SeriesData():
                 tags = tags.union(trace_data.getTags())
         return tags
 
-    def getZtraceDist(self, ztrace_name : str):
-        """Get the distance of a ztrace."""
+    def getZtraceDist(self, ztrace_name : str) -> float:
+        """Get the distance of a ztrace.
+        
+            Params:
+                ztrace_name (str): the name of the ztrace to retrieve data for
+        """
         return self.series.ztraces[ztrace_name].getDistance(self.series)
 
-    def getZtraceStart(self, ztrace_name : str):
-        """Get the first section of a ztrace."""
+    def getZtraceStart(self, ztrace_name : str) -> int:
+        """Get the first section of a ztrace.
+        
+            Params:
+                ztrace_name (str): the name of the ztrace to retrieve data for
+        """
         return self.series.ztraces[ztrace_name].getStart()
     
-    def getZtraceEnd(self, ztrace_name : str):
-        """Get the last section of a ztrace."""
+    def getZtraceEnd(self, ztrace_name : str) -> int:
+        """Get the last section of a ztrace.
+        
+            Params:
+                ztrace_name (str): the name of the ztrace to retrieve data for
+        """
         return self.series.ztraces[ztrace_name].getEnd()
     
     def clearSection(self, snum : int):
@@ -296,18 +331,20 @@ class SeriesData():
         for obj_data in self.data["objects"].values():
             obj_data.clearSection(snum)
         
-    def getTraceData(self, name : str, snum : int):
+    def getTraceData(self, name : str, snum : int) -> list:
         """Get the list of trace data objects.
         
             Params:
                 name (str): the name of the object/trace
                 snum (int): the section number
+            Returns:
+                (list): the list of TraceData objects
         """
         if name in self.data["objects"] and snum in self.data["objects"][name].traces:
             return self.data["objects"][name].traces[snum]
         return None
 
-    def getFlagCount(self):
+    def getFlagCount(self) -> int:
         """Get the number of flags in the series."""
         c = 0
         for data in self.data["sections"].values():
@@ -316,8 +353,6 @@ class SeriesData():
 
     def exportQuantCSV(self, out_fp : str):
         """Export a CSV containing the quantitative data for all objects.
-
-        (Meant for use outside of GUI)
         
             Params:
                 out_fp (str): the filepath for the newly created CSV

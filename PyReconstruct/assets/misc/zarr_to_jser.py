@@ -79,7 +79,7 @@ for snum in range(*srange):
             ext[:,0] += window[0]
             ext[:,1] += window[1]
             # apply reverse transform
-            tform = Transform(alignment[str(snum)])
+            tform = alignment[str(snum)])
             trace_points = tform.map(ext.tolist(), inverted=True)
             # get the trace color
             if id not in colors:

@@ -18,7 +18,8 @@ class ObjGroupDict():
         
             Params:
                 group (str): the group
-                obj (str): the object to add to the group"""
+                obj (str): the object to add to the group
+        """
         if group not in self.groups:
             self.groups[group] = set()
         self.groups[group].add(obj)
@@ -82,6 +83,8 @@ class ObjGroupDict():
         
             Params:
                 obj (str): the object to get the groups for
+            Returns:
+                (set): the groups associated with the obj
         """
         try:
             return self.objects[obj]
@@ -93,6 +96,8 @@ class ObjGroupDict():
         
             Params:
                 group (str): the group to get objects for
+            Returns:
+                (set): the objects associated with the group
         """
         try:
             return self.groups[group]
@@ -116,7 +121,7 @@ class ObjGroupDict():
         return list(self.objects.keys())
     
     def merge(self, other):
-        """Merge another object group dict into self."""
+        """Merge other object group dict into self."""
         for group in other.getGroupList():
             for obj in other.getGroupObjects(group):
                 self.add(group, obj)

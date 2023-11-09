@@ -29,7 +29,7 @@ class Objects():
         out_str += "Trace_Tags,Last_User,Curation_Status,Curation_User,"
         out_str += "Curation_Date,Alignment,Comment\n"
 
-        for obj_name in sorted(self.data["objects"].keys()):
+        for obj_name in sorted(self.series.data["objects"].keys()):
             out_str += f"{obj_name},"
             out_str += f"{self.series.data.getStart(obj_name)},"
             out_str += f"{self.series.data.getEnd(obj_name)},"

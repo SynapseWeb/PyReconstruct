@@ -16,7 +16,7 @@ class Trace():
             Params:
                 name (str): the name of the trace
                 color (tuple): the color of the trace: (R, G, B) 0-255
-                closed (bool): whether or not the trace is closed
+                closed (bool): True if trace is closed
         """
         self.name = name
         self.color = color
@@ -223,7 +223,7 @@ class Trace():
         return new_trace
     
     # STATIC METHOD
-    def fromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None, palette=False):
+    def fromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None):
         """Create a trace from an xml contour object.
         
             Params:
@@ -299,11 +299,13 @@ class Trace():
         else:
             return c
     
-    def getRadius(self, tform : Transform = None):
+    def getRadius(self, tform : Transform = None) -> float:
         """Get the distance from the centroid of the trace to its farthest point.
         
             Params:
                 tform (Transform): the transform to apply to the points
+            Returns:
+                (float): the radius of the trace
         """
         points = self.points.copy()
         if tform:
@@ -354,7 +356,14 @@ class Trace():
         self.points = [(x + xc, y + yc) for x, y in self.points]
     
     def getStretched(self, w : float, h : float):
-        """Get the trace stretched to a specific w and h."""
+        """Get the trace stretched to a specific w and h.
+        
+            Params:
+                w (float): the width of the resulting trace
+                h (float): the height of the resulting trace
+            Returns:
+                (Trace): the resulting trace
+        """
         new_trace = self.copy()
 
         # get constants
@@ -390,7 +399,11 @@ class Trace():
             self.points[i] = (x, y)
 
     def mergeTags(self, other):
-        """Merge the tags of two traces."""
+        """Merge the tags of two traces.
+        
+            Params:
+                other (Trace): the trace to merge tags with
+        """
         self.tags = self.tags.union(other.tags)
 
 def convertMode(arg):

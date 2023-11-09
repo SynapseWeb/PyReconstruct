@@ -40,24 +40,36 @@ class Contour():
         )
     
     def append(self, trace : Trace):
-        """Append a trace to the existing traces."""
+        """Append a trace to the existing traces.
+        
+            Params:
+                trace (Trace): the trace to append to the contour
+        """
         if trace.name != self.name:
             raise Exception("Trace name does not match contour name")
         self.traces.append(trace)
     
     def remove(self, trace : Trace):
-        """Remove a trace from the list."""
+        """Remove a trace from the list.
+        
+            Params:
+                trace (Trace): the trace to remove from the contour
+        """
         self.traces.remove(trace)
     
     def index(self, trace : Trace):
-        """Find the index of a trace in the list."""
+        """Find the index of a trace in the list.
+        
+            Params:
+                trace (Trace): the trace to find the index for
+        """
         return self.traces.index(trace)
     
-    def isEmpty(self):
+    def isEmpty(self) -> bool:
         """Return True if no traces associated with contour."""
         return not bool(self.traces)
     
-    def getTraces(self):
+    def getTraces(self) -> list:
         """Return the list of traces."""
         return self.traces.copy()
     
@@ -69,7 +81,12 @@ class Contour():
         return Contour(self.name, traces)
     
     def getBounds(self, tform=None):
-        """Get the bounds of the contour."""
+        """Get the bounds of the contour.
+
+            Params:
+                tform (Transform): the transform to apply to the traces
+            Returns:
+                (tuple): the (xmin, ymin, xmax, ymax) extremes for the contours"""
         values = [[], [], [], []]
         for trace in self.traces:
             for i, v in enumerate(trace.getBounds(tform)):
@@ -82,9 +99,15 @@ class Contour():
 
         return xmin, ymin, xmax, ymax
 
-    def getMidpoint(self):
-        """Get the midpoint of the contour (average of extremes)."""
-        xmin, ymin, xmax, ymax = self.getBounds()
+    def getMidpoint(self, tform=None):
+        """Get the midpoint of the contour (average of extremes).
+        
+            Params:
+                tform (Transform): the transform to apply to the traces
+            Returns:
+                (tuple): the x, y coords for the midpoint
+        """
+        xmin, ymin, xmax, ymax = self.getBounds(tform)
 
         return (xmax + xmin) / 2, (ymax + ymin) / 2
 

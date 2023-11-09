@@ -47,6 +47,8 @@ class Series():
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
         """Load the series file.
+
+        (This function is not used to open a JSER file.)
         
             Params:
                 filepath (str): the filepath for the series JSON file
@@ -119,8 +121,9 @@ class Series():
         """Process the file containing all section and series information.
         
             Params:
-                fp (str): the filepath
-                series_data (SeriesData): the series data object to store relevant data (opt)
+                fp (str): the filepath to the jser
+            Returns:
+                (Series): the series object created from the jser
         """
         # check for existing hidden folder
         sdir = os.path.dirname(fp)
@@ -252,8 +255,13 @@ class Series():
         
         return series
 
-    def saveJser(self, save_fp=None, close=False):
-        """Save the jser file."""
+    def saveJser(self, save_fp : str = None, close : bool = False):
+        """Save the jser file.
+        
+            Params:
+                save_fp (str): the optional override filepath to save the jser file
+                close (bool): True if sereis should be closed after saving
+        """
         jser_data = {}
 
         filenames = os.listdir(self.hidden_dir)
@@ -330,13 +338,13 @@ class Series():
 
         progbar.setValue(100)
     
-    def move(self, new_jser_fp : str, section : Section, b_section : Section):
+    def move(self, new_jser_fp : str, section : Section = None, b_section : Section = None):
         """Move/rename the series to its jser filepath.
         
             Params:
                 new_jser_fp (str): the new location for the series
-                section (Section): the section file being used
-                b_section (Section): the secondary section file being used
+                section (Section): the section file being used (in GUI)
+                b_section (Section): the secondary section file being used (in GUI)
             """
         # move/rename the hidden directory
         old_name = self.name
@@ -373,10 +381,13 @@ class Series():
             new_hidden_dir,
             os.path.basename(self.filepath).replace(old_name, new_name)
         )
-        section.filepath = os.path.join(
-            new_hidden_dir,
-            os.path.basename(section.filepath).replace(old_name, new_name)
-        )
+
+        # update loaded sections in GUI
+        if section:
+            section.filepath = os.path.join(
+                new_hidden_dir,
+                os.path.basename(section.filepath).replace(old_name, new_name)
+            )
         if b_section:
             b_section.filepath = os.path.join(
                 new_hidden_dir,
@@ -393,8 +404,14 @@ class Series():
             os.rmdir(self.hidden_dir)
     
     # STATIC METHOD
-    def updateJSON(series_data):
-        """Add missing attributes to the series JSON."""
+    def updateJSON(series_data : dict):
+        """Add missing attributes to the series JSON.
+
+        (Updates the dictionary in place)
+        
+            Params:
+                series_data (dict): the JSON data to update
+        """
         empty_series = Series.getEmptyDict()
         for key in empty_series:
             if key not in series_data:
@@ -487,7 +504,7 @@ class Series():
         """Convert series object into a dictionary.
         
             Returns:
-                (dict) all of the compiled section data
+                (dict): all of the compiled section data
         """
         d = {}
         
@@ -518,8 +535,12 @@ class Series():
         return d
     
     # STATIC METHOD
-    def getEmptyDict():
-        """Get an empty dictionary for a series object."""
+    def getEmptyDict() -> dict:
+        """Get an empty dictionary for a series object.
+        
+            Returns:
+                (dict): the empty series dictionary
+        """
         series_data = {}
         
         # series_data["sections"] = {}  # section_number : section_filename
@@ -633,8 +654,12 @@ class Series():
         
         return series
     
-    def isWelcomeSeries(self):
-        """Return True if self is the welcome series."""
+    def isWelcomeSeries(self) -> bool:
+        """Return True if self is the welcome series.
+        
+            Returns:
+                (bool): True if this series is the wolcome series
+        """
         try:
             if os.path.samefile(self.filepath, os.path.join(welcome_series_dir, "welcome.ser")):
                 return True
@@ -666,46 +691,60 @@ class Series():
         
             Params:
                 section_num (int): the section number
+            Returns:
+                (Section): the section
         """
         section = Section(section_num, self)
         return section
     
-    def enumerateSections(self, show_progress=True, message="Loading series data..."):
-        """Allow iteration through the sections."""
-        return SeriesIterator(self, show_progress, message)
+    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data..."):
+        """Allow iteration through the sections.
 
-    def map(self, fn, *args, message="Modifying series..."):
-        """Map a function to every section in the series.
+        Proper use in a for loop: for snum, section in series.enumerateSections():
         
             Params:
-                fn (function): the function to run on the section
-                *args: the arguments to pass into the function AFTER the section
+                show_progress (bool): True if progress should be displayed
+                message (str): the message to display by the progress bar
+            Returns:
+                (SeriesIterator): an iterable object for for loops
         """
-        # create wrapper func
-        results = {}
-        def wrapper(snum, fn, *args):
-            section = self.loadSection(snum)
-            results[snum] = fn(section, *args)
+        return SeriesIterator(self, show_progress, message)
+
+    # def map(self, fn, *args, message="Modifying series..."):
+    #     """Map a function to every section in the series.
         
-        threadpool = ThreadPoolProgBar()
+    #         Params:
+    #             fn (function): the function to run on the section
+    #             *args: the arguments to pass into the function AFTER the section
+    #     """
+    #     # create wrapper func
+    #     results = {}
+    #     def wrapper(snum, fn, *args):
+    #         section = self.loadSection(snum)
+    #         results[snum] = fn(section, *args)
+        
+    #     threadpool = ThreadPoolProgBar()
 
-        # create and run threadpool
-        for snum in self.sections:
-            threadpool.createWorker(
-                wrapper,
-                snum,
-                fn,
-                *args
-            )
-        threadpool.startAll(message)
+    #     # create and run threadpool
+    #     for snum in self.sections:
+    #         threadpool.createWorker(
+    #             wrapper,
+    #             snum,
+    #             fn,
+    #             *args
+    #         )
+    #     threadpool.startAll(message)
 
-        return results
+    #     return results
 
     def modifyAlignments(self, alignment_dict : dict, log_event=True):
         """Modify the alignments (input from dialog).
+
+        Not suggested for use outside of GUI.
         
             Params:
                 alignment_dict (dict): returned from the alignment dialog
+                log_event (bool): True if event should be logged
         """
         # change the current alignment if necessary
         if alignment_dict[self.alignment] is None:
@@ -745,7 +784,9 @@ class Series():
                     self.addLog(None, None, f"Rename alignment {old_a} to {new_a}")
     
     def getZValues(self):
-        """Return the z-values for each section.
+        """Return the z-coorindate for each section.
+
+        (Mainly for 3D use.)
         
             Returns:
                 (dict): section number : z-value
@@ -759,12 +800,13 @@ class Series():
         
         return zvals
     
-    def createZtrace(self, obj_name : str, cross_sectioned=True, log_event=True):
+    def createZtrace(self, obj_name : str, cross_sectioned : bool = True, log_event=True):
         """Create a ztrace from an existing object in the series.
         
             Params:
                 obj_name (str): the name of the object to create the ztrace from
                 cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
+                log_event (bool): True if event should be logged
         """
         ztrace_name = f"{obj_name}_zlen"
         ztrace_color = (0, 0, 0) # default to black
@@ -810,13 +852,14 @@ class Series():
 
         self.modified = True
     
-    def editZtraceAttributes(self, ztrace : Ztrace, name : str, color : tuple):
+    def editZtraceAttributes(self, ztrace : Ztrace, name : str, color : tuple, log_event=True):
         """Edit the name and color of a ztrace.
         
             Params:
                 ztrace (Ztrace): the ztrace object to modify
                 name (str): the new name
                 color (tuple): the new color
+                log_event (bool): True if event should be logged
         """
         if name:
             del(self.ztraces[ztrace.name])
@@ -826,6 +869,9 @@ class Series():
             ztrace.color = color
         
         self.modified = True
+
+        if log_event:
+            self.addLog(ztrace.name, None, "Modify ztrace")
         
     def rename(self, new_name : str):
         """Rename the series.
@@ -874,14 +920,16 @@ class Series():
             mode : tuple = None, 
             sections : list = None, 
             log_event=True):
-        """Edit the attributes of objects on every section.
+        """Edit the attributes of objects.
         
             Params:
-                series (Series): the series object
                 obj_names (list): the names of the objects to rename
                 name (str): the new name for the objects
                 color (tuple): the new color for the objects
-                addTrace (function): for object table updating purposes
+                tags (set): the tags to ADD to the traces of the objects
+                mode (tuple): the display mode to set for the traces
+                section (list): the section numbers to modify the object on (default: all)
+                log_event (bool): True if event should be logged
         """
         # preemptively create log
         if log_event:
@@ -924,7 +972,6 @@ class Series():
             Params:
                 obj_names (list): the names of objects to modify
                 new_rad (float): the new radius for the traces of the object
-                addTrace (function): for object table updating purposes
         """
         for snum, section in self.enumerateSections(
             message="Modifying radii..."
@@ -939,13 +986,12 @@ class Series():
         
         self.modified = True
     
-    def editObjectShape(self, obj_names : list, new_shape : float):
+    def editObjectShape(self, obj_names : list, new_shape : list):
         """Change the shape of all traces of an object.
         
             Params:
                 obj_names (list): the names of objects to modify
                 new_shape (list): the new shape for the traces of the object
-                addTrace (function): for object table updating purposes
         """
         for snum, section in self.enumerateSections(
             message="Modifying shapes..."
@@ -965,6 +1011,7 @@ class Series():
         
             Params:
                 obj_names (list): a list of object names
+                log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
             message="Removing trace tags..."
@@ -996,6 +1043,7 @@ class Series():
             Params:
                 obj_names (list): the names of objects to hide
                 hide (bool): True if object should be hidden
+                log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
             message="Hiding object(s)..." if hide else "Unhiding object(s)..."
@@ -1022,6 +1070,7 @@ class Series():
         
             Params:
                 hidden (bool): True if traces are to be hidden
+                log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
             message="Hiding traces..." if hidden else "Unhiding traces..."):
@@ -1033,7 +1082,13 @@ class Series():
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
     def importHistory(self, other, traces=True, ztraces=True):
-        """Import the history from another series."""
+        """Import the history from another series.
+        
+            Params:
+                other (Series): the other series
+                traces (bool): True if trace history should be imported
+                ztraces (bool): True if the ztrace history should be imported
+        """
         self_hist = self.getFullHistory()
         other_hist = other.getFullHistory()
 
@@ -1054,7 +1109,7 @@ class Series():
                 log not in self_hist.all_logs):
                 self.log_set.addExistingLog(log)            
     
-    def importTraces(self, other, sections=None, regex_filters=[], log_event=True):
+    def importTraces(self, other, sections : list = None, regex_filters : list = [], log_event=True):
         """Import all the traces from another series.
         
             Params:
@@ -1095,8 +1150,14 @@ class Series():
         
         self.save()
     
-    def importZtraces(self, other, regex_filters=[], log_event=True):
-        """Import all the ztraces from another series."""
+    def importZtraces(self, other, regex_filters : list = [], log_event=True):
+        """Import all the ztraces from another series.
+        
+            Params:
+                other (Series): the series to import from
+                regex_filters (list): the filters for the objects to import
+                log_event (bool): True if event should be logged
+        """
         if log_event:
             self.addLog(None, None, "Begin importing ztraces from another series")
 
@@ -1124,6 +1185,7 @@ class Series():
             Params:
                 other (series): the series to import transforms from
                 alignments (list): the names of alignments to import
+                log_event (bool): True if the event should be logged
         """
         # ensure that the two series have the same sections
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
@@ -1141,8 +1203,14 @@ class Series():
 
         self.save()
     
-    def importBC(self, other, sections=None, log_event=True):
-        """Import the brightness/contrast settings from another series."""
+    def importBC(self, other, sections : list = None, log_event=True):
+        """Import the brightness/contrast settings from another series.
+        
+            Params:
+                other (Series): the other series to import from
+                sections (list): the section numbers to import b/c for (default: all)
+                log_event (bool): True if event should be logged
+        """
         # # ensure that the two series have the same sections
         # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
         #     return
@@ -1164,7 +1232,11 @@ class Series():
         self.save()
     
     def importPalettes(self, other, log_event=True):
-        """Import the palettes from another series."""
+        """Import the palettes from another series.
+        
+            Params:
+                other (Series): the series to import from
+                log_event (bool): True if event should be logged"""
         for name, palette in other.palette_traces.items():
             if name not in self.palette_traces:
                 self.palette_traces[name] = palette.copy()
@@ -1182,70 +1254,78 @@ class Series():
         self.save()
 
     # STATIC METHOD
-    def getDefaultPaletteTraces():
-        """Return the default palette trace list."""
+    def getDefaultPaletteTraces() -> list:
+        """Return the default palette trace list.
+        
+            Returns:
+                (list): the list of the default palette traces
+        """
         palette_traces = []
         for l in default_traces:
             palette_traces.append(Trace.fromList(l.copy()))
         return palette_traces * 2
 
-    def mergeObjects(self, obj_names : list, new_name : str):
-        """Merge objects on every section.
+    # def mergeObjects(self, obj_names : list, new_name : str):
+    #     """Merge objects on every section.
         
-            Params:
-                obj_names (list): the names of the objects to merge
-                new_name (str): the name for the merged object
-        """
-        # iterate through sections
-        for snum, section in self.enumerateSections(message="Merging objects..."):
-            # get the traces to modify
-            traces = []
-            for name in obj_names:
-                if name in section.contours:
-                    traces += section.contours[name].getTraces()
-                    del(section.contours[name])
-            if not traces:
-                continue
+    #         Params:
+    #             obj_names (list): the names of the objects to merge
+    #             new_name (str): the name for the merged object
+    #     """
+    #     # iterate through sections
+    #     for snum, section in self.enumerateSections(message="Merging objects..."):
+    #         # get the traces to modify
+    #         traces = []
+    #         for name in obj_names:
+    #             if name in section.contours:
+    #                 traces += section.contours[name].getTraces()
+    #                 del(section.contours[name])
+    #         if not traces:
+    #             continue
 
-            # get the color
-            color = traces[0].color
-            fill_mode = traces[0].fill_mode
+    #         # get the color
+    #         color = traces[0].color
+    #         fill_mode = traces[0].fill_mode
 
-            # get the mag
-            if self.screen_mag:
-                mag = self.screen_mag
-            else:
-                mag = section.mag
+    #         # get the mag
+    #         if self.screen_mag:
+    #             mag = self.screen_mag
+    #         else:
+    #             mag = section.mag
 
-            # iterate through and gather pixel points
-            pix_traces = []
-            for trace in traces:
-                trace.name = new_name
-                pix_traces.append(
-                    [(round(x / mag), round(y / mag)) for x, y in trace.points]
-                )
+    #         # iterate through and gather pixel points
+    #         pix_traces = []
+    #         for trace in traces:
+    #             trace.name = new_name
+    #             pix_traces.append(
+    #                 [(round(x / mag), round(y / mag)) for x, y in trace.points]
+    #             )
             
-            # merge the traces
-            new_pix_traces = mergeTraces(pix_traces)
+    #         # merge the traces
+    #         new_pix_traces = mergeTraces(pix_traces)
 
-            # create a new contour from the traces
-            for pix_trace in new_pix_traces:
-                # convert pixels back to field coords
-                field_points = [
-                    (x * mag, y * mag) for x, y in pix_trace
-                ]
-                # create the trace
-                trace = Trace(new_name, color)
-                trace.fill_mode = fill_mode
-                trace.points = field_points
-                # add it to the contour
-                section.addTrace(trace, "Created by merging objects")
+    #         # create a new contour from the traces
+    #         for pix_trace in new_pix_traces:
+    #             # convert pixels back to field coords
+    #             field_points = [
+    #                 (x * mag, y * mag) for x, y in pix_trace
+    #             ]
+    #             # create the trace
+    #             trace = Trace(new_name, color)
+    #             trace.fill_mode = fill_mode
+    #             trace.points = field_points
+    #             # add it to the contour
+    #             section.addTrace(trace, "Created by merging objects")
 
-            # save thes section
-            section.save()
+    #         # save thes section
+    #         section.save()
     
-    def getRecentSegGroup(self):
-        """Return the most recent segmentation group name."""
+    def getRecentSegGroup(self) -> str:
+        """Return the most recent segmentation group name.
+        
+            Returns:
+                (str): the name of the most recent segmentation group
+        """
         g = None
         for group in self.object_groups.getGroupList():
             if group.startswith("seg_") and (
@@ -1255,7 +1335,11 @@ class Series():
         return g
     
     def deleteDuplicateTraces(self, log_event=True):
-        """Delete all duplicate traces in the series (keep tags)."""
+        """Delete all duplicate traces in the series (keep tags).
+        
+            Params:
+                log_event (bool): True if event should be logged
+        """
         removed = {}
         for snum, section in self.enumerateSections(message="Removing duplicate traces..."):
             found_on_section = False
@@ -1299,8 +1383,12 @@ class Series():
         if obj_name:
             self.setObjAttr(obj_name, "last_user", self.user)
     
-    def getFullHistory(self):
-        """Get all the logs for the series."""
+    def getFullHistory(self) -> LogSet:
+        """Get all the logs for the series.
+        
+            Returns:
+                (LogSet): the object containing the full history
+        """
         csv_fp = os.path.join(self.hidden_dir, "existing_log.csv")
         with open(csv_fp, "r") as f:
             log_list = f.readlines()[1:]
@@ -1329,11 +1417,12 @@ class Series():
                 self.setObjAttr(name, "curation", (True, self.user, getDateTime()[0]))
                 self.addLog(name, None, "Mark as curated")
     
-    def reorderSections(self, d : dict = None):
+    def reorderSections(self, d : dict = None, log_event=True):
         """Reorder the sections.
         
             Params:
                 d (dict): old_snum : new_snum for every section
+                log_event (bool): True if event should be logged
         """
         if not d:
             d = dict(tuple((snum, i) for i, snum in enumerate(self.sections.keys())))
@@ -1366,8 +1455,11 @@ class Series():
             self.sections[snum] = f"{self.name}.{snum}"
 
         self.current_section = d[self.current_section]
+
+        if log_event:
+            self.addLog(None, None, "Reorder sections")
     
-    def insertSection(self, index : int, src : str, mag : float, thickness : float):
+    def insertSection(self, index : int, src : str, mag : float, thickness : float, log_event=True):
         """Create a new section.
         
             Params:
@@ -1375,6 +1467,7 @@ class Series():
                 src (str): the path to the image for the new section
                 mag (float): the mag of the new section
                 thickness (float): the thickness of the new section
+                log_event (bool): True if event should be logged
         """
         # create the new section object
         max_snum = max(self.sections.keys()) + 1
@@ -1396,6 +1489,9 @@ class Series():
         else:
             reorder = dict((n, n) for n in self.sections)
         reorder[max_snum] = index
+
+        if log_event:
+            self.addLog(None, None, "Insert section")
     
     def getObjAttr(self, obj_name : str, attr_name : str):
         """Get the attributes for an object in the series.
@@ -1403,6 +1499,8 @@ class Series():
             Params:
                 obj_name (str): the name of the object
                 attr_name (str): the name of the attribute to get
+            Returns:
+                the request attribute
         """
         if not obj_name in self.obj_attrs or attr_name not in self.obj_attrs[obj_name]:
             # return defaults if not set
@@ -1437,8 +1535,14 @@ class Series():
             if not self.obj_attrs[obj_name]:
                 del(self.obj_attrs[obj_name])
     
-    def removeObjAttrs(self, name):
-        """Delete all attrs associated with an object name."""
+    def removeObjAttrs(self, name : str):
+        """Delete all attrs associated with an object name.
+
+        (Automatically called when object is deleted.)
+        
+            Params:
+                name (str): the name of the object
+        """
         # object groups
         self.object_groups.removeObject(name)
 
@@ -1446,7 +1550,14 @@ class Series():
         del(self.obj_attrs[name])
 
     def renameObjAttrs(self, old_name, new_name):
-        """Change the attibutes for an object that was renamed."""
+        """Change the attibutes for an object that was renamed.
+
+        (Automatically called when object is renamed.)
+        
+            Params:
+                old_name (str): the original name of the object
+                new_name (str): the new name for the object
+        """
         if new_name in self.data["objects"]:
             return  # do not overwrite if object exists
         

@@ -89,7 +89,13 @@ class Section():
     
     # STATIC METHOD
     def updateJSON(section_data):
-        """Add missing attributes to section JSON."""
+        """Add missing attributes to section JSON.
+
+        (Updates the dictionary in place)
+        
+            Params:
+                section_data (dict): the JSON data to update
+        """
         empty_section = Section.getEmptyDict()
         for key in empty_section:
             if key not in section_data:
@@ -190,7 +196,8 @@ class Section():
         return d
     
     # STATIC METHOD
-    def getEmptyDict():
+    def getEmptyDict() -> dict:
+        """Returns a dict representing an empty section."""
         section_data = {}
         section_data["src"] = ""  # image location
         section_data["brightness"] = 0
@@ -230,7 +237,11 @@ class Section():
             section_file.write(json.dumps(section_data, indent=2))
    
     def save(self, update_series_data=True):
-        """Save file into json."""
+        """Save file into json.
+        
+            Params:
+                update_series_data (bool): True if series data object should be updated
+        """
         try:
             if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
                 return  # ignore welcome series
@@ -265,8 +276,8 @@ class Section():
         """
         self.align_locked = align_locked
     
-    def getAllModifiedNames(self):
-        """Get the names of all the modified traces."""
+    def getAllModifiedNames(self) -> set:
+        """Return the names of all the modified traces."""
         trace_names = set([t.name for t in self.added_traces])
         trace_names = trace_names.union(set([t.name for t in self.removed_traces]))
         trace_names = trace_names.union(self.modified_contours)
@@ -323,6 +334,7 @@ class Section():
         
             Params:
                 trace (Trace): the trace to remove from the traces dictionary
+                log_event (bool): true if the event should be logged
         """
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
@@ -335,6 +347,7 @@ class Section():
         
             Params:
                 flag (Flag): the flag to add to the section
+                log_event (bool): true if the event should be logged
         """
         self.flags.append(flag)
         if log_event:
@@ -345,6 +358,7 @@ class Section():
         
             Params:
                 flag (Flag): the flag to remove from the section
+                log_event (bool): true if the event should be logged
         """
         if flag in self.flags:
             self.flags.remove(flag)
@@ -361,6 +375,7 @@ class Section():
                 tags (set): the new set of tags
                 mode (tuple): the new fill mode for the traces
                 add_tags (bool): True if tags should be added (rather than replaced)
+                log_event (bool): true if the event should be logged
         """
         for trace in traces.copy():
             # check if trace was highlighted
@@ -411,6 +426,7 @@ class Section():
             Params:
                 traces (list): the list of traces to change
                 new_rad (float): the new radius for the trace(s)
+                log_event (bool): true if the event should be logged
         """
         for trace in traces:
             self.removeTrace(trace, log_event=False)
@@ -425,6 +441,7 @@ class Section():
             Params:
                 traces (list): the list of traces to change
                 new_shape (list): the new shape for the trace(s)
+                log_event (bool): true if the event should be logged
         """
         for trace in traces:
             self.removeTrace(trace, log_event=False)
@@ -442,6 +459,8 @@ class Section():
             include_hidden=False):
         """Find closest trace/ztrace to field coordinates in a given radius.
         
+        (Only meant for GUI use.)
+        
             Params:
                 field_x (float): x coordinate of search center
                 field_y (float): y coordinate of search center
@@ -449,7 +468,7 @@ class Section():
                 traces_in_view (list): the traces in the window viewed by the user
                 include_hidden (bool): True if hidden traces can be returned
             Returns:
-                (Trace) the trace closest to the center
+                (tuple): the object closest to the point and the type
                 None if no trace points are found within the radius
         """
         min_distance = -1
@@ -534,21 +553,30 @@ class Section():
         return closest, closest_type
     
     def deselectAllTraces(self):
-        """Deselect all traces."""
+        """Deselect all traces.
+        
+        (Only meant for GUI use.)
+        """
         self.selected_traces = []
         self.selected_ztraces = []
         self.selected_flags = []
     
     def selectAllTraces(self):
-        """Select all traces."""
+        """Select all traces.
+        
+        (Only meant for GUI use.)
+        """
         self.selected_traces = self.tracesAsList()
     
     def hideTraces(self, traces : list = None, hide=True, log_event=True):
         """Hide traces.
+
+        (Only meant for GUI use.)
         
             Params:
                 traces (list): the traces to hide
                 hide (bool): True if traces should be hidden
+                log_event (bool): true if the event should be logged
         """
         modified = False
 
@@ -567,7 +595,13 @@ class Section():
         return modified
     
     def unhideAllTraces(self, log_event=True):
-        """Unhide all traces on the section."""
+        """Unhide all traces on the section.
+
+        (Only meant for GUI use.)
+        
+            Params:
+                log_event (bool): true if the event should be logged
+        """
         modified = False
         for trace in self.tracesAsList():
             hidden = trace.hidden
@@ -581,7 +615,14 @@ class Section():
         return modified
     
     def makeNegative(self, negative=True, log_event=True):
-        """Make a set of traces negative."""
+        """Make a set of traces negative.
+
+        (Only meant for GUI use.)
+        
+            Params:
+                negative (bool): the negative status of the traces to modify
+                log_event (bool): true if the event should be logged
+        """
         traces = self.selected_traces
         for trace in traces:
             self.removeTrace(trace, log_event=False)
@@ -596,6 +637,7 @@ class Section():
             Params:
                 traces (list): a list of traces to delete (default is selected traces)
                 flags (list): a list of flags to delete (default is selected flags)
+                log_event (bool): True if event should be logged
         """
         modified = False
 
@@ -625,6 +667,7 @@ class Section():
             Params:
                 dx (float): x-translate
                 dy (float): y-translate
+                log_event (bool): True if event should be logged
         """
         tform = self.tform
 

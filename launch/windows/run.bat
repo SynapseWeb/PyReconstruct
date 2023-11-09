@@ -15,10 +15,10 @@ if exist env\Scripts\activate (
     @timeout /t 1 /nobreak > nul
 )
 echo Checking dependencies...
-START /B /WAIT cmd /c pip install -r src/requirements.txt
+START /B /WAIT cmd /c pip install -r PyReconstruct/requirements.txt
 echo Starting PyReconstruct...
 echo Do NOT close this window while using PyReconstruct!
-START /B /WAIT cmd /c python src/PyReconstruct.py %1
+START /B /WAIT cmd /c python PyReconstruct/run.py %1
 call deactivate
 echo Press enter to exit.
 pause>nul

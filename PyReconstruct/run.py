@@ -16,6 +16,8 @@ import PyReconstruct.modules.gui.main as main
 
 def runPyReconstruct(filename=None):
     print("Hello Michael :( you perfidious vagabond")
+    print("Snail:")
+    print("Oh my god what have we done")
     # STOPGAP FOR WAYLAND QT ISSUE
     # https://stackoverflow.com/questions/68417682/qt-and-opencv-app-not-working-in-virtual-environment
 

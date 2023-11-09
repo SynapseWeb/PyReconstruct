@@ -5,7 +5,7 @@ HERE = pathlib.Path(__file__).parent
 
 # It can be convenient to put the metadata for a package at the top
 # of a file
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'julian.falco@utexas.edu'

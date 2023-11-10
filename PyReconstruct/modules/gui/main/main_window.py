@@ -1572,6 +1572,7 @@ class MainWindow(QMainWindow):
     
     def saveAsToJser(self, close=False):
         """Prompt the user to find a save location."""
+        print("yeet")
         # save the series data
         self.saveAllData()
 

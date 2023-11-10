@@ -39,7 +39,7 @@ def runPyReconstruct(filename=None):
                 filename = main_window.series.jser_fp
             # reload all of the written code
             for module_name, module in list(sys.modules.items()):
-                if module_name.startswith("modules"):
+                if module_name.startswith("PyReconstruct.modules"):
                     importlib.reload(module)
         else:
             run = False

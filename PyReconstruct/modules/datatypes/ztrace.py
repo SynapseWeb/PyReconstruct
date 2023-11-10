@@ -169,9 +169,12 @@ class Ztrace():
         # get z-values for each section
         zvals = series.getZValues()
 
+        alignment = series.getAttr(self.name, "alignment", ztrace=True)
+        if not alignment: alignment = series.alignment
+
         real_pts = []
         for x, y, snum in self.points:
-            tform = series.data["sections"][snum]["tforms"][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][alignment]
             new_pt = (*tform.map(x, y), zvals[snum])
             real_pts.append(new_pt)
         

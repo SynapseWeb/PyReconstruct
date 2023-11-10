@@ -58,7 +58,7 @@ class ObjectData():
         """
         if section.n not in self.traces:
             self.traces[section.n] = []
-        alignment = series.getObjAttr(trace.name, "alignment")
+        alignment = series.getAttr(trace.name, "alignment")
         if alignment is None: alignment = series.alignment
 
         if alignment == "no-alignment":
@@ -175,7 +175,7 @@ class SeriesData():
             if log_events and not self.supress_logging:
                 for obj_name in added_objects:
                     self.series.addLog(obj_name, None, "Create object")
-                    self.series.setObjAttr(obj_name, "alignment", self.series.alignment)  # set the fixed alignment of the object to creation
+                    self.series.setAttr(obj_name, "alignment", self.series.alignment)  # set the fixed alignment of the object to creation
                 for obj_name in removed_objects:
                     self.series.addLog(obj_name, None, "Delete object")
                     # remove object from object attributes dicts

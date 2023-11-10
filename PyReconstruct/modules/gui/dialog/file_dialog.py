@@ -36,7 +36,7 @@ class FileDialog(QFileDialog):
             response = fd.getOpenFileNames(fd, caption, filter=filter)[0]
         elif file_mode == "save":
             if not caption: caption = "Save File"
-            response = fd.getSaveFileName(fd, caption, dir=f".{file_name}", filter=filter)[0]
+            response = fd.getSaveFileName(fd, caption, dir=file_name, filter=filter)[0]
         fd.close()
 
         return response

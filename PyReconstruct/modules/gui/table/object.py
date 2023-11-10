@@ -606,13 +606,14 @@ class ObjectTableWidget(QDockWidget):
             return
         
         structure = [
-            ["Alignment:", (True, "combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
+            ["Alignment:", ("combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
         if not confirmed:
             return
         
         alignment = response[0]
+        if not alignment: alignment = None
         for obj_name in obj_names:
             self.series.setObjAttr(obj_name, "alignment", alignment)
             self.series.addLog(obj_name, None, "Edit default alignment")

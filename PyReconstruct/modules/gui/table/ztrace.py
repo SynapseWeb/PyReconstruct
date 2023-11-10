@@ -97,6 +97,9 @@ class ZtraceTableWidget(QDockWidget):
             g = self.series.ztrace_groups.getObjectGroups(ztrace_name)
             g = ", ".join(g)
             self.table.setItem(row, col, QTableWidgetItem(g))
+            col += 1
+            self.table.setItem(row, col, QTableWidgetItem(self.series.getAttr(ztrace_name, "alignment", ztrace=True)))
+
             if resize:
                 self.table.resizeColumnsToContents()
                 self.table.resizeRowToContents(row)
@@ -154,6 +157,7 @@ class ZtraceTableWidget(QDockWidget):
                     ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
                 ]
             },
+            ("setalignment_act", "Change ztrace alignment...", "", self.editAlignment),
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
@@ -204,7 +208,7 @@ class ZtraceTableWidget(QDockWidget):
     def createTable(self):
         """Create the table widget."""
         # establish table headers
-        self.horizontal_headers = ["Name", "Start", "End", "Distance", "Groups"]
+        self.horizontal_headers = ["Name", "Start", "End", "Distance", "Groups", "Alignment"]
 
         self.updateTitle()
 
@@ -402,6 +406,28 @@ class ZtraceTableWidget(QDockWidget):
             self.series.modified_ztraces.add(name)
             
         self.manager.update(clear_tracking=True)
+    
+    def editAlignment(self):
+        """Edit alignment for ztrace(s)."""
+        names = self.getSelectedNames()
+        if not names:
+            notify("Please select at least one ztrace.")
+            return
+        
+        structure = [
+            ["Alignment:", ("combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
+        if not confirmed:
+            return
+        
+        alignment = response[0]
+        if not alignment: alignment = None
+        for name in names:
+            self.series.setAttr(name, "alignment", alignment, ztrace=True)
+            self.series.addLog(name, None, "Edit default alignment")
+        
+        self.refresh()
     
     def delete(self):
         """Delete a set of ztraces."""

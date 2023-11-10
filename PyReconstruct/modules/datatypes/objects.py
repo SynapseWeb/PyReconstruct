@@ -38,8 +38,8 @@ class Objects():
             out_str += f"{self.series.data.getVolume(obj_name)},"
             out_str += f"{':'.join(self.series.object_groups.getObjectGroups(obj_name))},"
             out_str += f"{':'.join(self.series.data.getTags(obj_name))},"
-            out_str += f"{self.series.getObjAttr(obj_name, 'last_user')},"
-            curation = self.series.getObjAttr(obj_name, "curation")
+            out_str += f"{self.series.getAttr(obj_name, 'last_user')},"
+            curation = self.series.getAttr(obj_name, "curation")
             if curation:
                 status, user, date = tuple(curation)
                 if status:
@@ -49,10 +49,10 @@ class Objects():
             else:
                 status = user = date = ""
             out_str += f"{status},{user},{date},"
-            alignment = self.series.getObjAttr(obj_name, "alignment")
+            alignment = self.series.getAttr(obj_name, "alignment")
             if not alignment: alignment = ""
             out_str += f"{alignment},"
-            out_str += f"{self.series.getObjAttr(obj_name, 'comment')}\n"
+            out_str += f"{self.series.getAttr(obj_name, 'comment')}\n"
             
         if out_fp:
             with open(out_fp, "w") as f:
@@ -98,38 +98,38 @@ class SeriesObject():
 
     @property
     def mode_3D(self):
-        return self.series.getObjAttr(self.name, "3D_modes")
+        return self.series.getAttr(self.name, "3D_modes")
     @mode_3D.setter
     def mode_3D(self, value):
-        return self.series.setObjAttr(self.name, "3D_modes", value)
+        return self.series.setAttr(self.name, "3D_modes", value)
     
     @property
     def last_user(self):
-        return self.series.getObjAttr(self.name, "last_user")
+        return self.series.getAttr(self.name, "last_user")
     @last_user.setter
     def last_user(self, value):
-        self.series.getObjAttr(self.name, "last_user", value)
+        self.series.getAttr(self.name, "last_user", value)
     
     @property
     def curation(self):
-        return self.series.getObjAttr(self.name, "curation")
+        return self.series.getAttr(self.name, "curation")
     @curation.setter
     def curation(self, value):
-        self.series.getObjAttr(self.name, "curation", value)
+        self.series.getAttr(self.name, "curation", value)
     
     @property
     def comment(self):
-        return self.series.getObjAttr(self.name, "comment")
+        return self.series.getAttr(self.name, "comment")
     @comment.setter
     def comment(self, value):
-        self.series.getObjAttr(self.name, "comment", value)
+        self.series.getAttr(self.name, "comment", value)
     
     @property
     def alignment(self):
-        return self.series.getObjAttr(self.name, "alignment")
+        return self.series.getAttr(self.name, "alignment")
     @alignment.setter
     def alignment(self, value):
-        self.series.getObjAttr(self.name, "alignment", value)
+        self.series.getAttr(self.name, "alignment", value)
         self.series.data.refresh()  # refresh the series data
     
     @property

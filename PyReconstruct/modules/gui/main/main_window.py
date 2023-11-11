@@ -1073,6 +1073,7 @@ class MainWindow(QMainWindow):
         
         # import the transforms
         importTransforms(self.series, tforms_fp)
+        
         # reload the section
         self.field.reload()
 
@@ -1082,23 +1083,22 @@ class MainWindow(QMainWindow):
             Params:
                 swift_fp (str): the filepath for the transforms file
         """
+
         self.saveAllData()
         
         # get file from user
-        if swift_fp is None:
-            swift_fp = FileDialog.get(
-                "file",
-                self,
-                "Select SWiFT project file",
-            )
-        if not swift_fp: return
+        if not swift_fp:
+            swift_fp = FileDialog.get("file", self, "Select SWiFT project file")
+            
+        if not swift_fp:
+            return
 
-        # get the scales from the swift file
+        # get scales from the swift project file
         with open(swift_fp, "r") as fp: swift_json = json.load(fp)
-        scales_data = swift_json["data"]["scales"]
-        scale_names = list(scales_data.keys())
-        scales_available = [int(scale.split("_")[1]) for scale in scale_names]
+        scale_names = list(swift_json["level_data"].keys())
+        scales_available = [int(scale[1:]) for scale in scale_names]
         scales_available.sort()
+        
         print(f'Available SWiFT project scales: {scales_available}')
 
         structure = [

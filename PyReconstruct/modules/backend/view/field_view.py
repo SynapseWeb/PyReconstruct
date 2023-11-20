@@ -1,4 +1,5 @@
 import math
+
 from PySide6.QtGui import QPainter
 
 from .section_layer import SectionLayer
@@ -914,6 +915,39 @@ class FieldView():
                 painter.end()
         
         return view
+    
+    def quickAlign(self):
+        """Do a quick translational alignment of the current secion and b section."""  
+        if not self.b_section_layer or self.section.align_locked:
+            return
+
+        from skimage import registration
+        
+        pixmap_dim = self.section_layer.pixmap_dim
+        window = self.series.window
+        
+        arr1 = self.b_section_layer.generateImageArray(pixmap_dim, window)
+        arr2 = self.section_layer.generateImageArray(pixmap_dim, window)
+
+        # Perform phase correlation to find translation
+        model = registration.phase_cross_correlation(arr1, arr2)
+        error = model[1]
+        shift_x = model[0][1] / self.scaling * self.section.mag
+        shift_y = model[0][0] / self.scaling * self.section.mag
+
+        current_tform = self.section.tform
+        shift_tform = Transform([
+            1,
+            0,
+            shift_x, 
+            0,
+            1,
+            shift_y
+        ])
+        self.section.tform = shift_tform * current_tform
+
+        self.generateView()
+        self.saveState()
     
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
 

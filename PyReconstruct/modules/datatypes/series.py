@@ -86,8 +86,9 @@ class Series():
         self.alignment = series_data["alignment"]
         self.object_groups = ObjGroupDict(series_data["object_groups"])
         self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
-        # self.object_3D_modes = series_data["object_3D_modes"]
+
         self.obj_attrs = series_data["obj_attrs"]
+        self.ztrace_attrs = series_data["ztrace_attrs"]
 
         # default settings
         self.modified_ztraces = set()
@@ -529,7 +530,9 @@ class Series():
         d["alignment"] = self.alignment
         d["object_groups"] = self.object_groups.getGroupDict()
         d["ztrace_groups"] = self.ztrace_groups.getGroupDict()
+
         d["obj_attrs"] = self.obj_attrs
+        d["ztrace_attrs"] = self.ztrace_attrs
 
         # ADDED SINCE JAN 25TH
         d["options"] = self.options
@@ -586,12 +589,7 @@ class Series():
         options["auto_merge"] = False
 
         series_data["obj_attrs"] = {}
-        
-        obj_attrs = series_data["obj_attrs"]
-        obj_attrs["last_user"] = {}
-        obj_attrs["3D_modes"] = {}
-        obj_attrs["curation"] = {}
-        obj_attrs["comments"] = {}
+        series_data["ztrace_attrs"] = {}
 
         return series_data
     
@@ -1385,7 +1383,7 @@ class Series():
 
         # update the last user data
         if obj_name:
-            self.setObjAttr(obj_name, "last_user", self.user)
+            self.setAttr(obj_name, "last_user", self.user)
     
     def getFullHistory(self) -> LogSet:
         """Get all the logs for the series.
@@ -1412,13 +1410,13 @@ class Series():
         """
         for name in names:
             if cr_status == "":
-                self.setObjAttr(name, "curation", None)
+                self.setAttr(name, "curation", None)
                 self.log_set.removeCuration(name)
             elif cr_status == "Needs curation":
-                self.setObjAttr(name, "curation", (False, assign_to, getDateTime()[0]))
+                self.setAttr(name, "curation", (False, assign_to, getDateTime()[0]))
                 self.addLog(name, None, "Mark as needs curation")
             elif cr_status == "Curated":
-                self.setObjAttr(name, "curation", (True, self.user, getDateTime()[0]))
+                self.setAttr(name, "curation", (True, self.user, getDateTime()[0]))
                 self.addLog(name, None, "Mark as curated")
     
     def reorderSections(self, d : dict = None, log_event=True):
@@ -1497,7 +1495,7 @@ class Series():
         if log_event:
             self.addLog(None, None, "Insert section")
     
-    def getObjAttr(self, obj_name : str, attr_name : str):
+    def getAttr(self, name : str, attr_name : str, ztrace=False):
         """Get the attributes for an object in the series.
         
             Params:
@@ -1506,7 +1504,12 @@ class Series():
             Returns:
                 the request attribute
         """
-        if not obj_name in self.obj_attrs or attr_name not in self.obj_attrs[obj_name]:
+        if ztrace:
+            attrs = self.ztrace_attrs
+        else:
+            attrs = self.obj_attrs
+        
+        if not name in attrs or attr_name not in attrs[name]:
             # return defaults if not set
             if attr_name == "3D_modes":
                 return ["surface", 1]
@@ -1521,9 +1524,9 @@ class Series():
             else:
                 return
         else:
-            return self.obj_attrs[obj_name][attr_name]
+            return attrs[name][attr_name]
     
-    def setObjAttr(self, obj_name : str, attr_name : str, value):
+    def setAttr(self, name : str, attr_name : str, value, ztrace=False):
         """Set the attributes for an object in the series.
         
             Params:
@@ -1531,13 +1534,18 @@ class Series():
                 attr_name (str): the name of the attribute to set
                 value: the value to set for the attributes
         """
-        if obj_name not in self.obj_attrs:
-            self.obj_attrs[obj_name] = {}
-        self.obj_attrs[obj_name][attr_name] = value
+        if ztrace:
+            attrs = self.ztrace_attrs
+        else:
+            attrs = self.obj_attrs
+        
+        if name not in attrs:
+            attrs[name] = {}
+        attrs[name][attr_name] = value
         if value is None:
-            del(self.obj_attrs[obj_name][attr_name])
-            if not self.obj_attrs[obj_name]:
-                del(self.obj_attrs[obj_name])
+            del(attrs[name][attr_name])
+            if not attrs[name]:
+                del(attrs[name])
     
     def removeObjAttrs(self, name : str):
         """Delete all attrs associated with an object name.

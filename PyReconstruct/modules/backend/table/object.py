@@ -234,12 +234,12 @@ class ObjectTableManager():
 
         # set the series settings
         for name in obj_names:
-            obj_settings = self.series.getObjAttr(name, "3D_modes")
+            obj_settings = self.series.getAttr(name, "3D_modes")
             if new_type:
                 obj_settings[0] = new_type
             if new_opacity:
                 obj_settings[1] = new_opacity
-            self.series.setObjAttr(name, "3D_modes", obj_settings)
+            self.series.setAttr(name, "3D_modes", obj_settings)
         
         self.mainwindow.seriesModified(True)
     

@@ -274,7 +274,7 @@ class ObjectTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
             col += 1
         if self.columns["Last user"]:
-            last_user = self.series.getObjAttr(name, "last_user")
+            last_user = self.series.getAttr(name, "last_user")
             self.table.setItem(row, col, QTableWidgetItem(last_user))
             col += 1
         if self.columns["Curate"]:
@@ -285,7 +285,7 @@ class ObjectTableWidget(QDockWidget):
             cr_items = [check_item, status_item, user_item, date_item]
             check_item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
 
-            obj_curation = self.series.getObjAttr(name, "curation")
+            obj_curation = self.series.getAttr(name, "curation")
             if not obj_curation:
                 check_item.setCheckState(Qt.CheckState.Unchecked)
                 cr_color = None
@@ -308,12 +308,12 @@ class ObjectTableWidget(QDockWidget):
                 self.table.setItem(row, col, item)
                 col += 1
         if self.columns["Alignment"]:
-            alignment = self.series.getObjAttr(name, "alignment")
+            alignment = self.series.getAttr(name, "alignment")
             if alignment is None: alignment = ""
             self.table.setItem(row, col, QTableWidgetItem(alignment))
             col += 1
         if self.columns["Comment"]:
-            comment = self.series.getObjAttr(name, "comment")
+            comment = self.series.getAttr(name, "comment")
             self.table.setItem(row, col, QTableWidgetItem(comment))
             col += 1
         if resize:
@@ -347,7 +347,7 @@ class ObjectTableWidget(QDockWidget):
         
         # check curation status and user
         if self.columns["Curate"]:
-            obj_curation = self.series.getObjAttr(name, "curation")
+            obj_curation = self.series.getAttr(name, "curation")
             if obj_curation:
                 cr_status, user, date = tuple(obj_curation)
                 cr_status = "Curated" if cr_status else "Needs curation"
@@ -584,7 +584,7 @@ class ObjectTableWidget(QDockWidget):
             notify("Please select one object to edit.")
             return
         
-        comment = self.series.getObjAttr(obj_name, "comment")
+        comment = self.series.getAttr(obj_name, "comment")
         new_comment, confirmed = QInputDialog.getText(
             self,
             "Object Comment",
@@ -594,7 +594,7 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
-        self.series.setObjAttr(obj_name, "comment", new_comment)
+        self.series.setAttr(obj_name, "comment", new_comment)
         self.series.addLog(obj_name, None, "Edit object comment")
         self.updateObjects([obj_name])
     
@@ -615,7 +615,7 @@ class ObjectTableWidget(QDockWidget):
         alignment = response[0]
         if not alignment: alignment = None
         for obj_name in obj_names:
-            self.series.setObjAttr(obj_name, "alignment", alignment)
+            self.series.setAttr(obj_name, "alignment", alignment)
             self.series.addLog(obj_name, None, "Edit default alignment")
         
         self.refresh()
@@ -936,9 +936,9 @@ class ObjectTableWidget(QDockWidget):
             return
         
         # check for object names and opacities
-        type_3D, opacity = tuple(self.series.getObjAttr(obj_names[0], "3D_modes"))
+        type_3D, opacity = tuple(self.series.getAttr(obj_names[0], "3D_modes"))
         for name in obj_names[1:]:
-            new_type, new_opacity = tuple(self.series.getObjAttr(name, "3D_modes"))
+            new_type, new_opacity = tuple(self.series.getAttr(name, "3D_modes"))
             if type_3D != new_type:
                 type_3D = None
             if opacity != new_opacity:

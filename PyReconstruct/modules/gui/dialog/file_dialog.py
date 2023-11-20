@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtCore import QSettings, QDir, QFileInfo
 from PySide6.QtWidgets import QFileDialog
 
@@ -36,7 +38,10 @@ class FileDialog(QFileDialog):
             response = fd.getOpenFileNames(fd, caption, filter=filter)[0]
         elif file_mode == "save":
             if not caption: caption = "Save File"
-            response = fd.getSaveFileName(fd, caption, dir=f".{file_name}", filter=filter)[0]
+            settings = QSettings("KHLab", "PyReconstruct")
+            last_folder = settings.value("last_folder", QDir.homePath())
+            d = os.path.join(last_folder, file_name)
+            response = fd.getSaveFileName(fd, caption, dir=d, filter=filter)[0]
         fd.close()
 
         return response

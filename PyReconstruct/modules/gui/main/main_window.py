@@ -1096,8 +1096,20 @@ class MainWindow(QMainWindow):
 
         # get scales from the swift project file
         with open(swift_fp, "r") as fp: swift_json = json.load(fp)
-        scale_names = list(swift_json["level_data"].keys())
-        scales_available = [int(scale[1:]) for scale in scale_names]
+
+        scale_names = swift_json.get("level_data")
+
+        if scale_names:  # new swift project file formatting
+        
+            scale_names = list(swift_json["level_data"].keys())
+            scales_available = [int(scale[1:]) for scale in scale_names]
+
+        else:  # old swift project file formatting
+
+            scales_data = swift_json["data"]["scales"]
+            scale_names = list(scales_data.keys())
+            scales_available = [int(scale[6:]) for scale in scale_names]
+
         scales_available.sort()
         
         print(f'Available SWiFT project scales: {scales_available}')

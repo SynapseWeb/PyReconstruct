@@ -13,11 +13,13 @@ class IncorrectFormatError(Exception):
 class IncorrectSecNumError(Exception):
     pass
 
+
 def getDateTime():
     dt = datetime.now()
     d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
     t = f"{dt.hour:02d}:{dt.minute:02d}"
     return d, t
+
 
 def cafm_to_matrix(t):
     """Convert c_afm to Numpy matrix."""
@@ -55,38 +57,74 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
     return t
 
 
+def get_img_dim(scale_data):
+    """Get image dimensions (height and width) from scale data."""
+    return scale_data["saved_swim_settings"].get("img_size")
+
+
 def make_pyr_transforms(project_file, scale=1, cal_grid=False):
     """Return a list of PyReconstruct-formatted transformations."""
 
     with open(project_file, "r") as fp: swift_json = json.load(fp)
 
-    scale = f'scale_{str(scale)}'
-    scale_data = swift_json["data"]["scales"][scale]
-    scale_data_1 = swift_json["data"]["scales"]["scale_1"]
+    pyr_transforms = [np.identity(3)] if cal_grid else []  # list to hold transforms
+
+    stack_data = swift_json.get("stack")  # if exists
+
+    if stack_data:  # new swift project file formatting
     
-    stack_data = scale_data.get("stack")
+        scale = f's{str(scale)}'  # requested scale as properly formatted string
+
+        for section in stack_data:
+
+            # Get all scales (or "levels")
+        
+            scales_all = section.get("levels") # all scales
+            scale_req = scales_all.get(scale)  # requested scale
+            scale_1 = scales_all.get("s1")     # scale 1
+            
+            # Currently only the height (in px) is considered when scaling.
+            # Will need to understand if this changes with non-square images,
+            # which at the time of this writing this script are not handled by AlignEM-SWiFT.
+            
+            img_height_1, img_width_1 = get_img_dim(scale_1)
+            img_height, img_width = get_img_dim(scale_req)
+        
+            height_ratio = img_height_1 / img_height
+            width_ratio = img_width_1 / img_width  # unnecessary variable left here for now 
+        
+            # Get section transformation
+        
+            transform = scale_req.get("cafm")
+        
+            # Make sane
+        
+            transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
+
+            # Append to list
+        
+            pyr_transforms.append(transform)
+
+    else:  # old swift project file formatting
+
+        scale = f'scale_{str(scale)}'
+        scale_data = swift_json["data"]["scales"][scale]
+        scale_data_1 = swift_json["data"]["scales"]["scale_1"]
     
-    img_height_1, img_width_1 = scale_data_1.get('image_src_size')
-    img_height, img_width = scale_data.get('image_src_size')
-
-    # Currently only the height in px is considered when scaling
-    # Will need to understand if this changes with non-square images
-    height_ratio = img_height_1 / img_height
-    width_ratio = img_width_1 / img_width
-
-    # Start with identity matrix if cal_grid included as section 0
-    pyr_transforms = [np.identity(3)] if cal_grid else []
-
-    for section in stack_data:
+        stack_data = scale_data.get("stack")
         
-        # Get transform
-        transform = section["alignment"]["method_results"]["cumulative_afm"]
+        img_height_1, img_width_1 = scale_data_1.get('image_src_size')
+        img_height, img_width = scale_data.get('image_src_size')
+
+        height_ratio = img_height_1 / img_height
+        width_ratio = img_width_1 / img_width
+
+        for section in stack_data:
         
-        # Make sane
-        transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
-        
-        # Append to list
-        pyr_transforms.append(transform)
+            # Get transform, make sane, append to list
+            transform = section["alignment"]["method_results"]["cumulative_afm"]
+            transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
+            pyr_transforms.append(transform)
     
     del(transform)
 

@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
                                 [
                                     ("importtraces_act", "Traces...", "", self.importTraces),
                                     ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
+                                    ("importflags_act", "Flags...", "", self.importFlags),
                                     ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
                                     ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
                                     ("importbc_act", "Brightness/contrast...", "", self.importBC)
@@ -1359,6 +1360,31 @@ class MainWindow(QMainWindow):
         # refresh the object list if needed
         if self.field.section_table_manager:
             self.field.section_table_manager.refresh()
+    
+    def importFlags(self, jser_fp : str = None):
+        """Import flags from another series."""
+        if jser_fp is None:
+            jser_fp = FileDialog.get(
+                "file",
+                self,
+                "Select Series",
+                filter="*.jser"
+            )
+        if not jser_fp: return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        if not noUndoWarning():
+            return
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # import the flags
+        self.series.importFlags(o_series)
+        self.field.reload()
+
+        o_series.close()
     
     def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.

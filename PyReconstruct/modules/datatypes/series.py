@@ -1145,6 +1145,20 @@ class Series():
         # import the group data
         self.object_groups.merge(other.object_groups)
 
+        # import the object attributes
+        for obj_name, obj_data in other.obj_attrs.items():
+            for attr_name, attr_value in obj_data.items():
+                if obj_name not in self.obj_attrs:
+                    self.obj_attrs[obj_name] = {}
+                if attr_name not in self.obj_attrs[obj_name]:
+                    self.obj_attrs[obj_name][attr_name] = attr_value
+                # overwrite self curation if other is more recent
+                elif attr_name == "curation":
+                    self_date = self.obj_attrs[obj_name]["curation"][-1]
+                    other_date = attr_value[-1]
+                    if other_date >= self_date:
+                        self.obj_attrs[obj_name]["curation"] = attr_value
+
         # import the history
         if log_event:
             self.importHistory(other, ztraces=False)
@@ -1254,6 +1268,23 @@ class Series():
             self.addLog(None, None, "Import palettes from another series")
         
         self.save()
+    
+    def importFlags(self, other, log_event=True):
+        """Import flags from another series.
+        
+            Params:
+                other (Series): the series to import from
+                log_event (bool): True if event should be logged
+        """
+        for snum, section in self.enumerateSections(message="Importing flags..."):
+            if snum not in other.sections:  # skip if section is not requested or does not exist in other series
+                continue
+            s_section = other.loadSection(snum)  # sending section
+            section.flags += s_section.flags
+            section.save()
+        
+        if log_event:
+            self.addLog(None, None, "Import flags from another series")
 
     # STATIC METHOD
     def getDefaultPaletteTraces() -> list:

@@ -130,7 +130,6 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     for xml_contour in xml_series.contours:
         trace = Trace.fromXMLObj(
             xml_contour,
-            palette=True
         )
         series_dict["palette_traces"].append(trace.getList())
     series_dict["current_trace"] = series_dict["palette_traces"][0]

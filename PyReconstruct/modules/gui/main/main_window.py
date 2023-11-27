@@ -60,6 +60,18 @@ class MainWindow(QMainWindow):
         super().__init__() # initialize QMainWindow
         self.setWindowTitle("PyReconstruct")
 
+        # catch all exceptions and display error message
+        def customExcepthook(exctype, value, traceback):
+            """
+            Global exception hook to display a notification window.
+            """
+            message = f"An error occurred: {str(value)}\n(see console)"
+            QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
+            sys.__excepthook__(exctype, value, traceback)  # Call the default exception hook
+
+        # Set the exception hook
+        sys.excepthook = customExcepthook
+
         # set the window icon
         pix = QPixmap(os.path.join(img_dir, "PyReconstruct.ico"))
         self.setWindowIcon(pix)
@@ -1079,6 +1091,8 @@ class MainWindow(QMainWindow):
         # reload the section
         self.field.reload()
 
+        notify("Transforms imported successfully.")
+
     def importSwiftTransforms(self, swift_fp=None):
         """Import transforms from a text file.
         
@@ -1132,6 +1146,8 @@ class MainWindow(QMainWindow):
         importSwiftTransforms(self.series, swift_fp, scale, cal_grid)
         
         self.field.reload()
+
+        notify("Transforms imported successfully.")
     
     def importTraces(self, jser_fp : str = None):
         """Import traces from another jser series.
@@ -1187,6 +1203,8 @@ class MainWindow(QMainWindow):
             self.field.obj_table_manager.refresh()
         else:
             self.series.data.refresh()
+        
+        notify("Traces imported successfully.")
     
     def importZtraces(self, jser_fp : str = None):
         """Import ztraces from another jser series.
@@ -1226,6 +1244,8 @@ class MainWindow(QMainWindow):
         # refresh the ztrace list if needed
         if self.field.ztrace_table_manager:
             self.field.ztrace_table_manager.refresh()
+        
+        notify("Ztraces imported successfully.")
     
     def importTracePalette(self, jser_fp : str = None):
         """Import the trace palette from another series.
@@ -1255,6 +1275,8 @@ class MainWindow(QMainWindow):
         self.saveAllData()
 
         o_series.close()
+
+        notify("Trace palette(s) imported successfully.")
     
     def importSeriesTransforms(self, jser_fp : str = None):
         """Import the trace palette from another series.
@@ -1330,6 +1352,8 @@ class MainWindow(QMainWindow):
         
         self.field.reload()
         self.seriesModified()
+
+        notify("Transforms imported successfully.")
     
     def importBC(self, jser_fp : str = None):
         """Import the brightness/contrast settings from another jser series.
@@ -1372,6 +1396,8 @@ class MainWindow(QMainWindow):
         # refresh the object list if needed
         if self.field.section_table_manager:
             self.field.section_table_manager.refresh()
+
+        notify("Brightness/contrast settings imported successfully.")
     
     def importFlags(self, jser_fp : str = None):
         """Import flags from another series."""
@@ -1397,6 +1423,8 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         o_series.close()
+
+        notify("Flags imported successfully.")
     
     def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.
@@ -2229,6 +2257,8 @@ class MainWindow(QMainWindow):
 
         if self.field.obj_table_manager:
             self.field.obj_table_manager.refresh()
+
+        notify("Labels imported successfully.")
     
     def mergeLabels(self):
         """Merge selected labels in a zarr."""

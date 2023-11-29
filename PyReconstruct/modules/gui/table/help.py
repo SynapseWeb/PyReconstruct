@@ -149,6 +149,7 @@ help_shortcuts = [
     ('Ctrl-U', 'Unhide all hidden traces on the current section'),
     ('Shift-G', 'Modify the current palette button to match attributes of first selected trace'),
     ('Ctrl-Shift-G', 'Modiy the current palette button to match attributes AND shape of first selected trace'),
+    ('Ctrl-Shift-U', 'Unlock the current section'),
     ('Ctrl-T', 'Modify the transform on current section'),
     None,
     "Edit",

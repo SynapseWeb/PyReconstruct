@@ -283,6 +283,13 @@ class FieldWidget(QWidget, FieldView):
         # create a new table
         self.section_table_manager.newTable()
     
+    def unlockSection(self):
+        """Unlock the current section."""
+        self.section.align_locked = False
+        self.section.save()
+        if self.section_table_manager:
+            self.section_table_manager.updateSection(self.section.n)
+    
     def findContourDialog(self):
         """Open a dilog to prompt user to find contour."""
         contour_name, confirmed = QInputDialog.getText(

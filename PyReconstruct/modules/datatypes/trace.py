@@ -343,7 +343,7 @@ class Trace():
                 
         self.points = points
 
-    def reshape(self, new_points : float):
+    def reshape(self, new_points : float, tform : Transform = None):
         """Resize a trace beased on its radius
         
             Params:
@@ -351,7 +351,12 @@ class Trace():
         """
         r = self.getRadius()
         xc, yc = self.getCentroid()
+
         self.points = new_points
+        # apply reverse transform if applicable
+        if tform:
+            self.points = tform.map(self.points, inverted=True)
+
         self.resize(r)
         self.points = [(x + xc, y + yc) for x, y in self.points]
     

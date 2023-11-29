@@ -13,7 +13,10 @@ class Objects():
             Params:
                 obj_name (str): the name of the object
         """
-        return SeriesObject(self.series, obj_name)
+        if obj_name in self.getNames():
+            return SeriesObject(self.series, obj_name)
+        else:
+            return None
 
     def getNames(self):
         """Return all of the object names."""

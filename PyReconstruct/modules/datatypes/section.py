@@ -445,7 +445,7 @@ class Section():
         """
         for trace in traces:
             self.removeTrace(trace, log_event=False)
-            trace.reshape(new_shape)
+            trace.reshape(new_shape, self.tform)
             self.addTrace(trace, log_event=False)
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify shape")

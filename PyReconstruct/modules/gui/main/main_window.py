@@ -1046,7 +1046,7 @@ class MainWindow(QMainWindow):
                 "save",
                 self,
                 "Export Series",
-                filename=f"{self.series.name}.ser",
+                file_name=f"{self.series.name}.ser",
                 filter="XML Series (*.ser)"
             )
             if not export_fp: return False

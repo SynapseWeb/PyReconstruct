@@ -349,7 +349,7 @@ class Trace():
             Params:
                 new_points (float): the new points for the trace
         """
-        r = self.getRadius()
+        r = self.getRadius(tform)
         xc, yc = self.getCentroid()
 
         self.points = new_points

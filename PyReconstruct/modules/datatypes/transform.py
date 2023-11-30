@@ -1,6 +1,5 @@
 import numpy as np
-import cv2
-from itertools import combinations
+from skimage import transform as tf
 
 from PySide6.QtGui import QTransform
 
@@ -104,25 +103,19 @@ class Transform():
         self.tform[2] *= new_mag / prev_mag
         self.tform[5] *= new_mag / prev_mag
     
-    def estimateLinearTform(pts1, pts2):
+    def estimateTform(pts1, pts2):
         """Estimate the transform that converts pts1 to pts2.
         
             Params:
                 pts1 (list): the list of original points
                 pts2 (list): the list of points to transform into
         """
-        combs = tuple(combinations(range(len(pts1)), 3))
-        sum_mat = np.zeros((2, 3), dtype=np.float32)
-        for c in combs:
-            trip1 = [pts1[i] for i in c]
-            trip2 = [pts2[i] for i in c]
-            mat = cv2.getAffineTransform(
-                np.array(trip1, dtype=np.float32),
-                np.array(trip2, dtype=np.float32)
-            )
-            sum_mat += mat
-        avg_mat = sum_mat / len(combs)
-        tform = Transform(avg_mat.reshape(1,6).tolist()[0])
+        m = tf.estimate_transform("affine", np.array(pts1), np.array(pts2)).params
+
+        tform = Transform([
+            m[0,0], m[0,1], m[0,2],
+            m[1,0], m[1,1], m[1,2]
+        ])
 
         return tform
 

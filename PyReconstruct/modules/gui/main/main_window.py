@@ -65,9 +65,9 @@ class MainWindow(QMainWindow):
             """
             Global exception hook to display a notification window.
             """
+            sys.__excepthook__(exctype, value, traceback)  # Call the default exception hook
             message = f"An error occurred: {str(value)}\n(see console)"
             QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
-            sys.__excepthook__(exctype, value, traceback)  # Call the default exception hook
 
         # Set the exception hook
         sys.excepthook = customExcepthook
@@ -322,7 +322,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     ("unlocksection_act", "Unlock current section", "Ctrl+Shift+U", self.field.unlockSection),
-                    ("linearalign_act", "Align linear", "", self.field.linearAlign),
+                    ("linearalign_act", "Estimate affine transform", "", self.field.affineAlign),
                     # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
                 ]
             },

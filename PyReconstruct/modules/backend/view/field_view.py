@@ -772,10 +772,10 @@ class FieldView():
         self.hide_image = not self.hide_image
         self.generateView(generate_traces=False)
     
-    def linearAlign(self):
+    def affineAlign(self):
         """Modify the linear transformation using points from the selected trace.
         """
-        if not self.b_section:
+        if not self.b_section or self.section.align_locked:
             return
         
         # gather traces
@@ -800,18 +800,16 @@ class FieldView():
 
         # gather points from each section
         centsA = []
-        for trace in self.section.contours[contour_name]:
-            if trace in a_traces:
-                centsA.append(centroid(trace.points))
+        for trace in a_traces:
+            centsA.append(centroid(trace.points))
         centsB = []
         tformB = self.b_section.tform
-        for trace in self.b_section.contours[contour_name]:
-            if trace in b_traces:
-                pts = tformB.map(trace.points)
-                centsB.append(centroid(pts))
+        for trace in b_traces:
+            pts = tformB.map(trace.points)
+            centsB.append(centroid(pts))
         
         # calculate the tform
-        a2b_tform = Transform.estimateLinearTform(centsA, centsB)
+        a2b_tform = Transform.estimateTform(centsA, centsB)
 
         # change the transform
         self.changeTform(a2b_tform)

@@ -43,7 +43,7 @@ class Section():
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
         
-        Section.updateJSON(section_data)  # update any missing attributes
+        Section.updateJSON(section_data, n)  # update any missing attributes
         
         self.src = section_data["src"]
         self.brightness = section_data["brightness"]
@@ -72,7 +72,7 @@ class Section():
                 trace_list
             )
         
-        self.flags = [Flag.fromList(l) for l in section_data["flags"]]
+        self.flags = [Flag.fromList(l, self.n) for l in section_data["flags"]]
 
         self.calgrid = section_data["calgrid"]
     
@@ -88,13 +88,14 @@ class Section():
             self.tforms[self.series.alignment] = new_tform
     
     # STATIC METHOD
-    def updateJSON(section_data):
+    def updateJSON(section_data, n):
         """Add missing attributes to section JSON.
 
         (Updates the dictionary in place)
         
             Params:
                 section_data (dict): the JSON data to update
+                n (int): the section number
         """
         empty_section = Section.getEmptyDict()
         for key in empty_section:
@@ -156,10 +157,12 @@ class Section():
         if "no-alignment" in section_data["tforms"]:
             del(section_data["tforms"]["no-alignment"])
         
-        # iterate through flags and add resolved status
+        # iterate through flags and add resolved status or section number and ID
         for flag in section_data["flags"]:
             if len(flag) == 5:
                 flag.append(False)
+            if len(flag) == 6:
+                flag.insert(0, Flag.generateID())
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.

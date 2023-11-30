@@ -301,7 +301,7 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         x, y = self.section.tform.map(field_x, field_y, inverted=True)
         # create flag
-        f = Flag(title, x, y, color)
+        f = Flag(title, x, y, self.section.n, color)
         if comment: f.addComment(self.series.user, comment)
         self.section.addFlag(f)
     

@@ -219,7 +219,7 @@ class VPlotter(vedo.Plotter):
             self.updateSelected()
         
         # help menu
-        if key == "H":
+        if key == "Shift+Question":
             overwrite = True
             if not self.help_widget or self.help_widget.closed:
                 self.help_widget = HelpWidget("3D")

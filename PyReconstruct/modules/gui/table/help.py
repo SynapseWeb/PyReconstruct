@@ -199,5 +199,10 @@ help_shortcuts = [
     ('C', 'Use the closed trace tool'),
     ('O', 'Use the open trace tool'),
     ('S', 'Use the stamp tool'),
-    ('F', 'Use the flag tool')
-]
+    ('F', 'Use the flag tool'),
+    None,
+    "3D Scene Shortcuts:",
+    None,
+    ("Shift-/", "Pull up shortcuts for 3D scene"),
+    None,
+] + help_3D

@@ -206,22 +206,15 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            {
-                                "attr_name": "importjser",
-                                "text": "From jser file",
-                                "opts":
-                                [
-                                    ("importtraces_act", "Traces...", "", self.importTraces),
-                                    ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
-                                    ("importflags_act", "Flags...", "", self.importFlags),
-                                    ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                                    ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
-                                    ("importbc_act", "Brightness/contrast...", "", self.importBC)
-                                ]
-                            }
+                            ("importtraces_act", "Traces...", "", self.importTraces),
+                            ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
+                            ("importflags_act", "Flags...", "", self.importFlags),
+                            ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
+                            ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
+                            ("importbc_act", "Brightness/contrast...", "", self.importBC)
                         ]
-		    },
-		    {
+                    },
+                    {
                         "attr_name": "exportmenu",
                         "text": "Export",
                         "opts":
@@ -229,8 +222,8 @@ class MainWindow(QMainWindow):
                             ("exportjser_act", "as backup jser...", "Ctrl+Shift+B", self.manualBackup),
                             ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
                         ]
-		    },
-		    {
+                    },
+                    {
                         "attr_name": "imagesmenu",
                         "text": "Images",
                         "opts":
@@ -238,47 +231,6 @@ class MainWindow(QMainWindow):
                             ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
                             ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
                             ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False))
-                        ]
-                    },
-		    {
-                        "attr_name": "listsmenu",
-                        "text": "Lists / History",
-                        "opts":
-                        [
-                            ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                            ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                            ("flaglist_act", "Flag list", "", self.openFlagList),
-                            ("history_act", "View series history", "", self.viewSeriesHistory),
-                        ]
-                    },
-                    {
-                        "attr_name": "alignmentsmenu",
-                        "text": "Alignments",
-                        "opts":
-                        [
-                            {
-                                "attr_name": "importmenu",
-                                "text": "Import alignments",
-                                "opts":
-                                [
-                                    ("importjsertransforms_act", "jser file", "", self.importSeriesTransforms),
-                                    ("importtransforms_act", ".txt file", "", self.importTransforms),
-                                    ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
-                                ]
-                            },
-                            ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
-                            {
-                                "attr_name": "propagatemenu",
-                                "text": "Propagate transform",
-                                "opts":
-                                [
-                                    ("startpt_act", "Start propagation recording", "", lambda : self.field.setPropagationMode(True)),
-                                    ("endpt_act", "End propagation recording", "", lambda : self.field.setPropagationMode(False)),
-                                    None,
-                                    ("proptostart_act", "Propagate to start", "", lambda : self.field.propagateTo(False)),
-                                    ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))
-                                ]
-                            }
                         ]
                     },
                     {
@@ -290,7 +242,7 @@ class MainWindow(QMainWindow):
                             ("unhidealltraces_act", "Unhide all traces", "", lambda : self.hideSeriesTraces(hidden=False))
                         ]
                     },
-		    {
+                    {
                         "attr_name": "threedeemenu",
                         "text": "3D",
                         "opts":
@@ -299,7 +251,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     {
-                        "attr_name": "traepalette_menu",
+                        "attr_name": "tracepalette_menu",
                         "text": "Trace Palette",
                         "opts":
                         [
@@ -322,19 +274,79 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
-                    ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
                     ("goto_act", "Go to section", "Ctrl+G", self.changeSection),
                     ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                     None,
                     ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
                     ("findcontour_act", "Find contour...", "Ctrl+Shift+F", self.field.findContourDialog),
-                    None,
+                ]
+            },
+            {
+                "attr_name": "listsmenu",
+                "text": "Lists",
+                "opts":
+                [
+                    ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
+                    ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
+                    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
+                    ("flaglist_act", "Flag list", "", self.openFlagList),
+                    ("history_act", "View series history", "", self.viewSeriesHistory)
+                ]
+            },
+            {
+                "attr_name": "alignmentsmenu",
+                "text": "Alignments",
+                "opts":
+                [
+                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                    {
+                        "attr_name": "importmenu",
+                        "text": "Import alignments",
+                        "opts":
+                        [
+                            ("importjsertransforms_act", "jser file", "", self.importSeriesTransforms),
+                            ("importtransforms_act", ".txt file", "", self.importTransforms),
+                            ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
+                        ]
+                    },
+                    {
+                        "attr_name": "propagatemenu",
+                        "text": "Propagate transform",
+                        "opts":
+                        [
+                            ("startpt_act", "Start propagation recording", "", lambda : self.field.setPropagationMode(True)),
+                            ("endpt_act", "End propagation recording", "", lambda : self.field.setPropagationMode(False)),
+                            None,
+                            ("proptostart_act", "Propagate to start", "", lambda : self.field.propagateTo(False)),
+                            ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))
+                        ]
+                    },
                     ("unlocksection_act", "Unlock current section", "Ctrl+Shift+U", self.field.unlockSection),
                     ("linearalign_act", "Align linear", "", self.field.linearAlign),
                     # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
                 ]
             },
-
+            {
+                "attr_name": "autosegmenu",
+                "text": "Autosegment",
+                "opts":
+                [
+                    ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
+                    ("trainzarr_act", "Train...", "", self.train),
+                    ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
+                    ("predictzarr_act", "Predict (infer)...", "", self.predict),
+                    ("sementzarr_act", "Segment...", "", self.segment),
+                    {
+                        "attr_name": "zarrlayermenu",
+                        "text": "Zarr layer",
+                        "opts":
+                        [
+                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+                        ]
+                    }
+                ]
+            },
             {
                 "attr_name": "viewmenu",
                 "text": "View",
@@ -362,27 +374,6 @@ class MainWindow(QMainWindow):
                     ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
-                ]
-            },
-            {
-                "attr_name": "autosegmenu",
-                "text": "Autosegment",
-                "opts":
-                [
-                    ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
-                    ("trainzarr_act", "Train...", "", self.train),
-                    ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
-                    ("predictzarr_act", "Predict (infer)...", "", self.predict),
-                    ("sementzarr_act", "Segment...", "", self.segment),
-                    {
-                        "attr_name": "zarrlayermenu",
-                        "text": "Zarr layer",
-                        "opts":
-                        [
-                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
-                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
-                        ]
-                    }
                 ]
             },
             {

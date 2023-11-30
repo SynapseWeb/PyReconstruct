@@ -67,7 +67,7 @@ class FlagTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
-        self.row_flags = []
+        self.displayed_flags = []
         self.createTable()
         self.createMenus()
 
@@ -138,7 +138,7 @@ class FlagTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def setRow(self, snum : int, flag : Flag, row : int, resize=True):
+    def setRow(self, flag : Flag, row : int, resize=True):
         """Set the data for a row of the table.
         
             Params:
@@ -148,7 +148,7 @@ class FlagTableWidget(QDockWidget):
         self.process_check_event = False
         col = 0
         if self.columns["Section"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(snum)))
+            self.table.setItem(row, col, QTableWidgetItem(str(flag.snum)))
             col += 1
         if self.columns["Flag"]:
             self.table.setItem(row, col, QTableWidgetItem(flag.name))
@@ -169,9 +169,29 @@ class FlagTableWidget(QDockWidget):
             self.table.setItem(row, col, QTableWidgetItem(comment))
             col += 1
         
+        self.displayed_flags[row] = flag
+        
         if resize:
             self.table.resizeColumnsToContents()
             self.table.resizeRowToContents(row)
+    
+    def insertRow(self, r : int):
+        """Add a row to the table.
+        
+            Params:
+                r (int): the row to add to the table
+        """
+        self.table.insertRow(r)
+        self.displayed_flags.insert(r, None)
+    
+    def removeRow(self, r : int):
+        """Remove a row from the table.
+        
+            Params:
+                r (int): the row to remove
+        """
+        self.table.removeRow(r)
+        self.displayed_flags.pop(r)
             
     def passesFilters(self, flag : Flag):
         """Check if an object passes the filters.
@@ -207,9 +227,9 @@ class FlagTableWidget(QDockWidget):
         
         return True
     
-    def filterFlags(self, section : Section = None):
+    def getFilteredFlags(self, section : Section = None):
         """Get the flags that pass the filters."""
-        self.passing_flags = []
+        passing_flags = []
         for snum, data in self.series.data["sections"].items():
             if section and section.n == snum:
                 flags = section.flags
@@ -217,8 +237,8 @@ class FlagTableWidget(QDockWidget):
                 flags = data["flags"]
             for flag in flags:
                 if self.passesFilters(flag):
-                    self.passing_flags.append((snum, flag))
-        self.passing_flags.sort()
+                    passing_flags.append(flag)
+        return passing_flags
     
     def updateTitle(self):
         """Update the title of the table."""
@@ -255,11 +275,11 @@ class FlagTableWidget(QDockWidget):
                 self.horizontal_headers.append(key)
         
         # filter the objects
-        self.filterFlags()
+        passing_flags = self.getFilteredFlags()
 
         # create the table object
-        self.table = CopyTableWidget(len(self.passing_flags), len(self.horizontal_headers), self.main_widget)
-        self.row_flags = [None] * len(self.passing_flags)
+        self.table = CopyTableWidget(len(passing_flags), len(self.horizontal_headers), self.main_widget)
+        self.displayed_flags = [None] * len(passing_flags)
 
         # connect table functions
         self.table.mouseDoubleClickEvent = self.find
@@ -275,8 +295,8 @@ class FlagTableWidget(QDockWidget):
         self.table.verticalHeader().hide()  # no veritcal header
         
         # fill in object data
-        for r, (snum, flag) in enumerate(self.passing_flags):
-            self.setRow(snum, flag, r, resize=False)
+        for r, flag in enumerate(passing_flags):
+            self.setRow(flag, r, resize=False)
 
         # format rows and columns
         self.table.resizeColumnsToContents()
@@ -293,16 +313,14 @@ class FlagTableWidget(QDockWidget):
         """
         row, exists_in_table = self.table.getRowIndex(str(section.n))
         while exists_in_table:
-            self.table.removeRow(row)
+            self.removeRow(row)
             row, exists_in_table = self.table.getRowIndex(str(section.n))
         
         for flag in sorted(section.flags):
             if self.passesFilters(flag):
-                self.table.insertRow(row)
-                self.setRow(section.n, flag, row)
+                self.insertRow(row)
+                self.setRow(flag, row)
                 row += 1
-        
-        self.filterFlags()
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""
@@ -319,8 +337,8 @@ class FlagTableWidget(QDockWidget):
         """
         selected_indexes = self.table.selectedIndexes()
         if len(selected_indexes) != 1:
-            return None, None
-        return self.passing_flags[selected_indexes[0].row()]
+            return None
+        return self.displayed_flags[selected_indexes[0].row()]
     
     def getSelectedFlags(self):
         """Get the name of the objects highlighted by the user.
@@ -329,7 +347,7 @@ class FlagTableWidget(QDockWidget):
                 (list): the name of the objects
         """
         selected_indexes = self.table.selectedIndexes()
-        return [self.passing_flags[i.row()] for i in selected_indexes]
+        return [self.displayed_flags[i] for i in selected_indexes]
 
     # RIGHT CLICK FUNCTIONS
 
@@ -341,7 +359,7 @@ class FlagTableWidget(QDockWidget):
     
     def editFlag(self):
         """Edit a flag."""
-        snum, flag = self.getSelectedFlag()
+        flag = self.getSelectedFlag()
         if not flag:
             notify("Please edit one flag at a time.")
             return
@@ -358,7 +376,7 @@ class FlagTableWidget(QDockWidget):
         vscroll = self.table.verticalScrollBar()
         scroll_pos = vscroll.value()
 
-        self.manager.editFlag(snum, flag, nf)
+        self.manager.editFlag(flag, nf)
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
@@ -460,7 +478,7 @@ class FlagTableWidget(QDockWidget):
     def setColorFilter(self, use_selected=True):
         """Set the color filter for the list."""
         if use_selected:
-            snum, flag = self.getSelectedFlag()
+            flag = self.getSelectedFlag()
             if not flag:
                 notify("Please select one flag to set the color filter.")
                 return
@@ -502,10 +520,10 @@ class FlagTableWidget(QDockWidget):
     
     def find(self, event=None):
         """Focus the field on a flag in the series."""
-        snum, flag = self.getSelectedFlag()
+        flag = self.getSelectedFlag()
         if flag is None:
             return
-        self.mainwindow.setToFlag(snum, flag)
+        self.mainwindow.setToFlag(flag)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

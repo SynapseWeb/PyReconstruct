@@ -221,7 +221,7 @@ class Series():
             filename = sname + "." + str(snum)
             section_fp = os.path.join(hidden_dir, filename)
 
-            Section.updateJSON(section_data)  # update any missing attributes
+            Section.updateJSON(section_data, snum)  # update any missing attributes
             
             section_data["align_locked"] = True  # lock the section
 

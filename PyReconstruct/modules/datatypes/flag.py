@@ -1,14 +1,22 @@
 from datetime import datetime
+import random
+
+possible_chars = (
+    [chr(n) for n in range(65, 91)] +
+    [chr(n) for n in range(97, 123)] +
+    [chr(n) for n in range(48, 58)]
+)
 
 class Flag():
 
-    def __init__(self, name : str, x : int, y : int, color : tuple, comments=None, resolved=False):
+    def __init__(self, name : str, x : int, y : int, section_number : int, color : tuple, comments=None, resolved=False, id=None):
         """Create a flag object.
         
             Params:
                 name (str): the name of the flag
                 x (int): the x-coord for the flag
                 y (int): the y-coord for the flag
+                section_number (int): the section number for the flag
                 color (tuple): the the color of the flag
                 comments (list): the list of flag comments
                 resolved (bool): True if the flag is resolved
@@ -16,12 +24,19 @@ class Flag():
         self.name = name
         self.x = x
         self.y = y
+        self.snum = section_number
         self.color = color
+
         if comments:
             self.comments = comments
         else:
             self.comments = []
         self.resolved = resolved
+
+        if not id:
+            self.id = Flag.generateID()
+        else:
+            self.id = id
     
     def addComment(self, user : str, text : str):
         """Add a comment to the flag.
@@ -34,15 +49,25 @@ class Flag():
     
     def getList(self) -> list:
         """Returns the flag in a list representation."""
-        return [self.name, self.x, self.y, self.color, [c.getList() for c in self.comments], self.resolved]
+        return [
+            self.id, 
+            self.name, 
+            self.x, 
+            self.y, 
+            self.color, 
+            [c.getList() for c in self.comments], 
+            self.resolved
+        ]
     
-    def fromList(l : list):
+    def fromList(l : list, snum : int):
         """Create a flag object from a list.
         
             Params:
                 l (list): the list
+                snum (int): the section containing the flag
         """
         (
+            id,
             title,
             x,
             y,
@@ -51,7 +76,7 @@ class Flag():
             resolved
         ) = tuple(l)
         comments = [Comment.fromList(c) for c in comments]
-        return Flag(title, x, y, color, comments, resolved)
+        return Flag(title, x, y, snum, color, comments, resolved, id)
     
     def copy(self):
         """Returns a copy of the current flag."""
@@ -59,9 +84,11 @@ class Flag():
             self.name, 
             self.x, 
             self.y, 
+            self.snum,
             self.color, 
             [c.copy() for c in self.comments],
-            self.resolved
+            self.resolved,
+            self.id
         )
 
     def __lt__(self, other):
@@ -73,15 +100,13 @@ class Flag():
             Params:
                 other (Flag): the flag to compare to
         """
-        return (
-            self.name == other.name and
-            abs(self.x - other.x) < 1e-6 and
-            abs(self.y - other.y) < 1e-6 and
-            self.color == other.color and
-            len(self.comments) == len(other.comments) and
-            all([sc.equals(oc) for sc, oc in zip(self.comments, other.comments)]),
-            self.resolved == other.resolved
-        )
+        return self.id == other.id
+    
+    def generateID():
+        """Generate an ID for a flag."""
+        id = ""
+        for _ in range(6): id += random.choice(possible_chars)
+        return id
 
 def getDateTime():
     dt = datetime.now()
@@ -123,18 +148,5 @@ class Comment():
     def copy(self):
         """Returns a copy of the current flag comment."""
         return Comment(self.user, self.text, self.date, self.time)
-
-    def equals(self, other):
-        """Compare flag comment objects.
-        
-            Params:
-                other (Comment): the comment to compare to
-        """
-        return (
-            self.user == other.user,
-            self.text == other.text,
-            self.date == other.date,
-            self.time == other.time
-        )
 
     

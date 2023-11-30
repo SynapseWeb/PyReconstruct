@@ -1768,11 +1768,10 @@ class FieldWidget(QWidget, FieldView):
         name = response[0]
         color = response[1]
         comment = response[2]
-        f = Flag(name, x, y, color)
+        f = Flag(name, x, y, self.section.n, color)
         if comment:
             f.addComment(self.series.user, comment)
         self.section.addFlag(f)
-
 
         self.saveState()
         self.generateView(generate_image=False)

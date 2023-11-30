@@ -72,7 +72,8 @@ class FlagTableManager():
 
         # organize flags into dictionary
         flags_dict = {}
-        for snum, flag in flags:
+        for flag in flags:
+            snum = flag.snum
             if snum not in flags_dict:
                 flags_dict[snum] = []
             flags_dict[snum].append(flag)
@@ -93,7 +94,7 @@ class FlagTableManager():
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
 
-    def editFlag(self, snum : int, old_flag : Flag, new_flag : Flag):
+    def editFlag(self, old_flag : Flag, new_flag : Flag):
         """Edit a flag.
         
             Params:
@@ -103,7 +104,7 @@ class FlagTableManager():
         """
         self.mainwindow.saveAllData()
 
-        section = self.series.loadSection(snum)
+        section = self.series.loadSection(old_flag.snum)
         for i, flag in enumerate(section.flags):
             if old_flag.equals(flag):
                 section.flags[i] = new_flag
@@ -125,9 +126,9 @@ class FlagTableManager():
         """
         self.mainwindow.saveAllData()
 
-        for snum, flag in flags:
-            section = self.series.loadSection(snum)
-            for i, f in enumerate(section.flags):
+        for flag in flags:
+            section = self.series.loadSection(flag.snum)
+            for f in section.flags:
                 if flag.equals(f):
                     f.resolved = resolved
                     break

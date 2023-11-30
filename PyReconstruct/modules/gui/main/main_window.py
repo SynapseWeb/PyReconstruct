@@ -1743,15 +1743,14 @@ class MainWindow(QMainWindow):
             self.changeSection(section_num)
             self.field.findContour(obj_name)
     
-    def setToFlag(self, snum : int, flag : Flag):
+    def setToFlag(self, flag : Flag):
         """Focus the field on a flag.
         
             Params:
-                snum (int): the section number
                 flag (Flag): the flag
         """
-        if snum is not None and flag is not None:
-            self.changeSection(snum)
+        if flag is not None:
+            self.changeSection(flag.snum)
             self.field.findFlag(flag)
     
     def findObjectFirst(self, obj_name=None):

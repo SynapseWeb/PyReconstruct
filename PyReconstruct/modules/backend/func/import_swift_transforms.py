@@ -59,7 +59,7 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
 
 def get_img_dim(scale_data):
     """Get image dimensions (height and width) from scale data."""
-    return scale_data["saved_swim_settings"].get("img_size")
+    return scale_data["swim_settings"].get("img_size")
 
 
 def make_pyr_transforms(project_file, scale=1, cal_grid=False):

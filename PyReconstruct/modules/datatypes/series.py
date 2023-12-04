@@ -1215,7 +1215,7 @@ class Series():
                 r_section.save()
 
         if log_event:
-            alignments_str = ", ".join(alignments)
+            alignments_str = " ".join(alignments)
             self.addLog(None, None, f"Import alignments {alignments_str} from another series")
 
         self.save()

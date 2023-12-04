@@ -1223,14 +1223,19 @@ class FieldWidget(QWidget, FieldView):
                 self.is_selecting_traces = True
                 self.activateMouseBoundaryTimer()
             if self.series.options["pointer"][0] == "rect":
-                x1, y1 = self.current_trace[0]
                 x2, y2 = event.x(), event.y()
+                if self.current_trace:
+                    x1, y1 = self.current_trace[0]
+                else:
+                    x1, y1 = x2, y2
+
                 self.current_trace = [
                     (x1, y1),
                     (x2, y1),
                     (x2, y2),
                     (x1, y2)
                 ]
+                
             else:
                 x = event.x()
                 y = event.y()

@@ -28,20 +28,20 @@ def cafm_to_matrix(t):
                       [0, 0, 1]])
 
 
-def cafm_to_sanity(t, dim, scale_ratio=1):
+def cafm_to_sanity(t, dim, scale_ratio=1, old_swift=False):
     """Convert c_afm to something sane."""
 
     # Convert to matrix
     t = cafm_to_matrix(t)
 
-    # SWiFT transformation are inverted
-    t = np.linalg.inv(t)
+    # Transforms in older SWiFT project files are stored as inverted matrices
+    if old_swift: t = np.linalg.inv(t)
     
     # Get translation of bottom left corner from img height (px)
     BL_corner = np.array([[0], [dim], [1]])  # original BL corner
     BL_translation = np.matmul(t, BL_corner) - BL_corner
 
-    # Add BL corner translation to c_afm (x and y translations)
+    # Add BL corner translation to c_afm (x and y translation)
     t[0, 2] = BL_translation[0, 0] # x translation in px
     t[1, 2] = BL_translation[1, 0] # y translation in px
 
@@ -59,7 +59,7 @@ def cafm_to_sanity(t, dim, scale_ratio=1):
 
 def get_img_dim(scale_data):
     """Get image dimensions (height and width) from scale data."""
-    return scale_data["saved_swim_settings"].get("img_size")
+    return scale_data["swim_settings"]["img_size"]
 
 
 def make_pyr_transforms(project_file, scale=1, cal_grid=False):
@@ -71,7 +71,7 @@ def make_pyr_transforms(project_file, scale=1, cal_grid=False):
 
     stack_data = swift_json.get("stack")  # if exists
 
-    if stack_data:  # new swift project file formatting
+    if stack_data:  # new swift project file
     
         scale = f's{str(scale)}'  # requested scale as properly formatted string
 
@@ -83,33 +83,28 @@ def make_pyr_transforms(project_file, scale=1, cal_grid=False):
             scale_req = scales_all.get(scale)  # requested scale
             scale_1 = scales_all.get("s1")     # scale 1
             
-            # Currently only the height (in px) is considered when scaling.
-            # Will need to understand if this changes with non-square images,
-            # which at the time of this writing this script are not handled by AlignEM-SWiFT.
+            # When scaling, only height (px) is considered by this script.
+            # Will change if aligning non-square images,
+            # which is not currently supported by AlignEM-SWiFT.
             
             img_height_1, img_width_1 = get_img_dim(scale_1)
             img_height, img_width = get_img_dim(scale_req)
         
             height_ratio = img_height_1 / img_height
-            width_ratio = img_width_1 / img_width  # unnecessary variable left here for now 
+            width_ratio = img_width_1 / img_width  # left here for now 
         
-            # Get section transformation
-        
+            # Get section transform, make sane, append to list
             transform = scale_req.get("cafm")
-        
-            # Make sane
-        
             transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
-
-            # Append to list
-        
             pyr_transforms.append(transform)
 
-    else:  # old swift project file formatting
+    else:  # old swift project file
 
         scale = f'scale_{str(scale)}'
-        scale_data = swift_json["data"]["scales"][scale]
-        scale_data_1 = swift_json["data"]["scales"]["scale_1"]
+        scales_all = swift_json["data"]["scales"]
+        
+        scale_data = scales_all[scale]
+        scale_data_1 = scales_all["scale_1"]
     
         stack_data = scale_data.get("stack")
         
@@ -123,7 +118,7 @@ def make_pyr_transforms(project_file, scale=1, cal_grid=False):
         
             # Get transform, make sane, append to list
             transform = section["alignment"]["method_results"]["cumulative_afm"]
-            transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
+            transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio, old_swift=True)
             pyr_transforms.append(transform)
     
     del(transform)
@@ -135,6 +130,7 @@ def transforms_as_strings(recon_transforms, output_file=None):
     """Return transform matrices as string."""
 
     output = ''
+    
     for i, t in enumerate(recon_transforms):
         string = f'{i} {t[0, 0]} {t[0, 1]} {t[0, 2]} {t[1, 0]} {t[1, 1]} {t[1, 2]}\n'
         output += string

@@ -56,10 +56,10 @@ class Section():
             self.tforms[a] = Transform(section_data["tforms"][a])
         
         self.thickness = section_data["thickness"]
-        self.contours = section_data["contours"]
-        for name in self.contours:
+        self.contours : dict[str, Contour] = {}
+        for name in section_data["contours"]:
             trace_list = []
-            for trace_data in self.contours[name]:
+            for trace_data in section_data["contours"][name]:
                 trace = Trace.fromList(trace_data, name)
                 # screen for defective traces
                 l = len(trace.points)

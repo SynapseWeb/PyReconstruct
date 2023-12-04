@@ -2,7 +2,7 @@ from .trace import Trace
 
 class Contour():
 
-    def __init__(self, name : str, traces : list = None):
+    def __init__(self, name : str, traces : list[Trace] = None):
         """Create a contour object.
         
             Params:
@@ -14,15 +14,15 @@ class Contour():
             for trace in traces:
                 if trace.name != name:
                     raise Exception("Trace name does not match contour name")
-            self.traces = traces
+            self.traces : list[Trace] = traces
         else:
-            self.traces = []
+            self.traces : list[Trace] = []
     
     def __iter__(self):
         """Return the iterator object for the traces list"""
         return self.traces.__iter__()
     
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Trace:
         """Allow the user to index the traces list."""
         return self.traces[index]
     

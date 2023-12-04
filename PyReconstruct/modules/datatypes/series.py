@@ -587,6 +587,7 @@ class Series():
         options["flag_size"] = 14
         options["knife_del_threshold"] = 1
         options["auto_merge"] = False
+        options["display_closest"] = True
 
         series_data["obj_attrs"] = {}
         series_data["ztrace_attrs"] = {}

@@ -372,6 +372,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
+                    ("lefthanded_act", "Left handed", "checkbox", self.field.setLeftHanded),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
                 ]
@@ -1913,7 +1914,8 @@ class MainWindow(QMainWindow):
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
-            [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))]
+            [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
+            [("check", ("Diplay closest field item", self.series.options["display_closest"]))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:
@@ -1922,6 +1924,7 @@ class MainWindow(QMainWindow):
         s = "rect" if response[0][0][1] else "lasso"
         t = "inc" if response[1][0][1] else "exc"
         self.series.options["pointer"] = s, t
+        self.series.options["display_closest"] = response[2][0][1]
         self.seriesModified()
     
     def modifyGrid(self, event=None):

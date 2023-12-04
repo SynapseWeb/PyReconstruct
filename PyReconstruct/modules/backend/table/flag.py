@@ -133,8 +133,7 @@ class FlagTableManager():
                     f.resolved = resolved
                     break
             section.save()
-
-        self.updateSection(section)
+            self.updateSection(section)
 
         # update the view
         self.mainwindow.field.reload()

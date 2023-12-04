@@ -347,7 +347,7 @@ class FlagTableWidget(QDockWidget):
                 (list): the name of the objects
         """
         selected_indexes = self.table.selectedIndexes()
-        return [self.displayed_flags[i] for i in selected_indexes]
+        return [self.displayed_flags[i.row()] for i in selected_indexes]
 
     # RIGHT CLICK FUNCTIONS
 
@@ -387,7 +387,7 @@ class FlagTableWidget(QDockWidget):
             Params:
                 resolved (bool): the resolved status
         """
-        flags = self.getSelectedFlag()
+        flags = self.getSelectedFlags()
         if not flags:
             return
         

@@ -73,6 +73,12 @@ class Log():
                 s (str): the string
         """
         l = s.split(", ")
+
+        # check for commas in event
+        if len(l) > 6:
+            l[5] = ", ".join(l[5:])
+            l = l[:6]
+
         (
             date,
             time,

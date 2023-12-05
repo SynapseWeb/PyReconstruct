@@ -1,3 +1,6 @@
+from skimage.draw import polygon
+import numpy as np
+
 from .transform import Transform
 
 from PyReconstruct.modules.calc import centroid, distance
@@ -63,22 +66,36 @@ class Trace():
             return False
         return True
 
-    def overlaps(self, other):
+    def overlaps(self, other, threshold=0.99):
         """Check if trace points overlap.
         
             Params:
                 other (Trace): the trace to compare
+                threshold (float): the threshold overlap ratio to define overlapping
             Returns:
                 (bool): whether or not trace traces overlap
         """
-        if len(self.points) != len(other.points):
+        if self.closed != other.closed:
             return False
         
-        for (x1, y1), (x2, y2) in zip(self.points, other.points):
-            if abs(x1-x2) > 1e-6 or abs(y1-y2) > 1e-6:
-                return False
+        # compare points directly
+        points_match = True
+        if len(self.points) != len(other.points):
+            points_match = False
+        else:      
+            for (x1, y1), (x2, y2) in zip(self.points, other.points):
+                if abs(x1-x2) > 1e-2 or abs(y1-y2) > 1e-2:
+                    points_match = False
+                    break
+        if points_match:
+            return True
         
-        return True
+        # compare amount of overlap
+        r = self.getOverlapRatio(other)
+        if r >= threshold:
+            return True
+        else:
+            return False
     
     def setHidden(self, hidden=True):
         """Set whether the trace is hidden.
@@ -267,15 +284,20 @@ class Trace():
                 (float) max x value
                 (float) max y value
         """
-        if tform is None:
-            x = [p[0] for p in self.points]
-            y = [p[1] for p in self.points]
+        if tform is not None:
+            points = tform.map(self.points)
         else:
-            tform_points = tform.map(self.points)
-            x = [p[0] for p in tform_points]
-            y = [p[1] for p in tform_points]
+            points = self.points.copy()
+
+        xmin = xmax = self.points[0][0]
+        ymin = ymax = self.points[0][1]
+        for x, y in points[1:]:
+            if x < xmin: xmin = x
+            elif x > xmax: xmax = x
+            if y < ymin: ymin = y
+            elif y > ymax: ymax = y
         
-        return min(x), min(y), max(x), max(y)
+        return xmin, ymin, xmax, ymax
     
     def getMidpoint(self, tform : Transform = None) -> tuple:
         """Get the midpoint of the trace (avg of extremes).
@@ -410,6 +432,59 @@ class Trace():
                 other (Trace): the trace to merge tags with
         """
         self.tags = self.tags.union(other.tags)
+    
+    def getOverlapRatio(self, other):
+        """Get the amount of intersection between two traces.
+        
+            Params:
+                other (Trace): the trace to compare against
+        """
+        xmin1, ymin1, xmax1, ymax1 = self.getBounds()
+        xmin2, ymin2, xmax2, ymax2 = other.getBounds()
+
+        # if the shapes don't remotely intersect, ignore
+        if (
+            xmax1 < xmin2 or xmax2 < xmin1 or
+            ymax1 < ymin2 or ymax2 < ymin1):
+            return 0
+        
+        pts1 = np.array(self.points)
+        pts2 = np.array(other.points)
+        
+        # calculate a scaling factor
+        xmin, xmax = min(xmin1, xmin2), max(xmax1, xmax2)
+        ymin, ymax = min(ymin1, ymin2), max(ymax1, ymax2)
+        initial_area = (xmax-xmin) * (ymax-ymin)
+        scale_factor = (1e4 / initial_area) ** 0.5
+
+        # scale the points
+        pts1 = np.round(pts1 * scale_factor).astype(int)
+        pts2 = np.round(pts2 * scale_factor).astype(int)
+        xmin = round(xmin * scale_factor)
+        xmax = round(xmax * scale_factor)
+        ymin = round(ymin * scale_factor)
+        ymax = round(ymax * scale_factor)
+
+        # translate the points
+        pts1[:,0] -= xmin
+        pts1[:,1] -= ymin
+        pts2[:,0] -= xmin
+        pts2[:,1] -= ymin
+
+        # generate the polygons
+        r1, c1 = polygon(pts1[:,1], pts1[:,0])
+        r2, c2 = polygon(pts2[:,1], pts2[:,0])
+        mask1 = np.zeros(shape=(ymax-ymin+1, xmax-xmin+1), dtype=bool)
+        mask2 = np.zeros(shape=(ymax-ymin+1, xmax-xmin+1), dtype=bool)
+        mask1[r1, c1] = True
+        mask2[r2, c2] = True
+
+        # get the union and intersect areas
+        union_area = np.sum(np.logical_or(mask1, mask2))
+        intersect_area = np.sum(np.logical_and(mask1, mask2))
+
+        return intersect_area / union_area
+
 
 def convertMode(arg):
     """Translate between Reconstruct and PyReconstruct fill modes."""

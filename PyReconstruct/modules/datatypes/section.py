@@ -720,7 +720,7 @@ class Section():
             if log_event:
                 self.series.addLog(None, self.n, "Modify flag")
     
-    def importTraces(self, other, regex_filters=[]):
+    def importTraces(self, other, regex_filters=[], flag_conflicts=True):
         """Import the traces from another section.
         
             Params:
@@ -735,7 +735,14 @@ class Section():
 
             if passes_filters:
                 if cname in self.contours:
-                    self.contours[cname].importTraces(contour)
+                    conflict_traces = self.contours[cname].importTraces(contour)
+                    
+                    # flag the conflicts
+                    if flag_conflicts:
+                        for trace in conflict_traces:
+                            x, y = trace.getCentroid()
+                            self.flags.append(Flag("import-conflict", x, y, self.n, trace.color))
+
                 else:
                     self.contours[cname] = contour.copy()
         

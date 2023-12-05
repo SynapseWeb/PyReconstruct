@@ -1,4 +1,5 @@
 from .trace import Trace
+from .flag import Flag
 
 class Contour():
 
@@ -118,28 +119,44 @@ class Contour():
                 other (Contour): the contour with traces to import
         """
         # assume that the first few traces are the same to save time
-        for i, o_trace in enumerate(other):
+        i = 0
+        while i < len(other):
             if i >= len(self):
                 break
             s_trace = self[i]
-            if s_trace.overlaps(o_trace):
+            o_trace = other[i]
+            if s_trace.overlaps(o_trace, threshold=0.95):
                 s_trace.mergeTags(o_trace)  # import tags
             else:
                 break
+            i += 1
 
-        # gather remaining traces and compare them
+        # gather remaining traces that aren't the same between series
         rem_s_traces = self[i:]
         rem_o_traces = other[i:]
-        for o_trace in rem_o_traces:
+        first_comparison = True
+        for o_trace in rem_o_traces.copy():
             found = False
             found_i = None
             for i, s_trace in enumerate(rem_s_traces):
-                if s_trace.overlaps(o_trace):
+                if first_comparison:  # skip the first comparison -- we already know its false
+                    first_comparison = False
+                    continue
+                if s_trace.overlaps(o_trace, threshold=0.95):
                     s_trace.mergeTags(o_trace)  # import tags
                     found = True
                     found_i = i
                     break
             if found:
                 rem_s_traces.pop(found_i)
+                rem_o_traces.remove(o_trace)
             else:
-                self.append(o_trace.copy())
+                self.append(o_trace)
+        
+        # return the possible conflict traces
+        if rem_s_traces and rem_o_traces:
+            return (rem_s_traces + rem_o_traces)
+        else:
+            return []
+
+        

@@ -1,0 +1,5 @@
+jser = "/tmp/this/is/a/fake.jser"
+height = 2.0
+width = 2.0
+sections = 50
+mag = 0.004

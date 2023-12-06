@@ -36,7 +36,7 @@ from PyReconstruct.modules.backend.table import (
     FlagTableManager
 )
 from PyReconstruct.modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
-from PyReconstruct.modules.gui.utils import notify, drawOutlinedText
+from PyReconstruct.modules.gui.utils import notify, drawOutlinedText, noUndoWarning
 from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
@@ -1822,6 +1822,27 @@ class FieldWidget(QWidget, FieldView):
             self.mouse_mode == FieldWidget.CLOSEDTRACE):
             cursor = self.pencil_l if self.left_handed else self.pencil_r
             if cursor != self.cursor(): self.setCursor(cursor)
+    
+    def deleteAll(self, tags=False):
+        """Delete all traces in the series that match the trace name (and possibly tags).
+        
+            Params:
+                tags (bool): True if tags should be compared
+        """
+        if len(self.section.selected_traces) != 1:
+            notify("Please select only one trace.")
+            return
+        trace = self.section.selected_traces[0]
+
+        if not noUndoWarning():
+            return
+
+        if tags:
+            self.series.deleteAllTraces(trace.name, trace.tags)
+        else:
+            self.series.deleteAllTraces(trace.name)
+        
+        self.reload()
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

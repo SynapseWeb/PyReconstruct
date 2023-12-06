@@ -62,11 +62,12 @@ class FlagTableManager():
         for table in self.tables:
             table.createTable()
     
-    def deleteFlags(self, flags : list):
+    def deleteFlags(self, flags : list, match_name=False):
         """Delete an object or objects on every section.
         
             Params:
                 flags (list): the list of flags to delete
+                match_name (bool): True if flags with same name should be deleted
         """
         self.mainwindow.saveAllData()
 
@@ -82,8 +83,10 @@ class FlagTableManager():
         for snum, section in self.series.enumerateSections(message="Deleting flag(s)..."):
             if snum in flags_dict:
                 for delete_flag in flags_dict[snum]:
-                    for section_flag in section.flags:
-                        if section_flag.equals(delete_flag):
+                    for section_flag in section.flags.copy():
+                        if match_name and section_flag.name == delete_flag.name:
+                            section.flags.remove(section_flag)
+                        elif not match_name and section_flag.equals(delete_flag):
                             section.flags.remove(section_flag)
                             break
                 section.save()

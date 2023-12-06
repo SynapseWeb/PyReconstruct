@@ -4,7 +4,7 @@ import json
 import shutil
 from datetime import datetime
 
-from .log import LogSet
+from .log import LogSet, LogSetPair
 from .ztrace import Ztrace
 from .section import Section
 from .contour import Contour
@@ -1120,7 +1120,6 @@ class Series():
             sections : list = None, 
             regex_filters : list = [], 
             threshold : float = 0.95, 
-            remove_old_overlaps : bool = True,
             flag_conflicts : bool = True, 
             log_event=True):
         """Import all the traces from another series.
@@ -1147,13 +1146,10 @@ class Series():
         if sections is None:
             sections = self.sections.keys()
         
-        # acquire the histories if requested
-        if remove_old_overlaps:
-            s_history = self.getFullHistory()
-            o_history = other.getFullHistory()
-            histories = s_history, o_history
-        else:
-            histories = None
+        histories = LogSetPair(
+            self.getFullHistory(),
+            other.getFullHistory()
+        )
         
         for snum, section in self.enumerateSections(message="Importing traces..."):
             if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series

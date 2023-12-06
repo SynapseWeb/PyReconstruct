@@ -1162,7 +1162,6 @@ class MainWindow(QMainWindow):
                 ["Overlap threshold (0-1):", ("float", 0.95, (0,1)), None],
                 [(
                     "check", 
-                    ("Remove old traces that have overlap with new traces", True), 
                     ("Flag import conflicts", True)
                 )]
             ]
@@ -1178,14 +1177,12 @@ class MainWindow(QMainWindow):
             sections = tuple(range(response[2], response[3]+1))
 
             threshold = response[4]
-            remove_old_overlaps = response[5][0][1]
-            flag_conflicts = response[5][1][1]
+            flag_conflicts = response[5][0][1]
         
         else:
             sections = self.series.sections.keys()
             regex_filters = []
             threshold = 0.95
-            remove_old_overlaps = True
             flag_conflicts = True
 
         if not jser_fp: return  # exit function if user does not provide series
@@ -1199,7 +1196,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, sections, regex_filters, threshold, remove_old_overlaps, flag_conflicts)
+        self.series.importTraces(o_series, sections, regex_filters, threshold, flag_conflicts)
         o_series.close()
 
         # reload the field to update the traces

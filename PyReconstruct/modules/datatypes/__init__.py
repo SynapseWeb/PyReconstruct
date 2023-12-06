@@ -10,4 +10,4 @@ from .obj_group_dict import ObjGroupDict
 
 from .series_data import SeriesData, ObjectData, TraceData
 
-from .log import LogSet, Log
+from .log import LogSet, LogSetPair, Log

@@ -155,9 +155,6 @@ class Contour():
                 self.append(o_trace)
         
         # return the possible conflict traces
-        if rem_s_traces and rem_o_traces:
-            return rem_s_traces, rem_o_traces
-        else:
-            return [], []
+        return rem_s_traces, rem_o_traces
 
         

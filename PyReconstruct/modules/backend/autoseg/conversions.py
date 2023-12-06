@@ -17,15 +17,21 @@ def setDT():
     t = datetime.now()
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
+# def defineZarrWindow(
+#         border_obj : str=None,
+
 def seriesToZarr(
         series : Series,
-        border_obj : str,
         srange : tuple,
-        mag : float):
+        mag : float,
+        data_fp: str = None,
+        border_obj : str=None,
+):
     """Convert a series into a zarr file usable by neuroglancer.
     
         Params:
             series (Series): the series to convert
+            data_fp (str): filepath to output zarr
             border_obj (str): the object to use as the border marking
             srange (tuple): the range of sections (exclusive)
             mag (float): the microns per pixel for the zarr file
@@ -57,10 +63,11 @@ def seriesToZarr(
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
 
     # create the zarr files
-    data_fp = os.path.join(
-        os.path.dirname(series.jser_fp),
-        f"data_{border_obj}.zarr"
-    )
+    if not data_fp:
+        data_fp = os.path.join(
+            os.path.dirname(series.jser_fp),
+            f"data_{border_obj}.zarr"
+        )
     if os.path.isdir(data_fp):  # delete existing data.zarr
         shutil.rmtree(data_fp)
     data_zg = zarr.open(data_fp, "a")

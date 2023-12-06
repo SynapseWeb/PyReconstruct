@@ -720,12 +720,15 @@ class Section():
             if log_event:
                 self.series.addLog(None, self.n, "Modify flag")
     
-    def importTraces(self, other, regex_filters=[], flag_conflicts=True):
+    def importTraces(self, other, regex_filters=[], threshold : float = 0.95, flag_conflicts : bool = True, histories=None):
         """Import the traces from another section.
         
             Params:
                 other (Section): the section with traces to import
                 regex_filters (list): the list of regex filters for objects
+                threshold (float): the overlap threshold
+                flag_conflicts (bool): True if conflicts should be flagged
+                histories (tuple): the self history and the other history
         """
         for cname, contour in other.contours.items():
             passes_filters = False if regex_filters else True
@@ -735,13 +738,46 @@ class Section():
 
             if passes_filters:
                 if cname in self.contours:
-                    conflict_traces = self.contours[cname].importTraces(contour)
-                    
-                    # flag the conflicts
-                    if flag_conflicts:
-                        for trace in conflict_traces:
-                            x, y = trace.getCentroid()
-                            self.flags.append(Flag("import-conflict", x, y, self.n, trace.color))
+                    conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(contour, threshold)
+
+                    if conflict_traces_s and conflict_traces_o:
+
+                        if histories:
+                            s_history, o_history = histories
+                            # scan history to check which is more recent
+                            d_s, t_s = s_history.getDateTime(self.n, cname)
+                            d_o, t_o = o_history.getDateTime(other.n, cname)
+
+                            is_more_recent = None
+                            if d_s and d_o:
+                                if (d_s + t_s) > (d_o + t_o):
+                                    is_more_recent = True
+                                elif (d_s + t_s) < (d_o + t_o):
+                                    is_more_recent = False
+
+                            # remove traces in that older contour that overlap with ones in the newer contour                        
+                            if is_more_recent is not None:
+                                if is_more_recent:
+                                    keep_traces = conflict_traces_s
+                                    remove_traces = conflict_traces_o
+                                else:
+                                    keep_traces = conflict_traces_o
+                                    remove_traces = conflict_traces_s
+                                for kt in keep_traces.copy():
+                                    overlap_found = False
+                                    for rt in remove_traces.copy():
+                                        if kt.getOverlapRatio(rt):
+                                            overlap_found = True
+                                            remove_traces.remove(rt)
+                                            self.contours[cname].remove(rt)
+                                    if overlap_found:
+                                        keep_traces.remove(kt)
+
+                        # flag the remaining conflicts
+                        if flag_conflicts:
+                            for trace in (conflict_traces_s + conflict_traces_o):
+                                x, y = trace.getCentroid()
+                                self.flags.append(Flag("import-conflict", x, y, self.n, trace.color))
 
                 else:
                     self.contours[cname] = contour.copy()

@@ -1115,13 +1115,23 @@ class Series():
                 log not in self_hist.all_logs):
                 self.log_set.addExistingLog(log)            
     
-    def importTraces(self, other, sections : list = None, regex_filters : list = [], log_event=True):
+    def importTraces(
+            self, other, 
+            sections : list = None, 
+            regex_filters : list = [], 
+            threshold : float = 0.95, 
+            remove_old_overlaps : bool = True,
+            flag_conflicts : bool = True, 
+            log_event=True):
         """Import all the traces from another series.
         
             Params:
                 other (Series): the series to import from
                 section (list): the list of sections to include in import
                 regex_filters (list): the filters for the objects to import
+                threshold (float): the overlap threshold
+                remove_old_overlaps (bool): True if old traces overlapping new traces should be removed
+                flag_conflicts (bool): True if conflicts should be flagged
                 log_event (bool): True if event should be logged
         """
         # # ensure that the two series have the same sections
@@ -1137,11 +1147,19 @@ class Series():
         if sections is None:
             sections = self.sections.keys()
         
+        # acquire the histories if requested
+        if remove_old_overlaps:
+            s_history = self.getFullHistory()
+            o_history = other.getFullHistory()
+            histories = s_history, o_history
+        else:
+            histories = None
+        
         for snum, section in self.enumerateSections(message="Importing traces..."):
             if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
                 continue
             s_section = other.loadSection(snum)  # sending section
-            section.importTraces(s_section, regex_filters)
+            section.importTraces(s_section, regex_filters, threshold, flag_conflicts, histories)
         
         # unsupress logging for object creation
         self.data.supress_logging = False

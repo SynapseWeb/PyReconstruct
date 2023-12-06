@@ -112,11 +112,12 @@ class Contour():
 
         return (xmax + xmin) / 2, (ymax + ymin) / 2
 
-    def importTraces(self, other):
+    def importTraces(self, other, threshold : float = 0.95):
         """Import all of the traces from another contour.
         
             Params:
                 other (Contour): the contour with traces to import
+                threshold (float): the overlap threshold
         """
         # assume that the first few traces are the same to save time
         i = 0
@@ -125,7 +126,7 @@ class Contour():
                 break
             s_trace = self[i]
             o_trace = other[i]
-            if s_trace.overlaps(o_trace, threshold=0.95):
+            if s_trace.overlaps(o_trace, threshold):
                 s_trace.mergeTags(o_trace)  # import tags
             else:
                 break
@@ -155,8 +156,8 @@ class Contour():
         
         # return the possible conflict traces
         if rem_s_traces and rem_o_traces:
-            return (rem_s_traces + rem_o_traces)
+            return rem_s_traces, rem_o_traces
         else:
-            return []
+            return [], []
 
         

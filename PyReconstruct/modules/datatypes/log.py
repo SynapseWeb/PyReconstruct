@@ -145,6 +145,20 @@ class Log():
             self.section_ranges.append((snum, snum))
         
         self.checkSectionRanges()
+    
+    def containsSection(self, snum : int):
+        """Check if the logs section range contains the given section number.
+        
+            Params:
+                snum (int): the section number
+        """
+        if not self.section_ranges:
+            return False
+        
+        for n1, n2 in self.section_ranges:
+            if snum in range(n1, n2+1):
+                return True
+        return False
 
 
 class LogSet():
@@ -281,3 +295,15 @@ class LogSet():
             if (obj_name == log.obj_name and 
                 ("curated" in log.event or "curation" in log.event)):
                 self.all_logs.remove(log)
+    
+    def getDateTime(self, snum : int, cname : str):
+        """Scan the history and return the date for a contour on a given section.
+        
+            Params:
+                snum (int): the section number
+                cname (str): the contour name
+        """
+        for log in reversed(self.all_logs):
+            if log.obj_name == cname and log.containsSection(snum):
+                return log.date, log.time
+        return None, None

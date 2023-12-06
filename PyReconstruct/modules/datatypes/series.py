@@ -917,6 +917,31 @@ class Series():
         
         self.modified = True
     
+    def deleteAllTraces(self, trace_name : str, tags : set = None):
+        """Delete all traces with a certain name and tag set.
+        
+            Params:
+                trace_name (str): the name of the traces to delete
+                tags (set): the tags to check to delete
+        """
+        for snum, section in self.enumerateSections(
+            message="Deleting trace(s)..."
+        ):
+            if trace_name in section.contours:
+                contour = section.contours[trace_name]
+                to_del = []
+                for trace in contour:
+                    if (
+                        (tags is not None and trace.tags == tags) or
+                        (tags is None)
+                    ):
+                        to_del.append(trace)
+                for trace in to_del:
+                    section.removeTrace(trace)
+                if to_del:
+                    section.save()
+        self.modified = True
+    
     def editObjectAttributes(
             self, 
             obj_names : list, 
@@ -1143,6 +1168,10 @@ class Series():
         # supress logging for object creation
         self.data.supress_logging = True
 
+        # get the current date and time for tagging
+        d, t = getDateTime()
+        dt_str = d + "-" + t
+
         if sections is None:
             sections = self.sections.keys()
         
@@ -1155,7 +1184,7 @@ class Series():
             if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
                 continue
             s_section = other.loadSection(snum)  # sending section
-            section.importTraces(s_section, regex_filters, threshold, flag_conflicts, histories)
+            section.importTraces(s_section, regex_filters, threshold, flag_conflicts, histories, dt_str)
         
         # unsupress logging for object creation
         self.data.supress_logging = False

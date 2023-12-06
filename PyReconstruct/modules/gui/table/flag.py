@@ -133,7 +133,8 @@ class FlagTableWidget(QDockWidget):
             None,
             ("copy_act", "Copy", "", self.table.copy),
             None,
-            ("delete_act", "Delete", "", self.deleteFlags)
+            ("delete_act", "Delete", "", self.deleteFlags),
+            ("deletematchname_act", "Delete flags with this name", "", lambda : self.deleteFlags(True))
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
@@ -393,13 +394,13 @@ class FlagTableWidget(QDockWidget):
         
         self.manager.markResolved(flags, resolved)
 
-    def deleteFlags(self):
+    def deleteFlags(self, match_name=False):
         """Delete an object or objects on every section."""
         self.mainwindow.saveAllData()
         if not noUndoWarning():
             return
         selected_flags = self.getSelectedFlags()
-        self.manager.deleteFlags(selected_flags)
+        self.manager.deleteFlags(selected_flags, match_name)
 
     # MENU-RELATED FUNCTIONS
 

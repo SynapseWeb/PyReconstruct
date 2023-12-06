@@ -450,7 +450,16 @@ class MainWindow(QMainWindow):
             None,
             ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
             None,
-            ("deletetraces_act", "Delete traces", "Del", self.backspace)
+            {
+                "attr_name": "deleteallmenu",
+                "text": "Delete all",
+                "opts":
+                [
+                    ("deletealltraces_act", "traces with same name", "", self.field.deleteAll),
+                    ("deletealltracestags_act", "traces with same name and tags", "", lambda : self.field.deleteAll(True))
+                ]
+            },
+            ("delete_act", "Delete", "Del", self.backspace),
         ]
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
@@ -466,7 +475,8 @@ class MainWindow(QMainWindow):
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,
-            self.createflag_act
+            self.createflag_act,
+            self.deleteallmenu
         ]
         self.ztrace_actions = [
             self.edittrace_act

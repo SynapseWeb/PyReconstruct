@@ -721,7 +721,7 @@ class Section():
             if log_event:
                 self.series.addLog(None, self.n, "Modify flag")
     
-    def importTraces(self, other, regex_filters=[], threshold : float = 0.95, flag_conflicts : bool = True, histories : LogSetPair = None):
+    def importTraces(self, other, regex_filters=[], threshold : float = 0.95, flag_conflicts : bool = True, histories : LogSetPair = None, dt_str : str = None):
         """Import the traces from another section.
         
             Params:
@@ -730,6 +730,7 @@ class Section():
                 threshold (float): the overlap threshold
                 flag_conflicts (bool): True if conflicts should be flagged
                 histories (LogSetPair): the self history and the other history
+                dt_str (str): the datetime string for tagging purposes
         """
         for cname, contour in other.contours.items():
             passes_filters = False if regex_filters else True
@@ -746,23 +747,32 @@ class Section():
                 
                 if flag_conflicts:
                     # selectively exclude traces if only series contains data
-                    if (histories.last_shared is not None) and (bool(conflict_traces_s) != bool(conflict_traces_o)):
-                        if not conflict_traces_s:
-                            ct = conflict_traces_o
-                            ls = histories.logset1
-                        elif not conflict_traces_o:
-                            ct = conflict_traces_s
-                            ls = histories.logset2
-                        d, t = ls.getDateTime(self.n, cname)
-                        if (d + t) <= (histories.diverge_date + histories.diverge_time):
-                            ct.clear()
-                    # if no history found, assume new and do not flag
-                    elif histories.last_shared is None:
-                        continue
+                    if (bool(conflict_traces_s) != bool(conflict_traces_o)):
+                        if histories.last_shared is not None:
+                            if not conflict_traces_s:
+                                ct = conflict_traces_o
+                                ls = histories.logset1
+                            elif not conflict_traces_o:
+                                ct = conflict_traces_s
+                                ls = histories.logset2
+                            d, t = ls.getDateTime(self.n, cname)
+                            if (d + t) <= (histories.diverge_date + histories.diverge_time):
+                                ct.clear()
+                        # if no history found, assume new and do not flag
+                        else:
+                            conflict_traces_s.clear()
+                            conflict_traces_o.clear()
                                         
                     # flag the remaining conflicts
-                    for trace in (conflict_traces_s + conflict_traces_o):
+                    for trace in conflict_traces_s:
+                        if dt_str:
+                            trace.tags.add(f"{dt_str}-ic1")
                         x, y = trace.getCentroid()
-                        self.flags.append(Flag("import-conflict", x, y, self.n, trace.color))
+                        self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
+                    for trace in conflict_traces_o:
+                        if dt_str:
+                            trace.tags.add(f"{dt_str}-ic2")
+                        x, y = trace.getCentroid()
+                        self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
         
         self.save()

@@ -748,7 +748,7 @@ class Section():
                 modified_since_diverge = [False, False]
                 for i, ls in enumerate((histories.logset0, histories.logset1)):
                     d, t = ls.getDateTime(self.n, cname)
-                    if (d + t) > (histories.diverge_date + histories.diverge_time):
+                    if d and t and (d + t) > (histories.diverge_date + histories.diverge_time):
                         modified_since_diverge[i] = True
                 
                 if modified_since_diverge[0] != modified_since_diverge[1]:  # if only one of the contours has been modified since diverge

@@ -498,7 +498,18 @@ class FieldView():
             
         ]
 
-        # set the selected traces
+        # if the flag is an import conflict, hide everything except the conflict traces
+        if flag.name.startswith("import-conflict_"):
+            flag_cname = flag.name[flag.name.find("_")+1:]
+            for cname, contour in self.section.contours.items():
+                if cname == flag_cname:
+                    for trace in contour:
+                        trace.hidden = False
+                else:
+                    for trace in contour:
+                        trace.hidden = True
+
+        # set the selected flags
         show_flags = self.series.options["show_flags"]
         if (show_flags == "all" or
             (show_flags == "unresolved" and not flag.resolved)):

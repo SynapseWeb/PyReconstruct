@@ -51,8 +51,8 @@ class FlagTableWidget(QDockWidget):
         # set defaults
         self.columns = {
             "Section": True,
-            "Flag": True,
             "Color": True,
+            "Flag": True,
             "Resolved": False,
             "Last Comment": True
         }
@@ -151,13 +151,13 @@ class FlagTableWidget(QDockWidget):
         if self.columns["Section"]:
             self.table.setItem(row, col, QTableWidgetItem(str(flag.snum)))
             col += 1
-        if self.columns["Flag"]:
-            self.table.setItem(row, col, QTableWidgetItem(flag.name))
-            col += 1
         if self.columns["Color"]:
             item = QTableWidgetItem(" ")
             item.setBackground(QColor(*flag.color))
             self.table.setItem(row, col, item)
+            col += 1
+        if self.columns["Flag"]:
+            self.table.setItem(row, col, QTableWidgetItem(flag.name))
             col += 1
         if self.columns["Resolved"]:
             resolved = "Resolved" if flag.resolved else "Unresolved"

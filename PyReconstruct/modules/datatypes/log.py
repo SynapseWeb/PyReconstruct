@@ -329,7 +329,7 @@ class LogSetPair():
         ):
             i += 1
         
-        if i == 0 or i == len(self.logset0.all_logs) == len(self.logset1.all_logs):  # either diverge from start or completely the same
+        if i == 0 or (i == len(self.logset0.all_logs) == len(self.logset1.all_logs)):  # either diverge from start or completely the same
             self.last_shared = None
             self.diverge_date = None
             self.diverge_time = None

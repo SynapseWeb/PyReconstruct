@@ -733,46 +733,54 @@ class Section():
                 dt_str (str): the datetime string for tagging purposes
         """
         for cname, contour in other.contours.items():
+            # check filters, skip if does not pass
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
                 if bool(re.fullmatch(rf, cname)):
                     passes_filters = True
+            if not passes_filters:
+                continue
 
-            if passes_filters:
-                # create an empty contour if does not exist
-                if cname not in self.contours:
-                    self.contours[cname] = Contour(cname, [])
-
-                conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(contour, threshold)
+            # check the histories to find which contour has been modified since diverge
+            history_checked = False
+            if histories and histories.last_shared is not None:
+                # determine which series have not been modified since diverge
+                modified_since_diverge = [False, False]
+                for i, ls in enumerate((histories.logset0, histories.logset1)):
+                    d, t = ls.getDateTime(self.n, cname)
+                    if (d + t) > (histories.diverge_date + histories.diverge_time):
+                        modified_since_diverge[i] = True
                 
-                if flag_conflicts:
-                    # selectively exclude traces if only series contains data
-                    if (bool(conflict_traces_s) != bool(conflict_traces_o)):
-                        if histories.last_shared is not None:
-                            if not conflict_traces_s:
-                                ct = conflict_traces_o
-                                ls = histories.logset1
-                            elif not conflict_traces_o:
-                                ct = conflict_traces_s
-                                ls = histories.logset2
-                            d, t = ls.getDateTime(self.n, cname)
-                            if (d + t) <= (histories.diverge_date + histories.diverge_time):
-                                ct.clear()
-                        # if no history found, assume new and do not flag
-                        else:
-                            conflict_traces_s.clear()
-                            conflict_traces_o.clear()
-                                        
-                    # flag the remaining conflicts
-                    for trace in conflict_traces_s:
-                        if dt_str:
-                            trace.tags.add(f"{dt_str}-ic1")
-                        x, y = trace.getCentroid()
-                        self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
-                    for trace in conflict_traces_o:
-                        if dt_str:
-                            trace.tags.add(f"{dt_str}-ic2")
-                        x, y = trace.getCentroid()
-                        self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
+                if modified_since_diverge[0] != modified_since_diverge[1]:  # if only one of the contours has been modified since diverge
+                    # if the other series is the one modified, replace contour and move to next
+                    if modified_since_diverge[1]:
+                        self.contours[cname] = contour
+                    continue
+                elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
+                    continue
+                history_checked = True
+            
+            # create an empty contour if does not exist
+            if cname not in self.contours:
+                self.contours[cname] = Contour(cname, [])
+
+            # import the contour
+            conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(contour, threshold)
+            
+            # flag the remaining conflicts
+            if flag_conflicts and (
+                history_checked and (conflict_traces_s or conflict_traces_o) or  # if history has been checked, be inclusive with conflicts
+                not history_checked and (conflict_traces_s and conflict_traces_o)  # if history has not been checked, be exclusive with conflicts
+            ):                                        
+                for trace in conflict_traces_s:
+                    if dt_str:
+                        trace.tags.add(f"{dt_str}-ic1")
+                    x, y = trace.getCentroid()
+                    self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
+                for trace in conflict_traces_o:
+                    if dt_str:
+                        trace.tags.add(f"{dt_str}-ic2")
+                    x, y = trace.getCentroid()
+                    self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
         
         self.save()

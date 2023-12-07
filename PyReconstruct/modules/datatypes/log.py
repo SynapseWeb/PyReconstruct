@@ -310,30 +310,30 @@ class LogSet():
 
 class LogSetPair():
 
-    def __init__(self, logset1 : LogSet, logset2 : LogSet):
+    def __init__(self, logset0 : LogSet, logset1 : LogSet):
         """Create a logset pair (ideally when dealing with two series).
         
             Params:
                 logset1 (LogSet): the first logset (usually self)
                 logset2 (LogSet): the second logset (usually other)
         """
+        self.logset0 = logset0
         self.logset1 = logset1
-        self.logset2 = logset2
 
         # get the date and time for the diverge
         i = 0
         while (
+            i < len(self.logset0.all_logs) and
             i < len(self.logset1.all_logs) and
-            i < len(self.logset2.all_logs) and
-            self.logset1.all_logs[i] == self.logset2.all_logs[i]
+            self.logset0.all_logs[i] == self.logset1.all_logs[i]
         ):
             i += 1
         
-        if i == 0:
+        if i == 0 or i == len(self.logset0.all_logs) == len(self.logset1.all_logs):  # either diverge from start or completely the same
             self.last_shared = None
             self.diverge_date = None
             self.diverge_time = None
         else:
-            self.last_shared = self.logset1.all_logs[i-1]
+            self.last_shared = self.logset0.all_logs[i-1]
             self.diverge_date = self.last_shared.date
             self.diverge_time = self.last_shared.time

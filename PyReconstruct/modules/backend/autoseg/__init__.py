@@ -1,1 +1,1 @@
-from .conversions import seriesToZarr, seriesToLabels, labelsToObjects
+from .conversions import seriesToZarr, seriesToLabels, labelsToObjects, borderToWindow

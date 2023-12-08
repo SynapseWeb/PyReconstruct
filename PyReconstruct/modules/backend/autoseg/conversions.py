@@ -17,42 +17,62 @@ def setDT():
     t = datetime.now()
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
-# def defineZarrWindow(
-#         border_obj : str=None,
+def borderToWindow(border_obj, srange, series):
+    """Convert a border object into a window.
+
+        Params:
+            border_obj (str): the object to use as the border marking
+            series (Series): a series object
+            srange (tuple): the range of sections (exclusive)
+        Returns:
+           x position, y position, width, height
+    """
+
+    x_vals = []
+    y_vals = []
+    
+    for snum in range(*srange):
+        
+        section = series.loadSection(snum)
+        tform = section.tform
+        
+        if border_obj in section.contours:
+            
+            xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
+            
+            x_vals += [xmin, xmax]
+            y_vals += [ymin, ymax]
+            
+    x = min(x_vals)
+    w = max(x_vals) - x
+    y = min(y_vals)
+    h = max(y_vals) - y
+
+    window = [x, y, w, h]
+
+    return window
 
 def seriesToZarr(
         series : Series,
         srange : tuple,
         mag : float,
+        window : tuple,
         data_fp: str = None,
-        border_obj : str=None,
 ):
-    """Convert a series into a zarr file usable by neuroglancer.
+    """Convert a series into a neuroglancer-compatible zarr.
     
         Params:
             series (Series): the series to convert
-            data_fp (str): filepath to output zarr
-            border_obj (str): the object to use as the border marking
             srange (tuple): the range of sections (exclusive)
             mag (float): the microns per pixel for the zarr file
+            window (tuple): the window for the resulting zarr
+            data_fp (str): filepath to output zarr
+
         Returns:
             the filepath for the zarr, the threadpool
     """
-    # get the border window
-    x_vals = []
-    y_vals = []
-    for snum in range(*srange):
-        section = series.loadSection(snum)
-        tform = section.tform
-        if border_obj in section.contours:
-            xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
-            x_vals += [xmin, xmax]
-            y_vals += [ymin, ymax]
-    x = min(x_vals)
-    w = max(x_vals) - x
-    y = min(y_vals)
-    h = max(y_vals) - y
-    window = [x, y, w, h]
+
+    ######################
 
     # calculate field attributes
     shape = (

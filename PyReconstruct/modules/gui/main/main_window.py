@@ -49,7 +49,7 @@ from PyReconstruct.modules.backend.func import (
     importTransforms,
     importSwiftTransforms
 )
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects
+from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, borderToWindow
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import welcome_series_dir, assets_dir, img_dir
 
@@ -1999,7 +1999,7 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
     def exportToZarr(self):
-        """Set up an autosegmentation for a series.
+        """Set up an neuroglancer-compatible for autosegmentation.
         
             Params:
                 run (str): "train" or "segment"
@@ -2011,15 +2011,19 @@ class MainWindow(QMainWindow):
 
         if not dialog_confirmed: return
 
+        border_obj, srange, mag = inputs
+
+        # convert border obj to window
+        window = borderToWindow(border_obj, srange, self.series)
+
         print("Making zarr directory...")
         
         # export to zarr
-        border_obj, srange, mag = inputs
         data_fp = seriesToZarr(
             self.series,
-            border_obj,
             srange,
-            mag
+            mag,
+            window
         )
 
         self.series.options["autoseg"]["zarr_current"] = data_fp

@@ -1999,11 +1999,7 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
     def exportToZarr(self):
-        """Set up an neuroglancer-compatible for autosegmentation.
-        
-            Params:
-                run (str): "train" or "segment"
-        """
+        """Create a neuroglancer-compatible zarr for autosegmentation."""
         self.saveAllData()
         self.removeZarrLayer()
 
@@ -2028,7 +2024,7 @@ class MainWindow(QMainWindow):
 
         self.series.options["autoseg"]["zarr_current"] = data_fp
 
-        print("Zarr directory done.")
+        print(f"Zarr directory done and located here: {data_fp}")
     
     def train(self, retrain=False):
         """Train an autosegmentation model."""

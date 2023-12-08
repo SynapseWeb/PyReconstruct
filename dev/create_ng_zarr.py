@@ -9,7 +9,6 @@ import zarr
 import subprocess
 import argparse
 import tomllib
-import itertools
 
 from PySide6.QtWidgets import QApplication
 
@@ -18,8 +17,7 @@ project_dir = Path(__file__).parents[1]
 sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.backend.autoseg import seriesToZarr
-from PyReconstruct.modules.backend.autoseg import seriesToLabels
+from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels
 
 
 parser = argparse.ArgumentParser(prog="create_ng_zarr", description=__doc__)
@@ -40,25 +38,36 @@ args = parser.parse_args()
 # Change defaults according to optional toml config file
 if args.config:
     with open(args.config, 'rb') as fp:
-        parser.set_defaults(**tomllib.load(fp))
+        try:            
+            parser.set_defaults(**tomllib.load(fp))
+        except tomllib.TOMLDecodeError:
+            parser.error("Malformed toml config file.")
+    if args.groups: parser.set_defaults(groups=None)  # override toml acting as defaults if --groups called
     args = parser.parse_args()
 
 # Ensure "valid" jser provided
 if not args.jser or not os.path.exists(args.jser):
     parser.error("Please provide filepath to a valid jser.")
 
-jser_fp = args.jser
-h_out = float(args.height)
-w_out = float(args.width)
-secs = int(args.sections)
-mag = float(args.mag)
-groups = list(itertools.chain(*args.groups)) if args.groups else None
+jser_fp  = args.jser
+h_out    = float(args.height)
+w_out    = float(args.width)
+secs     = int(args.sections)
+mag      = float(args.mag)
 
-print(jser_fp, h_out, w_out, secs, mag, groups)
+def flatten_list(nested_list):
+    """Recursively flatten lists to handle groups."""
+ 
+    if not(bool(nested_list)):  # empty list?
+        return nested_list
+ 
+    if isinstance(nested_list[0], list):
+ 
+        return flatten_list(*nested_list[:1]) + flatten_list(nested_list[1:])
+ 
+    return nested_list[:1] + flatten_list(nested_list[1:])
 
-
-#sys.exit("bye-bye times")
-
+groups = flatten_list(args.groups) if args.groups else None
 
 print("Opening series...")
 series = Series.openJser(jser_fp)
@@ -104,16 +113,23 @@ app = QApplication(sys.argv)
 print("Creating zarr...")
 zarr_fp = seriesToZarr(
     series,
-    f"{series.name}",
     srange,
     mag,
-    output_dir="",
-    window=window
+    window=window,
+#    output_dir=output_dir
 )
+
+# Add labels to zarr if PyReconstruct groups provided
+if groups:
+    for group in groups:
+        print(f'Coverting group {group} to labels...') 
+        seriesToLabels(series, zarr_fp, group)
 
 series.close()
 
 print(f"\nSeries {series.name} exported as zarr")
-print(f"Window: {window}")
-print(f"Total sections {secs} ({start} through {end_exclude - 1})")
-print(f"Output path: {zarr_fp}\n")
+print("")
+print(f"Window:          {[round(elem, 2) for elem in window]}")
+print(f"Sections:        {secs} ({start}-{end_exclude - 1})")
+print(f"Mag:             {mag}")
+print(f"Zarr location:   {zarr_fp}\n")

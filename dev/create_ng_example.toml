@@ -1,5 +1,6 @@
-jser = "/tmp/this/is/a/fake.jser"
+jser = "/tmp/FHLTD_A-zarr.jser"
 height = 2.0
 width = 2.0
 sections = 50
-mag = 0.004
+mag = 0.008
+groups = ["test"]

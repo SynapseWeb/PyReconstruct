@@ -52,12 +52,21 @@ def borderToWindow(border_obj, srange, series):
 
     return window
 
+
+def createZarrName(window):
+    """Return string representing a zarr file name"""
+
+    window_str = [str(round(elem, 2)) for elem in window]
+    return f'data_{"-".join(window_str)}.zarr'
+
+
 def seriesToZarr(
         series : Series,
         srange : tuple,
         mag : float,
-        window : tuple,
+        window : list,
         data_fp: str = None,
+        output_dir: str = None
 ):
     """Convert a series into a neuroglancer-compatible zarr.
     
@@ -65,14 +74,13 @@ def seriesToZarr(
             series (Series): the series to convert
             srange (tuple): the range of sections (exclusive)
             mag (float): the microns per pixel for the zarr file
-            window (tuple): the window for the resulting zarr
-            data_fp (str): filepath to output zarr
+            window (list): the window (x, y, height, width) for the resulting zarr
+            data_fp (str): filename of output zarr
+            output_dir (str): directory to store zarr
 
         Returns:
             the filepath for the zarr, the threadpool
     """
-
-    ######################
 
     # calculate field attributes
     shape = (
@@ -80,21 +88,27 @@ def seriesToZarr(
         round(window[3]/mag),
         round(window[2]/mag)
     )
+
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
 
-    # create the zarr files
-    if not data_fp:
-        data_fp = os.path.join(
-            os.path.dirname(series.jser_fp),
-            f"data_{border_obj}.zarr"
-        )
-    if os.path.isdir(data_fp):  # delete existing data.zarr
-        shutil.rmtree(data_fp)
+    # create zarr files
+    
+    if not data_fp:  # if no data_fp provided, place with jser
+        
+        zarr_name = createZarrName(window)
+        
+        if not output_dir: output_dir = os.path.dirname(series.jser_fp)
+            
+        data_fp = os.path.join(output_dir, zarr_name)
+        
+    if os.path.isdir(data_fp): shutil.rmtree(data_fp)  # delete existing zarr
+        
     data_zg = zarr.open(data_fp, "a")
     data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
 
     # get values for saving zarr files (from last known section)
-    z_res = round(section.thickness * 1000)
+    section_thickness = series.loadSection(srange[0]).thickness
+    z_res = round(section_thickness * 1000)
     xy_res = round(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
     offset = [0, 0, 0]

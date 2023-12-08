@@ -2,9 +2,9 @@ name: pyreconstruct_dev
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.11
   - pip
   - setuptools
   - pip:
     - toml-argparse
-    - -r ../requirements.txt
+    - -r ../PyReconstruct/requirements.txt

@@ -32,8 +32,7 @@ class SectionTableManager():
 
     def refresh(self):
         """Refresh the section data."""
-        self.series.data.refresh()
-        self.updateTables()
+        self.mainwindow.field.refreshData()
     
     def updateTables(self):
         """Updates a table with the current data.
@@ -137,9 +136,8 @@ class SectionTableManager():
         self.mainwindow.field.reload()
         self.updateSections(section_numbers)
 
-        # refresh any existing obj table
-        if self.mainwindow.field.obj_table_manager:
-            self.mainwindow.field.obj_table_manager.refresh()
+        # refresh data and tables
+        self.mainwindow.field.refreshData()
         
         self.mainwindow.seriesModified(True)
     
@@ -195,12 +193,8 @@ class SectionTableManager():
             if log_event:
                 self.series.addLog(None, snum, "Delete section")
                 
-        # refresh the data
-        self.series.data.refresh()
-        if self.mainwindow.field.obj_table_manager:
-            self.mainwindow.field.obj_table_manager.updateTables()
-        if self.mainwindow.field.ztrace_table_manager:
-            self.mainwindow.field.ztrace_table_manager.updateTables()
+        # refresh the data in all tables
+        self.mainwindow.field.refreshData()
         
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:
@@ -218,11 +212,8 @@ class SectionTableManager():
         self.series.reorderSections(d)
         self.series.addLog(None, None, "Reorder sections")
         
-        self.series.data.refresh()
-        if self.mainwindow.field.obj_table_manager:
-            self.mainwindow.field.obj_table_manager.updateTables()
-        if self.mainwindow.field.ztrace_table_manager:
-            self.mainwindow.field.ztrace_table_manager.updateTables()
+        # refresh all table data
+        self.mainwindow.field.refreshData()
         
         # clear the field section states
         self.mainwindow.field.series_states = {}
@@ -250,12 +241,8 @@ class SectionTableManager():
         )
         self.series.addLog(None, index, "Insert section")
 
-        # refresh the data
-        self.series.data.refresh()
-        if self.mainwindow.field.obj_table_manager:
-            self.mainwindow.field.obj_table_manager.updateTables()
-        if self.mainwindow.field.ztrace_table_manager:
-            self.mainwindow.field.ztrace_table_manager.updateTables()
+        # refresh the data for all tables
+        self.mainwindow.field.refreshData()
         
         # clear the field section states
         self.mainwindow.field.series_states = {}

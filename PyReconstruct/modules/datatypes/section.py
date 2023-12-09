@@ -732,7 +732,8 @@ class Section():
                 histories (LogSetPair): the self history and the other history
                 dt_str (str): the datetime string for tagging purposes
         """
-        for cname, contour in other.contours.items():
+        all_contour_names = list(self.contours.keys()) + list(other.contours.keys())
+        for cname in all_contour_names:
             # check filters, skip if does not pass
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
@@ -741,22 +742,30 @@ class Section():
             if not passes_filters:
                 continue
 
+            # create an empty contour if does not exist
+            if cname not in self.contours:
+                self.contours[cname] = Contour(cname, [])
+            if cname not in other.contours:
+                other.contours[cname] = Contour(cname, [])
+
             # check the histories to find which contour has been modified since diverge
             history_checked = False
-            if histories and histories.last_shared is not None:
+            if histories and not histories.complete_match and histories.last_shared_index >= 0:
                 # determine which series have not been modified since diverge
                 modified_since_diverge = [False, False]
                 for i, ls in enumerate((histories.logset0, histories.logset1)):
-                    d, t = ls.getDateTime(self.n, cname)
-                    if d and t and (d + t) > (histories.diverge_date + histories.diverge_time):
+                    last_index = ls.getLastIndex(self.n, cname)
+                    if last_index > histories.last_shared_index:
                         modified_since_diverge[i] = True
                 
                 if modified_since_diverge[0] != modified_since_diverge[1]:  # if only one of the contours has been modified since diverge
                     # if the other series is the one modified, replace contour and move to next
                     if modified_since_diverge[1]:
-                        self.contours[cname] = contour
+                        self.contours[cname] = other.contours[cname]
+                    if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
                 elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
+                    if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
                 history_checked = True
             
@@ -765,7 +774,7 @@ class Section():
                 self.contours[cname] = Contour(cname, [])
 
             # import the contour
-            conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(contour, threshold)
+            conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(other.contours[cname], threshold)
             
             # flag the remaining conflicts
             if flag_conflicts and (
@@ -782,5 +791,7 @@ class Section():
                         trace.tags.add(f"{dt_str}-ic2")
                     x, y = trace.getCentroid()
                     self.flags.append(Flag(f"import-conflict_{trace.name}", x, y, self.n, trace.color))
+            
+            if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
         
         self.save()

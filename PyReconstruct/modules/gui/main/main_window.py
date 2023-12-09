@@ -1094,6 +1094,9 @@ class MainWindow(QMainWindow):
         # reload the section
         self.field.reload()
 
+        # refresh the data and lists
+        self.field.refreshData()
+
         notify("Transforms imported successfully.")
 
     def importSwiftTransforms(self, swift_fp=None):
@@ -1150,6 +1153,9 @@ class MainWindow(QMainWindow):
         
         self.field.reload()
 
+        # refresh the data and lists
+        self.field.refreshData()
+
         notify("Transforms imported successfully.")
     
     def importTraces(self, jser_fp : str = None):
@@ -1184,13 +1190,14 @@ class MainWindow(QMainWindow):
                 regex_filters = response[1].split(", ")
             else:
                 regex_filters = []
-            sections = tuple(range(response[2], response[3]+1))
+            srange = (response[2], response[3]+1)
 
             threshold = response[4]
             flag_conflicts = response[5][0][1]
         
         else:
-            sections = self.series.sections.keys()
+            slist = list(self.series.sections.keys())
+            srange = (min(slist), max(slist) + 1)
             regex_filters = []
             threshold = 0.95
             flag_conflicts = True
@@ -1206,17 +1213,14 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, sections, regex_filters, threshold, flag_conflicts)
+        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts)
         o_series.close()
 
         # reload the field to update the traces
         self.field.reload()
 
-        # refresh the object list if needed
-        if self.field.obj_table_manager:
-            self.field.obj_table_manager.refresh()
-        else:
-            self.series.data.refresh()
+        # refresh the data and lists
+        self.field.refreshData()
         
         notify("Traces imported successfully.")
     
@@ -1255,9 +1259,8 @@ class MainWindow(QMainWindow):
         # reload the field to update the ztraces
         self.field.reload()
 
-        # refresh the ztrace list if needed
-        if self.field.ztrace_table_manager:
-            self.field.ztrace_table_manager.refresh()
+        # refresh the data and lists
+        self.field.refreshData()
         
         notify("Ztraces imported successfully.")
     
@@ -1288,12 +1291,15 @@ class MainWindow(QMainWindow):
         self.series.importPalettes(o_series)
         self.saveAllData()
 
+        # reset the mouse palette
+        self.mouse_palette.reset()
+
         o_series.close()
 
-        notify("Trace palette(s) imported successfully.")
+        notify("Trace palette(s) imported successfully.\nOpen the palettes menu to view the new palettes.")
     
     def importSeriesTransforms(self, jser_fp : str = None):
-        """Import the trace palette from another series.
+        """Import the transforms from another series.
         
             Params:
                 jser_fp (str): the filepath with the series to import data from
@@ -1326,10 +1332,16 @@ class MainWindow(QMainWindow):
         s_alignments = list(self.series.data["sections"][other_sections[0]]["tforms"].keys())
 
         # prompt the user to choose an alignment
+        check_list = []
+        for a in o_alignments:
+            text = a
+            if a in s_alignments:
+                text += " (overwrite)"
+            check_list.append((text, False))
         structure = [
             [(
                 "check",
-                *((a, False) for a in o_alignments)
+                *tuple(check_list)
             )]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Import Transforms")
@@ -1365,6 +1377,10 @@ class MainWindow(QMainWindow):
         o_series.close()
         
         self.field.reload()
+
+        # refresh the data and lists
+        self.field.refreshData()
+
         self.seriesModified()
 
         notify("Transforms imported successfully.")
@@ -1407,9 +1423,8 @@ class MainWindow(QMainWindow):
         # reload the field to update the traces
         self.field.reload()
 
-        # refresh the object list if needed
-        if self.field.section_table_manager:
-            self.field.section_table_manager.refresh()
+        # refresh the data and lists
+        self.field.refreshData()
 
         notify("Brightness/contrast settings imported successfully.")
     
@@ -1435,6 +1450,9 @@ class MainWindow(QMainWindow):
         # import the flags
         self.series.importFlags(o_series)
         self.field.reload()
+
+        # refresh the data and lists
+        self.field.refreshData()
 
         o_series.close()
 

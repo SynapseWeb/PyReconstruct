@@ -45,9 +45,7 @@ class FlagTableManager():
 
     def refresh(self):
         """Reload all of the section data."""
-        self.mainwindow.saveAllData()
-        self.series.data.refresh()
-        self.updateTables()
+        self.mainwindow.field.refreshData()
     
     def updateTable(self, table : FlagTableWidget):
         """Updates a table with the current data.
@@ -133,7 +131,7 @@ class FlagTableManager():
             section = self.series.loadSection(flag.snum)
             for f in section.flags:
                 if flag.equals(f):
-                    f.resolved = resolved
+                    f.resolve(self.series.user, resolved)
                     break
             section.save()
             self.updateSection(section)

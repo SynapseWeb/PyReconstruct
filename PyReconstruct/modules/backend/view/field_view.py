@@ -647,13 +647,8 @@ class FieldView():
         
         self.reload()
 
-        # refresh all of the tables
-        if self.obj_table_manager:
-            self.obj_table_manager.refresh()
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection()
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.refresh()
+        # refresh data and tables
+        self.refreshData()
     
     def translateTform(self, dx : float, dy : float):
         """Translate the transform for the entire section.
@@ -1095,10 +1090,8 @@ class FieldView():
 
         self.section_layer.changeTform(new_tform)
 
-        # BUG: refresh object list?
-        # refresh the ztrace list
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.refresh()
+        # refresh data and tables
+        self.refreshData()
         
         self.generateView()
         self.saveState()

@@ -101,6 +101,23 @@ class Flag():
                 other (Flag): the flag to compare to
         """
         return self.id == other.id
+
+    def resolve(self, user : str, resolved=True):
+        """Resolve or unresolve the flag.
+        
+            Params:
+                user (str): the user that is modifying the flag
+                resolved (bool): the resolve status for the flag
+        """
+        # if no change, do nothing
+        if resolved == self.resolved:
+            return
+        
+        if resolved:
+            self.addComment(user, "Marked as resolved")
+        else:
+            self.addComment(user, "Marked as unresolved")
+        self.resolved = resolved
     
     def generateID():
         """Generate an ID for a flag."""

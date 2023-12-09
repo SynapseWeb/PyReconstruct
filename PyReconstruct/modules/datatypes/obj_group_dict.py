@@ -1,3 +1,5 @@
+import re
+
 class ObjGroupDict():
 
     def __init__(self, groups : dict = None):
@@ -120,9 +122,14 @@ class ObjGroupDict():
         """Get a list of objects."""
         return list(self.objects.keys())
     
-    def merge(self, other):
+    def merge(self, other, regex_filters=[]):
         """Merge other object group dict into self."""
-        for group in other.getGroupList():
-            for obj in other.getGroupObjects(group):
-                self.add(group, obj)
+        for obj in other.getObjectList():
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, obj)):
+                    passes_filters = True
+            if passes_filters:
+                for group in other.getObjectGroups(obj):
+                    self.add(group, obj)
     

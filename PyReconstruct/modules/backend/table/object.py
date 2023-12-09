@@ -53,10 +53,7 @@ class ObjectTableManager():
 
     def refresh(self):
         """Reload all of the section data."""
-        self.mainwindow.saveAllData()
-        self.series.data.refresh()
-        for table in self.tables:
-            table.createTable()
+        self.mainwindow.field.refreshData()
     
     def updateTable(self, table : ObjectTableWidget):
         """Updates a table with the current data.
@@ -255,13 +252,10 @@ class ObjectTableManager():
 
         for name in obj_names:
             self.series.createZtrace(name, cross_sectioned)
-
-        # update the ztrace table if one exists
-        if self.mainwindow.field.ztrace_table_manager:
-            self.mainwindow.field.ztrace_table_manager.refresh()
         
         self.mainwindow.seriesModified(True)
         self.mainwindow.field.reload()
+        self.mainwindow.field.refreshData()
     
     def close(self):
         """Close all tables."""

@@ -1112,37 +1112,9 @@ class Series():
         if log_event:
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
-    def importHistory(self, other, traces=True, ztraces=True):
-        """Import the history from another series.
-        
-            Params:
-                other (Series): the other series
-                traces (bool): True if trace history should be imported
-                ztraces (bool): True if the ztrace history should be imported
-        """
-        self_hist = self.getFullHistory()
-        other_hist = other.getFullHistory()
-
-        # filter out similar history
-        while (
-            self_hist.all_logs and other_hist.all_logs and
-            self_hist.all_logs[0] == other_hist.all_logs[0]):
-            self_hist.all_logs.pop(0)
-            other_hist.all_logs.pop(0)
-        
-        for log in other_hist.all_logs:
-            if (
-                log.obj_name and
-                (
-                    (ztraces and "ztrace" in log.event) or
-                    (traces and "ztrace" not in log.event)
-                ) and
-                log not in self_hist.all_logs):
-                self.log_set.addExistingLog(log)            
-    
     def importTraces(
             self, other, 
-            sections : list = None, 
+            srange : tuple = None, 
             regex_filters : list = [], 
             threshold : float = 0.95, 
             flag_conflicts : bool = True, 
@@ -1151,7 +1123,7 @@ class Series():
         
             Params:
                 other (Series): the series to import from
-                section (list): the list of sections to include in import
+                srange (tuple): the range of sections to include in import (exclusive)
                 regex_filters (list): the filters for the objects to import
                 threshold (float): the overlap threshold
                 remove_old_overlaps (bool): True if old traces overlapping new traces should be removed
@@ -1162,18 +1134,12 @@ class Series():
         # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
         #     return
         
-        if log_event:
-            self.addLog(None, None, "Begin importing traces from another series")
-        
         # supress logging for object creation
         self.data.supress_logging = True
 
         # get the current date and time for tagging
         d, t = getDateTime()
         dt_str = d + "-" + t
-
-        if sections is None:
-            sections = self.sections.keys()
         
         histories = LogSetPair(
             self.getFullHistory(),
@@ -1181,16 +1147,20 @@ class Series():
         )
         
         for snum, section in self.enumerateSections(message="Importing traces..."):
-            if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
+            if (
+                snum not in range(*srange) or 
+                snum not in other.sections
+            ):  # skip if section is not requested or does not exist in other series
                 continue
-            s_section = other.loadSection(snum)  # sending section
-            section.importTraces(s_section, regex_filters, threshold, flag_conflicts, histories, dt_str)
+            print("loading section", snum)
+            o_section = other.loadSection(snum)  # other section
+            section.importTraces(o_section, regex_filters, threshold, flag_conflicts, histories, dt_str)
         
         # unsupress logging for object creation
         self.data.supress_logging = False
         
         # import the group data
-        self.object_groups.merge(other.object_groups)
+        self.object_groups.merge(other.object_groups, regex_filters)
 
         # import the object attributes
         for obj_name, obj_data in other.obj_attrs.items():
@@ -1208,7 +1178,14 @@ class Series():
 
         # import the history
         if log_event:
-            self.importHistory(other, ztraces=False)
+            self.addLog(None, None, "Begin importing traces from another series")
+            histories.importLogs(
+                self,
+                traces=True,
+                ztraces=False,
+                srange=srange,
+                regex_filters=regex_filters
+            )
             self.addLog(None, None, "Finish importing traces from another series")
         
         self.save()
@@ -1221,23 +1198,40 @@ class Series():
                 regex_filters (list): the filters for the objects to import
                 log_event (bool): True if event should be logged
         """
-        if log_event:
-            self.addLog(None, None, "Begin importing ztraces from another series")
-
         for o_zname, o_ztrace in other.ztraces.items():
-            # only import new ztraces, do NOT replace existing ones
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, o_zname)):
+                    passes_filters = True
+            if not passes_filters:
+                continue
+
+            # do not replace existing ztraces
             if o_zname not in self.ztraces:
-                passes_filters = False if regex_filters else True
-                for rf in regex_filters:
-                    if bool(re.fullmatch(rf, o_zname)):
-                        passes_filters = True
-                if passes_filters:
-                    self.ztraces[o_zname] = o_ztrace.copy()
+                self.ztraces[o_zname] = o_ztrace.copy()
+            # # add a new ztrace if same name but dont overlap
+            elif not self.ztraces[o_zname].overlaps(o_ztrace):
+                n = 1
+                while (f"{o_zname}-imported-{n}") in self.ztraces:
+                    n += 1
+                self.ztraces[f"{o_zname}-imported-{n}"] = o_ztrace.copy()
         
-        # import the history
-        self.importHistory(other, traces=False)
+        # import the group data
+        self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
         
         if log_event:
+            # import the history
+            histories = LogSetPair(
+                self.getFullHistory(),
+                other.getFullHistory()
+            )
+            self.addLog(None, None, "Begin importing ztraces from another series")
+            histories.importLogs(
+                self,
+                traces=False,
+                ztraces=True,
+                regex_filters=regex_filters
+            )
             self.addLog(None, None, "Finish importing ztraces from another series")
         
         self.save()
@@ -1255,10 +1249,10 @@ class Series():
             return
         
         iterator = zip(self.enumerateSections(message="Importing transforms..."), other.enumerateSections(show_progress=False))
-        for (r_num, r_section), (s_num, s_section) in iterator:
+        for (s_snum, s_section), (o_snum, o_section) in iterator:
             for a in alignments:
-                r_section.tforms[a] = s_section.tforms[a].copy()
-                r_section.save()
+                s_section.tforms[a] = o_section.tforms[a].copy()
+                s_section.save()
 
         if log_event:
             alignments_str = " ".join(alignments)
@@ -1284,9 +1278,9 @@ class Series():
         for snum, section in self.enumerateSections(message="Importing brightness/contrast..."):
             if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
                 continue
-            s_section = other.loadSection(snum)
-            section.brightness = s_section.brightness
-            section.contrast = s_section.contrast
+            o_section = other.loadSection(snum)
+            section.brightness = o_section.brightness
+            section.contrast = o_section.contrast
             section.save()
         
         if log_event:
@@ -1301,6 +1295,7 @@ class Series():
                 other (Series): the series to import from
                 log_event (bool): True if event should be logged"""
         for name, palette in other.palette_traces.items():
+            new_name = name
             if name not in self.palette_traces:
                 self.palette_traces[name] = palette.copy()
             else:
@@ -1310,6 +1305,8 @@ class Series():
                     n += 1
                     new_name = f"{name}-{n}"
                 self.palette_traces[new_name] = palette.copy()
+            if name == other.palette_index[0]:
+                self.palette_index = [new_name, other.palette_index[1]]
         
         if log_event:
             self.addLog(None, None, "Import palettes from another series")
@@ -1324,11 +1321,32 @@ class Series():
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(message="Importing flags..."):
-            if snum not in other.sections:  # skip if section is not requested or does not exist in other series
+            if snum not in other.sections:  # skip if section does not exist in other series
                 continue
-            s_section = other.loadSection(snum)  # sending section
-            section.flags += s_section.flags
-            section.save()
+            new_flag_pool = section.flags.copy()
+            flags_modified = False
+            o_section = other.loadSection(snum)  # sending section
+            for o_flag in o_section.flags:
+                eq_found = False
+                for s_flag in section.flags:
+                    if s_flag.equals(o_flag):
+                        eq_found = True
+                        # if two of the same found, use one with more comments
+                        # otherwise, just keep the self flag
+                        slen = len(s_flag.comments)
+                        olen = len(o_flag.comments)
+                        if olen > slen:
+                            new_flag_pool.append(o_flag)
+                            new_flag_pool.remove(s_flag)
+                            flags_modified = True
+                        break
+                if not eq_found:
+                    new_flag_pool.append(o_flag)
+                    flags_modified = True
+
+            if flags_modified:
+                section.flags = new_flag_pool
+                section.save()
         
         if log_event:
             self.addLog(None, None, "Import flags from another series")

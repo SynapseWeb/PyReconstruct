@@ -1743,8 +1743,9 @@ class FieldWidget(QWidget, FieldView):
         self.displayed_flag = flag
         response, confirmed = FlagDialog(self, flag).exec()
         if confirmed:
-            flag.name, flag.color, flag.comments, new_comment, flag.resolved = response
+            flag.name, flag.color, flag.comments, new_comment, resolved = response
             if new_comment: flag.addComment(self.series.user, new_comment)
+            flag.resolve(self.series.user, resolved)
             self.generateView(generate_image=False)
             self.saveState()
         self.displayed_flag = None
@@ -1843,6 +1844,21 @@ class FieldWidget(QWidget, FieldView):
             self.series.deleteAllTraces(trace.name)
         
         self.reload()
+    
+    def refreshData(self):
+        """Refresh the series data and the corresponding data in the tables."""
+        self.mainwindow.saveAllData()
+        self.series.data.refresh()
+        if self.obj_table_manager:
+            self.obj_table_manager.updateTables()
+        if self.ztrace_table_manager:
+            self.ztrace_table_manager.updateTables()
+        if self.section_table_manager:
+            self.section_table_manager.updateTables()
+        if self.trace_table_manager:
+            self.trace_table_manager.loadSection(self.section)
+        if self.flag_table_manager:
+            self.flag_table_manager.updateTables()
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

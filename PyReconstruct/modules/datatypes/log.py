@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 def getDateTime():
@@ -38,14 +39,7 @@ class Log():
             Params:
                 other (Log): the log to compare to
         """
-        return (
-            self.date == other.date and
-            self.time == other.time and
-            self.user == other.user and
-            self.obj_name == other.obj_name and
-            self.section_ranges == other.section_ranges and
-            self.event == other.event
-        )
+        return str(self) == str(other)
     
     def __str__(self):
         if not self.obj_name:
@@ -158,7 +152,31 @@ class Log():
         for n1, n2 in self.section_ranges:
             if snum in range(n1, n2+1):
                 return True
+        
         return False
+    
+    def trimSectionRange(self, srange):
+        """Trim the section range of the log."""
+        if not self.section_ranges:
+            self.section_ranges = [(srange[0], srange[1]-1)]
+            return True
+        else:
+            sections = range(*srange)
+            new_section_ranges = []
+            for s1, s2 in self.section_ranges.copy():
+                if s1 and s2 in sections:
+                    new_section_ranges.append((s1, s2))
+                elif s1 in sections:
+                    new_section_ranges.append((s1, srange[1]-1))
+                elif s2 in sections:
+                    new_section_ranges.append(srange[0], s2)
+                elif s1 < srange[0] and s2 >= srange[1]:
+                    new_section_ranges.append((srange[0], srange[1]-1))
+            if new_section_ranges:
+                self.section_ranges = new_section_ranges
+                return True
+            else:
+                return False
 
 
 class LogSet():
@@ -296,17 +314,23 @@ class LogSet():
                 ("curated" in log.event or "curation" in log.event)):
                 self.all_logs.remove(log)
     
-    def getDateTime(self, snum : int, cname : str):
+    def getLastIndex(self, snum : int, cname : str):
         """Scan the history and return the date for a contour on a given section.
         
             Params:
                 snum (int): the section number
                 cname (str): the contour name
         """
+        i = len(self.all_logs) - 1
         for log in reversed(self.all_logs):
-            if log.obj_name == cname and log.containsSection(snum):
-                return log.date, log.time
-        return None, None
+            if (
+                log.obj_name == cname and 
+                ("ztrace" not in log.event) and 
+                (log.containsSection(snum) or (log.section_ranges is None))
+            ):
+                return i
+            i -= 1
+        return i
 
 class LogSetPair():
 
@@ -320,7 +344,7 @@ class LogSetPair():
         self.logset0 = logset0
         self.logset1 = logset1
 
-        # get the date and time for the diverge
+        # get the index for the diverge
         i = 0
         while (
             i < len(self.logset0.all_logs) and
@@ -329,11 +353,73 @@ class LogSetPair():
         ):
             i += 1
         
-        if i == 0 or (i == len(self.logset0.all_logs) == len(self.logset1.all_logs)):  # either diverge from start or completely the same
-            self.last_shared = None
-            self.diverge_date = None
-            self.diverge_time = None
-        else:
-            self.last_shared = self.logset0.all_logs[i-1]
-            self.diverge_date = self.last_shared.date
-            self.diverge_time = self.last_shared.time
+        self.last_shared_index = i-1
+
+        self.complete_match = (
+            i == len(self.logset0.all_logs) == len(self.logset1.all_logs)
+        )
+    
+    def importLogs(
+        self,
+        series,
+        traces=True,
+        ztraces=True,
+        srange=None,
+        regex_filters=[],
+    ):
+        """
+        Import the history data from the other logset into the series logset
+
+            Params:
+                series (Series): the series to modify the history for
+                traces (bool): True if trace history should be imported
+                ztraces (bool): True if the ztrace history should be imported
+                srange (tuple): the range of sections (exclusive)
+                regex_filters (list): the list of regex filters used to filter names
+        """
+        # filter out similar history
+        for i in range(self.last_shared_index + 1, len(self.logset1.all_logs)):
+            log = self.logset1.all_logs[i]
+
+            # check for trace/ztrace status
+            include_log = traces and ("ztrace" not in log.event)
+            include_log |= ztraces and ("ztrace" in log.event)
+            include_log &= bool(log.obj_name)
+            if not include_log:
+                continue  # skip if not desired status
+
+            # check filters
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, log.obj_name)):
+                    passes_filters = True
+            if not passes_filters: 
+                continue # skip if does not pass filters
+
+            # trim section range and check if contains sections within range
+            if srange and not log.trimSectionRange(srange):
+                continue
+
+            # update both the self series logs
+            series.log_set.addExistingLog(log)
+            self.logset0.addExistingLog(log)
+        
+        if traces:
+            # iterate through the series log and update the last users
+            last_user_data = {}  # obj_name : (user, datetime)
+            for log in self.logset0.all_logs[self.last_shared_index+1:]:
+                log : Log
+                if log.obj_name and ("ztrace" not in log.event):
+                    user0, dt0 = log.user, (log.date + log.time)
+                    # if obj name exists in data, check against date
+                    if log.obj_name in last_user_data:
+                        user1, dt1 = last_user_data[log.obj_name]
+                        if dt0 >= dt1:
+                            last_user_data[log.obj_name] = (user0, dt0)
+                    # if it does not exist in data so far, store
+                    else:
+                        last_user_data[log.obj_name] = (user0, dt0)
+            
+            # update the series attributes
+            for obj_name, (user, dt) in last_user_data.items():
+                series.setAttr(obj_name, "last_user", user)

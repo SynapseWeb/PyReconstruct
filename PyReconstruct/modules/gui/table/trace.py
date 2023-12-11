@@ -120,8 +120,10 @@ class TraceTableWidget(QDockWidget):
 
             # remove existing instances
             if is_in_table:
-                while self.table.item(r, 0).text() == name:
+                i = self.table.item(r, 0)
+                while i and i.text() == name:
                     self.table.removeRow(r)
+                    i = self.table.item(r, 0)
             
             # insert the new contour data
             trace_data_list = self.series.data.getTraceData(name, self.section.n)

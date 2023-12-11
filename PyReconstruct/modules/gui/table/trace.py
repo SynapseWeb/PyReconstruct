@@ -157,17 +157,17 @@ class TraceTableWidget(QDockWidget):
                 "opts":
                 [
                     ("columns_act", "Set columns...", "", self.setColumns),
-                    ("export_act", "Export...", "", self.export),
-                    {
-                        "attr_name": "filtermenu",
-                        "text": "Filter",
-                        "opts":
-                        [
-                            ("refilter_act", "Regex filter...", "", self.setREFilter),
-                            ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
-                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
-                        ]
-                    }
+                    ("export_act", "Export...", "", self.export)
+                ]
+            },
+            {
+                "attr_name": "filtermenu",
+                "text": "Filter",
+                "opts":
+                [
+                    ("refilter_act", "Regex filter...", "", self.setREFilter),
+                    ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
+                    ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
                 ]
             }
         ]

@@ -88,25 +88,25 @@ class FlagTableWidget(QDockWidget):
                     ("refresh_act", "Refresh", "", self.refresh),
                     ("columns_act", "Set columns...", "", self.setColumns),
                     ("export_act", "Export...", "", self.export),
+                ]
+            },
+            {
+                "attr_name": "filtermenu",
+                "text": "Filter",
+                "opts":
+                [
+                    ("displayresolved_act", "Display resolved flags", "checkbox", self.toggleDisplayResolved),
+                    ("refilter_act", "Regex filter...", "", self.setREFilter),
                     {
-                        "attr_name": "filtermenu",
-                        "text": "Filter",
+                        "attr_name": "colormenu",
+                        "text": "Color filter",
                         "opts":
                         [
-                            ("displayresolved_act", "Display resolved flags", "checkbox", self.toggleDisplayResolved),
-                            ("refilter_act", "Regex filter...", "", self.setREFilter),
-                            {
-                                "attr_name": "colormenu",
-                                "text": "Color filter",
-                                "opts":
-                                [
-                                    ("colorfilter_act", "Set filter...", "", lambda : self.setColorFilter(False)),
-                                    ("removecolor_act", "Remove filter...", "", self.removeColorFilter)
-                                ]
-                            },
-                            ("commentfilter_act", "Comment text...", "", self.setCommentFilter)
+                            ("colorfilter_act", "Set filter...", "", lambda : self.setColorFilter(False)),
+                            ("removecolor_act", "Remove filter...", "", self.removeColorFilter)
                         ]
-                    }
+                    },
+                    ("commentfilter_act", "Comment text...", "", self.setCommentFilter)
                 ]
             }
         ]

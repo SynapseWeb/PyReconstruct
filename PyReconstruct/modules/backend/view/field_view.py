@@ -634,7 +634,7 @@ class FieldView():
             
         self.generateView(generate_image=False)
     
-    def changeAlignment(self, new_alignment : str):
+    def changeAlignment(self, new_alignment : str, refresh_data=True):
         """Change the alignment setting for the series.
         
             Params:
@@ -648,7 +648,7 @@ class FieldView():
         self.reload()
 
         # refresh data and tables
-        self.refreshTables(refresh_data=True)
+        self.refreshTables(refresh_data)
     
     def translateTform(self, dx : float, dy : float):
         """Translate the transform for the entire section.

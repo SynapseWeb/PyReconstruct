@@ -209,6 +209,7 @@ class MainWindow(QMainWindow):
                             ("importtraces_act", "Traces...", "", self.importTraces),
                             ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
                             ("importflags_act", "Flags...", "", self.importFlags),
+                            ("importjsertransforms0_act", "Alignment(s)...", "", self.importSeriesTransforms),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
                             ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
                             ("importbc_act", "Brightness/contrast...", "", self.importBC)
@@ -275,10 +276,9 @@ class MainWindow(QMainWindow):
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
                     ("goto_act", "Go to section", "Ctrl+G", self.changeSection),
-                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                     None,
-                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
-                    ("findcontour_act", "Find contour...", "Ctrl+Shift+F", self.field.findContourDialog),
+                    None,
+                    ("findcontour_act", "Find contour...", "Shift+F", self.field.findContourDialog),
                 ]
             },
             {
@@ -287,10 +287,11 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
+                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
                     ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
                     ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                    ("flaglist_act", "Flag list", "", self.openFlagList),
-                    ("history_act", "View series history", "", self.viewSeriesHistory)
+                    ("flaglist_act", "Flag list", "Ctrl+Shift+F", self.openFlagList),
+                    ("history_act", "Series history", "", self.viewSeriesHistory)
                 ]
             },
             {
@@ -299,16 +300,18 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                    None,
                     {
                         "attr_name": "importmenu",
                         "text": "Import alignments",
                         "opts":
                         [
-                            ("importjsertransforms_act", "jser file", "", self.importSeriesTransforms),
+                            ("importjsertransforms1_act", "jser file", "", self.importSeriesTransforms),
                             ("importtransforms_act", ".txt file", "", self.importTransforms),
                             ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
                         ]
                     },
+                    None,
                     {
                         "attr_name": "propagatemenu",
                         "text": "Propagate transform",
@@ -321,7 +324,9 @@ class MainWindow(QMainWindow):
                             ("proptoend_act", "Propagate to end", "", lambda : self.field.propagateTo(True))
                         ]
                     },
+                    None,
                     ("unlocksection_act", "Unlock current section", "Ctrl+Shift+U", self.field.unlockSection),
+                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
                     ("linearalign_act", "Estimate affine transform", "", self.field.affineAlign),
                     # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
                 ]
@@ -1315,9 +1320,6 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
-        if not noUndoWarning():
-            return
-
         # open the other series
         o_series = Series.openJser(jser_fp)
 
@@ -1334,10 +1336,8 @@ class MainWindow(QMainWindow):
         # prompt the user to choose an alignment
         check_list = []
         for a in o_alignments:
-            text = a
-            if a in s_alignments:
-                text += " (overwrite)"
-            check_list.append((text, False))
+            if a != "no-alignment":
+                check_list.append((a, False))
         structure = [
             [(
                 "check",
@@ -1364,12 +1364,16 @@ class MainWindow(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 "Import Alignments",
-                f"The alignments {overlap_str} exist in your series.\nWould you like to overwrite them?",
+                f"The alignment(s) {overlap_str} exist in your series.\nWould you like to overwrite them?",
                 QMessageBox.Yes,
                 QMessageBox.No
             )
             if reply == QMessageBox.No:
                 notify("Import transforms canceled.")
+                o_series.close()
+                return
+        else:
+            if not noUndoWarning():
                 o_series.close()
                 return
         

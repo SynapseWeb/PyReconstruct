@@ -107,20 +107,19 @@ class ObjectTableWidget(QDockWidget):
                     ("refresh_act", "Refresh", "", self.refresh),
                     ("columns_act", "Set columns...", "", self.setColumns),
                     ("export_act", "Export...", "", self.export),
-                    {
-                        "attr_name": "filtermenu",
-                        "text": "Filter",
-                        "opts":
-                        [
-                            ("refilter_act", "Regex filter...", "", self.setREFilter),
-                            ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
-                            ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
-                            ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
-                        ]
-                    }
                 ]
             },
-
+            {
+                "attr_name": "filtermenu",
+                "text": "Filter",
+                "opts":
+                [
+                    ("refilter_act", "Regex filter...", "", self.setREFilter),
+                    ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
+                    ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
+                    ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
+                ]
+            },
             {
                 "attr_name": "findmenu",
                 "text": "Find",

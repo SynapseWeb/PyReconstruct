@@ -115,15 +115,15 @@ class ZtraceTableWidget(QDockWidget):
                 [
                     ("refresh_act", "Refresh", "", self.refresh),
                     ("export_act", "Export...", "", self.export),
-                    {
-                        "attr_name": "filtermenu",
-                        "text": "Filter",
-                        "opts":
-                        [
-                            ("refilter_act", "Regex filter...", "", self.setREFilter),
-                            ("groupfilter_act", "Group filter...", "", self.setGroupFilter)
-                        ]
-                    }
+                ]
+            },
+            {
+                "attr_name": "filtermenu",
+                "text": "Filter",
+                "opts":
+                [
+                    ("refilter_act", "Regex filter...", "", self.setREFilter),
+                    ("groupfilter_act", "Group filter...", "", self.setGroupFilter)
                 ]
             }
         ]

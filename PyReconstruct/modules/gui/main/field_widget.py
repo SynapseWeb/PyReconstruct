@@ -22,7 +22,8 @@ from PySide6.QtGui import (
     QPointingDevice,
     QCursor,
     QFont,
-    QTransform
+    QTransform,
+    QAction
 )
 
 from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
@@ -101,6 +102,10 @@ class FieldWidget(QWidget, FieldView):
         self.flag_display_timer.timeout.connect(
             self.displayFlagComments
         )
+        # set up flag edit event
+        self.edit_flag_event = QAction(self)
+        self.edit_flag_event.triggered.connect(self.editFlag)
+        self.trigger_edit_flag = False
 
         self.createField(series)
 
@@ -952,11 +957,10 @@ class FieldWidget(QWidget, FieldView):
             self.lclick, self.rclick, self.mclick = False, False, False
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
+            elif clicked_type == "flag":
+                self.trigger_edit_flag = True
             else:
-                if clicked_type == "flag":
-                    self.editFlag(self.clicked_trace)
-                else:
-                    self.mainwindow.field_menu.exec(event.globalPos())
+                self.mainwindow.field_menu.exec(event.globalPos())
             self.mainwindow.checkActions()
             return
 
@@ -1060,6 +1064,12 @@ class FieldWidget(QWidget, FieldView):
         if self.mclick:
             self.mousePanzoomRelease(event)
             self.mclick = False
+            return
+        
+        # modify flags as requested
+        if self.trigger_edit_flag:
+            self.edit_flag_event.trigger()
+            self.trigger_edit_flag = False
             return
 
         if self.mouse_mode == FieldWidget.POINTER:
@@ -1736,9 +1746,10 @@ class FieldWidget(QWidget, FieldView):
 
         self.update()
     
-    def editFlag(self, flag : Flag):
-        """Edit a flag."""
+    def editFlag(self, event=None):
+        """Edit a flag. (Triggered by action)"""
         # close flag display
+        flag = self.clicked_trace
         self.closeFlagComments()
         self.displayed_flag = flag
         response, confirmed = FlagDialog(self, flag).exec()

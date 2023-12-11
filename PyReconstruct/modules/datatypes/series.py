@@ -307,7 +307,10 @@ class Series():
                 jser_data["series"] = filedata
             elif filename == "existing_log.csv":
                 with open(fp, "r") as f:
-                    existing_log = f.read()
+                    existing_log = ""
+                    for line in f.readlines():
+                        if line.strip():
+                            existing_log += line
                 # continue saving the existing log file
                 jser_data["log"] = existing_log + jser_data["log"]
 

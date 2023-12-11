@@ -102,7 +102,7 @@ class Log():
                 else:
                     section_ranges.append((int(ends[0]), int(ends[1])))
         
-        return Log(date, time, user, obj_name, section_ranges, event)
+        return Log(date, time, user, obj_name, section_ranges, event.strip())
     
     def checkSectionRanges(self):
         """Iterate through the section ranges and combine adjacent ones."""
@@ -265,8 +265,9 @@ class LogSet():
         """
         log_set = LogSet()
         for log_str in log_list:
-            log = Log.fromStr(log_str)
-            log_set.addExistingLog(log)
+            if log_str.strip():
+                log = Log.fromStr(log_str)
+                log_set.addExistingLog(log)
         
         return log_set
     

@@ -648,7 +648,7 @@ class FieldView():
         self.reload()
 
         # refresh data and tables
-        self.refreshData()
+        self.refreshTables(refresh_data=True)
     
     def translateTform(self, dx : float, dy : float):
         """Translate the transform for the entire section.
@@ -1091,7 +1091,8 @@ class FieldView():
         self.section_layer.changeTform(new_tform)
 
         # refresh data and tables
-        self.refreshData()
+        self.section.save()
+        self.refreshTables()
         
         self.generateView()
         self.saveState()

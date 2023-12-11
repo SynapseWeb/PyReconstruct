@@ -45,7 +45,7 @@ class FlagTableManager():
 
     def refresh(self):
         """Reload all of the section data."""
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
     
     def updateTable(self, table : FlagTableWidget):
         """Updates a table with the current data.

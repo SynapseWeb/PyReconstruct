@@ -53,7 +53,7 @@ class ObjectTableManager():
 
     def refresh(self):
         """Reload all of the section data."""
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
     
     def updateTable(self, table : ObjectTableWidget):
         """Updates a table with the current data.
@@ -255,7 +255,7 @@ class ObjectTableManager():
         
         self.mainwindow.seriesModified(True)
         self.mainwindow.field.reload()
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables()
     
     def close(self):
         """Close all tables."""

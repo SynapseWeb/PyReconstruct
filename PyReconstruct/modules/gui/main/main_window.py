@@ -1095,7 +1095,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
 
         notify("Transforms imported successfully.")
 
@@ -1154,7 +1154,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
 
         notify("Transforms imported successfully.")
     
@@ -1220,7 +1220,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
         
         notify("Traces imported successfully.")
     
@@ -1260,7 +1260,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
         
         notify("Ztraces imported successfully.")
     
@@ -1379,7 +1379,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
 
         self.seriesModified()
 
@@ -1424,7 +1424,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
 
         notify("Brightness/contrast settings imported successfully.")
     
@@ -1452,7 +1452,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshData()
+        self.field.refreshTables()
 
         o_series.close()
 

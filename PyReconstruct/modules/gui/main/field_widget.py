@@ -1856,10 +1856,11 @@ class FieldWidget(QWidget, FieldView):
         
         self.reload()
     
-    def refreshData(self):
+    def refreshTables(self, refresh_data=False):
         """Refresh the series data and the corresponding data in the tables."""
         self.mainwindow.saveAllData()
-        self.series.data.refresh()
+        if refresh_data:
+            self.series.data.refresh()
         if self.obj_table_manager:
             self.obj_table_manager.updateTables()
         if self.ztrace_table_manager:

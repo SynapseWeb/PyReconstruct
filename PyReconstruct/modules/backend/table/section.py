@@ -32,7 +32,7 @@ class SectionTableManager():
 
     def refresh(self):
         """Refresh the section data."""
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
     
     def updateTables(self):
         """Updates a table with the current data.
@@ -78,7 +78,7 @@ class SectionTableManager():
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.updateSections(section_numbers)
+        self.mainwindow.field.updateTables()
 
     def setBC(self, section_numbers : list[int], b : int, c : int, log_event=True):
         """Set the brightness and contrast for a set of sections.
@@ -105,7 +105,7 @@ class SectionTableManager():
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.updateSections(section_numbers)
+        self.mainwindow.field.updateTables()
     
     def matchBC(self, section_numbers : list[int]):
         """Match the brightness and contrast of a set of sections to the current section.
@@ -137,7 +137,7 @@ class SectionTableManager():
         self.updateSections(section_numbers)
 
         # refresh data and tables
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables()
         
         self.mainwindow.seriesModified(True)
     
@@ -194,7 +194,7 @@ class SectionTableManager():
                 self.series.addLog(None, snum, "Delete section")
                 
         # refresh the data in all tables
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
         
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:
@@ -213,7 +213,7 @@ class SectionTableManager():
         self.series.addLog(None, None, "Reorder sections")
         
         # refresh all table data
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
         
         # clear the field section states
         self.mainwindow.field.series_states = {}
@@ -242,7 +242,7 @@ class SectionTableManager():
         self.series.addLog(None, index, "Insert section")
 
         # refresh the data for all tables
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
         
         # clear the field section states
         self.mainwindow.field.series_states = {}

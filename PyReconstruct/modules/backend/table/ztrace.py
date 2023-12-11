@@ -19,7 +19,7 @@ class ZtraceTableManager():
     
     def refresh(self):
         """Refresh the series data."""
-        self.mainwindow.field.refreshData()
+        self.mainwindow.field.refreshTables(refresh_data=True)
     
     def newTable(self):
         """Create a new ztrace list."""

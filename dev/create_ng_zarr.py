@@ -98,7 +98,7 @@ if series.src_dir.endswith("zarr"):
     
 else:
     
-    cmd = f"~/tmp/image-get-center {series.src_dir}"
+    cmd = f"image-get-center.sh {series.src_dir}"
     center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
 

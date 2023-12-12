@@ -136,7 +136,8 @@ class ObjectTableManager():
             sections
         )
 
-        all_names = set(obj_names + [name])
+        all_names = set(obj_names)
+        if name: all_names.add(name)
 
         # update the table data
         self.updateObjects(all_names)

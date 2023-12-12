@@ -1183,7 +1183,8 @@ class MainWindow(QMainWindow):
                 ["Overlap threshold (0-1):", ("float", 0.95, (0,1)), None],
                 [(
                     "check", 
-                    ("Flag import conflicts", True)
+                    ("Flag import conflicts", True),
+                    ("Check series histories", True)
                 )]
             ]
             response, confirmed = QuickDialog.get(self, structure, "Import Traces")
@@ -1199,6 +1200,7 @@ class MainWindow(QMainWindow):
 
             threshold = response[4]
             flag_conflicts = response[5][0][1]
+            check_history = response[5][1][1]
         
         else:
             slist = list(self.series.sections.keys())
@@ -1206,6 +1208,7 @@ class MainWindow(QMainWindow):
             regex_filters = []
             threshold = 0.95
             flag_conflicts = True
+            check_history = True
 
         if not jser_fp: return  # exit function if user does not provide series
 
@@ -1218,7 +1221,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts)
+        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history)
         o_series.close()
 
         # reload the field to update the traces

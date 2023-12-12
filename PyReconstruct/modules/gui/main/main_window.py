@@ -1181,11 +1181,19 @@ class MainWindow(QMainWindow):
                     ("int", max(self.series.sections.keys()))
                 ],
                 ["Overlap threshold (0-1):", ("float", 0.95, (0,1)), None],
+                ["Favor:",
+                (
+                    "radio",
+                    ("Neither", True),
+                    ("Current series (destination)", False),
+                    ("Importing series (source)", False)
+                ), None
+                ],
                 [(
                     "check", 
                     ("Flag import conflicts", True),
                     ("Check series histories", True)
-                )]
+                )],
             ]
             response, confirmed = QuickDialog.get(self, structure, "Import Traces")
             if not confirmed:
@@ -1199,8 +1207,14 @@ class MainWindow(QMainWindow):
             srange = (response[2], response[3]+1)
 
             threshold = response[4]
-            flag_conflicts = response[5][0][1]
-            check_history = response[5][1][1]
+            flag_conflicts = response[6][0][1]
+            check_history = response[6][1][1]
+            if response[5][1][1]:
+                favored = "self"
+            elif response[5][2][1]:
+                favored = "other"
+            else:
+                favored = ""
         
         else:
             slist = list(self.series.sections.keys())
@@ -1209,6 +1223,7 @@ class MainWindow(QMainWindow):
             threshold = 0.95
             flag_conflicts = True
             check_history = True
+            favored = ""
 
         if not jser_fp: return  # exit function if user does not provide series
 
@@ -1221,7 +1236,7 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history)
+        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history, favored)
         o_series.close()
 
         # reload the field to update the traces

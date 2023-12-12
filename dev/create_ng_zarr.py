@@ -81,6 +81,9 @@ end_exclude = mid + (secs // 2) - 1
 
 srange = (sections[start], sections[end_exclude])
 
+# sample a section to get the true magnification
+section = series.loadSection(sections[0])
+
 if series.src_dir.endswith("zarr"):
     
     scale_1 = os.path.join(series.src_dir, "scale_1")
@@ -89,22 +92,24 @@ if series.src_dir.endswith("zarr"):
     z = zarr.open(one_img, "r")
     h, w = z.shape
     
-    center_x, center_y = w // 2, h // 2
+    center_x_px, center_y_px = w // 2, h // 2
+
+    ## TODO: Do the above center values take into account transformations?
     
 else:
     
     cmd = f"~/tmp/image-get-center {series.src_dir}"
     center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-    center_x, center_y = map(float, center.stdout.strip().split(" "))
+    center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
 
-# sample a section to get the true magnification
-section = series.loadSection(sections[0])
+    ## TODO: Need to apply section transform to get true center.
+    ## The above will work for now.
 
 window = [
-    (center_x * section.mag) - (w_out / 2),  # x
-    (center_y * section.mag) - (h_out / 2),  # y
-    w_out,  # w
-    h_out  # h
+    (center_x_px * section.mag) - (w_out / 2),  # x
+    (center_y_px * section.mag) - (h_out / 2),  # y
+    w_out, # w
+    h_out # h
 ]
 
 print("Initializing pyqt...")

@@ -5,6 +5,7 @@ dependencies:
   - python=3.11
   - pip
   - setuptools
+  - imagemagick
   - pip:
-    - toml-argparse
+    - neuroglancer
     - -r ../PyReconstruct/requirements.txt

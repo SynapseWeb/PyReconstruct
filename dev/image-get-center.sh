@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+echo $1
+
+exit
+
+# Return middle pixel of an image
+cd $1
+
+# pick random image
+img=$(find ~+ -type f -name "*tif" -o -name "*jpg" -o -name "*jpeg" | sort -R | head -1)
+
+# Get height and width
+h=$(identify -ping -format "%h" $img)
+w=$(identify -ping -format "%w" $img)
+
+# Get midpoints
+mid_y=$(echo "$h 2" | awk '{printf "%.2f\n", $1 / $2}')
+mid_x=$(echo "$w 2" | awk '{printf "%.2f\n", $1 / $2}')
+
+# print
+echo $mid_x $mid_y

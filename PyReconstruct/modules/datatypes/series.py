@@ -1437,10 +1437,11 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self, log_event=True):
+    def deleteDuplicateTraces(self, threshold : float, log_event=True):
         """Delete all duplicate traces in the series (keep tags).
         
             Params:
+                threshold (float): the threshold for overlapping traces to be considered duplicates
                 log_event (bool): True if event should be logged
         """
         removed = {}
@@ -1454,7 +1455,7 @@ class Series():
                     for j in range(i-1, -1, -1):
                         trace2 = section.contours[cname][j]
                         # if overlaps, remove trace and break
-                        if trace1.overlaps(trace2):
+                        if trace1.overlaps(trace2, threshold=threshold):
                             if snum not in removed:
                                 removed[snum] = set()
                             removed[snum].add(cname)

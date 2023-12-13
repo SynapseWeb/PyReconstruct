@@ -2406,10 +2406,19 @@ class MainWindow(QMainWindow):
     def deleteDuplicateTraces(self):
         """Remove all duplicate traces from the series."""
         self.saveAllData()
+
+        structure = [[
+            "Overlap threshold:", ("float", 0.95, (0, 1))
+        ]]
+        response, confirmed = QuickDialog.get(self, structure, "Remove duplicate traces")
+        if not confirmed:
+            return
+        threshold = response[0]
+
         if not noUndoWarning():
             return
         
-        removed = self.series.deleteDuplicateTraces()
+        removed = self.series.deleteDuplicateTraces(threshold)
 
         if removed:
             message = "The following duplicate traces were removed:"

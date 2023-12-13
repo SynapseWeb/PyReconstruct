@@ -13,7 +13,7 @@ import tomllib
 from PySide6.QtWidgets import QApplication
 
 # Imports are a nightmare (set repo root here)
-project_dir = Path(__file__).parents[1]
+project_dir = Path(__file__).parents[2]
 sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series

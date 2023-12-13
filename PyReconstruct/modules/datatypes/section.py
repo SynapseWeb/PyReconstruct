@@ -778,7 +778,9 @@ class Section():
                 elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
                     if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
-                conflict_inclusive = True
+                conflict_inclusive = True  # be conflict inclusive if history was checked
+            else:
+                conflict_inclusive = False  # be conflict EXCLUSIVE if history is inconclusive
             
             # create an empty contour if does not exist
             if cname not in self.contours:
@@ -803,7 +805,6 @@ class Section():
                 # clear favored traces, as they will never be conflicts
                 traces1.clear()
                 # any traces left in unfavored traces will be flagged
-                conflict_inclusive = True
             
             # flag the remaining conflicts
             if flag_conflicts and (

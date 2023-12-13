@@ -1214,7 +1214,7 @@ class Series():
             # do not replace existing ztraces
             if o_zname not in self.ztraces:
                 self.ztraces[o_zname] = o_ztrace.copy()
-            # # add a new ztrace if same name but dont overlap
+            # add a new ztrace if same name but dont overlap
             elif not self.ztraces[o_zname].overlaps(o_ztrace):
                 n = 1
                 while (f"{o_zname}-imported-{n}") in self.ztraces:

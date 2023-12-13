@@ -66,13 +66,12 @@ class Trace():
             return False
         return True
 
-    def overlaps(self, other, threshold=0.99, inclusive=True):
+    def overlaps(self, other, threshold=0.99):
         """Check if trace points overlap.
         
             Params:
                 other (Trace): the trace to compare
-                threshold (float): the threshold overlap ratio to define overlapping
-                inclusive (bool): True if equal to threshold is accepted
+                threshold (float): the threshold overlap ratio to define overlapping (exclusive)
             Returns:
                 (bool): whether or not trace traces overlap
         """
@@ -93,9 +92,9 @@ class Trace():
         
         # compare amount of overlap
         r = self.getOverlapRatio(other)
-        if inclusive and r >= threshold:
+        if threshold < 1 and r > threshold:
             return True
-        elif not inclusive and r > threshold:
+        elif threshold == r == 1:
             return True
         else:
             return False

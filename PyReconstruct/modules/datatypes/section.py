@@ -799,7 +799,7 @@ class Section():
                 # iterate through traces and delete overlaps in unfavored series
                 for trace1 in traces1:
                     for trace2 in traces2.copy():
-                        if trace1.overlaps(trace2, threshold=0, inclusive=False):
+                        if trace1.overlaps(trace2, threshold=0):
                             traces2.remove(trace2)
                             self.contours[cname].remove(trace2)
                 # clear favored traces, as they will never be conflicts

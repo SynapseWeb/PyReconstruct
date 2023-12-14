@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+python -i -m PyReconstruct.assets.scripts.create_ng_zarr.ng_view $@

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Create neuroglancer-formatted zarrs from PyReconstruct jser files."""
 
 # Requires image-get-center (see below) if using with non-zarr images
@@ -12,9 +14,9 @@ import tomllib
 
 from PySide6.QtWidgets import QApplication
 
-# Imports are a nightmare (set repo root here)
-project_dir = Path(__file__).parents[2]
-sys.path.append(str(project_dir))
+# # Imports are a nightmare (set repo root here)
+# project_dir = Path(__file__).parents[2]
+# sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels
@@ -98,7 +100,7 @@ if series.src_dir.endswith("zarr"):
     
 else:
     
-    cmd = f"image-get-center.sh {series.src_dir}"
+    cmd = f"image-get-center {series.src_dir}"
     center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
 

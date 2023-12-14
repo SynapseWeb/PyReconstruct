@@ -1,8 +1,4 @@
-#!/usr/bin/env bash
-
-echo $1
-
-exit
+#!/usr/bin/sh
 
 # Return middle pixel of an image
 cd $1

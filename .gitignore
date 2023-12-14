@@ -1,5 +1,8 @@
 *~
 env/
+venv/
+build/
+PyReconstruct.egg-info/
 **/__pycache__/
 *.pyc
 run_julian.sh

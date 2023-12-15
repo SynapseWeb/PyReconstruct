@@ -6,6 +6,7 @@ dependencies:
   - pip
   - setuptools
   - imagemagick
+  - psycopg2
   - pip:
     - ..
-    - neuroglancer
+    - git+https://github.com/funkelab/funlib.show.neuroglancer

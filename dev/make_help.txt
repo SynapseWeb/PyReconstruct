@@ -1,0 +1,15 @@
+
+To create a PyReconstruct development environment run:
+
+make env
+
+By default, a new conda environment called '$ENV_NAME' will be created.
+You can change the default environment name by editing '<<<ENV>>>' in the makefile.
+
+Other possible commands:
+
+make help    : Show the current message
+make update  : Update packages and shell scripts
+make clean   : Remove the PyReconstruct dev environment completely
+remove       : Alias for 'make clean'
+

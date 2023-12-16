@@ -1,34 +1,62 @@
+import os
+import json
+
 from PyReconstruct.modules.datatypes import (
     Series,
     Section,
     Contour,
-    Ztrace
+    Ztrace,
+    Trace
 )
 
 class FieldState():
 
-    def __init__(self, contours : dict, ztraces : dict, tforms : dict, flags : list, updated_contours=None, updated_ztraces=None):
+    def __init__(
+            self, 
+            contours : dict, 
+            ztraces : dict, 
+            tforms : dict, 
+            flags : list,
+            contours_fp : str = None,
+            updated_contours=None, 
+            updated_ztraces=None
+        ):
         """Create a field state with traces and the transform.
         
             Params:
                 contours (dict): all the contours on a section
                 tforms (dict): the tforms for the section state
+                flags (list): the flags for the section state
+                contours_fp (str): the filepath to store the contours
                 updated_contours: the names of the modified contours
+                updated_ztraces: the names of the modified ztraces
         """
         self.contours = {}
-        self.ztraces = {}
-        # first state made for a section (or copy)
+        self.contours_fp = contours_fp
         if updated_contours is None:
-            for contour_name in contours:
-                self.contours[contour_name] = contours[contour_name].copy()
-        # added another state
-        else:
+            if contours is None:
+                updated_contours = []
+            else:
+                updated_contours = contours.keys()
+
+        # store contours in memory if no fp provided
+        if not self.contours_fp:  
             for contour_name in updated_contours:
                 if contour_name in contours:
                     self.contours[contour_name] = contours[contour_name].copy()
                 else:  # empty Contour
                     self.contours[contour_name] = Contour(contour_name)
+        # store contours in json
+        elif contours is None:  # assume stored in JSON already
+            self.contours = None
+        else:  # store contours if provided with both fp and contours
+            for contour_name in updated_contours:
+                self.contours[contour_name] = [trace.getList() for trace in contours[contour_name]]
+            with open(self.contours_fp, "w") as f:
+                json.dump(self.contours, f)
+            self.contours = None
         
+        self.ztraces = {}
         # first state made for a section (or copy)
         if updated_ztraces is None:
             for ztrace_name in ztraces:
@@ -49,13 +77,20 @@ class FieldState():
             self.flags.append(flag.copy())
     
     def copy(self):
-        return FieldState(self.contours, self.ztraces, self.tforms, self.flags)
+        return FieldState(self.contours, self.ztraces, self.tforms, self.flags, self.contours_fp)
     
     def getContours(self):
         contours = {}
-        for cname in self.contours:
-            contours[cname] = self.contours[cname].copy()
-        return contours
+        if self.contours_fp:
+            with open(self.contours_fp, "r") as f:
+                contours = json.load(f)
+                for cname, contour in contours.items():
+                    contours[cname] = Contour(cname, [Trace.fromList(trace) for trace in contour])
+            return contours
+        else:
+            for cname in self.contours:
+                contours[cname] = self.contours[cname].copy()
+            return contours
     
     def getZtraces(self):
         ztraces = {}
@@ -64,7 +99,12 @@ class FieldState():
         return ztraces
     
     def getModifiedContours(self):
-        return set(self.contours.keys())
+        if self.contours_fp:
+            with open(self.contours_fp, "r") as f:
+                contours = json.load(f)
+            return set(contours.keys())
+        else:
+            return set(self.contours.keys())
     
     def getModifiedZtraces(self):
         return set(self.ztraces.keys())
@@ -77,15 +117,36 @@ class FieldState():
 
 class SectionStates():
 
-    def __init__(self, section : Section, series : Series):
+    def __init__(self, section : Section = None, series : Series = None):
         """Create the section state manager.
         
             Params:
-                section (Section): the sectin object to store states for
+                section (Section): the section object to store states for
+                series (Series): the series that contains the sections
         """
-        self.current_state = FieldState(section.contours, series.ztraces, section.tforms, section.flags)
+        self.initialized = False
+        self.current_state = None
         self.undo_states = []
         self.redo_states = []
+        if section and series:
+            self.initialize(section, series)
+    
+    def initialize(self, section : Section, series : Series):
+        """Create the section state manager.
+        
+            Params:
+                section (Section): the section object to store states for
+                series (Series): the series that contains the sections
+        """
+        contours_fp = os.path.join(series.hidden_dir, f"{series.sections[section.n]}.s0")
+        self.current_state = FieldState(
+            section.contours, 
+            series.ztraces, 
+            section.tforms, 
+            section.flags,
+            contours_fp
+        )
+        self.initialized = True
     
     def addState(self, section : Section, series : Series):
         """Add a new undo state (called when an action is performed.
@@ -107,6 +168,7 @@ class SectionStates():
             series.ztraces,
             section.tforms,
             section.flags,
+            None,
             updated_contours,
             updated_ztraces
         )
@@ -125,7 +187,7 @@ class SectionStates():
             return
         
         # if only one undo state exists
-        elif len(self.undo_states) == 1:
+        if len(self.undo_states) == 1:
             state = self.undo_states[0]
             # restore contours
             modified_contours = self.current_state.getModifiedContours()
@@ -167,13 +229,26 @@ class SectionStates():
             if last_changed_contours:
                 for contour in last_changed_contours:
                     section.contours[contour] = Contour(contour)
+            
+        # update the series log
+        for cname in modified_contours:
+            series.addLog(cname, section.n, "Modify trace(s)")
+        for zname in modified_ztraces:
+            series.addLog(zname, section.n, "Modify ztrace")
 
         # restore the transforms
         restored_tforms = self.undo_states[-1].getTforms()
         section.tforms = restored_tforms
+        if section.tformsModified():
+            series.addLog(None, section.n, "Modify transform")
 
         # restore the flags
         restored_flags = self.undo_states[-1].getFlags()
+        # check if flag changes should be logged
+        flist_1 = [len(f.comments) for f in section.flags]
+        flist_2 = [len(f.comments) for f in restored_flags]
+        if flist_1 != flist_2:
+            series.addLog(None, section.n, "Modify flag(s)")
         section.flags = restored_flags
 
         # edit the undo/redo stacks and the current state
@@ -211,11 +286,25 @@ class SectionStates():
                 section.n
             )
         
+        # update the series log
+        for cname in modified_contours:
+            series.addLog(cname, section.n, "Modify trace(s)")
+        for zname in modified_ztraces:
+            series.addLog(zname, section.n, "Modify ztrace")
+        
         # restore the transforms
         section.tforms = redo_state.getTforms()
+        if section.tformsModified():
+            series.addLog(None, section.n, "Modify transform")
 
         # restore the flags
-        section.flags = redo_state.getFlags()
+        restored_flags = redo_state.getFlags()
+        # check if flag changes should be logged
+        flist_1 = [len(f.comments) for f in section.flags]
+        flist_2 = [len(f.comments) for f in restored_flags]
+        if flist_1 != flist_2:
+            series.addLog(None, section.n, "Modify flag(s)")
+        section.flags = restored_flags
 
         # edit the undo/redo stacks and the current state
         self.undo_states.append(self.current_state)

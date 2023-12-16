@@ -37,9 +37,11 @@ class ObjectTableManager():
                 section (Section): the section object
                 section_num (int): the section number
         """
-        
-        # refresh any removed traces
-        updated_contours = section.getAllModifiedNames()
+        # if the transform was modified, update all traces on section
+        if section.tformsModified(scaling_only=True):
+            updated_contours = section.contours.keys()
+        else:
+            updated_contours = section.getAllModifiedNames()
         self.updateObjects(updated_contours)
     
     def toggleCuration(self):
@@ -99,7 +101,7 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         # delete the object on every section
-        self.series.deleteObjects(obj_names)
+        self.series.deleteObjects(obj_names, self.mainwindow.field.series_states)
 
         # update the dictionary data and tables
         self.updateObjects(obj_names)
@@ -130,7 +132,8 @@ class ObjectTableManager():
             color,
             tags,
             mode,
-            sections
+            sections,
+            series_states=self.mainwindow.field.series_states
         )
 
         all_names = set(obj_names)

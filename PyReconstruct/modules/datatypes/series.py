@@ -703,7 +703,7 @@ class Series():
         section = Section(section_num, self)
         return section
     
-    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data..."):
+    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data...", series_states=None):
         """Allow iteration through the sections.
 
         Proper use in a for loop: for snum, section in series.enumerateSections():
@@ -711,10 +711,11 @@ class Series():
             Params:
                 show_progress (bool): True if progress should be displayed
                 message (str): the message to display by the progress bar
+                series_states (dict): section number : SectionStates object (use with GUI for undo/redo)
             Returns:
                 (SeriesIterator): an iterable object for for loops
         """
-        return SeriesIterator(self, show_progress, message)
+        return SeriesIterator(self, show_progress, message, series_states)
 
     # def map(self, fn, *args, message="Modifying series..."):
     #     """Map a function to every section in the series.
@@ -893,17 +894,19 @@ class Series():
 
     # series-wide trace functions
     
-    def deleteObjects(self, obj_names : list):
+    def deleteObjects(self, obj_names : list, series_states=None):
         """Delete object(s) from the series.
         
             Params:
                 obj_names (list): the objects to delete
+                series_states (dict): for use with GUI states
         """
         # remove objects from their groups
         for name in obj_names:
             self.object_groups.removeObject(name)
         for snum, section in self.enumerateSections(
-            message="Deleting object(s)..."
+            message="Deleting object(s)...",
+            series_states=series_states
         ):
             modified = False
             for obj_name in obj_names:
@@ -911,6 +914,7 @@ class Series():
                     section.removed_traces += section.contours[obj_name].getTraces()
                     del(section.contours[obj_name])
                     modified = True
+                    section.modified_contours.add(obj_name)
             
             if modified:
                 section.save()  # deleting object will automatically be logged
@@ -950,6 +954,7 @@ class Series():
             tags : set = None, 
             mode : tuple = None, 
             sections : list = None, 
+            series_states=None,
             log_event=True):
         """Edit the attributes of objects.
         
@@ -960,6 +965,7 @@ class Series():
                 tags (set): the tags to ADD to the traces of the objects
                 mode (tuple): the display mode to set for the traces
                 section (list): the section numbers to modify the object on (default: all)
+                series_states: the series states as store in the GUI
                 log_event (bool): True if event should be logged
         """
         # preemptively create log
@@ -975,7 +981,8 @@ class Series():
         
         # modify the object on every section
         for snum, section in self.enumerateSections(
-            message="Modifying object(s)..."
+            message="Modifying object(s)...",
+            series_states=series_states
         ):
             if snum not in sections:  # skip sections that are not included
                 continue
@@ -993,6 +1000,8 @@ class Series():
                     for obj_name in obj_names:
                         if obj_name in section.contours:
                             traces += section.contours[obj_name].getTraces()
+                for n in obj_names: section.modified_contours.add(n)
+                if name: section.modified_contours.add(n)
                 section.save()
         
         self.modified = True
@@ -1695,16 +1704,20 @@ class Series():
 
 class SeriesIterator():
 
-    def __init__(self, series : Series, show_progress : bool, message : str):
+    def __init__(self, series : Series, show_progress : bool, message : str, series_states):
         """Create the series iterator object.
         
             Params:
                 series (Series): the series object
                 show_progress (bool): show progress dialog if True
+                message (str): the message to show
+                series_states (dict): section number : SectionStates (for use with GUI)
         """
         self.series = series
+        self.section = None
         self.show_progress = show_progress
         self.message = message
+        self.series_states = series_states
     
     def __iter__(self):
         """Allow the user to iterate through the sections."""
@@ -1719,13 +1732,27 @@ class SeriesIterator():
     
     def __next__(self):
         """Return the next section."""
+        # update the series states of the previous section if requested
+        if self.series_states and self.section and self.section.getAllModifiedNames():
+            self.series_states[self.section.n].addState(
+                self.section, self.series
+            )
+
         if self.sni < len(self.section_numbers):
             if self.show_progress:
                     self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             snum = self.section_numbers[self.sni]
-            section = self.series.loadSection(snum)
+            self.section = self.series.loadSection(snum)
             self.sni += 1
-            return snum, section
+
+            # check if states have been initialized
+            if self.series_states:
+                states = self.series_states[snum]
+                if not states.initialized:
+                    states.initialize(self.section, self.series)
+            
+            return snum, self.section
+        
         else:
             if self.show_progress:
                 self.progbar.setValue(self.sni / len(self.section_numbers) * 100)

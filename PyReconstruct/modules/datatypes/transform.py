@@ -119,4 +119,21 @@ class Transform():
 
         return tform
 
+    @property
+    def det(self):
+        return self.getQTransform().determinant()
+
+    def equals(self, other):
+        """Compare two transforms
+        
+            Params:
+                other (Transform): the other transform
+        """
+        l1 = self.getList()
+        l2 = other.getList()            
+        for n1, n2 in zip(l1, l2):
+            if abs(n1 - n2) > 1e-6:
+                return False
+        return True
+
 

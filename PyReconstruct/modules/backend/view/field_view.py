@@ -30,9 +30,9 @@ class FieldView():
         # get series and current section
         self.series = series
         self.section = self.series.loadSection(self.series.current_section)
-        # load the section state
-        self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
+        # load the section states
+        self.clearStates()
+        self.series_states[self.series.current_section].initialize(self.section, self.series)
 
         # get image dir
         if self.series.src_dir == "":
@@ -70,7 +70,7 @@ class FieldView():
         # copy/paste clipboard
         self.clipboard = []
     
-    def reload(self):
+    def reload(self, clear_states=False):
         """Reload the section data (used if section files were modified, usually through object list)."""
         # reload the actual sections
         self.section = self.series.loadSection(self.series.current_section)
@@ -79,10 +79,8 @@ class FieldView():
             self.b_section = self.series.loadSection(self.b_section.n)
             self.b_section_layer.section = self.b_section
         # clear all the section states
-        self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
-        if self.b_section:
-            self.series_states[self.b_section] = SectionStates(self.b_section, self.series)
+        if clear_states:
+            self.clearStates()
         # clear the selected traces
         self.section.selected_traces = []
         if self.b_section:
@@ -112,7 +110,11 @@ class FieldView():
     def updateData(self, clear_tracking=True):
         """Update the series data object and the tables."""
         # update the series data tracker
-        self.series.data.updateSection(self.section, update_traces=True)
+        self.series.data.updateSection(
+            self.section, 
+            update_traces=True,
+            all_traces=False
+        )
 
         # update the object table
         if self.obj_table_manager:
@@ -139,6 +141,12 @@ class FieldView():
         if clear_tracking:
             self.section.clearTracking()
             self.series.modified_ztraces = set()
+    
+    def clearStates(self):
+        """Create/clear the states for each section."""
+        self.series_states : dict[int, SectionStates] = {}
+        for snum in self.series.sections:
+            self.series_states[snum] = SectionStates()
 
     def saveState(self):
         """Save the current traces and transform.
@@ -174,7 +182,7 @@ class FieldView():
         section_states.undoState(self.section, self.series)
 
         # update the data/tables
-        self.updateData(clear_tracking=False)
+        self.updateData()
         
         self.generateView()
     
@@ -285,8 +293,9 @@ class FieldView():
             self.section.selected_traces = []
         
         # create section undo/redo state object if needed
-        if new_section_num not in self.series_states:
-            self.series_states[new_section_num] = SectionStates(self.section, self.series)
+        states = self.series_states[new_section_num]
+        if not states.initialized:
+            states.initialize(self.section, self.series)
         
         # reload trace list
         if self.trace_table_manager:
@@ -1089,10 +1098,6 @@ class FieldView():
             self.stored_tform = dtform * self.stored_tform
 
         self.section_layer.changeTform(new_tform)
-
-        # refresh data and tables
-        self.section.save()
-        self.refreshTables()
         
         self.generateView()
         self.saveState()

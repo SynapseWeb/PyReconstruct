@@ -37,10 +37,6 @@ class Section():
 
         self.temp_hide = []
 
-        self.added_traces = []
-        self.removed_traces = []
-        self.modified_contours = set()
-
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
         
@@ -76,6 +72,9 @@ class Section():
         self.flags = [Flag.fromList(l, self.n) for l in section_data["flags"]]
 
         self.calgrid = section_data["calgrid"]
+
+        # for use with GUI
+        self.clearTracking()
     
     @property
     def tform(self):
@@ -287,11 +286,24 @@ class Section():
         trace_names = trace_names.union(self.modified_contours)
         return trace_names
     
+    def tformsModified(self, scaling_only=False):
+        if len(self.tforms_values_copy) != len(self.tforms):
+            return True
+        for t1, t2 in zip(self.tforms_values_copy, self.tforms.values()):
+            if scaling_only:
+                if abs(t1.det - t2.det) > 1e-6:
+                    return True
+            else:
+                if not t1.equals(t2):
+                    return True
+        return False
+    
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
         self.removed_traces = []
         self.modified_contours = set()
+        self.tforms_values_copy = [t.copy() for t in self.tforms.values()]
     
     def setMag(self, new_mag : float):
         """Set the magnification for the section.

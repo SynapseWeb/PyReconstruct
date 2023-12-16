@@ -10,7 +10,7 @@ ENV_DIR = $(CONDA_BASE)/envs/$(ENV_NAME)
 ENV_YAML = environment_dev.yaml
 
 # Other
-LINK_SCRIPTS = source ./link_shell.sh $(ENV_DIR)
+LINK_SCRIPTS = . ./link_shell.sh $(ENV_DIR)
 SHOW_HELP = cat make_help.txt | awk '{gsub("<<<ENV>>>","$(ENV_NAME)",$$0); print $$0}'
 
 #### HELP #################################################################################

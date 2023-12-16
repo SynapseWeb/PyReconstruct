@@ -292,9 +292,8 @@ class FieldWidget(QWidget, FieldView):
     def unlockSection(self):
         """Unlock the current section."""
         self.section.align_locked = False
-        self.section.save()
-        if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section.n)
+        self.updateData()
+        self.mainwindow.seriesModified()
     
     def findContourDialog(self):
         """Open a dilog to prompt user to find contour."""

@@ -107,12 +107,13 @@ class SeriesData():
         for snum, section in self.series.enumerateSections():
             self.updateSection(section, update_traces=True, log_events=False)
     
-    def updateSection(self, section : Section, update_traces=False, log_events=True):
+    def updateSection(self, section : Section, update_traces=False, all_traces=True, log_events=True):
         """Update the existing section data.
         
             Params:
                 section (Section): the section with data to update
                 update_traces (bool): True if all traces should also be updated
+                all_traces (bool): True if all traces on the section should be updated IF NO TRACES HAVE BEEN MARKED AS MODIFIED
                 log_events (bool): True if events (creating and deleting objects) should be logged
         """
         # create/update the data for a section
@@ -145,7 +146,7 @@ class SeriesData():
         if update_traces:
             # check if there are specific traces to be updated
             trace_names = section.getAllModifiedNames()
-            if not trace_names and not self.series.modified_ztraces:
+            if section.tformsModified(scaling_only=True) or (all_traces and not trace_names):
                 trace_names = section.contours.keys()
 
             # keep track of objects that are newly created/destroyed

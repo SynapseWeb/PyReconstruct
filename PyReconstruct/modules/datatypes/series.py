@@ -1142,6 +1142,7 @@ class Series():
             flag_conflicts : bool = True,
             check_history : bool = True,
             favored : str = "",
+            series_states=None,
             log_event=True):
         """Import all the traces from another series.
         
@@ -1154,6 +1155,7 @@ class Series():
                 flag_conflicts (bool): True if conflicts should be flagged
                 check_history (bool): True if history should be checked
                 favored (str): the series that is favored in the case of a conflict ("self", "other", or "")
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         # # ensure that the two series have the same sections
@@ -1172,7 +1174,10 @@ class Series():
             other.getFullHistory()
         )
         
-        for snum, section in self.enumerateSections(message="Importing traces..."):
+        for snum, section in self.enumerateSections(
+            message="Importing traces...",
+            series_states=series_states
+        ):
             if (
                 snum not in range(*srange) or 
                 snum not in other.sections
@@ -1263,19 +1268,23 @@ class Series():
         
         self.save()
     
-    def importTransforms(self, other, alignments : list, log_event=True):
+    def importTransforms(self, other, alignments : list, series_states=None, log_event=True):
         """Import transforms from another series.
         
             Params:
                 other (series): the series to import transforms from
                 alignments (list): the names of alignments to import
                 log_event (bool): True if the event should be logged
+                series_states (dict): optiona dict of undo states for GUI
         """
         # ensure that the two series have the same sections
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
             return
         
-        iterator = zip(self.enumerateSections(message="Importing transforms..."), other.enumerateSections(show_progress=False))
+        iterator = zip(
+            self.enumerateSections(message="Importing transforms...", series_states=series_states), 
+            other.enumerateSections(show_progress=False)
+        )
         for (s_snum, s_section), (o_snum, o_section) in iterator:
             for a in alignments:
                 s_section.tforms[a] = o_section.tforms[a].copy()
@@ -1459,15 +1468,19 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self, threshold : float, log_event=True):
+    def deleteDuplicateTraces(self, threshold : float, series_states=None, log_event=True):
         """Delete all duplicate traces in the series (keep tags).
         
             Params:
                 threshold (float): the threshold for overlapping traces to be considered duplicates
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         removed = {}
-        for snum, section in self.enumerateSections(message="Removing duplicate traces..."):
+        for snum, section in self.enumerateSections(
+            message="Removing duplicate traces...",
+            series_states=series_states
+        ):
             found_on_section = False
             for cname in section.contours:
                 i = 1
@@ -1483,7 +1496,7 @@ class Series():
                             removed[snum].add(cname)
                             found_on_section = True
                             trace1.mergeTags(trace2)
-                            section.contours[cname].remove(trace2)
+                            section.removeTrace(trace2)
                             i -= 1
                             break
                     i += 1
@@ -1748,7 +1761,9 @@ class SeriesIterator():
     def __next__(self):
         """Return the next section."""
         # update the series states of the previous section if requested
-        if self.series_states and self.section and self.section.getAllModifiedNames():
+        if self.series_states and self.section and (
+            self.section.getAllModifiedNames() or self.section.tformsModified()
+        ):
             self.series_states[self.section.n].addState(
                 self.section, self.series
             )

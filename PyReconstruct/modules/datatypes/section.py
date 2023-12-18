@@ -785,6 +785,7 @@ class Section():
                     # if the other series is the one modified, replace contour and move to next
                     if modified_since_diverge[1]:
                         self.contours[cname] = other.contours[cname]
+                        self.modified_contours.add(cname)
                     if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
                 elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
@@ -800,6 +801,13 @@ class Section():
 
             # import the contour
             conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(other.contours[cname], threshold)
+
+            # continue if no conflict traces
+            if not (conflict_traces_s or conflict_traces_o):
+                continue
+            # add to modified contours set otherwise
+            else:
+                self.modified_contours.add(cname)
 
             # iterate through conflict pool and favor the requested traces
             if favored:

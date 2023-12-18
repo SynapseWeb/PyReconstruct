@@ -1271,7 +1271,16 @@ class MainWindow(QMainWindow):
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history, favored)
+        self.series.importTraces(
+            o_series, 
+            srange, 
+            regex_filters, 
+            threshold, 
+            flag_conflicts, 
+            check_history, 
+            favored, 
+            self.field.series_states
+        )
         o_series.close()
 
         # reload the field to update the traces
@@ -1430,7 +1439,7 @@ class MainWindow(QMainWindow):
                 o_series.close()
                 return
         
-        self.series.importTransforms(o_series, chosen_alignments)
+        self.series.importTransforms(o_series, chosen_alignments, self.field.series_states)
         o_series.close()
         
         self.field.reload()
@@ -2453,7 +2462,7 @@ class MainWindow(QMainWindow):
         if not noUndoWarning():
             return
         
-        removed = self.series.deleteDuplicateTraces(threshold)
+        removed = self.series.deleteDuplicateTraces(threshold, self.field.series_states)
 
         if removed:
             message = "The following duplicate traces were removed:"

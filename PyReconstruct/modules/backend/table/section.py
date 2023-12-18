@@ -195,6 +195,9 @@ class SectionTableManager():
                 
         # refresh the data in all tables
         self.mainwindow.field.refreshTables(refresh_data=True)
+
+        # clear the states
+        self.mainwindow.field.clearStates()
         
         # switch to first section if current section is deleted
         if self.series.current_section in section_numbers:
@@ -215,8 +218,8 @@ class SectionTableManager():
         # refresh all table data
         self.mainwindow.field.refreshTables(refresh_data=True)
         
-        # clear the field section states
-        self.mainwindow.field.series_states = {}
+        # clear the states
+        self.mainwindow.field.clearStates()
 
         self.updateTables()
 
@@ -245,7 +248,7 @@ class SectionTableManager():
         self.mainwindow.field.refreshTables(refresh_data=True)
         
         # clear the field section states
-        self.mainwindow.field.series_states = {}
+        self.mainwindow.field.clearStates()
 
         self.updateTables()
 

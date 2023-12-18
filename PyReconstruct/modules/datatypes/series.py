@@ -911,17 +911,17 @@ class Series():
             modified = False
             for obj_name in obj_names:
                 if obj_name in section.contours:
-                    section.removed_traces += section.contours[obj_name].getTraces()
+                    for trace in section.contours[obj_name]:
+                        section.removeTrace(trace)
                     del(section.contours[obj_name])
                     modified = True
-                    section.modified_contours.add(obj_name)
             
             if modified:
                 section.save()  # deleting object will automatically be logged
         
         self.modified = True
     
-    def deleteAllTraces(self, trace_name : str, tags : set = None):
+    def deleteAllTraces(self, trace_name : str, tags : set = None, series_states=None):
         """Delete all traces with a certain name and tag set.
         
             Params:
@@ -929,7 +929,8 @@ class Series():
                 tags (set): the tags to check to delete
         """
         for snum, section in self.enumerateSections(
-            message="Deleting trace(s)..."
+            message="Deleting trace(s)...",
+            series_states=series_states
         ):
             if trace_name in section.contours:
                 contour = section.contours[trace_name]
@@ -1000,21 +1001,21 @@ class Series():
                     for obj_name in obj_names:
                         if obj_name in section.contours:
                             traces += section.contours[obj_name].getTraces()
-                for n in obj_names: section.modified_contours.add(n)
-                if name: section.modified_contours.add(n)
                 section.save()
         
         self.modified = True
     
-    def editObjectRadius(self, obj_names : list, new_rad : float):
+    def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.
         
             Params:
                 obj_names (list): the names of objects to modify
                 new_rad (float): the new radius for the traces of the object
+                series_states (dict): optional dict for GUI undo states
         """
         for snum, section in self.enumerateSections(
-            message="Modifying radii..."
+            message="Modifying radii...",
+            series_states=series_states
         ):
             traces = []
             for name in obj_names:
@@ -1026,15 +1027,17 @@ class Series():
         
         self.modified = True
     
-    def editObjectShape(self, obj_names : list, new_shape : list):
+    def editObjectShape(self, obj_names : list, new_shape : list, series_states=None):
         """Change the shape of all traces of an object.
         
             Params:
                 obj_names (list): the names of objects to modify
                 new_shape (list): the new shape for the traces of the object
+                series_states (dict): optional dict for GUI undo states
         """
         for snum, section in self.enumerateSections(
-            message="Modifying shapes..."
+            message="Modifying shapes...",
+            series_states=series_states
         ):
             traces = []
             for name in obj_names:
@@ -1046,15 +1049,17 @@ class Series():
         
         self.modified = True
     
-    def removeAllTraceTags(self, obj_names : list, log_event=True):
+    def removeAllTraceTags(self, obj_names : list, series_states=None, log_event=True):
         """Remove all tags from all traces on a set of objects.
         
             Params:
                 obj_names (list): a list of object names
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Removing trace tags..."
+            message="Removing trace tags...",
+            series_states=series_states
         ):
             traces = []
             for obj_name in obj_names:
@@ -1077,16 +1082,18 @@ class Series():
 
         self.modified = True
     
-    def hideObjects(self, obj_names : list, hide=True, log_event=True):
+    def hideObjects(self, obj_names : list, hide=True, series_states=None, log_event=True):
         """Hide all traces of a set of objects throughout the series.
         
             Params:
                 obj_names (list): the names of objects to hide
                 hide (bool): True if object should be hidden
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Hiding object(s)..." if hide else "Unhiding object(s)..."
+            message="Hiding object(s)..." if hide else "Unhiding object(s)...",
+            series_states=series_states
         ):
             modified = False
             for name in obj_names:
@@ -1095,6 +1102,7 @@ class Series():
                     for trace in contour:
                         trace.setHidden(hide)
                         modified = True
+                    section.modified_contours.add(name)
             if modified:
                 section.save()
         
@@ -1105,17 +1113,22 @@ class Series():
         
         self.modified = True
     
-    def hideAllTraces(self, hidden=True, log_event=True):
+    def hideAllTraces(self, hidden=True, series_states=None, log_event=True):
         """Hide all traces in the entire series.
         
             Params:
                 hidden (bool): True if traces are to be hidden
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Hiding traces..." if hidden else "Unhiding traces..."):
+            message="Hiding traces..." if hidden else "Unhiding traces...",
+            series_states=series_states
+        ):
             for trace in section.tracesAsList():
                 trace.setHidden(hidden)
+            for name in section.contours:
+                section.modified_contours.add(name)
             section.save()
         
         if log_event:
@@ -1718,6 +1731,8 @@ class SeriesIterator():
         self.show_progress = show_progress
         self.message = message
         self.series_states = series_states
+        if self.series_states is not None:
+            self.series_states["series_undos"].append({})
     
     def __iter__(self):
         """Allow the user to iterate through the sections."""
@@ -1737,6 +1752,8 @@ class SeriesIterator():
             self.series_states[self.section.n].addState(
                 self.section, self.series
             )
+            series_undo = self.series_states["series_undos"][-1]
+            series_undo[self.section.n] = len(self.series_states[self.section.n].undo_states)
 
         if self.sni < len(self.section_numbers):
             if self.show_progress:

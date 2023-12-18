@@ -174,6 +174,9 @@ class MainWindow(QMainWindow):
                     ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
                     ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
                     None,
+                    ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
+                    ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
+                    None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
                     ("paste_act", "Paste", "Ctrl+V", self.field.paste),
@@ -591,6 +594,38 @@ class MainWindow(QMainWindow):
         # zarr layer
         self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
 
+        # check for a series-wide redo possibility first
+        redo = self.seriesredo_act
+        series_redos = self.field.series_states["series_redos"]
+        if series_redos:
+            redo.setEnabled(True)
+            for snum, undo_len in series_redos[-1].items():
+                states = self.field.series_states[snum]
+                if not states.initialized:
+                    redo.setEnabled(False)
+                    break
+                if len(states.undo_states) != undo_len - 1:
+                    redo.setEnabled(False)
+                    break
+        else:
+            redo.setEnabled(False)
+        
+        # check for a series-wide undo possibility
+        undo = self.seriesundo_act
+        series_undos = self.field.series_states["series_undos"]
+        if series_undos:
+            undo.setEnabled(True)
+            for snum, undo_len in series_undos[-1].items():
+                states = self.field.series_states[snum]
+                if not states.initialized:
+                    undo.setEnabled(False)
+                    break
+                if len(states.undo_states) != undo_len:
+                    undo.setEnabled(False)
+                    break
+        else:
+            undo.setEnabled(False)
+            
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions

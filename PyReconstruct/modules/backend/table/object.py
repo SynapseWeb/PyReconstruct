@@ -19,6 +19,7 @@ class ObjectTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+        self.series_states = self.mainwindow.field.series_states
     
     def newTable(self):
         """Create a new object list widget."""
@@ -101,7 +102,7 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         # delete the object on every section
-        self.series.deleteObjects(obj_names, self.mainwindow.field.series_states)
+        self.series.deleteObjects(obj_names, self.series_states)
 
         # update the dictionary data and tables
         self.updateObjects(obj_names)
@@ -133,7 +134,7 @@ class ObjectTableManager():
             tags,
             mode,
             sections,
-            series_states=self.mainwindow.field.series_states
+            series_states=self.series_states
         )
 
         all_names = set(obj_names)
@@ -144,7 +145,7 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)   
+        self.mainwindow.seriesModified(True)
 
     def editRadius(self, obj_names : list, new_rad : float):
         """Change the radii of all traces of an object.
@@ -158,7 +159,8 @@ class ObjectTableManager():
         # iterate through all sections
         self.series.editObjectRadius(
             obj_names,
-            new_rad
+            new_rad,
+            self.series_states
         )
         
         # update the table data
@@ -180,7 +182,8 @@ class ObjectTableManager():
         # iterate through all sections
         self.series.editObjectShape(
             obj_names,
-            new_shape
+            new_shape,
+            self.series_states
         )
         
         # update the table data
@@ -199,7 +202,7 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
 
         # iterate through all the sections
-        self.series.removeAllTraceTags(obj_names)
+        self.series.removeAllTraceTags(obj_names, self.series_states)
 
         self.updateObjects(obj_names)
 
@@ -217,7 +220,7 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
 
         # iterate through sections and hide the traces
-        self.series.hideObjects(obj_names, hide)
+        self.series.hideObjects(obj_names, hide, self.series_states)
             
         # update the view
         self.mainwindow.field.reload()

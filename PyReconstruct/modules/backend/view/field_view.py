@@ -147,6 +147,8 @@ class FieldView():
         self.series_states : dict[int, SectionStates] = {}
         for snum in self.series.sections:
             self.series_states[snum] = SectionStates()
+        self.series_states["series_undos"] = []
+        self.series_states["series_redos"] = []
 
     def saveState(self):
         """Save the current traces and transform.
@@ -159,6 +161,17 @@ class FieldView():
 
         # update the data/tables
         self.updateData()
+
+        # check if a series undo has been overwritten
+        undos = self.series_states["series_undos"]
+        if undos and self.section.n in undos[-1]:
+            if undos[-1][self.section.n] == len(section_states.undo_states):
+                undos.pop()
+        # clear series redos
+        redos = self.series_states["series_redos"]
+        for redo in redos.copy():
+            if self.section.n in redo:
+                redos.remove(redo)
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
@@ -207,6 +220,34 @@ class FieldView():
         self.updateData()
         
         self.generateView()
+    
+    def seriesUndo(self, redo=False):
+        """Undo an action across the series.
+        
+            Params:
+                redo (bool): True if should redo instead of undo
+        """
+        undos = self.series_states["series_undos"]
+        redos = self.series_states["series_redos"]
+
+        sections = redos[-1].keys() if redo else undos[-1].keys()
+        for snum, section in self.series.enumerateSections(
+            message=("Re" if redo else "Un") + "doing action..."
+        ):
+            if snum not in sections:
+                continue
+            states = self.series_states[snum]
+            if redo:
+                states.redoState(section, self.series)
+            else:
+                states.undoState(section, self.series)
+            section.save()
+        if redo:
+            undos.append(redos.pop())
+        else:
+            redos.append(undos.pop())
+        self.reload()
+        self.refreshTables()
     
     def setPropagationMode(self, propagate : bool):
         """Set the propagation mode.

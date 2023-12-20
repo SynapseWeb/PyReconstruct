@@ -18,7 +18,7 @@ def setDT():
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
 def borderToWindow(border_obj, srange, series):
-    """Convert a border object into a window.
+    """Convert a border object into a window based on max/min x/y values.
 
         Params:
             border_obj (str): the object to use as the border marking
@@ -68,7 +68,7 @@ def seriesToZarr(
         data_fp: str = None,
         output_dir: str = None
 ):
-    """Convert a series into a neuroglancer-compatible zarr.
+    """Convert a series (images) into a neuroglancer-compatible zarr.
     
         Params:
             series (Series): the series to convert

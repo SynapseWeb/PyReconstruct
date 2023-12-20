@@ -1,5 +1,20 @@
 #!/usr/bin/sh
 
+usage='Usage: image-get-center <img dir>'
+
+if [[ $1 == '--help' || $1 == '-h' ]]
+then
+  echo $usage
+  exit 0
+fi
+
+if [[ -z $1 || ! -d $1 ]]
+then
+  echo 'Please provide a valid path to a directory containing a set of images.'
+  echo $usage
+  exit 1
+fi
+
 # Return middle pixel of an image
 cd $1
 

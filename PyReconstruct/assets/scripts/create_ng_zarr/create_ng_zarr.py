@@ -14,12 +14,12 @@ import tomllib
 
 from PySide6.QtWidgets import QApplication
 
-# # Imports are a nightmare (set repo root here)
-# project_dir = Path(__file__).parents[2]
-# sys.path.append(str(project_dir))
+# Imports are a nightmare (set repo root here)
+project_dir = Path(__file__).parents[2]
+sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels
+from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, borderToWindow
 
 
 parser = argparse.ArgumentParser(prog="create_ng_zarr", description=__doc__)
@@ -28,11 +28,12 @@ parser = argparse.ArgumentParser(prog="create_ng_zarr", description=__doc__)
 parser.add_argument('jser', type=str, nargs='?', help="Filepath of a valid jser file.")
 
 # optional args
-parser.add_argument('--config', type=str, help="filepath to a toml config file")
+parser.add_argument('--config', "-c", type=str, help="filepath to a toml config file")
 parser.add_argument("--height", "-y", type=float, default=2.0, help='height in μm (default %(default)s μm)')
 parser.add_argument("--width", "-x", type=float, default=2.0, help='width in μm (default %(default)s μm)')
 parser.add_argument("--sections", "-s", type=int, default=50, help='number of sections to include (default %(default)s sections)')
 parser.add_argument("--mag", "-m", type=float, default=0.008, help='output zarr mag in μm/vox (default %(default)s μm/vox)')
+parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
 parser.add_argument("--groups", "-g", type=str, action='append', nargs="*", default=None, help='PyReconstruct object groups to include as labels (default %(default)s μm/vox)')
 
 args = parser.parse_args()
@@ -56,6 +57,14 @@ h_out    = float(args.height)
 w_out    = float(args.width)
 secs     = int(args.sections)
 mag      = float(args.mag)
+obj      = args.obj
+
+print(f'jser_fp: {jser_fp}')
+print(f'h_out: {h_out}')
+print(f'w_out: {w_out}')
+print(f'secs: {secs}')
+print(f'mag: {mag}')
+print(f'obj: {obj}')
 
 def flatten_list(nested_list):
     """Recursively flatten lists to handle groups."""
@@ -83,36 +92,46 @@ end_exclude = mid + (secs // 2) - 1
 
 srange = (sections[start], sections[end_exclude])
 
-# sample a section to get the true magnification
+## sample a section to get the image magnification
 section = series.loadSection(sections[0])
 
-if series.src_dir.endswith("zarr"):
-    
-    scale_1 = os.path.join(series.src_dir, "scale_1")
-    one_img = os.path.join(scale_1, os.listdir(scale_1)[10])  # stear clear of cal grid
+## Get window either from image center or from an obj if provided
 
-    z = zarr.open(one_img, "r")
-    h, w = z.shape
-    
-    center_x_px, center_y_px = w // 2, h // 2
+if not obj:  # if no border obj defined, find center and surrounding window
 
-    ## TODO: Do the above center values take into account transformations?
+    if series.src_dir.endswith("zarr"):
     
-else:
-    
-    cmd = f"image-get-center {series.src_dir}"
-    center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-    center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
+        scale_1 = os.path.join(series.src_dir, "scale_1")
+        one_img = os.path.join(scale_1, os.listdir(scale_1)[10])  # stear clear of cal grid
+        
+        z = zarr.open(one_img, "r")
+        h, w = z.shape
+        
+        center_x_px, center_y_px = w // 2, h // 2
+        
+        ## TODO: Do the above center values take into account transformations?
+        
+    else:
+        
+        cmd = f"image-get-center {series.src_dir}"
+        center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
+        
+        ## TODO: Need to apply section transform to get true center.
+        ## The above will work for now.
+        
+        window = [
+            (center_x_px * section.mag) - (w_out / 2),  # x
+            (center_y_px * section.mag) - (h_out / 2),  # y
+            w_out, # w
+            h_out # h
+        ]
 
-    ## TODO: Need to apply section transform to get true center.
-    ## The above will work for now.
+else:  # border obj defined
 
-window = [
-    (center_x_px * section.mag) - (w_out / 2),  # x
-    (center_y_px * section.mag) - (h_out / 2),  # y
-    w_out, # w
-    h_out # h
-]
+    window = borderToWindow(obj, srange, series)
+
+print(f'window: {window}')
 
 print("Initializing pyqt...")
 app = QApplication(sys.argv)

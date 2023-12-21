@@ -11,6 +11,7 @@ import zarr
 import subprocess
 import argparse
 import tomllib
+import cv2
 
 from PySide6.QtWidgets import QApplication
 
@@ -36,6 +37,8 @@ parser.add_argument("--mag", "-m", type=float, default=0.008, help='output zarr 
 parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
 parser.add_argument("--padding", "-p", type=int, default=50, help='padding (px) to include around an object (default %(default)s px')
 parser.add_argument("--groups", "-g", type=str, action='append', nargs="*", default=None, help='PyReconstruct object groups to include as labels (default %(default)s μm/vox)')
+parser.add_argument("--max_tissue", action='store_true', help='Inclue all possible tissue and black space')
+#parser.add_argument("--min_tissue", action='store_true', help='Crop images to include only tissue')
 
 args = parser.parse_args()
 
@@ -60,6 +63,7 @@ secs     = int(args.sections)
 mag      = float(args.mag)
 obj      = args.obj
 padding  = int(args.padding)
+get_all  = bool(args.max_tissue)
 
 def flatten_list(nested_list):
     """Recursively flatten lists to handle groups."""
@@ -87,20 +91,54 @@ end_exclude = mid + (secs // 2) - 1
 
 srange = (sections[start], sections[end_exclude])
 
-## Sample a section to get image magnification
-section = series.loadSection(sections[0])
+## Sample a section to get image magnification and dimensions
+## Assume all sections have the same dimensions for now
+
+section = series.loadSection(sections[5])  # steer clear of cal grid
 img_mag = section.mag
+
+if series.src_dir.endswith(".zarr"):  ## TODO: Need to validate for zarrs more appropriately
+    
+    img_scale_1 = os.path.join(series.src_dir, "scale_1", section.src)
+    h, w = zarr.open(img_scale_1).shape
+    
+else:
+    
+    img_fp = os.path.join(series.src_dir, section.src)
+    h, w, _ = cv2.imread(img_fp).shape
+
+convert_microns = lambda x: x * img_mag
+img_corners = [(0, 0), (w, 0), (h, w), (0, h)]
+img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
 
 ## Procedures
 
-get_all = None
 get_most = None
 
 if get_all:  # request all available (include black space)
 
-    pass
+    x_mins, y_mins, x_maxs, y_maxs = ([], [], [], [])
 
-if get_most:  # request max amount of tissue
+    for section in range(srange[0], srange[1]):
+        
+        sec_tform = series.loadSection(section).tform
+        corners_transformed = sec_tform.map(img_corners)
+
+        x_vals, y_vals = list(zip(*corners_transformed))
+
+        x_mins.append(min(x_vals))
+        y_mins.append(min(y_vals))
+        x_maxs.append(max(x_vals))
+        y_maxs.append(max(y_vals))
+
+    window = [
+        min(x_mins),
+        min(y_mins),
+        max(y_maxs) - min(y_mins),
+        max(x_maxs) - min(x_mins)
+    ]
+
+elif get_most:  # request max amount of tissue
     
     pass
 
@@ -112,30 +150,12 @@ elif obj:  # request zarr around an object
 
 else:  # default to zarr around image center
 
-    if series.src_dir.endswith("zarr"):
-    
-        scale_1 = os.path.join(series.src_dir, "scale_1")
-        one_img = os.path.join(scale_1, os.listdir(scale_1)[10])  # stear clear of cal grid
-        
-        z = zarr.open(one_img, "r")
-        h, w = z.shape
-        
-        center_x_px, center_y_px = w // 2, h // 2
-        
-        ## TODO: Do the above center values take into account transformations?
-        
-    else:
-        
-        cmd = f"image-get-center {series.src_dir}"
-        center = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        center_x_px, center_y_px = map(float, center.stdout.strip().split(" "))
-        
-        ## TODO: Need to apply section transform to get true center.
-        ## The above will work for now.
+    center_x, center_y = w // 2, h // 2
+    ## TODO: Need to apply section transform to get true center.
         
     window = [
-        (center_x_px * img_mag) - (w_out / 2),  # x
-        (center_y_px * img_mag) - (h_out / 2),  # y
+        (center_x * img_mag) - (w_out / 2),  # x
+        (center_y * img_mag) - (h_out / 2),  # y
         w_out, # w
         h_out # h
     ]

@@ -91,9 +91,9 @@ def seriesToZarr(
 
     # calculate field attributes
     shape = (
-        srange[1] - srange[0],
-        round(window[3]/mag),
-        round(window[2]/mag)
+        srange[1] - srange[0],  # z
+        round(window[3]/mag),   # height
+        round(window[2]/mag)    # width
     )
 
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array

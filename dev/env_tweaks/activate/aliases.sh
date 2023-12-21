@@ -10,6 +10,7 @@ define_alias(){
 }
 
 # Make sure to quote commands with mutiple parts that are separated by whitespace
+define_alias PyReconstruct "python -m PyReconstruct.run"
 define_alias pyrecon PyReconstruct
 define_alias pr PyReconstruct
 define_alias ng neuroglancer

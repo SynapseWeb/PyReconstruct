@@ -54,7 +54,7 @@ class Series():
             Params:
                 filepath (str): the filepath for the series JSON file
                 sections (dict): section basename for each section
-                get_series_data (bool): True if serues data should be loaded
+                get_series_data (bool): True if series data should be loaded
         """
         self.filepath = filepath
         self.sections = sections

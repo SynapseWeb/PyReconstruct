@@ -15,7 +15,7 @@ import tomllib
 from PySide6.QtWidgets import QApplication
 
 # Imports are a nightmare (set repo root here)
-project_dir = Path(__file__).parents[2]
+project_dir = Path(__file__).parents[4]
 sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series
@@ -34,6 +34,7 @@ parser.add_argument("--width", "-x", type=float, default=2.0, help='width in μm
 parser.add_argument("--sections", "-s", type=int, default=50, help='number of sections to include (default %(default)s sections)')
 parser.add_argument("--mag", "-m", type=float, default=0.008, help='output zarr mag in μm/vox (default %(default)s μm/vox)')
 parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
+parser.add_argument("--padding", "-p", type=int, default=50, help='padding (px) to include around an object (default %(default)s px')
 parser.add_argument("--groups", "-g", type=str, action='append', nargs="*", default=None, help='PyReconstruct object groups to include as labels (default %(default)s μm/vox)')
 
 args = parser.parse_args()
@@ -48,7 +49,7 @@ if args.config:
     if args.groups: parser.set_defaults(groups=None)  # override toml acting as defaults if --groups called
     args = parser.parse_args()
 
-# Ensure "valid" jser provided
+# Make sure "valid" jser provided
 if not args.jser or not os.path.exists(args.jser):
     parser.error("Please provide filepath to a valid jser.")
 
@@ -58,18 +59,12 @@ w_out    = float(args.width)
 secs     = int(args.sections)
 mag      = float(args.mag)
 obj      = args.obj
-
-print(f'jser_fp: {jser_fp}')
-print(f'h_out: {h_out}')
-print(f'w_out: {w_out}')
-print(f'secs: {secs}')
-print(f'mag: {mag}')
-print(f'obj: {obj}')
+padding  = int(args.padding)
 
 def flatten_list(nested_list):
     """Recursively flatten lists to handle groups."""
  
-    if not(bool(nested_list)):  # empty list?
+    if not(bool(nested_list)):  # if empty list
         return nested_list
  
     if isinstance(nested_list[0], list):
@@ -92,12 +87,30 @@ end_exclude = mid + (secs // 2) - 1
 
 srange = (sections[start], sections[end_exclude])
 
-## sample a section to get the image magnification
+## Sample a section to get image magnification
 section = series.loadSection(sections[0])
+img_mag = section.mag
 
-## Get window either from image center or from an obj if provided
+## Procedures
 
-if not obj:  # if no border obj defined, find center and surrounding window
+get_all = None
+get_most = None
+
+if get_all:  # request all available (include black space)
+
+    pass
+
+if get_most:  # request max amount of tissue
+    
+    pass
+
+elif obj:  # request zarr around an object
+
+    if padding: padding *= img_mag # convert padding from px to μm
+    print(f'padding: {padding}')
+    window = borderToWindow(obj, srange, series, padding)
+
+else:  # default to zarr around image center
 
     if series.src_dir.endswith("zarr"):
     
@@ -120,16 +133,12 @@ if not obj:  # if no border obj defined, find center and surrounding window
         ## TODO: Need to apply section transform to get true center.
         ## The above will work for now.
         
-        window = [
-            (center_x_px * section.mag) - (w_out / 2),  # x
-            (center_y_px * section.mag) - (h_out / 2),  # y
-            w_out, # w
-            h_out # h
-        ]
-
-else:  # border obj defined
-
-    window = borderToWindow(obj, srange, series)
+    window = [
+        (center_x_px * img_mag) - (w_out / 2),  # x
+        (center_y_px * img_mag) - (h_out / 2),  # y
+        w_out, # w
+        h_out # h
+    ]
 
 print(f'window: {window}')
 

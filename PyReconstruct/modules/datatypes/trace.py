@@ -291,8 +291,9 @@ class Trace():
         else:
             points = self.points.copy()
 
-        xmin = xmax = self.points[0][0]
-        ymin = ymax = self.points[0][1]
+        xmin = xmax = points[0][0]  # BUG: Should this be 'points' and not 'self.points'?
+        ymin = ymax = points[0][1]
+        
         for x, y in points[1:]:
             if x < xmin: xmin = x
             elif x > xmax: xmax = x

@@ -17,17 +17,18 @@ def setDT():
     t = datetime.now()
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
-def borderToWindow(border_obj, srange, series):
+def borderToWindow(border_obj, srange, series: Series, padding: float=None):
     """Convert a border object into a window based on max/min x/y values.
 
         Params:
             border_obj (str): the object to use as the border marking
             series (Series): a series object
             srange (tuple): the range of sections (exclusive)
+            padding (float): padding (μm) to add around object
         Returns:
            x position, y position, width, height
     """
-
+    
     x_vals = []
     y_vals = []
     
@@ -42,11 +43,17 @@ def borderToWindow(border_obj, srange, series):
             
             x_vals += [xmin, xmax]
             y_vals += [ymin, ymax]
-            
+
     x = min(x_vals)
     w = max(x_vals) - x
     y = min(y_vals)
     h = max(y_vals) - y
+
+    if padding:
+        x -= padding
+        y -= padding
+        w += (padding * 2)
+        h += (padding * 2)
 
     window = [x, y, w, h]
 
@@ -270,7 +277,7 @@ def exportSection(data_zg, snum : int, series : Series, srange : tuple, window :
             window (list): the frame for the raw export
             pixmap_dim (tuple): the w and h in pixels for the arr output
     """
-    print(f"Section {snum} exporting started")
+    # print(f"Section {snum} exporting started")
     section = series.loadSection(snum)
     slayer = SectionLayer(section, series)
     z = snum - srange[0]
@@ -280,7 +287,7 @@ def exportSection(data_zg, snum : int, series : Series, srange : tuple, window :
         window
     )
     data_zg["raw"][z] = arr
-    print(f"Section {snum} exporting finished")
+    # print(f"Section {snum} exporting finished")
 
 def exportTraces(data_zg,
                  snum : int,

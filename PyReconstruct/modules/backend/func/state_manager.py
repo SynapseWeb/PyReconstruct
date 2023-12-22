@@ -339,5 +339,233 @@ def restoreZtraceOnSection(orig_ztrace : Ztrace, new_ztrace : Ztrace, snum : int
         restored_points
     )
 
+class SeriesState():
+
+    def __init__(self):
+        """Create a single series state."""
+        self.undo_lens = {}  # keep track of individial section undos (these will be populated as the enumerateSections loop progresses)
+        self.series_attrs = {}
+    
+    # STATIC METHOD
+    def getSeriesAttributes(series : Series):
+        """Reset the stored series attributes.
+        
+            Params:
+                series (Series): the series to store attributes for
+        """
+        obj_attrs = {}
+        for key, value in series.obj_attrs.items():
+            try: obj_attrs[key] = value.copy()
+            except AttributeError: obj_attrs[key] = value
+        
+        ztrace_attrs = {}
+        for key, value in series.ztrace_attrs.items():
+            try: ztrace_attrs[key] = value.copy()
+            except AttributeError: ztrace_attrs[key] = value
+        
+        object_groups = series.object_groups.copy()
+        ztrace_groups = series.ztrace_groups.copy()
+
+        alignment = series.alignment
+
+        ztraces = {}
+        for name, ztrace in series.ztraces.items():
+            ztraces[name] = ztrace.copy()
+        
+        return {
+            "obj_attrs" : obj_attrs,
+            "ztrace_attrs" : ztrace_attrs,
+            "object_groups" : object_groups,
+            "ztrace_groups" : ztrace_groups,
+            "alignment" : alignment,
+            "ztraces" : ztraces
+        }
+    
+    def resetSeriesAttributes(self, series : Series):
+        """Reset the stored series attributes.
+        
+            Params:
+                series (Series): the series to store attributes for
+        """
+        self.series_attrs = SeriesState.getSeriesAttributes(series)
+    
+    def applySeriesAttributes(self, series : Series):
+        """Apply the stored series attributes to a series.
+        
+            Params:
+                series (Series): the series to apply attributes to
+        """
+        pre_series_attrs = SeriesState.getSeriesAttributes(series)
+        for attr, value in self.series_attrs.items():
+            setattr(series, attr, value)
+
+        # specific case: no sections modified but the series data needs to be refreshed bc preferred alignments changed
+        if not self.undo_lens and alignmentPreferencesChanged(pre_series_attrs, self.series_attrs):
+            series.data.refresh()
+
+        self.series_attrs = pre_series_attrs
+
+def getAlignment(attrs, name):
+    if name in attrs and "alignment" in attrs[name]:
+        return attrs[name]["alignment"]
+    else:
+        return None
+
+def alignmentPreferencesChanged(pre_series_attrs, post_series_attrs):
+    """Check if the alignment preferences for objects and ztraces has changed."""
+    pre_obj_attrs = pre_series_attrs["obj_attrs"]
+    post_obj_attrs = post_series_attrs["obj_attrs"]
+    pre_ztrace_attrs = pre_series_attrs["ztrace_attrs"]
+    post_ztrace_attrs = post_series_attrs["ztrace_attrs"]
+
+    for pre, post in (
+        (pre_obj_attrs, post_obj_attrs),
+        (pre_ztrace_attrs, post_ztrace_attrs)
+    ):
+        for name in set(pre.keys()).union(post.keys()):
+            if getAlignment(pre, name) != getAlignment(post, name):
+                return True
+    
+    return False
+
+
+class SeriesStates():
+
+    def __init__(self, series : Series):
+        """Create the object to contain section states and information for series-wide states.
+        
+            Params:
+                section_numbers (list): the list of section numbers in the series
+        """
+        self.series = series
+        self.section_states_dict : dict[int, SectionStates] = {}
+        for snum in self.series.sections:
+            self.section_states_dict[snum] = SectionStates()
+        self.undos : list[SeriesState] = []
+        self.redos : list[SeriesState] = []
+    
+    def __iter__(self):
+        """Return the iterator object for the series states"""
+        return self.section_states_dict.__iter__()
+    
+    def __getitem__(self, index):
+        """Allow the user to index the series states."""
+        if type(index) is int:
+            return self.section_states_dict[index]
+        elif type(index) is Section:
+            section_states = self.section_states_dict[index.n]
+            if not section_states.initialized:
+                section_states.initialize(index, self.series)
+            return section_states
+    
+    def __len__(self):
+        """Get the length of the series states."""
+        return len(self.section_states_dict)
+
+    def addState(self):
+        """Create a new series undo state."""
+        new_state = SeriesState()
+        new_state.resetSeriesAttributes(self.series)
+        self.undos.append(new_state)
+    
+    def addSectionUndo(self, snum : int):
+        """Flag the section's latest undo state as part of the most recent series undo.
+        
+            Params:
+                snum (int): the section number
+        """
+        self.undos[-1].undo_lens[snum] = len(self[snum].undo_states)
+
+    def clear(self):
+        """Clear all state tracking."""
+        for snum in self.section_states_dict:
+            self.section_states_dict[snum] = SectionStates()
+        self.undos = []
+        self.redos = []
+    
+    def canUndo(self):
+        """Checks if a series-wide undo is possible."""
+        if not self.undos:
+            return False
+        
+        for snum, undo_len in self.undos[-1].undo_lens.items():
+            states = self[snum]
+            if not states.initialized:
+                return False
+            if len(states.undo_states) != undo_len:
+                return False
+        
+        return True
+
+    def canRedo(self):
+        """Checks if a series-wide redo is possible."""
+        if not self.redos:
+            return False
+        
+        for snum, undo_len in self.redos[-1].undo_lens.items():
+            states = self[snum]
+            if not states.initialized:
+                return False
+            if len(states.undo_states) != undo_len - 1:
+                return False
+        
+        return True
+    
+    def undoState(self, redo=False):
+        """Perform a series-wide undo or redo.
+        
+            Params:
+                redo (bool): True if redo should be performed instead of undo
+        """
+        if not redo and not self.canUndo(): return
+        if redo and not self.canRedo(): return
+        
+        state = self.redos[-1] if redo else self.undos[-1]
+        
+        # undo/redo the inidividual sections
+        sections = state.undo_lens.keys()
+        if sections:
+            for snum, section in self.series.enumerateSections(
+                message=("Re" if redo else "Un") + "doing action..."
+            ):
+                if snum not in sections:
+                    continue
+                states = self[snum]
+                if redo:
+                    states.redoState(section, self.series)
+                else:
+                    states.undoState(section, self.series)
+                section.save()
+        
+        # undo/redo the series attributes
+        state.applySeriesAttributes(self.series)
+
+        # move the state accordingly
+        if redo:
+            self.undos.append(self.redos.pop())
+        else:
+            self.redos.append(self.undos.pop())
+    
+    def checkOverwrite(self, snum : int):
+        """Check if a series undo/redo should be removed.
+        
+        (Called after a state has just been written to the given section)
+        
+            Params:
+                snum (int): the section number to check
+        """
+        # check if a series undo has been overwritten
+        if self.undos and snum in self.undos[-1].undo_lens:
+            if self.undos[-1].undo_lens[snum] == len(self[snum].undo_states):
+                self.undos.pop()
+        # clear series redos
+        for redo in self.redos.copy():
+            if snum in redo.undo_lens:
+                self.redos.remove(redo)
+
+    
+
+
+
 
 

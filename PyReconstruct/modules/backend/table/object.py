@@ -235,6 +235,7 @@ class ObjectTableManager():
                 new_opacity (float): the opacity for the 3D objects
         """
         self.mainwindow.saveAllData()
+        self.series_states.addState()
 
         # set the series settings
         for name in obj_names:
@@ -255,6 +256,7 @@ class ObjectTableManager():
                 croess_sectioned (bool): True if object is cross-sectioned
         """
         self.mainwindow.saveAllData()
+        self.series_states.addState()
 
         for name in obj_names:
             self.series.createZtrace(name, cross_sectioned)

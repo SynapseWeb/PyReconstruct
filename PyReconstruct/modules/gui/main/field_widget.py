@@ -37,7 +37,7 @@ from PyReconstruct.modules.backend.table import (
     FlagTableManager
 )
 from PyReconstruct.modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
-from PyReconstruct.modules.gui.utils import notify, drawOutlinedText, noUndoWarning
+from PyReconstruct.modules.gui.utils import notify, drawOutlinedText
 from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
@@ -1845,13 +1845,10 @@ class FieldWidget(QWidget, FieldView):
             return
         trace = self.section.selected_traces[0]
 
-        if not noUndoWarning():
-            return
-
         if tags:
-            self.series.deleteAllTraces(trace.name, trace.tags)
+            self.series.deleteAllTraces(trace.name, trace.tags, self.series_states)
         else:
-            self.series.deleteAllTraces(trace.name)
+            self.series.deleteAllTraces(trace.name, series_states=self.series_states)
         
         self.reload()
     

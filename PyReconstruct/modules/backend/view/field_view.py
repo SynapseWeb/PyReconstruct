@@ -11,7 +11,7 @@ from PyReconstruct.modules.datatypes import (
     Trace,
     Flag
 )
-from PyReconstruct.modules.backend.func import SectionStates
+from PyReconstruct.modules.backend.func import SectionStates, SeriesStates
 from PyReconstruct.modules.calc import (
     centroid,
     lineDistance,
@@ -32,7 +32,8 @@ class FieldView():
         self.section = self.series.loadSection(self.series.current_section)
         # load the section states
         self.clearStates()
-        self.series_states[self.series.current_section].initialize(self.section, self.series)
+        # initialize the current section
+        self.series_states[self.section]
 
         # get image dir
         if self.series.src_dir == "":
@@ -144,11 +145,7 @@ class FieldView():
     
     def clearStates(self):
         """Create/clear the states for each section."""
-        self.series_states : dict[int, SectionStates] = {}
-        for snum in self.series.sections:
-            self.series_states[snum] = SectionStates()
-        self.series_states["series_undos"] = []
-        self.series_states["series_redos"] = []
+        self.series_states = SeriesStates(self.series)
 
     def saveState(self):
         """Save the current traces and transform.
@@ -162,16 +159,8 @@ class FieldView():
         # update the data/tables
         self.updateData()
 
-        # check if a series undo has been overwritten
-        undos = self.series_states["series_undos"]
-        if undos and self.section.n in undos[-1]:
-            if undos[-1][self.section.n] == len(section_states.undo_states):
-                undos.pop()
-        # clear series redos
-        redos = self.series_states["series_redos"]
-        for redo in redos.copy():
-            if self.section.n in redo:
-                redos.remove(redo)
+        # check if a series undo/redo has been overwritten
+        self.series_states.checkOverwrite(self.section.n)
 
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
@@ -183,6 +172,11 @@ class FieldView():
         if self.hide_trace_layer:
             return
         
+        # do nothing if no states
+        section_states = self.series_states[self.series.current_section]
+        if not section_states.undo_states:
+            return
+
         # end any pending events
         self.endPendingEvents()  # function extended in inherited class
         
@@ -191,7 +185,6 @@ class FieldView():
         self.section.selected_ztraces = []
 
         # get the last undo state
-        section_states = self.series_states[self.series.current_section]
         section_states.undoState(self.section, self.series)
 
         # update the data/tables
@@ -205,6 +198,11 @@ class FieldView():
         if self.hide_trace_layer:
             return
         
+        # do nothing if no states
+        section_states = self.series_states[self.series.current_section]
+        if not section_states.redo_states:
+            return
+        
         # end any pending events
         self.endPendingEvents()  # function extended in inherited class
         
@@ -213,7 +211,6 @@ class FieldView():
         self.section.selected_ztraces = []
 
         # get the last redo state
-        section_states = self.series_states[self.series.current_section]
         section_states.redoState(self.section, self.series)
 
         # update the data/tables
@@ -227,25 +224,7 @@ class FieldView():
             Params:
                 redo (bool): True if should redo instead of undo
         """
-        undos = self.series_states["series_undos"]
-        redos = self.series_states["series_redos"]
-
-        sections = redos[-1].keys() if redo else undos[-1].keys()
-        for snum, section in self.series.enumerateSections(
-            message=("Re" if redo else "Un") + "doing action..."
-        ):
-            if snum not in sections:
-                continue
-            states = self.series_states[snum]
-            if redo:
-                states.redoState(section, self.series)
-            else:
-                states.undoState(section, self.series)
-            section.save()
-        if redo:
-            undos.append(redos.pop())
-        else:
-            redos.append(undos.pop())
+        self.series_states.undoState(redo)
         self.reload()
         self.refreshTables()
     

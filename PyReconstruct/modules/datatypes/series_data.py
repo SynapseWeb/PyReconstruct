@@ -59,7 +59,11 @@ class ObjectData():
         if section.n not in self.traces:
             self.traces[section.n] = []
         alignment = series.getAttr(trace.name, "alignment")
-        if alignment is None: alignment = series.alignment
+        if alignment is None:
+            alignment = series.alignment
+        elif alignment != "no-alignment" and alignment not in section.tforms:
+            series.setAttr(trace.name, "alignment", None)
+            alignment = series.alignment
 
         if alignment == "no-alignment":
             tform = Transform([1, 0, 0, 0, 1, 0])

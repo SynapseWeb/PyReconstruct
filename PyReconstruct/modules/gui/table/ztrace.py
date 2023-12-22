@@ -19,8 +19,7 @@ from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    notify,
-    noUndoWarning
+    notify
 )
 from PyReconstruct.modules.gui.dialog import (
     QuickDialog,
@@ -42,6 +41,7 @@ class ZtraceTableWidget(QDockWidget):
         super().__init__(mainwindow)
         self.mainwindow = mainwindow
         self.series = series
+        self.series_states = self.mainwindow.field.series_states
 
         # set desired format for widget
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
@@ -207,6 +207,14 @@ class ZtraceTableWidget(QDockWidget):
     
     def createTable(self):
         """Create the table widget."""
+        # close an existing table and save scroll position
+        if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
+            self.table.close()
+        else:
+            scroll_pos = 0
+        
         # establish table headers
         self.horizontal_headers = ["Name", "Start", "End", "Distance", "Groups", "Alignment"]
 
@@ -242,6 +250,9 @@ class ZtraceTableWidget(QDockWidget):
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
 
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
+
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
     
@@ -252,6 +263,8 @@ class ZtraceTableWidget(QDockWidget):
             if not is_in_table:
                 self.table.insertRow(r)
             self.setRow(name, r)
+        
+        self.mainwindow.checkActions()
     
     def getSelectedName(self):
         """Get the trace item that is selected by the user."""
@@ -365,6 +378,9 @@ class ZtraceTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        # save the series state
+        self.series_states.addState()
+        
         for name in ztrace_names:
             self.series.ztrace_groups.add(group=group_name, obj=name)
             if log_event:
@@ -385,6 +401,9 @@ class ZtraceTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        # save the series state
+        self.series_states.addState()
+        
         for name in ztrace_names:
             self.series.ztrace_groups.remove(group=group_name, obj=name)
             if log_event:
@@ -398,6 +417,9 @@ class ZtraceTableWidget(QDockWidget):
         ztrace_names = self.getSelectedNames()
         if not ztrace_names:
             return
+        
+        # save the series state
+        self.series_states.addState()
         
         for name in ztrace_names:
             self.series.ztrace_groups.removeObject(name)
@@ -421,6 +443,9 @@ class ZtraceTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        # save the series state
+        self.series_states.addState()
+        
         alignment = response[0]
         if not alignment: alignment = None
         for name in names:
@@ -433,10 +458,6 @@ class ZtraceTableWidget(QDockWidget):
         """Delete a set of ztraces."""
         names = self.getSelectedNames()
         if not names:
-            return
-        
-        # confirm with user
-        if not noUndoWarning():
             return
         
         self.manager.delete(names)

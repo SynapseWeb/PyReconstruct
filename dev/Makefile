@@ -28,9 +28,6 @@ help:
 .PHONY: env
 env:
 	conda env create -f $(ENV_YAML) -n $(ENV_NAME)
-	$(CONDA_INIT)
-	conda activate $(ENV_NAME)
-	conda develop ..
 	$(LINK_SCRIPTS)
 
 .PHONY: update
@@ -44,3 +41,4 @@ clean:
 
 .PHONY: remove
 remove: clean
+

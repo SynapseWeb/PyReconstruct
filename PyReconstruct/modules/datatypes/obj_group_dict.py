@@ -133,3 +133,7 @@ class ObjGroupDict():
                 for group in other.getObjectGroups(obj):
                     self.add(group, obj)
     
+    def copy(self):
+        """Return a copy of the two-way dict."""
+        return ObjGroupDict(self.groups.copy())
+    

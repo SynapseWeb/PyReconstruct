@@ -304,6 +304,7 @@ class Section():
         self.removed_traces = []
         self.modified_contours = set()
         self.tforms_values_copy = [t.copy() for t in self.tforms.values()]
+        self.flags_modified = False
     
     def setMag(self, new_mag : float):
         """Set the magnification for the section.
@@ -366,6 +367,7 @@ class Section():
                 log_event (bool): true if the event should be logged
         """
         self.flags.append(flag)
+        self.flags_modified = True
         if log_event:
             self.series.addLog(None, self.n, "Create flag(s)")
     
@@ -378,6 +380,7 @@ class Section():
         """
         if flag in self.flags:
             self.flags.remove(flag)
+            self.flags_modified = True
             if log_event:
                 self.series.addLog(None, self.n, "Delete flag(s)")
 

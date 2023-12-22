@@ -267,6 +267,14 @@ class TraceTableWidget(QDockWidget):
             Params:
                 tracedict (dict): the dictionary containing the object table data objects
         """
+        # close an existing table and save scroll position
+        if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
+            self.table.close()
+        else:
+            scroll_pos = 0
+        
         self.section = section
 
         self.updateTitle()
@@ -302,6 +310,9 @@ class TraceTableWidget(QDockWidget):
         # format rows and columns
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
+
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)

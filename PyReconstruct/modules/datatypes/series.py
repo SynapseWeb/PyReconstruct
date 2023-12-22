@@ -744,27 +744,24 @@ class Series():
 
     #     return results
 
-    def modifyAlignments(self, alignment_dict : dict, log_event=True):
+    def modifyAlignments(self, alignment_dict : dict, series_states=None, log_event=True):
         """Modify the alignments (input from dialog).
 
         Not suggested for use outside of GUI.
         
             Params:
                 alignment_dict (dict): returned from the alignment dialog
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         # change the current alignment if necessary
         if alignment_dict[self.alignment] is None:
-            found = False
-            for new_a, old_a in alignment_dict.items():
-                if old_a == self.alignment:
-                    self.alignment = new_a
-                    found = True
-                    break
-            if not found:
-                self.alignment = "no-alignment"
+            self.alignment = "no-alignment"
 
-        for snum, section in self.enumerateSections(message="Modifying alignments..."):
+        for snum, section in self.enumerateSections(
+            message="Modifying alignments...",
+            series_states=series_states
+        ):
             old_tforms = section.tforms.copy()
             new_tforms = {}
             for new_a, old_a in alignment_dict.items():
@@ -901,9 +898,6 @@ class Series():
                 obj_names (list): the objects to delete
                 series_states (dict): for use with GUI states
         """
-        # remove objects from their groups
-        for name in obj_names:
-            self.object_groups.removeObject(name)
         for snum, section in self.enumerateSections(
             message="Deleting object(s)...",
             series_states=series_states
@@ -1222,14 +1216,18 @@ class Series():
         
         self.save()
     
-    def importZtraces(self, other, regex_filters : list = [], log_event=True):
+    def importZtraces(self, other, regex_filters : list = [], series_states=None, log_event=True):
         """Import all the ztraces from another series.
         
             Params:
                 other (Series): the series to import from
                 regex_filters (list): the filters for the objects to import
+                series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
+        if series_states:
+            series_states.addState()
+        
         for o_zname, o_ztrace in other.ztraces.items():
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
@@ -1349,18 +1347,21 @@ class Series():
         
         self.save()
     
-    def importFlags(self, other, log_event=True):
+    def importFlags(self, other, series_states=None, log_event=True):
         """Import flags from another series.
         
             Params:
                 other (Series): the series to import from
+                series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
-        for snum, section in self.enumerateSections(message="Importing flags..."):
+        for snum, section in self.enumerateSections(
+            message="Importing flags...",
+            series_states=series_states
+        ):
             if snum not in other.sections:  # skip if section does not exist in other series
                 continue
             new_flag_pool = section.flags.copy()
-            flags_modified = False
             o_section = other.loadSection(snum)  # sending section
             for o_flag in o_section.flags:
                 eq_found = False
@@ -1374,13 +1375,13 @@ class Series():
                         if olen > slen:
                             new_flag_pool.append(o_flag)
                             new_flag_pool.remove(s_flag)
-                            flags_modified = True
+                            section.flags_modified = True
                         break
                 if not eq_found:
                     new_flag_pool.append(o_flag)
-                    flags_modified = True
+                    section.flags_modified = True
 
-            if flags_modified:
+            if section.flags_modified:
                 section.flags = new_flag_pool
                 section.save()
         
@@ -1745,7 +1746,7 @@ class SeriesIterator():
         self.message = message
         self.series_states = series_states
         if self.series_states is not None:
-            self.series_states["series_undos"].append({})
+            self.series_states.addState()
     
     def __iter__(self):
         """Allow the user to iterate through the sections."""
@@ -1762,13 +1763,14 @@ class SeriesIterator():
         """Return the next section."""
         # update the series states of the previous section if requested
         if self.series_states and self.section and (
-            self.section.getAllModifiedNames() or self.section.tformsModified()
+            self.section.getAllModifiedNames() or 
+            self.section.tformsModified() or
+            self.section.flags_modified
         ):
             self.series_states[self.section.n].addState(
                 self.section, self.series
             )
-            series_undo = self.series_states["series_undos"][-1]
-            series_undo[self.section.n] = len(self.series_states[self.section.n].undo_states)
+            self.series_states.addSectionUndo(self.section.n)
 
         if self.sni < len(self.section_numbers):
             if self.show_progress:
@@ -1779,9 +1781,7 @@ class SeriesIterator():
 
             # check if states have been initialized
             if self.series_states:
-                states = self.series_states[snum]
-                if not states.initialized:
-                    states.initialize(self.section, self.series)
+                self.series_states[self.section]
             
             return snum, self.section
         

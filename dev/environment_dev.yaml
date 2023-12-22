@@ -5,9 +5,10 @@ dependencies:
   - python=3.11
   - pip
   - setuptools
-  - imagemagick
   - psycopg2
   - conda-build
+  - lxml
+  - scikit-image
   - pip:
-    - -r ../PyReconstruct/requirements.txt
+    - -r ./pip-requirements.txt
     - git+https://github.com/funkelab/funlib.show.neuroglancer

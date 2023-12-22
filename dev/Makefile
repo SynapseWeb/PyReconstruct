@@ -2,7 +2,7 @@
 
 # Conda vars
 CONDA_BASE = $(shell conda info --base)
-CONDA_INIT = source $(CONDA_BASE)/etc/profile.d/conda.sh ; conda activate
+CONDA_INIT = . $(CONDA_BASE)/etc/profile.d/conda.sh ; conda activate
 
 # Environment vars
 ENV_NAME = pyrecon_dev

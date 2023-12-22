@@ -31,5 +31,16 @@ for script in env_tweaks/deactivate/* ; do
   cp $script $ENV_ETC/deactivate.d/
 done
 
-echo 'Hooks amended...'
+echo 'Hooks amended.'
+
+#### SYS.PATH ##################################################################
+
+echo 'Adding repo to path...'
+
+REPO_PATH=$(realpath ..)
+PYTHON=$(python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
+CONDA_PTH=$ENV_DIR/lib/$PYTHON/site-packages/conda.pth
+echo $REPO_PATH >> $CONDA_PTH
+
+echo 'Repo added to path.'
 

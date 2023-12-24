@@ -486,21 +486,22 @@ class Series():
         # check for separate obj attrs
         if "obj_attrs" not in series_data:
             series_data["obj_attrs"] = {}
-            obj_attrs = series_data["obj_attrs"]
-            if "object_3D_modes" in series_data:
-                for obj_name, modes in series_data["object_3D_modes"].items():
-                    if obj_name not in obj_attrs:
-                        obj_attrs[obj_name] = {}
-                    obj_attrs[obj_name]["3D_modes"] = modes
-            if "last_user" in series_data:
-                for obj_name, last_user in series_data["last_user"].items():
-                    if obj_name not in obj_attrs:
-                        obj_attrs[obj_name] = {}
-                    obj_attrs[obj_name]["last_user"] = last_user
-            if "curation" in series_data:
-                for obj_name, curation in series_data["curation"].items():
-                    if obj_name not in obj_attrs:
-                        obj_attrs[obj_name] = {}
+        obj_attrs = series_data["obj_attrs"]
+        if "object_3D_modes" in series_data:
+            for obj_name, modes in series_data["object_3D_modes"].items():
+                if obj_name not in obj_attrs:
+                    obj_attrs[obj_name] = {}
+                obj_attrs[obj_name]["3D_modes"] = modes
+        if "last_user" in series_data:
+            for obj_name, last_user in series_data["last_user"].items():
+                if obj_name not in obj_attrs:
+                    obj_attrs[obj_name] = {}
+                obj_attrs[obj_name]["last_user"] = last_user
+        if "curation" in series_data:
+            for obj_name, curation in series_data["curation"].items():
+                if obj_name not in obj_attrs:
+                    obj_attrs[obj_name] = {}
+                if "curation" not in obj_attrs[obj_name]:  # do not overwrite existing curation
                     obj_attrs[obj_name]["curation"] = curation
         
         # check series option for flags

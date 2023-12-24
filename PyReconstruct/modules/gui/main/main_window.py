@@ -1804,6 +1804,7 @@ class MainWindow(QMainWindow):
         if obj_name is not None and section_num is not None:
             self.changeSection(section_num)
             self.field.findContour(obj_name)
+            self.field.setFocus()
     
     def setToFlag(self, flag : Flag):
         """Focus the field on a flag.
@@ -1814,6 +1815,7 @@ class MainWindow(QMainWindow):
         if flag is not None:
             self.changeSection(flag.snum)
             self.field.findFlag(flag)
+            self.field.setFocus()
     
     def findObjectFirst(self, obj_name=None):
         """Find the first or last contour in the series.

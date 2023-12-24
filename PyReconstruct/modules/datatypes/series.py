@@ -1693,6 +1693,26 @@ class Series():
         example_section = self.sections[list(self.sections.keys())[0]]
         return list(example_section.tforms.keys())
 
+    def updateCurationFromHistory(self):
+        """Update curation status of all objects from the history."""
+        full_hist = self.getFullHistory().all_logs
+
+        marked_objs = set()
+        for log in reversed(full_hist):
+            name = log.obj_name
+            if not name or name in marked_objs:
+                continue
+
+            if "Mark as curated" in log.event:
+                if name not in self.obj_attrs:
+                    self.obj_attrs[name] = {}
+                self.obj_attrs[name]["curation"] = (True, log.user, log.date)
+                marked_objs.add(name)
+            elif "Mark is needs curation" in log.event:
+                if name not in self.obj_attrs:
+                    self.obj_attrs[name] = {}
+                self.obj_attrs[name]["curation"] = (False, "", log.date)
+                marked_objs.add(name)
 
 class SeriesIterator():
 

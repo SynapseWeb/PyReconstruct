@@ -235,6 +235,7 @@ class FieldWidget(QWidget, FieldView):
             pass
         if update:
             self.update()
+            self.setFocus()
     
     def openObjectList(self):
         """Open an object list."""

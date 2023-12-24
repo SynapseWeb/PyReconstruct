@@ -264,6 +264,8 @@ class MainWindow(QMainWindow):
                     ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
+                    None,
+                    ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory)
                 ]
             },
             
@@ -2499,6 +2501,11 @@ class MainWindow(QMainWindow):
         """Display the shortcuts."""
         if not self.shortcuts_widget or self.shortcuts_widget.closed:
             self.shortcuts_widget = HelpWidget("shortcuts")
+    
+    def updateCurationFromHistory(self):
+        """Update the series curation from the history."""
+        self.series.updateCurationFromHistory()
+        self.field.refreshTables()
 
     def restart(self):
         self.restart_mainwindow = True

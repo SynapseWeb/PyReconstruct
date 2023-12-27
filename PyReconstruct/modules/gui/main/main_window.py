@@ -2501,7 +2501,8 @@ class MainWindow(QMainWindow):
         is_series_wide = False
         if series_wide_possible:
             w = self.focusWidget()
-            table_focused = isinstance(w, CopyTableWidget)
+            away_from_field = not isinstance(w, FieldWidget)
+            print(away_from_field)
             state_has_sections = (
                     not redo and self.field.series_states.undos[-1].undo_lens or
                     redo and self.field.series_states.redos[-1].undo_lens
@@ -2510,13 +2511,13 @@ class MainWindow(QMainWindow):
                 not redo and self.field.section.n in self.field.series_states.undos[-1].undo_lens or
                 redo and self.field.section.n in self.field.series_states.redos[-1].undo_lens
             )
-            # if the user is focused on a table and the action does not affect sections, perform action without asking
-            if table_focused and not state_has_sections:
+            # if the user is not on field and the action does not affect sections, perform action without asking
+            if away_from_field and not state_has_sections:
                 is_series_wide = True
-            # if user is focused on table and action affects sections, ask
+            # if user is not on field and action affects sections, ask
             # if user is on a section involved in the series-wide undo, ask
             elif (
-                table_focused and state_has_sections or
+                away_from_field and state_has_sections or
                 current_section_in_state
             ):
                 action_text = 'redo' if redo else 'undo'
@@ -2531,23 +2532,6 @@ class MainWindow(QMainWindow):
                 if reply == QMessageBox.No:
                     return
                 is_series_wide = True
-            
-                # action_text = 'redo' if redo else 'undo'
-                # msg = QMessageBox()
-                # msg.setIcon(QMessageBox.Question)
-                # msg.setText(
-                #     f"Would you like to {action_text} for the entire\n" + \
-                #     "series or only the current section?"
-                # )
-                # msg.addButton("Entire Series", QMessageBox.YesRole)
-                # msg.addButton("Current Section Only", QMessageBox.NoRole)
-                # msg.addButton("Cancel", QMessageBox.RejectRole)
-                # msg.setWindowTitle("Series Action")
-                # response = msg.exec()
-                # if response == 2:
-                #     return
-                # elif response == 0:
-                #     is_series_wide = True
         
         if is_series_wide:
             if redo:
@@ -2585,8 +2569,10 @@ class MainWindow(QMainWindow):
     
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""
+        self.field.series_states.addState()
         self.series.updateCurationFromHistory()
         self.field.refreshTables()
+        self.seriesModified()
 
     def restart(self):
         self.restart_mainwindow = True

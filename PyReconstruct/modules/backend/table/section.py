@@ -78,7 +78,7 @@ class SectionTableManager():
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.mainwindow.field.updateTables()
+        self.mainwindow.field.refreshTables()
 
     def setBC(self, section_numbers : list[int], b : int, c : int, log_event=True):
         """Set the brightness and contrast for a set of sections.
@@ -105,7 +105,7 @@ class SectionTableManager():
         self.mainwindow.seriesModified(True)
 
         # update the tables
-        self.mainwindow.field.updateTables()
+        self.mainwindow.field.refreshTables()
     
     def matchBC(self, section_numbers : list[int]):
         """Match the brightness and contrast of a set of sections to the current section.

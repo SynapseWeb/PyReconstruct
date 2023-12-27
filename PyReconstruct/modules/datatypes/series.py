@@ -1706,12 +1706,14 @@ class Series():
             if "Mark as curated" in log.event:
                 if name not in self.obj_attrs:
                     self.obj_attrs[name] = {}
-                self.obj_attrs[name]["curation"] = (True, log.user, log.date)
+                if "curation" not in self.obj_attrs[name] or not self.obj_attrs[name]["curation"][0]:  # overwrite if at previous step in curation flow
+                    self.obj_attrs[name]["curation"] = (True, log.user, log.date)
                 marked_objs.add(name)
-            elif "Mark is needs curation" in log.event:
+            elif "Mark as needs curation" in log.event:
                 if name not in self.obj_attrs:
                     self.obj_attrs[name] = {}
-                self.obj_attrs[name]["curation"] = (False, "", log.date)
+                if "curation" not in self.obj_attrs[name]:
+                    self.obj_attrs[name]["curation"] = (False, "", log.date)
                 marked_objs.add(name)
 
 class SeriesIterator():

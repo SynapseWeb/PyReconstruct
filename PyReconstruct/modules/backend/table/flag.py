@@ -19,6 +19,7 @@ class FlagTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+        self.series_states = self.mainwindow.field.series_states
     
     def newTable(self):
         """Create a new object list widget."""
@@ -78,14 +79,17 @@ class FlagTableManager():
             flags_dict[snum].append(flag)
 
         # iterate through sections and delete
-        for snum, section in self.series.enumerateSections(message="Deleting flag(s)..."):
+        for snum, section in self.series.enumerateSections(
+            message="Deleting flag(s)...",
+            series_states=self.series_states
+        ):
             if snum in flags_dict:
                 for delete_flag in flags_dict[snum]:
                     for section_flag in section.flags.copy():
                         if match_name and section_flag.name == delete_flag.name:
-                            section.flags.remove(section_flag)
+                            section.removeFlag(section_flag)
                         elif not match_name and section_flag.equals(delete_flag):
-                            section.flags.remove(section_flag)
+                            section.removeFlag(section_flag)
                             break
                 section.save()
                 # update the tables
@@ -104,13 +108,19 @@ class FlagTableManager():
                 new_flag (Flag): the flag to replace
         """
         self.mainwindow.saveAllData()
+        self.series_states.addState()
 
         section = self.series.loadSection(old_flag.snum)
         for i, flag in enumerate(section.flags):
             if old_flag.equals(flag):
                 section.flags[i] = new_flag
+                section.flags_modified = True
                 break
         section.save()
+        
+        # manually create a section and series state
+        self.series_states[section].addState(section, self.series)
+        self.series_states.addSectionUndo(section.n)
 
         self.updateSection(section)
 
@@ -127,19 +137,34 @@ class FlagTableManager():
         """
         self.mainwindow.saveAllData()
 
+        # organize flags into dictionary
+        flags_dict = {}
         for flag in flags:
-            section = self.series.loadSection(flag.snum)
-            for f in section.flags:
-                if flag.equals(f):
-                    f.resolve(self.series.user, resolved)
-                    break
-            section.save()
-            self.updateSection(section)
+            snum = flag.snum
+            if snum not in flags_dict:
+                flags_dict[snum] = []
+            flags_dict[snum].append(flag)
 
+        # iterate through sections and resolve
+        for snum, section in self.series.enumerateSections(
+            message="Modifying flag(s)...",
+            series_states=self.series_states
+        ):
+            if snum in flags_dict:
+                for modify_flag in flags_dict[snum]:
+                    for section_flag in section.flags:
+                        if section_flag.equals(modify_flag):
+                            section_flag.resolve(self.series.user, resolved)
+                            section.flags_modified = True
+                            break
+                section.save()
+                # update the tables
+                self.updateSection(section)
+        
         # update the view
         self.mainwindow.field.reload()
         self.mainwindow.seriesModified(True)
-    
+
     def close(self):
         """Close all tables."""
         for table in self.tables:

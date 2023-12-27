@@ -37,10 +37,6 @@ class Section():
 
         self.temp_hide = []
 
-        self.added_traces = []
-        self.removed_traces = []
-        self.modified_contours = set()
-
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
         
@@ -76,6 +72,9 @@ class Section():
         self.flags = [Flag.fromList(l, self.n) for l in section_data["flags"]]
 
         self.calgrid = section_data["calgrid"]
+
+        # for use with GUI
+        self.clearTracking()
     
     @property
     def tform(self):
@@ -287,11 +286,25 @@ class Section():
         trace_names = trace_names.union(self.modified_contours)
         return trace_names
     
+    def tformsModified(self, scaling_only=False):
+        if len(self.tforms_values_copy) != len(self.tforms):
+            return True
+        for t1, t2 in zip(self.tforms_values_copy, self.tforms.values()):
+            if scaling_only:
+                if abs(t1.det - t2.det) > 1e-6:
+                    return True
+            else:
+                if not t1.equals(t2):
+                    return True
+        return False
+    
     def clearTracking(self):
         """Clear the added_traces and removed_traces lists."""
         self.added_traces = []
         self.removed_traces = []
         self.modified_contours = set()
+        self.tforms_values_copy = [t.copy() for t in self.tforms.values()]
+        self.flags_modified = False
     
     def setMag(self, new_mag : float):
         """Set the magnification for the section.
@@ -354,6 +367,7 @@ class Section():
                 log_event (bool): true if the event should be logged
         """
         self.flags.append(flag)
+        self.flags_modified = True
         if log_event:
             self.series.addLog(None, self.n, "Create flag(s)")
     
@@ -366,6 +380,7 @@ class Section():
         """
         if flag in self.flags:
             self.flags.remove(flag)
+            self.flags_modified = True
             if log_event:
                 self.series.addLog(None, self.n, "Delete flag(s)")
 
@@ -773,6 +788,7 @@ class Section():
                     # if the other series is the one modified, replace contour and move to next
                     if modified_since_diverge[1]:
                         self.contours[cname] = other.contours[cname]
+                        self.modified_contours.add(cname)
                     if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
                 elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
@@ -788,6 +804,13 @@ class Section():
 
             # import the contour
             conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(other.contours[cname], threshold)
+
+            # continue if no conflict traces
+            if not (conflict_traces_s or conflict_traces_o):
+                continue
+            # add to modified contours set otherwise
+            else:
+                self.modified_contours.add(cname)
 
             # iterate through conflict pool and favor the requested traces
             if favored:

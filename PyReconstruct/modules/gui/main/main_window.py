@@ -171,8 +171,11 @@ class MainWindow(QMainWindow):
                 "text": "Edit",
                 "opts":
                 [
-                    ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
-                    ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
+                    ("undo_act", "Undo", "Ctrl+Z", self.undo),
+                    ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
+                    # None,
+                    # ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
+                    # ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
@@ -211,7 +214,6 @@ class MainWindow(QMainWindow):
                             ("importflags_act", "Flags...", "", self.importFlags),
                             ("importjsertransforms0_act", "Alignment(s)...", "", self.importSeriesTransforms),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
                             ("importbc_act", "Brightness/contrast...", "", self.importBC)
                         ]
                     },
@@ -569,10 +571,21 @@ class MainWindow(QMainWindow):
         self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
         self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
 
+        # # check for a series-wide undo/redo
+        # self.seriesundo_act.setEnabled(self.field.series_states.canUndo())
+        # self.seriesredo_act.setEnabled(self.field.series_states.canRedo())
+
         # undo/redo
         states = self.field.series_states[self.series.current_section]
-        has_undo_states = bool(states.undo_states) or self.field.is_line_tracing
-        has_redo_states = bool(states.redo_states)
+        has_undo_states = (
+            bool(states.undo_states) or 
+            self.field.is_line_tracing or
+            self.field.series_states.canUndo()
+        )
+        has_redo_states = (
+            bool(states.redo_states) or
+            self.field.series_states.canRedo()
+        )
         self.undo_act.setEnabled(has_undo_states)
         self.redo_act.setEnabled(has_redo_states)
 
@@ -592,7 +605,7 @@ class MainWindow(QMainWindow):
 
         # zarr layer
         self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
-
+            
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
@@ -1075,6 +1088,9 @@ class MainWindow(QMainWindow):
         else:
             self.setWindowTitle(self.series.name)
         self.series.modified = modified
+
+        if self.field:
+            self.checkActions()
     
     def importTransforms(self, tforms_fp : str = None):
         """Import transforms from a text file.
@@ -1091,12 +1107,9 @@ class MainWindow(QMainWindow):
                 "Select file containing transforms"
             )
         if not tforms_fp: return
-
-        if not noUndoWarning():
-            return
         
         # import the transforms
-        importTransforms(self.series, tforms_fp)
+        importTransforms(self.series, tforms_fp, series_states=self.field.series_states)
         
         # reload the section
         self.field.reload()
@@ -1156,7 +1169,7 @@ class MainWindow(QMainWindow):
         # import transforms
         print(f'Importing SWiFT transforms at scale {scale}...')
         if cal_grid: print('Cal grid included in series')
-        importSwiftTransforms(self.series, swift_fp, scale, cal_grid)
+        importSwiftTransforms(self.series, swift_fp, scale, cal_grid, series_states=self.field.series_states)
         
         self.field.reload()
 
@@ -1231,14 +1244,20 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
-        if not noUndoWarning():
-            return
-
         # open the other series
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history, favored)
+        self.series.importTraces(
+            o_series, 
+            srange, 
+            regex_filters, 
+            threshold, 
+            flag_conflicts, 
+            check_history, 
+            favored, 
+            self.field.series_states
+        )
         o_series.close()
 
         # reload the field to update the traces
@@ -1271,14 +1290,11 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
-        if not noUndoWarning():
-            return
-
         # open the other series
         o_series = Series.openJser(jser_fp)
 
         # import the ztraces and close the other series
-        self.series.importZtraces(o_series, regex_filters)
+        self.series.importZtraces(o_series, regex_filters, series_states=self.field.series_states)
         o_series.close()
 
         # reload the field to update the ztraces
@@ -1392,12 +1408,8 @@ class MainWindow(QMainWindow):
                 notify("Import transforms canceled.")
                 o_series.close()
                 return
-        else:
-            if not noUndoWarning():
-                o_series.close()
-                return
         
-        self.series.importTransforms(o_series, chosen_alignments)
+        self.series.importTransforms(o_series, chosen_alignments, self.field.series_states)
         o_series.close()
         
         self.field.reload()
@@ -1435,6 +1447,9 @@ class MainWindow(QMainWindow):
         
         if not jser_fp: return  # exit function if user does not provide series
 
+        if not noUndoWarning():
+            return
+
         self.saveAllData()
 
         # open the other series
@@ -1464,9 +1479,6 @@ class MainWindow(QMainWindow):
         if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
-
-        if not noUndoWarning():
-            return
 
         # open the other series
         o_series = Series.openJser(jser_fp)
@@ -1928,8 +1940,7 @@ class MainWindow(QMainWindow):
                     modified = True
                     break
             if modified:
-                self.series.modifyAlignments(alignment_dict)
-                self.field.reload()
+                self.series.modifyAlignments(alignment_dict, self.field.series_states)
         
         if alignment_name:
             self.field.changeAlignment(alignment_name)
@@ -2418,11 +2429,8 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         threshold = response[0]
-
-        if not noUndoWarning():
-            return
         
-        removed = self.series.deleteDuplicateTraces(threshold)
+        removed = self.series.deleteDuplicateTraces(threshold, self.field.series_states)
 
         if removed:
             message = "The following duplicate traces were removed:"
@@ -2478,6 +2486,79 @@ class MainWindow(QMainWindow):
             w.backspace()
         else:
             self.field.backspace()
+    
+    def undo(self, redo=False):
+        """Perform an undo/redo action.
+        
+            Params:
+                redo (bool): True if redo should be performed
+        """
+        series_wide_possible = (
+            not redo and self.field.series_states.canUndo() or
+            redo and self.field.series_states.canRedo()
+        )
+
+        is_series_wide = False
+        if series_wide_possible:
+            w = self.focusWidget()
+            table_focused = isinstance(w, CopyTableWidget)
+            state_has_sections = (
+                    not redo and self.field.series_states.undos[-1].undo_lens or
+                    redo and self.field.series_states.redos[-1].undo_lens
+            )
+            current_section_in_state = (
+                not redo and self.field.section.n in self.field.series_states.undos[-1].undo_lens or
+                redo and self.field.section.n in self.field.series_states.redos[-1].undo_lens
+            )
+            # if the user is focused on a table and the action does not affect sections, perform action without asking
+            if table_focused and not state_has_sections:
+                is_series_wide = True
+            # if user is focused on table and action affects sections, ask
+            # if user is on a section involved in the series-wide undo, ask
+            elif (
+                table_focused and state_has_sections or
+                current_section_in_state
+            ):
+                action_text = 'redo' if redo else 'undo'
+                reply = QMessageBox.question(
+                    self,
+                    "Series Action",
+                    f"This {action_text} will affect multiple sections.\n" + \
+                    "Would you like to continue?",
+                    QMessageBox.Yes,
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.No:
+                    return
+                is_series_wide = True
+            
+                # action_text = 'redo' if redo else 'undo'
+                # msg = QMessageBox()
+                # msg.setIcon(QMessageBox.Question)
+                # msg.setText(
+                #     f"Would you like to {action_text} for the entire\n" + \
+                #     "series or only the current section?"
+                # )
+                # msg.addButton("Entire Series", QMessageBox.YesRole)
+                # msg.addButton("Current Section Only", QMessageBox.NoRole)
+                # msg.addButton("Cancel", QMessageBox.RejectRole)
+                # msg.setWindowTitle("Series Action")
+                # response = msg.exec()
+                # if response == 2:
+                #     return
+                # elif response == 0:
+                #     is_series_wide = True
+        
+        if is_series_wide:
+            if redo:
+                self.field.seriesUndo(redo=True)
+            else:
+                self.field.seriesUndo()
+        else:
+            if redo:
+                self.field.redoState()
+            else:
+                self.field.undoState()
     
     def copy(self):
         """Called when Ctrl+C is pressed."""

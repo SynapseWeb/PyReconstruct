@@ -16,6 +16,7 @@ class ZtraceTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+        self.series_states = self.mainwindow.field.series_states
     
     def refresh(self):
         """Refresh the series data."""
@@ -61,6 +62,9 @@ class ZtraceTableManager():
                 new_name (str): the new name for the trace
                 new_color (tuple): the new color for the trace
         """
+        # save the series state
+        self.series_states.addState()
+
         # modify the ztrace data
         ztrace = self.series.ztraces[name]
         if new_name:
@@ -101,6 +105,9 @@ class ZtraceTableManager():
                 smooth (int): the smoothing factor
                 newztrace (bool): False if ztrace should be overwritten
         """
+        # save the series state
+        self.series_states.addState()
+        
         # smooth the ztraces
         for name in names:
             # create a new ztrace if requested
@@ -129,6 +136,9 @@ class ZtraceTableManager():
             Params:
                 names (list): the list of ztraces to delete
         """
+        # save the series state
+        self.series_states.addState()
+        
         for name in names:
             del(self.series.ztraces[name])
             self.series.modified_ztraces.add(name)

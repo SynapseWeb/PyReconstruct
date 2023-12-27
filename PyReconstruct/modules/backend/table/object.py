@@ -19,6 +19,7 @@ class ObjectTableManager():
         self.tables = []
         self.series = series
         self.mainwindow = mainwindow
+        self.series_states = self.mainwindow.field.series_states
     
     def newTable(self):
         """Create a new object list widget."""
@@ -37,9 +38,11 @@ class ObjectTableManager():
                 section (Section): the section object
                 section_num (int): the section number
         """
-        
-        # refresh any removed traces
-        updated_contours = section.getAllModifiedNames()
+        # if the transform was modified, update all traces on section
+        if section.tformsModified(scaling_only=True):
+            updated_contours = section.contours.keys()
+        else:
+            updated_contours = section.getAllModifiedNames()
         self.updateObjects(updated_contours)
     
     def toggleCuration(self):
@@ -99,7 +102,7 @@ class ObjectTableManager():
         """
         self.mainwindow.saveAllData()
         # delete the object on every section
-        self.series.deleteObjects(obj_names)
+        self.series.deleteObjects(obj_names, self.series_states)
 
         # update the dictionary data and tables
         self.updateObjects(obj_names)
@@ -130,7 +133,8 @@ class ObjectTableManager():
             color,
             tags,
             mode,
-            sections
+            sections,
+            series_states=self.series_states
         )
 
         all_names = set(obj_names)
@@ -141,7 +145,7 @@ class ObjectTableManager():
         
         # update the view
         self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)   
+        self.mainwindow.seriesModified(True)
 
     def editRadius(self, obj_names : list, new_rad : float):
         """Change the radii of all traces of an object.
@@ -155,7 +159,8 @@ class ObjectTableManager():
         # iterate through all sections
         self.series.editObjectRadius(
             obj_names,
-            new_rad
+            new_rad,
+            self.series_states
         )
         
         # update the table data
@@ -177,7 +182,8 @@ class ObjectTableManager():
         # iterate through all sections
         self.series.editObjectShape(
             obj_names,
-            new_shape
+            new_shape,
+            self.series_states
         )
         
         # update the table data
@@ -196,7 +202,7 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
 
         # iterate through all the sections
-        self.series.removeAllTraceTags(obj_names)
+        self.series.removeAllTraceTags(obj_names, self.series_states)
 
         self.updateObjects(obj_names)
 
@@ -214,7 +220,7 @@ class ObjectTableManager():
         self.mainwindow.saveAllData()
 
         # iterate through sections and hide the traces
-        self.series.hideObjects(obj_names, hide)
+        self.series.hideObjects(obj_names, hide, self.series_states)
             
         # update the view
         self.mainwindow.field.reload()
@@ -229,6 +235,7 @@ class ObjectTableManager():
                 new_opacity (float): the opacity for the 3D objects
         """
         self.mainwindow.saveAllData()
+        self.series_states.addState()
 
         # set the series settings
         for name in obj_names:
@@ -249,6 +256,7 @@ class ObjectTableManager():
                 croess_sectioned (bool): True if object is cross-sectioned
         """
         self.mainwindow.saveAllData()
+        self.series_states.addState()
 
         for name in obj_names:
             self.series.createZtrace(name, cross_sectioned)

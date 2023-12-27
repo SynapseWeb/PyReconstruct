@@ -21,7 +21,6 @@ from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    noUndoWarning,
     notify
 )
 from PyReconstruct.modules.gui.dialog import (
@@ -52,6 +51,7 @@ class ObjectTableWidget(QDockWidget):
         super().__init__(mainwindow)
         self.series = series
         self.mainwindow = mainwindow
+        self.series_states = self.mainwindow.field.series_states
 
         # set desired format for widget
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
@@ -385,9 +385,13 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 objdata (dict): the dictionary containing the object table data objects
         """
-        # close an existing table if one exists
+        # close an existing table and save scroll position
         if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
             self.table.close()
+        else:
+            scroll_pos = 0
 
         # create the table title
         self.updateTitle()
@@ -436,6 +440,9 @@ class ObjectTableWidget(QDockWidget):
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
 
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
+
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
     
@@ -463,6 +470,8 @@ class ObjectTableWidget(QDockWidget):
             elif not exists_in_table and name in self.series.data["objects"]:  # add new object
                 self.table.insertRow(row)
                 self.setRow(name, row)
+        
+        self.mainwindow.checkActions()
     
     def resizeEvent(self, event):
         """Resize the table when window is resized."""
@@ -504,6 +513,8 @@ class ObjectTableWidget(QDockWidget):
             self.curate_column is None or 
             item.column() != self.curate_column):
             return
+        
+        self.series_states.addState()
 
         r = item.row()
         c = item.column()
@@ -561,10 +572,6 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
-        # confirm with user
-        if not noUndoWarning():
-            return
-        
         attr_trace, sections = response
         
         # keep track of scroll bar position
@@ -593,9 +600,13 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        self.series_states.addState()
+        
         self.series.setAttr(obj_name, "comment", new_comment)
         self.series.addLog(obj_name, None, "Edit object comment")
         self.updateObjects([obj_name])
+
+        self.mainwindow.seriesModified(True)
     
     def editAlignment(self):
         """Edit alignment for object(s)."""
@@ -611,13 +622,17 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        self.series_states.addState()
+        
         alignment = response[0]
         if not alignment: alignment = None
         for obj_name in obj_names:
+            print(alignment)
             self.series.setAttr(obj_name, "alignment", alignment)
             self.series.addLog(obj_name, None, "Edit default alignment")
         
         self.refresh()
+        self.mainwindow.seriesModified(True)
         
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
@@ -641,9 +656,6 @@ class ObjectTableWidget(QDockWidget):
         if new_rad == 0:
             return
         
-        if not noUndoWarning():
-            return
-        
         self.manager.editRadius(obj_names, new_rad)
     
     def editShape(self):
@@ -654,9 +666,6 @@ class ObjectTableWidget(QDockWidget):
         
         new_shape, confirmed = ShapesDialog(self).exec()
         if not confirmed:
-            return
-        
-        if not noUndoWarning():
             return
         
         self.manager.editShape(obj_names, new_shape)
@@ -697,6 +706,8 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        self.series_states.addState()
+        
         for name in obj_names:
             self.series.object_groups.add(group=group_name, obj=name)
             if log_event:
@@ -717,6 +728,8 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         
+        self.series_states.addState()
+        
         for name in obj_names:
             self.series.object_groups.remove(group=group_name, obj=name)
             if log_event:
@@ -730,6 +743,8 @@ class ObjectTableWidget(QDockWidget):
         if not obj_names:
             return
         
+        self.series_states.addState()
+        
         for name in obj_names:
             self.series.object_groups.removeObject(name)
             if log_event:
@@ -742,11 +757,7 @@ class ObjectTableWidget(QDockWidget):
         obj_names = self.getSelectedObjects()
         if not obj_names:
             return
-
-        # confirm with user
-        if not noUndoWarning():
-            return
-        
+                
         self.manager.removeAllTraceTags(obj_names)
     
     def viewHistory(self):
@@ -768,9 +779,6 @@ class ObjectTableWidget(QDockWidget):
         """Delete an object from the entire series."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
-            return
-        
-        if not noUndoWarning():
             return
         
         self.manager.deleteObjects(obj_names)
@@ -977,6 +985,8 @@ class ObjectTableWidget(QDockWidget):
         else:
             assign_to = ""
         
+        self.series_states.addState()
+        
         self.series.setCuration(names, curation_status, assign_to)
         self.manager.updateObjects(names)
         self.mainwindow.seriesModified(True)
@@ -997,6 +1007,8 @@ class ObjectTableWidget(QDockWidget):
             notify("This group already exists.")
             return
         
+        self.series_states.addState()
+
         objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
         self.series.object_groups.renameGroup(group, new_group)
         self.updateObjects(objs_to_update)
@@ -1009,6 +1021,8 @@ class ObjectTableWidget(QDockWidget):
         response, confirmed = QuickDialog.get(self, structure, "Delete Group")
         if not confirmed:
             return
+        
+        self.series_states.addState()
         
         group = response[0]
         if group in self.series.object_groups.getGroupList():

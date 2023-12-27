@@ -704,7 +704,7 @@ class Series():
         section = Section(section_num, self)
         return section
     
-    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data..."):
+    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data...", series_states=None):
         """Allow iteration through the sections.
 
         Proper use in a for loop: for snum, section in series.enumerateSections():
@@ -712,10 +712,11 @@ class Series():
             Params:
                 show_progress (bool): True if progress should be displayed
                 message (str): the message to display by the progress bar
+                series_states (dict): section number : SectionStates object (use with GUI for undo/redo)
             Returns:
                 (SeriesIterator): an iterable object for for loops
         """
-        return SeriesIterator(self, show_progress, message)
+        return SeriesIterator(self, show_progress, message, series_states)
 
     # def map(self, fn, *args, message="Modifying series..."):
     #     """Map a function to every section in the series.
@@ -744,27 +745,24 @@ class Series():
 
     #     return results
 
-    def modifyAlignments(self, alignment_dict : dict, log_event=True):
+    def modifyAlignments(self, alignment_dict : dict, series_states=None, log_event=True):
         """Modify the alignments (input from dialog).
 
         Not suggested for use outside of GUI.
         
             Params:
                 alignment_dict (dict): returned from the alignment dialog
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         # change the current alignment if necessary
         if alignment_dict[self.alignment] is None:
-            found = False
-            for new_a, old_a in alignment_dict.items():
-                if old_a == self.alignment:
-                    self.alignment = new_a
-                    found = True
-                    break
-            if not found:
-                self.alignment = "no-alignment"
+            self.alignment = "no-alignment"
 
-        for snum, section in self.enumerateSections(message="Modifying alignments..."):
+        for snum, section in self.enumerateSections(
+            message="Modifying alignments...",
+            series_states=series_states
+        ):
             old_tforms = section.tforms.copy()
             new_tforms = {}
             for new_a, old_a in alignment_dict.items():
@@ -894,22 +892,22 @@ class Series():
 
     # series-wide trace functions
     
-    def deleteObjects(self, obj_names : list):
+    def deleteObjects(self, obj_names : list, series_states=None):
         """Delete object(s) from the series.
         
             Params:
                 obj_names (list): the objects to delete
+                series_states (dict): for use with GUI states
         """
-        # remove objects from their groups
-        for name in obj_names:
-            self.object_groups.removeObject(name)
         for snum, section in self.enumerateSections(
-            message="Deleting object(s)..."
+            message="Deleting object(s)...",
+            series_states=series_states
         ):
             modified = False
             for obj_name in obj_names:
                 if obj_name in section.contours:
-                    section.removed_traces += section.contours[obj_name].getTraces()
+                    for trace in section.contours[obj_name]:
+                        section.removeTrace(trace)
                     del(section.contours[obj_name])
                     modified = True
             
@@ -918,7 +916,7 @@ class Series():
         
         self.modified = True
     
-    def deleteAllTraces(self, trace_name : str, tags : set = None):
+    def deleteAllTraces(self, trace_name : str, tags : set = None, series_states=None):
         """Delete all traces with a certain name and tag set.
         
             Params:
@@ -926,7 +924,8 @@ class Series():
                 tags (set): the tags to check to delete
         """
         for snum, section in self.enumerateSections(
-            message="Deleting trace(s)..."
+            message="Deleting trace(s)...",
+            series_states=series_states
         ):
             if trace_name in section.contours:
                 contour = section.contours[trace_name]
@@ -951,6 +950,7 @@ class Series():
             tags : set = None, 
             mode : tuple = None, 
             sections : list = None, 
+            series_states=None,
             log_event=True):
         """Edit the attributes of objects.
         
@@ -961,6 +961,7 @@ class Series():
                 tags (set): the tags to ADD to the traces of the objects
                 mode (tuple): the display mode to set for the traces
                 section (list): the section numbers to modify the object on (default: all)
+                series_states: the series states as store in the GUI
                 log_event (bool): True if event should be logged
         """
         # preemptively create log
@@ -976,7 +977,8 @@ class Series():
         
         # modify the object on every section
         for snum, section in self.enumerateSections(
-            message="Modifying object(s)..."
+            message="Modifying object(s)...",
+            series_states=series_states
         ):
             if snum not in sections:  # skip sections that are not included
                 continue
@@ -998,15 +1000,17 @@ class Series():
         
         self.modified = True
     
-    def editObjectRadius(self, obj_names : list, new_rad : float):
+    def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.
         
             Params:
                 obj_names (list): the names of objects to modify
                 new_rad (float): the new radius for the traces of the object
+                series_states (dict): optional dict for GUI undo states
         """
         for snum, section in self.enumerateSections(
-            message="Modifying radii..."
+            message="Modifying radii...",
+            series_states=series_states
         ):
             traces = []
             for name in obj_names:
@@ -1018,15 +1022,17 @@ class Series():
         
         self.modified = True
     
-    def editObjectShape(self, obj_names : list, new_shape : list):
+    def editObjectShape(self, obj_names : list, new_shape : list, series_states=None):
         """Change the shape of all traces of an object.
         
             Params:
                 obj_names (list): the names of objects to modify
                 new_shape (list): the new shape for the traces of the object
+                series_states (dict): optional dict for GUI undo states
         """
         for snum, section in self.enumerateSections(
-            message="Modifying shapes..."
+            message="Modifying shapes...",
+            series_states=series_states
         ):
             traces = []
             for name in obj_names:
@@ -1038,15 +1044,17 @@ class Series():
         
         self.modified = True
     
-    def removeAllTraceTags(self, obj_names : list, log_event=True):
+    def removeAllTraceTags(self, obj_names : list, series_states=None, log_event=True):
         """Remove all tags from all traces on a set of objects.
         
             Params:
                 obj_names (list): a list of object names
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Removing trace tags..."
+            message="Removing trace tags...",
+            series_states=series_states
         ):
             traces = []
             for obj_name in obj_names:
@@ -1069,16 +1077,18 @@ class Series():
 
         self.modified = True
     
-    def hideObjects(self, obj_names : list, hide=True, log_event=True):
+    def hideObjects(self, obj_names : list, hide=True, series_states=None, log_event=True):
         """Hide all traces of a set of objects throughout the series.
         
             Params:
                 obj_names (list): the names of objects to hide
                 hide (bool): True if object should be hidden
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Hiding object(s)..." if hide else "Unhiding object(s)..."
+            message="Hiding object(s)..." if hide else "Unhiding object(s)...",
+            series_states=series_states
         ):
             modified = False
             for name in obj_names:
@@ -1087,6 +1097,7 @@ class Series():
                     for trace in contour:
                         trace.setHidden(hide)
                         modified = True
+                    section.modified_contours.add(name)
             if modified:
                 section.save()
         
@@ -1097,17 +1108,22 @@ class Series():
         
         self.modified = True
     
-    def hideAllTraces(self, hidden=True, log_event=True):
+    def hideAllTraces(self, hidden=True, series_states=None, log_event=True):
         """Hide all traces in the entire series.
         
             Params:
                 hidden (bool): True if traces are to be hidden
+                series_states (dict): optional dict for GUI undo states
                 log_event (bool): True if event should be logged
         """
         for snum, section in self.enumerateSections(
-            message="Hiding traces..." if hidden else "Unhiding traces..."):
+            message="Hiding traces..." if hidden else "Unhiding traces...",
+            series_states=series_states
+        ):
             for trace in section.tracesAsList():
                 trace.setHidden(hidden)
+            for name in section.contours:
+                section.modified_contours.add(name)
             section.save()
         
         if log_event:
@@ -1121,6 +1137,7 @@ class Series():
             flag_conflicts : bool = True,
             check_history : bool = True,
             favored : str = "",
+            series_states=None,
             log_event=True):
         """Import all the traces from another series.
         
@@ -1133,6 +1150,7 @@ class Series():
                 flag_conflicts (bool): True if conflicts should be flagged
                 check_history (bool): True if history should be checked
                 favored (str): the series that is favored in the case of a conflict ("self", "other", or "")
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         # # ensure that the two series have the same sections
@@ -1151,7 +1169,10 @@ class Series():
             other.getFullHistory()
         )
         
-        for snum, section in self.enumerateSections(message="Importing traces..."):
+        for snum, section in self.enumerateSections(
+            message="Importing traces...",
+            series_states=series_states
+        ):
             if (
                 snum not in range(*srange) or 
                 snum not in other.sections
@@ -1196,14 +1217,18 @@ class Series():
         
         self.save()
     
-    def importZtraces(self, other, regex_filters : list = [], log_event=True):
+    def importZtraces(self, other, regex_filters : list = [], series_states=None, log_event=True):
         """Import all the ztraces from another series.
         
             Params:
                 other (Series): the series to import from
                 regex_filters (list): the filters for the objects to import
+                series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
+        if series_states:
+            series_states.addState()
+        
         for o_zname, o_ztrace in other.ztraces.items():
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
@@ -1242,19 +1267,23 @@ class Series():
         
         self.save()
     
-    def importTransforms(self, other, alignments : list, log_event=True):
+    def importTransforms(self, other, alignments : list, series_states=None, log_event=True):
         """Import transforms from another series.
         
             Params:
                 other (series): the series to import transforms from
                 alignments (list): the names of alignments to import
                 log_event (bool): True if the event should be logged
+                series_states (dict): optiona dict of undo states for GUI
         """
         # ensure that the two series have the same sections
         if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
             return
         
-        iterator = zip(self.enumerateSections(message="Importing transforms..."), other.enumerateSections(show_progress=False))
+        iterator = zip(
+            self.enumerateSections(message="Importing transforms...", series_states=series_states), 
+            other.enumerateSections(show_progress=False)
+        )
         for (s_snum, s_section), (o_snum, o_section) in iterator:
             for a in alignments:
                 s_section.tforms[a] = o_section.tforms[a].copy()
@@ -1319,18 +1348,21 @@ class Series():
         
         self.save()
     
-    def importFlags(self, other, log_event=True):
+    def importFlags(self, other, series_states=None, log_event=True):
         """Import flags from another series.
         
             Params:
                 other (Series): the series to import from
+                series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
-        for snum, section in self.enumerateSections(message="Importing flags..."):
+        for snum, section in self.enumerateSections(
+            message="Importing flags...",
+            series_states=series_states
+        ):
             if snum not in other.sections:  # skip if section does not exist in other series
                 continue
             new_flag_pool = section.flags.copy()
-            flags_modified = False
             o_section = other.loadSection(snum)  # sending section
             for o_flag in o_section.flags:
                 eq_found = False
@@ -1344,13 +1376,13 @@ class Series():
                         if olen > slen:
                             new_flag_pool.append(o_flag)
                             new_flag_pool.remove(s_flag)
-                            flags_modified = True
+                            section.flags_modified = True
                         break
                 if not eq_found:
                     new_flag_pool.append(o_flag)
-                    flags_modified = True
+                    section.flags_modified = True
 
-            if flags_modified:
+            if section.flags_modified:
                 section.flags = new_flag_pool
                 section.save()
         
@@ -1438,15 +1470,19 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self, threshold : float, log_event=True):
+    def deleteDuplicateTraces(self, threshold : float, series_states=None, log_event=True):
         """Delete all duplicate traces in the series (keep tags).
         
             Params:
                 threshold (float): the threshold for overlapping traces to be considered duplicates
+                series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
         removed = {}
-        for snum, section in self.enumerateSections(message="Removing duplicate traces..."):
+        for snum, section in self.enumerateSections(
+            message="Removing duplicate traces...",
+            series_states=series_states
+        ):
             found_on_section = False
             for cname in section.contours:
                 i = 1
@@ -1462,7 +1498,7 @@ class Series():
                             removed[snum].add(cname)
                             found_on_section = True
                             trace1.mergeTags(trace2)
-                            section.contours[cname].remove(trace2)
+                            section.removeTrace(trace2)
                             i -= 1
                             break
                     i += 1
@@ -1718,16 +1754,22 @@ class Series():
 
 class SeriesIterator():
 
-    def __init__(self, series : Series, show_progress : bool, message : str):
+    def __init__(self, series : Series, show_progress : bool, message : str, series_states):
         """Create the series iterator object.
         
             Params:
                 series (Series): the series object
                 show_progress (bool): show progress dialog if True
+                message (str): the message to show
+                series_states (dict): section number : SectionStates (for use with GUI)
         """
         self.series = series
+        self.section = None
         self.show_progress = show_progress
         self.message = message
+        self.series_states = series_states
+        if self.series_states is not None:
+            self.series_states.addState()
     
     def __iter__(self):
         """Allow the user to iterate through the sections."""
@@ -1742,13 +1784,30 @@ class SeriesIterator():
     
     def __next__(self):
         """Return the next section."""
+        # update the series states of the previous section if requested
+        if self.series_states and self.section and (
+            self.section.getAllModifiedNames() or 
+            self.section.tformsModified() or
+            self.section.flags_modified
+        ):
+            self.series_states[self.section.n].addState(
+                self.section, self.series
+            )
+            self.series_states.addSectionUndo(self.section.n)
+
         if self.sni < len(self.section_numbers):
             if self.show_progress:
                     self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             snum = self.section_numbers[self.sni]
-            section = self.series.loadSection(snum)
+            self.section = self.series.loadSection(snum)
             self.sni += 1
-            return snum, section
+
+            # check if states have been initialized
+            if self.series_states:
+                self.series_states[self.section]
+            
+            return snum, self.section
+        
         else:
             if self.show_progress:
                 self.progbar.setValue(self.sni / len(self.section_numbers) * 100)

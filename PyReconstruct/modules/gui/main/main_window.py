@@ -2502,7 +2502,6 @@ class MainWindow(QMainWindow):
         if series_wide_possible:
             w = self.focusWidget()
             away_from_field = not isinstance(w, FieldWidget)
-            print(away_from_field)
             state_has_sections = (
                     not redo and self.field.series_states.undos[-1].undo_lens or
                     redo and self.field.series_states.redos[-1].undo_lens

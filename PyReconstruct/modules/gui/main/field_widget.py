@@ -52,6 +52,7 @@ class FieldWidget(QWidget, FieldView):
                 mainwindow (MainWindow): the main window that contains this widget
         """
         super().__init__(mainwindow)
+        print("test")
         self.mainwindow = mainwindow
         self.setMouseTracking(True)
 

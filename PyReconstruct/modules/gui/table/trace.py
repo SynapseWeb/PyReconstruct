@@ -53,13 +53,7 @@ class TraceTableWidget(QDockWidget):
         self.setWindowTitle("Trace List")
 
         # set defaults
-        self.columns = {
-            "Index" : False,
-            "Tags" : True,
-            "Length" : True,
-            "Area" : True,
-            "Radius": True,
-        }
+        self.columns = self.series.getOption("trace_columns")
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -481,6 +475,7 @@ class TraceTableWidget(QDockWidget):
             return
         
         self.columns = dict(response[0])
+        self.series.setOption("trace_columns", self.columns)
         self.manager.updateTable(self)
     
     def export(self):

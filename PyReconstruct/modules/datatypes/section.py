@@ -536,7 +536,7 @@ class Section():
                 closest_trace_interior = trace
         
         # check for ztrace points close by
-        if self.series.options["show_ztraces"]:
+        if self.series.getOption("show_ztraces"):
             for ztrace in self.series.ztraces.values():
                 for i, pt in enumerate(ztrace.points):
                     if pt[2] == self.n:
@@ -548,7 +548,7 @@ class Section():
                             closest_type = "ztrace_pt"
         
         # check for flags close by
-        show_flags = self.series.options["show_flags"]
+        show_flags = self.series.getOption("show_flags")
         if show_flags != "none":
             for flag in self.flags:
                 if show_flags == "unresolved" and flag.resolved:

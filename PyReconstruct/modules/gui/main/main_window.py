@@ -564,7 +564,7 @@ class MainWindow(QMainWindow):
         self.backup_act.setEnabled(is_not_welcome_series)
 
         # check for backup directory
-        self.backup_act.setChecked(bool(self.series.options["backup_dir"]))
+        self.backup_act.setChecked(bool(self.series.getOption("backup_dir")))
 
         # check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
@@ -783,7 +783,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Fill Opacity",
                 "Enter fill opacity (0-1):",
-                text=str(round(self.series.options["fill_opacity"], 3))
+                text=str(round(self.series.getOption("fill_opacity"), 3))
             )
             if not confirmed:
                 return
@@ -796,7 +796,7 @@ class MainWindow(QMainWindow):
         if not (0 <= opacity <= 1):
             return
         
-        self.series.options["fill_opacity"] = opacity
+        self.series.setOption("fill_opacity", opacity)
         self.field.generateView(generate_image=False)
 
     def openSeries(self, series_obj=None, jser_fp=None):
@@ -1531,7 +1531,7 @@ class MainWindow(QMainWindow):
                   ("Rectangle", current_mode == "rect"),
                   ("Ellipse", current_mode == "circle")
                 )],
-                [("check", ("Automatically merge selected traces", self.series.options["auto_merge"]))]
+                [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))]
             ]
             response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
             if not confirmed:
@@ -1544,7 +1544,7 @@ class MainWindow(QMainWindow):
             else:
                 new_mode = "trace"
             
-            self.series.options["auto_merge"] = response[1][0][1]
+            self.series.setOption("auto_merge", response[1][0][1])
         
         self.field.closed_trace_mode = new_mode
 
@@ -1750,10 +1750,10 @@ class MainWindow(QMainWindow):
             if not new_dir:
                 self.backup_act.setChecked(False)
                 return
-            self.series.options["backup_dir"] = new_dir
+            self.series.setOption("backup_dir", new_dir)
         # user unchecked the option
         else:
-            self.series.options["backup_dir"] = ""
+            self.series.setOption("backup_dir", "")
         
         self.seriesModified()
     
@@ -1796,7 +1796,7 @@ class MainWindow(QMainWindow):
     def toggleZtraces(self):
         """Toggle whether ztraces are shown."""
         self.field.deselectAllTraces()
-        self.series.options["show_ztraces"] = not self.series.options["show_ztraces"]
+        self.series.setOption("show_ztraces", not self.series.getOption("show_ztraces"))
         self.field.generateView(generate_image=False)
     
     def openTraceList(self):
@@ -1879,11 +1879,11 @@ class MainWindow(QMainWindow):
                 amount (str): small, med, or big
         """
         if amount == "small":
-            num = self.series.options["small_dist"]
+            num = self.series.getOption("small_dist")
         elif amount == "med":
-            num = self.series.options["med_dist"]
+            num = self.series.getOption("med_dist")
         elif amount == "big":
-            num = self.series.options["big_dist"]
+            num = self.series.getOption("big_dist")
         if direction == "left":
             x, y = -num, 0
         elif direction == "right":
@@ -1985,13 +1985,13 @@ class MainWindow(QMainWindow):
     
     def modifyPointer(self, event=None):
         """Modify the pointer properties."""
-        s, t = self.series.options["pointer"]
+        s, t = tuple(self.series.getOption("pointer"))
         structure = [
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
             [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
-            [("check", ("Diplay closest field item", self.series.options["display_closest"]))]
+            [("check", ("Diplay closest field item", self.series.getOption("display_closest")))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:
@@ -1999,20 +1999,20 @@ class MainWindow(QMainWindow):
         
         s = "rect" if response[0][0][1] else "lasso"
         t = "inc" if response[1][0][1] else "exc"
-        self.series.options["pointer"] = s, t
-        self.series.options["display_closest"] = response[2][0][1]
+        self.series.setOption("pointer", [s, t])
+        self.series.setOption("display_closest", response[2][0][1])
         self.seriesModified()
     
     def modifyGrid(self, event=None):
         """Modify the grid properties."""
         response, confirmed = GridDialog(
             self,
-            tuple(self.series.options["grid"])
+            tuple(self.series.getOption("grid"))
         ).exec()
         if not confirmed:
             return
         
-        self.series.options["grid"] = response
+        self.series.setOption("grid", response)
         self.seriesModified()
     
     def modifyKnife(self, event=None):
@@ -2020,13 +2020,13 @@ class MainWindow(QMainWindow):
         structure = [
             ["When using the knife, objects smaller than this percent"],
             ["of the original trace area will be automatically deleted."],
-            ["Knife delete threshold (%):", ("float", self.series.options["knife_del_threshold"], (0, 100))]
+            ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold"), (0, 100))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
         if not confirmed:
             return
         
-        self.series.options["knife_del_threshold"] = response[0]
+        self.series.setOption("knife_del_threshold", response[0])
         self.seriesModified()
     
     def resetTracePalette(self):
@@ -2369,11 +2369,12 @@ class MainWindow(QMainWindow):
                 smoothing_alg (str): the name of the smoothing algorithm to use
         """
         if not smoothing_alg:
+            opt = self.series.getOption("3D_smoothing")
             structure = [
                 [("radio",
-                  ("Laplacian (most smooth)", self.series.options["3D_smoothing"] == "laplacian"),
-                  ("Humphrey (less smooth)", self.series.options["3D_smoothing"] == "humphrey"),
-                  ("None (blocky)", self.series.options["3D_smoothing"] == "none"))]
+                  ("Laplacian (most smooth)", opt == "laplacian"),
+                  ("Humphrey (less smooth)", opt == "humphrey"),
+                  ("None (blocky)", opt == "none"))]
             ]
             response, confirmed = QuickDialog.get(self, structure, "3D Smoothing")
             if not confirmed:
@@ -2389,7 +2390,7 @@ class MainWindow(QMainWindow):
         if smoothing_alg not in ["laplacian", "humphrey", "none"]:
             return
 
-        self.series.options["3D_smoothing"] = smoothing_alg
+        self.series.setOption("3D_smoothing", smoothing_alg)
         self.saveAllData()
         self.seriesModified()
     
@@ -2409,14 +2410,14 @@ class MainWindow(QMainWindow):
             self,
             "Find Contour Zoom",
             "Enter the find contour zoom (0-100):",
-            value=self.series.options["find_zoom"],
+            value=self.series.getOption("find_zoom"),
             minValue=0,
             maxValue=100
         )
         if not confirmed:
             return
 
-        self.series.options["find_zoom"] = z
+        self.series.setOption("find_zoom", z)
     
     def deleteDuplicateTraces(self):
         """Remove all duplicate traces from the series."""
@@ -2588,13 +2589,10 @@ class MainWindow(QMainWindow):
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
-        if self.series.options["autosave"]:
-            self.saveToJser(close=True)
-        else:
-            response = self.saveToJser(notify=True, close=True)
-            if response == "cancel":
-                event.ignore()
-                return
+        response = self.saveToJser(notify=True, close=True)
+        if response == "cancel":
+            event.ignore()
+            return
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()

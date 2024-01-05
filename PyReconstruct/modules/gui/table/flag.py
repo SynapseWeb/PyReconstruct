@@ -48,13 +48,7 @@ class FlagTableWidget(QDockWidget):
         self.setWindowTitle("Flag List")
 
         # set defaults
-        self.columns = {
-            "Section": True,
-            "Color": True,
-            "Flag": True,
-            "Resolved": False,
-            "Last Comment": True
-        }
+        self.columns = self.series.getOption("flag_columns")
         self.show_resolved = False
         self.re_filters = set([".*"])
         self.color_filter = None
@@ -422,6 +416,7 @@ class FlagTableWidget(QDockWidget):
         if not confirmed:
             return
         self.columns = dict(response[0])
+        self.series.setOption("flag_columns", self.columns)
         
         self.manager.updateTable(self)
     

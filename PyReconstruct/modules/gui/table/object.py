@@ -58,18 +58,7 @@ class ObjectTableWidget(QDockWidget):
         self.setWindowTitle("Object List")
 
         # set defaults
-        self.columns = {
-            "Range" : True,
-            "Count" : False,
-            "Flat area" : False,
-            "Volume": False,
-            "Groups": True,
-            "Trace tags": False,
-            "Last user": True,
-            "Curate": False,
-            "Alignment": False,
-            "Comment": True
-        }
+        self.columns = self.series.getOption("object_columns")
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -797,6 +786,7 @@ class ObjectTableWidget(QDockWidget):
         if not confirmed:
             return
         self.columns = dict(response[0])
+        self.series.setOption("object_columns", self.columns)
         
         self.manager.updateTable(self)
     

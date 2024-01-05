@@ -4,6 +4,8 @@ import json
 import shutil
 from datetime import datetime
 
+from PySide6.QtCore import QSettings
+
 from .log import LogSet, LogSetPair
 from .ztrace import Ztrace
 from .section import Section
@@ -19,7 +21,6 @@ from PyReconstruct.modules.constants import (
     assets_dir,
     welcome_series_dir
 )
-
 from PyReconstruct.modules.calc import mergeTraces
 from PyReconstruct.modules.constants import welcome_series_dir
 from PyReconstruct.modules.gui.utils import getProgbar
@@ -45,6 +46,53 @@ def getDateTime():
     return d, t
 
 class Series():
+    qsettings_defaults = {
+        # user
+        "user": os.getlogin(),
+        "left-handed": False,
+        # view
+        "3D_smoothing": "humphrey",
+        "show_ztraces": True,
+        "fill_opacity": 0.2,
+        "find_zoom": 95,
+        "show_flags": "unresolved",
+        "display_closest": True,
+        "flag_size": 14,
+        # mouse tools
+        "pointer": ["lasso", "exc"],
+        "auto_merge": False,
+        "knife_del_threshold": 1,
+        "grid": [1, 1, 1, 1, 1, 1],
+        "flag_name": "",
+        "flag_color": [255, 0, 0],
+        # table columns
+        "object_columns": {
+            "Range": True,
+            "Count": False,
+            "Flat area": False,
+            "Volume": False,
+            "Groups": True,
+            "Trace tags": False,
+            "Last user": True,
+            "Curate": False,
+            "Alignment": False,
+            "Comment": True
+        },
+        "trace_columns": {
+            "Index": False,
+            "Tags": True,
+            "Length": True,
+            "Area": True,
+            "Radius": True,
+        },
+        "flag_columns": {
+            "Section": True,
+            "Color": True,
+            "Flag": True,
+            "Resolved": False,
+            "Last Comment": True
+        }
+    }
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
         """Load the series file.
@@ -110,12 +158,6 @@ class Series():
         self.data = SeriesData(self)
         if get_series_data:
             self.data.refresh()
-        
-        # username (os.getlogin failes on TACC)
-        try:
-            self.user = os.getlogin()
-        except:
-            self.user = ""
 
         # objects for non-GUI users
         self.objects = Objects(self)
@@ -324,7 +366,7 @@ class Series():
             f.write(save_str)
 
         # backup the series if requested
-        if save_fp is None and self.options["backup_dir"] and os.path.isdir(self.options["backup_dir"]):
+        if save_fp is None and self.getOption("backup_dir") and os.path.isdir(self.getOption("backup_dir")):
             # get the file name
             fn = os.path.basename(self.jser_fp)
             # create the new file name
@@ -333,13 +375,13 @@ class Series():
             fn = fn[:fn.rfind(".")] + "_" + dt + fn[fn.rfind("."):]
             # save the file
             backup_fp = os.path.join(
-                self.options["backup_dir"],
+                self.getOption("backup_dir"),
                 fn
             )
             with open(backup_fp, "w") as f:
                 f.write(save_str)
         else:
-            self.options["backup_dir"] = ""
+            self.setOption("backup_dir", "")
         
         if close:
             self.close()
@@ -427,6 +469,9 @@ class Series():
         for key in empty_series["options"]:
             if key not in series_data["options"]:
                 series_data["options"][key] = empty_series["options"][key]
+        for key in list(series_data["options"].keys()):
+            if key not in empty_series["options"]:
+                del series_data["options"][key]
         
         # check for backup_dir key
         if "backup_dir" in series_data:
@@ -503,11 +548,6 @@ class Series():
                     obj_attrs[obj_name] = {}
                 if "curation" not in obj_attrs[obj_name]:  # do not overwrite existing curation
                     obj_attrs[obj_name]["curation"] = curation
-        
-        # check series option for flags
-        show_flags = series_data["options"]["show_flags"]
-        if type(show_flags) is bool:
-            series_data["options"]["show_flags"] = "unresolved" if show_flags else "none"
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -572,26 +612,11 @@ class Series():
         series_data["options"] = {}
 
         options = series_data["options"]
-        options["autosave"] = False
-        options["3D_smoothing"] = "humphrey"
+        options["backup_dir"] = ""
         options["small_dist"] = 0.01
         options["med_dist"] = 0.1
         options["big_dist"] = 1
-        options["show_ztraces"] = True
-        options["backup_dir"] = ""
-        options["fill_opacity"] = 0.2
-        options["grid"] = [1, 1, 1, 1, 1, 1]
-        options["pointer"] = ["lasso", "exc"]
-        options["show_ztraces"] = False
-        options["find_zoom"] = 95
         options["autoseg"] = {}
-        options["show_flags"] = "unresolved"
-        options["flag_name"] = ""
-        options["flag_color"] = (255, 0, 0)
-        options["flag_size"] = 14
-        options["knife_del_threshold"] = 1
-        options["auto_merge"] = False
-        options["display_closest"] = True
 
         series_data["obj_attrs"] = {}
         series_data["ztrace_attrs"] = {}
@@ -1751,6 +1776,56 @@ class Series():
                 if "curation" not in self.obj_attrs[name]:
                     self.obj_attrs[name]["curation"] = (False, "", log.date)
                 marked_objs.add(name)
+    
+    def getOption(self, option_name : str):
+        """Get an option from the series (or computer)
+        
+            Params:
+                option_name (str): the name of the option
+        """
+        if option_name in self.options:
+            option = self.options[option_name]
+        elif option_name in Series.qsettings_defaults:
+            settings = QSettings("KHLab", "PyReconstruct")
+            if settings.contains(option_name):
+                option_type = type(Series.qsettings_defaults[option_name])
+                option = settings.value(
+                    option_name,
+                    type=(str if option_type in (dict, list, tuple) else option_type)
+                )
+                if option_type in (dict, list, tuple):
+                    option = json.loads(option)
+            else:
+                option = Series.qsettings_defaults[option_name]
+                self.setOption(option_name, option)
+        else:
+            option = None
+        print("GET", option_name, option)
+        return option
+                    
+    def setOption(self, option_name : str, value):
+        """Set an option
+        
+            Params:
+                options_name (str): the name of the option
+                value: the value to set the option as
+        """
+        value_type = type(value)
+        if value_type in (dict, list, tuple):
+            value = json.dumps(value)
+        if option_name in self.options:
+            self.options[option_name] = value
+        else:
+            settings = QSettings("KHLab", "PyReconstruct")
+            settings.setValue(option_name, value)
+        print("SET", option_name, value)
+    
+    @property
+    def user(self):
+        return self.getOption("user")
+    @user.setter
+    def user(self, value):
+        self.setOption("user", value)
 
 class SeriesIterator():
 

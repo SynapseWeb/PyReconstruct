@@ -54,7 +54,7 @@ def generateVolumes(series : Series, obj_names : list):
                 avg_mag,
                 avg_thickness,
                 opacity,
-                series.options["3D_smoothing"]
+                series.getOption("3D_smoothing")
             ))
         elif type(obj_3D) is Spheres:
             mesh_data_list.append(obj_3D.generate3D(

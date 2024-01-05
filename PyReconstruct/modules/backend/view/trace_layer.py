@@ -133,7 +133,7 @@ class TraceLayer():
             inside_poly = True
             # check if ANY point is inside the polygon for inc
             # check if EVERY point is inside the polygon for exc
-            inc = self.series.options["pointer"][1] == "inc"
+            inc = self.series.getOption("pointer")[1] == "inc"
             for point in pix_points:
                 if inc and pointInPoly(*point, pix_poly):
                     traces_in_poly.append(trace)
@@ -373,7 +373,7 @@ class TraceLayer():
         cut_traces = cutTraces(
             trace_to_cut, 
             knife_trace, 
-            self.series.options["knife_del_threshold"], 
+            self.series.getOption("knife_del_threshold"), 
             closed=closed
         )  # merge the pixel traces
         # delete the old traces
@@ -526,7 +526,7 @@ class TraceLayer():
                 painter.setBrush(QBrush(QColor(*trace.color)))
                 # determine the type of fill
                 if trace.fill_mode[0] == "transparent":  # transparent fill
-                    painter.setOpacity(self.series.options["fill_opacity"])
+                    painter.setOpacity(self.series.getOption("fill_opacity"))
                 elif trace.fill_mode[0] == "solid":  # solid
                     painter.setOpacity(1)
                 painter.drawPolygon(qpoints)
@@ -618,7 +618,7 @@ class TraceLayer():
         
         # set up painter
         painter = QPainter(trace_layer)
-        painter.setOpacity(self.series.options["fill_opacity"])
+        painter.setOpacity(self.series.getOption("fill_opacity"))
 
         # draw points
         for qpoint, color in zip(qpoints, colors):
@@ -643,7 +643,7 @@ class TraceLayer():
             "⚑",
             c,
             None,
-            self.series.options["flag_size"]
+            self.series.getOption("flag_size")
         )
         # draw highlight if necessary
         if flag in self.section.selected_flags:
@@ -651,7 +651,7 @@ class TraceLayer():
             painter.setOpacity(1)
             painter.setBrush(Qt.transparent)
             lbl = QLabel(text="⚑")
-            lbl.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
+            lbl.setFont(QFont("Courier New", self.series.getOption("flag_size"), QFont.Bold))
             lbl.adjustSize()
             w, h = lbl.width(), lbl.height() * 3/4
             x += -w/2 - (h - w)
@@ -708,7 +708,7 @@ class TraceLayer():
         
         # draw ztraces
         self.zsegments_in_view = []
-        if self.series.options["show_ztraces"]:
+        if self.series.getOption("show_ztraces"):
             for ztrace in self.series.ztraces.values():
                 if ztrace not in self.section.temp_hide:
                     self._drawZtrace(trace_layer, ztrace)
@@ -716,9 +716,9 @@ class TraceLayer():
         
         # draw flags
         self.flags_in_view = []
-        if self.series.options["show_flags"] != "none":
+        if self.series.getOption("show_flags") != "none":
             for flag in self.section.flags:
-                if self.series.options["show_flags"] == "unresolved" and flag.resolved:
+                if self.series.getOption("show_flags") == "unresolved" and flag.resolved:
                     continue
                 if flag not in self.section.temp_hide:
                     self._drawFlag(trace_layer, flag)

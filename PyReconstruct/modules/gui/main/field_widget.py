@@ -460,7 +460,7 @@ class FieldWidget(QWidget, FieldView):
             # redraw flag with translation
             for (x, y), color in self.moving_flags:
                 field_painter.setPen(QPen(QColor(*color), 6))
-                field_painter.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
+                field_painter.setFont(QFont("Courier New", self.series.getOption("flag_size"), QFont.Bold))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawText(qpoint, "⚑")
 
@@ -536,7 +536,7 @@ class FieldWidget(QWidget, FieldView):
                                 self.displayed_flag = closest
                                 self.flag_display_timer.start(1000)
 
-                        if self.series.options["display_closest"]:
+                        if self.series.getOption("display_closest"):
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
                             if self.left_handed: mouse_x += 10
                             c = closest.color
@@ -1147,7 +1147,7 @@ class FieldWidget(QWidget, FieldView):
     def autoMerge(self):
         """Automatically merge the selected traces of the same name."""
         # merge with existing selected traces of the same name
-        if not self.series.options["auto_merge"]:
+        if not self.series.getOption("auto_merge"):
             return
         traces_to_merge = []
         for t in self.section.selected_traces:
@@ -1231,7 +1231,7 @@ class FieldWidget(QWidget, FieldView):
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
                 self.activateMouseBoundaryTimer()
-            if self.series.options["pointer"][0] == "rect":
+            if self.series.getOption("pointer")[0] == "rect":
                 x2, y2 = event.x(), event.y()
                 if self.current_trace:
                     x1, y1 = self.current_trace[0]
@@ -1632,7 +1632,7 @@ class FieldWidget(QWidget, FieldView):
             self.placeGrid(
                 pix_x, pix_y,
                 self.tracing_trace,
-                *tuple(self.series.options["grid"])
+                *tuple(self.series.getOption("grid"))
             )
     
     def gridRelease(self, event):
@@ -1716,15 +1716,15 @@ class FieldWidget(QWidget, FieldView):
     
     def flagRelease(self, event):
         """Called when mouse is released in flag mode."""
-        if self.lclick and self.series.options["show_flags"] != "none":
-            default_name = self.series.options["flag_name"]
+        if self.lclick and self.series.getOption("show_flags") != "none":
+            default_name = self.series.getOption("flag_name")
             if not default_name:
                 self.section.save()  # ensure all flags are in the series data object
                 flag_count = self.series.data.getFlagCount()
                 default_name = f"flag_{flag_count + 1}"
             structure = [
                 ["Name:", (True, "text", default_name)],
-                ["Color:", ("color", self.series.options["flag_color"]), ""],
+                ["Color:", ("color", self.series.getOption("flag_color")), ""],
                 ["Comment (opt):"],
                 [("textbox", "")]
             ]

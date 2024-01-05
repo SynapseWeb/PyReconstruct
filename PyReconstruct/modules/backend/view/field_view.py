@@ -415,7 +415,7 @@ class FieldView():
 
             max_img_dist = 50
 
-        zoom = self.series.options["find_zoom"]
+        zoom = self.series.getOption("find_zoom")
 
         new_range_x = range_x + ((100 - zoom)/100 * (max_img_dist - range_x))
         new_range_y = range_y + ((100 - zoom)/100 * (max_img_dist - range_y))
@@ -498,7 +498,7 @@ class FieldView():
 
             max_img_dist = 50
 
-        zoom = self.series.options["find_zoom"]
+        zoom = self.series.getOption("find_zoom")
 
         # modifier for flags: cap at 99% zoom
         if zoom > 99:
@@ -539,7 +539,7 @@ class FieldView():
                         trace.hidden = True
 
         # set the selected flags
-        show_flags = self.series.options["show_flags"]
+        show_flags = self.series.getOption("show_flags")
         if (show_flags == "all" or
             (show_flags == "unresolved" and not flag.resolved)):
             self.section.selected_flags = [flag]

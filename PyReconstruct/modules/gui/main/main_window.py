@@ -30,7 +30,8 @@ from PyReconstruct.modules.gui.dialog import (
     SegmentDialog,
     PredictDialog,
     QuickDialog,
-    FileDialog
+    FileDialog,
+    AllOptionsDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -204,6 +205,7 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
+                    ("alloptions_act", "Options...", "Shift+O", self.allOptions),
                     {
                         "attr_name": "importmenu",
                         "text": "Import",
@@ -2573,6 +2575,13 @@ class MainWindow(QMainWindow):
         self.series.updateCurationFromHistory()
         self.field.refreshTables()
         self.seriesModified()
+    
+    def allOptions(self):
+        confirmed = AllOptionsDialog(self, self.series).exec()
+        print(confirmed)
+        if confirmed:
+            self.field.generateView()
+            self.mouse_palette.reset()
 
     def restart(self):
         self.restart_mainwindow = True

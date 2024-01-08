@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QScrollArea
 )
+from PySide6.QtCore import Qt
 
 from .helper import resizeLineEdit, BrowseWidget
 from .color_button import ColorButton
@@ -131,7 +132,7 @@ class InputField():
 
 class QuickDialog(QDialog):
 
-    def __init__(self, parent, structure : list, title : str, grid=False):
+    def __init__(self, parent, structure : list, title : str, grid=False, include_confirm=True):
         """Create a quick dialog from a given structure.
         
             Params:
@@ -141,17 +142,22 @@ class QuickDialog(QDialog):
                 grid (bool): True if structure should be grid-style
         """
         QDialog.__init__(self, parent)
-        
-        self.setWindowTitle(title)
 
         vlayout, self.inputs = self.getLayout(structure, grid)
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        buttonbox = QDialogButtonBox(QBtn)
-        buttonbox.accepted.connect(self.accept)
-        buttonbox.rejected.connect(self.reject)
-
-        vlayout.addWidget(buttonbox)
+        if include_confirm:
+            self.setWindowTitle(title)
+            QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            buttonbox = QDialogButtonBox(QBtn)
+            buttonbox.accepted.connect(self.accept)
+            buttonbox.rejected.connect(self.reject)
+            vlayout.addWidget(buttonbox)
+        else:
+            lbl = QLabel(self, text=title)
+            f = lbl.font()
+            f.setBold(True)
+            lbl.setFont(f)
+            vlayout.insertWidget(0, lbl, alignment=Qt.AlignHCenter)
 
         self.setLayout(vlayout)
     
@@ -164,13 +170,25 @@ class QuickDialog(QDialog):
             r = 0
             c = 0
         vlayout = QVBoxLayout()
+        vlayout.setSpacing(1)
 
         for row_structure in structure:
+            if not row_structure:  # vertical layout spacer
+                if grid:
+                    r += 1
+                else:
+                    vlayout.addSpacing(5)
+                continue
+            
             if not grid:
                 row_layout = QHBoxLayout()
+                row_layout.setSpacing(4)
             for item in row_structure:
-                if not item and not grid:  # Spacer
-                    row_layout.addStretch()
+                if not item:  # Spacer
+                    if grid:
+                        c += 1
+                    else:
+                        row_layout.addStretch()
                     continue
                 elif type(item) is str:  # Label
                     w = QLabel(self, text=item)
@@ -197,12 +215,12 @@ class QuickDialog(QDialog):
                             options = None
                         if n is None:
                             w = QLineEdit("", self)
-                        else:
+                        elif widget_type == "int":
                             w = QLineEdit(str(n), self)
-                        if widget_type == "int":
                             resizeLineEdit(w, "000000")
                         elif widget_type == "float":
-                            resizeLineEdit(w, "000000000")
+                            w = QLineEdit(str(round(n, 7)), self)
+                            resizeLineEdit(w, "0.00000000")
                         inputs.append(InputField(widget_type, w, options, required=required))
                     elif widget_type == "combo":
                         # Params structure: list[str], optional: str
@@ -222,6 +240,7 @@ class QuickDialog(QDialog):
                         # Params structure list[(str, bool)]
                         w = QWidget(self)
                         vl = QVBoxLayout()
+                        vl.setSpacing(1)
                         for text, checked in params:
                             if widget_type == "check":
                                 bttn = QCheckBox(text, w)
@@ -276,12 +295,13 @@ class QuickDialog(QDialog):
         for input in self.inputs:
             r, is_valid = input.getResponse()
             if not is_valid:
-                return
+                return False
             else:
                 self.responses.append(r)
         self.responses = tuple(self.responses)
         
         QDialog.accept(self)
+        return True
     
     def exec(self):
         "Run the dialog."

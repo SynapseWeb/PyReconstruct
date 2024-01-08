@@ -49,19 +49,20 @@ class Series():
     qsettings_defaults = {
         # user
         "user": os.getlogin(),
-        "left-handed": False,
+        "backup_dir": "",
+        "left_handed": False,
         # view
         "3D_smoothing": "humphrey",
         "show_ztraces": True,
         "fill_opacity": 0.2,
-        "find_zoom": 95,
+        "find_zoom": 95.0,
         "show_flags": "unresolved",
         "display_closest": True,
         "flag_size": 14,
         # mouse tools
         "pointer": ["lasso", "exc"],
         "auto_merge": False,
-        "knife_del_threshold": 1,
+        "knife_del_threshold": 1.0,
         "grid": [1, 1, 1, 1, 1, 1],
         "flag_name": "",
         "flag_color": [255, 0, 0],
@@ -475,7 +476,6 @@ class Series():
         
         # check for backup_dir key
         if "backup_dir" in series_data:
-            series_data["options"]["backup_dir"] = series_data["backup_dir"]
             del series_data["backup_dir"]
         
         # check the ztraces
@@ -612,7 +612,6 @@ class Series():
         series_data["options"] = {}
 
         options = series_data["options"]
-        options["backup_dir"] = ""
         options["small_dist"] = 0.01
         options["med_dist"] = 0.1
         options["big_dist"] = 1
@@ -1777,17 +1776,22 @@ class Series():
                     self.obj_attrs[name]["curation"] = (False, "", log.date)
                 marked_objs.add(name)
     
-    def getOption(self, option_name : str):
+    def getOption(self, option_name : str, get_default=False):
         """Get an option from the series (or computer)
         
             Params:
                 option_name (str): the name of the option
         """
         if option_name in self.options:
-            option = self.options[option_name]
+            if get_default:
+                return Series.getEmptyDict()["options"][option_name]
+            else:
+                option = self.options[option_name]
         elif option_name in Series.qsettings_defaults:
             settings = QSettings("KHLab", "PyReconstruct")
-            if settings.contains(option_name):
+            if get_default:
+                return Series.qsettings_defaults[option_name]
+            elif settings.contains(option_name):
                 option_type = type(Series.qsettings_defaults[option_name])
                 option = settings.value(
                     option_name,

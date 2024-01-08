@@ -92,8 +92,7 @@ class FieldWidget(QWidget, FieldView):
             pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
             hotX=pencil_pm.width()-5, hotY=5
         )
-        self.left_handed = False
-
+        
         # set up the flag display
         self.flag_display = None
         self.displayed_flag = None
@@ -538,7 +537,7 @@ class FieldWidget(QWidget, FieldView):
 
                         if self.series.getOption("display_closest"):
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
-                            if self.left_handed: mouse_x += 10
+                            if self.series.getOption("left_handed"): mouse_x += 10
                             c = closest.color
                             drawOutlinedText(
                                 field_painter,
@@ -547,7 +546,7 @@ class FieldWidget(QWidget, FieldView):
                                 c,
                                 None,
                                 ct_size,
-                                not self.left_handed
+                                not self.series.getOption("left_handed")
                             )
             
             # get the names of the selected traces
@@ -842,7 +841,7 @@ class FieldWidget(QWidget, FieldView):
             )
         elif (mode == FieldWidget.OPENTRACE or
               mode == FieldWidget.CLOSEDTRACE):
-            cursor = self.pencil_l if self.left_handed else self.pencil_r
+            cursor = self.pencil_l if self.series.getOption("left_handed") else self.pencil_r
         elif (mode == FieldWidget.STAMP or
               mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
@@ -1824,14 +1823,14 @@ class FieldWidget(QWidget, FieldView):
                 left_handed (bool): True if user is left handed
         """
         if left_handed is not None:
-            self.left_handed = left_handed
+            self.series.setOption("left_handed", left_handed)
         else:
-            self.left_handed = self.mainwindow.lefthanded_act.isChecked()
+            self.series.setOption("left_handed", self.mainwindow.lefthanded_act.isChecked())
 
         # adjust handedness of the cursor
         if (self.mouse_mode == FieldWidget.OPENTRACE or
             self.mouse_mode == FieldWidget.CLOSEDTRACE):
-            cursor = self.pencil_l if self.left_handed else self.pencil_r
+            cursor = self.pencil_l if self.series.getOption("left_handed") else self.pencil_r
             if cursor != self.cursor(): self.setCursor(cursor)
     
     def deleteAll(self, tags=False):

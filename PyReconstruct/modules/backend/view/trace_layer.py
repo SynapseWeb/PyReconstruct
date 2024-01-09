@@ -247,7 +247,7 @@ class TraceLayer():
     def placeGrid(
         self,
         pix_x : float, pix_y : float,
-        trace : Trace,
+        ref_trace : Trace,
         w : float, h : float,
         dx : float, dy : float,
         nx : int, ny : int):
@@ -256,7 +256,7 @@ class TraceLayer():
             Params:
                 pix_x (float): the x-coord of the mouse location
                 pix_y (float): the y-coord of the mouse location
-                trace (Trace): the trace shape to use in the grid
+                trace (Trace): the trace to use in the grid
                 w (float): the desired width of the trace
                 h (float): the desired height of the trace
                 dx (float): the x distance between traces in the grid
@@ -268,24 +268,56 @@ class TraceLayer():
         field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.window, self.section.mag)
         origin = field_x + w/2, field_y - h/2
 
-        # stretch the trace to desired size
-        trace = trace.getStretched(w, h)
+        # create custom trace if using the sampling grid
+        if self.series.getOption("sampling_frame_grid"):
+            n = 0.5
+            nw, nh = n * w, n * h
+            print(nw, nh)
+            exc_points = [
+                (-nw, 2*nh),
+                (-nw, nh),
+                (-nw, -nh),
+                (nw, -nh),
+                (nw, -2*nh)
+            ]
+            inc_points = [
+                (-nw, nh),
+                (nw, nh),
+                (nw, -nh)
+            ]
+            
+            exc_trace = ref_trace.copy()
+            exc_trace.color = (255, 0, 0)
+            exc_trace.closed = False
+            exc_trace.points = exc_points
+
+            inc_trace = ref_trace.copy()
+            inc_trace.color = (0, 255, 0)
+            inc_trace.closed = False
+            inc_trace.points = inc_points
+
+            traces = [exc_trace, inc_trace]
+
+        else:
+            # stretch the reference trace to desired size
+            traces = [ref_trace.getStretched(w, h)]
 
         tform = self.section.tform
         for c in range(nx):
             for r in range(ny):
-                # create new trace
-                new_trace = trace.copy()
-                new_trace.points = []
-                for x, y in trace.points:
-                    field_point = (
-                        x + origin[0] + dx * c,
-                        y + origin[1] - dy * r
-                    )
-                    rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
-                    new_trace.add(rtform_point)
-                self.section.addTrace(new_trace)
-                self.section.selected_traces.append(new_trace)
+                for trace in traces:
+                    # create new trace
+                    new_trace = trace.copy()
+                    new_trace.points = []
+                    for x, y in trace.points:
+                        field_point = (
+                            x + origin[0] + dx * c,
+                            y + origin[1] - dy * r
+                        )
+                        rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
+                        new_trace.add(rtform_point)
+                    self.section.addTrace(new_trace)
+                    self.section.selected_traces.append(new_trace)
         
     def placeFlag(self, title : str, pix_x : int, pix_y : int, color : tuple, comment : str):
         """Create a flag on the section.

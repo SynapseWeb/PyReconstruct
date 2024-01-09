@@ -64,6 +64,7 @@ class Series():
         "auto_merge": False,
         "knife_del_threshold": 1.0,
         "grid": [1, 1, 1, 1, 1, 1],
+        "sampling_frame_grid": True,
         "flag_name": "",
         "flag_color": [255, 0, 0],
         # table columns

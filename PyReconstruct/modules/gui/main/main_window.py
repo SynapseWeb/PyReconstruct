@@ -2009,12 +2009,15 @@ class MainWindow(QMainWindow):
         """Modify the grid properties."""
         response, confirmed = GridDialog(
             self,
-            tuple(self.series.getOption("grid"))
+            tuple(self.series.getOption("grid")),
+            self.series.getOption("sampling_frame_grid")
         ).exec()
         if not confirmed:
             return
         
-        self.series.setOption("grid", response)
+        grid_response, sf_grid = response
+        self.series.setOption("grid", grid_response)
+        self.series.setOption("sampling_frame_grid", sf_grid)
         self.seriesModified()
     
     def modifyKnife(self, event=None):

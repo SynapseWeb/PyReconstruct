@@ -125,10 +125,13 @@ class AllOptionsDialog(QDialog):
             [None, "X", "Y"],
             ["Element size:", ("float", w), ("float", h)],
             ["Distance:", ("float", dx), ("float", dy)],
-            ["Number", ("int", nx), ("int", ny)]
+            ["Number", ("int", nx), ("int", ny)],
+            [("check", ("Sampling frame", self.series.getOption("sampling_frame_grid")))]
         ]
         def setOption(response):
-            self.series.setOption("grid", response)
+            self.series.setOption("grid", response[:6])
+            self.series.setOption("sampling_frame_grid", response[6][0][1])
+
         self.addOptionWidget("grid", structure, setOption, grid=True)
 
         # flag_defaults

@@ -37,7 +37,7 @@ from PyReconstruct.modules.backend.table import (
     FlagTableManager
 )
 from PyReconstruct.modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
-from PyReconstruct.modules.gui.utils import notify, drawOutlinedText, noUndoWarning
+from PyReconstruct.modules.gui.utils import notify, drawOutlinedText
 from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
@@ -52,7 +52,6 @@ class FieldWidget(QWidget, FieldView):
                 mainwindow (MainWindow): the main window that contains this widget
         """
         super().__init__(mainwindow)
-        print("test")
         self.mainwindow = mainwindow
         self.setMouseTracking(True)
 
@@ -93,8 +92,7 @@ class FieldWidget(QWidget, FieldView):
             pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
             hotX=pencil_pm.width()-5, hotY=5
         )
-        self.left_handed = False
-
+        
         # set up the flag display
         self.flag_display = None
         self.displayed_flag = None
@@ -293,9 +291,8 @@ class FieldWidget(QWidget, FieldView):
     def unlockSection(self):
         """Unlock the current section."""
         self.section.align_locked = False
-        self.section.save()
-        if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section.n)
+        self.updateData()
+        self.mainwindow.seriesModified()
     
     def findContourDialog(self):
         """Open a dilog to prompt user to find contour."""
@@ -462,7 +459,7 @@ class FieldWidget(QWidget, FieldView):
             # redraw flag with translation
             for (x, y), color in self.moving_flags:
                 field_painter.setPen(QPen(QColor(*color), 6))
-                field_painter.setFont(QFont("Courier New", self.series.options["flag_size"], QFont.Bold))
+                field_painter.setFont(QFont("Courier New", self.series.getOption("flag_size"), QFont.Bold))
                 qpoint = QPoint(x+dx, y+dy)
                 field_painter.drawText(qpoint, "⚑")
 
@@ -538,9 +535,9 @@ class FieldWidget(QWidget, FieldView):
                                 self.displayed_flag = closest
                                 self.flag_display_timer.start(1000)
 
-                        if self.series.options["display_closest"]:
+                        if self.series.getOption("display_closest"):
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
-                            if self.left_handed: mouse_x += 10
+                            if self.series.getOption("left_handed"): mouse_x += 10
                             c = closest.color
                             drawOutlinedText(
                                 field_painter,
@@ -549,7 +546,7 @@ class FieldWidget(QWidget, FieldView):
                                 c,
                                 None,
                                 ct_size,
-                                not self.left_handed
+                                not self.series.getOption("left_handed")
                             )
             
             # get the names of the selected traces
@@ -844,7 +841,7 @@ class FieldWidget(QWidget, FieldView):
             )
         elif (mode == FieldWidget.OPENTRACE or
               mode == FieldWidget.CLOSEDTRACE):
-            cursor = self.pencil_l if self.left_handed else self.pencil_r
+            cursor = self.pencil_l if self.series.getOption("left_handed") else self.pencil_r
         elif (mode == FieldWidget.STAMP or
               mode == FieldWidget.GRID):
             cursor = QCursor(Qt.CrossCursor)
@@ -1149,7 +1146,7 @@ class FieldWidget(QWidget, FieldView):
     def autoMerge(self):
         """Automatically merge the selected traces of the same name."""
         # merge with existing selected traces of the same name
-        if not self.series.options["auto_merge"]:
+        if not self.series.getOption("auto_merge"):
             return
         traces_to_merge = []
         for t in self.section.selected_traces:
@@ -1233,7 +1230,7 @@ class FieldWidget(QWidget, FieldView):
             if not self.is_selecting_traces:  # user just decided to group select traces
                 self.is_selecting_traces = True
                 self.activateMouseBoundaryTimer()
-            if self.series.options["pointer"][0] == "rect":
+            if self.series.getOption("pointer")[0] == "rect":
                 x2, y2 = event.x(), event.y()
                 if self.current_trace:
                     x1, y1 = self.current_trace[0]
@@ -1634,7 +1631,7 @@ class FieldWidget(QWidget, FieldView):
             self.placeGrid(
                 pix_x, pix_y,
                 self.tracing_trace,
-                *tuple(self.series.options["grid"])
+                *tuple(self.series.getOption("grid"))
             )
     
     def gridRelease(self, event):
@@ -1718,15 +1715,15 @@ class FieldWidget(QWidget, FieldView):
     
     def flagRelease(self, event):
         """Called when mouse is released in flag mode."""
-        if self.lclick and self.series.options["show_flags"] != "none":
-            default_name = self.series.options["flag_name"]
+        if self.lclick and self.series.getOption("show_flags") != "none":
+            default_name = self.series.getOption("flag_name")
             if not default_name:
                 self.section.save()  # ensure all flags are in the series data object
                 flag_count = self.series.data.getFlagCount()
                 default_name = f"flag_{flag_count + 1}"
             structure = [
                 ["Name:", (True, "text", default_name)],
-                ["Color:", ("color", self.series.options["flag_color"]), ""],
+                ["Color:", ("color", self.series.getOption("flag_color")), ""],
                 ["Comment (opt):"],
                 [("textbox", "")]
             ]
@@ -1826,14 +1823,14 @@ class FieldWidget(QWidget, FieldView):
                 left_handed (bool): True if user is left handed
         """
         if left_handed is not None:
-            self.left_handed = left_handed
+            self.series.setOption("left_handed", left_handed)
         else:
-            self.left_handed = self.mainwindow.lefthanded_act.isChecked()
+            self.series.setOption("left_handed", self.mainwindow.lefthanded_act.isChecked())
 
         # adjust handedness of the cursor
         if (self.mouse_mode == FieldWidget.OPENTRACE or
             self.mouse_mode == FieldWidget.CLOSEDTRACE):
-            cursor = self.pencil_l if self.left_handed else self.pencil_r
+            cursor = self.pencil_l if self.series.getOption("left_handed") else self.pencil_r
             if cursor != self.cursor(): self.setCursor(cursor)
     
     def deleteAll(self, tags=False):
@@ -1847,13 +1844,10 @@ class FieldWidget(QWidget, FieldView):
             return
         trace = self.section.selected_traces[0]
 
-        if not noUndoWarning():
-            return
-
         if tags:
-            self.series.deleteAllTraces(trace.name, trace.tags)
+            self.series.deleteAllTraces(trace.name, trace.tags, self.series_states)
         else:
-            self.series.deleteAllTraces(trace.name)
+            self.series.deleteAllTraces(trace.name, series_states=self.series_states)
         
         self.reload()
     

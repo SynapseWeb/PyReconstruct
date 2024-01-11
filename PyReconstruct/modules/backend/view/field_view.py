@@ -11,7 +11,7 @@ from PyReconstruct.modules.datatypes import (
     Trace,
     Flag
 )
-from PyReconstruct.modules.backend.func import SectionStates
+from PyReconstruct.modules.backend.func import SectionStates, SeriesStates
 from PyReconstruct.modules.calc import (
     centroid,
     lineDistance,
@@ -30,9 +30,10 @@ class FieldView():
         # get series and current section
         self.series = series
         self.section = self.series.loadSection(self.series.current_section)
-        # load the section state
-        self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
+        # load the section states
+        self.clearStates()
+        # initialize the current section
+        self.series_states[self.section]
 
         # get image dir
         if self.series.src_dir == "":
@@ -70,7 +71,7 @@ class FieldView():
         # copy/paste clipboard
         self.clipboard = []
     
-    def reload(self):
+    def reload(self, clear_states=False):
         """Reload the section data (used if section files were modified, usually through object list)."""
         # reload the actual sections
         self.section = self.series.loadSection(self.series.current_section)
@@ -79,10 +80,8 @@ class FieldView():
             self.b_section = self.series.loadSection(self.b_section.n)
             self.b_section_layer.section = self.b_section
         # clear all the section states
-        self.series_states = {}
-        self.series_states[self.series.current_section] = SectionStates(self.section, self.series)
-        if self.b_section:
-            self.series_states[self.b_section] = SectionStates(self.b_section, self.series)
+        if clear_states:
+            self.clearStates()
         # clear the selected traces
         self.section.selected_traces = []
         if self.b_section:
@@ -112,7 +111,11 @@ class FieldView():
     def updateData(self, clear_tracking=True):
         """Update the series data object and the tables."""
         # update the series data tracker
-        self.series.data.updateSection(self.section, update_traces=True)
+        self.series.data.updateSection(
+            self.section, 
+            update_traces=True,
+            all_traces=False
+        )
 
         # update the object table
         if self.obj_table_manager:
@@ -139,6 +142,10 @@ class FieldView():
         if clear_tracking:
             self.section.clearTracking()
             self.series.modified_ztraces = set()
+    
+    def clearStates(self):
+        """Create/clear the states for each section."""
+        self.series_states = SeriesStates(self.series)
 
     def saveState(self):
         """Save the current traces and transform.
@@ -152,6 +159,9 @@ class FieldView():
         # update the data/tables
         self.updateData()
 
+        # check if a series undo/redo has been overwritten
+        self.series_states.checkOverwrite(self.section.n)
+
         # notify that the series has been edited
         self.mainwindow.seriesModified(True)
         self.mainwindow.checkActions()
@@ -162,6 +172,11 @@ class FieldView():
         if self.hide_trace_layer:
             return
         
+        # do nothing if no states
+        section_states = self.series_states[self.series.current_section]
+        if not section_states.undo_states:
+            return
+
         # end any pending events
         self.endPendingEvents()  # function extended in inherited class
         
@@ -170,11 +185,10 @@ class FieldView():
         self.section.selected_ztraces = []
 
         # get the last undo state
-        section_states = self.series_states[self.series.current_section]
         section_states.undoState(self.section, self.series)
 
         # update the data/tables
-        self.updateData(clear_tracking=False)
+        self.updateData()
         
         self.generateView()
     
@@ -182,6 +196,11 @@ class FieldView():
         """Redo an undo (switch to last undid state)."""
         # disable if trace layer is hidden
         if self.hide_trace_layer:
+            return
+        
+        # do nothing if no states
+        section_states = self.series_states[self.series.current_section]
+        if not section_states.redo_states:
             return
         
         # end any pending events
@@ -192,13 +211,22 @@ class FieldView():
         self.section.selected_ztraces = []
 
         # get the last redo state
-        section_states = self.series_states[self.series.current_section]
         section_states.redoState(self.section, self.series)
 
         # update the data/tables
         self.updateData()
         
         self.generateView()
+    
+    def seriesUndo(self, redo=False):
+        """Undo an action across the series.
+        
+            Params:
+                redo (bool): True if should redo instead of undo
+        """
+        self.series_states.undoState(redo)
+        self.reload()
+        self.refreshTables()
     
     def setPropagationMode(self, propagate : bool):
         """Set the propagation mode.
@@ -285,8 +313,9 @@ class FieldView():
             self.section.selected_traces = []
         
         # create section undo/redo state object if needed
-        if new_section_num not in self.series_states:
-            self.series_states[new_section_num] = SectionStates(self.section, self.series)
+        states = self.series_states[new_section_num]
+        if not states.initialized:
+            states.initialize(self.section, self.series)
         
         # reload trace list
         if self.trace_table_manager:
@@ -386,7 +415,7 @@ class FieldView():
 
             max_img_dist = 50
 
-        zoom = self.series.options["find_zoom"]
+        zoom = self.series.getOption("find_zoom")
 
         new_range_x = range_x + ((100 - zoom)/100 * (max_img_dist - range_x))
         new_range_y = range_y + ((100 - zoom)/100 * (max_img_dist - range_y))
@@ -469,7 +498,7 @@ class FieldView():
 
             max_img_dist = 50
 
-        zoom = self.series.options["find_zoom"]
+        zoom = self.series.getOption("find_zoom")
 
         # modifier for flags: cap at 99% zoom
         if zoom > 99:
@@ -510,7 +539,7 @@ class FieldView():
                         trace.hidden = True
 
         # set the selected flags
-        show_flags = self.series.options["show_flags"]
+        show_flags = self.series.getOption("show_flags")
         if (show_flags == "all" or
             (show_flags == "unresolved" and not flag.resolved)):
             self.section.selected_flags = [flag]
@@ -1089,10 +1118,6 @@ class FieldView():
             self.stored_tform = dtform * self.stored_tform
 
         self.section_layer.changeTform(new_tform)
-
-        # refresh data and tables
-        self.section.save()
-        self.refreshTables()
         
         self.generateView()
         self.saveState()

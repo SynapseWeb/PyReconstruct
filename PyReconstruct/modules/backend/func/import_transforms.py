@@ -9,12 +9,13 @@ def getDateTime():
     t = f"{dt.hour:02d}:{dt.minute:02d}"
     return d, t
 
-def importTransforms(series : Series, tforms_fp : str, log_event=True):
+def importTransforms(series : Series, tforms_fp : str, series_states=None, log_event=True):
         """Import transforms from a text file.
         
             Params:
                 series (Series): the series to import transforms to
                 tforms_fp (str): the file path for the transforms file
+                series_states (SereisStates): series states object from GUI
         """
         # read through file
         with open(tforms_fp, "r") as f:
@@ -39,11 +40,17 @@ def importTransforms(series : Series, tforms_fp : str, log_event=True):
         fname = fname[:fname.rfind(".")]
         d, t = getDateTime()
         new_alignment_name = f"{fname}-{d}"
-        for section_num, tform in tforms.items():
-            section = series.loadSection(section_num)
-            # multiply pixel translations by magnification of section
-            tform[2] *= section.mag
-            tform[5] *= section.mag
+        for section_num, section in series.enumerateSections(
+            message="Importing transforms...",
+            series_states=series_states
+        ):
+            if section_num in tforms:
+                tform = tforms[section_num]
+                # multiply pixel translations by magnification of section
+                tform[2] *= section.mag
+                tform[5] *= section.mag
+            else:
+                tform = section.tform.getList()
             section.tforms[new_alignment_name] = Transform(tform)
             section.save()
         series.alignment = new_alignment_name

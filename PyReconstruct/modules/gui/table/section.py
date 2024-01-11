@@ -152,6 +152,14 @@ class SectionTableWidget(QDockWidget):
     
     def createTable(self):
         """Create the table widget."""
+        # close an existing table and save scroll position
+        if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
+            self.table.close()
+        else:
+            scroll_pos = 0
+        
         # establish table headers
         self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
 
@@ -176,6 +184,9 @@ class SectionTableWidget(QDockWidget):
             r += 1
 
         self.format()
+
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)

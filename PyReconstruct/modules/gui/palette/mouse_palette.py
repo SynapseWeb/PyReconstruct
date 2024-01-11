@@ -618,21 +618,21 @@ class MousePalette():
         """Set the default flag in the palette."""
         regenerate_view = False
         if name is not None:
-            self.series.options["flag_name"] = name
+            self.series.setOption("flag_name", name)
         
         if color is None:
-            color = self.series.options["flag_color"]
+            color = self.series.getOption("flag_color")
         else:
-            self.series.options["flag_color"] = color
+            self.series.setOption("flag_color", color)
         
         if font_size is None:
-            font_size = self.series.options["flag_size"]
-        elif font_size != self.series.options["flag_size"]:
-            self.series.options["flag_size"] = font_size
+            font_size = self.series.getOption("flag_size")
+        elif font_size != self.series.getOption("flag_size"):
+            self.series.setOption("flag_size", font_size)
             regenerate_view = True
         
-        if display_flags is not None and display_flags != self.series.options["show_flags"]:
-            self.series.options["show_flags"] = display_flags
+        if display_flags is not None and display_flags != self.series.getOption("show_flags"):
+            self.series.setOption("show_flags", display_flags)
             self.mainwindow.field.section.selected_flags = []
             regenerate_view = True
         
@@ -647,15 +647,16 @@ class MousePalette():
     
     def modifyFlag(self):
         """Modify the default flag."""
+        show_flags = self.series.getOption("show_flag")
         structure = [
-            ["Default name:", ("text", self.series.options["flag_name"])],
-            ["Default color:", ("color", self.series.options["flag_color"])],
-            ["Size of all flags: ", ("int", self.series.options["flag_size"], tuple(range(1, 100)))],
+            ["Default name:", ("text", self.series.getOption("flag_name"))],
+            ["Default color:", ("color", self.series.getOption("flag_color"))],
+            ["Size of all flags: ", ("int", self.series.getOption("flag_size"), tuple(range(1, 100)))],
             ["Display"],
             [("radio",
-              ("All flags", self.series.options["show_flags"] == "all"),
-              ("Only unresolved flags", self.series.options["show_flags"] == "unresolved"),
-              ("No flags", self.series.options["show_flags"] == "none")
+              ("All flags", show_flags == "all"),
+              ("Only unresolved flags", show_flags == "unresolved"),
+              ("No flags", show_flags == "none")
             )]
         ]
         response, confirmed = QuickDialog.get(self.mainwindow, structure, "Flag")

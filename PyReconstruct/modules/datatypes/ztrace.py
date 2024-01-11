@@ -26,6 +26,9 @@ class Ztrace():
 
     def overlaps(self, other):
         """Check if the ztraces have the same set of points."""
+        if len(self.points) != len(other.points):
+            return False
+        
         for (x1, y1, s1), (x2, y2, s2) in zip(self.points, other.points):
             if s1 != s2 or abs(x1-x2) > 1e-6 or abs(y1-y2) > 1e-6:
                 return False
@@ -269,18 +272,3 @@ class Ztrace():
             tform = series.data["sections"][snum]["tforms"][series.alignment]
             x, y = tform.map(x, y, inverted=True)
             self.points.append((x, y, snum))
-    
-    def overlaps(self, other):
-        """Check if this ztrace overlaps with another.
-        
-            Params:
-                other (Ztrace): the ztrace to compare points with
-        """
-        if len(self.points) != len(other.points):
-            return False
-        
-        for pt1, pt2 in zip(self.points, other.points):
-            if abs(pt1 - pt2) >= 1e-6:
-                return False
-        
-        return True

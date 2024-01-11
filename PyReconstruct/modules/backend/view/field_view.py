@@ -166,15 +166,10 @@ class FieldView():
         self.mainwindow.seriesModified(True)
         self.mainwindow.checkActions()
 
-    def undoState(self):
+    def undoState(self, redo=False):
         """Undo last action (switch to last state)."""
         # disable if trace layer is hidden
         if self.hide_trace_layer:
-            return
-        
-        # do nothing if no states
-        section_states = self.series_states[self.series.current_section]
-        if not section_states.undo_states:
             return
 
         # end any pending events
@@ -185,33 +180,7 @@ class FieldView():
         self.section.selected_ztraces = []
 
         # get the last undo state
-        section_states.undoState(self.section, self.series)
-
-        # update the data/tables
-        self.updateData()
-        
-        self.generateView()
-    
-    def redoState(self):
-        """Redo an undo (switch to last undid state)."""
-        # disable if trace layer is hidden
-        if self.hide_trace_layer:
-            return
-        
-        # do nothing if no states
-        section_states = self.series_states[self.series.current_section]
-        if not section_states.redo_states:
-            return
-        
-        # end any pending events
-        self.endPendingEvents()  # function extended in inherited class
-        
-        # clear the selected traces
-        self.section.selected_traces = []
-        self.section.selected_ztraces = []
-
-        # get the last redo state
-        section_states.redoState(self.section, self.series)
+        self.series_states.undoSection(self.section, redo)
 
         # update the data/tables
         self.updateData()

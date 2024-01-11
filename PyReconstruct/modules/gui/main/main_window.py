@@ -573,23 +573,11 @@ class MainWindow(QMainWindow):
         self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
         self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
 
-        # # check for a series-wide undo/redo
-        # self.seriesundo_act.setEnabled(self.field.series_states.canUndo())
-        # self.seriesredo_act.setEnabled(self.field.series_states.canRedo())
-
         # undo/redo
-        states = self.field.series_states[self.series.current_section]
-        has_undo_states = (
-            bool(states.undo_states) or 
-            self.field.is_line_tracing or
-            self.field.series_states.canUndo()
-        )
-        has_redo_states = (
-            bool(states.redo_states) or
-            self.field.series_states.canRedo()
-        )
-        self.undo_act.setEnabled(has_undo_states)
-        self.redo_act.setEnabled(has_redo_states)
+        can_undo_3D, can_undo_2D, _ = self.field.series_states.canUndo(self.field.section.n)
+        self.undo_act.setEnabled(can_undo_3D or can_undo_2D)
+        can_redo_3D, can_redo_2D, _ = self.field.series_states.canRedo(self.field.section.n)
+        self.redo_act.setEnabled(can_redo_3D or can_redo_2D)
 
         # check clipboard for paste options
         if self.field.clipboard:
@@ -2501,55 +2489,40 @@ class MainWindow(QMainWindow):
             Params:
                 redo (bool): True if redo should be performed
         """
-        series_wide_possible = (
-            not redo and self.field.series_states.canUndo() or
-            redo and self.field.series_states.canRedo()
-        )
-
-        is_series_wide = False
-        if series_wide_possible:
-            w = self.focusWidget()
-            away_from_field = not isinstance(w, FieldWidget)
-            state_has_sections = (
-                    not redo and self.field.series_states.undos[-1].undo_lens or
-                    redo and self.field.series_states.redos[-1].undo_lens
-            )
-            current_section_in_state = (
-                not redo and self.field.section.n in self.field.series_states.undos[-1].undo_lens or
-                redo and self.field.section.n in self.field.series_states.redos[-1].undo_lens
-            )
-            # if the user is not on field and the action does not affect sections, perform action without asking
-            if away_from_field and not state_has_sections:
-                is_series_wide = True
-            # if user is not on field and action affects sections, ask
-            # if user is on a section involved in the series-wide undo, ask
-            elif (
-                away_from_field and state_has_sections or
-                current_section_in_state
-            ):
-                action_text = 'redo' if redo else 'undo'
-                reply = QMessageBox.question(
-                    self,
-                    "Series Action",
-                    f"This {action_text} will affect multiple sections.\n" + \
-                    "Would you like to continue?",
-                    QMessageBox.Yes,
-                    QMessageBox.No
-                )
-                if reply == QMessageBox.No:
-                    return
-                is_series_wide = True
-        
-        if is_series_wide:
-            if redo:
-                self.field.seriesUndo(redo=True)
-            else:
-                self.field.seriesUndo()
+        if redo:
+            can_3D, can_2D, linked = self.field.series_states.canRedo()
         else:
-            if redo:
-                self.field.redoState()
-            else:
-                self.field.undoState()
+            can_3D, can_2D, linked = self.field.series_states.canUndo()
+        away_from_field = not isinstance(self.focusWidget(), FieldWidget)
+
+        if away_from_field:
+            if can_3D:
+                self.field.series_states.undoState(redo)
+                self.field.reload()
+        else:
+            if can_2D and not linked:
+                self.field.undoState(redo)
+            elif not can_2D and linked:
+                self.field.series_states.undoState(redo)
+                self.field.reload()
+            elif can_2D and linked:
+                if can_3D:
+                    mbox = QMessageBox(self)
+                    mbox.setWindowTitle("Redo" if redo else "Undo")
+                    mbox.setText("This action is linked to multiple sections.\nPlease select how you would like to proceed.")
+                    mbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                    mbox.setButtonText(QMessageBox.Yes, "All sections")
+                    mbox.setButtonText(QMessageBox.No, "Only this section")
+                    mbox.setButtonText(QMessageBox.Cancel, "Cancel")
+                    response = mbox.exec()
+
+                    if response == QMessageBox.Yes:
+                        self.field.series_states.undoState(redo)
+                        self.field.reload()
+                    elif response == QMessageBox.No:
+                        self.field.undoState(redo)
+                else:
+                    self.field.undoState(redo)  # automatically break 3D state 
     
     def copy(self):
         """Called when Ctrl+C is pressed."""

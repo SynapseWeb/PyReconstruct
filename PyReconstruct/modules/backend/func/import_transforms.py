@@ -42,7 +42,8 @@ def importTransforms(series : Series, tforms_fp : str, series_states=None, log_e
         new_alignment_name = f"{fname}-{d}"
         for section_num, section in series.enumerateSections(
             message="Importing transforms...",
-            series_states=series_states
+            series_states=series_states,
+            breakable=False
         ):
             if section_num in tforms:
                 tform = tforms[section_num]

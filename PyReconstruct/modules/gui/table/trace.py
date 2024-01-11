@@ -53,13 +53,7 @@ class TraceTableWidget(QDockWidget):
         self.setWindowTitle("Trace List")
 
         # set defaults
-        self.columns = {
-            "Index" : False,
-            "Tags" : True,
-            "Length" : True,
-            "Area" : True,
-            "Radius": True,
-        }
+        self.columns = self.series.getOption("trace_columns")
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -267,6 +261,14 @@ class TraceTableWidget(QDockWidget):
             Params:
                 tracedict (dict): the dictionary containing the object table data objects
         """
+        # close an existing table and save scroll position
+        if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
+            self.table.close()
+        else:
+            scroll_pos = 0
+        
         self.section = section
 
         self.updateTitle()
@@ -302,6 +304,9 @@ class TraceTableWidget(QDockWidget):
         # format rows and columns
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
+
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
@@ -470,6 +475,7 @@ class TraceTableWidget(QDockWidget):
             return
         
         self.columns = dict(response[0])
+        self.series.setOption("trace_columns", self.columns)
         self.manager.updateTable(self)
     
     def export(self):

@@ -20,7 +20,6 @@ from PyReconstruct.modules.datatypes import Series, Section, Flag
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    noUndoWarning,
     notify
 )
 from PyReconstruct.modules.gui.dialog import (
@@ -49,13 +48,7 @@ class FlagTableWidget(QDockWidget):
         self.setWindowTitle("Flag List")
 
         # set defaults
-        self.columns = {
-            "Section": True,
-            "Color": True,
-            "Flag": True,
-            "Resolved": False,
-            "Last Comment": True
-        }
+        self.columns = self.series.getOption("flag_columns")
         self.show_resolved = False
         self.re_filters = set([".*"])
         self.color_filter = None
@@ -263,9 +256,13 @@ class FlagTableWidget(QDockWidget):
             Params:
                 objdata (dict): the dictionary containing the object table data objects
         """
-        # close an existing table if one exists
+        # close an existing table and save scroll position
         if self.table is not None:
+            vscroll = self.table.verticalScrollBar()
+            scroll_pos = vscroll.value()
             self.table.close()
+        else:
+            scroll_pos = 0
         
         self.updateTitle()
 
@@ -302,6 +299,9 @@ class FlagTableWidget(QDockWidget):
         # format rows and columns
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
+
+        # set the saved scroll value
+        self.table.verticalScrollBar().setValue(scroll_pos)
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
@@ -398,8 +398,6 @@ class FlagTableWidget(QDockWidget):
     def deleteFlags(self, match_name=False):
         """Delete an object or objects on every section."""
         self.mainwindow.saveAllData()
-        if not noUndoWarning():
-            return
         selected_flags = self.getSelectedFlags()
         self.manager.deleteFlags(selected_flags, match_name)
 
@@ -418,6 +416,7 @@ class FlagTableWidget(QDockWidget):
         if not confirmed:
             return
         self.columns = dict(response[0])
+        self.series.setOption("flag_columns", self.columns)
         
         self.manager.updateTable(self)
     

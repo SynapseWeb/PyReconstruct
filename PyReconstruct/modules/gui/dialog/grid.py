@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QLineEdit, 
     QVBoxLayout,
     QGridLayout,
+    QCheckBox
 )
 
 from .helper import resizeLineEdit
@@ -13,7 +14,7 @@ from PyReconstruct.modules.gui.utils import notify
 
 class GridDialog(QDialog):
 
-    def __init__(self, parent, properties : tuple):
+    def __init__(self, parent, properties : tuple, sf_grid : bool):
         """Create a dialog for brightness/contrast."""
         super().__init__(parent)
 
@@ -74,6 +75,9 @@ class GridDialog(QDialog):
         layout.addWidget(num_y_text, 2, 3)
         layout.addWidget(num_y_input, 2, 4)
 
+        self.sf_cb = QCheckBox(self, text="Sampling frame")
+        self.sf_cb.setChecked(sf_grid)
+
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
         buttonbox.accepted.connect(self.accept)
@@ -82,9 +86,14 @@ class GridDialog(QDialog):
         vlayout = QVBoxLayout()
         vlayout.setSpacing(10)
         vlayout.addLayout(layout)
+        vlayout.addWidget(self.sf_cb)
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
+    
+    def toggleSF(self):
+        """Toggle the sampling frame widgets."""
+
     
     def accept(self):
         """Overwritten from parent class."""
@@ -103,11 +112,11 @@ class GridDialog(QDialog):
         "Run the dialog."
         confirmed = super().exec()
         if confirmed:
-            response = []
+            grid_response = []
             for input in self.inputs[:4]:
-                response.append(float(input.text()))
+                grid_response.append(float(input.text()))
             for input in self.inputs[4:]:
-                response.append(int(input.text()))
-            return response, True
+                grid_response.append(int(input.text()))
+            return (grid_response, self.sf_cb.isChecked()), True
         else:
             return None, False

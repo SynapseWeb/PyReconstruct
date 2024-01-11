@@ -141,7 +141,7 @@ def transforms_as_strings(recon_transforms, output_file=None):
     return output
 
         
-def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False, log_event=True):
+def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_grid: bool = False, series_states=None, log_event=True):
 
     new_transforms = make_pyr_transforms(project_fp, scale, cal_grid)
     new_transforms = transforms_as_strings(new_transforms)
@@ -179,13 +179,17 @@ def importSwiftTransforms(series: Series, project_fp: str, scale: int = 1, cal_g
     d, t = getDateTime()
     new_alignment_name = f"{fname}-{d}"
     
-    for section_num, tform in tforms.items():
-        
-        section = series.loadSection(section_num)
-
-        # multiply pixel translations by magnification of section
-        tform[2] *= section.mag
-        tform[5] *= section.mag
+    for section_num, section in series.enumerateSections(
+        message="Importing transforms...",
+        series_states=series_states
+    ):
+        if section_num in tforms:
+            tform = tforms[section_num]
+            # multiply pixel translations by magnification of section
+            tform[2] *= section.mag
+            tform[5] *= section.mag
+        else:
+            tform = section.tform.getList()
 
         section.tforms[new_alignment_name] = Transform(tform)
 

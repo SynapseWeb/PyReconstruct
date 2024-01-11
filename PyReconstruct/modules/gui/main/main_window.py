@@ -30,7 +30,8 @@ from PyReconstruct.modules.gui.dialog import (
     SegmentDialog,
     PredictDialog,
     QuickDialog,
-    FileDialog
+    FileDialog,
+    AllOptionsDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -171,8 +172,11 @@ class MainWindow(QMainWindow):
                 "text": "Edit",
                 "opts":
                 [
-                    ("undo_act", "Undo", "Ctrl+Z", self.field.undoState),
-                    ("redo_act", "Redo", "Ctrl+Y", self.field.redoState),
+                    ("undo_act", "Undo", "Ctrl+Z", self.undo),
+                    ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
+                    # None,
+                    # ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
+                    # ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
@@ -201,6 +205,7 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
+                    ("alloptions_act", "Options...", "Shift+O", self.allOptions),
                     {
                         "attr_name": "importmenu",
                         "text": "Import",
@@ -211,7 +216,6 @@ class MainWindow(QMainWindow):
                             ("importflags_act", "Flags...", "", self.importFlags),
                             ("importjsertransforms0_act", "Alignment(s)...", "", self.importSeriesTransforms),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importseriestransforms_act", "Image transforms...", "", self.importSeriesTransforms),
                             ("importbc_act", "Brightness/contrast...", "", self.importBC)
                         ]
                     },
@@ -562,17 +566,28 @@ class MainWindow(QMainWindow):
         self.backup_act.setEnabled(is_not_welcome_series)
 
         # check for backup directory
-        self.backup_act.setChecked(bool(self.series.options["backup_dir"]))
+        self.backup_act.setChecked(bool(self.series.getOption("backup_dir")))
 
         # check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
         self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
         self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
 
+        # # check for a series-wide undo/redo
+        # self.seriesundo_act.setEnabled(self.field.series_states.canUndo())
+        # self.seriesredo_act.setEnabled(self.field.series_states.canRedo())
+
         # undo/redo
         states = self.field.series_states[self.series.current_section]
-        has_undo_states = bool(states.undo_states) or self.field.is_line_tracing
-        has_redo_states = bool(states.redo_states)
+        has_undo_states = (
+            bool(states.undo_states) or 
+            self.field.is_line_tracing or
+            self.field.series_states.canUndo()
+        )
+        has_redo_states = (
+            bool(states.redo_states) or
+            self.field.series_states.canRedo()
+        )
         self.undo_act.setEnabled(has_undo_states)
         self.redo_act.setEnabled(has_redo_states)
 
@@ -592,7 +607,7 @@ class MainWindow(QMainWindow):
 
         # zarr layer
         self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
-
+            
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""
         # domain translate motions
@@ -770,7 +785,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Fill Opacity",
                 "Enter fill opacity (0-1):",
-                text=str(round(self.series.options["fill_opacity"], 3))
+                text=str(round(self.series.getOption("fill_opacity"), 3))
             )
             if not confirmed:
                 return
@@ -783,7 +798,7 @@ class MainWindow(QMainWindow):
         if not (0 <= opacity <= 1):
             return
         
-        self.series.options["fill_opacity"] = opacity
+        self.series.setOption("fill_opacity", opacity)
         self.field.generateView(generate_image=False)
 
     def openSeries(self, series_obj=None, jser_fp=None):
@@ -1075,6 +1090,9 @@ class MainWindow(QMainWindow):
         else:
             self.setWindowTitle(self.series.name)
         self.series.modified = modified
+
+        if self.field:
+            self.checkActions()
     
     def importTransforms(self, tforms_fp : str = None):
         """Import transforms from a text file.
@@ -1091,12 +1109,9 @@ class MainWindow(QMainWindow):
                 "Select file containing transforms"
             )
         if not tforms_fp: return
-
-        if not noUndoWarning():
-            return
         
         # import the transforms
-        importTransforms(self.series, tforms_fp)
+        importTransforms(self.series, tforms_fp, series_states=self.field.series_states)
         
         # reload the section
         self.field.reload()
@@ -1156,7 +1171,7 @@ class MainWindow(QMainWindow):
         # import transforms
         print(f'Importing SWiFT transforms at scale {scale}...')
         if cal_grid: print('Cal grid included in series')
-        importSwiftTransforms(self.series, swift_fp, scale, cal_grid)
+        importSwiftTransforms(self.series, swift_fp, scale, cal_grid, series_states=self.field.series_states)
         
         self.field.reload()
 
@@ -1231,14 +1246,20 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
-        if not noUndoWarning():
-            return
-
         # open the other series
         o_series = Series.openJser(jser_fp)
 
         # import the traces and close the other series
-        self.series.importTraces(o_series, srange, regex_filters, threshold, flag_conflicts, check_history, favored)
+        self.series.importTraces(
+            o_series, 
+            srange, 
+            regex_filters, 
+            threshold, 
+            flag_conflicts, 
+            check_history, 
+            favored, 
+            self.field.series_states
+        )
         o_series.close()
 
         # reload the field to update the traces
@@ -1271,14 +1292,11 @@ class MainWindow(QMainWindow):
 
         self.saveAllData()
 
-        if not noUndoWarning():
-            return
-
         # open the other series
         o_series = Series.openJser(jser_fp)
 
         # import the ztraces and close the other series
-        self.series.importZtraces(o_series, regex_filters)
+        self.series.importZtraces(o_series, regex_filters, series_states=self.field.series_states)
         o_series.close()
 
         # reload the field to update the ztraces
@@ -1392,12 +1410,8 @@ class MainWindow(QMainWindow):
                 notify("Import transforms canceled.")
                 o_series.close()
                 return
-        else:
-            if not noUndoWarning():
-                o_series.close()
-                return
         
-        self.series.importTransforms(o_series, chosen_alignments)
+        self.series.importTransforms(o_series, chosen_alignments, self.field.series_states)
         o_series.close()
         
         self.field.reload()
@@ -1435,6 +1449,9 @@ class MainWindow(QMainWindow):
         
         if not jser_fp: return  # exit function if user does not provide series
 
+        if not noUndoWarning():
+            return
+
         self.saveAllData()
 
         # open the other series
@@ -1464,9 +1481,6 @@ class MainWindow(QMainWindow):
         if not jser_fp: return  # exit function if user does not provide series
 
         self.saveAllData()
-
-        if not noUndoWarning():
-            return
 
         # open the other series
         o_series = Series.openJser(jser_fp)
@@ -1519,7 +1533,7 @@ class MainWindow(QMainWindow):
                   ("Rectangle", current_mode == "rect"),
                   ("Ellipse", current_mode == "circle")
                 )],
-                [("check", ("Automatically merge selected traces", self.series.options["auto_merge"]))]
+                [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))]
             ]
             response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
             if not confirmed:
@@ -1532,7 +1546,7 @@ class MainWindow(QMainWindow):
             else:
                 new_mode = "trace"
             
-            self.series.options["auto_merge"] = response[1][0][1]
+            self.series.setOption("auto_merge", response[1][0][1])
         
         self.field.closed_trace_mode = new_mode
 
@@ -1738,10 +1752,10 @@ class MainWindow(QMainWindow):
             if not new_dir:
                 self.backup_act.setChecked(False)
                 return
-            self.series.options["backup_dir"] = new_dir
+            self.series.setOption("backup_dir", new_dir)
         # user unchecked the option
         else:
-            self.series.options["backup_dir"] = ""
+            self.series.setOption("backup_dir", "")
         
         self.seriesModified()
     
@@ -1784,7 +1798,7 @@ class MainWindow(QMainWindow):
     def toggleZtraces(self):
         """Toggle whether ztraces are shown."""
         self.field.deselectAllTraces()
-        self.series.options["show_ztraces"] = not self.series.options["show_ztraces"]
+        self.series.setOption("show_ztraces", not self.series.getOption("show_ztraces"))
         self.field.generateView(generate_image=False)
     
     def openTraceList(self):
@@ -1867,11 +1881,11 @@ class MainWindow(QMainWindow):
                 amount (str): small, med, or big
         """
         if amount == "small":
-            num = self.series.options["small_dist"]
+            num = self.series.getOption("small_dist")
         elif amount == "med":
-            num = self.series.options["med_dist"]
+            num = self.series.getOption("med_dist")
         elif amount == "big":
-            num = self.series.options["big_dist"]
+            num = self.series.getOption("big_dist")
         if direction == "left":
             x, y = -num, 0
         elif direction == "right":
@@ -1928,8 +1942,7 @@ class MainWindow(QMainWindow):
                     modified = True
                     break
             if modified:
-                self.series.modifyAlignments(alignment_dict)
-                self.field.reload()
+                self.series.modifyAlignments(alignment_dict, self.field.series_states)
         
         if alignment_name:
             self.field.changeAlignment(alignment_name)
@@ -1974,13 +1987,13 @@ class MainWindow(QMainWindow):
     
     def modifyPointer(self, event=None):
         """Modify the pointer properties."""
-        s, t = self.series.options["pointer"]
+        s, t = tuple(self.series.getOption("pointer"))
         structure = [
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
             [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
-            [("check", ("Diplay closest field item", self.series.options["display_closest"]))]
+            [("check", ("Diplay closest field item", self.series.getOption("display_closest")))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:
@@ -1988,20 +2001,23 @@ class MainWindow(QMainWindow):
         
         s = "rect" if response[0][0][1] else "lasso"
         t = "inc" if response[1][0][1] else "exc"
-        self.series.options["pointer"] = s, t
-        self.series.options["display_closest"] = response[2][0][1]
+        self.series.setOption("pointer", [s, t])
+        self.series.setOption("display_closest", response[2][0][1])
         self.seriesModified()
     
     def modifyGrid(self, event=None):
         """Modify the grid properties."""
         response, confirmed = GridDialog(
             self,
-            tuple(self.series.options["grid"])
+            tuple(self.series.getOption("grid")),
+            self.series.getOption("sampling_frame_grid")
         ).exec()
         if not confirmed:
             return
         
-        self.series.options["grid"] = response
+        grid_response, sf_grid = response
+        self.series.setOption("grid", grid_response)
+        self.series.setOption("sampling_frame_grid", sf_grid)
         self.seriesModified()
     
     def modifyKnife(self, event=None):
@@ -2009,13 +2025,13 @@ class MainWindow(QMainWindow):
         structure = [
             ["When using the knife, objects smaller than this percent"],
             ["of the original trace area will be automatically deleted."],
-            ["Knife delete threshold (%):", ("float", self.series.options["knife_del_threshold"], (0, 100))]
+            ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold"), (0, 100))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
         if not confirmed:
             return
         
-        self.series.options["knife_del_threshold"] = response[0]
+        self.series.setOption("knife_del_threshold", response[0])
         self.seriesModified()
     
     def resetTracePalette(self):
@@ -2358,11 +2374,12 @@ class MainWindow(QMainWindow):
                 smoothing_alg (str): the name of the smoothing algorithm to use
         """
         if not smoothing_alg:
+            opt = self.series.getOption("3D_smoothing")
             structure = [
                 [("radio",
-                  ("Laplacian (most smooth)", self.series.options["3D_smoothing"] == "laplacian"),
-                  ("Humphrey (less smooth)", self.series.options["3D_smoothing"] == "humphrey"),
-                  ("None (blocky)", self.series.options["3D_smoothing"] == "none"))]
+                  ("Laplacian (most smooth)", opt == "laplacian"),
+                  ("Humphrey (less smooth)", opt == "humphrey"),
+                  ("None (blocky)", opt == "none"))]
             ]
             response, confirmed = QuickDialog.get(self, structure, "3D Smoothing")
             if not confirmed:
@@ -2378,7 +2395,7 @@ class MainWindow(QMainWindow):
         if smoothing_alg not in ["laplacian", "humphrey", "none"]:
             return
 
-        self.series.options["3D_smoothing"] = smoothing_alg
+        self.series.setOption("3D_smoothing", smoothing_alg)
         self.saveAllData()
         self.seriesModified()
     
@@ -2398,14 +2415,14 @@ class MainWindow(QMainWindow):
             self,
             "Find Contour Zoom",
             "Enter the find contour zoom (0-100):",
-            value=self.series.options["find_zoom"],
+            value=self.series.getOption("find_zoom"),
             minValue=0,
             maxValue=100
         )
         if not confirmed:
             return
 
-        self.series.options["find_zoom"] = z
+        self.series.setOption("find_zoom", z)
     
     def deleteDuplicateTraces(self):
         """Remove all duplicate traces from the series."""
@@ -2418,11 +2435,8 @@ class MainWindow(QMainWindow):
         if not confirmed:
             return
         threshold = response[0]
-
-        if not noUndoWarning():
-            return
         
-        removed = self.series.deleteDuplicateTraces(threshold)
+        removed = self.series.deleteDuplicateTraces(threshold, self.field.series_states)
 
         if removed:
             message = "The following duplicate traces were removed:"
@@ -2481,6 +2495,62 @@ class MainWindow(QMainWindow):
         else:
             self.field.backspace()
     
+    def undo(self, redo=False):
+        """Perform an undo/redo action.
+        
+            Params:
+                redo (bool): True if redo should be performed
+        """
+        series_wide_possible = (
+            not redo and self.field.series_states.canUndo() or
+            redo and self.field.series_states.canRedo()
+        )
+
+        is_series_wide = False
+        if series_wide_possible:
+            w = self.focusWidget()
+            away_from_field = not isinstance(w, FieldWidget)
+            state_has_sections = (
+                    not redo and self.field.series_states.undos[-1].undo_lens or
+                    redo and self.field.series_states.redos[-1].undo_lens
+            )
+            current_section_in_state = (
+                not redo and self.field.section.n in self.field.series_states.undos[-1].undo_lens or
+                redo and self.field.section.n in self.field.series_states.redos[-1].undo_lens
+            )
+            # if the user is not on field and the action does not affect sections, perform action without asking
+            if away_from_field and not state_has_sections:
+                is_series_wide = True
+            # if user is not on field and action affects sections, ask
+            # if user is on a section involved in the series-wide undo, ask
+            elif (
+                away_from_field and state_has_sections or
+                current_section_in_state
+            ):
+                action_text = 'redo' if redo else 'undo'
+                reply = QMessageBox.question(
+                    self,
+                    "Series Action",
+                    f"This {action_text} will affect multiple sections.\n" + \
+                    "Would you like to continue?",
+                    QMessageBox.Yes,
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.No:
+                    return
+                is_series_wide = True
+        
+        if is_series_wide:
+            if redo:
+                self.field.seriesUndo(redo=True)
+            else:
+                self.field.seriesUndo()
+        else:
+            if redo:
+                self.field.redoState()
+            else:
+                self.field.undoState()
+    
     def copy(self):
         """Called when Ctrl+C is pressed."""
         w = self.focusWidget()
@@ -2506,8 +2576,17 @@ class MainWindow(QMainWindow):
     
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""
+        self.field.series_states.addState()
         self.series.updateCurationFromHistory()
         self.field.refreshTables()
+        self.seriesModified()
+    
+    def allOptions(self):
+        confirmed = AllOptionsDialog(self, self.series).exec()
+        print(confirmed)
+        if confirmed:
+            self.field.generateView()
+            self.mouse_palette.reset()
 
     def restart(self):
         self.restart_mainwindow = True
@@ -2524,13 +2603,10 @@ class MainWindow(QMainWindow):
             
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
-        if self.series.options["autosave"]:
-            self.saveToJser(close=True)
-        else:
-            response = self.saveToJser(notify=True, close=True)
-            if response == "cancel":
-                event.ignore()
-                return
+        response = self.saveToJser(notify=True, close=True)
+        if response == "cancel":
+            event.ignore()
+            return
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()

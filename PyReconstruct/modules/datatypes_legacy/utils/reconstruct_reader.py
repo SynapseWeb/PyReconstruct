@@ -113,10 +113,9 @@ def process_section_file(path, data_check=False):
             # Image contours
             image_contours = [child for child in children if child.tag == "Contour"]
             if len(image_contours) > 1:
-                raise Exception(
-                    "No support for Images with more than one Contour.")
+                raise Exception(f"No support for images with multiple domain contours: index {data['index']}.")
             elif not image_contours:
-                raise Exception("No support for Images with out a Contour.")
+                raise Exception(f"No support for images without domain contour: index {data['index']}")
             else:
                 image_contour_data = extract_section_contour_attributes(
                     image_contours[0])

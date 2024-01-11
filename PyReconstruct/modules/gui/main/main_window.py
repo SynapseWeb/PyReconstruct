@@ -2450,7 +2450,8 @@ class MainWindow(QMainWindow):
                 self.viewer.addZtraces(obj_names)
             else:
                 self.viewer.addObjects(obj_names)
-            
+        self.viewer.activateWindow()
+        
     def removeFrom3D(self, obj_names, ztraces=False):
         """Remove objects from 3D viewer.
         
@@ -2465,6 +2466,7 @@ class MainWindow(QMainWindow):
             self.viewer.removeZtraces(obj_names)
         else:
             self.viewer.removeObjects(obj_names)
+        self.viewer.activateWindow()
     
     def toggleCuration(self):
         """Quick shortcut to toggle curation on/off for the tables."""

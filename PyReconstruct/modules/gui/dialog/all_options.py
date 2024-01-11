@@ -5,15 +5,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QDialogButtonBox,
-    QPushButton,
-    QMessageBox
+    QPushButton
 )
 from PySide6.QtGui import (
     QPainter,
     QColor
 )
-from PySide6.QtCore import QSettings
-
 from .quick_dialog import QuickDialog
 
 from PyReconstruct.modules.datatypes import Series
@@ -21,7 +18,12 @@ from PyReconstruct.modules.datatypes import Series
 class AllOptionsDialog(QDialog):
 
     def __init__(self, parent, series : Series):
-        """Create the dialog for all series/user options."""
+        """Create the dialog for all series/user options
+        
+            Params:
+                parent (QWidget): the parent widget
+                series (Series): the series with optionsto view/modify
+        """
         super().__init__(parent)
         self.series = series
         self.tabs = QTabWidget(self)
@@ -44,7 +46,14 @@ class AllOptionsDialog(QDialog):
 
         self.setLayout(full_vlayout)
     
-    def getWidgetsLayout(self, structure):
+    def getWidgetsLayout(self, structure : list):
+        """Create a layout from a predifined widget structure
+
+        (Ideally the structure for a full tab)
+        
+            Params:
+                structure (list): the desired layout structure
+        """
         vlayout = QVBoxLayout()
         for line in structure:
             hlayout = QHBoxLayout()
@@ -59,6 +68,8 @@ class AllOptionsDialog(QDialog):
         return vlayout
 
     def placeWidgets(self):
+        """"""
+        # this is what goes into 
         tab_structure = {
             "Mouse Tools": [
                 ["pointer"],
@@ -94,6 +105,11 @@ class AllOptionsDialog(QDialog):
             self.tabs.addTab(widget, tab_name)
     
     def createWidgets(self, use_defaults=False):
+        """Create the widgets for each of the options
+        
+            Params:
+                use_defaults (bool): True if all values should be set at defaults instead of current settings
+        """
         self.all_widgets = {}
         # pointer
         s, t = tuple(self.series.getOption("pointer", use_defaults))
@@ -268,11 +284,20 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("small_dist", response[2])
         self.addOptionWidget("step", structure, setOption)
     
-    def addOptionWidget(self, name, structure, setOption, grid=False):
+    def addOptionWidget(self, name : str, structure : list, setOption, grid=False):
+        """Add a widget to the all_widgets dictionary
+        
+            Params:
+                name (str): the desired name for the widget
+                structure (list): the QuickDialog structure for the widget
+                setOption (function): the function for setting the widget option once accepted
+                grid (bool): True if widget structure should be a grid instead of rows
+        """
         title = name.replace("_", " ").title()
         self.all_widgets[name] = OptionWidget(self, title, structure, self.series, setOption, grid)
     
     def accept(self):
+        """Overwritten--called when OK is pressed"""
         widgets = self.all_widgets.values()
         for w in widgets:
             if not w.accept():
@@ -283,6 +308,7 @@ class AllOptionsDialog(QDialog):
         return True
 
     def resetDefaults(self):
+        """Reset the default values for the widget inputs"""
         # keep track of the current tab
         current_tab = self.tabs.currentIndex()
         # reset the widget and use defaults
@@ -294,15 +320,31 @@ class AllOptionsDialog(QDialog):
 
 class OptionWidget(QuickDialog):
 
-    def __init__(self, parent, title, structure, series, setOption, grid=False):
+    def __init__(
+            self, 
+            parent, 
+            title : str, 
+            structure : list, 
+            series : Series, 
+            setOption, 
+            grid=False
+        ):
+        """Create a widget for a series option
+        
+            Params:
+                parent (QWidget): the parent widget
+                title (str): the title of the widget
+                structure (list): the structure for the widget
+                series (Series): the series lnked to the options
+                setOption (function): the function to set the options
+                grid (bool): True if structure should be grid instead of rows
+        """
         super().__init__(parent, structure, title, grid, include_confirm=False)
         self.series = series
         self.setOption = setOption
-
-    def accept(self):
-        return super().accept()
     
     def set(self):
+        """Set the series option for the widget"""
         self.setOption(self.responses)
     
     def paintEvent(self, event):

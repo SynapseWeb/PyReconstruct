@@ -1782,6 +1782,7 @@ class Series():
         
             Params:
                 option_name (str): the name of the option
+                get_default (bool): True if only default should be returned
         """
         if option_name in self.options:
             if get_default:
@@ -1805,7 +1806,6 @@ class Series():
                 self.setOption(option_name, option)
         else:
             option = None
-        print("GET", option_name, option)
         return option
                     
     def setOption(self, option_name : str, value):
@@ -1823,7 +1823,6 @@ class Series():
         else:
             settings = QSettings("KHLab", "PyReconstruct")
             settings.setValue(option_name, value)
-        print("SET", option_name, value)
     
     @property
     def user(self):

@@ -729,7 +729,7 @@ class Series():
         section = Section(section_num, self)
         return section
     
-    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data...", series_states=None):
+    def enumerateSections(self, show_progress : bool = True, message : str = "Loading series data...", series_states=None, breakable=True):
         """Allow iteration through the sections.
 
         Proper use in a for loop: for snum, section in series.enumerateSections():
@@ -738,10 +738,11 @@ class Series():
                 show_progress (bool): True if progress should be displayed
                 message (str): the message to display by the progress bar
                 series_states (dict): section number : SectionStates object (use with GUI for undo/redo)
+                breakable (bool): True if sereis state is breakable
             Returns:
                 (SeriesIterator): an iterable object for for loops
         """
-        return SeriesIterator(self, show_progress, message, series_states)
+        return SeriesIterator(self, show_progress, message, series_states, breakable)
 
     # def map(self, fn, *args, message="Modifying series..."):
     #     """Map a function to every section in the series.
@@ -786,7 +787,8 @@ class Series():
 
         for snum, section in self.enumerateSections(
             message="Modifying alignments...",
-            series_states=series_states
+            series_states=series_states,
+            breakable=False
         ):
             old_tforms = section.tforms.copy()
             new_tforms = {}
@@ -1306,7 +1308,7 @@ class Series():
             return
         
         iterator = zip(
-            self.enumerateSections(message="Importing transforms...", series_states=series_states), 
+            self.enumerateSections(message="Importing transforms...", series_states=series_states, breakable=False), 
             other.enumerateSections(show_progress=False)
         )
         for (s_snum, s_section), (o_snum, o_section) in iterator:
@@ -1833,7 +1835,7 @@ class Series():
 
 class SeriesIterator():
 
-    def __init__(self, series : Series, show_progress : bool, message : str, series_states):
+    def __init__(self, series : Series, show_progress : bool, message : str, series_states, breakable=True):
         """Create the series iterator object.
         
             Params:
@@ -1841,6 +1843,7 @@ class SeriesIterator():
                 show_progress (bool): show progress dialog if True
                 message (str): the message to show
                 series_states (dict): section number : SectionStates (for use with GUI)
+                breakable (bool): True if series state is breakable
         """
         self.series = series
         self.section = None
@@ -1848,7 +1851,7 @@ class SeriesIterator():
         self.message = message
         self.series_states = series_states
         if self.series_states is not None:
-            self.series_states.addState()
+            self.series_states.addState(breakable)
     
     def __iter__(self):
         """Allow the user to iterate through the sections."""

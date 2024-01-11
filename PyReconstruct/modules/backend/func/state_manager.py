@@ -341,10 +341,11 @@ def restoreZtraceOnSection(orig_ztrace : Ztrace, new_ztrace : Ztrace, snum : int
 
 class SeriesState():
 
-    def __init__(self):
+    def __init__(self, breakable=True):
         """Create a single series state."""
         self.undo_lens = {}  # keep track of individial section undos (these will be populated as the enumerateSections loop progresses)
         self.series_attrs = {}
+        self.breakable = breakable
     
     # STATIC METHOD
     def getSeriesAttributes(series : Series):
@@ -462,9 +463,13 @@ class SeriesStates():
         """Get the length of the series states."""
         return len(self.section_states_dict)
 
-    def addState(self):
-        """Create a new series undo state."""
-        new_state = SeriesState()
+    def addState(self, breakable=True):
+        """Create a new series undo state.
+        
+            Params:
+                breakable (bool): True if series state can be broken (aka dissolved and left as individual section events)
+        """
+        new_state = SeriesState(breakable)
         new_state.resetSeriesAttributes(self.series)
         self.undos.append(new_state)
     
@@ -483,33 +488,86 @@ class SeriesStates():
         self.undos = []
         self.redos = []
     
-    def canUndo(self):
-        """Checks if a series-wide undo is possible."""
-        if not self.undos:
-            return False
+    def canUndo(self, current_section : int = None):
+        """Checks if an undo is possible.
         
-        for snum, undo_len in self.undos[-1].undo_lens.items():
-            states = self[snum]
-            if not states.initialized:
-                return False
-            if len(states.undo_states) != undo_len:
-                return False
+            Params:
+                current_section (int): the section the user is on
+            Returns:
+                (3D undo possible, 2D undo possible, 3D and 2D undo are linked)
+        """
+        if current_section is None:
+            current_section = self.series.current_section
+        current_states = self[current_section]
+        # neither section nor series undo is populated
+        if not self.undos and not current_states.undo_states:
+            return (False, False, False)
+        # only section undo populated
+        if not self.undos and current_states.undo_states:
+            return (False, True, False)
+        # series undo is populated
+        if self.undos:
+            undo_lens = self.undos[-1].undo_lens
+            breakable = self.undos[-1].breakable
+            # check if state numbers match on all sections
+            all_sections_match = True
+            for snum, undo_len in undo_lens.items():
+                states = self[snum]
+                if not states.initialized or len(states.undo_states) != undo_len:
+                    all_sections_match = False
+                    break
+            # check if state numbers match on the current section
+            current_section_match = bool(
+                current_section in undo_lens and 
+                len(current_states.undo_states) == undo_lens[current_section]
+            )
+            # check if user can perform a 2D undo only
+            can_2D = bool(
+                not current_section_match and current_states.undo_states or  # no link and section has undo states
+                current_section_match and breakable  # link, but breakable
+            )
+            return (all_sections_match, can_2D, current_section_match)
         
-        return True
+    def canRedo(self, current_section : int = None):
+        """Checks if an redo is possible.
+        
+            Params:
+                current_section (int): the section the user is on
+            Returns:
+                (3D redo possible, 2D redo possible, 3D and 2D redo are linked)
+        """
+        if current_section is None:
+            current_section = self.series.current_section
+        current_states = self[current_section]
+        # neither section nor series redo is populated
+        if not self.redos and not current_states.redo_states:
+            return (False, False, False)
+        # only section redo populated
+        if not self.redos and current_states.redo_states:
+            return (False, True, False)
+        # series redo is populated
+        if self.redos:
+            undo_lens = self.redos[-1].undo_lens
+            breakable = self.redos[-1].breakable
+           # check if state numbers match on all sections
+            all_sections_match = True
+            for snum, undo_len in undo_lens.items():
+                states = self[snum]
+                if not states.initialized or len(states.undo_states) != undo_len - 1:
+                    all_sections_match = False
+                    break
+            # check if state numbers match on the current section
+            current_section_match = bool(
+                current_section in undo_lens and 
+                len(current_states.undo_states) == undo_lens[current_section] - 1
+            )
+            # check if user can perform a 2D redo only
+            can_2D = bool(
+                not current_section_match and bool(current_states.redo_states) or  # no link and section has redo states
+                current_section_match and breakable  # link, but breakable
+            )
 
-    def canRedo(self):
-        """Checks if a series-wide redo is possible."""
-        if not self.redos:
-            return False
-        
-        for snum, undo_len in self.redos[-1].undo_lens.items():
-            states = self[snum]
-            if not states.initialized:
-                return False
-            if len(states.undo_states) != undo_len - 1:
-                return False
-        
-        return True
+            return (all_sections_match, can_2D, current_section_match)
     
     def undoState(self, redo=False):
         """Perform a series-wide undo or redo.
@@ -517,8 +575,13 @@ class SeriesStates():
             Params:
                 redo (bool): True if redo should be performed instead of undo
         """
-        if not redo and not self.canUndo(): return
-        if redo and not self.canRedo(): return
+        if redo:
+            can_3D, can_2D, linked = self.canRedo()
+        else:
+            can_3D, can_2D, linked = self.canUndo()
+        
+        if not can_3D:
+            return
         
         state = self.redos[-1] if redo else self.undos[-1]
         
@@ -545,7 +608,36 @@ class SeriesStates():
             self.undos.append(self.redos.pop())
         else:
             self.redos.append(self.undos.pop())
-    
+        
+    def undoSection(self, section : Section, redo=False):
+        """Undo/redo on a section
+        
+            Params:
+                section (Section): the section to undo/redo on
+                redo (bool): True if redo, False if undo
+        """
+        if redo:
+            can_3D, can_2D, linked = self.canRedo()
+        else:
+            can_3D, can_2D, linked = self.canUndo()
+        
+        if not can_2D:
+            return
+        
+        # check if series undo/redo should be broken
+        if linked:
+            if redo:
+                s = self.redos.pop()
+            else:
+                s = self.undos.pop()
+            if not s.breakable:
+                raise Exception("Trying to dissolve an unbreakable series state")
+                
+        if redo:
+            self.section_states_dict[section.n].redoState(section, self.series)
+        else:
+            self.section_states_dict[section.n].undoState(section, self.series)
+
     def checkOverwrite(self, snum : int):
         """Check if a series undo/redo should be removed.
         

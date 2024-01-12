@@ -498,6 +498,9 @@ class SeriesStates():
         """
         if current_section is None:
             current_section = self.series.current_section
+        if current_section not in self.section_states_dict:
+            return (False, False, False)
+        
         current_states = self[current_section]
         # neither section nor series undo is populated
         if not self.undos and not current_states.undo_states:
@@ -538,6 +541,9 @@ class SeriesStates():
         """
         if current_section is None:
             current_section = self.series.current_section
+        if current_section not in self.section_states_dict:
+            return (False, False, False)
+        
         current_states = self[current_section]
         # neither section nor series redo is populated
         if not self.redos and not current_states.redo_states:

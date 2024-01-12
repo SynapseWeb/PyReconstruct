@@ -463,14 +463,16 @@ class MousePalette():
             s = QSlider(Qt.Horizontal, self.mainwindow)
             s.setMinimum(-100)
             s.setMaximum(100)
-            s.valueChanged.connect(
-                self.setBrightness
-                if option == "brightness" else
-                self.setContrast
-            )
             s.show()
             self.bc_widgets.append((b, s))
         self.placeBCButtons()
+        # connect functions
+        self.bc_widgets[0][1].valueChanged.connect(
+                self.setBrightness
+        )
+        self.bc_widgets[1][1].valueChanged.connect(
+                self.setContrast
+        )
     
     def setBrightness(self, b : int):
         """Set the brightness for the current section."""

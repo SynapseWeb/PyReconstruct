@@ -577,7 +577,7 @@ class MainWindow(QMainWindow):
         # undo/redo
         can_undo_3D, can_undo_2D, _ = self.field.series_states.canUndo(self.field.section.n)
         self.undo_act.setEnabled(can_undo_3D or can_undo_2D)
-        can_redo_3D, can_redo_2D, _ = self.field.series_states.canRedo(self.field.section.n)
+        can_redo_3D, can_redo_2D, _ = self.field.series_states.canUndo(self.field.section.n, redo=True)
         self.redo_act.setEnabled(can_redo_3D or can_redo_2D)
 
         # check clipboard for paste options
@@ -2486,10 +2486,7 @@ class MainWindow(QMainWindow):
             Params:
                 redo (bool): True if redo should be performed
         """
-        if redo:
-            can_3D, can_2D, linked = self.field.series_states.canRedo()
-        else:
-            can_3D, can_2D, linked = self.field.series_states.canUndo()
+        can_3D, can_2D, linked = self.field.series_states.canUndo(redo=redo)
         away_from_field = not isinstance(self.focusWidget(), FieldWidget)
 
         if away_from_field:

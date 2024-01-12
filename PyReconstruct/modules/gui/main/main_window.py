@@ -98,10 +98,8 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
-        try:  # os.getlogin() fails on TACC
-            self.user = os.getlogin()
-        except:
-            self.user = ""
+        self.check_actions_enabled = False
+        self.actions_initialized = False
 
         # create status bar at bottom of window
         self.statusbar = self.statusBar()
@@ -120,12 +118,11 @@ class MainWindow(QMainWindow):
             welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
             self.openSeries(welcome_series)
         
-        self.field.generateView()
-
         # create menu and shortcuts
         self.createMenuBar()
         self.createContextMenus()
         self.createShortcuts()
+        self.actions_initialized = True
 
         # set the main window as the parent of the progress bar
         setMainWindow(self)
@@ -508,6 +505,10 @@ class MainWindow(QMainWindow):
                 context_menu (bool): True if context menu is being generated
                 clicked_trace (Trace): the trace that was clicked on IF the cotext menu is being generated
         """
+        # skip if actions not initialized yet
+        if not self.actions_initialized:
+            return
+        
         # if both traces and ztraces are highlighted or nothing is highlighted, only allow general field options
         if not (bool(self.field.section.selected_traces) ^ 
                 bool(self.field.section.selected_ztraces)
@@ -759,7 +760,6 @@ class MainWindow(QMainWindow):
                 return
         
         QSettings("KHLab", "PyReconstruct").setValue("username", new_name)
-        self.user = new_name
         self.series.user = new_name
     
     def setFillOpacity(self, opacity : float = None):
@@ -932,9 +932,6 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
-        
-        # set the user for the series
-        self.series.user = self.user
     
     def newSeries(
         self,

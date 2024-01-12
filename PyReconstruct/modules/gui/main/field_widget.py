@@ -228,10 +228,7 @@ class FieldWidget(QWidget, FieldView):
             generate_traces,
             blend=self.blend_sections
         )
-        try:
-            self.mainwindow.checkActions()
-        except AttributeError:
-            pass
+        self.mainwindow.checkActions()
         if update:
             self.update()
     

@@ -61,8 +61,6 @@ class MainWindow(QMainWindow):
         super().__init__() # initialize QMainWindow
         self.setWindowTitle("PyReconstruct")
 
-        print("test1")
-
         # catch all exceptions and display error message
         def customExcepthook(exctype, value, traceback):
             """

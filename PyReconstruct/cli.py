@@ -25,7 +25,7 @@ def update():
         "install", 
         "--force-reinstall", 
         "--no-deps",
-        "git+https://github.com/SynapseWeb/PyReconstruct.git"
+        "git+https://github.com/SynapseWeb/PyReconstruct.git@neu466g"
     ])
 
 if __name__ == '__main__':

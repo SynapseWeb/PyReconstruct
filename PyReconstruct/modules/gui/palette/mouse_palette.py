@@ -477,6 +477,8 @@ class MousePalette():
     def setBrightness(self, b : int):
         """Set the brightness for the current section."""
         b = round((b/100) ** 2 * 100) * (-1 if b < 0 else 1)
+        if b == self.mainwindow.field.section.brightness:
+            return
         self.mainwindow.field.section_layer.setBrightness(b)
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)
@@ -485,6 +487,8 @@ class MousePalette():
     def setContrast(self, c : int):
         """Set the contrast for the current section."""
         c = round((c/100) ** 2 * 100) * (-1 if c < 0 else 1)
+        if c == self.mainwindow.field.section.contrast:
+            return
         self.mainwindow.field.section_layer.setContrast(c)
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)

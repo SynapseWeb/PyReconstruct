@@ -55,8 +55,6 @@ class FieldWidget(QWidget, FieldView):
         self.mainwindow = mainwindow
         self.setMouseTracking(True)
 
-        print("test2")
-
         # enable touch gestures
         Qt.WA_AcceptTouchEvents = True
         gestures = [Qt.GestureType.PinchGesture]

@@ -2492,12 +2492,14 @@ class MainWindow(QMainWindow):
         if away_from_field:
             if can_3D:
                 self.field.series_states.undoState(redo)
+                self.field.refreshTables()
                 self.field.reload()
         else:
             if can_2D and not linked:
                 self.field.undoState(redo)
             elif not can_2D and linked:
                 self.field.series_states.undoState(redo)
+                self.field.refreshTables()
                 self.field.reload()
             elif can_2D and linked:
                 if can_3D:
@@ -2512,6 +2514,7 @@ class MainWindow(QMainWindow):
 
                     if response == QMessageBox.Yes:
                         self.field.series_states.undoState(redo)
+                        self.field.refreshTables()
                         self.field.reload()
                     elif response == QMessageBox.No:
                         self.field.undoState(redo)

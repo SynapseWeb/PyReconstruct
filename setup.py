@@ -20,7 +20,7 @@ INSTALL_REQUIRES = [
       'opencv-python',
       'numpy',
       'scikit-image',
-      'trimesh',
+      'trimesh==3.18.1',
       'vedo',
       'zarr',
       'lxml'

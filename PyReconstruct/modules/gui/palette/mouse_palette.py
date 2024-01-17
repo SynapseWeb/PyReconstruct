@@ -653,7 +653,8 @@ class MousePalette():
     
     def modifyFlag(self):
         """Modify the default flag."""
-        show_flags = self.series.getOption("show_flag")
+        show_flags = self.series.getOption("show_flags")
+        print(show_flags)
         structure = [
             ["Default name:", ("text", self.series.getOption("flag_name"))],
             ["Default color:", ("color", self.series.getOption("flag_color"))],

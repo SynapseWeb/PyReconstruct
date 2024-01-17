@@ -245,11 +245,8 @@ class Section():
             Params:
                 update_series_data (bool): True if series data object should be updated
         """
-        try:
-            if os.path.samefile(self.filepath, os.path.join(assets_dir, "welcome_series", "welcome.0")):
-                return  # ignore welcome series
-        except FileNotFoundError:
-            pass
+        if self.series.isWelcomeSeries():
+            return
 
         # update the series data
         if update_series_data:

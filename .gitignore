@@ -7,7 +7,7 @@ PyReconstruct.egg-info/
 *.pyc
 run_julian.sh
 convert_to_zarr.sh
-venv/
+fix_field_tags.sh
 pyrightconfig.json
 testing/
 misc/legacy_recon_src/

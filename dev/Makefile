@@ -5,7 +5,7 @@ CONDA_BASE = $(shell conda info --base)
 CONDA_INIT = . $(CONDA_BASE)/etc/profile.d/conda.sh ; conda activate
 
 # Environment vars
-ENV_NAME = pyrecon_dev_20240117
+ENV_NAME = pyrecon_dev
 ENV_DIR = $(CONDA_BASE)/envs/$(ENV_NAME)
 ENV_YAML = environment_dev.yaml
 

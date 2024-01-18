@@ -11,7 +11,7 @@ ENV_YAML = environment_dev.yaml
 export ENV_DIR
 
 # Other
-LINK_SCRIPTS = . ./link_shell.sh $(ENV_DIR)
+LINK_SCRIPTS = . ./link_shell.sh
 SHOW_HELP = cat make_help.txt | awk '{gsub("<<<ENV>>>","$(ENV_NAME)",$$0); print $$0}'
 
 #### HELP #################################################################################

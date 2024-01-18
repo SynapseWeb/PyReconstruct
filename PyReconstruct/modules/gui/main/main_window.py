@@ -2541,8 +2541,9 @@ class MainWindow(QMainWindow):
     
     def displayShortcuts(self):
         """Display the shortcuts."""
-        if not self.shortcuts_widget or self.shortcuts_widget.closed:
-            self.shortcuts_widget = HelpWidget("shortcuts")
+        if self.shortcuts_widget and not self.shortcuts_widget.closed:
+            self.shortcuts_widget.close()
+        self.shortcuts_widget = HelpWidget("shortcuts")
     
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""

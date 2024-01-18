@@ -20,7 +20,7 @@ project_dir = Path(__file__).parents[4]
 sys.path.append(str(project_dir))
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, borderToWindow
+from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, groupsToVolume
 
 
 parser = argparse.ArgumentParser(prog="create_ng_zarr", description=__doc__)
@@ -30,11 +30,11 @@ parser.add_argument('jser', type=str, nargs='?', help="Filepath of a valid jser 
 
 # optional args
 parser.add_argument('--config', "-c", type=str, help="filepath to a toml config file")
-parser.add_argument("--height", "-y", type=float, default=2.0, help='height in μm (default %(default)s μm)')
-parser.add_argument("--width", "-x", type=float, default=2.0, help='width in μm (default %(default)s μm)')
-parser.add_argument("--sections", "-s", type=int, default=50, help='number of sections to include (default %(default)s sections)')
+## parser.add_argument("--height", "-y", type=float, default=2.0, help='height in μm (default %(default)s μm)')
+## parser.add_argument("--width", "-x", type=float, default=2.0, help='width in μm (default %(default)s μm)')
+# ## parser.add_argument("--sections", "-s", type=int, default=50, help='number of sections to include (default %(default)s sections)')
 parser.add_argument("--mag", "-m", type=float, default=0.008, help='output zarr mag in μm/vox (default %(default)s μm/vox)')
-parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
+## parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
 parser.add_argument("--padding", "-p", type=int, default=50, help='padding (px) to include around an object (default %(default)s px')
 parser.add_argument("--groups", "-g", type=str, action='append', nargs="*", default=None, help='PyReconstruct object groups to include as labels (default %(default)s μm/vox)')
 parser.add_argument("--max_tissue", action='store_true', help='Inclue all possible tissue and black space')
@@ -61,7 +61,7 @@ h_out    = float(args.height)
 w_out    = float(args.width)
 secs     = int(args.sections)
 mag      = float(args.mag)
-obj      = args.obj
+##obj      = args.obj
 padding  = int(args.padding)
 get_all  = bool(args.max_tissue)
 
@@ -142,11 +142,11 @@ elif get_most:  # request max amount of tissue
     
     pass
 
-elif obj:  # request zarr around an object
+elif groups:  # request zarr around an object
 
     if padding: padding *= img_mag # convert padding from px to μm
     print(f'padding: {padding}')
-    window = borderToWindow(obj, srange, series, padding)
+    window = groupsToVolume(series, groups, padding)
 
 else:  # default to zarr around image center
 

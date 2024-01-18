@@ -42,7 +42,7 @@ class Section():
         
         Section.updateJSON(section_data, n)  # update any missing attributes
         
-        self.src = section_data["src"]
+        self.src = os.path.basename(section_data["src"])
         self.brightness = section_data["brightness"]
         self.contrast = section_data["contrast"]
         self.mag = section_data["mag"]

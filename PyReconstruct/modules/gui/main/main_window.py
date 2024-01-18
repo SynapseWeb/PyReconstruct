@@ -1717,6 +1717,11 @@ class MainWindow(QMainWindow):
             self.field.section,
             self.field.b_section
         )
+        # clear the section states
+        self.field.series_states.clear()
+        self.field.series_states[self.field.section]
+        if self.field.b_section:
+            self.field.series_states[self.field.b_section]
         
         # save the file
         self.series.saveJser(close=close)

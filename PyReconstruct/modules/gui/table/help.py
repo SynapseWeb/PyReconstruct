@@ -12,7 +12,14 @@ class HelpWidget(QDockWidget):
         if self.mode == "3D":
             self.help_desc = help_3D
         elif self.mode == "shortcuts":
-            self.help_desc = help_shortcuts
+            link = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
+            link_lbl = QLabel(self)
+            link_lbl.setOpenExternalLinks(True)
+            link_lbl.setText(f'<a href="{link}">{link}</a>')
+            self.help_desc = (
+                [("Link to full wiki:", link_lbl), None] + 
+                help_shortcuts
+            )
 
         self.setFloating(True)
         self.setAllowedAreas(Qt.NoDockWidgetArea)
@@ -122,13 +129,7 @@ help_3D = [
     ("Esc", "abort execution and exit python kernel")
 ]
 
-link = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
-link_lbl = QLabel()
-link_lbl.setOpenExternalLinks(True)
-link_lbl.setText(f'<a href="{link}">{link}</a>')
 help_shortcuts = [
-    ("Full wiki:", link_lbl),
-    None,
     "General",
     ('Delete/Backspace', 'Delete selected traces'),
     ('', 'Remove last entered point when polyline tracing or using scissors.'),

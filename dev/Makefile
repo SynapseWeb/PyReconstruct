@@ -8,6 +8,7 @@ CONDA_INIT = . $(CONDA_BASE)/etc/profile.d/conda.sh ; conda activate
 ENV_NAME = pyrecon_dev
 ENV_DIR = $(CONDA_BASE)/envs/$(ENV_NAME)
 ENV_YAML = environment_dev.yaml
+export ENV_DIR
 
 # Other
 LINK_SCRIPTS = . ./link_shell.sh $(ENV_DIR)
@@ -28,12 +29,12 @@ help:
 .PHONY: env
 env:
 	conda env create -f $(ENV_YAML) -n $(ENV_NAME)
-	$(LINK_SCRIPTS)
+	. ./link_shell.sh
 
 .PHONY: update
 update:
 	conda env update -n $(ENV_NAME) -f $(ENV_YAML) --prune
-	$(LINK_SCRIPTS)
+	. ./link_shell.sh
 
 .PHONY: clean
 clean:

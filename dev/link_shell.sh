@@ -1,5 +1,6 @@
 #!/usr/bin/sh
 
+ENV_DIR=$1
 ENV_BIN=$ENV_DIR/bin
 ENV_ETC=$ENV_DIR/etc/conda
 

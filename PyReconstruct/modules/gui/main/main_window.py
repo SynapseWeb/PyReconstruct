@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import webbrowser
 from datetime import datetime
 import json
 import subprocess
@@ -390,7 +391,8 @@ class MainWindow(QMainWindow):
                 "text": "Help",
                 "opts":
                 [
-                    ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts)
+                    ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts),
+                    ("openwiki_act", "Go to online user guide", "", self.openWiki)
                 ]
             }
         ]
@@ -2549,6 +2551,11 @@ class MainWindow(QMainWindow):
         if self.shortcuts_widget and not self.shortcuts_widget.closed:
             self.shortcuts_widget.close()
         self.shortcuts_widget = HelpWidget("shortcuts")
+
+    def openWiki(self):
+        """Open kh lab PyReconstruct public wiki."""
+        wiki_site = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
+        webbrowser.open(wiki_site)
     
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""

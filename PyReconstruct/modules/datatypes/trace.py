@@ -375,14 +375,14 @@ class Trace():
                 new_points (float): the new points for the trace
         """
         r = self.getRadius(tform)
-        xc, yc = self.getCentroid(tform)
+        xc, yc = self.getCentroid()
 
         self.points = new_points
+        self.resize(r)
         # apply reverse transform if applicable
         if tform:
-            self.points = tform.map(self.points, inverted=True)
+            self.points = tform.getLinear().map(self.points, inverted=True)
 
-        self.resize(r)
         self.points = [(x + xc, y + yc) for x, y in self.points]
     
     def getStretched(self, w : float, h : float):

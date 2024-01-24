@@ -172,9 +172,6 @@ class MainWindow(QMainWindow):
                 [
                     ("undo_act", "Undo", "Ctrl+Z", self.undo),
                     ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
-                    # None,
-                    # ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
-                    # ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
@@ -2499,15 +2496,15 @@ class MainWindow(QMainWindow):
         if away_from_field:
             if can_3D:
                 self.field.series_states.undoState(redo)
-                self.field.refreshTables()
                 self.field.reload()
+                self.field.refreshTables()
         else:
             if can_2D and not linked:
                 self.field.undoState(redo)
             elif not can_2D and linked:
                 self.field.series_states.undoState(redo)
-                self.field.refreshTables()
                 self.field.reload()
+                self.field.refreshTables()
             elif can_2D and linked:
                 if can_3D:
                     mbox = QMessageBox(self)
@@ -2521,8 +2518,8 @@ class MainWindow(QMainWindow):
 
                     if response == QMessageBox.Yes:
                         self.field.series_states.undoState(redo)
-                        self.field.refreshTables()
                         self.field.reload()
+                        self.field.refreshTables()
                     elif response == QMessageBox.No:
                         self.field.undoState(redo)
                 else:

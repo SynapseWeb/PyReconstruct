@@ -51,6 +51,10 @@ from PyReconstruct.modules.backend.func import (
     importTransforms,
     importSwiftTransforms
 )
+from PyReconstruct.modules.backend.view import (
+    optimizeSeriesBC,
+    optimizeSectionBC
+)
 from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, borderToWindow
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import welcome_series_dir, assets_dir, img_dir
@@ -233,7 +237,8 @@ class MainWindow(QMainWindow):
                         [
                             ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
                             ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
-                            ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False))
+                            ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False)),
+                            ("optimizebc_act", "Optimize brightness/contrast", "", self.optimizeBC)
                         ]
                     },
                     {
@@ -2565,12 +2570,47 @@ class MainWindow(QMainWindow):
         self.seriesModified()
     
     def allOptions(self):
+        """Display the series options dialog."""
         confirmed = AllOptionsDialog(self, self.series).exec()
-        print(confirmed)
         if confirmed:
             self.field.generateView()
             self.mouse_palette.reset()
-
+    
+    def optimizeBC(self):
+        """Optimize the brightness and contrast of the series."""
+        all_snum = sorted(list(self.series.sections.keys()))
+        structure = [
+            ["Mean (0-255):", ("int", 128, range(256))],
+            ["Standard Devation:", ("float", 60)],
+            [("radio", ("Use full image", True), ("Use current window view only", False))],
+            ["from section", ("int", all_snum[0], all_snum), "to", ("int", all_snum[-1], all_snum)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Optimize Images")
+        if not confirmed:
+            return
+        
+        mean = response[0]
+        std = response[1]
+        full_image = response[2][0][1]
+        s0 = response[3]
+        s1 = response[4]
+        if s0 > s1:
+            notify("Please enter a valid section range.")
+            return
+        
+        if not noUndoWarning():
+            return
+        
+        sections = tuple(range(s0, s1+1))
+        optimizeSeriesBC(
+            self.series, 
+            mean, 
+            std,
+            sections,
+            None if full_image else self.series.window.copy()
+        )
+        self.field.reload()
+        
     def restart(self):
         self.restart_mainwindow = True
 

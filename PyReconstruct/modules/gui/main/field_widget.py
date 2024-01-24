@@ -1863,6 +1863,9 @@ class FieldWidget(QWidget, FieldView):
             self.trace_table_manager.loadSection(self.section)
         if self.flag_table_manager:
             self.flag_table_manager.updateTables()
+    
+    def optimizeBC(self):
+        """Optimize the brightness and contrast on a section."""
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

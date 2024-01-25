@@ -13,3 +13,4 @@ from .quick_dialog import QuickDialog, QuickTabDialog
 from .flag import FlagDialog
 from .file_dialog import FileDialog
 from .all_options import AllOptionsDialog
+from .bc_profiles import BCProfilesDialog

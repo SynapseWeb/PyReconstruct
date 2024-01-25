@@ -43,8 +43,7 @@ class Section():
         Section.updateJSON(section_data, n)  # update any missing attributes
         
         self.src = os.path.basename(section_data["src"])
-        self.brightness = section_data["brightness"]
-        self.contrast = section_data["contrast"]
+        self.bc_profiles = section_data["brightness_contrast_profiles"]
         self.mag = section_data["mag"]
         self.align_locked = section_data["align_locked"]
 
@@ -87,6 +86,22 @@ class Section():
         if self.series.alignment != "no-alignment":
             self.tforms[self.series.alignment] = new_tform
     
+    @property
+    def brightness(self):
+        return self.bc_profiles[self.series.bc_profile][0]
+    @brightness.setter
+    def brightness(self, b):
+        c = self.contrast
+        self.bc_profiles[self.series.bc_profile] = (b, c)
+    
+    @property
+    def contrast(self):
+        return self.bc_profiles[self.series.bc_profile][1]
+    @contrast.setter
+    def contrast(self, c):
+        b = self.brightness
+        self.bc_profiles[self.series.bc_profile] = (b, c)
+    
     # STATIC METHOD
     def updateJSON(section_data, n):
         """Add missing attributes to section JSON.
@@ -103,9 +118,15 @@ class Section():
                 section_data[key] = empty_section[key]
         
         # modify brightness/contrast
-        if abs(section_data["brightness"]) > 100:
-            section_data["brightness"] = 0
-        section_data["contrast"] = int(section_data["contrast"])
+        if "brightness" in section_data and "contrast" in section_data:
+            # fix exact numbers from an older version
+            if abs(section_data["brightness"]) > 100:
+                section_data["brightness"] = 0
+            section_data["contrast"] = int(section_data["contrast"])
+            # move into profiles
+            section_data["brightness_contrast_profiles"] = {
+                "default": (section_data["brightness"], section_data["contrast"])
+            }
 
         # scan contours
         flagged_contours = []
@@ -172,8 +193,7 @@ class Section():
         """
         d = {}
         d["src"] = self.src
-        d["brightness"] = self.brightness
-        d["contrast"] = self.contrast
+        d["brightness_contrast_profiles"] = self.bc_profiles
         d["mag"] = self.mag
         d["align_locked"] = self.align_locked
 
@@ -203,8 +223,9 @@ class Section():
         """Returns a dict representing an empty section."""
         section_data = {}
         section_data["src"] = ""  # image location
-        section_data["brightness"] = 0
-        section_data["contrast"] = 0
+        section_data["brightness_contrast_profiles"] = {
+            "default": (0, 0)
+        }
         section_data["mag"] = 0.00254  # microns per pixel
         section_data["align_locked"] = True
         section_data["thickness"] = 0.05  # section thickness

@@ -32,7 +32,8 @@ from PyReconstruct.modules.gui.dialog import (
     PredictDialog,
     QuickDialog,
     FileDialog,
-    AllOptionsDialog
+    AllOptionsDialog,
+    BCProfilesDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -176,9 +177,6 @@ class MainWindow(QMainWindow):
                 [
                     ("undo_act", "Undo", "Ctrl+Z", self.undo),
                     ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
-                    # None,
-                    # ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
-                    # ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
@@ -272,7 +270,9 @@ class MainWindow(QMainWindow):
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
-                    ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory)
+                    ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
+                    None,
+                    ("bcprofiles_act", "Modify brightness/contrast profiles", "", self.changeBCProfiles)
                 ]
             },
             
@@ -1913,11 +1913,7 @@ class MainWindow(QMainWindow):
         )
     
     def changeAlignment(self):
-        """Open dialog to modify and change alignments.
-        
-            Params:
-                alignment_name (str): the name of the alignment ro switch to
-        """
+        """Open dialog to modify and change alignments."""
         self.saveAllData()
         
         alignments = list(self.field.section.tforms.keys())
@@ -1945,6 +1941,37 @@ class MainWindow(QMainWindow):
             self.field.changeAlignment(alignment_name)
         elif modified:
             self.field.changeAlignment(self.series.alignment)
+    
+    def changeBCProfiles(self):
+        """Open dialog to modify and change brightness/contrast profiles."""
+        self.saveAllData()
+        
+        bc_profiles = list(self.field.section.bc_profiles.keys())
+
+        response, confirmed = BCProfilesDialog(
+            self,
+            bc_profiles,
+            self.series.bc_profile
+        ).exec()
+        if not confirmed:
+            return
+        
+        profile_name, profiles_dict = response
+
+        modified = False
+        if profiles_dict:
+            for k, v in profiles_dict.items():
+                if k != v:
+                    modified = True
+                    break
+            if modified:
+                self.series.modifyBCProfiles(profiles_dict, self.field.series_states)
+                self.field.reload()
+        
+        if profile_name:
+            self.field.changeBCProfile(profile_name)
+        elif modified:
+            self.field.changeBCProfile(self.series.bc_profile)
             
     def calibrateMag(self, trace_lengths : dict = None):
         """Calibrate the pixel size for the series.

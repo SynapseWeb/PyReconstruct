@@ -51,7 +51,7 @@ from PyReconstruct.modules.backend.func import (
     importTransforms,
     importSwiftTransforms
 )
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, borderToWindow
+from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import welcome_series_dir, assets_dir, img_dir
 
@@ -1045,6 +1045,7 @@ class MainWindow(QMainWindow):
             Params:
                 export_fp (str): the filepath for the XML .ser file
         """
+
         # save the current data
         self.saveAllData()
 
@@ -2070,31 +2071,34 @@ class MainWindow(QMainWindow):
 
     def exportToZarr(self):
         """Create a neuroglancer-compatible zarr for autosegmentation."""
-        self.saveAllData()
-        self.removeZarrLayer()
 
-        inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
+        pass  # TODO: Update for new zarring method
+    
+        # self.saveAllData()
+        # self.removeZarrLayer()
 
-        if not dialog_confirmed: return
+        # inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
 
-        border_obj, srange, mag = inputs
+        # if not dialog_confirmed: return
 
-        # convert border obj to window
-        window = borderToWindow(border_obj, srange, self.series)
+        # border_obj, srange, mag = inputs
 
-        print("Making zarr directory...")
+        # # convert border obj to window
+        # window = borderToWindow(border_obj, srange, self.series)
+
+        # print("Making zarr directory...")
         
-        # export to zarr
-        data_fp = seriesToZarr(
-            self.series,
-            srange,
-            mag,
-            window
-        )
+        # # export to zarr
+        # data_fp = seriesToZarr(
+        #     self.series,
+        #     srange,
+        #     mag,
+        #     window
+        # )
 
-        self.series.options["autoseg"]["zarr_current"] = data_fp
+        # self.series.options["autoseg"]["zarr_current"] = data_fp
 
-        print(f"Zarr directory done and located here: {data_fp}")
+        # print(f"Zarr directory done and located here: {data_fp}")
     
     def train(self, retrain=False):
         """Train an autosegmentation model."""

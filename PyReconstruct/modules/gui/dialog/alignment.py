@@ -107,7 +107,7 @@ class AlignmentDialog(QDialog):
         """
         super().__init__(parent)
 
-        self.setWindowTitle("Change Alignment")
+        self.setWindowTitle(" ")
 
         title_text = QLabel(self, text="Switch to Alignment")
 

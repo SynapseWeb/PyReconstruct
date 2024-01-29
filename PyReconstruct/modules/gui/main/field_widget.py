@@ -726,6 +726,10 @@ class FieldWidget(QWidget, FieldView):
         alignment = "Alignment: " + self.series.alignment
         self.status_list.append(alignment)
 
+        # display the brightness/contrast setting
+        bc_profile = "B/C Profile: " + self.series.bc_profile
+        self.status_list.append(bc_profile)
+
         # display mouse position in the field
         x, y = pixmapPointToField(
             self.mouse_x, 
@@ -1863,6 +1867,9 @@ class FieldWidget(QWidget, FieldView):
             self.trace_table_manager.loadSection(self.section)
         if self.flag_table_manager:
             self.flag_table_manager.updateTables()
+    
+    def optimizeBC(self):
+        """Optimize the brightness and contrast on a section."""
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

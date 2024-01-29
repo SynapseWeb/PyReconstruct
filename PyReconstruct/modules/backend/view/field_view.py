@@ -648,6 +648,16 @@ class FieldView():
         # refresh data and tables
         self.refreshTables(refresh_data)
     
+    def changeBCProfile(self, new_profile):
+        """Change the brightness/contrast profile for the series.
+        
+            Params:
+                new_profile (str): the name of the profile to switch to
+        """
+        self.series.bc_profile = new_profile
+        self.mainwindow.mouse_palette.updateBC()
+        self.generateView()
+    
     def translateTform(self, dx : float, dy : float):
         """Translate the transform for the entire section.
             Params:

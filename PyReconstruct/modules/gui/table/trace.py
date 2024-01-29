@@ -151,7 +151,8 @@ class TraceTableWidget(QDockWidget):
                 "opts":
                 [
                     ("columns_act", "Set columns...", "", self.setColumns),
-                    ("export_act", "Export...", "", self.export)
+                    ("export_act", "Export...", "", self.export),
+                    ("exportall_act", "Export all traces in series...", "", self.exportAll)
                 ]
             },
             {
@@ -503,7 +504,21 @@ class TraceTableWidget(QDockWidget):
                 items.append(self.table.item(r, c).text())
             csv_file.write(",".join(items) + "\n")
         # close file
-        csv_file.close()        
+        csv_file.close()
+
+    def exportAll(self):
+        """Export the trace list as a csv file."""
+        # get the location from the user
+        file_path = FileDialog.get(
+            "save",
+            self,
+            "Save List of All Traces",
+            file_name="traces.csv",
+            filter="Comma Separated Values (*.csv)"
+        )
+        if not file_path: return
+
+        self.series.data.exportTracesCSV(file_path)     
     
     def setREFilter(self):
         """Set a new regex filter for the list."""

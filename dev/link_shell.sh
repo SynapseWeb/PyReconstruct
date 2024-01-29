@@ -11,7 +11,7 @@ SHELL_SCRIPTS=$(ls shell)
 
 for script in $SHELL_SCRIPTS ; do
   ENV_SCRIPT=$ENV_BIN/$script
-  if [[ -f $ENV_SCRIPT ]] ; then rm $ENV_SCRIPT ; fi
+  if [ -f $ENV_SCRIPT ] ; then rm $ENV_SCRIPT ; fi
   cp shell/$script $ENV_BIN/
   chmod +x $ENV_SCRIPT
 done

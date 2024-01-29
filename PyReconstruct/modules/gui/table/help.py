@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDockWidget, QTableWidgetItem, QAbstractItemView
+from PySide6.QtWidgets import QDockWidget, QTableWidgetItem, QAbstractItemView, QLabel, QWidget
 from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
@@ -8,10 +8,18 @@ class HelpWidget(QDockWidget):
     def __init__(self, mode):
         """Create a text widget to display 3D options"""
         super().__init__()
-        if mode == "3D":
+        self.mode = mode
+        if self.mode == "3D":
             self.help_desc = help_3D
-        elif mode == "shortcuts":
-            self.help_desc = help_shortcuts
+        elif self.mode == "shortcuts":
+            link = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
+            link_lbl = QLabel(self)
+            link_lbl.setOpenExternalLinks(True)
+            link_lbl.setText(f'<a href="{link}">{link}</a>')
+            self.help_desc = (
+                [("Link to full wiki:", link_lbl), None] + 
+                help_shortcuts
+            )
 
         self.setFloating(True)
         self.setAllowedAreas(Qt.NoDockWidgetArea)
@@ -43,7 +51,10 @@ class HelpWidget(QDockWidget):
         else:
             k, d = key_desc
             self.table.setItem(r, 0, QTableWidgetItem(k))
-            self.table.setItem(r, 1, QTableWidgetItem(d))
+            if type(d) is str:
+                self.table.setItem(r, 1, QTableWidgetItem(d))
+            elif isinstance(d, QWidget):
+                self.table.setCellWidget(r, 1, d)
         self.table.setRowHeight(r, 5)
     
     def createTable(self):
@@ -51,7 +62,7 @@ class HelpWidget(QDockWidget):
         # establish table headers
         self.horizontal_headers = ["Key", "Description"]
 
-        self.table = CopyTableWidget(len(self.help_desc), len(self.horizontal_headers))
+        self.table = CopyTableWidget(len(self.help_desc) + 1, len(self.horizontal_headers))
         self.setWidget(self.table)
 
         # format table
@@ -60,8 +71,8 @@ class HelpWidget(QDockWidget):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
         self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
         self.table.verticalHeader().hide()  # no veritcal header
-        
-        # fill in section data
+
+        # fill in data
         for r, key_desc in enumerate(self.help_desc):
             self.setRow(r, key_desc)
         

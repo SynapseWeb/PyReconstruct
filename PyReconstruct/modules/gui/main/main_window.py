@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import webbrowser
 from datetime import datetime
 import json
 import subprocess
@@ -171,9 +172,6 @@ class MainWindow(QMainWindow):
                 [
                     ("undo_act", "Undo", "Ctrl+Z", self.undo),
                     ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
-                    # None,
-                    # ("seriesundo_act", "Series undo", "", self.field.seriesUndo),
-                    # ("seriesredo_act", "Series redo", "", lambda : self.field.seriesUndo(True)),
                     None,
                     ("cut_act", "Cut", "Ctrl+X", self.field.cut),
                     ("copy_act", "Copy", "Ctrl+C", self.copy),
@@ -390,7 +388,8 @@ class MainWindow(QMainWindow):
                 "text": "Help",
                 "opts":
                 [
-                    ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts)
+                    ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts),
+                    ("openwiki_act", "Go to online user guide", "", self.openWiki)
                 ]
             }
         ]
@@ -1717,6 +1716,11 @@ class MainWindow(QMainWindow):
             self.field.section,
             self.field.b_section
         )
+        # clear the section states
+        self.field.series_states.clear()
+        self.field.series_states[self.field.section]
+        if self.field.b_section:
+            self.field.series_states[self.field.b_section]
         
         # save the file
         self.series.saveJser(close=close)
@@ -2492,15 +2496,15 @@ class MainWindow(QMainWindow):
         if away_from_field:
             if can_3D:
                 self.field.series_states.undoState(redo)
-                self.field.refreshTables()
                 self.field.reload()
+                self.field.refreshTables()
         else:
             if can_2D and not linked:
                 self.field.undoState(redo)
             elif not can_2D and linked:
                 self.field.series_states.undoState(redo)
-                self.field.refreshTables()
                 self.field.reload()
+                self.field.refreshTables()
             elif can_2D and linked:
                 if can_3D:
                     mbox = QMessageBox(self)
@@ -2514,8 +2518,8 @@ class MainWindow(QMainWindow):
 
                     if response == QMessageBox.Yes:
                         self.field.series_states.undoState(redo)
-                        self.field.refreshTables()
                         self.field.reload()
+                        self.field.refreshTables()
                     elif response == QMessageBox.No:
                         self.field.undoState(redo)
                 else:
@@ -2544,6 +2548,11 @@ class MainWindow(QMainWindow):
         if self.shortcuts_widget and not self.shortcuts_widget.closed:
             self.shortcuts_widget.close()
         self.shortcuts_widget = HelpWidget("shortcuts")
+
+    def openWiki(self):
+        """Open kh lab PyReconstruct public wiki."""
+        wiki_site = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
+        webbrowser.open(wiki_site)
     
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""

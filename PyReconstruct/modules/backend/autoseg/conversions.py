@@ -13,12 +13,13 @@ from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.calc import colorize, reducePoints
 
 def setDT():
+    """Set date and time."""
     global dt
     t = datetime.now()
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
 def groupsToVolume(series: Series, groups: list=None, padding: float=None):
-    """Convert a objects in groups into a volume based on max/min x/y/section values.
+    """Convert objects in groups into a volume based on max and min x/y/section values.
 
         Params:
             group_name (str): group to include in zarr
@@ -26,17 +27,19 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
             srange (tuple): the range of sections (exclusive)
             padding (float): padding (μm) to add around object
         Returns:
-           x position, y position, width, height
+           [x position, y position, width, height], [start, end]
     """
     
+    group_objects = []
     x_vals = []
     y_vals = []
-    sec_range = {}
-    group_objects = []
+    sec_range = set()
     
     if groups:
         for group in groups:
             group_objects += series.object_groups.getGroupObjects(group)
+
+    print(f'group_objs: {group_objects}')
     
     for snum, section in series.enumerateSections():
         
@@ -67,9 +70,9 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
         w += (padding * 2)
         h += (padding * 2)
 
-    window = [x, y, w, h, sec_range]
+    window = [x, y, w, h]
 
-    return window
+    return window, sec_range
 
 
 def createZarrName(window):

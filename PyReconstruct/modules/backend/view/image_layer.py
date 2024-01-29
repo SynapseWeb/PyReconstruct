@@ -178,16 +178,10 @@ class ImageLayer():
         """
         # paint to image
         painter = QPainter(image_layer)
-        rgb = round(self.section.brightness * 255/100)
+        b = self.section.brightness / 100
         # different modes for high and low brightness
-        if self.section.brightness >= 0:
-            painter.setCompositionMode(QPainter.CompositionMode_Plus)
-            brightness_color = QColor(*([rgb]*3))
-        else:
-            painter.setCompositionMode(QPainter.CompositionMode_Multiply)
-            brightness_color = QColor(*([255+rgb]*3))
-        painter.setPen(QPen(brightness_color, 0))
-        painter.setBrush(brightness_color)
+        painter.setBrush(Qt.white if b >= 0 else Qt.black)
+        painter.setOpacity(abs(b))
         painter.drawPolygon(self.bc_poly)
         painter.end()
     

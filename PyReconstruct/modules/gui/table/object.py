@@ -574,12 +574,14 @@ class ObjectTableWidget(QDockWidget):
     
     def editComment(self):
         """Edit the comment of the object."""
-        obj_name = self.getSelectedObject()
-        if not obj_name:
-            notify("Please select one object to edit.")
+        obj_names = self.getSelectedObjects()
+        if not obj_names:
             return
         
-        comment = self.series.getAttr(obj_name, "comment")
+        if len(obj_names) == 1:
+            comment = self.series.getAttr(obj_names[0], "comment")
+        else:
+            comment = ""
         new_comment, confirmed = QInputDialog.getText(
             self,
             "Object Comment",
@@ -591,9 +593,10 @@ class ObjectTableWidget(QDockWidget):
         
         self.series_states.addState()
         
-        self.series.setAttr(obj_name, "comment", new_comment)
-        self.series.addLog(obj_name, None, "Edit object comment")
-        self.updateObjects([obj_name])
+        for obj_name in obj_names:
+            self.series.setAttr(obj_name, "comment", new_comment)
+            self.series.addLog(obj_name, None, "Edit object comment")
+        self.updateObjects(obj_names)
 
         self.mainwindow.seriesModified(True)
     

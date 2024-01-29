@@ -29,12 +29,12 @@ help:
 .PHONY: env
 env:
 	conda env create -f $(ENV_YAML) -n $(ENV_NAME)
-	$(LINK_SCRIPTS)
+	. ./link_shell.sh
 
 .PHONY: update
 update:
 	conda env update -n $(ENV_NAME) -f $(ENV_YAML) --prune
-	$(LINK_SCRIPTS)
+	. ./link_shell.sh
 
 .PHONY: clean
 clean:

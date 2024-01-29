@@ -135,5 +135,10 @@ class Transform():
             if abs(n1 - n2) > 1e-6:
                 return False
         return True
+    
+    def getLinear(self):
+        l = self.getList()
+        l[2], l[5] = 0, 0
+        return Transform(l)
 
 

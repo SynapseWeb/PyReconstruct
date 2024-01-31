@@ -33,7 +33,8 @@ from PyReconstruct.modules.gui.dialog import (
     QuickDialog,
     FileDialog,
     AllOptionsDialog,
-    BCProfilesDialog
+    BCProfilesDialog,
+    BackupDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -1759,17 +1760,10 @@ class MainWindow(QMainWindow):
     def manualBackup(self):
         """Back up the series to a specified location."""
         self.saveAllData()
-        d = datetime.now().strftime('%Y%m%d')
-        series_basename = f"{self.series.name}-{d}-{self.series.user}.jser"
 
-        backup_fp = FileDialog.get(
-            "save",
-            self,
-            "Backup Series",
-            file_name=series_basename,
-            filter="Series file (*.jser)"
-        )
-        if not backup_fp: return
+        backup_fp, confirmed = BackupDialog(self, self.series).exec()
+        if not confirmed:
+            return
         
         self.series.saveJser(save_fp=backup_fp)
     

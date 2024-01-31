@@ -93,7 +93,7 @@ help_3D = [
     ("C", "toggle scale cube"),
     ("Up/Down/Left/Right", "move scale cube in XY"),
     ("Ctrl+Up/Down", "move scale cube in Z"),
-    ("Right-click scale cube", "change scale cube size"),
+    ("Shift+C", "change scale cube size"),
     None,
     ("[", "decrease opacity of selected object(s)"),
     ("]", "increase opacity of selected object(s)"),

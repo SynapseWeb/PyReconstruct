@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QAbstractItemView
+    QAbstractItemView,
+    QApplication
 )
 from PySide6.QtCore import Qt
 
@@ -408,7 +409,7 @@ class ObjectTableWidget(QDockWidget):
         self.table = CopyTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
 
         # connect table functions
-        self.table.mouseDoubleClickEvent = self.findFirst
+        self.table.mouseDoubleClickEvent = self.mouseDoubleClickEvent
         self.table.contextMenuEvent = self.objectContextMenu
         self.table.backspace = self.deleteObjects
         self.table.itemChanged.connect(self.checkCurate)
@@ -468,6 +469,16 @@ class ObjectTableWidget(QDockWidget):
         w = event.size().width()
         h = event.size().height()
         self.table.resize(w, h-20)
+    
+    def mouseDoubleClickEvent(self, event):
+        """Called when user double-clicks."""
+        super().mouseDoubleClickEvent(event)
+
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers == Qt.ShiftModifier:
+            self.addTo3D()
+        else:
+            self.findFirst()
     
     def getSelectedObject(self) -> str:
         """Get the name of the object highlighted by the user.

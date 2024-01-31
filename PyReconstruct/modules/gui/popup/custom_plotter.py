@@ -33,8 +33,6 @@ class VPlotter(vedo.Plotter):
         self.add_callback("LeftButtonClick", self.leftButtonClickEvent)
         self.click_time = None
 
-        self.add_callback("RightButtonClick", self.rightButtonClickEvent)
-
         self.help_widget = None
 
     def getSectionFromZ(self, z):
@@ -123,24 +121,6 @@ class VPlotter(vedo.Plotter):
             self.selected_names.append(name)
         
         self.updateSelected()
-    
-    def rightButtonClickEvent(self, event):
-        """Called when the right click button is pressed."""
-        msh = event.actor
-        if not msh or msh.metadata["name"] is None:
-            return
-        name = msh.metadata["name"][0]
-        if name == "Scale Cube":
-            structure = [
-                ["Side length:", ("float", self.sc_side)],
-                ["Color:", ("color", self.sc_color)]
-            ]
-            response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
-            if not confirmed:
-                return
-            self.sc_side, self.sc_color = response
-            self.createScaleCube()
-            self.render()
 
     def _keypress(self, iren, event):
         """Called when a key is pressed."""
@@ -172,6 +152,20 @@ class VPlotter(vedo.Plotter):
             else:
                 self.remove(self.sc)
                 self.sc = None
+        elif key == "Shift+C":
+            if self.sc is None:
+                return
+            
+            structure = [
+                ["Side length:", ("float", self.sc_side)],
+                ["Color:", ("color", self.sc_color)]
+            ]
+            response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
+            if not confirmed:
+                return
+            self.sc_side, self.sc_color = response
+            self.createScaleCube()
+            self.render()
 
         elif key == "Left" and self.sc is not None:
             x, y, z = self.sc.pos()

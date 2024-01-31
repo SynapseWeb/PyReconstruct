@@ -10,6 +10,12 @@ class ObjGroupDict():
         """
         self.groups = {}
         self.objects = {}
+
+        # scan the dictionary for empty groups
+        for group, obj_list in groups.copy().items():
+            if not any(obj_list):
+                del(groups[group])
+
         if groups:
             for group, obj_list in groups.items():
                 for obj in obj_list:

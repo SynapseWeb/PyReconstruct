@@ -355,3 +355,35 @@ class SeriesData():
         for data in self.data["sections"].values():
             c += len(data["flags"])
         return c
+    
+    def exportTracesCSV(self, out_fp : str = None):
+        """Export all of the individual trace data into a CSV file.
+        
+            Params:
+                out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
+        """
+        out_str = "Name,Section,Index,Tags,Length,Area,Radius\n"
+
+        # iterate through all traces
+        for name in sorted(list(self.data["objects"].keys())):
+            for snum in sorted(list(self.series.sections.keys())):
+                trace_list = self.getTraceData(name, snum)
+                if not trace_list:
+                    continue
+                for i, t in enumerate(trace_list):
+                    trace_line = (
+                        f"{name},{snum},{i},{' '.join(t.getTags())}," +
+                        f"{round(t.getLength(), 7)},{round(t.getArea(), 7)}," +
+                        f"{round(t.getRadius(), 7)}\n"
+                    )
+                    out_str += trace_line
+        
+        # export the csv file
+        if out_fp:
+            with open(out_fp, "w") as f:
+                f.write(out_str)
+        else:
+            return out_str
+
+
+

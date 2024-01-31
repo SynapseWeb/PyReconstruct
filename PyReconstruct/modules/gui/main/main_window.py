@@ -32,7 +32,8 @@ from PyReconstruct.modules.gui.dialog import (
     PredictDialog,
     QuickDialog,
     FileDialog,
-    AllOptionsDialog
+    AllOptionsDialog,
+    BCProfilesDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -50,6 +51,9 @@ from PyReconstruct.modules.backend.func import (
     jsonToXML,
     importTransforms,
     importSwiftTransforms
+)
+from PyReconstruct.modules.backend.view import (
+    optimizeSeriesBC
 )
 from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
@@ -230,7 +234,8 @@ class MainWindow(QMainWindow):
                         [
                             ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
                             ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
-                            ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False))
+                            ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False)),
+                            ("optimizebc_act", "Optimize brightness/contrast", "", self.optimizeBC)
                         ]
                     },
                     {
@@ -264,7 +269,9 @@ class MainWindow(QMainWindow):
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
-                    ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory)
+                    ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
+                    None,
+                    ("bcprofiles_act", "Modify brightness/contrast profiles", "", self.changeBCProfiles)
                 ]
             },
             
@@ -1906,11 +1913,7 @@ class MainWindow(QMainWindow):
         )
     
     def changeAlignment(self):
-        """Open dialog to modify and change alignments.
-        
-            Params:
-                alignment_name (str): the name of the alignment ro switch to
-        """
+        """Open dialog to modify and change alignments."""
         self.saveAllData()
         
         alignments = list(self.field.section.tforms.keys())
@@ -1938,6 +1941,37 @@ class MainWindow(QMainWindow):
             self.field.changeAlignment(alignment_name)
         elif modified:
             self.field.changeAlignment(self.series.alignment)
+    
+    def changeBCProfiles(self):
+        """Open dialog to modify and change brightness/contrast profiles."""
+        self.saveAllData()
+        
+        bc_profiles = list(self.field.section.bc_profiles.keys())
+
+        response, confirmed = BCProfilesDialog(
+            self,
+            bc_profiles,
+            self.series.bc_profile
+        ).exec()
+        if not confirmed:
+            return
+        
+        profile_name, profiles_dict = response
+
+        modified = False
+        if profiles_dict:
+            for k, v in profiles_dict.items():
+                if k != v:
+                    modified = True
+                    break
+            if modified:
+                self.series.modifyBCProfiles(profiles_dict, self.field.series_states)
+                self.field.reload()
+        
+        if profile_name:
+            self.field.changeBCProfile(profile_name)
+        elif modified:
+            self.field.changeBCProfile(self.series.bc_profile)
             
     def calibrateMag(self, trace_lengths : dict = None):
         """Calibrate the pixel size for the series.
@@ -2566,12 +2600,47 @@ class MainWindow(QMainWindow):
         self.seriesModified()
     
     def allOptions(self):
+        """Display the series options dialog."""
         confirmed = AllOptionsDialog(self, self.series).exec()
-        print(confirmed)
         if confirmed:
             self.field.generateView()
             self.mouse_palette.reset()
-
+    
+    def optimizeBC(self):
+        """Optimize the brightness and contrast of the series."""
+        all_snum = sorted(list(self.series.sections.keys()))
+        structure = [
+            ["Mean (0-255):", ("int", 128, range(256))],
+            ["Standard Devation:", ("float", 60)],
+            [("radio", ("Use full image", True), ("Use current window view only", False))],
+            ["from section", ("int", all_snum[0], all_snum), "to", ("int", all_snum[-1], all_snum)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Optimize Images")
+        if not confirmed:
+            return
+        
+        mean = response[0]
+        std = response[1]
+        full_image = response[2][0][1]
+        s0 = response[3]
+        s1 = response[4]
+        if s0 > s1:
+            notify("Please enter a valid section range.")
+            return
+        
+        if not noUndoWarning():
+            return
+        
+        sections = tuple(range(s0, s1+1))
+        optimizeSeriesBC(
+            self.series, 
+            mean, 
+            std,
+            sections,
+            None if full_image else self.series.window.copy()
+        )
+        self.field.reload()
+        
     def restart(self):
         self.restart_mainwindow = True
 

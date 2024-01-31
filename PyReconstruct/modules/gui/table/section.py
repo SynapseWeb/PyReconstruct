@@ -95,6 +95,7 @@ class SectionTableWidget(QDockWidget):
                 "opts":
                 [
                     ("setbc_act", "Set brightness/contrast...", "", self.setBC),
+                    ("incbc_acrt", "Increment brightness/contrast...", "", lambda : self.setBC(inc=True)),
                     ("matchbc_act", "Match brightness/contrast to section in view", "", self.matchBC)
                 ]
             },
@@ -242,21 +243,23 @@ class SectionTableWidget(QDockWidget):
             return
         self.manager.lockSections(section_numbers, lock)
     
-    def setBC(self):
+    def setBC(self, inc=False):
         """Set the brightness/contrast for a set of sections."""
         section_numbers = self.getSelectedSections()
         if not section_numbers:
             return
         
+        desc = "increment" if inc else "(-100 - 100)"
+
         structure = [
-            ["Brightness (-100 - 100):", ("int", None, tuple(range(-100, 101)))],
-            ["Contrast (-100 - 100):", ("int", None, tuple(range(-100, 100)))]
+            [f"Brightness {desc}:", ("int", None, tuple(range(-100, 101)))],
+            [f"Contrast {desc}:", ("int", None, tuple(range(-100, 100)))]
         ]
-        response, confirmed = QuickDialog.get(self, structure, "Set brightness/contrast")
+        response, confirmed = QuickDialog.get(self, structure, "Brightness/Contrast")
         if not confirmed:
             return
 
-        self.manager.setBC(section_numbers, *response)
+        self.manager.setBC(section_numbers, *response, inc=inc)
     
     def matchBC(self):
         """Match the brightness/contrast of the selected sections with the current section."""

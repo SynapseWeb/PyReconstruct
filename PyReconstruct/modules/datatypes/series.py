@@ -140,6 +140,8 @@ class Series():
         self.obj_attrs = series_data["obj_attrs"]
         self.ztrace_attrs = series_data["ztrace_attrs"]
 
+        self.bc_profile = series_data["current_brightness_contrast_profile"]
+
         # default settings
         self.modified_ztraces = set()
         self.leave_open = False
@@ -549,6 +551,10 @@ class Series():
                     obj_attrs[obj_name] = {}
                 if "curation" not in obj_attrs[obj_name]:  # do not overwrite existing curation
                     obj_attrs[obj_name]["curation"] = curation
+        
+        # check for brightnes_contrast profile
+        if "current_brightness_contrast_profile" not in series_data:
+            series_data["current_brightness_contrast_profile"] = "default"
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -579,6 +585,8 @@ class Series():
         d["obj_attrs"] = self.obj_attrs
         d["ztrace_attrs"] = self.ztrace_attrs
 
+        d["current_brightness_contrast_profile"] = self.bc_profile
+
         # ADDED SINCE JAN 25TH
         d["options"] = self.options
 
@@ -607,6 +615,7 @@ class Series():
         series_data["alignment"] = "default"
         series_data["object_groups"] = {}
         series_data["ztrace_groups"] = {}
+        series_data["current_brightness_contrast_profile"] = "default"
 
         # ADDED SINCE JAN 25TH
 
@@ -814,6 +823,45 @@ class Series():
                     self.addLog(None, None, f"Create alignment {new_a} from {old_a}")
                 elif old_a in old_tforms and new_a not in old_tforms:
                     self.addLog(None, None, f"Rename alignment {old_a} to {new_a}")
+    
+    def modifyBCProfiles(self, profiles_dict : dict, log_event=True):
+        """Modify the alignments (input from dialog).
+
+        Not suggested for use outside of GUI.
+        
+            Params:
+                profiles_dict (dict): returned from the bc_profiles dialog
+                log_event (bool): True if event should be logged
+        """
+        # change the current alignment if necessary
+        if profiles_dict[self.bc_profile] is None:
+            self.bc_profile = "no-alignment"
+
+        for snum, section in self.enumerateSections(
+            message="Modifying brightness/contrast profiles..."
+        ):
+            old_profiles = section.bc_profiles.copy()
+            new_profiles = {}
+            for new_p, old_p in profiles_dict.items():
+                if old_p is None:
+                    continue
+                elif old_p not in old_profiles:
+                    continue
+                else:
+                    new_profiles[new_p] = old_profiles[old_p]
+            section.bc_profiles = new_profiles
+            section.save()
+        
+        if log_event:
+            for new_p, old_p in profiles_dict.items():
+                if new_p == old_p:
+                    continue
+                if old_p is None and new_p in old_profiles and new_p not in profiles_dict.values():
+                    self.addLog(None, None, f"Delete brightness/contrast profile {new_p}")
+                elif old_p == self.alignment:
+                    self.addLog(None, None, f"Create brightness/contrast profile {new_p} from {old_p}")
+                elif old_p in old_profiles and new_p not in old_profiles:
+                    self.addLog(None, None, f"Rename brightness/contrast profile {old_p} to {new_p}")
     
     def getZValues(self):
         """Return the z-coorindate for each section.

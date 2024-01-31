@@ -13,41 +13,56 @@ from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.calc import colorize, reducePoints
 
 def setDT():
+    """Set date and time."""
     global dt
     t = datetime.now()
     dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
 
-def borderToWindow(border_obj, srange, series: Series, padding: float=None):
-    """Convert a border object into a window based on max/min x/y values.
+def groupsToVolume(series: Series, groups: list=None, padding: float=None):
+    """Convert objects in groups into a volume based on max and min x/y/section values.
 
         Params:
-            border_obj (str): the object to use as the border marking
+            group_name (str): group to include in zarr
             series (Series): a series object
             srange (tuple): the range of sections (exclusive)
             padding (float): padding (μm) to add around object
         Returns:
-           x position, y position, width, height
+           [x position, y position, width, height], [start, end]
     """
     
+    group_objects = []
     x_vals = []
     y_vals = []
+    sec_range = set()
     
-    for snum in range(*srange):
+    if groups:
+        for group in groups:
+            group_objects += series.object_groups.getGroupObjects(group)
+
+    print(f'group_objs: {group_objects}')
+    
+    for snum, section in series.enumerateSections():
         
-        section = series.loadSection(snum)
         tform = section.tform
+
+        # for each object to be included...
+
+        for border_obj in group_objects:
         
-        if border_obj in section.contours:
-            
-            xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
-            
-            x_vals += [xmin, xmax]
-            y_vals += [ymin, ymax]
+            if border_obj in section.contours:
+                
+                xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
+
+                sec_range.add(snum)
+                x_vals += [xmin, xmax]
+                y_vals += [ymin, ymax]
 
     x = min(x_vals)
     w = max(x_vals) - x
     y = min(y_vals)
     h = max(y_vals) - y
+
+    sec_range = [min(sec_range), max(sec_range) + 1]
 
     if padding:
         x -= padding
@@ -57,7 +72,7 @@ def borderToWindow(border_obj, srange, series: Series, padding: float=None):
 
     window = [x, y, w, h]
 
-    return window
+    return window, sec_range
 
 
 def createZarrName(window):

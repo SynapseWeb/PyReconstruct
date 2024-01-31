@@ -75,7 +75,8 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
         image = cv2.imread(fp)
     else:
         slayer = SectionLayer(section, section.series)
-        pixmap_dim = window[2] / section.mag, window[3] / section.mag
+        pixmap_dim = round(window[2] / section.mag), round(window[3] / section.mag)
+        section.brightness, section.contrast = 0, 0  # reset the brightness and contrast
         image = slayer.generateImageArray(pixmap_dim, window)
 
     # get desired brightness and contrast

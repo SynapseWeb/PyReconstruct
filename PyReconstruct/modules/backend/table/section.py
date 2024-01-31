@@ -80,22 +80,31 @@ class SectionTableManager():
         # update the tables
         self.mainwindow.field.refreshTables()
 
-    def setBC(self, section_numbers : list[int], b : int, c : int, log_event=True):
+    def setBC(self, section_numbers : list[int], b : int, c : int, inc=False, log_event=True):
         """Set the brightness and contrast for a set of sections.
         
             Params:
                 section_numbers (list): the list of section numbers to set
                 b (int): the brightness to set
                 c (int): the contrast to set
+                inc (bool): False if value should be added to brightness and contrast instead of setting
         """
         self.mainwindow.saveAllData()
 
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             if b is not None:
-                section.brightness = b
+                if inc:
+                    section.brightness += b
+                else:
+                    section.brightness = b
+                section.brightness = max(-100, min(100, section.brightness))
             if c is not None:
-                section.contrast = c
+                if inc:
+                    section.contrast += c
+                else:
+                    section.contrast = c
+                section.contrast = max(-100, min(100, section.contrast))
             section.save()
             if log_event:
                 self.series.addLog(None, snum, "Modify brightness/contrast")

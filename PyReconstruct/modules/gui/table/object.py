@@ -833,70 +833,45 @@ class ObjectTableWidget(QDockWidget):
     
     def setREFilter(self):
         """Set a new regex filter for the list."""
-        # get a new filter from the user
-        re_filter_str = ", ".join(self.re_filters)
-        new_re_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Objects",
-            "Enter the object filters:",
-            text=re_filter_str
-        )
+        structure = [
+            ["Enter the regex filter(s) below"],
+            [("multitext", self.re_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Regex Filters")
         if not confirmed:
             return
-
-        # get the new regex filter for the set
-        self.re_filters = new_re_filter.split(", ")
-        if self.re_filters == [""]:
-            self.re_filters = [".*"]
-        for i, filter in enumerate(self.re_filters):
-            self.re_filters[i] = filter.replace("#", "[0-9]")
-        self.re_filters = set(self.re_filters)
+        
+        self.re_filters = set(response[0] if response[0] else [".*"])
 
         # call through manager to update self
         self.manager.updateTable(self)
     
     def setGroupFilter(self):
         """Set a new group filter for the list."""
-        # get a new filter from the user
-        group_filter_str = ", ".join(self.group_filters)
-        new_group_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Objects",
-            "Enter the group filters:",
-            text=group_filter_str
-        )
+        structure = [
+            ["Enter the group filter(s) below"],
+            [("multitext", self.group_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Group Filters")
         if not confirmed:
             return
-
-        # get the new group filter for the list
-        self.group_filters = new_group_filter.split(", ")
-        if self.group_filters == [""]:
-            self.group_filters = set()
-        else:
-            self.group_filters = set(self.group_filters)
         
-        # call through manager to update self
+        self.group_filters = set(response[0])
+        
         self.manager.updateTable(self)
     
     def setTagFilter(self):
         """Set a new tag filter for the list."""
         # get a new filter from the user
-        tag_filter_str = ", ".join(self.tag_filters)
-        new_tag_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Objects",
-            "Enter the tag filters:",
-            text=tag_filter_str
-        )
+        structure = [
+            ["Enter the tag filter(s) below"],
+            [("multitext", self.tag_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Tag Filters")
         if not confirmed:
             return
-
-        # get the new tag filter for the list
-        self.tag_filters = new_tag_filter.split(", ")
-        if self.tag_filters == [""]:
-            self.tag_filters = set()
-        else:
-            self.tag_filters = set(self.tag_filters)
+        
+        self.tag_filters = set(response[0])
         
         # call through manager to update self
         self.manager.updateTable(self)
@@ -909,18 +884,15 @@ class ObjectTableWidget(QDockWidget):
                 "check",
                 *((s,c) for s, c in self.cr_status_filter.items())
             )],
-            ["Users (separate with comma and space):"],
-            [("text", ", ".join(self.cr_user_filters))]
+            ["Users:"],
+            [("multitext", self.cr_user_filters)]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Curation Filters")
         if not confirmed:
             return
         
         self.cr_status_filter = dict(response[0])
-        if response[1]:
-            self.cr_user_filters = set(response[1].split(", "))
-        else:
-            self.cr_user_filters = set()
+        self.cr_user_filters = set(response[1])
 
         # call through manager to update self
         self.manager.updateTable(self)

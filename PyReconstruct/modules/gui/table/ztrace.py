@@ -498,23 +498,15 @@ class ZtraceTableWidget(QDockWidget):
     def setREFilter(self):
         """Set a new regex filter for the list."""
         # get a new filter from the user
-        re_filter_str = ", ".join(self.re_filters)
-        new_re_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Ztraces",
-            "Enter the ztrace filters:",
-            text=re_filter_str
-        )
+        structure = [
+            ["Enter the regex filter(s) below"],
+            [("multitext", self.re_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Regex Filters")
         if not confirmed:
             return
-
-        # get the new regex filter for the set
-        self.re_filters = new_re_filter.split(", ")
-        if self.re_filters == [""]:
-            self.re_filters = [".*"]
-        for i, filter in enumerate(self.re_filters):
-            self.re_filters[i] = filter.replace("#", "[0-9]")
-        self.re_filters = set(self.re_filters)
+        
+        self.re_filters = set(response[0] if response[0] else [".*"])
 
         # call through manager to update self
         self.manager.updateTable(self)
@@ -522,22 +514,15 @@ class ZtraceTableWidget(QDockWidget):
     def setGroupFilter(self):
         """Set a new group filter for the list."""
         # get a new filter from the user
-        group_filter_str = ", ".join(self.group_filters)
-        new_group_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Ztraces",
-            "Enter the group filters:",
-            text=group_filter_str
-        )
+        structure = [
+            ["Enter the group filter(s) below"],
+            [("multitext", self.group_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Group Filters")
         if not confirmed:
             return
-
-        # get the new group filter for the list
-        self.group_filters = new_group_filter.split(", ")
-        if self.group_filters == [""]:
-            self.group_filters = set()
-        else:
-            self.group_filters = set(self.group_filters)
+        
+        self.group_filters = set(response[0])
         
         # call through manager to update self
         self.manager.updateTable(self)

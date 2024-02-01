@@ -455,23 +455,15 @@ class FlagTableWidget(QDockWidget):
     def setREFilter(self):
         """Set a new regex filter for the list."""
         # get a new filter from the user
-        re_filter_str = ", ".join(self.re_filters)
-        new_re_filter, confirmed = QInputDialog.getText(
-            self,
-            "Filter Flags",
-            "Enter the flag name filters:",
-            text=re_filter_str
-        )
+        structure = [
+            ["Enter the regex filter(s) below"],
+            [("multitext", self.re_filters)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Regex Filters")
         if not confirmed:
             return
-
-        # get the new regex filter for the set
-        self.re_filters = new_re_filter.split(", ")
-        if self.re_filters == [""]:
-            self.re_filters = [".*"]
-        for i, filter in enumerate(self.re_filters):
-            self.re_filters[i] = filter.replace("#", "[0-9]")
-        self.re_filters = set(self.re_filters)
+        
+        self.re_filters = set(response[0] if response[0] else [".*"])
 
         # call through manager to update self
         self.manager.updateTable(self)

@@ -147,7 +147,7 @@ class PaletteButton(MoveableButton):
             original_radius = self.trace.getRadius()
             self.trace.points = points
             self.trace.resize(original_radius)
-        if tags:
+        if tags is not None:
             self.trace.tags = tags
         fill_mode = list(self.trace.fill_mode)
         style, condition = mode

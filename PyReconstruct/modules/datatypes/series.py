@@ -1700,11 +1700,12 @@ class Series():
         # reorder the sections
         if index in self.sections:
             reorder = dict(
-                (n, n + 1 if n >= index else 0) for n in self.sections
+                (n, n + 1 if n >= index else n) for n in self.sections
             )
         else:
             reorder = dict((n, n) for n in self.sections)
         reorder[max_snum] = index
+        self.reorderSections(reorder, log_event=False)
 
         if log_event:
             self.addLog(None, None, "Insert section")

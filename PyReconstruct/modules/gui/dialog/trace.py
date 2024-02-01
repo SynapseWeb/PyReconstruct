@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from .color_button import ColorButton
 from .shape_button import ShapeButton
 from .helper import resizeLineEdit
+from .quick_dialog import MultiLineEdit
 
 from PyReconstruct.modules.datatypes import Trace
 from PyReconstruct.modules.gui.utils import notify
@@ -108,12 +109,8 @@ class TraceDialog(QDialog):
             shape_row.addWidget(self.shape_input)
             shape_row.addStretch()
 
-        tags_row = QHBoxLayout()
         tags_text = QLabel(self, text="Tags:")
-        self.tags_input = QLineEdit(self)
-        self.tags_input.setText(", ".join(tags))
-        tags_row.addWidget(tags_text)
-        tags_row.addWidget(self.tags_input)
+        self.tags_input = MultiLineEdit(self, tags)
 
         self.selected_input = QCheckBox("Fill when selected")
         if fill_condition in ("selected", "always"):
@@ -183,7 +180,8 @@ class TraceDialog(QDialog):
         vlayout.addLayout(name_row)
         vlayout.addLayout(color_row)
         if self.is_palette: vlayout.addLayout(shape_row)
-        vlayout.addLayout(tags_row)
+        vlayout.addWidget(tags_text)
+        vlayout.addWidget(self.tags_input)
         vlayout.addLayout(style_row)
         vlayout.addWidget(self.selected_input)
         vlayout.addWidget(self.unselected_input)
@@ -243,15 +241,12 @@ class TraceDialog(QDialog):
                 name = None
             trace.name = name
 
+            # color
             color = self.color_input.getColor()
             trace.color = color
 
-            # color
-            tags = self.tags_input.text().split(", ")
-            if tags == [""]:
-                tags = None
-            else:
-                tags = set(tags)
+            # tags
+            tags = set(self.tags_input.getEntries())
             trace.tags = tags
 
             # shape

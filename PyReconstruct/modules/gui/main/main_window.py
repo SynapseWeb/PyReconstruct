@@ -2637,6 +2637,7 @@ class MainWindow(QMainWindow):
             None if full_image else self.series.window.copy()
         )
         self.field.reload()
+        self.field.updateData()
         
     def restart(self):
         self.restart_mainwindow = True

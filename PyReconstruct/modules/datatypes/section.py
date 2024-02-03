@@ -102,6 +102,20 @@ class Section():
         b = self.brightness
         self.bc_profiles[self.series.bc_profile] = (b, c)
     
+    @property
+    def src_fp(self):
+        if self.series.src_dir.endswith("zarr"):
+            return os.path.join(
+                self.series.src_dir,
+                "scale_1",
+                self.src
+            )
+        else:
+            return os.path.join(
+                self.series.src_dir,
+                self.src
+            )
+    
     # STATIC METHOD
     def updateJSON(section_data, n):
         """Add missing attributes to section JSON.

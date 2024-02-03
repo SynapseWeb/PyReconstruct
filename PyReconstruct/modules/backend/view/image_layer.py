@@ -78,7 +78,7 @@ class ImageLayer():
         
         # if saved as normal images
         else:
-            src_path = os.path.join(self.series.src_dir, os.path.basename(self.section.src))
+            src_path = self.section.src_fp
             self.image = QImage(src_path)
             if self.image.isNull():
                 self.image_found = False

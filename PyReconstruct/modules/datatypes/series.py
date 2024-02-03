@@ -83,6 +83,8 @@ class Series():
         "trace_columns": {
             "Index": False,
             "Tags": True,
+            "Hidden": True,
+            "Closed": True,
             "Length": True,
             "Area": True,
             "Radius": True,
@@ -943,12 +945,14 @@ class Series():
         """
         if name:
             del(self.ztraces[ztrace.name])
+            self.modified_ztraces.add(ztrace.name)
             ztrace.name = name
             self.ztraces[name] = ztrace
         if color:
             ztrace.color = color
         
         self.modified = True
+        self.modified_ztraces.add(ztrace.name)
 
         if log_event:
             self.addLog(ztrace.name, None, "Modify ztrace")

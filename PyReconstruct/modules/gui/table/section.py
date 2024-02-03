@@ -138,9 +138,13 @@ class SectionTableWidget(QDockWidget):
         self.table.setItem(r, 1, QTableWidgetItem(
             str(round(section_data["thickness"], 5))
         ))
-        self.table.setItem(r, 2, QTableWidgetItem(
-            "Locked" if section_data["locked"] else "Unlocked"
-        ))
+
+        # checkbox for locked/unlocked
+        item = QTableWidgetItem("")
+        item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+        item.setCheckState(Qt.CheckState.Checked if section_data["locked"] else Qt.CheckState.Unchecked)
+        self.table.setItem(r, 2, item)
+
         self.table.setItem(r, 3, QTableWidgetItem(
             str(section_data["brightness"])
         ))
@@ -191,6 +195,9 @@ class SectionTableWidget(QDockWidget):
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
+
+        # connect checkbox functions
+        self.table.itemChanged.connect(self.checkLock)
     
     def updateSection(self, snum : int):
         """Update the tables for a single section.
@@ -198,7 +205,6 @@ class SectionTableWidget(QDockWidget):
             Params:
                 snum (int): the section number to update
         """
-
         # iterate through rows to find section number
         for r in range(self.table.rowCount()):
             t = self.table.item(r, 0).text()
@@ -233,12 +239,24 @@ class SectionTableWidget(QDockWidget):
         w = event.size().width()
         h = event.size().height()
         self.table.resize(w, h-20)
+    
+    def checkLock(self, item : QTableWidgetItem):
+        """User checked a lock checkbox."""
+        snum = int(self.table.item(item.row(), 0).text())
+        lock = item.checkState() == Qt.CheckState.Checked
+        self.lockSections(lock, section_numbers=[snum])
 
     # RIGHT CLICK FUNCTIONS
 
-    def lockSections(self, lock=True):
-        """Lock or unlock a set of sections."""
-        section_numbers = self.getSelectedSections()
+    def lockSections(self, lock=True, section_numbers=None):
+        """Lock or unlock a set of sections.
+        
+            Params:
+                lock (bool): True if section should be locked
+                section_numbers (list): the list of sections to modify
+        """
+        if section_numbers is None:
+            section_numbers = self.getSelectedSections()
         if not section_numbers:
             return
         self.manager.lockSections(section_numbers, lock)

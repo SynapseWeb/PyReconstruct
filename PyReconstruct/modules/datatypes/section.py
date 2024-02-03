@@ -630,6 +630,30 @@ class Section():
         self.selected_traces = []
 
         return modified
+
+    def closeTraces(self, traces : list = None, closed=True, log_event=True):
+        """Close or open traces.
+
+        (Only meant for GUI use.)
+        
+            Params:
+                traces (list): the traces to modify
+                closed (bool): True if traces should be closed
+                log_event (bool): true if the event should be logged
+        """
+        modified = False
+
+        if not traces:
+            traces = self.selected_traces
+
+        for trace in traces:
+            modified = True
+            trace.closed = closed
+            self.modified_contours.add(trace.name)
+            if log_event:
+                self.series.addLog(trace.name, self.n, "Modify trace(s)")
+        
+        return modified
     
     def unhideAllTraces(self, log_event=True):
         """Unhide all traces on the section.

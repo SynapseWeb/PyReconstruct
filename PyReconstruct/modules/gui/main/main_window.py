@@ -46,7 +46,7 @@ from PyReconstruct.modules.gui.utils import (
     setMainWindow,
     noUndoWarning
 )
-from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, HelpWidget
+from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, HelpWidget, TraceTableWidget
 from PyReconstruct.modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -2523,10 +2523,13 @@ class MainWindow(QMainWindow):
                 redo (bool): True if redo should be performed
         """
         can_3D, can_2D, linked = self.field.series_states.canUndo(redo=redo)
-        away_from_field = not isinstance(self.focusWidget(), FieldWidget)
-
+        fw = self.focusWidget()
+        away_from_field = not (
+            isinstance(fw, FieldWidget) or
+            type(fw.parent().parent()) is TraceTableWidget
+        )
         if away_from_field:
-            if can_3D:
+            if can_3D: 
                 self.field.series_states.undoState(redo)
                 self.field.reload()
                 self.field.refreshTables()

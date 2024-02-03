@@ -6,14 +6,16 @@ from .trace import Trace
 
 class TraceData():
 
-    def __init__(self, trace : Trace, tform : Transform):
+    def __init__(self, trace : Trace, index : int, tform : Transform):
         """Create a trace table item.
         
             Params:
                 trace (Trace): the trace object for the trace
                 tform (Transform): the transform applied to the trace
         """
+        self.index = index
         self.closed = trace.closed
+        self.hidden = trace.hidden
         self.negative = trace.negative
         self.tags = trace.tags
         tformed_points = tform.map(trace.points)
@@ -70,8 +72,9 @@ class ObjectData():
         else:
             tform = section.tforms[alignment]
 
+        i = len(self.traces[section.n])
         self.traces[section.n].append(
-            TraceData(trace, tform)
+            TraceData(trace, i, tform)
         )
     
     def clearSection(self, snum : int):

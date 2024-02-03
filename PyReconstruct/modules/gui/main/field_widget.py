@@ -811,6 +811,9 @@ class FieldWidget(QWidget, FieldView):
         if not confirmed:
             return
         
+        # save the series state
+        self.series_states.addState()
+        
         new_name, new_color = response
         self.series.editZtraceAttributes(
             ztrace,
@@ -818,8 +821,9 @@ class FieldWidget(QWidget, FieldView):
             new_color
         )
 
+        self.updateData()
+
         self.generateView(generate_image=False)
-        self.saveState() 
 
     def setMouseMode(self, mode : int):
         """Set the mode of the mouse.

@@ -6,6 +6,8 @@ from PyReconstruct.modules.datatypes import (
     Section
 )
 
+import sys
+
 class TraceTableManager():
 
     def __init__(self, series : Series, section : Section, mainwindow):
@@ -99,6 +101,17 @@ class TraceTableManager():
         self.mainwindow.field.generateView()
         self.mainwindow.field.saveState()
     
+    def closeTraces(self, traces, closed=True):
+        """Hide/unhide a set of traces.
+        
+            Params:
+                traces (list): the list of traces to modify
+                closed (bool): True if traces should be closed
+        """
+        self.mainwindow.field.section.closeTraces(traces, closed)
+        self.mainwindow.field.generateView()
+        self.mainwindow.field.saveState()
+    
     def editRadius(self, traces : list, new_rad : float):
         """Edit the radius of a set of traces
         
@@ -136,9 +149,7 @@ class TraceTableManager():
             Params:
                 traces (list): the trace to delete
         """
-        self.mainwindow.field.section.deleteTraces(traces)
-        self.mainwindow.field.generateView(generate_image=False)
-        self.mainwindow.field.saveState()
+        self.mainwindow.field.deleteTraces(traces)
         
     def close(self):
         """Close all tables."""

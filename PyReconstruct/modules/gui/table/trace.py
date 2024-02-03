@@ -54,6 +54,12 @@ class TraceTableWidget(QDockWidget):
 
         # set defaults
         self.columns = self.series.getOption("trace_columns")
+
+        # check for added hidden and closed columns
+        if "hidden" not in self.columns or "closed" not in self.columns:
+            self.columns = Series.qsettings_defaults["trace_columns"]
+            self.series.setOption("trace_columns", self.columns)
+
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -72,7 +78,7 @@ class TraceTableWidget(QDockWidget):
 
         self.show()
     
-    def setRow(self, name : str, index : int, trace_data : TraceData, row : int, resize_columns=True):
+    def setRow(self, name : str, trace_data : TraceData, row : int, resize_columns=True):
         """Populate a row with trace item data.
         
             Params:
@@ -83,14 +89,32 @@ class TraceTableWidget(QDockWidget):
         """
         while row > self.table.rowCount()-1:
             self.table.insertRow(self.table.rowCount())
+            self.rows.append(None)
+        self.rows[row] = trace_data
         col = 0
         self.table.setItem(row, col, QTableWidgetItem(name))
         col += 1
         if self.columns["Index"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(index)))
+            self.table.setItem(row, col, QTableWidgetItem(str(trace_data.index)))
             col += 1
         if self.columns["Tags"]:
             self.table.setItem(row, col, QTableWidgetItem(", ".join(trace_data.getTags())))
+            col += 1
+        if self.columns["Hidden"]:
+            self.enable_cb_event = False
+            item = QTableWidgetItem("")
+            item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+            item.setCheckState(Qt.CheckState.Checked if trace_data.hidden else Qt.CheckState.Unchecked)
+            self.table.setItem(row, col, item)
+            self.enable_cb_event = True
+            col += 1
+        if self.columns["Closed"]:
+            self.enable_cb_event = False
+            item = QTableWidgetItem("")
+            item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+            item.setCheckState(Qt.CheckState.Checked if trace_data.closed else Qt.CheckState.Unchecked)
+            self.table.setItem(row, col, item)
+            self.enable_cb_event = True
             col += 1
         if self.columns["Length"]:
             self.table.setItem(row, col, QTableWidgetItem(str(round(trace_data.getLength(), 5))))
@@ -117,6 +141,7 @@ class TraceTableWidget(QDockWidget):
                 i = self.table.item(r, 0)
                 while i and i.text() == name:
                     self.table.removeRow(r)
+                    self.rows.pop(r)
                     i = self.table.item(r, 0)
             
             # insert the new contour data
@@ -133,7 +158,8 @@ class TraceTableWidget(QDockWidget):
                         if union_len == trace_len + filters_len:  # intersection does not exist
                             continue
                     self.table.insertRow(r)
-                    self.setRow(name, r - first_row, trace_data, r)
+                    self.rows.insert(r, None)
+                    self.setRow(name, trace_data, r)
                     modified_rows.append(r)
                     r += 1            
             if resize:
@@ -141,6 +167,23 @@ class TraceTableWidget(QDockWidget):
                 for r in modified_rows:
                     self.table.resizeRowToContents(r)
     
+    def itemChecked(self, item : QTableWidgetItem):
+        """Called when user checks a checkbox in the table."""
+        # prevent recursion
+        if not self.enable_cb_event:
+            return
+        self.enable_cb_event = False
+
+        items = [self.getSelectedItem(item)]
+        c = item.column()
+        value = item.checkState() == Qt.CheckState.Checked
+        if self.horizontal_headers[c] == "Hidden":
+            self.hideTraces(value, items)
+        elif self.horizontal_headers[c] == "Closed":
+            self.closeTraces(value, items)
+
+        self.enable_cb_event = True
+
     def createMenus(self):
         """Create the menu for the trace table widget."""
         # Create menubar menu
@@ -285,6 +328,7 @@ class TraceTableWidget(QDockWidget):
 
         # create the table
         self.table = CopyTableWidget(0, len(self.horizontal_headers))
+        self.rows = []
 
         # connect table functions
         self.table.contextMenuEvent = self.traceContextMenu
@@ -311,21 +355,22 @@ class TraceTableWidget(QDockWidget):
 
         # set table as central widget
         self.main_widget.setCentralWidget(self.table)
+
+        # checkbox for hidden and closed
+        self.table.itemChanged.connect(self.itemChecked)
+        self.enable_cb_event = True
     
-    def getSelectedItem(self):
+    def getSelectedItem(self, item : QTableWidgetItem=None):
         """Get the trace item that is selected by the user."""
-        selected_indeces = self.table.selectedIndexes()
-        if len(selected_indeces) != 1:
-            return
+        if item is None:
+            selected_indeces = self.table.selectedIndexes()
+            if len(selected_indeces) != 1:
+                return
+            item = selected_indeces[0]
         
-        r = selected_indeces[0].row()
+        r = item.row()
         name = self.table.item(r, 0).text()
-        # iterate backwards to get index
-        index = 0
-        r -= 1
-        while r >= 0 and self.table.item(r, 0).text() == name:
-            r -= 1
-            index += 1
+        index = self.rows[r].index
         return name, index
     
     def getSelectedItems(self):
@@ -338,12 +383,7 @@ class TraceTableWidget(QDockWidget):
         for i in selected_indeces:
             r = i.row()
             name = self.table.item(r, 0).text()
-            # iterate backwards to get index
-            index = 0
-            r -= 1
-            while r >= 0 and self.table.item(r, 0).text() == name:
-                r -= 1
-                index += 1
+            index = self.rows[r].index
             selected_traces.append((name, index))
         
         return selected_traces
@@ -381,18 +421,35 @@ class TraceTableWidget(QDockWidget):
         )
         self.manager.update()
     
-    def hideTraces(self, hide=True):
+    def hideTraces(self, hide=True, items=None):
         """Hide a set of traces.
         
             Params:
                 hide (bool): True if the traces should be hidden
+                items (list): the specific items indicating the traces to modify
         """
-        items = self.getSelectedItems()
         if items is None:
+            items = self.getSelectedItems()
+        if not items:
             return
         
         traces = self.manager.getTraces(items)
         self.manager.hideTraces(traces, hide)
+    
+    def closeTraces(self, closed=True, items=None):
+        """Close a set of traces.
+        
+            Params:
+                closed (bool): True if the traces should be closed
+                items (list): the specific items indicating the traces to modify
+        """
+        if items is None:
+            items = self.getSelectedItems()
+        if not items:
+            return
+        
+        traces = self.manager.getTraces(items)
+        self.manager.closeTraces(traces, closed)
     
     def editRadius(self):
         """Edit the radius for a set of traces."""
@@ -453,6 +510,7 @@ class TraceTableWidget(QDockWidget):
         if not items:
             return
         
+        print("yeet")
         traces = self.manager.getTraces(items)
 
         self.manager.deleteTraces(traces) 

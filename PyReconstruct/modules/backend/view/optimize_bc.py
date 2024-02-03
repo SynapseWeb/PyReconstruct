@@ -66,7 +66,7 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
             window (list): the x, y, w, h window (None if using full images)
     """
     # make sure the image exists
-    fp = os.path.join(section.series.src_dir, section.src)
+    fp = section.src_fp
     if not (os.path.isfile(fp) or os.path.isdir(fp)):
         return
     

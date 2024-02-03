@@ -63,6 +63,7 @@ class TraceTableWidget(QDockWidget):
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
+        self.hide_filter = "all"
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -157,6 +158,12 @@ class TraceTableWidget(QDockWidget):
                         union_len = len(trace_tags.union(self.tag_filters))
                         if union_len == trace_len + filters_len:  # intersection does not exist
                             continue
+                    # check for hidden
+                    if (
+                        (self.hide_filter == "hidden" and not trace_data.hidden) or
+                        (self.hide_filter == "unhidden" and trace_data.hidden)
+                    ):
+                        continue
                     self.table.insertRow(r)
                     self.rows.insert(r, None)
                     self.setRow(name, trace_data, r)
@@ -205,7 +212,8 @@ class TraceTableWidget(QDockWidget):
                 [
                     ("refilter_act", "Regex filter...", "", self.setREFilter),
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
-                    ("tagfilter_act", "Tag filter...", "", self.setTagFilter)
+                    ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
+                    ("hidefilter_act", "Hide filter...", "", self.setHideFilter)
                 ]
             }
         ]
@@ -623,6 +631,27 @@ class TraceTableWidget(QDockWidget):
         
         self.tag_filters = set(response[0])
         
+        # call through manager to update self
+        self.manager.updateTable(self)
+    
+    def setHideFilter(self):
+        """Set the hidden trace filter for the list."""
+        structure = [
+            ["Display:"],
+            [("radio",
+              ("all traces", self.hide_filter == "all"),
+              ("only hidden traces", self.hide_filter == "hidden"),
+              ("only unhidden traces", self.hide_filter == "unhidden")
+            )]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Hide Filter")
+        if not confirmed:
+            return
+        
+        if response[0][0][1]: self.hide_filter = "all"
+        elif response[0][1][1]: self.hide_filter = "hidden"
+        else: self.hide_filter = "unhidden"
+
         # call through manager to update self
         self.manager.updateTable(self)
 

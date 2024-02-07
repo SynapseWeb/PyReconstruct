@@ -464,6 +464,7 @@ class FlagTableWidget(QDockWidget):
             return
         
         self.re_filters = set(response[0] if response[0] else [".*"])
+        self.re_filters = set([s.replace("#", "[0-9]") for s in self.re_filters])
 
         # call through manager to update self
         self.manager.updateTable(self)

@@ -140,6 +140,44 @@ class Series():
         self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
 
         self.obj_attrs = series_data["obj_attrs"]
+
+        # CLASS DEBUG: Scan the attributes and remove teacher comments
+        teacher_comments = [
+            "No mito",
+            "Yes mito",
+            "No mito (pleiomorphic vesicles)",
+            "No mito, SDSA",
+            "cs; perf",
+            "cs; mac",
+            "cs and ef (s63); mac",
+            "cs and ef (s79); mac",
+            "cs and ob (s67); mac",
+            "cs and ef; perf (tricky)",
+            "large perf (cs, ob s115, and ef s109), difficult",
+            "large perf (cs and ef s110), not too difficult",
+            "large perf (cs and ef s108), difficult",
+            "cs(s123 flaw); mac",
+            "cs(s132 en-face); mac",
+            "SER only, No mito",
+            "PR only, No mito",
+            "PR only, Yes mito",
+            "SA only, Yes mito",
+            "SER only. No mito",
+            "PR and SA, No mito",
+            "PR and SA, Yes mito",
+            "SA only, No mito",
+            "2 PR only, No mito",
+            "SA only, No mito",
+            "2 PR only, Yes mito",
+            "SER only, Yes mito",
+            "typical",
+            "multi",
+            "branched"
+        ]
+        for obj_name in self.obj_attrs:
+            if "comment" in self.obj_attrs[obj_name] and self.obj_attrs[obj_name]["comment"] in teacher_comments:
+                del(self.obj_attrs[obj_name]["comment"])
+
         self.ztrace_attrs = series_data["ztrace_attrs"]
 
         self.bc_profile = series_data["current_brightness_contrast_profile"]

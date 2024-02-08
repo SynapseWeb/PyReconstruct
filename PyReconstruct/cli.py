@@ -20,13 +20,8 @@ def open_file(filename):
         print(f"File not found: {filename}")
 
 def update():
-    subprocess.run([
-        "pip", 
-        "install", 
-        "--force-reinstall", 
-        "--no-deps",
-        "git+https://github.com/SynapseWeb/PyReconstruct.git@neu466g"
-    ])
+    cmd = "pip install --force-reinstall --no-deps git+https://github.com/synapseweb/pyreconstruct"
+    subprocess.run(cmd.split(" "))
 
 if __name__ == '__main__':
     main()

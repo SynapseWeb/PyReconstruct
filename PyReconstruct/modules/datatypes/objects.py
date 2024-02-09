@@ -28,20 +28,22 @@ class Objects():
             Params:
                 out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
         """
-        out_str = "Name,Start,End,Count,Flat_Area,Volume,Groups,"
-        out_str += "Trace_Tags,Last_User,Curation_Status,Curation_User,"
-        out_str += "Curation_Date,Alignment,Comment\n"
+        sep = "|"
+        
+        out_str = f"Name{sep}Start{sep}End{sep}Count{sep}Flat_Area{sep}Volume{sep}Groups{sep}"
+        out_str += f"Trace_Tags{sep}Last_User{sep}Curation_Status{sep}Curation_User{sep}"
+        out_str += f"Curation_Date{sep}Alignment{sep}Comment\n"
 
         for obj_name in sorted(self.series.data["objects"].keys()):
-            out_str += f"{obj_name},"
-            out_str += f"{self.series.data.getStart(obj_name)},"
-            out_str += f"{self.series.data.getEnd(obj_name)},"
-            out_str += f"{self.series.data.getCount(obj_name)},"
-            out_str += f"{self.series.data.getFlatArea(obj_name)},"
-            out_str += f"{self.series.data.getVolume(obj_name)},"
-            out_str += f"{':'.join(self.series.object_groups.getObjectGroups(obj_name))},"
-            out_str += f"{':'.join(self.series.data.getTags(obj_name))},"
-            out_str += f"{self.series.getAttr(obj_name, 'last_user')},"
+            out_str += f"{obj_name}{sep}"
+            out_str += f"{self.series.data.getStart(obj_name)}{sep}"
+            out_str += f"{self.series.data.getEnd(obj_name)}{sep}"
+            out_str += f"{self.series.data.getCount(obj_name)}{sep}"
+            out_str += f"{self.series.data.getFlatArea(obj_name)}{sep}"
+            out_str += f"{self.series.data.getVolume(obj_name)}{sep}"
+            out_str += f"{':'.join(self.series.object_groups.getObjectGroups(obj_name))}{sep}"
+            out_str += f"{':'.join(self.series.data.getTags(obj_name))}{sep}"
+            out_str += f"{self.series.getAttr(obj_name, 'last_user')}{sep}"
             curation = self.series.getAttr(obj_name, "curation")
             if curation:
                 status, user, date = tuple(curation)
@@ -51,10 +53,10 @@ class Objects():
                     status = "Needs Curation"
             else:
                 status = user = date = ""
-            out_str += f"{status},{user},{date},"
+            out_str += f"{status}{sep}{user}{sep}{date}{sep}"
             alignment = self.series.getAttr(obj_name, "alignment")
             if not alignment: alignment = ""
-            out_str += f"{alignment},"
+            out_str += f"{alignment}{sep}"
             out_str += f"{self.series.getAttr(obj_name, 'comment')}\n"
             
         if out_fp:

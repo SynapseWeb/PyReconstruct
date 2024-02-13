@@ -22,7 +22,8 @@ from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    notify
+    notify,
+    notifyLocked
 )
 from PyReconstruct.modules.gui.dialog import (
     ObjectGroupDialog,
@@ -60,6 +61,10 @@ class ObjectTableWidget(QDockWidget):
 
         # set defaults
         self.columns = self.series.getOption("object_columns")
+        # check for missing columns
+        if "Locked" not in self.columns:
+            self.columns = Series.qsettings_defaults["object_columns"]
+            self.series.setOption("object_columns", self.columns)
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -164,6 +169,8 @@ class ObjectTableWidget(QDockWidget):
                     ("curated_act", "Curated", "", lambda : self.bulkCurate("Curated"))
                 ]
             },
+            None,
+            ("lockobj_act", "Lock", "", self.lockObjects),
             None,
             {
                 "attr_name": "menu_3D",
@@ -274,6 +281,12 @@ class ObjectTableWidget(QDockWidget):
             tags = self.series.data.getTags(name)
             tags_str = ", ".join(tags)
             self.table.setItem(row, col, QTableWidgetItem(tags_str))
+            col += 1
+        if self.columns["Locked"]:
+            item = QTableWidgetItem("")
+            item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+            item.setCheckState(Qt.CheckState.Checked if self.series.getAttr(name, "locked") else Qt.CheckState.Unchecked)
+            self.table.setItem(row, col, item)
             col += 1
         if self.columns["Last user"]:
             last_user = self.series.getAttr(name, "last_user")
@@ -425,7 +438,7 @@ class ObjectTableWidget(QDockWidget):
         self.table.mouseDoubleClickEvent = self.mouseDoubleClickEvent
         self.table.contextMenuEvent = self.objectContextMenu
         self.table.backspace = self.deleteObjects
-        self.table.itemChanged.connect(self.checkCurate)
+        self.table.itemChanged.connect(self.itemChecked)
 
         # format table
         # self.table.setWordWrap(False)
@@ -493,7 +506,7 @@ class ObjectTableWidget(QDockWidget):
         else:
             self.findFirst()
     
-    def getSelectedObject(self) -> str:
+    def getSelectedObject(self, include_locked=False) -> str:
         """Get the name of the object highlighted by the user.
         
             Returns:
@@ -504,9 +517,17 @@ class ObjectTableWidget(QDockWidget):
             return None
         r = selected_indexes[0].row()
         obj_name = self.table.item(r, 0).text()
-        return obj_name
+        unlocked = True
+        if not include_locked and self.series.getAttr(obj_name, "locked"):
+            unlocked = notifyLocked([obj_name], self.series, self.series_states)
+        
+        if unlocked:
+            self.manager.updateObjects([obj_name])
+            return obj_name
+        else:
+            return None
     
-    def getSelectedObjects(self) -> list[str]:
+    def getSelectedObjects(self, include_locked=False) -> list[str]:
         """Get the name of the objects highlighted by the user.
         
             Returns:
@@ -514,50 +535,82 @@ class ObjectTableWidget(QDockWidget):
         """
         selected_indexes = self.table.selectedIndexes()
         obj_names = []
+        locked_objs = []
         for i in selected_indexes:
             r = i.row()
-            obj_names.append(self.table.item(r, 0).text())
-        return obj_names
+            n = self.table.item(r, 0).text()
+            if not include_locked and self.series.getAttr(n, "locked"):
+                locked_objs.append(n)
+            obj_names.append(n)
+        
+        unlocked = True
+        if locked_objs:
+            unlocked = notifyLocked(locked_objs, self.series, self.series_states)
 
-    def checkCurate(self, item : QTableWidgetItem):
+        if unlocked:
+            self.manager.updateObjects(obj_names)
+            return obj_names
+        else:
+            return None
+
+    def itemChecked(self, item : QTableWidgetItem):
         """User checked a curate checkbox."""
         # check for curation
-        if (not self.process_check_event or 
-            self.curate_column is None or 
-            item.column() != self.curate_column):
+        if not self.process_check_event:
             return
         
-        self.series_states.addState()
+        self.process_check_event = False
 
         r = item.row()
         c = item.column()
         name = self.table.item(r, 0).text()
         state = item.checkState()
-        if state == Qt.CheckState.Unchecked:
-            self.series.setCuration([name], "")
-        elif state == Qt.CheckState.PartiallyChecked:
-            assign_to, confirmed = QInputDialog.getText(
-                self,
-                "Assign to",
-                "Assign curation to username:\n(press enter to leave blank)" 
-            )
-            if not confirmed:
-                item.setCheckState(Qt.CheckState.Unchecked)
-                return
-            self.series.setCuration([name], "Needs curation", assign_to)
-        elif state == Qt.CheckState.Checked:
-            self.series.setCuration([name], "Curated")
-        self.setRow(name, r)
 
-        self.manager.updateObjects([name])
+        # if locked box checked
+        if self.horizontal_headers[c] == "Locked":
+            self.series_states.addState()
+            locked = state == Qt.CheckState.Checked
+            self.series.setAttr(name, "locked", locked)
+            self.setRow(name, r)
+            if locked:
+                self.mainwindow.field.deselectAllTraces()
+            self.mainwindow.seriesModified(True)
+        
+        # curation box checked
+        elif self.horizontal_headers[c] == "CR":
+            if self.series.getAttr(name, "locked"):
+                notify("This object is locked.")
+                self.setRow(name, r)
+                self.manager.updateObjects([name])
+            else:
+                self.series_states.addState()
+                if state == Qt.CheckState.Unchecked:
+                    self.series.setCuration([name], "")
+                elif state == Qt.CheckState.PartiallyChecked:
+                    assign_to, confirmed = QInputDialog.getText(
+                        self,
+                        "Assign to",
+                        "Assign curation to username:\n(press enter to leave blank)" 
+                    )
+                    if not confirmed:
+                        item.setCheckState(Qt.CheckState.Unchecked)
+                        self.process_check_event = True
+                        return
+                    self.series.setCuration([name], "Needs curation", assign_to)
+                elif state == Qt.CheckState.Checked:
+                    self.series.setCuration([name], "Curated")
 
-        self.mainwindow.seriesModified(True)
+                self.setRow(name, r)
+                self.manager.updateObjects([name])
+                self.mainwindow.seriesModified(True)
+        
+        self.process_check_event = True
 
     # RIGHT CLICK FUNCTIONS
 
     def objectContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify objects."""
-        if len(self.table.selectedIndexes()) == 0:
+        if not self.getSelectedObjects():
             return
         self.context_menu.exec(event.globalPos())   
     
@@ -699,13 +752,13 @@ class ObjectTableWidget(QDockWidget):
 
     def addTo3D(self):
         """Generate a 3D view of an object"""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelectedObjects(include_locked=True)
         if obj_names:
             self.mainwindow.addTo3D(obj_names)
     
     def remove3D(self):
         """Remove object(s) from the scene."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelectedObjects(include_locked=True)
         if obj_names:
             self.mainwindow.removeFrom3D(obj_names)
 
@@ -783,7 +836,7 @@ class ObjectTableWidget(QDockWidget):
     
     def viewHistory(self):
         """View the history for a set of objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelectedObjects(include_locked=True)
         if not obj_names:
             return
         
@@ -791,7 +844,7 @@ class ObjectTableWidget(QDockWidget):
     
     def createZtrace(self, cross_sectioned=True):
         """Create a ztrace from selected objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelectedObjects(include_locked=True)
         if not obj_names:
             return
         self.manager.createZtrace(obj_names, cross_sectioned)
@@ -919,14 +972,14 @@ class ObjectTableWidget(QDockWidget):
     
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
-        obj_name = self.getSelectedObject()
+        obj_name = self.getSelectedObject(include_locked=True)
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=True)
     
     def findLast(self):
         """Focus the field on the last occurence of an object in the series."""
-        obj_name = self.getSelectedObject()
+        obj_name = self.getSelectedObject(include_locked=True)
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=False)
@@ -1006,7 +1059,7 @@ class ObjectTableWidget(QDockWidget):
 
         objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
         self.series.object_groups.renameGroup(group, new_group)
-        self.updateObjects(objs_to_update)
+        self.manager.updateObjects(objs_to_update)
     
     def deleteGroup(self):
         """Delete an object group."""
@@ -1023,7 +1076,19 @@ class ObjectTableWidget(QDockWidget):
         if group in self.series.object_groups.getGroupList():
             objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
             self.series.object_groups.removeGroup(group)
-            self.updateObjects(objs_to_update)
+            self.manager.updateObjects(objs_to_update)
+    
+    def lockObjects(self):
+        """Locked the selected objects."""
+        names = self.getSelectedObjects(include_locked=True)
+
+        self.series_states.addState()
+
+        for name in names:
+            self.series.setAttr(name, "locked", True)
+
+        self.manager.updateObjects(names)
+        self.mainwindow.field.deselectAllTraces()
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

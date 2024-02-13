@@ -37,7 +37,7 @@ from PyReconstruct.modules.backend.table import (
     FlagTableManager
 )
 from PyReconstruct.modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
-from PyReconstruct.modules.gui.utils import notify, drawOutlinedText
+from PyReconstruct.modules.gui.utils import notify, drawOutlinedText, notifyLocked
 from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
@@ -867,6 +867,24 @@ class FieldWidget(QWidget, FieldView):
         for c in "{}":
             t.name = t.name.replace(c, "")
         self.tracing_trace = t
+    
+    def usingLocked(self):
+        """Returns true if the current tracing trace is locked."""
+        return self.series.getAttr(self.tracing_trace.name, "locked")
+    
+    def notifyLocked(self, names):
+        """Notify to the user that a trace is locked."""
+        if type(names) is str:
+            names = [names]
+        else:
+            names = set(names)
+
+        unlocked = notifyLocked(names, self.series, self.series_states)
+        
+        if unlocked and self.obj_table_manager:
+            self.obj_table_manager.updateObjects(names)
+
+        return unlocked
 
     def event(self, event):
         """Overwritten from QWidget.event.
@@ -973,6 +991,12 @@ class FieldWidget(QWidget, FieldView):
             self.mousePanzoomPress(event) 
         elif self.mouse_mode == FieldWidget.KNIFE:
             self.knifePress(event)
+        elif self.mouse_mode == FieldWidget.SCISSORS:
+            self.scissorsPress(event)
+        
+        elif self.usingLocked():
+            self.notifyLocked(self.tracing_trace.name)
+
         elif (
             self.mouse_mode == FieldWidget.CLOSEDTRACE or
             self.mouse_mode == FieldWidget.OPENTRACE
@@ -982,8 +1006,6 @@ class FieldWidget(QWidget, FieldView):
             self.stampPress(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridPress(event)
-        elif self.mouse_mode == FieldWidget.SCISSORS:
-            self.scissorsPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -1036,6 +1058,10 @@ class FieldWidget(QWidget, FieldView):
             self.mousePanzoomMove(event)
         elif self.mouse_mode == FieldWidget.KNIFE:
             self.knifeMove(event)
+
+        elif self.usingLocked():
+            pass
+        
         elif (
             self.mouse_mode == FieldWidget.CLOSEDTRACE or
             self.mouse_mode == FieldWidget.OPENTRACE
@@ -1077,21 +1103,25 @@ class FieldWidget(QWidget, FieldView):
 
         if self.mouse_mode == FieldWidget.POINTER:
             self.pointerRelease(event)
-        if self.mouse_mode == FieldWidget.PANZOOM:
+        elif self.mouse_mode == FieldWidget.PANZOOM:
             self.mousePanzoomRelease(event)
+        elif self.mouse_mode == FieldWidget.KNIFE:
+            self.knifeRelease(event)
+        elif self.mouse_mode == FieldWidget.FLAG:
+            self.flagRelease(event)
+
+        elif self.usingLocked():
+            pass
+
         elif (
             self.mouse_mode == FieldWidget.CLOSEDTRACE or
             self.mouse_mode == FieldWidget.OPENTRACE
         ):
             self.traceRelease(event)
-        elif self.mouse_mode == FieldWidget.KNIFE:
-            self.knifeRelease(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampRelease(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridRelease(event)
-        elif self.mouse_mode == FieldWidget.FLAG:
-            self.flagRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -1271,7 +1301,11 @@ class FieldWidget(QWidget, FieldView):
             elif self.selected_trace:
                 # if user selected a normal trace
                 if self.selected_type == "trace":
-                    self.selectTrace(self.selected_trace)
+                    unlocked = True
+                    if self.series.getAttr(self.selected_trace.name, "locked"):
+                        unlocked = self.notifyLocked(self.selected_trace.name)
+                    if unlocked:
+                        self.selectTrace(self.selected_trace)
                 # if user selected a ztrace
                 elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
@@ -1652,6 +1686,9 @@ class FieldWidget(QWidget, FieldView):
                 self.clicked_y
             )
             if self.selected_type == "trace":
+                if self.series.getAttr(self.selected_trace.name, "locked"):
+                    self.notifyLocked(self.selected_trace.name)
+                    return
                 self.is_scissoring = True
                 self.deselectAllTraces()
                 self.section.deleteTraces([self.selected_trace])

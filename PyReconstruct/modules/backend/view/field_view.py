@@ -325,7 +325,7 @@ class FieldView():
         self.series.window = [min_x - range_x/2, min_y - range_y/2, range_x * 2, range_y * 2]
 
         # set the trace as the only selected trace
-        if trace.hidden:
+        if trace.hidden or self.hide_trace_layer or self.series.getAttr(trace.name, "locked"):
             self.section.selected_traces = []
         else:
             self.section.selected_traces = [trace]
@@ -412,8 +412,8 @@ class FieldView():
         # set the selected traces
         self.section.selected_traces = []
         for trace in contour.getTraces():
-            if not trace.hidden:
-                self.section.selected_traces.append(trace)
+            if not trace.hidden and not self.hide_trace_layer:
+                self.section.addSelectedTrace(trace)
 
         self.generateView()
     
@@ -573,7 +573,7 @@ class FieldView():
         if trace in self.section.selected_traces:
             self.section.selected_traces.remove(trace)
         else:
-            self.section.selected_traces.append(trace)
+            self.section.addSelectedTrace(trace)
 
         self.generateView(generate_image=False)
     
@@ -625,7 +625,7 @@ class FieldView():
 
         for trace in traces:
             if trace not in self.section.selected_traces:
-                self.section.selected_traces.append(trace)
+                self.section.addSelectedTrace(trace)
         for ztrace_i in ztraces_i:
             if ztrace_i not in self.section.selected_ztraces:
                 self.section.selected_ztraces.append(ztrace_i)
@@ -960,6 +960,23 @@ class FieldView():
 
         self.generateView()
         self.saveState()
+    
+    def lockObjects(self, names=None):
+        """Lock a set of objects.
+        
+            Params:
+                names (set): the set of names to lock
+        """
+        if names is None:
+            names = set([t.name for t in self.section.selected_traces])
+        
+        self.series_states.addState()
+
+        for name in names:
+            self.series.setAttr(name, "locked", True)
+        if self.obj_table_manager:
+            self.obj_table_manager.updateObjects(names)
+        self.deselectAllTraces()
     
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
 

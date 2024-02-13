@@ -75,6 +75,7 @@ class Series():
             "Volume": False,
             "Groups": True,
             "Trace tags": False,
+            "Locked": True,
             "Last user": True,
             "Curate": False,
             "Alignment": False,
@@ -1740,6 +1741,8 @@ class Series():
                 return ""
             elif attr_name == "alignment":
                 return None
+            elif attr_name == "locked":
+                return False
             else:
                 return
         else:

@@ -361,6 +361,9 @@ class Section():
                 trace (Trace): the trace to add
                 log_event (bool): true if the event should be logged
         """        
+        # do not add trace if locked
+        if self.series.getAttr(trace.name, "locked"):
+            return
         # do not add trace if less than two points
         if len(trace.points) < 2:
             return
@@ -385,6 +388,9 @@ class Section():
                 trace (Trace): the trace to remove from the traces dictionary
                 log_event (bool): true if the event should be logged
         """
+        # do not remove trace if locked
+        if self.series.getAttr(trace.name, "locked"):
+            return
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
             self.removed_traces.append(trace.copy())
@@ -469,7 +475,7 @@ class Section():
             # add trace back to scene and highlight if needed
             self.addTrace(new_trace, log_event=False)
             if selected:
-                self.selected_traces.append(new_trace)
+                self.addSelectedTrace(new_trace)
     
     def editTraceRadius(self, traces : list[Trace], new_rad : float, log_event=True):
         """Change the radius of a trace or set of traces.
@@ -617,7 +623,8 @@ class Section():
         
         (Only meant for GUI use.)
         """
-        self.selected_traces = self.tracesAsList()
+        for trace in self.tracesAsList():
+            self.addSelectedTrace(trace)
     
     def hideTraces(self, traces : list = None, hide=True, log_event=True):
         """Hide traces.
@@ -904,3 +911,15 @@ class Section():
             if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
         
         self.save()
+    
+    def addSelectedTrace(self, trace : Trace):
+        """Add a trace to the selected trace list.
+        
+            Params:
+                trace (Trace): the trace to append to the list.
+        """
+        # check if trace is within locked object
+        if self.series.getAttr(trace.name, "locked"):
+            return
+        
+        self.selected_traces.append(trace)

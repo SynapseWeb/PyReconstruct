@@ -22,7 +22,8 @@ from PyReconstruct.modules.datatypes import (
 )
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
-    populateMenu
+    populateMenu,
+    notify
 )
 from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
@@ -56,7 +57,7 @@ class TraceTableWidget(QDockWidget):
         self.columns = self.series.getOption("trace_columns")
 
         # check for added hidden and closed columns
-        if "hidden" not in self.columns or "closed" not in self.columns:
+        if "Hidden" not in self.columns or "Closed" not in self.columns:
             self.columns = Series.qsettings_defaults["trace_columns"]
             self.series.setOption("trace_columns", self.columns)
 
@@ -181,13 +182,20 @@ class TraceTableWidget(QDockWidget):
             return
         self.enable_cb_event = False
 
-        items = [self.getSelectedItem(item)]
         c = item.column()
-        value = item.checkState() == Qt.CheckState.Checked
-        if self.horizontal_headers[c] == "Hidden":
-            self.hideTraces(value, items)
-        elif self.horizontal_headers[c] == "Closed":
-            self.closeTraces(value, items)
+        state = item.checkState()
+        value = state == Qt.CheckState.Checked
+        name, index = self.getSelectedItem(item)
+
+        if name:
+            items = [(name, index)]
+            if self.horizontal_headers[c] == "Hidden":
+                self.hideTraces(value, items)
+            elif self.horizontal_headers[c] == "Closed":
+                self.closeTraces(value, items)
+        else:
+            item.setCheckState(Qt.CheckState.Unchecked if value else Qt.CheckState.Checked)
+
 
         self.enable_cb_event = True
 
@@ -368,31 +376,45 @@ class TraceTableWidget(QDockWidget):
         self.table.itemChanged.connect(self.itemChecked)
         self.enable_cb_event = True
     
-    def getSelectedItem(self, item : QTableWidgetItem=None):
+    def getSelectedItem(self, item : QTableWidgetItem=None, include_locked=False):
         """Get the trace item that is selected by the user."""
         if item is None:
             selected_indeces = self.table.selectedIndexes()
             if len(selected_indeces) != 1:
-                return
+                return None, None
             item = selected_indeces[0]
         
         r = item.row()
         name = self.table.item(r, 0).text()
         index = self.rows[r].index
+
+        if not include_locked and self.series.getAttr(name, "locked"):
+            unlocked = self.mainwindow.field.notifyLocked(name)
+            if not unlocked:
+                return None, None
+
         return name, index
     
-    def getSelectedItems(self):
+    def getSelectedItems(self, include_locked=False):
         """Get the trace items that iare selected by the user."""
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
             return
         
         selected_traces = []
+        locked_objs = set()
         for i in selected_indeces:
             r = i.row()
             name = self.table.item(r, 0).text()
             index = self.rows[r].index
+            if not include_locked and self.series.getAttr(name, "locked"):
+                locked_objs.add(name)
             selected_traces.append((name, index))
+        
+        if locked_objs:
+            unlocked = self.mainwindow.field.notifyLocked(locked_objs)
+            if not unlocked:
+                return None
         
         return selected_traces
     
@@ -507,7 +529,7 @@ class TraceTableWidget(QDockWidget):
           
     def findTrace(self, event=None):
         """Select a trace on the section."""
-        item = self.getSelectedItem()
+        item = self.getSelectedItem(include_locked=True)
         if item is None:
             return
         self.manager.findTrace(item)
@@ -526,8 +548,9 @@ class TraceTableWidget(QDockWidget):
     
     def traceContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify traces."""
-        if len(self.table.selectedIndexes()) == 0:
+        if not self.getSelectedItems():
             return
+        
         self.context_menu.exec(event.globalPos())
 
     # MENU-RELATED FUNCTIONS

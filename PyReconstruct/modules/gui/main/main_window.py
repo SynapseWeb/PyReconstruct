@@ -425,6 +425,8 @@ class MainWindow(QMainWindow):
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
+                    None,
+                    ("locktrace_act", "Lock object", "", self.field.lockObjects)
                     # None,
                     # ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
                 ]

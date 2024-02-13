@@ -275,3 +275,27 @@ def getProgbar(text, cancel=True, maximum=100):
         progbar = BasicProgbar(text, maximum)
     
     return progbar
+
+def notifyLocked(obj_names, series, series_states):
+    """Open a dialog when the user tries to interact with a locked object."""
+    if len(obj_names) > 1:
+        s = "These objects are locked.\nWould you like to unlock them?"
+    else:
+        s = "This object is locked.\nWould you like to unlock it?"
+    
+    response = QMessageBox.question(
+        mainwindow,
+        "Locked Object",
+        s,
+        QMessageBox.Yes,
+        QMessageBox.No
+    )
+
+    if response == QMessageBox.Yes:
+        series_states.addState()
+        for obj_name in obj_names:
+            series.setAttr(obj_name, "locked", False)
+        return True
+    else:
+        return False
+    

@@ -345,8 +345,8 @@ class Series():
             elif ext == "ser":
                 with open(fp, "r") as f:
                     filedata = json.load(f)
-                # manually remove the log set from the series data
-                del(filedata["log_set"])
+                # manually remove log set from series data if exists
+                if filedata.get("log_set"): del(filedata["log_set"])
                 # add the log_set string to the log
                 log_set_str = str(self.log_set)
                 if log_set_str:

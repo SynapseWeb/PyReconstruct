@@ -219,7 +219,7 @@ class TraceLayer():
         
         # add the trace to the section and select
         self.section.addTrace(new_trace, log_event=log_event)
-        self.section.selected_traces.append(new_trace)
+        self.section.addSelectedTrace(new_trace)
     
     def placeStamp(self, pix_x : int, pix_y : int, trace : Trace):
         """Called when mouse is pressed in stamp mode.
@@ -242,7 +242,7 @@ class TraceLayer():
             rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
             new_trace.add(rtform_point)
         self.section.addTrace(new_trace)
-        self.section.selected_traces.append(new_trace)
+        self.section.addSelectedTrace(new_trace)
     
     def placeGrid(
         self,
@@ -317,7 +317,7 @@ class TraceLayer():
                         rtform_point = tform.map(*field_point, inverted=True)  # fix the coords to image
                         new_trace.add(rtform_point)
                     self.section.addTrace(new_trace)
-                    self.section.selected_traces.append(new_trace)
+                    self.section.addSelectedTrace(new_trace)
         
     def placeFlag(self, title : str, pix_x : int, pix_y : int, color : tuple, comment : str):
         """Create a flag on the section.
@@ -468,7 +468,7 @@ class TraceLayer():
             tform = self.section.tform
             trace.points = [tform.map(*p, inverted=True) for p in trace.points]
             self.section.addTrace(trace)
-            self.section.selected_traces.append(trace)
+            self.section.addSelectedTrace(trace)
     
     def pasteAttributes(self, traces : list[Trace]):
         """Called when the user pressed Ctrl+B."""

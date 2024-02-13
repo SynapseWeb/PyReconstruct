@@ -13,5 +13,6 @@ from .utils import (
     unsavedNotify,
     mainwindow,
     drawOutlinedText,
-    getProgbar
+    getProgbar,
+    notifyLocked
 )

@@ -1550,7 +1550,7 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self, threshold : float, series_states=None, log_event=True):
+    def deleteDuplicateTraces(self, threshold : float, include_locked=False, series_states=None, log_event=True):
         """Delete all duplicate traces in the series (keep tags).
         
             Params:
@@ -1565,6 +1565,8 @@ class Series():
         ):
             found_on_section = False
             for cname in section.contours:
+                if not include_locked and self.getAttr(cname, "locked"):
+                    continue
                 i = 1
                 while i < len(section.contours[cname]):
                     trace1 = section.contours[cname][i]

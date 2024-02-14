@@ -72,7 +72,8 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
     
     # get the image array
     if window is None:
-        image = cv2.imread(fp)
+        image = cv2.imread(fp, cv2.IMREAD_GRAYSCALE)
+        cv2.resize(image, (1024, 1024))
     else:
         slayer = SectionLayer(section, section.series)
         pixmap_dim = round(window[2] / section.mag), round(window[3] / section.mag)

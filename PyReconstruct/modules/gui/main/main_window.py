@@ -2452,15 +2452,17 @@ class MainWindow(QMainWindow):
         """Remove all duplicate traces from the series."""
         self.saveAllData()
 
-        structure = [[
-            "Overlap threshold:", ("float", 0.95, (0, 1))
-        ]]
+        structure = [
+            ["Overlap threshold:", ("float", 0.95, (0, 1))],
+            [("check", ("check locked traces", False))]
+        ]
         response, confirmed = QuickDialog.get(self, structure, "Remove duplicate traces")
         if not confirmed:
             return
         threshold = response[0]
+        include_locked = response[1][0][1]
         
-        removed = self.series.deleteDuplicateTraces(threshold, self.field.series_states)
+        removed = self.series.deleteDuplicateTraces(threshold, include_locked, self.field.series_states)
 
         if removed:
             message = "The following duplicate traces were removed:"
@@ -2535,43 +2537,42 @@ class MainWindow(QMainWindow):
             Params:
                 redo (bool): True if redo should be performed
         """
+        self.saveAllData()
         can_3D, can_2D, linked = self.field.series_states.canUndo(redo=redo)
-        fw = self.focusWidget()
-        away_from_field = not (
-            isinstance(fw, FieldWidget) or
-            type(fw.parent().parent()) is TraceTableWidget
-        )
-        if away_from_field:
-            if can_3D: 
-                self.field.series_states.undoState(redo)
-                self.field.reload()
-                self.field.refreshTables()
-        else:
-            if can_2D and not linked:
-                self.field.undoState(redo)
-            elif not can_2D and linked:
-                self.field.series_states.undoState(redo)
-                self.field.reload()
-                self.field.refreshTables()
-            elif can_2D and linked:
-                if can_3D:
-                    mbox = QMessageBox(self)
-                    mbox.setWindowTitle("Redo" if redo else "Undo")
-                    mbox.setText("This action is linked to multiple sections.\nPlease select how you would like to proceed.")
-                    mbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-                    mbox.setButtonText(QMessageBox.Yes, "All sections")
-                    mbox.setButtonText(QMessageBox.No, "Only this section")
-                    mbox.setButtonText(QMessageBox.Cancel, "Cancel")
-                    response = mbox.exec()
+        def act2D():
+            self.field.undoState(redo)
+        def act3D():
+            self.field.series_states.undoState(redo)
+            self.field.reload()
+            self.field.refreshTables()
 
-                    if response == QMessageBox.Yes:
-                        self.field.series_states.undoState(redo)
-                        self.field.reload()
-                        self.field.refreshTables()
-                    elif response == QMessageBox.No:
-                        self.field.undoState(redo)
-                else:
-                    self.field.undoState(redo)  # automatically break 3D state 
+        # both 3D and 2D possible and they are linked
+        if can_3D and can_2D and linked:
+            mbox = QMessageBox(self)
+            mbox.setWindowTitle("Redo" if redo else "Undo")
+            mbox.setText("This action is linked to multiple sections.\nPlease select how you would like to proceed.")
+            mbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            mbox.setButtonText(QMessageBox.Yes, "All sections")
+            mbox.setButtonText(QMessageBox.No, "Only this section")
+            mbox.setButtonText(QMessageBox.Cancel, "Cancel")
+            response = mbox.exec()
+            if response == QMessageBox.Yes:
+                act3D()
+            elif response == QMessageBox.No:
+                act2D()
+        # both 3D and 2D possible but they are not linked
+        elif can_3D and can_2D and not linked:
+            favor_3D = self.field.series_states.favor3D(redo=redo)
+            if favor_3D:
+                act3D()
+            else:
+                act2D()
+        # only 3D possible
+        elif can_3D:
+            act3D()
+        # only 2D possible
+        elif can_2D:
+            act2D()
     
     def copy(self):
         """Called when Ctrl+C is pressed."""

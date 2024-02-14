@@ -361,9 +361,6 @@ class Section():
                 trace (Trace): the trace to add
                 log_event (bool): true if the event should be logged
         """        
-        # do not add trace if locked
-        if self.series.getAttr(trace.name, "locked"):
-            return
         # do not add trace if less than two points
         if len(trace.points) < 2:
             return
@@ -388,9 +385,6 @@ class Section():
                 trace (Trace): the trace to remove from the traces dictionary
                 log_event (bool): true if the event should be logged
         """
-        # do not remove trace if locked
-        if self.series.getAttr(trace.name, "locked"):
-            return
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
             self.removed_traces.append(trace.copy())

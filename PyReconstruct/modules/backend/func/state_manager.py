@@ -1,5 +1,6 @@
 import os
 import json
+import time
 
 from PyReconstruct.modules.datatypes import (
     Series,
@@ -114,6 +115,9 @@ class FieldState():
 
     def getFlags(self):
         return self.flags.copy()
+    
+    def updateTime(self):
+        self.time = round(time.time()*10)  # keep track of time when added to state list
 
 class SectionStates():
 
@@ -149,7 +153,7 @@ class SectionStates():
         self.initialized = True
     
     def addState(self, section : Section, series : Series):
-        """Add a new undo state (called when an action is performed.
+        """Add a new undo state (called when an action is performed).
         
             Params:
                 section (Section): the section object
@@ -157,6 +161,7 @@ class SectionStates():
         # clear redo states
         self.redo_states = []
         # push current state to undo states
+        self.current_state.updateTime()  # keep track of when added to undos
         self.undo_states.append(self.current_state)
         # get the names of the updated contours
         updated_contours = section.getAllModifiedNames()
@@ -343,6 +348,7 @@ class SeriesState():
 
     def __init__(self, breakable=True):
         """Create a single series state."""
+        self.time = round(time.time() * 10)  # keep track of time
         self.undo_lens = {}  # keep track of individial section undos (these will be populated as the enumerateSections loop progresses)
         self.series_attrs = {}
         self.breakable = breakable
@@ -547,6 +553,27 @@ class SeriesStates():
                 )  # no link to unbreakable set and section has undo states
             )
             return (all_sections_match, can_2D, current_section_match)
+    
+    def favor3D(self, current_section : int = None, redo=False):
+        """If both a 2D and 3D undo are possible and they are not linked, check which one was done more recently.
+        Return True if 3D is more recent (and should be favored)."""
+        if current_section is None:
+            current_section = self.series.current_section
+        
+        can_3D, can_2D, linked = self.canUndo(current_section, redo)
+        if can_3D and can_2D and not linked:
+            if redo:
+                state_3D = self.redos[-1]
+                state_2D = self[current_section].redo_states[-1]
+            else:
+                state_3D = self.undos[-1]
+                state_2D = self[current_section].undo_states[-1]
+            if state_3D.time > state_2D.time:
+                return True
+            else:
+                return False
+        else:
+            return None
     
     def undoState(self, redo=False):
         """Perform a series-wide undo or redo.

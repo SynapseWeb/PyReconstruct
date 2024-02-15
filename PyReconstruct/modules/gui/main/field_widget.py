@@ -1301,10 +1301,7 @@ class FieldWidget(QWidget, FieldView):
             elif self.selected_trace:
                 # if user selected a normal trace
                 if self.selected_type == "trace":
-                    unlocked = True
-                    if self.series.getAttr(self.selected_trace.name, "locked"):
-                        unlocked = self.notifyLocked(self.selected_trace.name)
-                    if unlocked:
+                    if not self.series.getAttr(self.selected_trace.name, "locked"):
                         self.selectTrace(self.selected_trace)
                 # if user selected a ztrace
                 elif self.selected_type == "ztrace_pt":

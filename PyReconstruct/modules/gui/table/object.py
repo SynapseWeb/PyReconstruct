@@ -546,9 +546,9 @@ class ObjectTableWidget(QDockWidget):
         unlocked = True
         if locked_objs:
             unlocked = notifyLocked(locked_objs, self.series, self.series_states)
+            if unlocked: self.manager.updateObjects(obj_names)
 
         if unlocked:
-            self.manager.updateObjects(obj_names)
             return obj_names
         else:
             return None

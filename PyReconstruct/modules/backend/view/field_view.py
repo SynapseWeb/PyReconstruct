@@ -978,6 +978,21 @@ class FieldView():
             self.obj_table_manager.updateObjects(names)
         self.deselectAllTraces()
     
+    def unlockObject(self, name=None):
+        """Unlock a single object.
+        
+            Params:
+                name (str): the name of the object to unlock
+        """
+        if name is None:
+            name = self.clicked_trace.name
+        
+        self.series_states.addState()
+
+        self.series.setAttr(name, "locked", False)
+        if self.obj_table_manager:
+            self.obj_table_manager.updateObjects([name])
+    
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
 
     def deleteTraces(self, traces=None):

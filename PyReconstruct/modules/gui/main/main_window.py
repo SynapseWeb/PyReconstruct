@@ -424,10 +424,18 @@ class MainWindow(QMainWindow):
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                    None,
-                    ("locktrace_act", "Lock object", "", self.field.lockObjects)
                     # None,
                     # ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
+                ]
+            },
+            None,
+            {
+                "attr_name": "lockmenu",
+                "text": "Lock/Unlock",
+                "opts":
+                [
+                    ("lockobject_act", "Lock object", "", self.field.lockObjects),
+                    ("unlockobject_act", "Unlock object", "", self.field.unlockObject),
                 ]
             },
             {
@@ -488,6 +496,11 @@ class MainWindow(QMainWindow):
             self.mergetraces_act,
             self.makepositive_act,
             self.makenegative_act,
+            self.lockobject_act,
+            self.curatemenu,
+            self.blankcurate_act,
+            self.needscuration_act,
+            self.curated_act,
             self.hidetraces_act,
             self.cut_act,
             self.copy_act,
@@ -566,6 +579,12 @@ class MainWindow(QMainWindow):
             else:
                 self.importlabels_act.setEnabled(False)
                 self.mergelabels_act.setEnabled(False)
+        
+        # check if locked trace was right-clicked
+        if clicked_trace and self.series.getAttr(clicked_trace.name, "locked"):
+            self.unlockobject_act.setEnabled(True)
+        else:
+            self.unlockobject_act.setEnabled(False)
         
         # MENUBAR
 
@@ -2453,7 +2472,7 @@ class MainWindow(QMainWindow):
 
         structure = [
             ["Overlap threshold:", ("float", 0.95, (0, 1))],
-            [("check", ("check locked traces", False))]
+            [("check", ("check locked traces", True))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Remove duplicate traces")
         if not confirmed:

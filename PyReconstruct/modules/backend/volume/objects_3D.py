@@ -1,11 +1,44 @@
 import numpy as np
+from numpy._typing import _Float16Codes
 
 from skimage.draw import polygon
 import trimesh
+from vtkmodules.vtkFiltersGeneral import vtkCountVertices
 
 from PyReconstruct.modules.calc import centroid
 from PyReconstruct.modules.datatypes import Trace, Transform
 
+def exportMesh(tm, output_file, export_type):
+    """Export a trimesh to a file."""
+    with open(output_file, "w") as fp:
+        
+        match export_type:
+            
+            case "obj":
+                
+                with open(output_file, "w") as fp:
+                    fp.write(trimesh.exchange.obj.export_obj(tm))
+                    
+            case "off":
+                
+                with open(output_file, "w") as fp:
+                    fp.write(trimesh.exchange.off.export_off(tm))
+                    
+            case "ply":
+                
+                with open(output_file, "wb") as fp:
+                    fp.write(trimesh.exchange.ply.export_ply(tm))
+                    
+            case "stl":
+                
+                with open(output_file, "wb") as fp:
+                    fp.write(trimesh.exchange.stl.export_stl(tm))
+                    
+            case "dae":
+                
+                with open(output_file, "wb") as fp:
+                    fp.write(trimesh.exchange.dae.export_collada(tm))
+                    
 class Object3D():
 
     def __init__(self, name):
@@ -55,10 +88,10 @@ class Surface(Object3D):
             self.traces[snum]["neg"].append(pts)
         else:
             self.traces[snum]["pos"].append(pts)
-    
-    def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
-        """Generate the numpy array volumes.
-        """
+
+    def generateTrimesh(self, section_mag, section_thickness, alpha=1, smoothing="none"):
+        """Generate a trimesh object from traces."""
+
         # set voxel resolution to arbitrary x times average sections mag
         vres = section_mag * 8
 
@@ -114,23 +147,33 @@ class Surface(Object3D):
         elif smoothing == "laplacian":
             trimesh.smoothing.filter_laplacian(tm)
 
-        faces = tm.faces
-        verts = tm.vertices
-
         # provide real vertex locations
         # (i.e., normalize to real world dimensions)
-        verts[:,:2] *= vres
-        verts[:,0] += xmin
-        verts[:,1] += ymin
-        verts[:,2] += smin
-        verts[:,2] *= section_thickness
+        tm.vertices[:,:2] *= vres
+        tm.vertices[:,0] += xmin
+        tm.vertices[:,1] += ymin
+        tm.vertices[:,2] += smin
+        tm.vertices[:,2] *= section_thickness
+
+        return tm
+
+    def exportTrimesh(self, output_file, export_type, section_mag, section_thickness, alpha=1, smoothing="none"):
+        """Export trimesh object to file."""
+
+        tm = self.generateTrimesh(section_mag, section_thickness, alpha, smoothing)
+        exportMesh(tm, output_file, export_type)
+
+    def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
+        """Generate the openGL mesh for a surface object."""
+
+        tm = self.generateTrimesh(section_mag, section_thickness, alpha, smoothing)
 
         mesh_data = {
             "name": self.name,
             "color": self.color,
             "alpha": alpha,
-            "vertices": verts,
-            "faces": faces
+            "vertices": tm.vertices,
+            "faces": tm.faces
         }
 
         return mesh_data
@@ -156,11 +199,15 @@ class Spheres(Object3D):
         self.addToExtremes(x, y, snum)
 
         self.radii.append(trace.getRadius(tform))
-    
-    def generate3D(self, section_thickness : float, alpha=1):
-        """Generate the opengl meshes for the spheres."""
+
+    def generateTrimesh(self, section_thickness, alpha=1):
+        """Generate trimesh object of spheres."""
+
         verts = []
         faces = []
+
+        all_spheres = []
+        
         for point, radius in zip(
             self.centroids,
             self.radii
@@ -168,15 +215,30 @@ class Spheres(Object3D):
             x, y, s = point
             z = s * section_thickness
             sphere = trimesh.primitives.Sphere(radius=radius, center=(x,y,z), subdivisions=1)
+            all_spheres.append(sphere)
+            
             faces += (sphere.faces + len(verts)).tolist()
             verts += sphere.vertices.tolist()
+        
+        return trimesh.util.concatenate(all_spheres)
+
+    def exportTrimesh(self, output_file, export_type, section_thickness, alpha=1):
+        """Export trimesh sphere(s) to file."""
+
+        tm = self.generateTrimesh(section_thickness, alpha)
+        exportMesh(tm, output_file, export_type)
+            
+    def generate3D(self, section_thickness : float, alpha=1):
+        """Generate the openGL meshes for sphere objects."""
+
+        tm = self.generateTrimesh(section_thickness, alpha)
         
         mesh_data = {
             "name": self.name,
             "color": self.colors[0],
             "alpha": alpha,
-            "vertices": np.array(verts),
-            "faces": np.array(faces)
+            "vertices": np.array(tm.vertices),
+            "faces": np.array(tm.faces)
         }
         
         return mesh_data
@@ -212,10 +274,11 @@ class Contours(Object3D):
         self.traces[snum].append(pts)
     
     def generate3D(self, section_thickness, alpha=1):
-        """Generate trace slabs.
-        """
+        """Generate openGL meshes for trace slabs."""
+        
         verts = []
         faces = []
+        
         for snum in self.traces:
             # get the z values
             z1 = snum * section_thickness

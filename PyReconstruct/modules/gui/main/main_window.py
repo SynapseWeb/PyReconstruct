@@ -57,6 +57,7 @@ from PyReconstruct.modules.backend.view import (
     optimizeSeriesBC
 )
 from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
+from PyReconstruct.modules.backend.volume import export3DObjects
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import welcome_series_dir, assets_dir, img_dir
 
@@ -2502,6 +2503,16 @@ class MainWindow(QMainWindow):
         else:
             self.viewer.removeObjects(obj_names)
         self.viewer.activateWindow()
+
+    def exportAs3D(self, obj_names, export_type, ztraces=False):
+        """Export 3D objects."""
+        self.saveAllData()
+        export_dir = FileDialog.get(
+                "dir",
+                self,
+                "Select folder to export objects to",
+            )
+        export3DObjects(self.series, obj_names, export_dir, export_type)
     
     def toggleCuration(self):
         """Quick shortcut to toggle curation on/off for the tables."""

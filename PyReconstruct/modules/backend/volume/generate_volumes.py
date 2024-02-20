@@ -70,7 +70,7 @@ def generateVolumes(series : Series, obj_names : list):
     # convert snum extremes to z extremes
     extremes[4] *= avg_thickness
     extremes[5] *= avg_thickness
-
+    
     # return list tuples (volume, opengl objects)
     # return global bounding box to set view
     return (

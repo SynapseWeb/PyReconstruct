@@ -172,6 +172,19 @@ class ObjectTableWidget(QDockWidget):
                 [
                     ("addto3D_act", "Add to scene", "", self.addTo3D),
                     ("remove3D_act", "Remove from scene", "", self.remove3D),
+                    {
+                        "attr_name": "Export",
+                        "text": "Export",
+                        "opts":
+                        [
+                            ("export3D_act", "Wavefront (.obj)", "", lambda : self.exportAs3D("obj")),
+                            ("export3D_act", "Object File Format (.off)", "", lambda : self.exportAs3D("off")),
+                            ("export3D_act", "Stanford PLY (.ply)", "", lambda : self.exportAs3D("ply")),
+                            ("export3D_act", "Stl (.stl)", "", lambda : self.exportAs3D("stl")),
+                            ("export3D_act", "Collada (.dae) - requires collada", "", lambda : self.exportAs3D("dae")),
+                        ]
+                        
+                    },
                     None,
                     ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
@@ -695,6 +708,12 @@ class ObjectTableWidget(QDockWidget):
         obj_names = self.getSelectedObjects()
         if obj_names:
             self.mainwindow.removeFrom3D(obj_names)
+
+    def exportAs3D(self, export_type):
+        """Export 3D objects."""
+        obj_names = self.getSelectedObjects()
+        if obj_names:
+            self.mainwindow.exportAs3D(obj_names, export_type)
 
     def addToGroup(self, log_event=True):
         """Add objects to a group."""

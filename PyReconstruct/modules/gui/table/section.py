@@ -328,6 +328,10 @@ class SectionTableWidget(QDockWidget):
         if snum is None:
             return
 
+        if self.series.data["sections"][snum]["locked"]:
+            notify("Cannot change image source for locked sections")
+            return
+
         # get the existing section source
         src = self.series.data["sections"][snum]["src"]
 

@@ -325,9 +325,9 @@ class SectionTableWidget(QDockWidget):
     def editSrc(self):
         """Modify the image source for a single section."""
         snum = self.getSelectedSection()
-        if not snum:
+        if snum is None:
             return
-        
+
         # get the existing section source
         src = self.series.data["sections"][snum]["src"]
 

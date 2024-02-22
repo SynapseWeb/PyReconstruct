@@ -372,7 +372,7 @@ class FlagTableWidget(QDockWidget):
         nf = flag.copy()
         nf.name, nf.color, nf.comments, new_comment, resolved = response
         if new_comment: nf.addComment(self.series.user, new_comment)
-        nf.resolved: nf.resolve(self.series.user, resolved)
+        nf.resolve(self.series.user, resolved)
 
         # keep track of scroll bar position
         vscroll = self.table.verticalScrollBar()

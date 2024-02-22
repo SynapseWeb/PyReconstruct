@@ -171,9 +171,12 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("knife_del_threshold", response[0])
         self.addOptionWidget("knife", structure, setOption)
 
-        # smoothing_3D
+        # 3D
         opt = self.series.getOption("3D_smoothing", use_defaults)
         structure = [
+            ["XY Resolution:"],
+            ["cornered, slow", ("slider", self.series.getOption("3D_xy_res")), "rounded, fast"],
+            [" "],
             ["3D smoothing:"],
             [("radio",
                 ("Laplacian (most smooth)", opt == "laplacian"),
@@ -181,9 +184,10 @@ class AllOptionsDialog(QDialog):
                 ("None (blocky)", opt == "none"))]
         ]
         def setOption(response):
-            if response[0][0][1]:
+            self.series.setOption("3D_xy_res", response[0])
+            if response[1][0][1]:
                 smoothing_alg = "laplacian"
-            elif response[0][1][1]:
+            elif response[1][1][1]:
                 smoothing_alg = "humphrey"
             else:
                 smoothing_alg = "none"

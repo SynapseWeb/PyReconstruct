@@ -52,6 +52,7 @@ class Series():
         "backup_dir": "",
         "left_handed": False,
         # view
+        "3D_xy_res": 100,  # 0-100
         "3D_smoothing": "humphrey",
         "show_ztraces": True,
         "fill_opacity": 0.2,

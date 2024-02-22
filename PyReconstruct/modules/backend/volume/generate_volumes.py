@@ -50,8 +50,13 @@ def generateVolumes(series : Series, obj_names : list):
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
+            # get the vres from the series options
+            vres_min = min(avg_mag, avg_thickness)
+            vres_max = max(avg_mag, avg_thickness)
+            vres_percent = series.getOption("3D_xy_res")
+            vres = vres_min + (vres_percent / 100) * (vres_max - vres_min)
             mesh_data_list.append(obj_3D.generate3D(
-                avg_mag,
+                vres,
                 avg_thickness,
                 opacity,
                 series.getOption("3D_smoothing")

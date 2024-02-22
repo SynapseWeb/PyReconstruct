@@ -89,12 +89,8 @@ class Surface(Object3D):
         else:
             self.traces[snum]["pos"].append(pts)
 
-    def generateTrimesh(self, section_mag, section_thickness, alpha=1, smoothing="none"):
+    def generateTrimesh(self, vres, section_thickness, alpha=1, smoothing="none"):
         """Generate a trimesh object from traces."""
-
-        # set voxel resolution to arbitrary x times average sections mag
-        vres = section_mag * 8
-
         # calculate the dimensions of bounding box for empty array
         xmin, xmax, ymin, ymax, smin, smax = tuple(self.extremes)
         vshape = (
@@ -145,7 +141,7 @@ class Surface(Object3D):
         if smoothing == "humphrey":
             trimesh.smoothing.filter_humphrey(tm)
         elif smoothing == "laplacian":
-            trimesh.smoothing.filter_laplacian(tm)
+            trimesh.smoothing.filter_laplacian(tm, iterations=5)  # limit drift
 
         # provide real vertex locations
         # (i.e., normalize to real world dimensions)
@@ -157,16 +153,16 @@ class Surface(Object3D):
 
         return tm
 
-    def exportTrimesh(self, output_file, export_type, section_mag, section_thickness, alpha=1, smoothing="none"):
+    def exportTrimesh(self, output_file, export_type, vres, section_thickness, alpha=1, smoothing="none"):
         """Export trimesh object to file."""
 
-        tm = self.generateTrimesh(section_mag, section_thickness, alpha, smoothing)
+        tm = self.generateTrimesh(vres, section_thickness, alpha, smoothing)
         exportMesh(tm, output_file, export_type)
 
-    def generate3D(self, section_mag, section_thickness, alpha=1, smoothing="none"):
+    def generate3D(self, vres, section_thickness, alpha=1, smoothing="none"):
         """Generate the openGL mesh for a surface object."""
 
-        tm = self.generateTrimesh(section_mag, section_thickness, alpha, smoothing)
+        tm = self.generateTrimesh(vres, section_thickness, alpha, smoothing)
 
         mesh_data = {
             "name": self.name,

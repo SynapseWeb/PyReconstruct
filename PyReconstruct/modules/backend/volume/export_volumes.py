@@ -71,10 +71,16 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
             case Surface():
 
+                # get the vres from the series options
+                vres_min = min(avg_mag, avg_thickness)
+                vres_max = max(avg_mag, avg_thickness)
+                vres_percent = series.getOption("3D_xy_res")
+                vres = vres_min + (vres_percent / 100) * (vres_max - vres_min)
+
                 obj_3D.exportTrimesh(
                     output_file,
                     export_type,
-                    avg_mag,
+                    vres,
                     avg_thickness,
                     opacity,
                     series.getOption("3D_smoothing"),

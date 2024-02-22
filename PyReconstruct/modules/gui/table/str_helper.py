@@ -13,7 +13,11 @@ class SortStr():
         return False
         
 def lessThan(s1, s2):
-    return SortStr(s1) < SortStr(s2)
+    # check if the names are integers
+    if s1.isnumeric() and s2.isnumeric():
+        return int(s1) < int(s2)
+    else:
+        return SortStr(s1) < SortStr(s2)
 
 def sortList(l):
     ls = [SortStr(s) for s in l]

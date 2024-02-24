@@ -52,8 +52,9 @@ class Series():
         "backup_dir": "",
         "left_handed": False,
         # view
-        "3D_xy_res": 100,  # 0-100
+        "3D_xy_res": 0,  # 0-100
         "3D_smoothing": "humphrey",
+        "smoothing_iterations": 10,
         "show_ztraces": True,
         "fill_opacity": 0.2,
         "find_zoom": 95.0,
@@ -559,6 +560,13 @@ class Series():
         # check for brightnes_contrast profile
         if "current_brightness_contrast_profile" not in series_data:
             series_data["current_brightness_contrast_profile"] = "default"
+        
+        # check for splitting 3D modes
+        for name, data in series_data["obj_attrs"].items():
+            if "3D_modes" in data:
+                data["3D_mode"] = data["3D_modes"][0]
+                data["3D_opacity"] = data["3D_modes"][1]
+                del(data["3D_modes"])
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -1734,8 +1742,10 @@ class Series():
         
         if not name in attrs or attr_name not in attrs[name]:
             # return defaults if not set
-            if attr_name == "3D_modes":
-                return ["surface", 1]
+            if attr_name == "3D_mode":
+                return "surface"
+            if attr_name == "3D_opacity":
+                return 1
             elif attr_name == "last_user":
                 return ""
             elif attr_name == "curation":
@@ -1891,6 +1901,13 @@ class Series():
     @user.setter
     def user(self, value):
         self.setOption("user", value)
+    
+    @property
+    def avg_mag(self):
+        return self.data.getAvgMag()
+    @property
+    def avg_thickness(self):
+         return self.data.getAvgThickness()
 
 class SeriesIterator():
 

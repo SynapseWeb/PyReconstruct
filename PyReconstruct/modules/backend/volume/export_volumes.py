@@ -24,28 +24,22 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     for obj_name in obj_names:
 
-        mode, opacity = tuple(series.getAttr(obj_name, "3D_modes"))
+        mode = series.getAttr(obj_name, "3D_mode")
 
         match mode:
             
             case "surface":
-                obj_data[obj_name] = (Surface(obj_name), opacity)
+                obj_data[obj_name] = Surface(obj_name, series)
                 
             case "spheres":
-                obj_data[obj_name] = (Spheres(obj_name), opacity)
+                obj_data[obj_name] = Spheres(obj_name, series)
                 
             case "contours":
-                obj_data[obj_name] = (Contours(obj_name), opacity)
-
-    # iterate through all sections and gather points (and colors)
-    mags = []
-    thicknesses = []
+                obj_data[obj_name] = Contours(obj_name, series)
 
     for snum, section in series.enumerateSections(show_progress=False):
 
         # Assume somewhat uniform section thickness
-        thicknesses.append(section.thickness)
-        mags.append(section.mag)
         tform = section.tform
 
         for obj_name in obj_names:
@@ -58,11 +52,8 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
                     obj_data[obj_name][0].addTrace(trace, snum, tform)
 
     # iterate through all objects and export 3D meshes
-    
-    avg_mag = sum(mags) / len(mags)
-    avg_thickness = sum(thicknesses) / len(thicknesses)
 
-    for obj_name, (obj_3D, opacity) in obj_data.items():
+    for obj_name, obj_3D in obj_data.items():
 
         output_dir = Path(output_dir)
         output_file = output_dir / f"{obj_name}.{export_type}"
@@ -71,19 +62,9 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
             case Surface():
 
-                # get the vres from the series options
-                vres_min = min(avg_mag, avg_thickness)
-                vres_max = max(avg_mag, avg_thickness)
-                vres_percent = series.getOption("3D_xy_res")
-                vres = vres_min + (vres_percent / 100) * (vres_max - vres_min)
-
                 obj_3D.exportTrimesh(
                     output_file,
                     export_type,
-                    vres,
-                    avg_thickness,
-                    opacity,
-                    series.getOption("3D_smoothing"),
                 )
 
             case Spheres():
@@ -91,8 +72,6 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
                 obj_3D.exportTrimesh(
                     output_file,
                     export_type,
-                    avg_thickness,
-                    opacity
                 )
 
             case Contours():

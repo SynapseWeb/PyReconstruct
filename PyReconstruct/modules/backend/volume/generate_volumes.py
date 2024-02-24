@@ -16,13 +16,13 @@ def generateVolumes(series : Series, obj_names : list):
     # create the 3D objects
     obj_data = {}
     for obj_name in obj_names:
-        mode, opacity = tuple(series.getAttr(obj_name, "3D_modes"))
+        mode = series.getAttr(obj_name, "3D_mode")
         if mode == "surface":
-            obj_data[obj_name] = (Surface(obj_name), opacity)
+            obj_data[obj_name] = Surface(obj_name, series)
         elif mode == "spheres":
-            obj_data[obj_name] = (Spheres(obj_name), opacity)
+            obj_data[obj_name] = Spheres(obj_name, series)
         elif mode == "contours":
-            obj_data[obj_name] = (Contours(obj_name), opacity)
+            obj_data[obj_name] = Contours(obj_name, series)
 
     # iterate through all sections and gather points (and colors)
     mags = []
@@ -38,38 +38,26 @@ def generateVolumes(series : Series, obj_names : list):
             if obj_name in section.contours:
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
-                    obj_data[obj_name][0].addTrace(trace, snum, tform)
+                    obj_data[obj_name].addTrace(trace, snum, tform)
 
     # iterate through all objects and create 3D meshes
     mesh_data_list = []
     extremes = []
-    avg_mag = sum(mags) / len(mags)
-    avg_thickness = sum(thicknesses) / len(thicknesses)
 
-    for obj_name, (obj_3D, opacity) in obj_data.items():
+    for obj_name, obj_3D in obj_data.items():
         extremes = addToExtremes(extremes, obj_3D.extremes)
 
         if type(obj_3D) is Surface:
-            mesh_data_list.append(obj_3D.generate3D(
-                avg_mag,
-                avg_thickness,
-                opacity,
-                series.getOption("3D_smoothing")
-            ))
+            mesh_data_list.append(obj_3D.generate3D())
         elif type(obj_3D) is Spheres:
-            mesh_data_list.append(obj_3D.generate3D(
-                avg_thickness,
-                opacity
-            ))
+            mesh_data_list.append(obj_3D.generate3D())
         elif type(obj_3D) is Contours:
-            mesh_data_list.append(obj_3D.generate3D(
-                avg_thickness,
-                opacity
-            ))
+            mesh_data_list.append(obj_3D.generate3D())
     
     # convert snum extremes to z extremes
-    extremes[4] *= avg_thickness
-    extremes[5] *= avg_thickness
+    t = series.avg_thickness
+    extremes[4] *= t
+    extremes[5] *= t
     
     # return list tuples (volume, opengl objects)
     # return global bounding box to set view

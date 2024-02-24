@@ -171,23 +171,35 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("knife_del_threshold", response[0])
         self.addOptionWidget("knife", structure, setOption)
 
-        # smoothing_3D
+        # 3D
         opt = self.series.getOption("3D_smoothing", use_defaults)
         structure = [
+            ["XY Resolution:"],
+            ["less detail (fast)", ("slider", self.series.getOption("3D_xy_res")), "more detail (slow)"],
+            [" "],
             ["3D smoothing:"],
             [("radio",
-                ("Laplacian (most smooth)", opt == "laplacian"),
-                ("Humphrey (less smooth)", opt == "humphrey"),
-                ("None (blocky)", opt == "none"))]
+                ("Laplacian (smoothest)", opt == "laplacian"),
+                ("Humphrey", opt == "humphrey"),
+                ("Mutable Diffusion Laplcian", opt == "mut_dif_laplacian"),
+                ("Taubin", opt == "taubin"),
+                ("None (least smooth)", opt == "none"))],
+            ["Smoothing iterations:", ("int", self.series.getOption("smoothing_iterations"))]
         ]
         def setOption(response):
-            if response[0][0][1]:
+            self.series.setOption("3D_xy_res", response[0])
+            if response[1][0][1]:
                 smoothing_alg = "laplacian"
-            elif response[0][1][1]:
+            elif response[1][1][1]:
                 smoothing_alg = "humphrey"
+            elif response[1][2][1]:
+                smoothing_alg = "mut_dif_laplacian"
+            elif response[1][3][1]:
+                smoothing_alg = "taubin"
             else:
                 smoothing_alg = "none"
             self.series.setOption("3D_smoothing", smoothing_alg)
+            self.series.setOption("smoothing_iterations", response[2])
         self.addOptionWidget("smoothing_3D", structure, setOption)
 
         # show_ztraces

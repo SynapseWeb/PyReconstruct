@@ -103,10 +103,17 @@ class SeriesObject():
 
     @property
     def mode_3D(self):
-        return self.series.getAttr(self.name, "3D_modes")
+        return self.series.getAttr(self.name, "3D_mode")
     @mode_3D.setter
     def mode_3D(self, value):
-        return self.series.setAttr(self.name, "3D_modes", value)
+        return self.series.setAttr(self.name, "3D_mode", value)
+    @property
+    def opacity_3D(self):
+        return self.series.getAttr(self.name, "3D_opacity")
+    @mode_3D.setter
+    def opacity_3D(self, value):
+        return self.series.setAttr(self.name, "3D_opacity", value)
+    
     
     @property
     def last_user(self):

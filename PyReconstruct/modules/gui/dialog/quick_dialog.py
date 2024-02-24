@@ -15,7 +15,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QTabWidget,
     QScrollArea,
-    QPushButton
+    QPushButton,
+    QSlider
 )
 from PySide6.QtCore import Qt
 
@@ -88,6 +89,8 @@ class InputField():
             except ValueError:
                 notify("Please enter a valid number.")
                 return None, False
+        elif self.type == "slider":
+            return self.widget.value(), True
         elif self.type == "combo":
             t = self.widget.currentText()
             if t == "" and self.required:
@@ -292,6 +295,16 @@ class QuickDialog(QDialog):
                             w = QLineEdit(str(round(n, 7)), self)
                             resizeLineEdit(w, "0.00000000")
                         inputs.append(InputField(widget_type, w, options, required=required))
+                    elif widget_type == "slider":
+                        # Params: int (opt)
+                        w = QSlider(Qt.Horizontal, self)
+                        w.setMinimum(0)
+                        w.setMaximum(100)
+                        if params:
+                            w.setValue(params[0])
+                        else:
+                            w.setValue(0)
+                        inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "combo":
                         # Params structure: list[str], optional: str
                         options = params[0]

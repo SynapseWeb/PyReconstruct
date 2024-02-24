@@ -991,9 +991,11 @@ class ObjectTableWidget(QDockWidget):
             return
         
         # check for object names and opacities
-        type_3D, opacity = tuple(self.series.getAttr(obj_names[0], "3D_modes"))
+        type_3D = self.series.getAttr(obj_names[0], "3D_mode")
+        opacity = self.series.getAttr(obj_names[0], "3D_opacity")
         for name in obj_names[1:]:
-            new_type, new_opacity = tuple(self.series.getAttr(name, "3D_modes"))
+            new_type = self.series.getAttr(name, "3D_mode")
+            new_opacity = self.series.getAttr(name, "3D_opacity")
             if type_3D != new_type:
                 type_3D = None
             if opacity != new_opacity:

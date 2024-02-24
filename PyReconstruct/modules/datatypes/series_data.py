@@ -387,6 +387,21 @@ class SeriesData():
                 f.write(out_str)
         else:
             return out_str
+    
+    def getAvgMag(self):
+        """Return the average magnification of the series."""
+        mags = []
+        for sdata in self.data["sections"].values():
+            mags.append(sdata["mag"])
+        return sum(mags) / len(mags)
+
+    def getAvgThickness(self):
+        """Return the average thickness of the series."""
+        thicknesses = []
+        for sdata in self.data["sections"].values():
+            thicknesses.append(sdata["thickness"])
+        return sum(thicknesses) / len(thicknesses)
+
 
 
 

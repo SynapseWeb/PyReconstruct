@@ -25,17 +25,15 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
     for obj_name in obj_names:
 
         mode = series.getAttr(obj_name, "3D_mode")
-
-        match mode:
             
-            case "surface":
-                obj_data[obj_name] = Surface(obj_name, series)
-                
-            case "spheres":
-                obj_data[obj_name] = Spheres(obj_name, series)
-                
-            case "contours":
-                obj_data[obj_name] = Contours(obj_name, series)
+        if mode == "surface":
+            obj_data[obj_name] = Surface(obj_name, series)
+            
+        elif mode == "spheres":
+            obj_data[obj_name] = Spheres(obj_name, series)
+            
+        elif mode == "contours":
+            obj_data[obj_name] = Contours(obj_name, series)
 
     for snum, section in series.enumerateSections(show_progress=False):
 
@@ -58,24 +56,11 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
         output_dir = Path(output_dir)
         output_file = output_dir / f"{obj_name}.{export_type}"
 
-        match obj_3D:
+        if type(obj_3D) is Surface or type(obj_3D) is Spheres:
 
-            case Surface():
-
-                obj_3D.exportTrimesh(
-                    output_file,
-                    export_type,
-                )
-
-            case Spheres():
-
-                obj_3D.exportTrimesh(
-                    output_file,
-                    export_type,
-                )
-
-            case Contours():
-
-                pass
+            obj_3D.exportTrimesh(
+                output_file,
+                export_type,
+            )
 
     notify(f"Object(s) exported to directory:\n\n{output_dir.absolute()}\n")

@@ -11,33 +11,31 @@ from PyReconstruct.modules.datatypes import Trace, Transform, Series
 def exportMesh(tm, output_file, export_type):
     """Export a trimesh to a file."""
     with open(output_file, "w") as fp:
-        
-        match export_type:
             
-            case "obj":
+        if export_type == "obj":
+            
+            with open(output_file, "w") as fp:
+                fp.write(trimesh.exchange.obj.export_obj(tm))
                 
-                with open(output_file, "w") as fp:
-                    fp.write(trimesh.exchange.obj.export_obj(tm))
-                    
-            case "off":
+        elif export_type == "off":
+            
+            with open(output_file, "w") as fp:
+                fp.write(trimesh.exchange.off.export_off(tm))
                 
-                with open(output_file, "w") as fp:
-                    fp.write(trimesh.exchange.off.export_off(tm))
-                    
-            case "ply":
+        elif export_type == "ply":
+            
+            with open(output_file, "wb") as fp:
+                fp.write(trimesh.exchange.ply.export_ply(tm))
                 
-                with open(output_file, "wb") as fp:
-                    fp.write(trimesh.exchange.ply.export_ply(tm))
-                    
-            case "stl":
+        elif export_type == "stl":
+            
+            with open(output_file, "wb") as fp:
+                fp.write(trimesh.exchange.stl.export_stl(tm))
                 
-                with open(output_file, "wb") as fp:
-                    fp.write(trimesh.exchange.stl.export_stl(tm))
-                    
-            case "dae":
-                
-                with open(output_file, "wb") as fp:
-                    fp.write(trimesh.exchange.dae.export_collada(tm))
+        elif export_type == "dae":
+            
+            with open(output_file, "wb") as fp:
+                fp.write(trimesh.exchange.dae.export_collada(tm))
                     
 class Object3D():
 

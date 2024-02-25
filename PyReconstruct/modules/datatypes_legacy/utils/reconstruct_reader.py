@@ -14,6 +14,8 @@ from ..classes.zcontour import ZContour
 
 def str_to_bool(string):
     """Converts str to str_to_bool(bool."""
+    if type(string) is not str:
+        return False
     return string.capitalize() == "True"
 
 

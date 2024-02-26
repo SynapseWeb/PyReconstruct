@@ -1318,6 +1318,17 @@ class Series():
         if series_states:
             series_states.addState()
         
+        # gather the mismatched calibrations
+        cal_conversions = {}
+        for snum in self.sections:
+            if snum not in other.sections:
+                continue
+            s_mag = self.data["sections"][snum]["mag"]
+            o_mag = other.data["sections"][snum]["mag"]
+            if abs(o_mag - s_mag) > 1e-8:
+                cal_conversions[snum] = (o_mag, s_mag)
+
+        
         for o_zname, o_ztrace in other.ztraces.items():
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
@@ -1325,6 +1336,20 @@ class Series():
                     passes_filters = True
             if not passes_filters:
                 continue
+
+            # check to ensure all sections included
+            sections_check = True
+            for x, y, snum in o_ztrace.points:
+                if snum not in self.sections:
+                    sections_check = False
+                    break
+            if not sections_check:
+                print(f"Skipping {o_zname}: includes sections not in this series.")
+                continue
+
+            # modify the ztrace scaling if necessary
+            for snum, (o_mag, s_mag) in cal_conversions.items():
+                o_ztrace.magScale(snum, o_mag, s_mag)
 
             # do not replace existing ztraces
             if o_zname not in self.ztraces:
@@ -1374,7 +1399,10 @@ class Series():
             other.enumerateSections(show_progress=False)
         )
         for (s_snum, s_section), (o_snum, o_section) in iterator:
+            mags_match = abs(o_section.mag - s_section.mag) <= 1e-8
             for a in alignments:
+                if not mags_match:
+                    o_section.tforms[a].magScale(o_section.mag, s_section.mag)
                 s_section.tforms[a] = o_section.tforms[a].copy()
                 s_section.save()
 
@@ -1453,7 +1481,12 @@ class Series():
                 continue
             new_flag_pool = section.flags.copy()
             o_section = other.loadSection(snum)  # sending section
+            mags_match = abs(o_section.mag - section.mag) <= 1e-8
+
             for o_flag in o_section.flags:
+                # adjust the flag to match magnification if necessary
+                if not mags_match:
+                    o_flag.magScale(o_section.mag, section.mag)
                 eq_found = False
                 for s_flag in section.flags:
                     if s_flag.equals(o_flag):

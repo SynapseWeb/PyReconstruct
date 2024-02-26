@@ -14,5 +14,6 @@ from .utils import (
     mainwindow,
     drawOutlinedText,
     getProgbar,
-    notifyLocked
+    notifyLocked,
+    checkMag
 )

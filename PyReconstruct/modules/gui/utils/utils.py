@@ -298,4 +298,24 @@ def notifyLocked(obj_names, series, series_states):
         return True
     else:
         return False
+
+def checkMag(s_series, o_series):
+    """Check the magnification between the two series. If different, prompt user for response."""
+    if abs(o_series.avg_mag - s_series.avg_mag) > 1e-8:
+        response = QMessageBox.question(
+            mainwindow,
+            "Calibration Mismatch",
+            (
+                "The series have different calibrations.\n" +
+                f"Current series: {round(s_series.avg_mag, 8)}\n" +
+                f"Importing series: {round(o_series.avg_mag, 8)}\n" + 
+                "Would you like to continue?"
+            ),
+            QMessageBox.Yes,
+            QMessageBox.No
+        )
+        if response != QMessageBox.Yes:
+            return False
+        
+    return True
     

@@ -44,7 +44,8 @@ from PyReconstruct.modules.gui.utils import (
     saveNotify,
     unsavedNotify,
     setMainWindow,
-    noUndoWarning
+    noUndoWarning,
+    checkMag
 )
 from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, HelpWidget, TraceTableWidget
 from PyReconstruct.modules.backend.func import (
@@ -266,10 +267,18 @@ class MainWindow(QMainWindow):
                             ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
                         ]
                     },
+                    {
+                        "attr_name": "calibrationmenu",
+                        "text": "Calibration",
+                        "opts":
+                        [
+                            ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
+                            ("setmag_act", "Manually set series manigifcation...", "", self.setSeriesMag),
+                        ]
+                    },
                     None,
                     ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
-                    ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                     None,
                     ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
                     None,
@@ -1264,6 +1273,10 @@ class MainWindow(QMainWindow):
         # open the other series
         o_series = Series.openJser(jser_fp)
 
+        # check the manigifcations
+        if not checkMag(self.series, o_series):
+            return
+
         # import the traces and close the other series
         self.series.importTraces(
             o_series, 
@@ -1309,6 +1322,10 @@ class MainWindow(QMainWindow):
 
         # open the other series
         o_series = Series.openJser(jser_fp)
+
+        # check the manigifcations
+        if not checkMag(self.series, o_series):
+            return
 
         # import the ztraces and close the other series
         self.series.importZtraces(o_series, regex_filters, series_states=self.field.series_states)
@@ -1375,6 +1392,10 @@ class MainWindow(QMainWindow):
 
         # open the other series
         o_series = Series.openJser(jser_fp)
+
+        # check the manigifcations
+        if not checkMag(self.series, o_series):
+            return
 
         # preliminary sections check
         self_sections = sorted(list(self.series.sections.keys()))
@@ -1499,6 +1520,10 @@ class MainWindow(QMainWindow):
 
         # open the other series
         o_series = Series.openJser(jser_fp)
+
+        # check the manigifcations
+        if not checkMag(self.series, o_series):
+            return
 
         # import the flags
         self.series.importFlags(o_series)
@@ -2024,6 +2049,23 @@ class MainWindow(QMainWindow):
                 trace_lengths[name] = d
         
         self.field.calibrateMag(trace_lengths)
+    
+    def setSeriesMag(self):
+        """Manually set (or view) the series magnification."""
+        response, confirmed = QInputDialog.getDouble(
+            self, 
+            "Set Magnification", 
+            "Series magnification (microns per image pixel):",
+            self.series.avg_mag,
+            decimals=8,
+            step = 0.001
+        )
+        if not confirmed:
+            return
+        if response <= 0:
+            notify("Magnification cannot be less than or equal to zero.")
+        
+        self.field.setMag(response)
     
     def modifyPointer(self, event=None):
         """Modify the pointer properties."""

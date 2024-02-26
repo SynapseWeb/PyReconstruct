@@ -292,8 +292,8 @@ class QuickDialog(QDialog):
                             w = QLineEdit(str(n), self)
                             resizeLineEdit(w, "000000")
                         elif widget_type == "float":
-                            w = QLineEdit(str(round(n, 7)), self)
-                            resizeLineEdit(w, "0.00000000")
+                            w = QLineEdit(str(round(n, 8)), self)
+                            resizeLineEdit(w, "0.000000000")
                         inputs.append(InputField(widget_type, w, options, required=required))
                     elif widget_type == "slider":
                         # Params: int (opt)

@@ -822,6 +822,7 @@ class Section():
                 dt_str (str): the datetime string for tagging purposes
         """
         all_contour_names = list(self.contours.keys()) + list(other.contours.keys())
+        mags_match = abs(other.mag - self.mag) <= 1e-8
         for cname in all_contour_names:
             # check filters, skip if does not pass
             passes_filters = False if regex_filters else True
@@ -836,6 +837,11 @@ class Section():
                 self.contours[cname] = Contour(cname, [])
             if cname not in other.contours:
                 other.contours[cname] = Contour(cname, [])
+            
+            # adjust the contours on the other series to match the magnification of the current series
+            if not mags_match:
+                for trace in other.contours[cname]:
+                    trace.magScale(other.mag, self.mag)
 
             # check the histories to find which contour has been modified since diverge
             conflict_inclusive = False  # variable to keep track if all conflicts should always be flagged or only when both series have a conflict

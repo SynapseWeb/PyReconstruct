@@ -352,6 +352,14 @@ class Section():
         for trace in self.tracesAsList():
             trace.magScale(self.mag, new_mag)
         
+        # modify the ztraces
+        for ztrace in self.series.ztraces.values():
+            ztrace.magScale(self.n, self.mag, new_mag)
+        
+        # modify the flags
+        for flag in self.flags:
+            flag.magScale(self.mag, new_mag)
+        
         self.mag = new_mag
     
     def addTrace(self, trace : Trace, log_event=True):

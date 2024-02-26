@@ -272,3 +272,17 @@ class Ztrace():
             tform = series.data["sections"][snum]["tforms"][series.alignment]
             x, y = tform.map(x, y, inverted=True)
             self.points.append((x, y, snum))
+    
+    def magScale(self, section_num : int, prev_mag : float, new_mag : float):
+        """Adjust the ztrace points to a new magnification.
+        
+            Params:
+                section_number (int): the section number whose magnification is being changed
+                prev_mag (float): the previous magnification
+                new_mag (float): the new magnification being set
+        """
+        for i, (x, y, snum) in enumerate(self.points):
+            if snum == section_num:
+                x *= new_mag / prev_mag
+                y *= new_mag / prev_mag
+                self.points[i] = (x, y, snum)

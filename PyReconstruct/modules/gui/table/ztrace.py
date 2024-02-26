@@ -354,7 +354,7 @@ class ZtraceTableWidget(QDockWidget):
         
         self.manager.smooth(names, smooth, newztrace)
     
-    def addTo3D(self):
+    def addTo3D(self, event=None):
         """Generate a 3D view of an object"""
         ztrace_names = self.getSelectedNames()
         if ztrace_names:

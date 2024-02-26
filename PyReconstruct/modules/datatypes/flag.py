@@ -125,6 +125,16 @@ class Flag():
         for _ in range(6): id += random.choice(possible_chars)
         return id
 
+    def magScale(self, prev_mag : float, new_mag : float):
+        """Adjust the flag position to a new magnification.
+        
+            Params:
+                prev_mag (float): the previous magnification
+                new_mag (float): the new magnification being set
+        """
+        self.x *= new_mag / prev_mag
+        self.y *= new_mag / prev_mag
+
 def getDateTime():
     dt = datetime.now()
     d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"

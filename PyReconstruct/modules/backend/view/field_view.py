@@ -862,6 +862,7 @@ class FieldView():
         
         # reload the field
         self.reload()
+        self.refreshTables(refresh_data=True)
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.

@@ -45,8 +45,6 @@ class ImageLayer():
         """Load the image."""
         # get the image path
         self.is_zarr_file = self.series.src_dir.endswith("zarr")
-        self.is_scaled = False
-        self.selected_scale = 1
         
         # if the image folder is a zarr file
         if self.is_zarr_file:
@@ -59,22 +57,25 @@ class ImageLayer():
                     for g in self.zg:
                         if g != "scale_1":
                             self.zg.move(g, os.path.join("scale_1", g))
-                self.image_found = "scale_1" in self.zg and self.section.src in self.zg["scale_1"]
+                # gather the scales
+                self.scales = []
+                for g in self.zg:
+                    if g.startswith("scale_") and self.section.src in self.zg[g]:
+                        self.scales.append(int(g.split("_")[-1]))
+                if not self.scales:
+                    self.image_found = False
+                else:
+                    self.image_found = True
+                    self.scales.sort(reverse=True)
+                    self.is_scaled = self.scales != [1]
+                    self.selected_scale = self.scales[-1]
             else:
                 self.image_found = False
             if self.image_found:
-                self.image = self.zg["scale_1"][self.section.src]
-                self.bh, self.bw = self.image.shape
+                self.image = self.zg[f"scale_{self.selected_scale}"][self.section.src]
+                self.bh, self.bw = (n * self.selected_scale for n in self.image.shape)
                 self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
                 self.image_found = True
-                # get scales
-                self.scales = []
-                for g in self.zg:
-                    if self.section.src in self.zg[g]:
-                        self.scales.append(int(g.split("_")[-1]))
-                self.scales.sort(reverse=True)
-                if len(self.scales) > 1:
-                    self.is_scaled = True
         
         # if saved as normal images
         else:
@@ -243,12 +244,14 @@ class ImageLayer():
             return blank_pixmap
 
         # get the applicable zarr scale if using zarr file for images
-        scale_level = 1
         if self.is_zarr_file:
-            for s in self.scales:
+            scale_level = self.scales[-1]
+            for s in self.scales[:-1]:
                 if (1/self.scaling) > s:
                     scale_level = s
                     break
+        else:
+            scale_level = 1
 
         # get vectors for four window corners
         window_corners = [

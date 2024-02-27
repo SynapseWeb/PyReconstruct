@@ -1,5 +1,7 @@
-import cv2
 import os
+import cv2
+import zarr
+import numpy as np
 
 from PyReconstruct.modules.datatypes import Series, Section
 from .section_layer import SectionLayer
@@ -27,8 +29,6 @@ def applyContrastAndBrightness(pixel : int, brightness : int, contrast : int):
     
     # round and clamp pixel value
     pixel = max(0, min(255, round(pixel)))
-
-import numpy as np
 
 def adjustPixelsToStats(image, desired_mean, desired_std):
     """Adjust a set of pixels to have the desired mean and standard deviation.
@@ -73,7 +73,15 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
     # get the image array
     if window is None:
         try:
-            image = cv2.imread(fp, cv2.IMREAD_GRAYSCALE)
+            if os.path.isfile(fp):
+                image = cv2.imread(fp, cv2.IMREAD_GRAYSCALE)
+            else:  # get the smallest image if using a zarr
+                fp = os.path.join(
+                    section.series.src_dir,
+                    f"scale_{max(section.zarr_scales)}",
+                    section.src
+                )
+                image = zarr.open(fp, "r")[:]
             cv2.resize(image, (1024, 1024))
         except:
             print(f"Image at {fp} is corrupt. Skipping...")

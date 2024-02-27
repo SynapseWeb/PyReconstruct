@@ -57,11 +57,8 @@ class ImageLayer():
                     for g in self.zg:
                         if g != "scale_1":
                             self.zg.move(g, os.path.join("scale_1", g))
-                # gather the scales
-                self.scales = []
-                for g in self.zg:
-                    if g.startswith("scale_") and self.section.src in self.zg[g]:
-                        self.scales.append(int(g.split("_")[-1]))
+                # gather scales
+                self.scales = self.section.zarr_scales
                 if not self.scales:
                     self.image_found = False
                 else:

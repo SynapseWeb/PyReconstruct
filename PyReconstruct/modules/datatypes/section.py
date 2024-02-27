@@ -105,9 +105,10 @@ class Section():
     @property
     def src_fp(self):
         if self.series.src_dir.endswith("zarr"):
+            scales = self.zarr_scales
             return os.path.join(
                 self.series.src_dir,
-                "scale_1",
+                f"scale_{min(scales)}",
                 self.src
             )
         else:
@@ -115,6 +116,21 @@ class Section():
                 self.series.src_dir,
                 self.src
             )
+    
+    @property
+    def zarr_scales(self):
+        if self.series.src_dir.endswith("zarr"):
+            return [
+                int(s.split("_")[1])
+                for s in os.listdir(self.series.src_dir)
+                if (
+                    s.startswith("scale_") and 
+                    s.split("_")[1].isnumeric() and 
+                    self.src in os.listdir(os.path.join(self.series.src_dir, s))
+                )
+            ]
+
+
     
     # STATIC METHOD
     def updateJSON(section_data, n):

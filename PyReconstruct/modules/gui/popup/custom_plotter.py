@@ -2,7 +2,7 @@ import vedo
 
 from PyReconstruct.modules.gui.dialog import QuickDialog
 from PyReconstruct.modules.gui.utils import notify
-from PyReconstruct.modules.gui.table import HelpWidget
+from PyReconstruct.modules.gui.table import Help3DWidget
 from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 
@@ -215,7 +215,7 @@ class VPlotter(vedo.Plotter):
         if key == "Shift+Question":
             overwrite = True
             if not self.help_widget or self.help_widget.closed:
-                self.help_widget = HelpWidget("3D")
+                self.help_widget = Help3DWidget()
 
         if not overwrite:
             super()._keypress(iren, event)

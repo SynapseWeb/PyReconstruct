@@ -45,9 +45,18 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     """
     act_name, text, kbd, f = action_tuple
     # create the action attribute
-    action = container.addAction(text, f, kbd)
-    if kbd == "checkbox":
-        action.setCheckable(True)
+    action : QAction = container.addAction(text, f, "")
+    
+    # create the shorcut or checkbox
+    if type(kbd) is str:
+        if kbd == "checkbox":
+            action.setCheckable(True)
+        else:
+            action.setShortcut(kbd)
+    else:  # assume series was passed in
+        action.setShortcut(kbd.getOption(act_name))
+
+    # attach to widget
     widget.addAction(action)
     setattr(widget, act_name, action)
 

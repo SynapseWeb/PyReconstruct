@@ -3,23 +3,12 @@ from PySide6.QtCore import Qt
 
 from .copy_table_widget import CopyTableWidget
 
-class HelpWidget(QDockWidget):
+class Help3DWidget(QDockWidget):
 
-    def __init__(self, mode):
+    def __init__(self):
         """Create a text widget to display 3D options"""
         super().__init__()
-        self.mode = mode
-        if self.mode == "3D":
-            self.help_desc = help_3D
-        elif self.mode == "shortcuts":
-            link = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
-            link_lbl = QLabel(self)
-            link_lbl.setOpenExternalLinks(True)
-            link_lbl.setText(f'<a href="{link}">{link}</a>')
-            self.help_desc = (
-                [("Link to full wiki:", link_lbl), None] + 
-                help_shortcuts
-            )
+        self.help_desc = help_3D
 
         self.setFloating(True)
         self.setAllowedAreas(Qt.NoDockWidgetArea)
@@ -128,92 +117,3 @@ help_3D = [
     ("Q", "return control to python script"),
     ("Esc", "abort execution and exit python kernel")
 ]
-
-help_shortcuts = [
-    "General",
-    ('Delete/Backspace', 'Delete selected traces'),
-    ('', 'Remove last entered point when polyline tracing or using scissors.'),
-    ('', 'Delete selected entry when using the lists'),
-    ('? (Shift-/)', 'Display keyboard shortcuts'),
-    ('Page Up', 'Display the next (higher) section'),
-    ('Page Down', 'Display the preceding (lower) section'),
-    ('/ ', 'Switch back & forth between the current section and last section viewed'),
-    None,
-    "View",
-    ('H', 'Toggle hide all traces, regardless of individual trace hide status'),
-    ('A', 'Toggle show all traces, regardless of individual trace hide status'),
-    ('I', 'Toggle hide section image'),
-    ('-', 'Decrease brightness'),
-    ('=', 'Increase brightness'),
-    ('[', 'Decrease contrast'),
-    (']', 'Increase contrast'),
-    ('Space', 'Blend the current section with the last section viewed'),
-    ('Home', 'Set the view to the image'),
-    None,
-    "Field Interactions",
-    ('Ctrl-A', 'Select all traces on a section'),
-    ('Ctrl-D', 'Deselect all traces on section'),
-    ('Ctrl-E', 'Edit the attributes of the selected trace(s)'),
-    ('Ctrl-M', 'Merge the selected traces'),
-    ('Ctrl-Shift-M', 'Merge the attributes of the selected traces'),
-    ('Ctrl-H', 'Hide the selected traces'),
-    ('Ctrl-U', 'Unhide all hidden traces on the current section'),
-    ('Shift-G', 'Modify the current palette button to match attributes of first selected trace'),
-    ('Ctrl-Shift-G', 'Modiy the current palette button to match attributes AND shape of first selected trace'),
-    ('Ctrl-Shift-U', 'Unlock the current section'),
-    ('Ctrl-T', 'Modify the transform on current section'),
-    None,
-    "Edit",
-    ('Ctrl-Z', 'Undo'),
-    ('Ctrl-Y', 'Re-do'),
-    ('Ctrl-C', 'Copy the selected traces onto the clipboard'),
-    ('Ctrl-X', 'Cut selected traces onto the clipboard'),
-    ('Ctrl-V', 'Paste clipboard traces into section'),
-    ('Ctrl-B', 'Paste attributes of clipboard traces onto selected traces'),
-    None,
-    "Navigate",
-    ('Ctrl-F', 'Find the first instance of a trace in series'),
-    ('Ctrl-Shift-F', 'Find a trace on the current section'),
-    ('Ctrl-G', 'Go to a specific section number'),
-    None,
-    "File",
-    ('Ctrl-O', 'Open a series file'),
-    ('Ctrl-S', 'Save'),
-    ('Ctrl-Shift-B', 'Backup series'),
-    ('Ctrl-N', 'New'),
-    ('Ctrl-R', 'Restart'),
-    ('Ctrl-Q', 'Quit'),
-    None,
-    "Lists",
-    ('Ctrl-Shift-O', 'Open the Object List'),
-    ('Ctrl-Shift-C', 'Toggle curation columns in object list'),
-    ('Ctrl-Shift-T', 'Open the Trace List'),
-    ('Ctrl-Shift-Z', 'Open the Ztrace List'),
-    ('Ctrl-Shift-S', 'Open the Section List'),
-    ('Ctrl-Shift-A', 'Switch/modify alignments'),
-    None,
-    "Trace Palette",
-    ('#, Shift-#', 'Select a trace on the palette'),
-    ('Ctrl-#, Ctrl-Shift-#', 'Edit attributes for a single trace on the palette'),
-    ('Ctrl-Shift-P', 'Switch/modify palettes'),
-    None,
-    "Arrow Keys",
-    ('Left/Right/Up/Down', 'Translate selected traces or image if no trace selected'),
-    ('Ctrl-Left/Right/Up/Down', 'Translate traces or image a small amount'),
-    ('Shift-Left/Right/Up/Down', 'Translate trace or image a large amount'),
-    ('Ctrl-Shift-Left/Right/Up/Down', 'Rotate the image around the mouse'),
-    None,
-    "Tool Palette",
-    ('P', 'Use the pointer tool'),
-    ('Z', 'Use the pan/zoom tool'),
-    ('K', 'Use the knife tool'),
-    ('C', 'Use the closed trace tool'),
-    ('O', 'Use the open trace tool'),
-    ('S', 'Use the stamp tool'),
-    ('F', 'Use the flag tool'),
-    None,
-    "3D Scene Shortcuts:",
-    None,
-    ("Shift-/", "Pull up shortcuts for 3D scene"),
-    None,
-] + help_3D

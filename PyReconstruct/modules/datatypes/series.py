@@ -15,6 +15,7 @@ from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
 from .objects import Objects
+from .default_settings import default_settings
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
@@ -46,60 +47,7 @@ def getDateTime():
     return d, t
 
 class Series():
-    qsettings_defaults = {
-        # user
-        "user": os.getlogin(),
-        "backup_dir": "",
-        "left_handed": False,
-        # view
-        "3D_xy_res": 0,  # 0-100
-        "3D_smoothing": "humphrey",
-        "smoothing_iterations": 10,
-        "show_ztraces": True,
-        "fill_opacity": 0.2,
-        "find_zoom": 95.0,
-        "show_flags": "unresolved",
-        "display_closest": True,
-        "flag_size": 14,
-        # mouse tools
-        "pointer": ["lasso", "exc"],
-        "auto_merge": False,
-        "knife_del_threshold": 1.0,
-        "grid": [1, 1, 1, 1, 1, 1],
-        "sampling_frame_grid": True,
-        "flag_name": "",
-        "flag_color": [255, 0, 0],
-        # table columns
-        "object_columns": {
-            "Range": True,
-            "Count": False,
-            "Flat area": False,
-            "Volume": False,
-            "Groups": True,
-            "Trace tags": False,
-            "Locked": True,
-            "Last user": True,
-            "Curate": False,
-            "Alignment": False,
-            "Comment": True
-        },
-        "trace_columns": {
-            "Index": False,
-            "Tags": True,
-            "Hidden": True,
-            "Closed": True,
-            "Length": True,
-            "Area": True,
-            "Radius": True,
-        },
-        "flag_columns": {
-            "Section": True,
-            "Color": True,
-            "Flag": True,
-            "Resolved": False,
-            "Last Comment": True
-        }
-    }
+    qsettings_defaults = default_settings.copy()
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
         """Load the series file.

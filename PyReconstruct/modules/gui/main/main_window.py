@@ -34,7 +34,8 @@ from PyReconstruct.modules.gui.dialog import (
     FileDialog,
     AllOptionsDialog,
     BCProfilesDialog,
-    BackupDialog
+    BackupDialog,
+    ShortcutsDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
 from PyReconstruct.modules.gui.utils import (
@@ -47,7 +48,7 @@ from PyReconstruct.modules.gui.utils import (
     noUndoWarning,
     checkMag
 )
-from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, HelpWidget, TraceTableWidget
+from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, TraceTableWidget
 from PyReconstruct.modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -154,21 +155,21 @@ class MainWindow(QMainWindow):
                         "text": "New",
                         "opts":
                         [
-                            ("newfromimages_act", "From images...", "Ctrl+N", self.newSeries),
+                            ("newfromimages_act", "From images...", self.series, self.newSeries),
                             ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True)),
                             ("newfromxml_act", "From legacy .ser...", "", self.newFromXML)
                         ]
                     },
-                    ("open_act", "Open", "Ctrl+O", self.openSeries),
+                    ("open_act", "Open", self.series, self.openSeries),
                     None,  # None acts as menu divider
-                    ("save_act", "Save", "Ctrl+S", self.saveToJser),
+                    ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
                     ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
-                    ("restart_act", "Reload", "Ctrl+R", self.restart),
-                    ("quit_act", "Quit", "Ctrl+Q", self.close),
+                    ("restart_act", "Reload", self.series, self.restart),
+                    ("quit_act", "Quit", self.series, self.close),
                 ]
             },
 
@@ -177,26 +178,26 @@ class MainWindow(QMainWindow):
                 "text": "Edit",
                 "opts":
                 [
-                    ("undo_act", "Undo", "Ctrl+Z", self.undo),
-                    ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
+                    ("undo_act", "Undo", self.series, self.undo),
+                    ("redo_act", "Redo", self.series, lambda : self.undo(True)),
                     None,
-                    ("cut_act", "Cut", "Ctrl+X", self.field.cut),
-                    ("copy_act", "Copy", "Ctrl+C", self.copy),
-                    ("paste_act", "Paste", "Ctrl+V", self.field.paste),
-                    ("pasteattributes_act", "Paste attributes", "Ctrl+B", self.field.pasteAttributes),
+                    ("cut_act", "Cut", self.series, self.field.cut),
+                    ("copy_act", "Copy", self.series, self.copy),
+                    ("paste_act", "Paste", self.series, self.field.paste),
+                    ("pasteattributes_act", "Paste attributes", self.series, self.field.pasteAttributes),
                     None,
-                    ("pastetopalette_act", "Paste attributes to palette", "Shift+G", self.pasteAttributesToPalette),
-                    ("pastetopalettewithshape_act", "Paste attributes to palette (include shape)", "Ctrl+Shift+G", lambda : self.pasteAttributesToPalette(True)),
+                    ("pastetopalette_act", "Paste attributes to palette", self.series, self.pasteAttributesToPalette),
+                    ("pastetopalettewithshape_act", "Paste attributes to palette (include shape)", self.series, lambda : self.pasteAttributesToPalette(True)),
                     None,
                     {
                         "attr_name": "bcmenu",
                         "text": "Brightness/contrast",
                         "opts":
                         [
-                            ("incbr_act", "Increase brightness", "=", lambda : self.editImage(option="brightness", direction="up")),
-                            ("decbr_act", "Decrease brightness", "-", lambda : self.editImage(option="brightness", direction="down")),
-                            ("inccon_act", "Increase contrast", "]", lambda : self.editImage(option="contrast", direction="up")),
-                            ("deccon_act", "Decrease contrast", "[", lambda : self.editImage(option="contrast", direction="down"))
+                            ("incbr_act", "Increase brightness", self.series, lambda : self.editImage(option="brightness", direction="up")),
+                            ("decbr_act", "Decrease brightness", self.series, lambda : self.editImage(option="brightness", direction="down")),
+                            ("inccon_act", "Increase contrast", self.series, lambda : self.editImage(option="contrast", direction="up")),
+                            ("deccon_act", "Decrease contrast", self.series, lambda : self.editImage(option="contrast", direction="down"))
                         ]
                     }
                 ]
@@ -207,7 +208,7 @@ class MainWindow(QMainWindow):
                 "text": "Series",
                 "opts":
                 [
-                    ("alloptions_act", "Options...", "Shift+O", self.allOptions),
+                    ("alloptions_act", "Options...", self.series, self.allOptions),
                     {
                         "attr_name": "importmenu",
                         "text": "Import",
@@ -226,7 +227,7 @@ class MainWindow(QMainWindow):
                         "text": "Export",
                         "opts":
                         [
-                            ("exportjser_act", "as backup jser...", "Ctrl+Shift+B", self.manualBackup),
+                            ("exportjser_act", "as backup jser...", self.series, self.manualBackup),
                             ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
                         ]
                     },
@@ -263,7 +264,7 @@ class MainWindow(QMainWindow):
                         "text": "Trace Palette",
                         "opts":
                         [
-                            ("modifytracepalette_act", "All palettes...", "Ctrl+Shift+P", self.mouse_palette.modifyAllPaletteButtons),
+                            ("modifytracepalette_act", "All palettes...", self.series, self.mouse_palette.modifyAllPaletteButtons),
                             ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
                         ]
                     },
@@ -277,7 +278,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
-                    ("findobjectfirst_act", "Find first object contour...", "Ctrl+F", self.findObjectFirst),
+                    ("findobjectfirst_act", "Find first object contour...", self.series, self.findObjectFirst),
                     ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
                     None,
                     ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
@@ -294,10 +295,11 @@ class MainWindow(QMainWindow):
                     ("nextsection_act", "Next section", "PgUp", self.incrementSection),
                     ("prevsection_act", "Previous section", "PgDown", lambda : self.incrementSection(down=True)),
                     None,
-                    ("goto_act", "Go to section", "Ctrl+G", self.changeSection),
+                    ("goto_act", "Go to section", self.series, self.changeSection),
                     None,
+                    ("flicker_act", "Flicker section", self.series, self.flickerSections),
                     None,
-                    ("findcontour_act", "Find contour...", "Shift+F", self.field.findContourDialog),
+                    ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
                 ]
             },
             {
@@ -305,11 +307,11 @@ class MainWindow(QMainWindow):
                 "text": "Lists",
                 "opts":
                 [
-                    ("objectlist_act", "Object list", "Ctrl+Shift+O", self.openObjectList),
-                    ("tracelist_act", "Trace list", "Ctrl+Shift+T", self.openTraceList),
-                    ("sectionlist_act", "Section list", "Ctrl+Shift+S", self.openSectionList),
-                    ("ztracelist_act", "Z-trace list", "Ctrl+Shift+Z", self.openZtraceList),
-                    ("flaglist_act", "Flag list", "Ctrl+Shift+F", self.openFlagList),
+                    ("objectlist_act", "Object list", self.series, self.openObjectList),
+                    ("tracelist_act", "Trace list", self.series, self.openTraceList),
+                    ("sectionlist_act", "Section list", self.series, self.openSectionList),
+                    ("ztracelist_act", "Z-trace list", self.series, self.openZtraceList),
+                    ("flaglist_act", "Flag list", self.series, self.openFlagList),
                     ("history_act", "Series history", "", self.viewSeriesHistory)
                 ]
             },
@@ -318,7 +320,7 @@ class MainWindow(QMainWindow):
                 "text": "Alignments",
                 "opts":
                 [
-                    ("changealignment_act", "Change alignment", "Ctrl+Shift+A", self.changeAlignment),
+                    ("changealignment_act", "Change alignment", self.series, self.changeAlignment),
                     None,
                     {
                         "attr_name": "importmenu",
@@ -344,8 +346,8 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     None,
-                    ("unlocksection_act", "Unlock current section", "Ctrl+Shift+U", self.field.unlockSection),
-                    ("changetform_act", "Change transformation", "Ctrl+T", self.changeTform),
+                    ("unlocksection_act", "Unlock current section", self.series, self.field.unlockSection),
+                    ("changetform_act", "Change transformation", self.series, self.changeTform),
                     ("linearalign_act", "Estimate affine transform", "", self.field.affineAlign),
                     # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
                 ]
@@ -398,7 +400,7 @@ class MainWindow(QMainWindow):
                     ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     ("lefthanded_act", "Left handed", "checkbox", self.field.setLeftHanded),
                     None,
-                    ("togglecuration_act", "Toggle curation in object lists", "Ctrl+Shift+C", self.toggleCuration)
+                    ("togglecuration_act", "Toggle curation in object lists", self.series, self.toggleCuration)
                 ]
             },
             {
@@ -423,19 +425,17 @@ class MainWindow(QMainWindow):
     def createContextMenus(self):
         """Create the right-click menus used in the field."""
         field_menu_list = [
-            ("edittrace_act", "Edit attributes...", "Ctrl+E", self.field.traceDialog),
+            ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",
                 "opts":
                 [
-                    ("mergetraces_act", "Merge traces", "Ctrl+M", self.field.mergeSelectedTraces),
-                    ("mergeobjects_act", "Merge attributes...", "Ctrl+Shift+M", lambda : self.field.mergeSelectedTraces(merge_attrs=True)),
+                    ("mergetraces_act", "Merge traces", self.series, self.field.mergeSelectedTraces),
+                    ("mergeobjects_act", "Merge attributes...", self.series, lambda : self.field.mergeSelectedTraces(merge_attrs=True)),
                     None,
                     ("makenegative_act", "Make negative", "", self.field.makeNegative),
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                    # None,
-                    # ("markseg_act", "Add to good segmentation group", "Shift+G", self.markKeep)
                 ]
             },
             None,
@@ -464,14 +464,14 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
-                    ("hidetraces_act", "Hide traces", "Ctrl+H", self.field.hideTraces),
-                    ("unhideall_act", "Unhide all traces", "Ctrl+U", self.field.unhideAllTraces),
+                    ("hidetraces_act", "Hide traces", self.series, self.field.hideTraces),
+                    ("unhideall_act", "Unhide all traces", self.series, self.field.unhideAllTraces),
                     None,
-                    ("hideall_act", "Toggle hide all", "H", self.field.toggleHideAllTraces),
-                    ("showall_act", "Toggle show all", "A", self.field.toggleShowAllTraces),
+                    ("hideall_act", "Toggle hide all", self.series, self.field.toggleHideAllTraces),
+                    ("showall_act", "Toggle show all", self.series, self.field.toggleShowAllTraces),
                     None,
-                    ("hideimage_act", "Toggle hide image", "I", self.field.toggleHideImage),
-                    ("blend_act", "Toggle section blend", " ", self.field.toggleBlend),
+                    ("hideimage_act", "Toggle hide image", self.series, self.field.toggleHideImage),
+                    ("blend_act", "Toggle section blend", self.series, self.field.toggleBlend),
                 ]
             },
             None,
@@ -480,8 +480,8 @@ class MainWindow(QMainWindow):
             self.paste_act,
             self.pasteattributes_act,
             None,
-            ("selectall_act", "Select all traces", "Ctrl+A", self.field.selectAllTraces),
-            ("deselect_act", "Deselect traces", "Ctrl+D", self.field.deselectAllTraces),
+            ("selectall_act", "Select all traces", self.series, self.field.selectAllTraces),
+            ("deselect_act", "Deselect traces", self.series, self.field.deselectAllTraces),
             None,
             ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
             None,
@@ -641,8 +641,6 @@ class MainWindow(QMainWindow):
         shortcuts = [
             ("Backspace", self.backspace),
 
-            ("/", self.flickerSections),
-
             ("Ctrl+Left", lambda : self.translate("left", "small")),
             ("Left", lambda : self.translate("left", "med")),
             ("Shift+Left", lambda : self.translate("left", "big")),
@@ -661,7 +659,7 @@ class MainWindow(QMainWindow):
         ]
 
         for kbd, act in shortcuts:
-            QShortcut(QKeySequence(kbd), self).activated.connect(act)
+            self.addAction("", kbd, act)
     
     def createPaletteShortcuts(self):
         """Create shortcuts associate with the mouse palette."""
@@ -683,20 +681,28 @@ class MainWindow(QMainWindow):
             trace_shortcuts.append(s_switch)
             trace_shortcuts.append(s_modify)
         
+        for kbd, act in trace_shortcuts:
+            self.addAction("", kbd, act)
+
+        
         # mouse mode shortcuts (F1-F8)
         mode_shortcuts = [
-            ("p", lambda : self.mouse_palette.activateModeButton("Pointer")),
-            ("z", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
-            ("k", lambda : self.mouse_palette.activateModeButton("Knife")),
-            ("c", lambda : self.mouse_palette.activateModeButton("Closed Trace")),
-            ("o", lambda : self.mouse_palette.activateModeButton("Open Trace")),
-            ("s", lambda : self.mouse_palette.activateModeButton("Stamp")),
-            ("g", lambda : self.mouse_palette.activateModeButton("Grid")),
-            ("f", lambda : self.mouse_palette.activateModeButton("Flag"))
+            ("usepointer_act", lambda : self.mouse_palette.activateModeButton("Pointer")),
+            ("usepanzoom_act", lambda : self.mouse_palette.activateModeButton("Pan/Zoom")),
+            ("useknife_act", lambda : self.mouse_palette.activateModeButton("Knife")),
+            ("usectrace_act", lambda : self.mouse_palette.activateModeButton("Closed Trace")),
+            ("useotrace_act", lambda : self.mouse_palette.activateModeButton("Open Trace")),
+            ("usestamp_act", lambda : self.mouse_palette.activateModeButton("Stamp")),
+            ("usegrid_act", lambda : self.mouse_palette.activateModeButton("Grid")),
+            ("useflag_act", lambda : self.mouse_palette.activateModeButton("Flag"))
         ]
   
-        for kbd, act in (mode_shortcuts + trace_shortcuts):
-            QShortcut(QKeySequence(kbd), self).activated.connect(act)
+        for act_name, act in mode_shortcuts:
+            setattr(
+                self, 
+                act_name, 
+                self.addAction("", self.series.getOption(act_name), act)
+            )
     
     def changeSrcDir(self, new_src_dir : str = None, notify=False):
         """Open a series of dialogs to change the image source directory.
@@ -2655,9 +2661,11 @@ class MainWindow(QMainWindow):
     
     def displayShortcuts(self):
         """Display the shortcuts."""
-        if self.shortcuts_widget and not self.shortcuts_widget.closed:
-            self.shortcuts_widget.close()
-        self.shortcuts_widget = HelpWidget("shortcuts")
+        response, confirmed = ShortcutsDialog(self, self.series).exec()
+        if not confirmed:
+            return
+        
+        self.resetShortcuts(response)
 
     def openWiki(self):
         """Open kh lab PyReconstruct public wiki."""
@@ -2713,6 +2721,22 @@ class MainWindow(QMainWindow):
         )
         self.field.reload()
         self.field.updateData()
+    
+    def resetShortcuts(self, shortcuts_dict : dict = None):
+        """Reset the shortcuts for the window.
+        
+            Params:
+                shortcuts_dict: the action name : shortcut pairs (will use series opts if not provided)
+        """
+        if shortcuts_dict is None:
+            shortcuts_dict = {}
+            for k in Series.qsettings_defaults:
+                if k.endswith("_act") and getattr(self, k):
+                    shortcuts_dict[k] = self.series.getOption(k)
+        
+        for act_name, kbd in shortcuts_dict.items():
+            getattr(self, act_name).setShortcut(kbd)
+            self.series.setOption(act_name, kbd)
         
     def restart(self):
         self.restart_mainwindow = True

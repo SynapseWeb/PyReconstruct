@@ -15,3 +15,4 @@ from .file_dialog import FileDialog
 from .all_options import AllOptionsDialog
 from .bc_profiles import BCProfilesDialog
 from .backup import BackupDialog
+from .shortcuts import ShortcutsDialog

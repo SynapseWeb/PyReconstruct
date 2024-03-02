@@ -222,183 +222,132 @@ class ImageLayer():
             Returns:
                 image_layer (QPixmap): the image laye
         """
-        # save and unpack window and pixmap values
-        self.pixmap_dim = pixmap_dim
+        # setup
         self.window = window
-        pixmap_w, pixmap_h = tuple(pixmap_dim)
-        window_x, window_y, window_w, window_h = tuple(window) 
+        self.pixmap_dim = pixmap_dim
 
-        # scaling: ratio of screen pixels to actual image pixels (should be equal)
-        x_scaling = pixmap_w / (window_w / self.section.mag)
-        y_scaling = pixmap_h / (window_h / self.section.mag)
-        self.scaling = x_scaling
-        # assert(abs(x_scaling - y_scaling) < 1e-6)
+        tform = self.section.tform
+        mag = self.section.mag
+        wx, wy, ww, wh = tuple(self.window)
+        pmw, pmh = tuple(self.pixmap_dim)
+        iw, ih = self.bw, self.bh
+        s = self.scaling = pmw / (ww / mag)
 
         # return blank if image was not found
         if not self.image_found:
-            blank_pixmap = QPixmap(pixmap_w, pixmap_h)
+            blank_pixmap = QPixmap(pmw, pmh)
             blank_pixmap.fill(Qt.black)
             return blank_pixmap
 
-        # get the applicable zarr scale if using zarr file for images
+        # step 0: get the applicable zarr scale if using zarr file for images
         if self.is_zarr_file:
             scale_level = self.scales[-1]
-            for s in self.scales[:-1]:
-                if (1/self.scaling) > s:
-                    scale_level = s
+            for scale in self.scales[:-1]:
+                if (1/self.scaling) > scale:
+                    scale_level = scale
                     break
-        else:
-            scale_level = 1
-
-        # get vectors for four window corners
-        window_corners = [
-            [window_x, window_y],
-            [window_x, window_y + window_h],
-            [window_x + window_w, window_y + window_h],
-            [window_x + window_w, window_y]
-        ]
-        
-        # get transforms
-        tform = self.section.tform
-
-        # convert corners to image pixel coordinates
-        for i in range(len(window_corners)):
-            # apply inverse transform to window corners
-            point = window_corners[i]
-            point = list(tform.map(*point, inverted=True))
-            # divide by image magnification
-            point[0] /= self.section.mag
-            point[1] /= self.section.mag
-            # adjust y-coordinate
-            point[1] = self.bh - point[1]
-            window_corners[i] = point
-        
-        # get the bounding rectangle for the corners
-        xmin, ymin, xmax, ymax = getBoundingRect(window_corners)
-        
-        # calculate the shift in origin
-        origin_shift = [0, 0]
-        origin_shift[0] = window_corners[1][0] - xmin
-        origin_shift[1] = window_corners[1][1] - ymin
-
-        # space to fill if crop falls outside image
-        blank_space = [0, 0]
-        # space to add if crop falls outside image
-        extra_space = [0, 0]
-
-        # check if requested view is completely out of bounds
-        oob = False
-        oob |= xmin >= self.bw
-        oob |= xmax <= 0
-        oob |= ymin >= self.bh
-        oob |= ymax <= 0
-        # return blank pixmap if coords are out of bounds
-        if oob:
-            blank_pixmap = QPixmap(pixmap_w, pixmap_h)
-            blank_pixmap.fill(Qt.black)
-            return blank_pixmap
-
-        # trim crop coords to be within image
-        if xmin < 0:
-            blank_space[0] = -xmin
-            xmin = 0
-        if ymin < 0:
-            blank_space[1] = -ymin
-            ymin = 0
-        if xmax > self.bw:
-            extra_space[0] = xmax - self.bw
-            xmax = self.bw
-        if ymax > self.bh:
-            extra_space[1] = ymax - self.bh
-            ymax = self.bh
-
-        # crop image and place in field
-        xmin, ymin, xmax, ymax = tuple(
-            map(
-                int,
-                (
-                    xmin / scale_level,
-                    ymin / scale_level,
-                    xmax / scale_level,
-                    ymax / scale_level
-                )
-            )
-        )
-        if self.is_zarr_file:
             if self.selected_scale != scale_level:
                 self.image = self.zg[f"scale_{scale_level}"][self.section.src]
                 self.selected_scale = scale_level
-            zarr_saved = self.image[ymin:ymax, xmin:xmax]
+        else:
+            scale_level = 1
+        
+
+        # step 1: get the polygon for the window
+        poly_window = [
+            (wx, wy),
+            (wx, wy + wh),
+            (wx + ww, wy + wh),
+            (wx + ww, wy)
+        ]
+
+        # step 2: untransform the window poly
+        utf_poly_window = tform.map(poly_window, inverted=True)
+
+        # step 3: convert to pixel coordinates
+        utf_pixel_poly_window = [(x / mag, y / mag) for x, y in utf_poly_window]
+
+        # step 4: get bounds to crop image
+        bounds = getBounds(utf_pixel_poly_window)
+
+        # step 5: adjust bounds to image dimensions and get necessary padding
+        bounds, padding = adjustBounds(bounds, iw, ih)
+        # check if completely out of bounds
+        if bounds is None:
+            blank_pixmap = QPixmap(pmw, pmh)
+            blank_pixmap.fill(Qt.black)
+            return blank_pixmap
+        # unpack values otherwise
+        xmin, ymin, xmax, ymax = bounds
+        xminp, yminp, xmaxp, ymaxp = padding
+        
+        # step 6: get crop from image
+        if self.is_zarr_file:
+            # scale the cropping values accordingly
+            xmins, ymins, xmaxs, ymaxs = (round(n / scale_level) for n in bounds)
+            ihs = round(ih / scale_level)
+            zarr_saved = self.image[
+                ihs - ymaxs: ihs - ymins,
+                xmins:xmaxs
+            ]
             im_crop = QImage(
                 zarr_saved.data,
-                xmax-xmin,
-                ymax-ymin,
+                xmaxs-xmins,
+                ymaxs-ymins,
                 zarr_saved.strides[0],
                 QImage.Format.Format_Grayscale8
             )
         else:
             crop_rect = QRect(
                 xmin,
-                ymin,
+                ih-ymax,
                 xmax-xmin,
                 ymax-ymin
             )
             im_crop = self.image.copy(crop_rect)
-
-        # make the crop the size of the screen
-        im_scaled = im_crop.scaled(im_crop.width()*self.scaling*scale_level, im_crop.height()*self.scaling*scale_level)
-        blank_space[0] *= self.scaling
-        blank_space[1] *= self.scaling
-        extra_space[0] *= self.scaling
-        extra_space[1] *= self.scaling
-        origin_shift[0] *= self.scaling
-        origin_shift[1] *= self.scaling
-
-        # get padded pixmap dim
-        padded_w = int(blank_space[0] + im_scaled.width() + extra_space[0] + 1)
-        if padded_w < pixmap_dim[0]: padded_w = pixmap_dim[0]
-        padded_h = int(blank_space[1] + im_scaled.height() + extra_space[1] + 1)
-        if padded_h < pixmap_dim[1]: padded_h = pixmap_dim[1]
-
-        # add blank space on each side
-        im_padded = QPixmap(padded_w, padded_h)
+        
+        # setp 7: scale the cropped image
+        im_scaled = im_crop.scaled(
+            im_crop.width() * s * scale_level,
+            im_crop.height() * s * scale_level
+        )
+        
+        # step 8: pad the image (continue to account for scaling)
+        im_padded = QPixmap(
+            (xminp + (xmax - xmin) + xmaxp) * s,
+            (ymaxp + (ymax - ymin) + yminp) * s
+        )
         im_padded.fill(Qt.black)
         painter = QPainter(im_padded)
         painter.drawImage(
-            blank_space[0],
-            blank_space[1],
+            xminp * s,
+            ymaxp * s,
             im_scaled
         )
         painter.end()
 
-        # transform the padded image
-        image_tform = tform.imageTransform()
-        im_tformed = im_padded.transformed(image_tform.getQTransform())
-
-        # transform the origin shift coordinates
-        origin_shift = list(image_tform.map(*origin_shift))
-        # add to top right origin coordinate for transform
-        top_left = self._calcTformCorners(im_padded, image_tform)[1]
-        origin_shift[0] += top_left[0]
-        origin_shift[1] += top_left[1]
-
-        # crop the transformed image to screen dimensions
-        image_layer_rect = QRect(
-            round(origin_shift[0]),
-            round(origin_shift[1]),
-            *pixmap_dim
+        # step 9: transform the padded image
+        im_tformed = im_padded.transformed(
+            tform.imageTransform().getQTransform()
         )
-        image_layer = im_tformed.copy(image_layer_rect)
 
+        # step 10: rip the pixmap from the transformed image
+        image_layer = im_tformed.copy(
+            (im_tformed.width() - pmw) / 2,
+            (im_tformed.height() - pmh) / 2,
+            pmw,
+            pmh
+        )
+
+        # step 11: draw brightness and contrast
         # create the brightness/contrast polygon (draws as a polygon over the image)
         self.bc_poly = QPolygon()
-        for p in self.base_corners:
-            x, y = [n*self.section.mag for n in p]
+        for x, y in self.base_corners:
+            x, y = (x * mag, y * mag)
             x, y = tform.map(x, y)
             x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
             self.bc_poly.append(QPoint(x, y))
-        # draw the brightness and contrast
-        self._drawBrightness(image_layer)  # brightness first!
+        self._drawBrightness(image_layer)
         self._drawContrast(image_layer)
 
         return image_layer
@@ -428,7 +377,7 @@ class ImageLayer():
 
         return arr
 
-def getBoundingRect(points : list):
+def getBounds(points : list):
     """Get the bounding rectangle and shift in origin for a set of points.
     
             Params:
@@ -450,3 +399,44 @@ def getBoundingRect(points : list):
         if y > ymax: ymax = y
     
     return xmin, ymin, xmax, ymax
+
+def adjustBounds(bounds, w, h):
+    """Adjust the bounds to a specific width and height."""
+    xmin, ymin, xmax, ymax = tuple(bounds)
+
+    if xmin > w:
+        return None, None
+    elif xmin < 0:
+        xmin_padding = 0 - xmin
+        xmin = 0
+    else:
+        xmin_padding = 0
+    
+    if ymin > h:
+        return None, None
+    elif ymin < 0:
+        ymin_padding = 0 - ymin
+        ymin = 0
+    else:
+        ymin_padding = 0
+    
+    if xmax < 0:
+        return None, None
+    elif xmax > w:
+        xmax_padding = xmax - w
+        xmax = w
+    else:
+        xmax_padding = 0
+    
+    if ymax < 0:
+        return None, None
+    elif ymax > h:
+        ymax_padding = ymax - h
+        ymax = h
+    else:
+        ymax_padding = 0
+
+    return (
+        tuple(round(n) for n in (xmin, ymin, xmax, ymax)),
+        tuple(round(n) for n in (xmin_padding, ymin_padding, xmax_padding, ymax_padding))
+    )

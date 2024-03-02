@@ -37,7 +37,7 @@ from PyReconstruct.modules.gui.dialog import (
     BackupDialog,
     ShortcutsDialog
 )
-from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter
+from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter, AboutWidget
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
@@ -283,7 +283,9 @@ class MainWindow(QMainWindow):
                     None,
                     ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
                     None,
-                    ("bcprofiles_act", "Modify brightness/contrast profiles", "", self.changeBCProfiles)
+                    ("bcprofiles_act", "Modify brightness/contrast profiles", "", self.changeBCProfiles),
+                    None,
+                    ("about_act", "About this series...", "", self.displayAbout),
                 ]
             },
             
@@ -2737,6 +2739,10 @@ class MainWindow(QMainWindow):
         for act_name, kbd in shortcuts_dict.items():
             getattr(self, act_name).setShortcut(kbd)
             self.series.setOption(act_name, kbd)
+    
+    def displayAbout(self):
+        """Display the widget display information about the series."""
+        AboutWidget(self, self.series)
         
     def restart(self):
         self.restart_mainwindow = True

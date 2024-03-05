@@ -222,22 +222,23 @@ class ImageLayer():
             Returns:
                 image_layer (QPixmap): the image laye
         """
-        # setup
+        # set attrs
         self.window = window
         self.pixmap_dim = pixmap_dim
 
+        # return blank if image was not found
+        if not self.image_found:
+            blank_pixmap = QPixmap(*pixmap_dim)
+            blank_pixmap.fill(Qt.black)
+            return blank_pixmap
+
+        # setup
         tform = self.section.tform
         mag = self.section.mag
         wx, wy, ww, wh = tuple(self.window)
         pmw, pmh = tuple(self.pixmap_dim)
         iw, ih = self.bw, self.bh
         s = self.scaling = pmw / (ww / mag)
-
-        # return blank if image was not found
-        if not self.image_found:
-            blank_pixmap = QPixmap(pmw, pmh)
-            blank_pixmap.fill(Qt.black)
-            return blank_pixmap
 
         # step 0: get the applicable zarr scale if using zarr file for images
         if self.is_zarr_file:

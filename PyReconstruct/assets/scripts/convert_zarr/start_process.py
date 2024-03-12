@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
     def message(self, s):
         self.text.appendPlainText(s)
 
-    def start_process(self):
+    def start_process(self, cmd, args):
         
         if self.p is None:  # No process running.
 
@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
             self.p.stateChanged.connect(self.handle_state)
             self.p.finished.connect(self.process_finished)
             
-            self.p.start(zarr_cmd, zarr_args)
+            self.p.start(cmd, args)
 
     def handle_stderr(self):
         
@@ -89,5 +89,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    window.start_process()
+    window.start_process(zarr_cmd, zarr_args)
     app.exec()

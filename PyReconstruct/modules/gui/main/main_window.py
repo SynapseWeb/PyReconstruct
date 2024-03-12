@@ -1221,15 +1221,15 @@ class MainWindow(QMainWindow):
         if jser_fp is None:
             structure = [
                 ["Series:", (True, "file", "", "*.jser")],
-                ["Object regex filters (separate with a comma and space):"],
-                [("text", "")],
+                ["Object regex filters:"],
+                [("multitext", [])],
                 [
                     "From section",
                     ("int", min(self.series.sections.keys())),
                     "to",
                     ("int", max(self.series.sections.keys()))
                 ],
-                ["Overlap threshold (0-1):", ("float", 0.95, (0,1)), None],
+                ["Duplicate threshold (0-1):", ("float", 0.95, (0,1)), None],
                 ["Favor:",
                 (
                     "radio",
@@ -1249,10 +1249,7 @@ class MainWindow(QMainWindow):
                 return
             
             jser_fp = response[0]
-            if response[1]:
-                regex_filters = response[1].split(", ")
-            else:
-                regex_filters = []
+            regex_filters = response[1]
             srange = (response[2], response[3]+1)
 
             threshold = response[4]

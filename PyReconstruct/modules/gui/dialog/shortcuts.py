@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, 
     QDialog, 
     QGridLayout, 
-    QLineEdit,
+    QPushButton,
     QDialogButtonBox,
     QVBoxLayout,
     QScrollArea,
@@ -55,6 +55,10 @@ class ShortcutsDialog(QDialog):
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
 
+        reset_defaults_button = QPushButton("Reset Defaults")
+        reset_defaults_button.clicked.connect(self.resetDefaults)
+        buttonbox.addButton(reset_defaults_button, QDialogButtonBox.ResetRole)
+
         qsa = QScrollArea(self)
         w = QWidget(self)
         w.setLayout(grid)
@@ -66,6 +70,11 @@ class ShortcutsDialog(QDialog):
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
+    
+    def resetDefaults(self):
+        """Reset the defaults for all fields."""
+        for act, w in self.act_widgets.items():
+            w.setKeySequence(self.series.getOption(act))
     
     def accept(self):
         """Called when user accepts the dialog."""

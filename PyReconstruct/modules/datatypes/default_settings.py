@@ -20,6 +20,7 @@ default_settings = {
     # mouse tools
     "pointer": ["lasso", "exc"],
     "auto_merge": False,
+    "trace_mode": "combo",  # combo, poly, scribble
     "knife_del_threshold": 1.0,
     "grid": [1, 1, 1, 1, 1, 1],
     "sampling_frame_grid": True,

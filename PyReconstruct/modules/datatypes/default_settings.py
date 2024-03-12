@@ -4,6 +4,12 @@ default_settings = {
     # user
     "user": os.getlogin(),
     "backup_dir": "",
+    "manual_backup_dir": "",
+    "manual_backup_name": True,
+    "manual_backup_date": True,
+    "manual_backup_time": False,
+    "manual_backup_user": True,
+    "manual_backup_comment": True,
     "left_handed": False,
 
     # view

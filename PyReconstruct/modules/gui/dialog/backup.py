@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -10,14 +11,15 @@ from PySide6.QtWidgets import (
     QCheckBox
 )
 
-from .file_dialog import FileDialog
+from .helper import BrowseWidget
 
 from PyReconstruct.modules.datatypes import Series
+from PyReconstruct.modules.gui.utils import notify
 
 def getDateTime():
     dt = datetime.now()
     d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
+    t = f"{dt.hour:02d}-{dt.minute:02d}"
     return d, t
 
 class BackupDialog(QDialog):
@@ -26,6 +28,7 @@ class BackupDialog(QDialog):
         """Create a dialog for brightness/contrast."""
         super().__init__(parent)
         self.setWindowTitle("Backup Series")
+        self.series = series
 
         name = series.name
         date, time = getDateTime()
@@ -33,6 +36,25 @@ class BackupDialog(QDialog):
         self.fp = ""
 
         vlayout = QVBoxLayout()
+
+        # create the directory widget first
+        hbl = QHBoxLayout()
+        bdir = series.getOption("manual_backup_dir")
+        if not os.path.isdir(bdir):
+            bdir = ""
+        self.dir_widget = BrowseWidget(self, "dir", bdir)
+        hbl.addWidget(QLabel(self, text="Save Folder:"))
+        hbl.addWidget(self.dir_widget)
+        vlayout.addLayout(hbl)
+
+        # create the delimiter widget
+        r = QHBoxLayout()
+        lbl = QLabel(self, text="Delimiter:")
+        self.delimiter_le = QLineEdit(self, text="-")
+        self.delimiter_le.textChanged.connect(self.updateWidgets)
+        r.addWidget(lbl)
+        r.addWidget(self.delimiter_le)
+        vlayout.addLayout(r)
 
         self.widgets = {}
 
@@ -51,7 +73,7 @@ class BackupDialog(QDialog):
             r = QHBoxLayout()
             cb = QCheckBox(self)
             cb.setText(f"{k.title()}:")
-            cb.setChecked(True)
+            cb.setChecked(series.getOption(f"manual_backup_{k}"))
             cb.stateChanged.connect(self.updateWidgets)
             le = QLineEdit(self, text=v)
             le.textChanged.connect(self.updateWidgets)
@@ -59,19 +81,10 @@ class BackupDialog(QDialog):
             r.addWidget(le)
             vlayout.addLayout(r)
             self.widgets[k] = (cb, le)
-        
-        # create the delimiter widget
-        r = QHBoxLayout()
-        lbl = QLabel(self, text="Delimiter:")
-        self.delimiter_le = QLineEdit(self, text="-")
-        self.delimiter_le.textChanged.connect(self.updateWidgets)
-        r.addWidget(lbl)
-        r.addWidget(self.delimiter_le)
-        vlayout.addLayout(r)
 
-        # hard-code uncheck time
-        self.widgets["time"][0].setChecked(False)
-
+        # display name
+        vlayout.addSpacing(10)
+        vlayout.addWidget(QLabel(self, text="Save File Name:"))
         vlayout.addWidget(self.save_name_lbl)
         
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -81,6 +94,7 @@ class BackupDialog(QDialog):
         vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
+        self.updateWidgets()
     
     def updateWidgets(self):
         """Update the display widgets."""
@@ -96,15 +110,20 @@ class BackupDialog(QDialog):
     
     def accept(self):
         """Overwritten from parent class."""
-        # get the filepath
-        self.fp = FileDialog.get(
-            "save",
-            self,
-            "Save Series",
-            filter="*.jser",
-            file_name=f"{self.save_name_lbl.text()}.jser"
-        )
-        if not self.fp: return
+        bdir = self.dir_widget.text()
+        if not os.path.isdir(bdir):
+            notify("Please enter a valid directory.")
+            return
+        fname = f"{self.save_name_lbl.text()}.jser"
+        self.fp = os.path.join(bdir, fname)
+
+        # set the series options
+        self.series.setOption("manual_backup_dir", bdir)
+        for name, (cb, le) in self.widgets.items():
+            self.series.setOption(
+                f"manual_backup_{name}",
+                cb.isChecked()
+            )
 
         super().accept()
     

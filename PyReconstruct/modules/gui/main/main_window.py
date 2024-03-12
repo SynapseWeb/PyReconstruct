@@ -1568,32 +1568,46 @@ class MainWindow(QMainWindow):
         """
         self.field.setMouseMode(new_mode)
     
-    def changeClosedTraceMode(self, new_mode=None):
-        """Change the closed trace mode (trace, rectangle, circle)."""
-        if new_mode not in ["trace", "rect", "circle"]:
-            current_mode = self.field.closed_trace_mode
-            structure = [
-                [("radio",
-                  ("Trace", current_mode == "trace"),
-                  ("Rectangle", current_mode == "rect"),
-                  ("Ellipse", current_mode == "circle")
-                )],
-                [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))]
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
-            if not confirmed:
-                return
-            
-            if response[0][1][1]:
-                new_mode = "rect"
-            elif response[0][2][1]:
-                new_mode = "circle"
-            else:
-                new_mode = "trace"
-            
-            self.series.setOption("auto_merge", response[1][0][1])
+    def changeTraceMode(self):
+        """Change the trace mode and shape."""
+        current_shape = self.field.closed_trace_shape
+        current_mode = self.series.getOption("trace_mode")
+        structure = [
+            ["Mode:"],
+            [("radio",
+                ("Scribble", current_mode == "scribble"),
+                ("Poly", current_mode == "poly"),
+                ("Combo", current_mode == "combo")
+            )],
+            ["Closed Trace Shape:"],
+            [("radio",
+                ("Trace", current_shape == "trace"),
+                ("Rectangle", current_shape == "rect"),
+                ("Ellipse", current_shape == "circle")
+            )],
+            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
+        if not confirmed:
+            return
         
-        self.field.closed_trace_mode = new_mode
+        if response[0][0][1]:
+            new_mode = "scribble"
+        elif response[0][1][1]:
+            new_mode = "poly"
+        else:
+            new_mode = "combo"
+        
+        if response[1][1][1]:
+            new_shape = "rect"
+        elif response[1][2][1]:
+            new_shape = "circle"
+        else:
+            new_shape = "trace"
+        
+        self.series.setOption("trace_mode", new_mode)
+        self.field.closed_trace_shape = new_shape
+        self.series.setOption("auto_merge", response[2][0][1])
 
     def changeTracingTrace(self, trace):
         """Change the trace utilized by the user.

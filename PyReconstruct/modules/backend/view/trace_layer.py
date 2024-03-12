@@ -204,6 +204,9 @@ class TraceLayer():
         new_trace = base_trace.copy()
         new_trace.points = []
 
+        # remove trace if less than 2 points after simplification
+        if len(pix_trace) < 2:
+            return
         # force trace to be open if only two points
         if len(pix_trace) == 2:
             new_trace.closed = False

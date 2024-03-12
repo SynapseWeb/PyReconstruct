@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QDialogButtonBox,
-    QPushButton
+    QPushButton,
+    QScrollArea
 )
 from PySide6.QtGui import (
     QPainter,
@@ -73,7 +74,7 @@ class AllOptionsDialog(QDialog):
         tab_structure = {
             "Mouse Tools": [
                 ["pointer"],
-                ["closed_trace"],
+                ["trace"],
                 ["knife"],
                 ["grid"],
                 ["flag_defaults"]
@@ -102,7 +103,10 @@ class AllOptionsDialog(QDialog):
             widget = QWidget(self)
             vlayout = self.getWidgetsLayout(structure)
             widget.setLayout(vlayout)
-            self.tabs.addTab(widget, tab_name)
+            qsa = QScrollArea()
+            qsa.setWidgetResizable(True)
+            qsa.setWidget(widget)
+            self.tabs.addTab(qsa, tab_name)
     
     def createWidgets(self, use_defaults=False):
         """Create the widgets for each of the options
@@ -127,13 +131,27 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("display_closest", response[2][0][1])
         self.addOptionWidget("pointer", structure, setOption)
 
-        # closed_trace
+        # trace
+        trace_mode = self.series.getOption("trace_mode")
         structure = [
+            ["Mode:"],
+            [("radio",
+                ("Scribble", trace_mode == "scribble"),
+                ("Poly", trace_mode == "poly"),
+                ("Combo", trace_mode == "combo")
+            )],
             [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge", use_defaults)))]
         ]
         def setOption(response):
-            self.series.setOption("auto_merge", response[0][0][1])
-        self.addOptionWidget("closed_trace", structure, setOption)
+            if response[0][0][1]:
+                new_mode = "scribble"
+            elif response[0][1][1]:
+                new_mode = "poly"
+            else:
+                new_mode = "combo"
+            self.series.setOption("trace_mode", new_mode)
+            self.series.setOption("auto_merge", response[1][0][1])
+        self.addOptionWidget("trace", structure, setOption)
 
         # grid
         w, h, dx, dy, nx, ny = self.series.getOption("grid", use_defaults)

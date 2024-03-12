@@ -157,7 +157,7 @@ class FieldWidget(QWidget, FieldView):
         self.is_moving_trace = False
         self.is_selecting_traces = False
         self.is_scissoring = False
-        self.closed_trace_mode = "trace"
+        self.closed_trace_shape = "trace"
 
         self.selected_trace_names = {}
         self.selected_ztrace_names = {}
@@ -415,7 +415,7 @@ class FieldWidget(QWidget, FieldView):
                 self.mouse_mode == FieldWidget.CLOSEDTRACE
             ):
                 closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE and self.is_line_tracing or
-                          self.mouse_mode == FieldWidget.CLOSEDTRACE and self.closed_trace_mode != "trace")
+                          self.mouse_mode == FieldWidget.CLOSEDTRACE and self.closed_trace_shape != "trace")
                 color = QColor(*self.tracing_trace.color)
                 pen = QPen(color, 1)
             
@@ -1158,14 +1158,16 @@ class FieldWidget(QWidget, FieldView):
     
     def activateMouseBoundaryTimer(self):
         """Activate the timer to check the mouse boundary."""
-        self.mouse_boundary_timer = QTimer(self)
-        self.mouse_boundary_timer.timeout.connect(self.checkMouseBoundary)
-        self.mouse_boundary_timer.start(100)
+        if self.mouse_boundary_timer is None:
+            self.mouse_boundary_timer = QTimer(self)
+            self.mouse_boundary_timer.timeout.connect(self.checkMouseBoundary)
+            self.mouse_boundary_timer.start(100)
     
     def deactivateMouseBoundaryTimer(self):
         """Deactivate the timer to check the mouse near boundary."""
         if self.mouse_boundary_timer:
             self.mouse_boundary_timer.stop()
+            self.mouse_boundary_timer = None
     
     def isSingleClicking(self):
         """Check if user is single-clicking.
@@ -1480,7 +1482,14 @@ class FieldWidget(QWidget, FieldView):
             self.last_x = event.x()
             self.last_y = event.y()
             self.current_trace = [(self.last_x, self.last_y)]
-    
+
+        # start line tracing of only trace mode set
+        trace_mode = self.series.getOption("trace_mode")
+        if trace_mode == "poly":
+            self.is_line_tracing = True
+            self.activateMouseBoundaryTimer()
+            self.mainwindow.checkActions()
+
     def traceMove(self, event):
         """Called when mouse is moved in trace mode."""
         if self.is_line_tracing:
@@ -1490,11 +1499,12 @@ class FieldWidget(QWidget, FieldView):
     
     def traceRelease(self, event):
         """Called when mouse is released in trace mode."""
+        trace_mode = self.series.getOption("trace_mode")
         # user is already line tracing
         if self.is_line_tracing:
             self.lineRelease(event)
-        # user decided to line trace
-        elif self.isSingleClicking():
+        # user decided to line trace (in combo trace_mode)
+        elif trace_mode == "combo" and self.isSingleClicking():
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
             self.activateMouseBoundaryTimer()
@@ -1512,9 +1522,9 @@ class FieldWidget(QWidget, FieldView):
             # draw trace on pixmap
             x = event.x()
             y = event.y()
-            if self.closed_trace_mode == "trace" or self.mouse_mode == FieldWidget.OPENTRACE:
+            if self.closed_trace_shape == "trace" or self.mouse_mode == FieldWidget.OPENTRACE:
                 self.current_trace.append((x, y))
-            elif self.closed_trace_mode == "rect":
+            elif self.closed_trace_shape == "rect":
                 x1, y1 = self.current_trace[0]
                 self.current_trace = [
                     (x1, y1),
@@ -1522,7 +1532,7 @@ class FieldWidget(QWidget, FieldView):
                     (x, y),
                     (x1, y)
                 ]
-            elif self.closed_trace_mode == "circle":
+            elif self.closed_trace_shape == "circle":
                 self.current_trace = ellipseFromPair(self.clicked_x, self.clicked_y, x, y)
             self.last_x = x
             self.last_y = y
@@ -1535,7 +1545,7 @@ class FieldWidget(QWidget, FieldView):
         """
         closed = (self.mouse_mode == FieldWidget.CLOSEDTRACE)
         if self.lclick:
-            if len(self.current_trace) <= 1:
+            if len(self.current_trace) < 2:
                 return
             self.newTrace(
                 self.current_trace,

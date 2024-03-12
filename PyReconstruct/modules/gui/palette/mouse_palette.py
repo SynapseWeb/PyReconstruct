@@ -138,8 +138,8 @@ class MousePalette():
         # manually enter dialog function for pointer and grid
         if name == "Pointer":
             b.setRightClickEvent(self.mainwindow.modifyPointer)
-        elif name == "Closed Trace":
-            b.setRightClickEvent(self.mainwindow.changeClosedTraceMode)
+        elif name == "Closed Trace" or name == "Open Trace":
+            b.setRightClickEvent(self.mainwindow.changeTraceMode)
         elif name == "Grid":
             b.setRightClickEvent(self.mainwindow.modifyGrid)
         elif name == "Flag":

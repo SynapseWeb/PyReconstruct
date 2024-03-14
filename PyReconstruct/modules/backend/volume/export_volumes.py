@@ -45,9 +45,9 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             if obj_name in section.contours:
                 
                 for trace in section.contours[obj_name]:
-                    
+
                     # collect all points if generating a full surface
-                    obj_data[obj_name][0].addTrace(trace, snum, tform)
+                    obj_data[obj_name].addTrace(trace, snum, tform)
 
     # iterate through all objects and export 3D meshes
 

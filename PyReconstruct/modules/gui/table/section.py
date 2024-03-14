@@ -48,6 +48,7 @@ class SectionTableWidget(QDockWidget):
         
         # create the table and the menu
         self.table = None
+        self.process_check_event = True
         self.createTable()
         self.createMenus()
 
@@ -130,6 +131,7 @@ class SectionTableWidget(QDockWidget):
                 r (int): the row index
                 snum (int): the section number
         """
+        self.process_check_event = False
         section_data = self.series.data["sections"][snum]
 
         self.table.setItem(r, 0, QTableWidgetItem(
@@ -154,6 +156,7 @@ class SectionTableWidget(QDockWidget):
         self.table.setItem(r, 5, QTableWidgetItem(
             str(section_data["src"])
         ))
+        self.process_check_event = True
     
     def createTable(self):
         """Create the table widget."""
@@ -242,6 +245,8 @@ class SectionTableWidget(QDockWidget):
     
     def checkLock(self, item : QTableWidgetItem):
         """User checked a lock checkbox."""
+        if not self.process_check_event:
+            return
         snum = int(self.table.item(item.row(), 0).text())
         lock = item.checkState() == Qt.CheckState.Checked
         self.lockSections(lock, section_numbers=[snum])

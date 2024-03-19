@@ -219,7 +219,9 @@ class MainWindow(QMainWindow):
                             ("importflags_act", "Flags...", "", self.importFlags),
                             ("importjsertransforms0_act", "Alignment(s)...", "", self.importSeriesTransforms),
                             ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importbc_act", "Brightness/contrast...", "", self.importBC)
+                            ("importbc_act", "Brightness/contrast...", "", self.importBC),
+                            None,
+                            ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
                         ]
                     },
                     {
@@ -228,7 +230,8 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("exportjser_act", "as backup jser...", self.series, self.manualBackup),
-                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML)
+                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
+                            ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
                         ]
                     },
                     {
@@ -2754,6 +2757,34 @@ class MainWindow(QMainWindow):
     def displayAbout(self):
         """Display the widget display information about the series."""
         AboutWidget(self, self.series)
+    
+    def exportTracePaletteCSV(self):
+        """Export the current trace palette as CSV file."""
+        name = self.series.palette_index[0]
+        fp = FileDialog.get(
+            "save",
+            self,
+            "Export Trace Palette",
+            filter="*.csv",
+            file_name=f"{name}.csv"
+        )
+        if not fp: return
+
+        self.series.exportTracePaletteCSV(fp)
+    
+    def importTracePaletteCSV(self):
+        """Import a trace palette from a CSV file."""
+        fp = FileDialog.get(
+            "file",
+            self,
+            "Import Trace Palette",
+            filter="*.csv"
+        )
+        if not fp: return
+
+        self.series.importTracePaletteCSV(fp)
+
+        self.mouse_palette.reset()
         
     def restart(self):
         self.restart_mainwindow = True

@@ -30,6 +30,17 @@ class Trace():
         self.tags = set()
         self.fill_mode = ("none", "none")
     
+    @property
+    def name(self):
+        return self._name
+    @name.setter  # prevent unusual whitespace in names
+    def name(self, value):
+        assert (value is None or type(value) is str)
+        if value is not None:
+            value = value.strip()
+            value = "_".join(value.split())  # replace all whitespace with underscores
+        self._name = value
+    
     def copy(self):
         """Create a copy of the trace object.
         

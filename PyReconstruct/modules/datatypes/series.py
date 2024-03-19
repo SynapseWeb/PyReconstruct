@@ -118,6 +118,11 @@ class Series():
 
         # objects for non-GUI users
         self.objects = Objects(self)
+
+        # editors list
+        self.editors = set(series_data["editors"])
+        if not self.isWelcomeSeries() and not self.editors:
+            self.editors = self.getEditorsFromHistory()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -515,6 +520,10 @@ class Series():
                 data["3D_mode"] = data["3D_modes"][0]
                 data["3D_opacity"] = data["3D_modes"][1]
                 del(data["3D_modes"])
+        
+        # check for editors list
+        if "editors" not in series_data:
+            series_data["editors"] = []
 
     def getDict(self) -> dict:
         """Convert series object into a dictionary.
@@ -551,6 +560,8 @@ class Series():
         d["options"] = self.options
 
         d["log_set"] = self.log_set.getList()
+
+        d["editors"] = list(self.editors)
 
         return d
     
@@ -1592,9 +1603,10 @@ class Series():
         """
         self.log_set.addLog(self.user, obj_name, snum, event)
 
-        # update the last user data
+        # update the user data
         if obj_name:
             self.setAttr(obj_name, "last_user", self.user)
+            self.editors.add(self.user)
     
     def getFullHistory(self) -> LogSet:
         """Get all the logs for the series.
@@ -1947,6 +1959,16 @@ class Series():
             trace_list.append(t)
         
         self.palette_traces[palette_name] = trace_list
+    
+    def getEditorsFromHistory(self):
+        """Get the set of editors from the history of the series."""
+        editors = set()
+        ls = self.getFullHistory()
+        for l in ls.all_logs:
+            if l.user:
+                editors.add(l.user)
+        return editors
+
 
 class SeriesIterator():
 

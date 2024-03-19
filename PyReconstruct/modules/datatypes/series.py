@@ -1965,11 +1965,14 @@ class Series():
     def getEditorsFromHistory(self):
         """Get the set of editors from the history of the series."""
         editors = set()
-        ls = self.getFullHistory()
-        for l in ls.all_logs:
-            if l.user:
-                editors.add(l.user)
-        return editors
+        try:
+            ls = self.getFullHistory()
+            for l in ls.all_logs:
+                if l.user:
+                    editors.add(l.user)
+            return editors
+        except:
+            return set()
 
 
 class SeriesIterator():

@@ -296,10 +296,17 @@ class LogSet():
                 log_list (list): the list representation of the logs
         """
         log_set = LogSet()
-        for log_str in log_list:
+        i = 0
+        while i < len(log_list):
+            log_str = log_list[i]
             if log_str.strip():
+                # check for corrupt log strings (return key in name)
+                while len(log_str.split(",")) < 6:
+                    log_str += log_list[i+1].strip()
+                    i += 1
                 log = Log.fromStr(log_str)
                 log_set.addExistingLog(log)
+            i += 1
         
         return log_set
     

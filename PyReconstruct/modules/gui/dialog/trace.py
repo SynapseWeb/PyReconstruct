@@ -236,7 +236,7 @@ class TraceDialog(QDialog):
             trace = Trace(None, None, None)
 
             # name
-            name = self.name_input.text().strip()
+            name = self.name_input.text()
             if name == "*" or name == "":
                 name = None
             trace.name = name

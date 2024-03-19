@@ -130,8 +130,6 @@ class Section():
                 )
             ]
 
-
-    
     # STATIC METHOD
     def updateJSON(section_data, n):
         """Add missing attributes to section JSON.
@@ -195,15 +193,6 @@ class Section():
         for cname in flagged_contours:
             del(section_data["contours"][cname])
         
-        # scan contour names and remove errant whitespace
-        for cname in tuple(section_data["contours"].keys()):
-            s_cname = cname.strip()
-            if cname != s_cname:
-                if s_cname not in section_data["contours"]:
-                    section_data["contours"][s_cname] = []
-                section_data["contours"][s_cname] += section_data["contours"][cname]
-                del(section_data["contours"][cname])
-        
         # remove no-alignment if present
         if "no-alignment" in section_data["tforms"]:
             del(section_data["tforms"]["no-alignment"])
@@ -214,6 +203,16 @@ class Section():
                 flag.append(False)
             if len(flag) == 6:
                 flag.insert(0, Flag.generateID())
+        
+        # iterate through the contours and remove whitespace
+        for cname in tuple(section_data["contours"].keys()):
+            cname = cname.strip()
+            updated_cname = "_".join(cname.split())
+            if cname != updated_cname:
+                if updated_cname not in section_data["contours"]:
+                    section_data["contours"][updated_cname] = []
+                section_data["contours"][updated_cname] += section_data["contours"][cname]
+                del(section_data["contours"][cname])
 
     def getDict(self) -> dict:
         """Convert section object into a dictionary.

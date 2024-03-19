@@ -1890,6 +1890,64 @@ class Series():
     def avg_thickness(self):
          return self.data.getAvgThickness()
 
+    def exportTracePaletteCSV(self, fp : str, palette_name : str = None):
+        """Export the trace palette as a CSV file.
+        
+            Params:
+                fp (str): the filepath for the CSV file
+                palette_name (str): the name of the palette to export (default: current palette)
+        """
+        if palette_name is None:
+            palette_name = self.palette_index[0]
+        
+        traces = self.palette_traces[palette_name].copy()
+        csv_str = "Name,Color,Fill,Tags,X,Y\n"
+
+        for trace in traces:
+            trace : Trace
+            name = trace.name
+            color = " ".join(str(n) for n in trace.color)
+            fill = " ".join(trace.fill_mode)
+            tags = " ".join(trace.tags)
+            x = " ".join(str(x) for x, y in trace.points)
+            y = " ".join(str(y) for x, y in trace.points)
+            csv_str += ",".join([name, color, fill, tags, x, y]) + "\n"
+        
+        with open(fp, "w") as f:
+            f.write(csv_str)
+    
+    def importTracePaletteCSV(self, fp : str, palette_name : str = None):
+        """Import the trace palette from a CSV file.
+        
+            Params:
+                fp (str): the path to the CSV file
+                palette_name (str): the name for the new palette (default: overwrite current)
+        """
+        if palette_name is None:
+            palette_name = self.palette_index[0]
+        
+        with open(fp, "r") as f:
+            lines = f.readlines()[1:]
+        
+        trace_list = []
+
+        for line in lines:
+            l = line.split(",")
+            name = l[0]
+            color = tuple(int(n) for n in l[1].split())
+            fill = tuple(l[2].split())
+            tags = set(l[3].split())
+            x = [float(n) for n in l[4].split()]
+            y = [float(n) for n in l[5].split()]
+
+            t = Trace(name, color)
+            t.fill_mode = fill
+            t.tags = tags
+            t.points = list(zip(x, y))
+            trace_list.append(t)
+        
+        self.palette_traces[palette_name] = trace_list
+
 class SeriesIterator():
 
     def __init__(self, series : Series, show_progress : bool, message : str, series_states, breakable=True):

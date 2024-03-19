@@ -1967,12 +1967,13 @@ class Series():
         editors = set()
         try:
             ls = self.getFullHistory()
-            for l in ls.all_logs:
-                if l.user:
-                    editors.add(l.user)
-            return editors
         except:
+            print("ERROR: corrupt history. Skipping editors update...")
             return set()
+        for l in ls.all_logs:
+            if l.user:
+                editors.add(l.user)
+        return editors
 
 
 class SeriesIterator():

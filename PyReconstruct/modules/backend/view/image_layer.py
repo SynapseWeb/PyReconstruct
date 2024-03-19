@@ -271,8 +271,8 @@ class ImageLayer():
         # step 4: get bounds to crop image
         bounds = getBounds(utf_pixel_poly_window)
 
-        # step 5: adjust bounds to image dimensions and get necessary padding
-        bounds, padding = adjustBounds(bounds, iw, ih)
+        # step 5: adjust bounds to image dimensions and get necessary filling
+        bounds, filling = adjustBounds(bounds, iw, ih)
         # check if completely out of bounds
         if bounds is None:
             blank_pixmap = QPixmap(pmw, pmh)
@@ -280,7 +280,7 @@ class ImageLayer():
             return blank_pixmap
         # unpack values otherwise
         xmin, ymin, xmax, ymax = bounds
-        xminp, yminp, xmaxp, ymaxp = padding
+        xminp, yminp, xmaxp, ymaxp = filling
         
         # step 6: get crop from image
         if self.is_zarr_file:
@@ -313,13 +313,13 @@ class ImageLayer():
             im_crop.height() * s * scale_level
         )
         
-        # step 8: pad the image (continue to account for scaling)
-        im_padded = QPixmap(
+        # step 8: fill the image (continue to account for scaling)
+        im_filled = QPixmap(
             (xminp + (xmax - xmin) + xmaxp) * s,
             (ymaxp + (ymax - ymin) + yminp) * s
         )
-        im_padded.fill(Qt.black)
-        painter = QPainter(im_padded)
+        im_filled.fill(Qt.black)
+        painter = QPainter(im_filled)
         painter.drawImage(
             xminp * s,
             ymaxp * s,
@@ -327,8 +327,8 @@ class ImageLayer():
         )
         painter.end()
 
-        # step 9: transform the padded image
-        im_tformed = im_padded.transformed(
+        # step 9: transform the filled image
+        im_tformed = im_filled.transformed(
             tform.imageTransform().getQTransform()
         )
 
@@ -408,36 +408,36 @@ def adjustBounds(bounds, w, h):
     if xmin > w:
         return None, None
     elif xmin < 0:
-        xmin_padding = 0 - xmin
+        xmin_filling = 0 - xmin
         xmin = 0
     else:
-        xmin_padding = 0
+        xmin_filling = 0
     
     if ymin > h:
         return None, None
     elif ymin < 0:
-        ymin_padding = 0 - ymin
+        ymin_filling = 0 - ymin
         ymin = 0
     else:
-        ymin_padding = 0
+        ymin_filling = 0
     
     if xmax < 0:
         return None, None
     elif xmax > w:
-        xmax_padding = xmax - w
+        xmax_filling = xmax - w
         xmax = w
     else:
-        xmax_padding = 0
+        xmax_filling = 0
     
     if ymax < 0:
         return None, None
     elif ymax > h:
-        ymax_padding = ymax - h
+        ymax_filling = ymax - h
         ymax = h
     else:
-        ymax_padding = 0
+        ymax_filling = 0
 
     return (
         tuple(round(n) for n in (xmin, ymin, xmax, ymax)),
-        tuple(round(n) for n in (xmin_padding, ymin_padding, xmax_padding, ymax_padding))
+        tuple(round(n) for n in (xmin_filling, ymin_filling, xmax_filling, ymax_filling))
     )

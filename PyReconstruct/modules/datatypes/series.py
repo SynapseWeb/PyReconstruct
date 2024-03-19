@@ -1815,8 +1815,10 @@ class Series():
     
     def getAlignments(self) -> list:
         """Return a list of alignment names."""
-        example_section = self.sections[list(self.sections.keys())[0]]
-        return list(example_section.tforms.keys())
+        snum = list(self.sections.keys())[0]  # get a valid section number
+        anames = list(self.data["sections"][snum]["tforms"].keys())
+        print(anames)
+        return anames
 
     def updateCurationFromHistory(self):
         """Update curation status of all objects from the history."""

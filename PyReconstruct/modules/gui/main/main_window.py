@@ -810,6 +810,8 @@ class MainWindow(QMainWindow):
         
         QSettings("KHLab", "PyReconstruct").setValue("username", new_name)
         self.series.user = new_name
+
+        self.notifyNewEditor()
     
     def setFillOpacity(self, opacity : float = None):
         """Set the opacity of the trace highlight.
@@ -853,9 +855,12 @@ class MainWindow(QMainWindow):
             
             # user has opened an existing series
             if self.series:
+                first_open = False
                 response = self.saveToJser(notify=True)
                 if response == "cancel":
                     return
+            else:
+                first_open = True
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)
@@ -981,6 +986,10 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # notify new users of any warnings
+        if not first_open:
+            self.notifyNewEditor()
     
     def newSeries(
         self,
@@ -2785,6 +2794,18 @@ class MainWindow(QMainWindow):
         self.series.importTracePaletteCSV(fp)
 
         self.mouse_palette.reset()
+    
+    def notifyNewEditor(self):
+        """Provide any relevant notifications to new editors."""
+        if (
+            not self.series.isWelcomeSeries() and
+            self.series.user not in self.series.editors and
+            len(self.series.getAlignments()) > 2
+        ):
+            notify(
+                "Note: this series has multiple alignments.\n" + 
+                f"Press {self.series.getOption('changealignment_act')} to view"
+            )
         
     def restart(self):
         self.restart_mainwindow = True

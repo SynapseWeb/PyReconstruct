@@ -846,18 +846,21 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
+        # user has opened an existing series
+        if self.series:
+            first_open = False
+            response = self.saveToJser(notify=True)
+            if response == "cancel":
+                return
+        else:
+            first_open = True
+        
         if not series_obj:  # if series is not provided            
             # get the new series
             new_series = None
             if not jser_fp:
                 jser_fp = FileDialog.get("file", self, "Open Series", filter="*.jser")
                 if not jser_fp: return  # exit function if user does not provide series
-            
-            # user has opened an existing series
-            if self.series:
-                response = self.saveToJser(notify=True)
-                if response == "cancel":
-                    return
 
             # check for a hidden series folder
             sdir = os.path.dirname(jser_fp)
@@ -983,6 +986,10 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # notify new users of any warnings
+        if not first_open:
+            self.notifyNewEditor()
         
     def newSeries(
         self,

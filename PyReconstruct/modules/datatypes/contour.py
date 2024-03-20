@@ -112,13 +112,29 @@ class Contour():
 
         return (xmax + xmin) / 2, (ymax + ymin) / 2
 
-    def importTraces(self, other, threshold : float = 0.95):
+    def importTraces(self, other, threshold : float = 0.95, keep_above : str = "self"):
         """Import all of the traces from another contour.
         
             Params:
                 other (Contour): the contour with traces to import
                 threshold (float): the overlap threshold
+                keep_above (str): the series that is favored for functional duplicates (above the overlap threshold; "self", "other", or "")
         """
+        # keep track of new trace list
+        traces = []
+        # repeated use: determining which traces to use when finding duplicates
+        def addDuplicate(st : Trace, ot : Trace, tlist : list):
+            if keep_above == "self":
+                st.mergeTags(ot)  # import tags
+                tlist.append(st)
+            elif keep_above == "other":
+                ot.mergeTags(st)
+                tlist.append(ot)
+            elif keep_above == "":
+                tlist += [st, ot]
+            else:
+                raise Exception(f"Invalid key {keep_above} used for keep_above parameter.")
+
         # assume that the first few traces are the same to save time
         i = 0
         while i < len(other):
@@ -127,7 +143,7 @@ class Contour():
             s_trace = self[i]
             o_trace = other[i]
             if s_trace.overlaps(o_trace, threshold):
-                s_trace.mergeTags(o_trace)  # import tags
+                addDuplicate(s_trace, o_trace, traces)
             else:
                 break
             i += 1
@@ -137,22 +153,22 @@ class Contour():
         rem_o_traces = other[i:]
         first_comparison = True
         for o_trace in rem_o_traces.copy():
-            found = False
             found_i = None
             for i, s_trace in enumerate(rem_s_traces):
                 if first_comparison:  # skip the first comparison -- we already know its false
                     first_comparison = False
                     continue
                 if s_trace.overlaps(o_trace, threshold=0.95):
-                    s_trace.mergeTags(o_trace)  # import tags
-                    found = True
+                    addDuplicate(s_trace, o_trace, traces)
                     found_i = i
                     break
-            if found:
+            if found_i is not None:
                 rem_s_traces.pop(found_i)
                 rem_o_traces.remove(o_trace)
-            else:
-                self.append(o_trace)
+        traces += rem_s_traces + rem_o_traces
+        
+        # replace traces list with new list
+        self.traces = traces
         
         # return the possible conflict traces
         return rem_s_traces, rem_o_traces

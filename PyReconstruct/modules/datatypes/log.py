@@ -430,3 +430,19 @@ class LogSetPair():
             # update the series attributes
             for obj_name, (user, dt) in last_user_data.items():
                 series.setAttr(obj_name, "last_user", user)
+    
+    def getModifiedSinceDiverge(self, cname : str, snum : int):
+        """Get the information on which contours have been modified since diverge.
+            Params:
+                cname (str): the name of the contour to check
+                snum (int): the section number of the contour
+            Returns:
+                (tuple): logset0 True/False, logset1 True/False
+        """
+        # determine which series have been modified since diverge
+        modified_since_diverge = [False, False]
+        for i, ls in enumerate((self.logset0, self.logset1)):
+            last_index = ls.getLastIndex(snum, cname)
+            if last_index > self.last_shared_index:
+                modified_since_diverge[i] = True
+        return tuple(modified_since_diverge)

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from .helper import resizeLineEdit, BrowseWidget
+from .helper import resizeLineEdit, BrowseWidget, MultiLineEdit
 from .color_button import ColorButton
 from .shape_button import ShapeButton
 from PyReconstruct.modules.gui.utils import notify
@@ -139,63 +139,6 @@ class InputField():
                     return None, True
             else:
                 return s, True
-
-
-class MultiLineEdit(QWidget):
-
-    def __init__(self, parent : QWidget, entries : list = None):
-        """Create the multi line edit widget."""
-        super().__init__(parent)
-        self.container = parent
-
-        vbl = QVBoxLayout()
-        self.input_layout = QVBoxLayout()
-
-        # create the line edit widget
-        if entries:
-            self.les = []
-            for entry in entries:
-                le = QLineEdit(self, text=entry)
-                self.input_layout.addWidget(le)
-                self.les.append(le)
-        else:
-            le = QLineEdit(self)
-            self.input_layout.addWidget(le)
-            self.les = [le]
-        vbl.addLayout(self.input_layout)
-
-        # create the add/remove buttons
-        ar_row = QHBoxLayout()
-        ar_row.addStretch(10)
-        remove = QPushButton(self, text="-")
-        remove.clicked.connect(self.remove)
-        ar_row.addWidget(remove)
-        add = QPushButton(self, text="+")
-        add.clicked.connect(self.add)
-        ar_row.addWidget(add)
-        vbl.addLayout(ar_row)
-
-        self.setLayout(vbl)
-    
-    def add(self):
-        """Add a line edit row to the field."""
-        le = QLineEdit(self)
-        self.input_layout.addWidget(le)
-        self.les.append(le)
-    
-    def remove(self):
-        """Remove a line edit row from the field."""
-        if self.les:
-            self.les.pop().deleteLater()
-            self.container.adjustSize()
-    
-    def getEntries(self):
-        """Get the strings input by the user."""
-        l = []
-        for le in self.les:
-            t = le.text()
-            if t: l.append(le.text())
-        return l
 
 
 class QuickDialog(QDialog):

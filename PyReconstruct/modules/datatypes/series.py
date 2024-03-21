@@ -1184,7 +1184,8 @@ class Series():
             threshold : float = 0.95, 
             flag_conflicts : bool = True,
             check_history : bool = True,
-            favored : str = "",
+            keep_above : str = "self",
+            keep_below : str = "",
             series_states=None,
             log_event=True):
         """Import all the traces from another series.
@@ -1197,7 +1198,8 @@ class Series():
                 remove_old_overlaps (bool): True if old traces overlapping new traces should be removed
                 flag_conflicts (bool): True if conflicts should be flagged
                 check_history (bool): True if history should be checked
-                favored (str): the series that is favored in the case of a conflict ("self", "other", or "")
+                keep_above (str): the series that is favored for functional duplicates (above the overlap threshold; "self", "other", or "")
+                keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
         """
@@ -1229,7 +1231,7 @@ class Series():
             print("loading section", snum)
             o_section = other.loadSection(snum)  # other section
             histories_param = histories if check_history else None  # skip history if checking is not requested
-            section.importTraces(o_section, regex_filters, threshold, flag_conflicts, histories_param, favored, dt_str)
+            section.importTraces(o_section, regex_filters, threshold, flag_conflicts, histories_param, keep_above, keep_below, dt_str)
         
         # unsupress logging for object creation
         self.data.supress_logging = False

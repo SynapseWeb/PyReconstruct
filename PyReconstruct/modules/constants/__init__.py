@@ -11,3 +11,11 @@ from .locations import (
     img_dir,
     welcome_series_dir,
 )
+from .websites import (
+    kh_web,
+    kh_wiki,
+    kh_atlas,
+    gh_repo,
+    gh_issues,
+    gh_submit
+)

@@ -61,7 +61,17 @@ from PyReconstruct.modules.backend.view import (
 from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
 from PyReconstruct.modules.backend.volume import export3DObjects
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
-from PyReconstruct.modules.constants import welcome_series_dir, assets_dir, img_dir
+from PyReconstruct.modules.constants import (
+    welcome_series_dir,
+    assets_dir,
+    img_dir,
+    kh_web,
+    kh_wiki,
+    kh_atlas,
+    gh_repo,
+    gh_issues,
+    gh_submit
+)
 
 class MainWindow(QMainWindow):
 
@@ -414,7 +424,27 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts),
-                    ("openwiki_act", "Go to online user guide", "", self.openWiki)
+                    None,
+                    {
+                        "attr_name": "onlinemenu",
+                        "text": "Online resources",
+                        "opts": [
+                            ("openwiki_act", "PyReconstruct user guide", "", lambda : self.openWebsite(kh_wiki)),
+                            ("openrepo_act", "PyReconstruct source code", "", lambda : self.openWebsite(gh_repo)),
+                            ("openkhlab_act", "KH lab website", "", lambda : self.openWebsite(kh_web)),
+                            ("openkhatlast_act", "Atlas Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas))
+                        ]
+                    },
+                    {
+                        "attr_name": "issuemenu",
+                        "text": "Report issues (GitHub)",
+                        "opts":
+                        [
+                            ("submitissue_act", "Report bug / Request feature", "", lambda : self.openWebsite(gh_submit)),
+                            ("seeissues_act", "See unresolved issues", "", lambda : self.openWebsite(gh_issues))
+                        ]
+                    },
+                    
                 ]
             }
         ]
@@ -2692,11 +2722,10 @@ class MainWindow(QMainWindow):
         
         self.resetShortcuts(response)
 
-    def openWiki(self):
-        """Open kh lab PyReconstruct public wiki."""
-        wiki_site = "https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide"
-        webbrowser.open(wiki_site)
-    
+    def openWebsite(self, site):
+        """Open website in user's browser."""
+        webbrowser.open(site)
+
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""
         self.field.series_states.addState()

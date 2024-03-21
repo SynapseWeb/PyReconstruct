@@ -70,7 +70,8 @@ from PyReconstruct.modules.constants import (
     kh_atlas,
     gh_repo,
     gh_issues,
-    gh_submit
+    gh_submit,
+    developers_mailto_str
 )
 
 class MainWindow(QMainWindow):
@@ -432,7 +433,7 @@ class MainWindow(QMainWindow):
                             ("openwiki_act", "PyReconstruct user guide", "", lambda : self.openWebsite(kh_wiki)),
                             ("openrepo_act", "PyReconstruct source code", "", lambda : self.openWebsite(gh_repo)),
                             ("openkhlab_act", "KH lab website", "", lambda : self.openWebsite(kh_web)),
-                            ("openkhatlast_act", "Atlas Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas))
+                            ("openkhatlast_act", "Atlas of Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas))
                         ]
                     },
                     {
@@ -444,7 +445,7 @@ class MainWindow(QMainWindow):
                             ("seeissues_act", "See unresolved issues", "", lambda : self.openWebsite(gh_issues))
                         ]
                     },
-                    
+                    ("emailteam_act", "Email developers", "", lambda : self.openWebsite(developers_mailto_str)),
                 ]
             }
         ]

@@ -147,11 +147,12 @@ class SectionTableWidget(QDockWidget):
         item.setCheckState(Qt.CheckState.Checked if section_data["locked"] else Qt.CheckState.Unchecked)
         self.table.setItem(r, 2, item)
 
+        brightness, contrast = section_data["bc_profiles"][self.series.bc_profile]
         self.table.setItem(r, 3, QTableWidgetItem(
-            str(section_data["brightness"])
+            str(brightness)
         ))
         self.table.setItem(r, 4, QTableWidgetItem(
-            str(section_data["contrast"])
+            str(contrast)
         ))
         self.table.setItem(r, 5, QTableWidgetItem(
             str(section_data["src"])
@@ -272,6 +273,11 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
+        for snum in section_numbers:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
+        
         desc = "increment" if inc else "(-100 - 100)"
 
         structure = [
@@ -290,6 +296,11 @@ class SectionTableWidget(QDockWidget):
         if not section_numbers:
             return
         
+        for snum in section_numbers:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
+        
         self.manager.matchBC(section_numbers)
     
     def editThickness(self):
@@ -297,6 +308,11 @@ class SectionTableWidget(QDockWidget):
         section_numbers = self.getSelectedSections()
         if not section_numbers:
             return
+        
+        for snum in section_numbers:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
         
         # get the existing section thickness
         snum = section_numbers[0]
@@ -334,7 +350,7 @@ class SectionTableWidget(QDockWidget):
             return
 
         if self.series.data["sections"][snum]["locked"]:
-            notify("Cannot change image source for locked sections")
+            notify("Unlock section(s) before modifying.")
             return
 
         # get the existing section source
@@ -413,6 +429,12 @@ class SectionTableWidget(QDockWidget):
     
     def modifyAllSrc(self):
         """Modify the image source for all sections."""
+        # check to ensure all sections are unlocked
+        for snum in self.series.sections:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
+            
         # attempt to use the last section src as an example
         snum = max(self.series.sections.keys())
         example_src = self.series.data["sections"][snum]["src"]
@@ -442,6 +464,12 @@ class SectionTableWidget(QDockWidget):
     
     def reorderSections(self):
         """Reorder the sections so that they are in order."""
+        # check to make sure all sections are unlocked
+        for snum in self.series.sections:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
+            
         if not noUndoWarning():
             return
         

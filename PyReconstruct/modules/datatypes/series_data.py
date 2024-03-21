@@ -129,8 +129,7 @@ class SeriesData():
                 "thickness": section.thickness,
                 "calgrid": section.calgrid,
                 "locked": section.align_locked,
-                "brightness": section.brightness,
-                "contrast": section.contrast,
+                "bc_profiles": section.bc_profiles.copy(),
                 "src": section.src,
                 "mag": section.mag,
                 "flags": [f.copy() for f in section.flags],
@@ -142,8 +141,7 @@ class SeriesData():
             d = self.data["sections"][section.n]
             d["thickness"] = section.thickness
             d["locked"] = section.align_locked
-            d["brightness"] = section.brightness
-            d["contrast"] = section.contrast
+            d["bc_profiles"] = section.bc_profiles.copy()
             d["src"] = section.src
             d["mag"] = section.mag
             d["flags"] = [f.copy() for f in section.flags]

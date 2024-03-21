@@ -480,6 +480,7 @@ class MousePalette():
         if b == self.mainwindow.field.section.brightness:
             return
         self.mainwindow.field.section_layer.setBrightness(b)
+        self.mainwindow.field.updateData()
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)
         self.mainwindow.seriesModified(True)
@@ -490,6 +491,7 @@ class MousePalette():
         if c == self.mainwindow.field.section.contrast:
             return
         self.mainwindow.field.section_layer.setContrast(c)
+        self.mainwindow.field.updateData()
         self.updateBC()
         self.mainwindow.field.generateView(generate_traces=False)
         self.mainwindow.seriesModified(True)

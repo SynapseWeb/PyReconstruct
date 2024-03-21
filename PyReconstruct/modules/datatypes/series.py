@@ -271,6 +271,8 @@ class Series():
                 save_fp (str): the optional override filepath to save the jser file
                 close (bool): True if sereis should be closed after saving
         """
+        self.save()
+        
         jser_data = {}
 
         filenames = os.listdir(self.hidden_dir)

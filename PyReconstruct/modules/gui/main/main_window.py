@@ -35,7 +35,8 @@ from PyReconstruct.modules.gui.dialog import (
     AllOptionsDialog,
     BCProfilesDialog,
     BackupDialog,
-    ShortcutsDialog
+    ShortcutsDialog,
+    ImportTracesDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter, AboutWidget
 from PyReconstruct.modules.gui.utils import (
@@ -1262,48 +1263,19 @@ class MainWindow(QMainWindow):
                 jser_fp (str): the filepath with the series to import data from
         """
         if jser_fp is None:
-            structure = [
-                ["Series:", (True, "file", "", "*.jser")],
-                ["Object regex filters:"],
-                [("multitext", [])],
-                [
-                    "From section",
-                    ("int", min(self.series.sections.keys())),
-                    "to",
-                    ("int", max(self.series.sections.keys()))
-                ],
-                ["Duplicate threshold (0-1):", ("float", 0.95, (0,1)), None],
-                ["Favor:",
-                (
-                    "radio",
-                    ("Neither", True),
-                    ("Current series (destination)", False),
-                    ("Importing series (source)", False)
-                ), None
-                ],
-                [(
-                    "check", 
-                    ("Flag import conflicts", True),
-                    ("Check series histories", True)
-                )],
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "Import Traces")
+            response, confirmed = ImportTracesDialog(self, self.series).exec()
             if not confirmed:
                 return
-            
-            jser_fp = response[0]
-            regex_filters = response[1]
-            srange = (response[2], response[3]+1)
-
-            threshold = response[4]
-            flag_conflicts = response[6][0][1]
-            check_history = response[6][1][1]
-            if response[5][1][1]:
-                favored = "self"
-            elif response[5][2][1]:
-                favored = "other"
-            else:
-                favored = ""
+            (
+                jser_fp,
+                srange,
+                regex_filters,
+                threshold,
+                flag_conflicts,
+                check_history,
+                keep_above,
+                keep_below
+            ) = response
         
         else:
             slist = list(self.series.sections.keys())
@@ -1312,7 +1284,8 @@ class MainWindow(QMainWindow):
             threshold = 0.95
             flag_conflicts = True
             check_history = True
-            favored = ""
+            keep_above = "self"
+            keep_below = ""
 
         if not jser_fp: return  # exit function if user does not provide series
 
@@ -1333,7 +1306,8 @@ class MainWindow(QMainWindow):
             threshold, 
             flag_conflicts, 
             check_history, 
-            favored, 
+            keep_above,
+            keep_below, 
             self.field.series_states
         )
         o_series.close()

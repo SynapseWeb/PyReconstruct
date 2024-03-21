@@ -655,7 +655,12 @@ class FieldView():
                 new_profile (str): the name of the profile to switch to
         """
         self.series.bc_profile = new_profile
+
+        # update palette and tables
         self.mainwindow.mouse_palette.updateBC()
+        if self.section_table_manager:
+            self.section_table_manager.updateSections(self.series.sections.keys())
+
         self.generateView()
     
     def translateTform(self, dx : float, dy : float):

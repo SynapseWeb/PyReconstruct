@@ -6,33 +6,9 @@ import cv2
 import zarr
 from multiprocessing import Pool
 
-if len(sys.argv) == 3:
-    
-    img_dir = sys.argv[1]
-    zarr_fp = sys.argv[2]
-    create_new = True
-    
-elif len(sys.argv) == 2:
-    
-    zarr_fp = sys.argv[1]
-    create_new = False
-    
-else:
+def create2D(args):
+    filename, create_new, img_dir, zg = args  # unpack arguments
 
-    print("Please provide arguments", flush=True)
-    exit()
-
-if create_new:
-    zg = zarr.group(zarr_fp, overwrite=True)
-    zg.create_group("scale_1")
-    message = "Converting to zarr now..."
-else:
-    zg = zarr.open(zarr_fp)
-    message = "Updating zarr scales now..."
-
-print(message)
-
-def create2D(filename):
     print(f"Working on {filename}...", flush=True)
     try:
         # get the image
@@ -66,13 +42,36 @@ def create2D(filename):
         print(e, flush=True)
 
 if __name__ == "__main__":
+    print(f"Arguments provided: {sys.argv}")
+
+    if len(sys.argv) == 3:
+        
+        img_dir = sys.argv[1]
+        zarr_fp = sys.argv[2]
+        create_new = True
+        
+    elif len(sys.argv) == 2:
+        
+        img_dir = None
+        zarr_fp = sys.argv[1]
+        create_new = False
+        
+    else:
+
+        print("Please provide arguments", flush=True)
+        exit()
+
+    if create_new:
+        zg = zarr.group(zarr_fp, overwrite=True)
+        zg.create_group("scale_1")
+        message = "Converting to zarr now..."
+    else:
+        zg = zarr.open(zarr_fp)
+        message = "Updating zarr scales now..."
+
+    print(message)
 
     with Pool(1) as p:
-
-        if create_new:
-            
-            p.map(create2D, os.listdir(img_dir))
-            
-        else:
-            
-            p.map(create2D, list(zg["scale_1"]))
+        filenames = os.listdir(img_dir) if create_new else list(zg["scale_1"])
+        args_list = [(filename, create_new, img_dir, zg) for filename in filenames]
+        p.map(create2D, args_list)

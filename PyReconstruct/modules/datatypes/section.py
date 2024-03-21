@@ -823,7 +823,8 @@ class Section():
             threshold : float = 0.95, 
             flag_conflicts : bool = True, 
             histories : LogSetPair = None, 
-            favored : str = "",
+            keep_above : str = "self",
+            keep_below : str = "",
             dt_str : str = None):
         """Import the traces from another section.
         
@@ -833,11 +834,13 @@ class Section():
                 threshold (float): the overlap threshold
                 flag_conflicts (bool): True if conflicts should be flagged
                 histories (LogSetPair): the self history and the other history
-                favored (str): the favored series in the case of a conflict ("self", "other", or "")
+                keep_above (str): the series that is favored for functional duplicates (above the overlap threshold; "self", "other", or "")
+                keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 dt_str (str): the datetime string for tagging purposes
         """
         all_contour_names = list(self.contours.keys()) + list(other.contours.keys())
         mags_match = abs(other.mag - self.mag) <= 1e-8
+
         for cname in all_contour_names:
             # check filters, skip if does not pass
             passes_filters = False if regex_filters else True
@@ -846,6 +849,9 @@ class Section():
                     passes_filters = True
             if not passes_filters:
                 continue
+
+            # flag as modified
+            self.modified_contours.add(cname)
 
             # create an empty contour if does not exist
             if cname not in self.contours:
@@ -859,51 +865,35 @@ class Section():
                     trace.magScale(other.mag, self.mag)
 
             # check the histories to find which contour has been modified since diverge
-            conflict_inclusive = False  # variable to keep track if all conflicts should always be flagged or only when both series have a conflict
-            if not histories:
-                conflict_inclusive = True  # be conflict inclusive if user explicitly requested to not check history
-            elif histories and not histories.complete_match and histories.last_shared_index >= 0:
-                # determine which series have not been modified since diverge
-                modified_since_diverge = [False, False]
-                for i, ls in enumerate((histories.logset0, histories.logset1)):
-                    last_index = ls.getLastIndex(self.n, cname)
-                    if last_index > histories.last_shared_index:
-                        modified_since_diverge[i] = True
+            if histories and not histories.complete_match and histories.last_shared_index >= 0:
+                # determine which series have been modified since diverge
+                modified_since_diverge = histories.getModifiedSinceDiverge(cname, self.n)
                 
-                if modified_since_diverge[0] != modified_since_diverge[1]:  # if only one of the contours has been modified since diverge
+                # if only one of the contours has been modified since diverge, use that one
+                if modified_since_diverge[0] != modified_since_diverge[1]:
                     # if the other series is the one modified, replace contour and move to next
                     if modified_since_diverge[1]:
                         self.contours[cname] = other.contours[cname]
-                        self.modified_contours.add(cname)
                     if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
                 elif not any(modified_since_diverge):  # if neither contour has been modified since diverge, skip completely (risky)
                     if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                     continue
-                conflict_inclusive = True  # be conflict inclusive if history was checked
-            else:
-                conflict_inclusive = False  # be conflict EXCLUSIVE if history is inconclusive
-            
-            # create an empty contour if does not exist
-            if cname not in self.contours:
-                self.contours[cname] = Contour(cname, [])
 
             # import the contour
-            conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(other.contours[cname], threshold)
+            conflict_traces_s, conflict_traces_o = self.contours[cname].importTraces(other.contours[cname], threshold, keep_above)
 
-            # continue if no conflict traces
-            if not (conflict_traces_s or conflict_traces_o):
+            # if one or both series have no conflicts, no need to flag them or check for favor below the threshold
+            if not conflict_traces_s or not conflict_traces_o:
+                if self.contours[cname].isEmpty(): del(self.contours[cname])  # remove contour from self if empty
                 continue
-            # add to modified contours set otherwise
-            else:
-                self.modified_contours.add(cname)
 
             # iterate through conflict pool and favor the requested traces
-            if favored:
+            if keep_below in ("self", "other"):
                 # set traces1 variable to be favored traces and traces2 to be unfavored traces
-                if favored == "self":
+                if keep_below == "self":
                     traces1, traces2 = conflict_traces_s, conflict_traces_o
-                else:
+                elif keep_below == "other":
                     traces1, traces2 = conflict_traces_o, conflict_traces_s
                 # iterate through traces and delete overlaps in unfavored series
                 for trace1 in traces1:
@@ -916,10 +906,7 @@ class Section():
                 # any traces left in unfavored traces will be flagged
             
             # flag the remaining conflicts
-            if flag_conflicts and (
-                conflict_inclusive and (conflict_traces_s or conflict_traces_o) or  # if history has been checked, be inclusive with conflicts
-                not conflict_inclusive and (conflict_traces_s and conflict_traces_o)  # if history has not been checked, be exclusive with conflicts
-            ):                                        
+            if flag_conflicts:                                     
                 for trace in conflict_traces_s:
                     if dt_str:
                         trace.tags.add(f"{dt_str}-ic1")

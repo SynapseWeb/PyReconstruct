@@ -95,9 +95,10 @@ class SectionTableWidget(QDockWidget):
                 "text": "Brightness/contrast",
                 "opts":
                 [
-                    ("setbc_act", "Set brightness/contrast...", "", self.setBC),
-                    ("incbc_acrt", "Increment brightness/contrast...", "", lambda : self.setBC(inc=True)),
-                    ("matchbc_act", "Match brightness/contrast to section in view", "", self.matchBC)
+                    ("setbc_act", "Set...", "", self.setBC),
+                    ("incbc_acrt", "Increment...", "", lambda : self.setBC(inc=True)),
+                    ("matchbc_act", "Match values to section in view", "", self.matchBC),
+                    ("optimizebc_act", "Optimize...", "", self.optimizeBC),
                 ]
             },
             ("thickness_act", "Edit thickness...", "", self.editThickness),
@@ -302,6 +303,19 @@ class SectionTableWidget(QDockWidget):
                 return
         
         self.manager.matchBC(section_numbers)
+    
+    def optimizeBC(self):
+        """Optimize the brightness/contrast of the selected sections."""
+        section_numbers = self.getSelectedSections()
+        if not section_numbers:
+            return
+        
+        for snum in section_numbers:
+            if self.series.data["sections"][snum]["locked"]:
+                notify("Unlock section(s) before modifying.")
+                return
+        
+        self.mainwindow.optimizeBC(section_numbers)
     
     def editThickness(self):
         """Modify the section thickness for a set of sections."""

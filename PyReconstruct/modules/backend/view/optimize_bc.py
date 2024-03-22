@@ -47,13 +47,17 @@ def adjustPixelsToStats(image, desired_mean, desired_std):
     current_std = np.std(image)
 
     # Calculate the required brightness and contrast adjustments
-    brightness = ((desired_mean - current_mean) / current_mean) * 100
-    contrast = ((desired_std / current_std) - 1) * 20
-
-    # Ensure that brightness and contrast are within the valid range
-    brightness = max(-100, min(100, round(brightness)))
-    contrast = max(-100, min(100, round(contrast)))
-
+    if abs(current_mean) > 1e-6:
+        brightness = ((desired_mean - current_mean) / current_mean) * 100
+        brightness = max(-100, min(100, round(brightness)))
+    else:
+        brightness = None
+    if abs(current_std) > 1e-6:
+        contrast = ((desired_std / current_std) - 1) * 20
+        contrast = max(-100, min(100, round(contrast)))
+    else:
+        contrast = None
+    
     return brightness, contrast
 
 def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, window=None):
@@ -89,15 +93,21 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
     else:
         slayer = SectionLayer(section, section.series)
         pixmap_dim = round(window[2] / section.mag), round(window[3] / section.mag)
+        b, c = section.brightness, section.contrast
         section.brightness, section.contrast = 0, 0  # reset the brightness and contrast
-        image = slayer.generateImageArray(pixmap_dim, window)
+        image = slayer.generateImageArray(pixmap_dim, window, get_crop_only=True)
+        section.brightness, section.contrast = b, c
 
     # get desired brightness and contrast
-    section.brightness, section.contrast = adjustPixelsToStats(
+    new_brightness, new_contrast = adjustPixelsToStats(
         image,
         desired_mean,
         desired_std
     )
+    if new_brightness is not None:
+        section.brightness = new_brightness
+    if new_contrast is not None:
+        section.contrast = new_contrast
     
 def optimizeSeriesBC(series : Series, desired_mean=128, desired_std=60, section_nums=None, window=None):
     """Optimize the brightness and contrast of the images for a series.

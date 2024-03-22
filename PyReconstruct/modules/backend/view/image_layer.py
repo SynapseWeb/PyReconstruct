@@ -213,12 +213,13 @@ class ImageLayer():
             painter.drawPolygon(self.bc_poly)
         painter.end()
 
-    def generateImageLayer(self, pixmap_dim : tuple, window : list) -> QPixmap:
+    def generateImageLayer(self, pixmap_dim : tuple, window : list, get_crop_only=False) -> QPixmap:
         """Generate the image layer.
         
             Params:
                 pixmap_dim (tuple): the w and h of the main window
                 window (list): the x, y, w, and h of the field window
+                get_crop_only (bool): returns only the direct crop from the image (only for use with brightness/contrast functions)
             Returns:
                 image_layer (QPixmap): the image laye
         """
@@ -307,6 +308,9 @@ class ImageLayer():
             )
             im_crop = self.image.copy(crop_rect)
         
+        if get_crop_only:  # only for use with brightness/contrast functions
+            return QPixmap.fromImage(im_crop)
+        
         # setp 7: scale the cropped image
         im_scaled = im_crop.scaled(
             im_crop.width() * s * scale_level,
@@ -353,7 +357,7 @@ class ImageLayer():
 
         return image_layer
     
-    def generateImageArray(self, pixmap_dim : tuple, window : list):
+    def generateImageArray(self, pixmap_dim : tuple, window : list, get_crop_only=False):
         """Generate the image layer.
         
             Params:
@@ -365,7 +369,8 @@ class ImageLayer():
         # generate the qimage from pixmap
         qimage = self.generateImageLayer(
             pixmap_dim,
-            window
+            window,
+            get_crop_only
         ).toImage()
         qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
 

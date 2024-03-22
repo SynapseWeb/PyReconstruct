@@ -255,7 +255,6 @@ class MainWindow(QMainWindow):
                             ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
                             ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
                             ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False)),
-                            ("optimizebc_act", "Optimize brightness/contrast", "", self.optimizeBC)
                         ]
                     },
                     {
@@ -308,7 +307,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
                     None,
-                    ("bcprofiles_act", "Modify brightness/contrast profiles", "", self.changeBCProfiles),
+                    ("bcprofiles_act", "Brightness/contrast profiles...", "", self.changeBCProfiles),
                     None,
                     ("about_act", "About this series...", "", self.displayAbout),
                 ]
@@ -2741,14 +2740,16 @@ class MainWindow(QMainWindow):
             self.field.generateView()
             self.mouse_palette.reset()
     
-    def optimizeBC(self):
-        """Optimize the brightness and contrast of the series."""
-        all_snum = sorted(list(self.series.sections.keys()))
+    def optimizeBC(self, sections : list = None):
+        """Optimize the brightness and contrast of the series.
+        
+            Params:
+                sections (list): the list of section numbers
+        """
         structure = [
             ["Mean (0-255):", ("int", 128, range(256))],
             ["Standard Devation:", ("float", 60)],
             [("radio", ("Use full image", True), ("Use current window view only", False))],
-            ["from section", ("int", all_snum[0], all_snum), "to", ("int", all_snum[-1], all_snum)]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Optimize Images")
         if not confirmed:
@@ -2757,25 +2758,24 @@ class MainWindow(QMainWindow):
         mean = response[0]
         std = response[1]
         full_image = response[2][0][1]
-        s0 = response[3]
-        s1 = response[4]
-        if s0 > s1:
-            notify("Please enter a valid section range.")
-            return
         
         if not noUndoWarning():
             return
         
-        sections = tuple(range(s0, s1+1))
+        if sections is None:
+            sections = list(self.series.sections.keys())
+        
         optimizeSeriesBC(
             self.series, 
-            mean, 
+            mean,
             std,
             sections,
             None if full_image else self.series.window.copy()
         )
         self.field.reload()
-        self.field.updateData()
+        
+        if self.field.section_table_manager:
+            self.field.section_table_manager.updateSections(sections)
     
     def resetShortcuts(self, shortcuts_dict : dict = None):
         """Reset the shortcuts for the window.

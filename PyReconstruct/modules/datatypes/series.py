@@ -15,7 +15,7 @@ from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
 from .objects import Objects
-from .default_settings import default_settings
+from .default_settings import default_settings, default_series_settings
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
@@ -48,6 +48,7 @@ def getDateTime():
 
 class Series():
     qsettings_defaults = default_settings.copy()
+    qsettings_series_defaults = default_series_settings.copy()
 
     def __init__(self, filepath : str, sections : dict, get_series_data=True):
         """Load the series file.
@@ -123,6 +124,9 @@ class Series():
         self.editors = set(series_data["editors"])
         if not self.isWelcomeSeries() and not self.editors:
             self.editors = self.getEditorsFromHistory()
+
+        # series code
+        self.code = series_data["code"]
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -272,7 +276,7 @@ class Series():
                 close (bool): True if sereis should be closed after saving
         """
         self.save()
-        
+
         jser_data = {}
 
         filenames = os.listdir(self.hidden_dir)
@@ -330,7 +334,7 @@ class Series():
             f.write(save_str)
 
         # backup the series if requested
-        if save_fp is None and self.getOption("backup_dir") and os.path.isdir(self.getOption("backup_dir")):
+        if save_fp is None and self.getOption("autoversion_dir") and os.path.isdir(self.getOption("autoversion_dir")):
             # get the file name
             fn = os.path.basename(self.jser_fp)
             # create the new file name
@@ -339,13 +343,13 @@ class Series():
             fn = fn[:fn.rfind(".")] + "_" + dt + fn[fn.rfind("."):]
             # save the file
             backup_fp = os.path.join(
-                self.getOption("backup_dir"),
+                self.getOption("autoversion_dir"),
                 fn
             )
             with open(backup_fp, "w") as f:
                 f.write(save_str)
         else:
-            self.setOption("backup_dir", "")
+            self.setOption("autoversion_dir", "")
         
         if close:
             self.close()
@@ -564,6 +568,7 @@ class Series():
         d["log_set"] = self.log_set.getList()
 
         d["editors"] = list(self.editors)
+        d["code"] = self.code
 
         return d
     
@@ -602,6 +607,9 @@ class Series():
 
         series_data["obj_attrs"] = {}
         series_data["ztrace_attrs"] = {}
+
+        series_data["editors"] = []
+        series_data["code"] = ""
 
         return series_data
     
@@ -1854,28 +1862,38 @@ class Series():
                 option_name (str): the name of the option
                 get_default (bool): True if only default should be returned
         """
+        # check for internal series option first
         if option_name in self.options:
             if get_default:
                 return Series.getEmptyDict()["options"][option_name]
             else:
-                option = self.options[option_name]
+                return self.options[option_name]
+        
+        # get the proper settings and defaults
+        if option_name in Series.qsettings_series_defaults:
+            settings = QSettings("KHLab", f"PyReconstruct-{self.code}")
+            defaults = Series.qsettings_series_defaults
         elif option_name in Series.qsettings_defaults:
             settings = QSettings("KHLab", "PyReconstruct")
-            if get_default:
-                return Series.qsettings_defaults[option_name]
-            elif settings.contains(option_name):
-                option_type = type(Series.qsettings_defaults[option_name])
-                option = settings.value(
-                    option_name,
-                    type=(str if option_type in (dict, list, tuple) else option_type)
-                )
-                if option_type in (dict, list, tuple):
-                    option = json.loads(option)
-            else:
-                option = Series.qsettings_defaults[option_name]
-                self.setOption(option_name, option)
+            defaults = Series.qsettings_defaults
         else:
-            option = None
+            return None
+        
+        # get the option
+        if get_default:
+            return defaults[option_name]
+        elif settings.contains(option_name):
+            option_type = type(defaults[option_name])
+            option = settings.value(
+                option_name,
+                type=(str if option_type in (dict, list, tuple) else option_type)
+            )
+            if option_type in (dict, list, tuple):
+                option = json.loads(option)
+        else:
+            option = defaults[option_name]
+            self.setOption(option_name, option)
+        
         return option
                     
     def setOption(self, option_name : str, value):
@@ -1885,14 +1903,25 @@ class Series():
                 options_name (str): the name of the option
                 value: the value to set the option as
         """
+        # check for internal series option first
+        if option_name in self.options:
+            self.options[option_name] = value
+            return
+        
+        # convert format if necessary
         value_type = type(value)
         if value_type in (dict, list, tuple):
             value = json.dumps(value)
-        if option_name in self.options:
-            self.options[option_name] = value
-        else:
+        
+        # get the proper settings
+        if option_name in Series.qsettings_series_defaults:
+            settings = QSettings("KHLab", f"PyReconstruct-{self.code}")
+        elif option_name in Series.qsettings_defaults:
             settings = QSettings("KHLab", "PyReconstruct")
-            settings.setValue(option_name, value)
+        else:
+            return
+        
+        settings.setValue(option_name, value)
     
     @property
     def user(self):

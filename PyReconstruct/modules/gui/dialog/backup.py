@@ -11,15 +11,15 @@ from PySide6.QtWidgets import (
     QCheckBox
 )
 
-from .helper import BrowseWidget
+from .helper import BrowseWidget, resizeLineEdit
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
 
 def getDateTime():
     dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}-{dt.minute:02d}"
+    d = f"{dt.year % 1000}",f"{dt.month:02d}",f"{dt.day:02d}"
+    t = f"{dt.hour:02d}",f"{dt.minute:02d}"
     return d, t
 
 class BackupDialog(QDialog):
@@ -31,7 +31,8 @@ class BackupDialog(QDialog):
         self.series = series
 
         name = series.name
-        date, time = getDateTime()
+        self.date, self.time = getDateTime()
+
         user = series.user
         self.fp = ""
 
@@ -49,8 +50,11 @@ class BackupDialog(QDialog):
 
         # create the delimiter widget
         r = QHBoxLayout()
-        lbl = QLabel(self, text="Delimiter:")
-        self.delimiter_le = QLineEdit(self, text="-")
+        lbl = QLabel(self, text="Overall Delimiter:")
+        self.delimiter_le = QLineEdit(
+            self, 
+            text=self.series.getOption("manual_backup_delimiter")
+        )
         self.delimiter_le.textChanged.connect(self.updateWidgets)
         r.addWidget(lbl)
         r.addWidget(self.delimiter_le)
@@ -60,8 +64,8 @@ class BackupDialog(QDialog):
 
         widget_info = [
             ("name", name),
-            ("date", date),
-            ("time", time),
+            ("date", ""),  # updated later
+            ("time", ""),  # updated later
             ("user", user),
             ("comment", "")
         ]
@@ -79,6 +83,20 @@ class BackupDialog(QDialog):
             le.textChanged.connect(self.updateWidgets)
             r.addWidget(cb)
             r.addWidget(le)
+
+            # manually add widgets for date and time delimiters
+            if k in ("date", "time"):
+                le.setEnabled(False)
+                r.addWidget(QLabel(self, text="Delimiter:"))
+                dle = QLineEdit(
+                    self,
+                    text=self.series.getOption(f"manual_backup_{k}_delimiter")
+                )
+                resizeLineEdit(dle, "000")
+                dle.textChanged.connect(self.updateWidgets)
+                setattr(self, f"{k}_delimiter_le", dle)
+                r.addWidget(dle)
+
             vlayout.addLayout(r)
             self.widgets[k] = (cb, le)
 
@@ -100,12 +118,14 @@ class BackupDialog(QDialog):
         """Update the display widgets."""
         l = []
         dl = self.delimiter_le.text()
-        for cb, le in self.widgets.values():
+        for name, (cb, le) in self.widgets.items():
+            if name in ("date", "time"):
+                dle = getattr(self, f"{name}_delimiter_le")
+                d = dle.text()
+                le.setText(d.join(getattr(self, name)))
             if cb.isChecked():
-                le.setEnabled(True)
                 l.append(le.text().replace(" ", dl))
-            else:
-                le.setEnabled(False)
+                    
         self.save_name_lbl.setText(dl.join(l))
     
     def accept(self):
@@ -123,6 +143,15 @@ class BackupDialog(QDialog):
             self.series.setOption(
                 f"manual_backup_{name}",
                 cb.isChecked()
+            )
+        self.series.setOption(
+            "manual_backup_delimiter",
+            self.delimiter_le.text()
+        )
+        for s in ("date", "time"):
+            self.series.setOption(
+                f"manual_backup_{s}_delimiter",
+                getattr(self, f"{s}_delimiter_le").text()
             )
 
         super().accept()

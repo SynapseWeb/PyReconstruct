@@ -3,8 +3,11 @@ import os
 default_settings = {
     # user
     "user": os.getlogin(),
-    "backup_dir": "",
-    "manual_backup_dir": "",
+    # "backup_dir": "",
+    # "manual_backup_dir": "",
+    "manual_backup_delimiter": "-",
+    "manual_backup_date_delimiter": "-",
+    "manual_backup_time_delimiter": "-",
     "manual_backup_name": True,
     "manual_backup_date": True,
     "manual_backup_time": False,
@@ -120,4 +123,12 @@ default_settings = {
     "usestamp_act": "S",
     "usegrid_act": "G",
     "useflag_act": "F",
+
+    # series-related
+    "series_code_pattern": "[0-9A-Za-z]+"
+}
+
+default_series_settings = {
+    "autoversion_dir": "",
+    "manual_backup_dir": ""
 }

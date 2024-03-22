@@ -2825,9 +2825,22 @@ class MainWindow(QMainWindow):
         )
         if not fp: return
 
-        self.series.importTracePaletteCSV(fp)
+        # get the new name of the palette
+        name = os.path.basename(fp)
+        name = name[:name.rfind(".")]
+
+        i = 0
+        while name in self.series.palette_traces:
+            i += 1
+            name = f"{name}-{i}"
+
+        self.series.importTracePaletteCSV(fp, name)
+        self.series.palette_index[0] = name
 
         self.mouse_palette.reset()
+
+        notify(f"Trace palette '{name}' successfully imported.\n" +
+               f"Press {self.series.getOption('modifytracepalette_act')} to view all palettes.")
     
     def notifyNewEditor(self):
         """Provide any relevant notifications to new editors."""

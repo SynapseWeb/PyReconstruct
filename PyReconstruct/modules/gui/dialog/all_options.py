@@ -88,7 +88,7 @@ class AllOptionsDialog(QDialog):
             ],
             "User/Series": [
                 ["user"],
-                ["auto-backup"],
+                ["auto-versioning"],
                 ["step"],
                 ["left_handed"]
             ],
@@ -296,11 +296,13 @@ class AllOptionsDialog(QDialog):
         
         # backup
         structure = [
-            ["Auto-backup directory:", ("dir", self.series.getOption("backup_dir", use_defaults))]
+            [" "],
+            [f"Auto-version directory for {self.series.code}:"],
+            [("dir", self.series.getOption("autoversion_dir", use_defaults))],
         ]
         def setOption(response):
-            self.series.setOption("backup_dir", response[0])
-        self.addOptionWidget("auto-backup", structure, setOption)
+            self.series.setOption("autoversion_dir", response[0])
+        self.addOptionWidget("auto-versioning", structure, setOption)
 
         # step
         structure = [

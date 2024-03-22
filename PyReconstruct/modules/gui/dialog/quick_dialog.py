@@ -143,7 +143,7 @@ class InputField():
 
 class QuickDialog(QDialog):
 
-    def __init__(self, parent, structure : list, title : str, grid=False, include_confirm=True):
+    def __init__(self, parent, structure : list, title : str, grid=False, include_confirm=True, cancelable=True):
         """Create a quick dialog from a given structure.
         
             Params:
@@ -158,7 +158,10 @@ class QuickDialog(QDialog):
 
         if include_confirm:
             self.setWindowTitle(title)
-            QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            if cancelable:
+                QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            else:
+                QBtn = QDialogButtonBox.Ok
             buttonbox = QDialogButtonBox(QBtn)
             buttonbox.accepted.connect(self.accept)
             buttonbox.rejected.connect(self.reject)
@@ -337,7 +340,7 @@ class QuickDialog(QDialog):
         else:
             return None, False
     
-    def get(parent : QWidget, structure : list, title="Dialog", grid=False):
+    def get(parent : QWidget, structure : list, title="Dialog", grid=False, cancelable=True):
         """Create a quick dialog and return the inputs.
         
             Params:
@@ -345,8 +348,9 @@ class QuickDialog(QDialog):
                 structure (list): the structure of the input dialog
                 title (str): the title of the dialog
                 grid (bool): True if grid layout
+                cancelable (bool): True if cancel button is present on dialog
         """
-        return QuickDialog(parent, structure, title, grid).exec()
+        return QuickDialog(parent, structure, title, grid, cancelable=cancelable).exec()
 
 
 class QuickTabDialog(QuickDialog):

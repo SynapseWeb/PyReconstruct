@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import time
 import webbrowser
 from datetime import datetime
@@ -176,7 +177,7 @@ class MainWindow(QMainWindow):
                     None,  # None acts as menu divider
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
-                    ("backup_act", "Auto-backup series", "checkbox", self.autoBackup),
+                    ("backup_act", "Auto-versioning", "checkbox", self.setAutoVersion),
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
@@ -290,6 +291,15 @@ class MainWindow(QMainWindow):
                         [
                             ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
                             ("setmag_act", "Manually set series manigifcation...", "", self.setSeriesMag),
+                        ]
+                    },
+                    {
+                        "attr_name": "seriescodemenu",
+                        "text": "Series Code",
+                        "opts":
+                        [
+                            ("setseriescode_act", "Set the series code", "", self.setSeriesCode),
+                            ("seriescodepattern_act", "Modify the series code regex pattern", "", self.editSeriesCodePattern),
                         ]
                     },
                     None,
@@ -642,7 +652,7 @@ class MainWindow(QMainWindow):
         self.backup_act.setEnabled(is_not_welcome_series)
 
         # check for backup directory
-        self.backup_act.setChecked(bool(self.series.getOption("backup_dir")))
+        self.backup_act.setChecked(bool(self.series.getOption("autoversion_dir")))
 
         # check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
@@ -970,7 +980,7 @@ class MainWindow(QMainWindow):
         self.seriesModified(self.series.modified)
 
         # set the explorer filepath
-        if not self.series.isWelcomeSeries():
+        if not self.series.isWelcomeSeries() and self.series.jser_fp:
             settings = QSettings("KHLab", "PyReconstruct")
             settings.setValue("last_folder", os.path.dirname(self.series.jser_fp))
 
@@ -1018,6 +1028,17 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.srcToZarr(create_new=False)
+        
+        # get the series code from the user if needed
+        if not self.series.isWelcomeSeries() and not self.series.code:
+            detected_code = re.search(
+                self.series.getOption("series_code_pattern"), 
+                self.series.name
+            )
+            if detected_code:
+                self.series.code = detected_code.group()
+            self.setSeriesCode(cancelable=False)
+            self.seriesModified()
         
         # notify new users of any warnings
         if not first_open:
@@ -1820,23 +1841,28 @@ class MainWindow(QMainWindow):
         # set the series to unmodified
         self.seriesModified(False)
     
-    def autoBackup(self):
-        """Set up the auto-backup functionality for the series."""
+    def setAutoVersion(self):
+        """Set up the autoversioning functionality for the series."""
         # user checked the option
         if self.backup_act.isChecked():
-            # prompt the user to find a folder to store backups
-            new_dir = FileDialog.get(
-                "dir",
-                self,
-                "Select folder to contain backup files",
-            )
-            if not new_dir:
+            structure = [
+                ["When an auto-version folder is set, an extra JSER file marked\n" +
+                 "with the date and time will be automatically saved to the \n" +
+                 "auto-version folder every time you save this series."],
+                [" "],
+                [f"Auto-version folder for {self.series.code}:"],
+                [(True, "dir", "")]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Auto-versioning")
+            if not confirmed or not os.path.isdir(response[0]):
                 self.backup_act.setChecked(False)
                 return
-            self.series.setOption("backup_dir", new_dir)
+
+            self.series.setOption("autoversion_dir", response[0])
+        
         # user unchecked the option
         else:
-            self.series.setOption("backup_dir", "")
+            self.series.setOption("autoversion_dir", "")
         
         self.seriesModified()
     
@@ -2814,6 +2840,38 @@ class MainWindow(QMainWindow):
                 "Note: this series has multiple alignments.\n" + 
                 f"Press {self.series.getOption('changealignment_act')} to view"
             )
+    
+    def editSeriesCodePattern(self):
+        """Edit the regex pattern used to automatically detect series codes."""
+        response, confirmed = QInputDialog.getText(
+            self,
+            "Series Code Pattern",
+            "Enter the regex pattern for series codes:",
+            text=self.series.getOption("series_code_pattern")
+        )
+        if not confirmed:
+            return
+        
+        self.series.setOption("series_code_pattern", response)
+    
+    def setSeriesCode(self, cancelable=True):
+        """Set the series code (ensure that user enters a valid series code)."""
+        code_is_valid = False
+        while not code_is_valid:
+            structure = [
+                ["The series code is a unique set of characters that identifies\n" + 
+                "a specific series, regardless of the file name."],
+                [" "],
+                ["Series code:", (True, "text", self.series.code)]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Series Code", cancelable=cancelable)
+            if confirmed:
+                self.series.code = response[0]
+            
+            code_is_valid = bool(self.series.code)
+
+            if not code_is_valid:
+                notify("Please enter a code for the series.")
         
     def restart(self):
         self.restart_mainwindow = True

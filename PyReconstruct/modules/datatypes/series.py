@@ -334,7 +334,7 @@ class Series():
             f.write(save_str)
 
         # backup the series if requested
-        if save_fp is None and self.getOption("autoversion_dir") and os.path.isdir(self.getOption("autoversion_dir")):
+        if save_fp is None and self.getOption("autoversion") and os.path.isdir(self.getOption("autoversion_dir")):
             # get the file name
             fn = os.path.basename(self.jser_fp)
             # create the new file name
@@ -349,7 +349,7 @@ class Series():
             with open(backup_fp, "w") as f:
                 f.write(save_str)
         else:
-            self.setOption("autoversion_dir", "")
+            self.setOption("autoversion", False)
         
         if close:
             self.close()

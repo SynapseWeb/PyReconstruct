@@ -177,7 +177,15 @@ class MainWindow(QMainWindow):
                     None,  # None acts as menu divider
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
-                    ("backup_act", "Auto-versioning", "checkbox", self.setAutoVersion),
+                    {
+                        "attr_name": "autoversionmenu",
+                        "text": "Auto-versioning",
+                        "opts":
+                        [
+                            ("autoversion_act", "Toggle auto-versioning", "checkbox", self.toggleAutoVersion),
+                            ("setautoversion_act", "Set directory", "", self.setAutoVersion)
+                        ]
+                    },
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
@@ -648,10 +656,16 @@ class MainWindow(QMainWindow):
         is_not_welcome_series = not self.series.isWelcomeSeries()
         self.save_act.setEnabled(is_not_welcome_series)
         self.saveas_act.setEnabled(is_not_welcome_series)
-        self.backup_act.setEnabled(is_not_welcome_series)
+        self.autoversion_act.setEnabled(is_not_welcome_series)
 
         # check for backup directory
-        self.backup_act.setChecked(bool(self.series.getOption("autoversion_dir")))
+        is_autoversioning = (
+            self.series.getOption("autoversion") and 
+            os.path.isdir(self.series.getOption("autoversion_dir"))
+        )
+        self.autoversion_act.setChecked(is_autoversioning)
+        self.series.setOption("autoversion", is_autoversioning)  # ensure consistency
+        self.setautoversion_act.setEnabled(self.autoversion_act.isChecked())
 
         # check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
@@ -1840,28 +1854,40 @@ class MainWindow(QMainWindow):
         # set the series to unmodified
         self.seriesModified(False)
     
-    def setAutoVersion(self):
-        """Set up the autoversioning functionality for the series."""
-        # user checked the option
-        if self.backup_act.isChecked():
-            structure = [
-                ["When an auto-version folder is set, an extra JSER file marked\n" +
-                 "with the date and time will be automatically saved to the \n" +
-                 "auto-version folder every time you save this series."],
-                [" "],
-                [f"Auto-version folder for {self.series.code}:"],
-                [(True, "dir", "")]
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "Auto-versioning")
-            if not confirmed or not os.path.isdir(response[0]):
-                self.backup_act.setChecked(False)
-                return
-
-            self.series.setOption("autoversion_dir", response[0])
-        
-        # user unchecked the option
+    def toggleAutoVersion(self):
+        """Toggle auto-versioning."""
+        if self.autoversion_act.isChecked():
+            self.series.setOption("autoversion", True)
+            if not os.path.isdir(self.series.getOption("autoversion_dir")):
+                self.setAutoVersion()
         else:
-            self.series.setOption("autoversion_dir", "")
+            self.series.setOption("autoversion", False)
+        self.seriesModified()
+    
+    def setAutoVersion(self):
+        """Set up the autoversioning directory for the series."""
+        structure = [
+            ["When an auto-version folder is set, an extra JSER file marked\n" +
+                "with the date and time will be automatically saved to the \n" +
+                "auto-version folder every time you save this series."],
+            [" "],
+            [f"Auto-version folder for {self.series.code}:"],
+            [(True, "dir", self.series.getOption("autoversion_dir"))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Auto-versioning")
+        if not confirmed:
+            if (
+                self.series.getOption("autoversion") and
+                not os.path.isdir(self.series.getOption("autoversion_dir"))
+            ):
+                self.series.setOption("autoversion", False)
+                self.autoversion_act.setChecked(False)
+            return
+        
+        self.series.setOption("autoversion", True)
+        self.series.setOption("autoversion_dir", response[0])
+
+        print("yeet")
         
         self.seriesModified()
     

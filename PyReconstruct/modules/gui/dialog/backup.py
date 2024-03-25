@@ -30,7 +30,7 @@ class BackupDialog(QDialog):
         self.setWindowTitle("Backup Series")
         self.series = series
 
-        name = series.name
+        name = series.code
         self.date, self.time = getDateTime()
 
         user = series.user
@@ -44,7 +44,7 @@ class BackupDialog(QDialog):
         if not os.path.isdir(bdir):
             bdir = ""
         self.dir_widget = BrowseWidget(self, "dir", bdir)
-        hbl.addWidget(QLabel(self, text="Save Folder:"))
+        hbl.addWidget(QLabel(self, text="Backup Folder:"))
         hbl.addWidget(self.dir_widget)
         vlayout.addLayout(hbl)
 
@@ -86,7 +86,6 @@ class BackupDialog(QDialog):
 
             # manually add widgets for date and time delimiters
             if k in ("date", "time"):
-                le.setEnabled(False)
                 r.addWidget(QLabel(self, text="Delimiter:"))
                 dle = QLineEdit(
                     self,
@@ -102,7 +101,7 @@ class BackupDialog(QDialog):
 
         # display name
         vlayout.addSpacing(10)
-        vlayout.addWidget(QLabel(self, text="Save File Name:"))
+        vlayout.addWidget(QLabel(self, text="Backup File Name:"))
         vlayout.addWidget(self.save_name_lbl)
         
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -123,7 +122,7 @@ class BackupDialog(QDialog):
                 dle = getattr(self, f"{name}_delimiter_le")
                 d = dle.text()
                 le.setText(d.join(getattr(self, name)))
-            if cb.isChecked():
+            if cb.isChecked() and le.text():
                 l.append(le.text().replace(" ", dl))
                     
         self.save_name_lbl.setText(dl.join(l))

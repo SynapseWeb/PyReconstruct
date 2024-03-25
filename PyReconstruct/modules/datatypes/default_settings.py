@@ -129,6 +129,7 @@ default_settings = {
 }
 
 default_series_settings = {
+    "autoversion": False,
     "autoversion_dir": "",
     "manual_backup_dir": ""
 }

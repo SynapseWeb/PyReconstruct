@@ -27,3 +27,7 @@ from .developers import (
     developers_emails,
     developers_mailto_str
 )
+
+from .repo_info import (
+    repo_info
+)

@@ -23,7 +23,8 @@ INSTALL_REQUIRES = [
       'trimesh==3.18.1',
       'vedo',
       'zarr',
-      'lxml'
+      'lxml',
+      'gitpython'
 ]
 
 

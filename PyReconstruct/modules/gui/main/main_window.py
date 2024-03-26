@@ -73,7 +73,8 @@ from PyReconstruct.modules.constants import (
     gh_repo,
     gh_issues,
     gh_submit,
-    developers_mailto_str
+    developers_mailto_str,
+    repo_info
 )
 
 class MainWindow(QMainWindow):
@@ -442,6 +443,8 @@ class MainWindow(QMainWindow):
                 "text": "Help",
                 "opts":
                 [
+                    ("repobranch_act", f"Repo info - {repo_info['branch']} ({repo_info['commit']})", "", self.copyCommit),
+                    None,
                     ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts),
                     None,
                     {
@@ -2751,6 +2754,11 @@ class MainWindow(QMainWindow):
     def openWebsite(self, site):
         """Open website in user's browser."""
         webbrowser.open(site)
+
+    def copyCommit(self):
+        """Copy current commit or repo."""
+        clipboard = QApplication.clipboard()
+        clipboard.setText(repo_info["commit"])
 
     def updateCurationFromHistory(self):
         """Update the series curation from the history."""

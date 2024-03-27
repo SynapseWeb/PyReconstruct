@@ -50,7 +50,7 @@ class BackupDialog(QDialog):
 
         # create the delimiter widget
         r = QHBoxLayout()
-        lbl = QLabel(self, text="Overall Delimiter:")
+        lbl = QLabel(self, text="Delimiter between parts:")
         self.delimiter_le = QLineEdit(
             self, 
             text=self.series.getOption("manual_backup_delimiter")
@@ -133,8 +133,15 @@ class BackupDialog(QDialog):
         if not os.path.isdir(bdir):
             notify("Please enter a valid directory.")
             return
-        fname = f"{self.save_name_lbl.text()}.jser"
+        
+        fname = self.save_name_lbl.text() + ".jser"
         self.fp = os.path.join(bdir, fname)
+
+        ## do not overwrite existing backups
+        if os.path.exists(self.fp):
+            time_now = datetime.now().strftime("%H%M%S")
+            unique_fname = self.save_name_lbl.text() + "-" + time_now + ".jser"
+            self.fp = os.path.join(bdir, unique_fname)
 
         # set the series options
         self.series.setOption("manual_backup_dir", bdir)

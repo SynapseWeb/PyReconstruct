@@ -262,6 +262,36 @@ class ObjectTableManager():
         self.mainwindow.seriesModified(True)
         self.mainwindow.field.reload()
         self.mainwindow.field.refreshTables()
+
+    def splitObject(self, name : str, log_event=True):
+        """Split an object into one object per trace."""
+        self.mainwindow.saveAllData()
+        self.series_states.addState()
+
+        series_states = self.mainwindow.field.series_states
+        n = 1
+        digits = len(str(self.series.data.getCount(name)))
+
+        for snum, section in self.series.enumerateSections(
+            message="Splitting object...",
+            series_states=series_states
+        ):
+            if name in section.contours:
+                traces = section.contours[name].getTraces()
+                del(section.contours[name])
+                for trace in traces:
+                    section.removeTrace(trace, log_event=False)
+                    trace.name = f"{trace.name}_{n:0{digits}d}"
+                    section.addTrace(trace, log_event=False)
+                    n += 1
+                section.save()
+        
+        if log_event:
+            self.series.addLog(name, None, "Split into individual objects per trace")
+        
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.field.reload()
+        self.mainwindow.field.refreshTables()
     
     def close(self):
         """Close all tables."""

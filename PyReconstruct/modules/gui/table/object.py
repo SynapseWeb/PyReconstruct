@@ -156,7 +156,9 @@ class ObjectTableWidget(QDockWidget):
                 "opts":
                 [
                     ("editradius_act", "Edit radius...", "", self.editRadius),
-                    ("editshape_act", "Edit shape...", "", self.editShape)
+                    ("editshape_act", "Edit shape...", "", self.editShape),
+                    None,
+                    ("splitobj_act", "Split traces into individual objects", "", self.splitObject),
                 ]
             },
             ("removealltags_act", "Remove all tags", "", self.removeAllTags),
@@ -1124,6 +1126,14 @@ class ObjectTableWidget(QDockWidget):
             return
         
         self.mainwindow.setPaletteButtonName(name)
+    
+    def splitObject(self):
+        """Split an object into one object per trace."""
+        name = self.getSelectedObject()
+        if not name:
+            return
+        
+        self.manager.splitObject(name)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

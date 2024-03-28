@@ -42,6 +42,7 @@ default_settings = {
         "Count": False,
         "Flat area": False,
         "Volume": False,
+        "Radius": False,
         "Groups": True,
         "Trace tags": False,
         "Locked": True,

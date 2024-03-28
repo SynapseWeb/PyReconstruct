@@ -303,6 +303,24 @@ class SeriesData():
             for trace_data in trace_list:
                 tags = tags.union(trace_data.getTags())
         return tags
+    
+    def getAvgRadius(self, obj_name : str) -> float:
+        """Get the average stamp radius of an object.
+        
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
+        obj_data = self.data["objects"].get(obj_name)
+        if obj_data is None:
+            return None
+        
+        radii = []
+        for trace_list in obj_data.traces.values():
+            for trace_data in trace_list:
+                radii.append(trace_data.getRadius())
+        avg_radius = sum(radii) / len(radii)
+
+        return avg_radius
 
     def getZtraceDist(self, ztrace_name : str) -> float:
         """Get the distance of a ztrace.

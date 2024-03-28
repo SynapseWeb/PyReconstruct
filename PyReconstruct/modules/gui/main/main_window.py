@@ -2919,6 +2919,19 @@ class MainWindow(QMainWindow):
 
             if not code_is_valid:
                 notify("Please enter a code for the series.")
+    
+    def setPaletteButtonName(self, name : str):
+        """Set the name for the selected palette button.
+        
+        (Used by the object list)
+        
+            Params:
+                name (str): the name to set the button
+        """
+        pname, i = self.series.palette_index
+        trace = self.series.palette_traces[pname][i]
+        trace.name = name
+        self.mouse_palette.modifyPaletteButton(i, trace)
         
     def restart(self):
         self.restart_mainwindow = True

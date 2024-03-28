@@ -355,13 +355,18 @@ class Trace():
         cx, cy = centroid(self.points)
         self.points = [(x-cx, y-cy) for x,y in self.points]
 
-    def resize(self, new_radius : float):
+    def resize(self, new_radius : float, tform : Transform = None):
         """Resize a trace beased on its radius
         
             Params:
                 new_radius (float): the new radius for the trace
+                tform (Transform): the transform to apply to the radius
         """
         points = self.points.copy()
+
+        # apply the forward transform if applicable
+        if tform:
+            points = tform.map(points)
         
         # calculate constants
         cx, cy = centroid(points)
@@ -376,6 +381,10 @@ class Trace():
             )
             for x, y in points
         ]
+
+        # apply the reverse transform if applicable
+        if tform:
+            points = tform.map(points, inverted=True)
                 
         self.points = points
 
@@ -384,6 +393,7 @@ class Trace():
         
             Params:
                 new_points (float): the new points for the trace
+                tform (Transform): the transform to apply the shape
         """
         r = self.getRadius(tform)
         xc, yc = self.getCentroid()

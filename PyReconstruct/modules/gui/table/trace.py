@@ -55,11 +55,13 @@ class TraceTableWidget(QDockWidget):
 
         # set defaults
         self.columns = self.series.getOption("trace_columns")
-
-        # check for added hidden and closed columns
-        if "Hidden" not in self.columns or "Closed" not in self.columns:
-            self.columns = Series.qsettings_defaults["trace_columns"]
-            self.series.setOption("trace_columns", self.columns)
+        # check for missing columns
+        defaults = self.series.getOption("trace_columns", get_default=True)
+        for col_name in defaults:
+            if col_name not in self.columns:
+                self.columns = defaults
+                self.series.setOption("trace_columns", self.columns)
+                break
 
         self.re_filters = set([".*"])
         self.tag_filters = set()

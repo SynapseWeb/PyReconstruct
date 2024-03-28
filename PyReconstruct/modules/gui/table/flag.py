@@ -49,6 +49,14 @@ class FlagTableWidget(QDockWidget):
 
         # set defaults
         self.columns = self.series.getOption("flag_columns")
+        # check for missing
+        defaults = self.series.getOption("flag_columns", get_default=True)
+        for col_name in defaults:
+            if col_name not in self.columns:
+                self.columns = defaults
+                self.series.setOption("flag_columns", self.columns)
+                break
+
         self.show_resolved = False
         self.re_filters = set([".*"])
         self.color_filter = None

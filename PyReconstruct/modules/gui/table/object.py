@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QInputDialog, 
     QMenu, 
     QAbstractItemView,
-    QApplication
+    QApplication,
+    QMessageBox
 )
 from PySide6.QtCore import Qt
 
@@ -62,9 +63,13 @@ class ObjectTableWidget(QDockWidget):
         # set defaults
         self.columns = self.series.getOption("object_columns")
         # check for missing columns
-        if "Locked" not in self.columns:
-            self.columns = Series.qsettings_defaults["object_columns"]
-            self.series.setOption("object_columns", self.columns)
+        defaults = self.series.getOption("object_columns", get_default=True)
+        for col_name in defaults:
+            if col_name not in self.columns:
+                self.columns = defaults
+                self.series.setOption("object_columns", self.columns)
+                break
+        
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -221,6 +226,8 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             None,
+            None,
+            ("setpalettename_act", "Copy name to palette", "", self.setPaletteName),
             ("copy_act", "Copy", "", self.table.copy),
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
@@ -271,6 +278,9 @@ class ObjectTableWidget(QDockWidget):
             col += 1
         if self.columns["Volume"]:
             self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
+            col += 1
+        if self.columns["Radius"]:
+            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getAvgRadius(name), 5))))
             col += 1
         if self.columns["Groups"]:
             groups = self.series.object_groups.getObjectGroups(name)
@@ -721,8 +731,23 @@ class ObjectTableWidget(QDockWidget):
         except ValueError:
             return
         
-        if new_rad == 0:
+        if new_rad <= 0:
             return
+        
+        for name in obj_names:
+            a = self.series.getAttr(name, "alignment")
+            if a and a != self.series.alignment:
+                response = QMessageBox.question(
+                    self,
+                    "Alignment Conflict",
+                    "The field alignment does not match the object alignment.\nWould you like to continue?",
+                    buttons=(
+                        QMessageBox.Yes |
+                        QMessageBox.No 
+                    )
+                )
+                if response != QMessageBox.Yes:
+                    return
         
         self.manager.editRadius(obj_names, new_rad)
     
@@ -1091,6 +1116,14 @@ class ObjectTableWidget(QDockWidget):
 
         self.manager.updateObjects(names)
         self.mainwindow.field.deselectAllTraces()
+    
+    def setPaletteName(self):
+        """Set the selected object name as the name of the selected palette trace."""
+        name = self.getSelectedObject()
+        if not name:
+            return
+        
+        self.mainwindow.setPaletteButtonName(name)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

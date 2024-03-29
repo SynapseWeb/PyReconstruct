@@ -23,7 +23,7 @@ def update():
     
     link = "git+https://github.com/synapseweb/pyreconstruct@test/pip-updating"
     
-    cmd_uninstall = f"pip uninstall PyReconstruct"
+    cmd_uninstall = f"pip uninstall --yes PyReconstruct"
     cmd_reinstall = f"pip install {link}"
     
     subprocess.run(cmd_uninstall.split(" "))

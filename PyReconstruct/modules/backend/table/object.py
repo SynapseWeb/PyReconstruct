@@ -278,9 +278,9 @@ class ObjectTableManager():
         ):
             if name in section.contours:
                 traces = section.contours[name].getTraces()
-                del(section.contours[name])
                 for trace in traces:
                     section.removeTrace(trace, log_event=False)
+                    trace = trace.copy()
                     trace.name = f"{trace.name}_{n:0{digits}d}"
                     section.addTrace(trace, log_event=False)
                     n += 1

@@ -25,7 +25,8 @@ INSTALL_REQUIRES = [
       'zarr',
       'lxml',
       'gitpython',
-      'orgparse'
+      'orgparse',
+      'pysimplegui'
 ]
 
 

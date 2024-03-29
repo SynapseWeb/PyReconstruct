@@ -1,0 +1,888 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.gui.popup package" href="modules.gui.popup.html" /><link rel="prev" title="modules.gui.main package" href="modules.gui.main.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.gui.palette package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-gui-palette-package">
+<h1>modules.gui.palette package<a class="headerlink" href="#modules-gui-palette-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.gui.palette.buttons">
+<span id="modules-gui-palette-buttons-module"></span><h2>modules.gui.palette.buttons module<a class="headerlink" href="#module-modules.gui.palette.buttons" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.ModeButton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModeButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#ModeButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.ModeButton" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton" title="modules.gui.palette.buttons.MoveableButton"><code class="xref py py-class docutils literal notranslate"><span class="pre">MoveableButton</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.ModeButton.paintEvent">
+<span class="sig-name descname"><span class="pre">paintEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#ModeButton.paintEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.ModeButton.paintEvent" title="Link to this definition">#</a></dt>
+<dd><p>Add a highlighting border to selected buttons.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.ModeButton.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ModeButton&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;MoveableButton&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.palette.buttons.ModeButton.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MoveableButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#MoveableButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QPushButton</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton.mouseMoveEvent">
+<span class="sig-name descname"><span class="pre">mouseMoveEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#MoveableButton.mouseMoveEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton.mouseMoveEvent" title="Link to this definition">#</a></dt>
+<dd><p>Called when button is moved.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton.mousePressEvent">
+<span class="sig-name descname"><span class="pre">mousePressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#MoveableButton.mousePressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton.mousePressEvent" title="Link to this definition">#</a></dt>
+<dd><p>Called when button is pressed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton.mouseReleaseEvent">
+<span class="sig-name descname"><span class="pre">mouseReleaseEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#MoveableButton.mouseReleaseEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton.mouseReleaseEvent" title="Link to this definition">#</a></dt>
+<dd><p>Called when mouse is released.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton.setRightClickEvent">
+<span class="sig-name descname"><span class="pre">setRightClickEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#MoveableButton.setRightClickEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton.setRightClickEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.MoveableButton.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;MoveableButton&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QPushButton&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.palette.buttons.MoveableButton.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.PaletteButton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PaletteButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#PaletteButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.PaletteButton" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton" title="modules.gui.palette.buttons.MoveableButton"><code class="xref py py-class docutils literal notranslate"><span class="pre">MoveableButton</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.PaletteButton.openDialog">
+<span class="sig-name descname"><span class="pre">openDialog</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#PaletteButton.openDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.PaletteButton.openDialog" title="Link to this definition">#</a></dt>
+<dd><p>Change the attributes of a trace on the palette.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.PaletteButton.paintEvent">
+<span class="sig-name descname"><span class="pre">paintEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#PaletteButton.paintEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.PaletteButton.paintEvent" title="Link to this definition">#</a></dt>
+<dd><p>Draw the trace on the button.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.PaletteButton.setTrace">
+<span class="sig-name descname"><span class="pre">setTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/buttons.html#PaletteButton.setTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.buttons.PaletteButton.setTrace" title="Link to this definition">#</a></dt>
+<dd><p>Create a palette button object.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace (Trace): the trace that is displayed on the button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.palette.buttons.PaletteButton.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;PaletteButton&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;MoveableButton&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.palette.buttons.PaletteButton.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.palette.mouse_palette">
+<span id="modules-gui-palette-mouse-palette-module"></span><h2>modules.gui.palette.mouse_palette module<a class="headerlink" href="#module-modules.gui.palette.mouse_palette" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MousePalette</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.activateModeButton">
+<span class="sig-name descname"><span class="pre">activateModeButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.activateModeButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.activateModeButton" title="Link to this definition">#</a></dt>
+<dd><p>Executed when any mouse mode button is clicked: changes mouse mode.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>bname (str): the name of the clicked button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.activatePaletteButton">
+<span class="sig-name descname"><span class="pre">activatePaletteButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bpos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.activatePaletteButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.activatePaletteButton" title="Link to this definition">#</a></dt>
+<dd><p>Executed when palette button is clicked: changes mouse trace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>bpos (int): the position of the palette button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all buttons</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.createBCButtons">
+<span class="sig-name descname"><span class="pre">createBCButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.createBCButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.createBCButtons" title="Link to this definition">#</a></dt>
+<dd><p>Create the brightnes/contrast buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.createIncrementButtons">
+<span class="sig-name descname"><span class="pre">createIncrementButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.createIncrementButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.createIncrementButtons" title="Link to this definition">#</a></dt>
+<dd><p>Create the section increment buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.createModeButton">
+<span class="sig-name descname"><span class="pre">createModeButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mouse_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.createModeButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.createModeButton" title="Link to this definition">#</a></dt>
+<dd><p>Creates a new mouse mode button.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the button (and PNG file)
+sc (str): the shortcut character for the button
+pos (int): the position of the button
+mouse_mode (int): the mode this button is connected to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.createPaletteButton">
+<span class="sig-name descname"><span class="pre">createPaletteButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.createPaletteButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.createPaletteButton" title="Link to this definition">#</a></dt>
+<dd><p>Create a palette button on the dock.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace (Trace): the trace to go on the button
+pos (int): the position of the button (assumes 20 buttons)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.createPaletteSideButtons">
+<span class="sig-name descname"><span class="pre">createPaletteSideButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.createPaletteSideButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.createPaletteSideButtons" title="Link to this definition">#</a></dt>
+<dd><p>Create the palette increment buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.getBounds">
+<span class="sig-name descname"><span class="pre">getBounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.getBounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.getBounds" title="Link to this definition">#</a></dt>
+<dd><p>Get the bounds for the buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.getButtonCoords">
+<span class="sig-name descname"><span class="pre">getButtonCoords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.getButtonCoords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.getButtonCoords" title="Link to this definition">#</a></dt>
+<dd><p>Get the coordinates for a button group.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>group (str): the name of the button group.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.incrementPalette">
+<span class="sig-name descname"><span class="pre">incrementPalette</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">up</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.incrementPalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.incrementPalette" title="Link to this definition">#</a></dt>
+<dd><p>Increment the palette.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>up (bool): True if increment higher, False if increment lower</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.incrementSection">
+<span class="sig-name descname"><span class="pre">incrementSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">down</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.incrementSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.incrementSection" title="Link to this definition">#</a></dt>
+<dd><p>Increment the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.modifyAllPaletteButtons">
+<span class="sig-name descname"><span class="pre">modifyAllPaletteButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.modifyAllPaletteButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.modifyAllPaletteButtons" title="Link to this definition">#</a></dt>
+<dd><p>Modify all the palette buttons through a single dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.modifyFlag">
+<span class="sig-name descname"><span class="pre">modifyFlag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.modifyFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.modifyFlag" title="Link to this definition">#</a></dt>
+<dd><p>Modify the default flag.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.modifyPalette">
+<span class="sig-name descname"><span class="pre">modifyPalette</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.modifyPalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.modifyPalette" title="Link to this definition">#</a></dt>
+<dd><p>Modify all of the palette traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace_list (list): the list of traces to set the palette buttons</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.modifyPaletteButton">
+<span class="sig-name descname"><span class="pre">modifyPaletteButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bpos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.modifyPaletteButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.modifyPaletteButton" title="Link to this definition">#</a></dt>
+<dd><p>Opens dialog to modify palette button.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>bpos (int): the position of the palette button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.moveButton">
+<span class="sig-name descname"><span class="pre">moveButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.moveButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.moveButton" title="Link to this definition">#</a></dt>
+<dd><p>Move a button group.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>dx (int): the x-value movement for the button
+dy (int): the y-value movement for the button
+group (str): the name of the button group</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.paletteButtonChanged">
+<span class="sig-name descname"><span class="pre">paletteButtonChanged</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">button</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton" title="modules.gui.palette.buttons.PaletteButton"><span class="pre">PaletteButton</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.paletteButtonChanged"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.paletteButtonChanged" title="Link to this definition">#</a></dt>
+<dd><p>Executed when user changes palette trace: ensure that tracing pencil is updated.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>button (PaletteButton): the button that was changed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.pasteAttributesToButton">
+<span class="sig-name descname"><span class="pre">pasteAttributesToButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.pasteAttributesToButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.pasteAttributesToButton" title="Link to this definition">#</a></dt>
+<dd><p>Paste the attributes of a trace to the current button.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace (Trace): the trace to paste</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placeBCButtons">
+<span class="sig-name descname"><span class="pre">placeBCButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placeBCButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placeBCButtons" title="Link to this definition">#</a></dt>
+<dd><p>Place the brightness/contrast buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placeIncrementButtons">
+<span class="sig-name descname"><span class="pre">placeIncrementButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placeIncrementButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placeIncrementButtons" title="Link to this definition">#</a></dt>
+<dd><p>Place the increment buttons on the field</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placeLabel">
+<span class="sig-name descname"><span class="pre">placeLabel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placeLabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placeLabel" title="Link to this definition">#</a></dt>
+<dd><p>Place the trace palette label.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placeModeButton">
+<span class="sig-name descname"><span class="pre">placeModeButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">button</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placeModeButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placeModeButton" title="Link to this definition">#</a></dt>
+<dd><p>Place the mode button in the main window.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>button (ModeButton): the button to place
+pos (int): the position of the button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placePaletteButton">
+<span class="sig-name descname"><span class="pre">placePaletteButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">button</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton" title="modules.gui.palette.buttons.PaletteButton"><span class="pre">PaletteButton</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placePaletteButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placePaletteButton" title="Link to this definition">#</a></dt>
+<dd><p>Place the palette button in the main window.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>button (PaletteButton): the palette button to move
+pos (int): its position</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.placePaletteSideButtons">
+<span class="sig-name descname"><span class="pre">placePaletteSideButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.placePaletteSideButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.placePaletteSideButtons" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.reset" title="Link to this definition">#</a></dt>
+<dd><p>Reset the mouse palette when opening a new series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.resetPalette">
+<span class="sig-name descname"><span class="pre">resetPalette</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.resetPalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.resetPalette" title="Link to this definition">#</a></dt>
+<dd><p>Reset the palette to the default traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.resetPos">
+<span class="sig-name descname"><span class="pre">resetPos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.resetPos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.resetPos" title="Link to this definition">#</a></dt>
+<dd><p>Reset the positions of the buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.resize">
+<span class="sig-name descname"><span class="pre">resize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.resize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.resize" title="Link to this definition">#</a></dt>
+<dd><p>Move the buttons to fit the main window.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.setBrightness">
+<span class="sig-name descname"><span class="pre">setBrightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.setBrightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.setBrightness" title="Link to this definition">#</a></dt>
+<dd><p>Set the brightness for the current section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.setContrast">
+<span class="sig-name descname"><span class="pre">setContrast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.setContrast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.setContrast" title="Link to this definition">#</a></dt>
+<dd><p>Set the contrast for the current section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.setFlag">
+<span class="sig-name descname"><span class="pre">setFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">font_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_flags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.setFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.setFlag" title="Link to this definition">#</a></dt>
+<dd><p>Set the default flag in the palette.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.setPaletteButtonTip">
+<span class="sig-name descname"><span class="pre">setPaletteButtonTip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton" title="modules.gui.palette.buttons.PaletteButton"><span class="pre">PaletteButton</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.setPaletteButtonTip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.setPaletteButtonTip" title="Link to this definition">#</a></dt>
+<dd><p>Set the tool tip for a palette button.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>b (PaletteButton): the palette button to modify
+pos (int): the position of the button</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.toggleBC">
+<span class="sig-name descname"><span class="pre">toggleBC</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.toggleBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.toggleBC" title="Link to this definition">#</a></dt>
+<dd><p>Hide/Unhide the brightness/contrast buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.toggleIncrement">
+<span class="sig-name descname"><span class="pre">toggleIncrement</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.toggleIncrement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.toggleIncrement" title="Link to this definition">#</a></dt>
+<dd><p>Hide/Unhide the increment buttons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.togglePalette">
+<span class="sig-name descname"><span class="pre">togglePalette</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.togglePalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.togglePalette" title="Link to this definition">#</a></dt>
+<dd><p>Hide/Unhide the mouse palette.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.updateBC">
+<span class="sig-name descname"><span class="pre">updateBC</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.updateBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.updateBC" title="Link to this definition">#</a></dt>
+<dd><p>Update the brightness/contrast on the slider to the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.mouse_palette.MousePalette.updateLabel">
+<span class="sig-name descname"><span class="pre">updateLabel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/mouse_palette.html#MousePalette.updateLabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.mouse_palette.MousePalette.updateLabel" title="Link to this definition">#</a></dt>
+<dd><p>Update the name of the trace palette label.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.palette.outlined_label">
+<span id="modules-gui-palette-outlined-label-module"></span><h2>modules.gui.palette.outlined_label module<a class="headerlink" href="#module-modules.gui.palette.outlined_label" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OutlinedLabel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QLabel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.minimumSizeHint">
+<span class="sig-name descname"><span class="pre">minimumSizeHint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PySide6.QtCore.QSize</span></span></span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.minimumSizeHint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.minimumSizeHint" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.outlineThickness">
+<span class="sig-name descname"><span class="pre">outlineThickness</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.outlineThickness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.outlineThickness" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.paintEvent">
+<span class="sig-name descname"><span class="pre">paintEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg__1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PySide6.QtGui.QPaintEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.paintEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.paintEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.scaledOutlineMode">
+<span class="sig-name descname"><span class="pre">scaledOutlineMode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.scaledOutlineMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.scaledOutlineMode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setBrush">
+<span class="sig-name descname"><span class="pre">setBrush</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">brush</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setBrush"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setBrush" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setOutlineColor">
+<span class="sig-name descname"><span class="pre">setOutlineColor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setOutlineColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setOutlineColor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setOutlineThickness">
+<span class="sig-name descname"><span class="pre">setOutlineThickness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setOutlineThickness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setOutlineThickness" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setPen">
+<span class="sig-name descname"><span class="pre">setPen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pen</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setPen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setPen" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setScaledOutlineMode">
+<span class="sig-name descname"><span class="pre">setScaledOutlineMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setScaledOutlineMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setScaledOutlineMode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.setTextColor">
+<span class="sig-name descname"><span class="pre">setTextColor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.setTextColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.setTextColor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.sizeHint">
+<span class="sig-name descname"><span class="pre">sizeHint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PySide6.QtCore.QSize</span></span></span><a class="reference internal" href="_modules/modules/gui/palette/outlined_label.html#OutlinedLabel.sizeHint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.sizeHint" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.palette.outlined_label.OutlinedLabel.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;OutlinedLabel&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QLabel&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.palette.outlined_label.OutlinedLabel.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.palette.zarr_palette">
+<span id="modules-gui-palette-zarr-palette-module"></span><h2>modules.gui.palette.zarr_palette module<a class="headerlink" href="#module-modules.gui.palette.zarr_palette" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.palette.zarr_palette.ZarrPalette">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZarrPalette</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/zarr_palette.html#ZarrPalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.zarr_palette.ZarrPalette" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.zarr_palette.ZarrPalette.changeGroup">
+<span class="sig-name descname"><span class="pre">changeGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/zarr_palette.html#ZarrPalette.changeGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.zarr_palette.ZarrPalette.changeGroup" title="Link to this definition">#</a></dt>
+<dd><p>Change the group for the overlay displayed.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>group_name (str): the name of the group to change to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.zarr_palette.ZarrPalette.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/zarr_palette.html#ZarrPalette.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.zarr_palette.ZarrPalette.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all widgets.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.palette.zarr_palette.ZarrPalette.placeWidgets">
+<span class="sig-name descname"><span class="pre">placeWidgets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/palette/zarr_palette.html#ZarrPalette.placeWidgets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.palette.zarr_palette.ZarrPalette.placeWidgets" title="Link to this definition">#</a></dt>
+<dd><p>Place the widgets in the correct locations.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.palette">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.gui.palette" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.gui.popup.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.gui.popup package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.gui.main.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.gui.main package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.gui.palette package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.gui.palette.buttons">modules.gui.palette.buttons module</a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.ModeButton"><code class="docutils literal notranslate"><span class="pre">ModeButton</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.ModeButton.paintEvent"><code class="docutils literal notranslate"><span class="pre">ModeButton.paintEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.ModeButton.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ModeButton.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton"><code class="docutils literal notranslate"><span class="pre">MoveableButton</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton.mouseMoveEvent"><code class="docutils literal notranslate"><span class="pre">MoveableButton.mouseMoveEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton.mousePressEvent"><code class="docutils literal notranslate"><span class="pre">MoveableButton.mousePressEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton.mouseReleaseEvent"><code class="docutils literal notranslate"><span class="pre">MoveableButton.mouseReleaseEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton.setRightClickEvent"><code class="docutils literal notranslate"><span class="pre">MoveableButton.setRightClickEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.MoveableButton.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">MoveableButton.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton"><code class="docutils literal notranslate"><span class="pre">PaletteButton</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton.openDialog"><code class="docutils literal notranslate"><span class="pre">PaletteButton.openDialog()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton.paintEvent"><code class="docutils literal notranslate"><span class="pre">PaletteButton.paintEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton.setTrace"><code class="docutils literal notranslate"><span class="pre">PaletteButton.setTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.buttons.PaletteButton.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">PaletteButton.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.palette.mouse_palette">modules.gui.palette.mouse_palette module</a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette"><code class="docutils literal notranslate"><span class="pre">MousePalette</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.activateModeButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.activateModeButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.activatePaletteButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.activatePaletteButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.close"><code class="docutils literal notranslate"><span class="pre">MousePalette.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.createBCButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.createBCButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.createIncrementButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.createIncrementButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.createModeButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.createModeButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.createPaletteButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.createPaletteButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.createPaletteSideButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.createPaletteSideButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.getBounds"><code class="docutils literal notranslate"><span class="pre">MousePalette.getBounds()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.getButtonCoords"><code class="docutils literal notranslate"><span class="pre">MousePalette.getButtonCoords()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.incrementPalette"><code class="docutils literal notranslate"><span class="pre">MousePalette.incrementPalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.incrementSection"><code class="docutils literal notranslate"><span class="pre">MousePalette.incrementSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.modifyAllPaletteButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.modifyAllPaletteButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.modifyFlag"><code class="docutils literal notranslate"><span class="pre">MousePalette.modifyFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.modifyPalette"><code class="docutils literal notranslate"><span class="pre">MousePalette.modifyPalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.modifyPaletteButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.modifyPaletteButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.moveButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.moveButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.paletteButtonChanged"><code class="docutils literal notranslate"><span class="pre">MousePalette.paletteButtonChanged()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.pasteAttributesToButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.pasteAttributesToButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placeBCButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.placeBCButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placeIncrementButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.placeIncrementButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placeLabel"><code class="docutils literal notranslate"><span class="pre">MousePalette.placeLabel()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placeModeButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.placeModeButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placePaletteButton"><code class="docutils literal notranslate"><span class="pre">MousePalette.placePaletteButton()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.placePaletteSideButtons"><code class="docutils literal notranslate"><span class="pre">MousePalette.placePaletteSideButtons()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.reset"><code class="docutils literal notranslate"><span class="pre">MousePalette.reset()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.resetPalette"><code class="docutils literal notranslate"><span class="pre">MousePalette.resetPalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.resetPos"><code class="docutils literal notranslate"><span class="pre">MousePalette.resetPos()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.resize"><code class="docutils literal notranslate"><span class="pre">MousePalette.resize()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.setBrightness"><code class="docutils literal notranslate"><span class="pre">MousePalette.setBrightness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.setContrast"><code class="docutils literal notranslate"><span class="pre">MousePalette.setContrast()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.setFlag"><code class="docutils literal notranslate"><span class="pre">MousePalette.setFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.setPaletteButtonTip"><code class="docutils literal notranslate"><span class="pre">MousePalette.setPaletteButtonTip()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.toggleBC"><code class="docutils literal notranslate"><span class="pre">MousePalette.toggleBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.toggleIncrement"><code class="docutils literal notranslate"><span class="pre">MousePalette.toggleIncrement()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.togglePalette"><code class="docutils literal notranslate"><span class="pre">MousePalette.togglePalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.updateBC"><code class="docutils literal notranslate"><span class="pre">MousePalette.updateBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.mouse_palette.MousePalette.updateLabel"><code class="docutils literal notranslate"><span class="pre">MousePalette.updateLabel()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.palette.outlined_label">modules.gui.palette.outlined_label module</a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.minimumSizeHint"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.minimumSizeHint()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.outlineThickness"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.outlineThickness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.paintEvent"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.paintEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.scaledOutlineMode"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.scaledOutlineMode()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setBrush"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setBrush()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setOutlineColor"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setOutlineColor()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setOutlineThickness"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setOutlineThickness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setPen"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setPen()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setScaledOutlineMode"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setScaledOutlineMode()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.setTextColor"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.setTextColor()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.sizeHint"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.sizeHint()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.outlined_label.OutlinedLabel.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">OutlinedLabel.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.palette.zarr_palette">modules.gui.palette.zarr_palette module</a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.zarr_palette.ZarrPalette"><code class="docutils literal notranslate"><span class="pre">ZarrPalette</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.palette.zarr_palette.ZarrPalette.changeGroup"><code class="docutils literal notranslate"><span class="pre">ZarrPalette.changeGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.zarr_palette.ZarrPalette.close"><code class="docutils literal notranslate"><span class="pre">ZarrPalette.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.palette.zarr_palette.ZarrPalette.placeWidgets"><code class="docutils literal notranslate"><span class="pre">ZarrPalette.placeWidgets()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.palette">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.table.help &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.table.help</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="n">QDockWidget</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">,</span> <span class="n">QAbstractItemView</span><span class="p">,</span> <span class="n">QLabel</span><span class="p">,</span> <span class="n">QWidget</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.copy_table_widget</span> <span class="kn">import</span> <span class="n">CopyTableWidget</span>
+
+<div class="viewcode-block" id="HelpWidget">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.help.HelpWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">HelpWidget</span><span class="p">(</span><span class="n">QDockWidget</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a text widget to display 3D options&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;3D&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">help_desc</span> <span class="o">=</span> <span class="n">help_3D</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;shortcuts&quot;</span><span class="p">:</span>
+            <span class="n">link</span> <span class="o">=</span> <span class="s2">&quot;https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide&quot;</span>
+            <span class="n">link_lbl</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">link_lbl</span><span class="o">.</span><span class="n">setOpenExternalLinks</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">link_lbl</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;a href=&quot;</span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s1">&quot;&gt;</span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s1">&lt;/a&gt;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">help_desc</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[(</span><span class="s2">&quot;Link to full wiki:&quot;</span><span class="p">,</span> <span class="n">link_lbl</span><span class="p">),</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> 
+                <span class="n">help_shortcuts</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFloating</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAllowedAreas</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">NoDockWidgetArea</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Help&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># create the table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnWidth</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]),</span> <span class="mi">600</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<div class="viewcode-block" id="HelpWidget.setRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.help.HelpWidget.setRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">key_desc</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the data for a row.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                r (int): the row index</span>
+<span class="sd">                key_desc (tuple): key, description</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key_desc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">key_desc</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">key_desc</span><span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">font</span><span class="p">()</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">setBold</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">i</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">key_desc</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">QWidget</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setCellWidget</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setRowHeight</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="HelpWidget.createTable">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.help.HelpWidget.createTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># establish table headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Key&quot;</span><span class="p">,</span> <span class="s2">&quot;Description&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">CopyTableWidget</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">help_desc</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+
+        <span class="c1"># format table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setShowGrid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setAlternatingRowColors</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># alternate row colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setEditTriggers</span><span class="p">(</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">NoEditTriggers</span><span class="p">)</span>  <span class="c1"># cannot be edited</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>  <span class="c1"># titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>  <span class="c1"># no veritcal header</span>
+
+        <span class="c1"># fill in data</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">key_desc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">help_desc</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">key_desc</span><span class="p">)</span>
+        
+        <span class="c1"># format the table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="HelpWidget.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.help.HelpWidget.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+
+<span class="n">help_3D</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;Left-click&quot;</span><span class="p">,</span> <span class="s2">&quot;rotate scene / select objects&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Middle-click&quot;</span><span class="p">,</span> <span class="s2">&quot;pan scene&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Right-click&quot;</span><span class="p">,</span> <span class="s2">&quot;zoom scene in or out&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Ctrl-click&quot;</span><span class="p">,</span> <span class="s2">&quot;rotate scene&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Double-click&quot;</span><span class="p">,</span> <span class="s2">&quot;move to point in 2D field&quot;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle scale cube&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Up/Down/Left/Right&quot;</span><span class="p">,</span> <span class="s2">&quot;move scale cube in XY&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Ctrl+Up/Down&quot;</span><span class="p">,</span> <span class="s2">&quot;move scale cube in Z&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Right-click scale cube&quot;</span><span class="p">,</span> <span class="s2">&quot;change scale cube size&quot;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;decrease opacity of selected object(s)&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;increase opacity of selected object(s)&quot;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fly camera towards last clicked point&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;print info about selected object&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+I&quot;</span><span class="p">,</span> <span class="s2">&quot;print the RGB color under the mouse&quot;</span><span class="p">),</span>
+    <span class="c1"># (&quot;Y&quot;, &quot;show the pipeline for this object as a graph&quot;),</span>
+    <span class="p">(</span><span class="s2">&quot;W/S&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle wireframe/surface style&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;P/Shift+P&quot;</span><span class="p">,</span> <span class="s2">&quot;change point size of vertices&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle edges visibility&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle mesh visibility&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+X&quot;</span><span class="p">,</span> <span class="s2">&quot;invoke a cutter widget tool&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;1-3&quot;</span><span class="p">,</span> <span class="s2">&quot;change mesh color&quot;</span><span class="p">),</span>
+    <span class="c1"># (&quot;4&quot;, &quot;use data array as colors, if present&quot;),</span>
+    <span class="p">(</span><span class="s2">&quot;5-6&quot;</span><span class="p">,</span> <span class="s2">&quot;change background color(s)&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;+/-&quot;</span><span class="p">,</span> <span class="s2">&quot;cycle axes style&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;cycle available lighting styles&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+K&quot;</span><span class="p">,</span> <span class="s2">&quot;cycle available shading styles&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+A&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle anti-aliasing&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+D&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle depth-peeling (for transparencies)&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;O/Shift+O&quot;</span><span class="p">,</span> <span class="s2">&quot;add/remove light to scene and rotate it&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;show surface mesh normals&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle interaction to Actor Mode&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;J&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle interaction to Joystick Mode&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+U&quot;</span><span class="p">,</span> <span class="s2">&quot;toggle perspective/parallel projection&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;reset camera position&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+R&quot;</span><span class="p">,</span> <span class="s2">&quot;reset camera orientation to orthogonal view&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Shift+C&quot;</span><span class="p">,</span> <span class="s2">&quot;print current camera settings&quot;</span><span class="p">),</span>
+    <span class="c1"># (&quot;Shift+S&quot;, &quot;save a screenshot&quot;),</span>
+    <span class="c1"># (&quot;Shift+E/Shift+F&quot;, &quot;export 3D scene to numpy file or X3D&quot;),</span>
+    <span class="p">(</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="s2">&quot;return control to python script&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;Esc&quot;</span><span class="p">,</span> <span class="s2">&quot;abort execution and exit python kernel&quot;</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">help_shortcuts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;General&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Delete/Backspace&#39;</span><span class="p">,</span> <span class="s1">&#39;Delete selected traces&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;Remove last entered point when polyline tracing or using scissors.&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;Delete selected entry when using the lists&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;? (Shift-/)&#39;</span><span class="p">,</span> <span class="s1">&#39;Display keyboard shortcuts&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Page Up&#39;</span><span class="p">,</span> <span class="s1">&#39;Display the next (higher) section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Page Down&#39;</span><span class="p">,</span> <span class="s1">&#39;Display the preceding (lower) section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;/ &#39;</span><span class="p">,</span> <span class="s1">&#39;Switch back &amp; forth between the current section and last section viewed&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;View&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="s1">&#39;Toggle hide all traces, regardless of individual trace hide status&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;Toggle show all traces, regardless of individual trace hide status&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;Toggle hide section image&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;Decrease brightness&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;Increase brightness&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">,</span> <span class="s1">&#39;Decrease contrast&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">,</span> <span class="s1">&#39;Increase contrast&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Space&#39;</span><span class="p">,</span> <span class="s1">&#39;Blend the current section with the last section viewed&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Home&#39;</span><span class="p">,</span> <span class="s1">&#39;Set the view to the image&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Field Interactions&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-A&#39;</span><span class="p">,</span> <span class="s1">&#39;Select all traces on a section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-D&#39;</span><span class="p">,</span> <span class="s1">&#39;Deselect all traces on section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-E&#39;</span><span class="p">,</span> <span class="s1">&#39;Edit the attributes of the selected trace(s)&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-M&#39;</span><span class="p">,</span> <span class="s1">&#39;Merge the selected traces&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-M&#39;</span><span class="p">,</span> <span class="s1">&#39;Merge the attributes of the selected traces&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-H&#39;</span><span class="p">,</span> <span class="s1">&#39;Hide the selected traces&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-U&#39;</span><span class="p">,</span> <span class="s1">&#39;Unhide all hidden traces on the current section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Shift-G&#39;</span><span class="p">,</span> <span class="s1">&#39;Modify the current palette button to match attributes of first selected trace&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-G&#39;</span><span class="p">,</span> <span class="s1">&#39;Modiy the current palette button to match attributes AND shape of first selected trace&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-U&#39;</span><span class="p">,</span> <span class="s1">&#39;Unlock the current section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-T&#39;</span><span class="p">,</span> <span class="s1">&#39;Modify the transform on current section&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Edit&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Undo&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Y&#39;</span><span class="p">,</span> <span class="s1">&#39;Re-do&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-C&#39;</span><span class="p">,</span> <span class="s1">&#39;Copy the selected traces onto the clipboard&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-X&#39;</span><span class="p">,</span> <span class="s1">&#39;Cut selected traces onto the clipboard&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-V&#39;</span><span class="p">,</span> <span class="s1">&#39;Paste clipboard traces into section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-B&#39;</span><span class="p">,</span> <span class="s1">&#39;Paste attributes of clipboard traces onto selected traces&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Navigate&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-F&#39;</span><span class="p">,</span> <span class="s1">&#39;Find the first instance of a trace in series&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-F&#39;</span><span class="p">,</span> <span class="s1">&#39;Find a trace on the current section&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-G&#39;</span><span class="p">,</span> <span class="s1">&#39;Go to a specific section number&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;File&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-O&#39;</span><span class="p">,</span> <span class="s1">&#39;Open a series file&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-S&#39;</span><span class="p">,</span> <span class="s1">&#39;Save&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-B&#39;</span><span class="p">,</span> <span class="s1">&#39;Backup series&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-N&#39;</span><span class="p">,</span> <span class="s1">&#39;New&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-R&#39;</span><span class="p">,</span> <span class="s1">&#39;Restart&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Q&#39;</span><span class="p">,</span> <span class="s1">&#39;Quit&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Lists&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-O&#39;</span><span class="p">,</span> <span class="s1">&#39;Open the Object List&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-C&#39;</span><span class="p">,</span> <span class="s1">&#39;Toggle curation columns in object list&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-T&#39;</span><span class="p">,</span> <span class="s1">&#39;Open the Trace List&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Open the Ztrace List&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-S&#39;</span><span class="p">,</span> <span class="s1">&#39;Open the Section List&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-A&#39;</span><span class="p">,</span> <span class="s1">&#39;Switch/modify alignments&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Trace Palette&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;#, Shift-#&#39;</span><span class="p">,</span> <span class="s1">&#39;Select a trace on the palette&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-#, Ctrl-Shift-#&#39;</span><span class="p">,</span> <span class="s1">&#39;Edit attributes for a single trace on the palette&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-P&#39;</span><span class="p">,</span> <span class="s1">&#39;Switch/modify palettes&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Arrow Keys&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;Left/Right/Up/Down&#39;</span><span class="p">,</span> <span class="s1">&#39;Translate selected traces or image if no trace selected&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Left/Right/Up/Down&#39;</span><span class="p">,</span> <span class="s1">&#39;Translate traces or image a small amount&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Shift-Left/Right/Up/Down&#39;</span><span class="p">,</span> <span class="s1">&#39;Translate trace or image a large amount&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Ctrl-Shift-Left/Right/Up/Down&#39;</span><span class="p">,</span> <span class="s1">&#39;Rotate the image around the mouse&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;Tool Palette&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the pointer tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the pan/zoom tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the knife tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the closed trace tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;O&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the open trace tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the stamp tool&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;Use the flag tool&#39;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;3D Scene Shortcuts:&quot;</span><span class="p">,</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="p">(</span><span class="s2">&quot;Shift-/&quot;</span><span class="p">,</span> <span class="s2">&quot;Pull up shortcuts for 3D scene&quot;</span><span class="p">),</span>
+    <span class="kc">None</span><span class="p">,</span>
+<span class="p">]</span> <span class="o">+</span> <span class="n">help_3D</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.palette.mouse_palette &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.palette.mouse_palette</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">QStyle</span><span class="p">,</span> <span class="n">QSlider</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="n">QIcon</span><span class="p">,</span> <span class="n">QPixmap</span><span class="p">,</span> <span class="n">QColor</span><span class="p">,</span> <span class="n">QFont</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">QSize</span><span class="p">,</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.buttons</span> <span class="kn">import</span> <span class="n">PaletteButton</span><span class="p">,</span> <span class="n">ModeButton</span><span class="p">,</span> <span class="n">MoveableButton</span>
+<span class="kn">from</span> <span class="nn">.outlined_label</span> <span class="kn">import</span> <span class="n">OutlinedLabel</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span><span class="p">,</span> <span class="n">Trace</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">locations</span> <span class="k">as</span> <span class="n">loc</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="n">TracePaletteDialog</span><span class="p">,</span> <span class="n">QuickDialog</span>
+
+<div class="viewcode-block" id="MousePalette">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette">[docs]</a>
+<span class="k">class</span> <span class="nc">MousePalette</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mainwindow</span> <span class="p">:</span> <span class="n">QWidget</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the mouse dock widget object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                palette_traces (list): list of traces to include on palette</span>
+<span class="sd">                selected_trace (Trace): the trace that is selected on the palette</span>
+<span class="sd">                mainwindow (MainWindow): the parent main window of the dock</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="p">:</span> <span class="n">Series</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span> <span class="o">=</span> <span class="mi">40</span>  <span class="c1"># mode button size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">=</span> <span class="mi">40</span>  <span class="c1"># palette button size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ibw</span> <span class="o">=</span> <span class="mi">90</span>  <span class="c1"># inc button width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ibh</span> <span class="o">=</span> <span class="mi">35</span>  <span class="c1"># inc button height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># brightness/contrast button size</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># create mode buttons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_y</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Pointer&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Pan/Zoom&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Knife&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Scissors&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Closed Trace&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Open Trace&quot;</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Stamp&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Grid&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createModeButton</span><span class="p">(</span><span class="s2">&quot;Flag&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+        <span class="c1"># create palette buttons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_x</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_y</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">traces</span><span class="p">):</span>  <span class="c1"># create all the palette buttons</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">createPaletteButton</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># create palette increments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createPaletteSideButtons</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_mode</span> <span class="o">=</span> <span class="s2">&quot;pointer&quot;</span>
+
+        <span class="c1"># create label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">OutlinedLabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">)</span>
+        <span class="n">font</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">font</span><span class="p">()</span>
+        <span class="n">font</span><span class="o">.</span><span class="n">setFamily</span><span class="p">(</span><span class="s2">&quot;Courier New&quot;</span><span class="p">)</span>
+        <span class="n">font</span><span class="o">.</span><span class="n">setBold</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">font</span><span class="o">.</span><span class="n">setPointSize</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">font</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateLabel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="c1"># create increment buttons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_y</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createIncrementButtons</span><span class="p">()</span>
+
+        <span class="c1"># create brightness/contrast buttons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_y</span> <span class="o">=</span> <span class="mf">0.8</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createBCButtons</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_hidden</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_hidden</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_hidden</span> <span class="o">=</span> <span class="kc">False</span>
+    
+<div class="viewcode-block" id="MousePalette.placeModeButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placeModeButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeModeButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">pos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place the mode button in the main window.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                button (ModeButton): the button to place</span>
+<span class="sd">                pos (int): the position of the button</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">)</span> <span class="o">*</span> <span class="n">pos</span>
+        <span class="n">button</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.createModeButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.createModeButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">createModeButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sc</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">mouse_mode</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new mouse mode button.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the button (and PNG file)</span>
+<span class="sd">                sc (str): the shortcut character for the button</span>
+<span class="sd">                pos (int): the position of the button</span>
+<span class="sd">                mouse_mode (int): the mode this button is connected to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">ModeButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># filter name to get filename</span>
+        <span class="n">stripped_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">characters_to_remove</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">characters_to_remove</span><span class="p">:</span>
+            <span class="n">stripped_name</span> <span class="o">=</span> <span class="n">stripped_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">stripped_name</span> <span class="o">=</span> <span class="n">stripped_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="c1"># open the icon file</span>
+        <span class="n">icon_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">img_dir</span><span class="p">,</span> <span class="n">stripped_name</span> <span class="o">+</span> <span class="s2">&quot;.png&quot;</span><span class="p">)</span>
+        <span class="n">pixmap</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">icon_fp</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeModeButton</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+
+        <span class="c1"># format the button</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">QIcon</span><span class="p">(</span><span class="n">pixmap</span><span class="p">))</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setIconSize</span><span class="p">(</span><span class="n">QSize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">))</span>
+        <span class="c1"># b.setText(name)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">sc</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="n">b</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># make the first button selected by default</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activateModeButton</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="c1"># dictionary -- name : (button object, mouse mode, position)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">mouse_mode</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+
+        <span class="c1"># manually enter dialog function for pointer and grid</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Pointer&quot;</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setRightClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">modifyPointer</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Closed Trace&quot;</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setRightClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeClosedTraceMode</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Grid&quot;</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setRightClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">modifyGrid</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Flag&quot;</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setRightClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modifyFlag</span><span class="p">)</span>
+            <span class="c1"># manually set the flag text and color</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setFlag</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Knife&quot;</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setRightClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">modifyKnife</span><span class="p">)</span>
+
+        <span class="n">b</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.placePaletteButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placePaletteButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">placePaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">button</span> <span class="p">:</span> <span class="n">PaletteButton</span><span class="p">,</span> <span class="n">pos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place the palette button in the main window.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                button (PaletteButton): the palette button to move</span>
+<span class="sd">                pos (int): its position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># place the palette button in the middle of the FIELD (not mainwindow)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">//</span> <span class="mi">5</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_offset</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">x_offset</span> <span class="o">+=</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span> <span class="o">+</span> <span class="n">pos</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="n">x_offset</span>
+
+        <span class="k">if</span> <span class="n">pos</span><span class="o">//</span><span class="mi">10</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">y_offset</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">y_offset</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">y_offset</span> <span class="o">+=</span> <span class="p">(</span><span class="n">pos</span><span class="o">//</span><span class="mi">10</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span>
+        <span class="n">y</span> <span class="o">+=</span> <span class="n">y_offset</span>
+
+        <span class="n">button</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.placePaletteSideButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placePaletteSideButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">placePaletteSideButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+
+        <span class="n">up</span><span class="p">,</span> <span class="n">down</span><span class="p">,</span> <span class="n">opts</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_side_buttons</span><span class="p">)</span>
+
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span>
+        
+        <span class="n">up</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">y1</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">down</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">opts</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.setPaletteButtonTip">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.setPaletteButtonTip">[docs]</a>
+    <span class="k">def</span> <span class="nf">setPaletteButtonTip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span> <span class="p">:</span> <span class="n">PaletteButton</span><span class="p">,</span> <span class="n">pos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the tool tip for a palette button.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                b (PaletteButton): the palette button to modify</span>
+<span class="sd">                pos (int): the position of the button</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kbd</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="o">//</span> <span class="mi">10</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">kbd</span> <span class="o">+=</span> <span class="s2">&quot;Shift+&quot;</span>
+        <span class="n">kbd</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">((</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">tooltip</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">kbd</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">tooltip</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.createPaletteButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.createPaletteButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">createPaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">pos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a palette button on the dock.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to go on the button</span>
+<span class="sd">                pos (int): the position of the button (assumes 20 buttons)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">PaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placePaletteButton</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setPaletteButtonTip</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activatePaletteButton</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.createPaletteSideButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.createPaletteSideButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">createPaletteSideButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the palette increment buttons.&quot;&quot;&quot;</span>
+        <span class="n">b_up</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+        <span class="n">b_up</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">b_up</span><span class="o">.</span><span class="n">font</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">setBold</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">b_up</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">b_up</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">incrementPalette</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">b_up</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="n">b_down</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+        <span class="n">b_down</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+        <span class="n">b_down</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">b_down</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">incrementPalette</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+        <span class="n">b_down</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="n">b_opts</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+        <span class="n">b_opts</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;☰&quot;</span><span class="p">)</span>
+        <span class="n">b_opts</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modifyAllPaletteButtons</span><span class="p">)</span>
+        <span class="n">b_opts</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="s2">&quot;Modify all palettes&quot;</span><span class="p">)</span>
+        <span class="n">b_opts</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_side_buttons</span> <span class="o">=</span> <span class="p">[</span><span class="n">b_up</span><span class="p">,</span> <span class="n">b_down</span><span class="p">,</span> <span class="n">b_opts</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placePaletteSideButtons</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.placeLabel">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placeLabel">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place the trace palette label.&quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;trace&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">())</span>
+        <span class="n">x</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trace_y</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">+</span> <span class="mi">5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span> <span class="o">+</span> <span class="mi">5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.updateLabel">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.updateLabel">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the name of the trace palette label.&quot;&quot;&quot;</span>
+        <span class="n">g</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">)</span>
+        <span class="n">selected_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">selected_trace</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">selected_trace</span><span class="o">.</span><span class="n">color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setTextColor</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">black_outline</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">400</span>
+        <span class="k">if</span> <span class="n">black_outline</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setOutlineColor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setOutlineColor</span><span class="p">((</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeLabel</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.activateModeButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.activateModeButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">activateModeButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bname</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when any mouse mode button is clicked: changes mouse mode.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                bname (str): the name of the clicked button</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">button_info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">button</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">button_info</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">bname</span><span class="p">:</span>
+                    <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="ow">not</span> <span class="n">button</span><span class="o">.</span><span class="n">isChecked</span><span class="p">())</span>    
+                    <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">button_info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">button</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">button_info</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">bname</span><span class="p">:</span>
+                <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeMouseMode</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_mode</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>      </div>
+
+    
+<div class="viewcode-block" id="MousePalette.activatePaletteButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.activatePaletteButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">activatePaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bpos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when palette button is clicked: changes mouse trace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                bpos (int): the position of the palette button</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">button</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">bpos</span><span class="p">:</span>
+                    <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="ow">not</span> <span class="n">button</span><span class="o">.</span><span class="n">isChecked</span><span class="p">())</span>    
+                    <span class="k">return</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">button</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">bpos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+                    <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="ow">not</span> <span class="n">button</span><span class="o">.</span><span class="n">isChecked</span><span class="p">())</span>
+                    <span class="k">return</span>
+                <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeTracingTrace</span><span class="p">(</span><span class="n">button</span><span class="o">.</span><span class="n">trace</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateLabel</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">button</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.paletteButtonChanged">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.paletteButtonChanged">[docs]</a>
+    <span class="k">def</span> <span class="nf">paletteButtonChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">button</span> <span class="p">:</span> <span class="n">PaletteButton</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when user changes palette trace: ensure that tracing pencil is updated.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                button (PaletteButton): the button that was changed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="n">button</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setPaletteButtonTip</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">isChecked</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeTracingTrace</span><span class="p">(</span><span class="n">button</span><span class="o">.</span><span class="n">trace</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateLabel</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.pasteAttributesToButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.pasteAttributesToButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">pasteAttributesToButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">use_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Paste the attributes of a trace to the current button.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to paste</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bpos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">use_shape</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">centerAtOrigin</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">getRadius</span><span class="p">()</span>
+            <span class="n">bttn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">[</span><span class="n">bpos</span><span class="p">]</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">bttn</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span> <span class="n">color</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modifyPaletteButton</span><span class="p">(</span><span class="n">bpos</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.modifyPaletteButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.modifyPaletteButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">modifyPaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bpos</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Opens dialog to modify palette button.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                bpos (int): the position of the palette button</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">[</span><span class="n">bpos</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">trace</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">openDialog</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">bpos</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">trace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paletteButtonChanged</span><span class="p">(</span><span class="n">b</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.modifyPalette">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.modifyPalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">modifyPalette</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_list</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify all of the palette traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace_list (list): the list of traces to set the palette buttons</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">bpos</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace_list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modifyPaletteButton</span><span class="p">(</span><span class="n">bpos</span><span class="p">,</span> <span class="n">trace</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activatePaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.resetPalette">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.resetPalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">resetPalette</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the palette to the default traces.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modifyPalette</span><span class="p">(</span><span class="n">Series</span><span class="o">.</span><span class="n">getDefaultPaletteTraces</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.placeIncrementButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placeIncrementButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeIncrementButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place the increment buttons on the field&quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;inc&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibh</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibh</span> <span class="o">+</span> <span class="mi">15</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibh</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.createIncrementButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.createIncrementButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">createIncrementButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the section increment buttons.&quot;&quot;&quot;</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;inc&quot;</span><span class="p">)</span>
+        <span class="n">up_icon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">style</span><span class="p">()</span><span class="o">.</span><span class="n">standardIcon</span><span class="p">(</span>
+            <span class="n">QStyle</span><span class="o">.</span><span class="n">SP_TitleBarShadeButton</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">up_icon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incrementSection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="s2">&quot;Next section (PgUp)&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;inc&quot;</span><span class="p">)</span>
+        <span class="n">down_icon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">style</span><span class="p">()</span><span class="o">.</span><span class="n">standardIcon</span><span class="p">(</span>
+            <span class="n">QStyle</span><span class="o">.</span><span class="n">SP_TitleBarUnshadeButton</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">down_icon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">incrementSection</span><span class="p">(</span><span class="n">down</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="s2">&quot;Previous section (PgDown)&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeIncrementButtons</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_buttons</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">up_bttn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_bttn</span><span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.incrementSection">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.incrementSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">incrementSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Increment the section.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">incrementSection</span><span class="p">(</span><span class="n">down</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.placeBCButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.placeBCButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeBCButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place the brightness/contrast buttons.&quot;&quot;&quot;</span>
+        <span class="n">bcx</span><span class="p">,</span> <span class="n">bcy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="s2">&quot;bc&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">bttn</span><span class="p">,</span> <span class="n">slider</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">bcx</span><span class="p">,</span> <span class="n">bcy</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span> <span class="o">+</span> <span class="mi">20</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span>
+            <span class="n">bttn</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="p">)</span>
+            <span class="n">slider</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="o">*</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateBC</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.updateBC">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.updateBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateBC</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the brightness/contrast on the slider to the section.&quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">brightness</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">contrast</span>
+
+        <span class="n">b_slider_value</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="nb">abs</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">c_slider_value</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="nb">abs</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">c</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">b_bttn</span><span class="p">,</span> <span class="n">b_slider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">b_bttn</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+        <span class="n">b_slider</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">b_slider_value</span><span class="p">)</span>
+
+        <span class="n">c_bttn</span><span class="p">,</span> <span class="n">c_slider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">c_bttn</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+        <span class="n">c_slider</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">c_slider_value</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.createBCButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.createBCButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">createBCButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the brightnes/contrast buttons.&quot;&quot;&quot;</span>
+        <span class="c1"># create the brightness/contrast button/slider</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;brightness&quot;</span><span class="p">,</span> <span class="s2">&quot;contrast&quot;</span><span class="p">):</span>
+            <span class="c1"># create button</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">MoveableButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;bc&quot;</span><span class="p">)</span>
+            <span class="n">icon_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">img_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">option</span><span class="si">}</span><span class="s2">_up.png&quot;</span><span class="p">)</span>
+            <span class="n">pixmap</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">icon_fp</span><span class="p">)</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">QIcon</span><span class="p">(</span><span class="n">pixmap</span><span class="p">))</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">setIconSize</span><span class="p">(</span><span class="n">QSize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="o">*</span><span class="mi">2</span><span class="o">/</span><span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span><span class="o">*</span><span class="mi">2</span><span class="o">/</span><span class="mi">3</span><span class="p">))</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="c1"># create slider</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">QSlider</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">)</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">setMinimum</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeBCButtons</span><span class="p">()</span>
+        <span class="c1"># connect functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setBrightness</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setContrast</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.setBrightness">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.setBrightness">[docs]</a>
+    <span class="k">def</span> <span class="nf">setBrightness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the brightness for the current section.&quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">b</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">brightness</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section_layer</span><span class="o">.</span><span class="n">setBrightness</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateBC</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">generateView</span><span class="p">(</span><span class="n">generate_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.setContrast">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.setContrast">[docs]</a>
+    <span class="k">def</span> <span class="nf">setContrast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the contrast for the current section.&quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">c</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">c</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">contrast</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section_layer</span><span class="o">.</span><span class="n">setContrast</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateBC</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">generateView</span><span class="p">(</span><span class="n">generate_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.getButtonCoords">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.getButtonCoords">[docs]</a>
+    <span class="k">def</span> <span class="nf">getButtonCoords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the coordinates for a button group.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                group (str): the name of the button group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">()[</span><span class="n">group</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_x&quot;</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_y&quot;</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">))</span> <span class="o">+</span> <span class="n">x1</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">))</span> <span class="o">+</span> <span class="n">y1</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.moveButton">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.moveButton">[docs]</a>
+    <span class="k">def</span> <span class="nf">moveButton</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move a button group.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                dx (int): the x-value movement for the button</span>
+<span class="sd">                dy (int): the y-value movement for the button</span>
+<span class="sd">                group (str): the name of the button group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">()[</span><span class="n">group</span><span class="p">]</span>
+        <span class="n">current_x</span><span class="p">,</span> <span class="n">current_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getButtonCoords</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="n">new_x</span> <span class="o">=</span> <span class="p">((</span><span class="n">current_x</span> <span class="o">+</span> <span class="n">dx</span><span class="p">)</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="n">new_x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">new_x</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">new_x</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">new_y</span> <span class="o">=</span> <span class="p">((</span><span class="n">current_y</span> <span class="o">+</span> <span class="n">dy</span><span class="p">)</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="n">new_y</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">new_y</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">new_y</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_x&quot;</span><span class="p">,</span> <span class="n">new_x</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_y&quot;</span><span class="p">,</span> <span class="n">new_y</span><span class="p">)</span>
+
+        <span class="c1"># special case: move selected traces if needed</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="o">==</span> <span class="s2">&quot;mode&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.getBounds">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.getBounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">getBounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the bounds for the buttons.&quot;&quot;&quot;</span>
+        <span class="n">fx1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+        <span class="n">fx2</span> <span class="o">=</span> <span class="n">fx1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">fy1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+        <span class="n">fy2</span> <span class="o">=</span> <span class="n">fy1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fx1</span><span class="p">,</span> <span class="n">fx2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mblen</span><span class="p">,</span> <span class="n">fy1</span><span class="p">,</span> <span class="n">fy2</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mblen</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">)</span> <span class="o">+</span> <span class="mi">10</span><span class="p">),</span>
+            <span class="s2">&quot;trace&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fx1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span> <span class="n">fx2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="o">*</span><span class="mf">5.5</span> <span class="o">-</span> <span class="mi">3</span><span class="p">,</span> <span class="n">fy1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="p">,</span> <span class="n">fy2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pblen</span><span class="p">),</span>
+            <span class="s2">&quot;inc&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fx1</span><span class="p">,</span> <span class="n">fx2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibw</span><span class="p">,</span> <span class="n">fy1</span><span class="p">,</span> <span class="n">fy2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ibh</span><span class="o">*</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">15</span><span class="p">),</span>
+            <span class="s2">&quot;bc&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fx1</span><span class="p">,</span> <span class="n">fx2</span> <span class="o">-</span> <span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">fy1</span><span class="p">,</span> <span class="n">fy2</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">bcsize</span> <span class="o">-</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.togglePalette">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.togglePalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">togglePalette</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide/Unhide the mouse palette.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">palette_hidden</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_hidden</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">]):</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_hidden</span> <span class="k">else</span> <span class="n">w</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.toggleIncrement">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.toggleIncrement">[docs]</a>
+    <span class="k">def</span> <span class="nf">toggleIncrement</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide/Unhide the increment buttons.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_hidden</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">inc_hidden</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inc_buttons</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inc_hidden</span> <span class="k">else</span> <span class="n">b</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.toggleBC">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.toggleBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">toggleBC</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide/Unhide the brightness/contrast buttons.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_hidden</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_hidden</span>
+        <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_hidden</span> <span class="k">else</span> <span class="n">b</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_hidden</span> <span class="k">else</span> <span class="n">s</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.resetPos">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.resetPos">[docs]</a>
+    <span class="k">def</span> <span class="nf">resetPos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the positions of the buttons.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_y</span> <span class="o">=</span> <span class="mf">0.01</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_x</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_y</span> <span class="o">=</span> <span class="mf">0.99</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_y</span> <span class="o">=</span> <span class="mf">0.99</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_x</span> <span class="o">=</span> <span class="mf">0.99</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_y</span> <span class="o">=</span> <span class="mf">0.8</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.incrementPalette">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.incrementPalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">incrementPalette</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">up</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Increment the palette.</span>
+<span class="sd">            </span>
+<span class="sd">            Params:</span>
+<span class="sd">                up (bool): True if increment higher, False if increment lower</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">def</span> <span class="nf">incStr</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+            <span class="nb">min</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="nb">max</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">up</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="nb">min</span><span class="p">:</span> <span class="n">n</span> <span class="o">=</span> <span class="nb">max</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">:</span> <span class="n">n</span> <span class="o">=</span> <span class="nb">min</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+        
+        <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="n">match</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">incStr</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+        
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\{(\d+)\}&quot;</span>
+
+        <span class="k">for</span> <span class="n">bpos</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">):</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">replace</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">new_trace</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">new_trace</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modifyPaletteButton</span><span class="p">(</span><span class="n">bpos</span><span class="p">,</span> <span class="n">new_trace</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="MousePalette.modifyAllPaletteButtons">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.modifyAllPaletteButtons">[docs]</a>
+    <span class="k">def</span> <span class="nf">modifyAllPaletteButtons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify all the palette buttons through a single dialog.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dragging</span><span class="p">:</span>
+            <span class="k">return</span>
+               
+        <span class="c1"># run the widget</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">TracePaletteDialog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">modifyPalette</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activatePaletteButton</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.setFlag">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.setFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">setFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">font_size</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">display_flags</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the default flag in the palette.&quot;&quot;&quot;</span>
+        <span class="n">regenerate_view</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_name&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_color&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_color&quot;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">font_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">font_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">font_size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="n">regenerate_view</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="k">if</span> <span class="n">display_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">display_flags</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">,</span> <span class="n">display_flags</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_flags</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">regenerate_view</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="k">if</span> <span class="n">regenerate_view</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">generateView</span><span class="p">(</span><span class="n">generate_image</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="n">button</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">[</span><span class="s2">&quot;Flag&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">button</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+        <span class="n">button</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;⚑&quot;</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="p">))</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">button</span><span class="o">.</span><span class="n">setStyleSheet</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;color:rgb</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.modifyFlag">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.modifyFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">modifyFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the default flag.&quot;&quot;&quot;</span>
+        <span class="n">show_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">show_flags</span><span class="p">)</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Default name:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_name&quot;</span><span class="p">))],</span>
+            <span class="p">[</span><span class="s2">&quot;Default color:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_color&quot;</span><span class="p">))],</span>
+            <span class="p">[</span><span class="s2">&quot;Size of all flags: &quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)))],</span>
+            <span class="p">[</span><span class="s2">&quot;Display&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;radio&quot;</span><span class="p">,</span>
+              <span class="p">(</span><span class="s2">&quot;All flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">),</span>
+              <span class="p">(</span><span class="s2">&quot;Only unresolved flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;unresolved&quot;</span><span class="p">),</span>
+              <span class="p">(</span><span class="s2">&quot;No flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">)</span>
+            <span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Flag&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+        <span class="k">elif</span> <span class="n">response</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;unresolved&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFlag</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">response</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">show_flags</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="MousePalette.resize">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.resize">[docs]</a>
+    <span class="k">def</span> <span class="nf">resize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move the buttons to fit the main window.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">mbname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">:</span>
+            <span class="n">button</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">[</span><span class="n">mbname</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">placeModeButton</span><span class="p">(</span><span class="n">button</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">placePaletteButton</span><span class="p">(</span><span class="n">pb</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placePaletteSideButtons</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeLabel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeIncrementButtons</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeBCButtons</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="MousePalette.reset">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the mouse palette when opening a new series.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MousePalette.close">
+<a class="viewcode-back" href="../../../../modules.gui.palette.html#modules.gui.palette.mouse_palette.MousePalette.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close all buttons&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">bname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">:</span>
+            <span class="n">button</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_buttons</span><span class="p">[</span><span class="n">bname</span><span class="p">]</span>
+            <span class="n">button</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">pb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_buttons</span><span class="p">:</span>
+            <span class="n">pb</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">palette_side_buttons</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inc_buttons</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_widgets</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+        
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

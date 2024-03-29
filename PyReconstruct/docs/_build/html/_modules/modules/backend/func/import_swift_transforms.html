@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.func.import_swift_transforms &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.func.import_swift_transforms</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span><span class="p">,</span> <span class="n">Transform</span>
+
+
+<div class="viewcode-block" id="IncorrectFormatError">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.IncorrectFormatError">[docs]</a>
+<span class="k">class</span> <span class="nc">IncorrectFormatError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="IncorrectSecNumError">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.IncorrectSecNumError">[docs]</a>
+<span class="k">class</span> <span class="nc">IncorrectSecNumError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="getDateTime">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.getDateTime">[docs]</a>
+<span class="k">def</span> <span class="nf">getDateTime</span><span class="p">():</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">minute</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">,</span> <span class="n">t</span></div>
+
+
+
+<div class="viewcode-block" id="cafm_to_matrix">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.cafm_to_matrix">[docs]</a>
+<span class="k">def</span> <span class="nf">cafm_to_matrix</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert c_afm to Numpy matrix.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">([[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]],</span>
+                      <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]],</span>
+                      <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span></div>
+
+
+
+<div class="viewcode-block" id="cafm_to_sanity">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.cafm_to_sanity">[docs]</a>
+<span class="k">def</span> <span class="nf">cafm_to_sanity</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">scale_ratio</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">old_swift</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert c_afm to something sane.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Convert to matrix</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">cafm_to_matrix</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="c1"># Transforms in older SWiFT project files are stored as inverted matrices</span>
+    <span class="k">if</span> <span class="n">old_swift</span><span class="p">:</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    
+    <span class="c1"># Get translation of bottom left corner from img height (px)</span>
+    <span class="n">BL_corner</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">dim</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]])</span>  <span class="c1"># original BL corner</span>
+    <span class="n">BL_translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">BL_corner</span><span class="p">)</span> <span class="o">-</span> <span class="n">BL_corner</span>
+
+    <span class="c1"># Add BL corner translation to c_afm (x and y translation)</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">BL_translation</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># x translation in px</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">BL_translation</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># y translation in px</span>
+
+    <span class="c1"># Flip y axis by changing signs of a2, b1, and b3</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># a2</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># b1</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># b3</span>
+    
+    <span class="c1"># Apply any scale ratio difference</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="n">scale_ratio</span>
+    <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="n">scale_ratio</span>
+
+    <span class="k">return</span> <span class="n">t</span></div>
+
+
+
+<div class="viewcode-block" id="get_img_dim">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.get_img_dim">[docs]</a>
+<span class="k">def</span> <span class="nf">get_img_dim</span><span class="p">(</span><span class="n">scale_data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get image dimensions (height and width) from scale data.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">scale_data</span><span class="p">[</span><span class="s2">&quot;swim_settings&quot;</span><span class="p">][</span><span class="s2">&quot;img_size&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="make_pyr_transforms">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.make_pyr_transforms">[docs]</a>
+<span class="k">def</span> <span class="nf">make_pyr_transforms</span><span class="p">(</span><span class="n">project_file</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cal_grid</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of PyReconstruct-formatted transformations.&quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">project_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span> <span class="n">swift_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+    <span class="n">pyr_transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span> <span class="k">if</span> <span class="n">cal_grid</span> <span class="k">else</span> <span class="p">[]</span>  <span class="c1"># list to hold transforms</span>
+
+    <span class="n">stack_data</span> <span class="o">=</span> <span class="n">swift_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stack&quot;</span><span class="p">)</span>  <span class="c1"># if exists</span>
+
+    <span class="k">if</span> <span class="n">stack_data</span><span class="p">:</span>  <span class="c1"># new swift project file</span>
+    
+        <span class="n">scale</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;s</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>  <span class="c1"># requested scale as properly formatted string</span>
+
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">stack_data</span><span class="p">:</span>
+
+            <span class="c1"># Get all scales (or &quot;levels&quot;)</span>
+        
+            <span class="n">scales_all</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;levels&quot;</span><span class="p">)</span> <span class="c1"># all scales</span>
+            <span class="n">scale_req</span> <span class="o">=</span> <span class="n">scales_all</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>  <span class="c1"># requested scale</span>
+            <span class="n">scale_1</span> <span class="o">=</span> <span class="n">scales_all</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;s1&quot;</span><span class="p">)</span>     <span class="c1"># scale 1</span>
+            
+            <span class="c1"># When scaling, only height (px) is considered by this script.</span>
+            <span class="c1"># Will change if aligning non-square images,</span>
+            <span class="c1"># which is not currently supported by AlignEM-SWiFT.</span>
+            
+            <span class="n">img_height_1</span><span class="p">,</span> <span class="n">img_width_1</span> <span class="o">=</span> <span class="n">get_img_dim</span><span class="p">(</span><span class="n">scale_1</span><span class="p">)</span>
+            <span class="n">img_height</span><span class="p">,</span> <span class="n">img_width</span> <span class="o">=</span> <span class="n">get_img_dim</span><span class="p">(</span><span class="n">scale_req</span><span class="p">)</span>
+        
+            <span class="n">height_ratio</span> <span class="o">=</span> <span class="n">img_height_1</span> <span class="o">/</span> <span class="n">img_height</span>
+            <span class="n">width_ratio</span> <span class="o">=</span> <span class="n">img_width_1</span> <span class="o">/</span> <span class="n">img_width</span>  <span class="c1"># left here for now </span>
+        
+            <span class="c1"># Get section transform, make sane, append to list</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">scale_req</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cafm&quot;</span><span class="p">)</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">cafm_to_sanity</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">img_height</span><span class="p">,</span> <span class="n">scale_ratio</span><span class="o">=</span><span class="n">height_ratio</span><span class="p">)</span>
+            <span class="n">pyr_transforms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># old swift project file</span>
+
+        <span class="n">scale</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;scale_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">scales_all</span> <span class="o">=</span> <span class="n">swift_json</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;scales&quot;</span><span class="p">]</span>
+        
+        <span class="n">scale_data</span> <span class="o">=</span> <span class="n">scales_all</span><span class="p">[</span><span class="n">scale</span><span class="p">]</span>
+        <span class="n">scale_data_1</span> <span class="o">=</span> <span class="n">scales_all</span><span class="p">[</span><span class="s2">&quot;scale_1&quot;</span><span class="p">]</span>
+    
+        <span class="n">stack_data</span> <span class="o">=</span> <span class="n">scale_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stack&quot;</span><span class="p">)</span>
+        
+        <span class="n">img_height_1</span><span class="p">,</span> <span class="n">img_width_1</span> <span class="o">=</span> <span class="n">scale_data_1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;image_src_size&#39;</span><span class="p">)</span>
+        <span class="n">img_height</span><span class="p">,</span> <span class="n">img_width</span> <span class="o">=</span> <span class="n">scale_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;image_src_size&#39;</span><span class="p">)</span>
+
+        <span class="n">height_ratio</span> <span class="o">=</span> <span class="n">img_height_1</span> <span class="o">/</span> <span class="n">img_height</span>
+        <span class="n">width_ratio</span> <span class="o">=</span> <span class="n">img_width_1</span> <span class="o">/</span> <span class="n">img_width</span>
+
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">stack_data</span><span class="p">:</span>
+        
+            <span class="c1"># Get transform, make sane, append to list</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">section</span><span class="p">[</span><span class="s2">&quot;alignment&quot;</span><span class="p">][</span><span class="s2">&quot;method_results&quot;</span><span class="p">][</span><span class="s2">&quot;cumulative_afm&quot;</span><span class="p">]</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">cafm_to_sanity</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">img_height</span><span class="p">,</span> <span class="n">scale_ratio</span><span class="o">=</span><span class="n">height_ratio</span><span class="p">,</span> <span class="n">old_swift</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">pyr_transforms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+    
+    <span class="k">del</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pyr_transforms</span></div>
+
+
+
+<div class="viewcode-block" id="transforms_as_strings">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.transforms_as_strings">[docs]</a>
+<span class="k">def</span> <span class="nf">transforms_as_strings</span><span class="p">(</span><span class="n">recon_transforms</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return transform matrices as string.&quot;&quot;&quot;</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">recon_transforms</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">output</span> <span class="o">+=</span> <span class="n">string</span>
+
+    <span class="k">if</span> <span class="n">output_file</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span> <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+        
+<div class="viewcode-block" id="importSwiftTransforms">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.import_swift_transforms.importSwiftTransforms">[docs]</a>
+<span class="k">def</span> <span class="nf">importSwiftTransforms</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">project_fp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cal_grid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">series_states</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="n">new_transforms</span> <span class="o">=</span> <span class="n">make_pyr_transforms</span><span class="p">(</span><span class="n">project_fp</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">cal_grid</span><span class="p">)</span>
+    <span class="n">new_transforms</span> <span class="o">=</span> <span class="n">transforms_as_strings</span><span class="p">(</span><span class="n">new_transforms</span><span class="p">)</span>
+    <span class="n">transforms_list</span> <span class="o">=</span> <span class="n">new_transforms</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">transforms_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">IncorrectSecNumError</span><span class="p">(</span><span class="s2">&quot;Mismatch between number of sections and number of transformations you are trying to import.&quot;</span><span class="p">)</span>
+
+    <span class="n">tforms</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Empty dictionary to hold transformations</span>
+    
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">transforms_list</span><span class="p">:</span>
+        
+        <span class="n">swift_sec</span><span class="p">,</span> <span class="o">*</span><span class="n">matrix</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span>
+            
+            <span class="k">raise</span> <span class="n">IncorrectFormatError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Project file (at index </span><span class="si">{</span><span class="n">swift_sec</span><span class="si">}</span><span class="s2">) incorrect number of elements.&quot;</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">swift_sec</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">IncorrectSecNumError</span><span class="p">(</span><span class="s2">&quot;Section numbers in project file do not correspond to current series.&quot;</span><span class="p">)</span>
+
+            <span class="n">current_tform</span> <span class="o">=</span> <span class="p">{</span> <span class="nb">int</span><span class="p">(</span><span class="n">swift_sec</span><span class="p">):</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">matrix</span><span class="p">]</span> <span class="p">}</span>
+            
+            <span class="n">tforms</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">current_tform</span><span class="p">)</span>
+            
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            
+            <span class="k">raise</span> <span class="n">IncorrectFormatError</span><span class="p">(</span><span class="s2">&quot;Incorrect project file format.&quot;</span><span class="p">)</span>
+        
+    <span class="c1"># set tforms</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">project_fp</span><span class="p">)</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span><span class="p">[:</span><span class="n">fname</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)]</span>
+    <span class="n">d</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getDateTime</span><span class="p">()</span>
+    <span class="n">new_alignment_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+    <span class="k">for</span> <span class="n">section_num</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">(</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Importing transforms...&quot;</span><span class="p">,</span>
+        <span class="n">series_states</span><span class="o">=</span><span class="n">series_states</span><span class="p">,</span>
+        <span class="n">breakable</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">section_num</span> <span class="ow">in</span> <span class="n">tforms</span><span class="p">:</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="n">tforms</span><span class="p">[</span><span class="n">section_num</span><span class="p">]</span>
+            <span class="c1"># multiply pixel translations by magnification of section</span>
+            <span class="n">tform</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+            <span class="n">tform</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">*=</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">tform</span><span class="o">.</span><span class="n">getList</span><span class="p">()</span>
+
+        <span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="n">new_alignment_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">(</span><span class="n">tform</span><span class="p">)</span>
+
+        <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    
+    <span class="n">series</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">new_alignment_name</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    
+    <span class="c1"># log event</span>
+    <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Import SWIFT transforms to alignment </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SWiFT transforms imported!&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

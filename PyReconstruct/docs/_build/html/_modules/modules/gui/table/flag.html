@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.table.flag &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.table.flag</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QMainWindow</span><span class="p">,</span> 
+    <span class="n">QDockWidget</span><span class="p">,</span> 
+    <span class="n">QTableWidgetItem</span><span class="p">,</span>  
+    <span class="n">QWidget</span><span class="p">,</span> 
+    <span class="n">QInputDialog</span><span class="p">,</span> 
+    <span class="n">QMenu</span><span class="p">,</span> 
+    <span class="n">QAbstractItemView</span><span class="p">,</span>
+    <span class="n">QColorDialog</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="n">QColor</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.copy_table_widget</span> <span class="kn">import</span> <span class="n">CopyTableWidget</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span><span class="p">,</span> <span class="n">Section</span><span class="p">,</span> <span class="n">Flag</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">populateMenuBar</span><span class="p">,</span>
+    <span class="n">populateMenu</span><span class="p">,</span>
+    <span class="n">notify</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FlagDialog</span><span class="p">,</span>
+    <span class="n">QuickDialog</span><span class="p">,</span>
+    <span class="n">FileDialog</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="FlagTableWidget">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">FlagTableWidget</span><span class="p">(</span><span class="n">QDockWidget</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span> <span class="p">:</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the object table dock widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the Series object</span>
+<span class="sd">                mainwindow (MainWindow): the main window the dock is connected to</span>
+<span class="sd">                manager: the object table manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initialize the widget</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mainwindow</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+
+        <span class="c1"># set desired format for widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAllowedAreas</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">RightDockWidgetArea</span><span class="p">)</span>  <span class="c1"># can be docked to right or left side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Flag List&quot;</span><span class="p">)</span>
+
+        <span class="c1"># set defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_columns&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_resolved</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;.*&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># create the main window widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span> <span class="o">=</span> <span class="n">QMainWindow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+        
+        <span class="c1"># create the table and the menu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createMenus</span><span class="p">()</span>
+
+        <span class="c1"># save manager object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="FlagTableWidget.createMenus">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.createMenus">[docs]</a>
+    <span class="k">def</span> <span class="nf">createMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the menu for the object table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># Create menubar menu</span>
+        <span class="n">menubar_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;listmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;List&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;refresh_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Refresh&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;columns_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Set columns...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColumns</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;export_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Export...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;filtermenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;displayresolved_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Display resolved flags&quot;</span><span class="p">,</span> <span class="s2">&quot;checkbox&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">toggleDisplayResolved</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;refilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Regex filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setREFilter</span><span class="p">),</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;colormenu&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Color filter&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                        <span class="p">[</span>
+                            <span class="p">(</span><span class="s2">&quot;colorfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Set filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColorFilter</span><span class="p">(</span><span class="kc">False</span><span class="p">)),</span>
+                            <span class="p">(</span><span class="s2">&quot;removecolor_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeColorFilter</span><span class="p">)</span>
+                        <span class="p">]</span>
+                    <span class="p">},</span>
+                    <span class="p">(</span><span class="s2">&quot;commentfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Comment text...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setCommentFilter</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        <span class="c1"># create the menubar object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="o">.</span><span class="n">setNativeMenuBar</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># attach menu to the window</span>
+        <span class="c1"># fill in the menu bar object</span>
+        <span class="n">populateMenuBar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="p">,</span> <span class="n">menubar_list</span><span class="p">)</span>
+
+        <span class="c1"># create the right-click menu</span>
+        <span class="n">context_menu_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;editattribtues_act&quot;</span><span class="p">,</span> <span class="s2">&quot;View / Edit...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editFlag</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;flagcolorfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Use as color filter&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColorFilter</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;resolvemenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Resolve&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;resolve_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Mark as resolved&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">markResolved</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;unresolved_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Mark as unresolved&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">markResolved</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;copy_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Copy&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">copy</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;delete_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteFlags</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;deletematchname_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete flags with this name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteFlags</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span> <span class="o">=</span> <span class="n">QMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">populateMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="p">,</span> <span class="n">context_menu_list</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.setRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.setRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">row</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the data for a row of the table.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the object</span>
+<span class="sd">                row (int): the row to enter this data into</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_check_event</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Section&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">snum</span><span class="p">)))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Color&quot;</span><span class="p">]:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">setBackground</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">flag</span><span class="o">.</span><span class="n">color</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Flag&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Resolved&quot;</span><span class="p">]:</span>
+            <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;Resolved&quot;</span> <span class="k">if</span> <span class="n">flag</span><span class="o">.</span><span class="n">resolved</span> <span class="k">else</span> <span class="s2">&quot;Unresolved&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">resolved</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Last Comment&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">flag</span><span class="o">.</span><span class="n">comments</span><span class="p">:</span>
+                <span class="n">comment</span> <span class="o">=</span> <span class="n">flag</span><span class="o">.</span><span class="n">comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">comment</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">comment</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">flag</span>
+        
+        <span class="k">if</span> <span class="n">resize</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowToContents</span><span class="p">(</span><span class="n">row</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.insertRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.insertRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">insertRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a row to the table.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                r (int): the row to add to the table</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">insertRow</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.removeRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.removeRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a row from the table.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                r (int): the row to remove</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">r</span><span class="p">)</span></div>
+
+            
+<div class="viewcode-block" id="FlagTableWidget.passesFilters">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.passesFilters">[docs]</a>
+    <span class="k">def</span> <span class="nf">passesFilters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if an object passes the filters.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check resolved</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_resolved</span> <span class="ow">and</span> <span class="n">flag</span><span class="o">.</span><span class="n">resolved</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check regex</span>
+        <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="k">else</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">re_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">re_filter</span><span class="p">,</span> <span class="n">flag</span><span class="o">.</span><span class="n">name</span><span class="p">)):</span>
+                <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">passes_filters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check color</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span> <span class="ow">and</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">color</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check comments</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span><span class="p">:</span>
+            <span class="n">text_found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">flag</span><span class="o">.</span><span class="n">comments</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span> <span class="ow">in</span> <span class="n">comment</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
+                    <span class="n">text_found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">text_found</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.getFilteredFlags">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.getFilteredFlags">[docs]</a>
+    <span class="k">def</span> <span class="nf">getFilteredFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the flags that pass the filters.&quot;&quot;&quot;</span>
+        <span class="n">passing_flags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">section</span> <span class="ow">and</span> <span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="o">==</span> <span class="n">snum</span><span class="p">:</span>
+                <span class="n">flags</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">flags</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flags</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">passesFilters</span><span class="p">(</span><span class="n">flag</span><span class="p">):</span>
+                    <span class="n">passing_flags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">passing_flags</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.updateTitle">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.updateTitle">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTitle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the title of the table.&quot;&quot;&quot;</span>
+        <span class="n">is_regex</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">,)</span>
+        <span class="n">is_color</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span><span class="p">)</span>
+        <span class="n">is_comment</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span><span class="p">)</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Flag List &quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">is_regex</span><span class="p">,</span> <span class="n">is_color</span><span class="p">,</span> <span class="n">is_comment</span><span class="p">)):</span>
+            <span class="n">strs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">is_regex</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;regex&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_color</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_comment</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;comments&quot;</span><span class="p">)</span>
+            <span class="n">title</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(Filtered by: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strs</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.createTable">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.createTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the table widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                objdata (dict): the dictionary containing the object table data objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># close an existing table and save scroll position</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTitle</span><span class="p">()</span>
+
+        <span class="c1"># establish table headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">b</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c1"># filter the objects</span>
+        <span class="n">passing_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFilteredFlags</span><span class="p">()</span>
+
+        <span class="c1"># create the table object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">CopyTableWidget</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">passing_flags</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">passing_flags</span><span class="p">)</span>
+
+        <span class="c1"># connect table functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">mouseDoubleClickEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">contextMenuEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagContextMenu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">backspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteFlags</span>
+
+        <span class="c1"># format table</span>
+        <span class="c1"># self.table.setWordWrap(False)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setShowGrid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setAlternatingRowColors</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># alternate row colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setEditTriggers</span><span class="p">(</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">NoEditTriggers</span><span class="p">)</span>  <span class="c1"># cannot be edited</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>  <span class="c1"># titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>  <span class="c1"># no veritcal header</span>
+        
+        <span class="c1"># fill in object data</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">passing_flags</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># format rows and columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowsToContents</span><span class="p">()</span>
+
+        <span class="c1"># set the saved scroll value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span>
+
+        <span class="c1"># set table as central widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.updateSection">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the flags for a section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">row</span><span class="p">,</span> <span class="n">exists_in_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+        <span class="k">while</span> <span class="n">exists_in_table</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">row</span><span class="p">,</span> <span class="n">exists_in_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+        
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">passesFilters</span><span class="p">(</span><span class="n">flag</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">insertRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+                <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.resizeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.resizeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the table when window is resized.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.getSelectedFlag">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.getSelectedFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the object highlighted by the user.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (str): the name of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_indexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indexes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span><span class="p">[</span><span class="n">selected_indexes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row</span><span class="p">()]</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.getSelectedFlags">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.getSelectedFlags">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the objects highlighted by the user.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): the name of the objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_indexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">displayed_flags</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">row</span><span class="p">()]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">selected_indexes</span><span class="p">]</span></div>
+
+
+    <span class="c1"># RIGHT CLICK FUNCTIONS</span>
+
+<div class="viewcode-block" id="FlagTableWidget.flagContextMenu">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.flagContextMenu">[docs]</a>
+    <span class="k">def</span> <span class="nf">flagContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when button is right-clicked: pulls up menu for user to modify objects.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">globalPos</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.editFlag">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.editFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">editFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit a flag.&quot;&quot;&quot;</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedFlag</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">flag</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please edit one flag at a time.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">FlagDialog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="n">flag</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">nf</span> <span class="o">=</span> <span class="n">flag</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">nf</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">nf</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">nf</span><span class="o">.</span><span class="n">comments</span><span class="p">,</span> <span class="n">new_comment</span><span class="p">,</span> <span class="n">resolved</span> <span class="o">=</span> <span class="n">response</span>
+        <span class="k">if</span> <span class="n">new_comment</span><span class="p">:</span> <span class="n">nf</span><span class="o">.</span><span class="n">addComment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">new_comment</span><span class="p">)</span>
+        <span class="n">nf</span><span class="o">.</span><span class="n">resolved</span><span class="p">:</span> <span class="n">nf</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">resolved</span><span class="p">)</span>
+
+        <span class="c1"># keep track of scroll bar position</span>
+        <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+        <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editFlag</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="n">nf</span><span class="p">)</span>
+        
+        <span class="c1"># reset scroll bar position</span>
+        <span class="n">vscroll</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.markResolved">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.markResolved">[docs]</a>
+    <span class="k">def</span> <span class="nf">markResolved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolved</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mark a flag as resolved or unresolved.</span>
+<span class="sd">            </span>
+<span class="sd">            Params:</span>
+<span class="sd">                resolved (bool): the resolved status</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedFlags</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">markResolved</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="n">resolved</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FlagTableWidget.deleteFlags">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.deleteFlags">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">match_name</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an object or objects on every section.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="n">selected_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedFlags</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">deleteFlags</span><span class="p">(</span><span class="n">selected_flags</span><span class="p">,</span> <span class="n">match_name</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU-RELATED FUNCTIONS</span>
+
+<div class="viewcode-block" id="FlagTableWidget.refresh">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Refresh the object lists.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.setColumns">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.setColumns">[docs]</a>
+    <span class="k">def</span> <span class="nf">setColumns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the columns to display.&quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Table Columns&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_columns&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.export">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.export">[docs]</a>
+    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the object list as a csv file.&quot;&quot;&quot;</span>
+        <span class="c1"># get the location from the user</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">FileDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;save&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save Object List&quot;</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;objects.csv&quot;</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="s2">&quot;Comma Separated Values (*.csv)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span> <span class="k">return</span>
+        <span class="c1"># unload the table into the csv file</span>
+        <span class="n">csv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="c1"># headers first</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># object data</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># close file</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.toggleDisplayResolved">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.toggleDisplayResolved">[docs]</a>
+    <span class="k">def</span> <span class="nf">toggleDisplayResolved</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Toggle whether or not resolved flags are displayed in the table.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_resolved</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">displayresolved_act</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.setREFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.setREFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setREFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new regex filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">re_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+        <span class="n">new_re_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Flags&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the flag name filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">re_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new regex filter for the set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="n">new_re_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.*&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="nb">filter</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="s2">&quot;[0-9]&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.setColorFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.setColorFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setColorFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_selected</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the color filter for the list.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">use_selected</span><span class="p">:</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedFlag</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">flag</span><span class="p">:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select one flag to set the color filter.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">QColorDialog</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span>
+                    <span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">QColorDialog</span><span class="o">.</span><span class="n">getColor</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">red</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">green</span><span class="p">(),</span> <span class="n">c</span><span class="o">.</span><span class="n">blue</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.setCommentFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.setCommentFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setCommentFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new regex filter for the comments.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">new_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Comments&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the text to find in the flag comments:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">comment_filter</span> <span class="o">=</span> <span class="n">new_filter</span>
+
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.removeColorFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.removeColorFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeColorFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the color filter.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color_filter</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.find">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.find">[docs]</a>
+    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Focus the field on a flag in the series.&quot;&quot;&quot;</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedFlag</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">setToFlag</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableWidget.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.flag.FlagTableWidget.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove self from manager table list.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.func.xml_json_conversions &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.func.xml_json_conversions</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="n">reducePoints</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.constants</span> <span class="kn">import</span> <span class="n">blank_section</span><span class="p">,</span> <span class="n">blank_series_no_contours</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">getProgbar</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.constants</span> <span class="kn">import</span> <span class="n">createHiddenDir</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span>
+    <span class="n">Section</span><span class="p">,</span>
+    <span class="n">Transform</span><span class="p">,</span>
+    <span class="n">Trace</span><span class="p">,</span>
+    <span class="n">Ztrace</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes_legacy</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Transform</span> <span class="k">as</span> <span class="n">XMLTransform</span><span class="p">,</span>
+    <span class="n">process_series_file</span><span class="p">,</span> 
+    <span class="n">process_section_file</span><span class="p">,</span>
+    <span class="n">write_section</span><span class="p">,</span>
+    <span class="n">write_series</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="xmlToJSON">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.xmlToJSON">[docs]</a>
+<span class="k">def</span> <span class="nf">xmlToJSON</span><span class="p">(</span><span class="n">xml_dir</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a series in XML to JSON.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            xml_dir (str): the directory for the xml series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># gather the series and section filepaths</span>
+    <span class="n">series_fp</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">section_fps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">json_fp</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">xml_dir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.ser&quot;</span><span class="p">):</span>
+            <span class="n">series_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml_dir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">series_name</span> <span class="o">=</span> <span class="n">f</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.json&quot;</span><span class="p">):</span>
+            <span class="n">json_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml_dir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">f</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">():</span>
+            <span class="n">section_fps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml_dir</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
+    
+    <span class="c1"># create the hidden folder containing the JSON files</span>
+    <span class="n">sname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">series_fp</span><span class="p">)</span>
+    <span class="n">sname</span> <span class="o">=</span> <span class="n">sname</span><span class="p">[:</span><span class="n">sname</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)]</span>
+    <span class="n">hidden_dir</span> <span class="o">=</span> <span class="n">createHiddenDir</span><span class="p">(</span><span class="n">xml_dir</span><span class="p">,</span> <span class="n">sname</span><span class="p">)</span>
+
+    <span class="c1"># set up progress</span>
+    <span class="n">progbar</span> <span class="o">=</span> <span class="n">getProgbar</span><span class="p">(</span>
+        <span class="s2">&quot;Converting series...&quot;</span>
+    <span class="p">)</span>
+    <span class="n">progress</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">final_value</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">section_fps</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">json_fp</span><span class="p">:</span> <span class="n">final_value</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="c1"># convert the series file</span>
+    <span class="n">json_series_fp</span> <span class="o">=</span> <span class="n">seriesXMLToJSON</span><span class="p">(</span><span class="n">series_fp</span><span class="p">,</span> <span class="n">section_fps</span><span class="p">,</span> <span class="n">hidden_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">progbar</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span> <span class="k">return</span>
+    <span class="n">progress</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">progbar</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">progress</span><span class="o">/</span><span class="n">final_value</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+    <span class="c1"># get the reconcropper data</span>
+    <span class="k">if</span> <span class="n">json_fp</span><span class="p">:</span>
+        <span class="n">alignment_dict</span> <span class="o">=</span> <span class="n">getReconcropperData</span><span class="p">(</span><span class="n">json_fp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">alignment_dict</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">progbar</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span> <span class="k">return</span>
+    <span class="n">progress</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">progbar</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">progress</span><span class="o">/</span><span class="n">final_value</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+    <span class="c1"># convert the section files and gather section names and tforms</span>
+    <span class="n">sections</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">section_tforms</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">section_fp</span> <span class="ow">in</span> <span class="n">section_fps</span><span class="p">:</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">section_fp</span><span class="p">[</span><span class="n">section_fp</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="n">sectionXMLtoJSON</span><span class="p">(</span><span class="n">section_fp</span><span class="p">,</span> <span class="n">alignment_dict</span><span class="p">,</span> <span class="n">hidden_dir</span><span class="p">)</span>
+        <span class="n">sections</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sname</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">snum</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">section_tforms</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="n">tform</span>
+        <span class="k">if</span> <span class="n">progbar</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span> <span class="k">return</span>
+        <span class="n">progress</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">progbar</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">progress</span><span class="o">/</span><span class="n">final_value</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+    
+    <span class="c1"># create an empty log file</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hidden_dir</span><span class="p">,</span> <span class="s2">&quot;existing_log.csv&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date, Time, User, Obj, Sections, Event&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># open the series file</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">Series</span><span class="p">(</span><span class="n">json_series_fp</span><span class="p">,</span> <span class="n">sections</span><span class="p">)</span>
+
+    <span class="c1"># modify the ztraces</span>
+    <span class="k">for</span> <span class="n">ztrace</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">new_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_tforms</span><span class="p">:</span>
+                <span class="n">new_point</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="o">*</span><span class="n">section_tforms</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="n">snum</span>
+                <span class="p">)</span>
+                <span class="n">new_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_point</span><span class="p">)</span>
+        <span class="n">ztrace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">new_points</span>
+    
+    <span class="c1"># save the jser file</span>
+    <span class="c1"># series.save()</span>
+    <span class="c1"># series.jser_fp = os.path.join(</span>
+    <span class="c1">#     xml_dir,</span>
+    <span class="c1">#     f&quot;{series_name}.jser&quot;</span>
+    <span class="c1"># )</span>
+    <span class="c1"># series.saveJser()</span>
+
+    <span class="c1"># log create the first log in the series</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Create series from XML files&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">series</span></div>
+
+
+<div class="viewcode-block" id="seriesXMLToJSON">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.seriesXMLToJSON">[docs]</a>
+<span class="k">def</span> <span class="nf">seriesXMLToJSON</span><span class="p">(</span><span class="n">series_fp</span><span class="p">,</span> <span class="n">section_fps</span><span class="p">,</span> <span class="n">hidden_dir</span><span class="p">):</span>
+    <span class="c1"># grab the series file</span>
+    <span class="n">xml_series</span> <span class="o">=</span> <span class="n">process_series_file</span><span class="p">(</span><span class="n">series_fp</span><span class="p">)</span>
+    <span class="c1"># create an empty JSON series</span>
+    <span class="n">series_dict</span> <span class="o">=</span> <span class="n">Series</span><span class="o">.</span><span class="n">getEmptyDict</span><span class="p">()</span>
+
+    <span class="c1"># get the current section</span>
+    <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;current_section&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xml_series</span><span class="o">.</span><span class="n">index</span>
+
+    <span class="c1"># get the view window</span>
+    <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;window&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">xml_series</span><span class="o">.</span><span class="n">viewport</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1"># import the palette</span>
+    <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;palette_traces&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">xml_contour</span> <span class="ow">in</span> <span class="n">xml_series</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="o">.</span><span class="n">fromXMLObj</span><span class="p">(</span>
+            <span class="n">xml_contour</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;palette_traces&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getList</span><span class="p">())</span>
+    <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;current_trace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;palette_traces&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="c1"># import ztraces</span>
+    <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;ztraces&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">xml_zcontour</span> <span class="ow">in</span> <span class="n">xml_series</span><span class="o">.</span><span class="n">zcontours</span><span class="p">:</span>
+        <span class="n">series_dict</span><span class="p">[</span><span class="s2">&quot;ztraces&quot;</span><span class="p">][</span><span class="n">xml_zcontour</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ztrace</span><span class="o">.</span><span class="n">dictFromXMLObj</span><span class="p">(</span><span class="n">xml_zcontour</span><span class="p">)</span>
+
+    <span class="c1"># get the series filename and save</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">series_fp</span><span class="p">)</span>
+    <span class="n">json_series_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hidden_dir</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_series_fp</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">series_dict</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json_series_fp</span></div>
+
+
+<div class="viewcode-block" id="getReconcropperData">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.getReconcropperData">[docs]</a>
+<span class="k">def</span> <span class="nf">getReconcropperData</span><span class="p">(</span><span class="n">json_fp</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_fp</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    
+    <span class="n">alignment_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;LOCAL&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ALIGNMENT&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">section_name</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">[</span><span class="n">item</span><span class="p">]:</span>
+                <span class="c1"># get the transform data</span>
+                <span class="n">xcoef</span> <span class="o">=</span> <span class="n">json_data</span><span class="p">[</span><span class="n">item</span><span class="p">][</span><span class="n">section_name</span><span class="p">][</span><span class="s2">&quot;xcoef&quot;</span><span class="p">]</span>
+                <span class="n">ycoef</span> <span class="o">=</span> <span class="n">json_data</span><span class="p">[</span><span class="n">item</span><span class="p">][</span><span class="n">section_name</span><span class="p">][</span><span class="s2">&quot;ycoef&quot;</span><span class="p">]</span>
+                <span class="n">leg_tform</span> <span class="o">=</span> <span class="n">XMLTransform</span><span class="p">(</span><span class="n">xcoef</span><span class="o">=</span><span class="n">xcoef</span><span class="p">,</span> <span class="n">ycoef</span><span class="o">=</span><span class="n">ycoef</span><span class="p">)</span>
+                <span class="n">tform_list</span> <span class="o">=</span> <span class="n">leg_tform</span><span class="o">.</span><span class="n">getTformList</span><span class="p">()</span>
+
+                <span class="c1"># store the transform data</span>
+                <span class="n">aname</span> <span class="o">=</span> <span class="n">item</span>
+                <span class="k">if</span> <span class="n">section_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">alignment_dict</span><span class="p">:</span>
+                    <span class="n">alignment_dict</span><span class="p">[</span><span class="n">section_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">alignment_dict</span><span class="p">[</span><span class="n">section_name</span><span class="p">][</span><span class="n">aname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tform_list</span>
+                
+    <span class="k">return</span> <span class="n">alignment_dict</span></div>
+
+
+<div class="viewcode-block" id="sectionXMLtoJSON">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.sectionXMLtoJSON">[docs]</a>
+<span class="k">def</span> <span class="nf">sectionXMLtoJSON</span><span class="p">(</span><span class="n">section_fp</span><span class="p">,</span> <span class="n">alignment_dict</span><span class="p">,</span> <span class="n">hidden_dir</span><span class="p">):</span>
+    <span class="c1"># grab the section file</span>
+    <span class="n">xml_section</span> <span class="o">=</span> <span class="n">process_section_file</span><span class="p">(</span><span class="n">section_fp</span><span class="p">)</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">section_fp</span><span class="p">)</span>
+
+    <span class="c1"># get an empty section dict</span>
+    <span class="n">section_dict</span> <span class="o">=</span> <span class="n">Section</span><span class="o">.</span><span class="n">getEmptyDict</span><span class="p">()</span>
+
+    <span class="c1"># get image data</span>
+    <span class="k">if</span> <span class="n">xml_section</span><span class="o">.</span><span class="n">images</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">xml_section</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># assume only one image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="k">if</span> <span class="n">image</span><span class="p">:</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">src</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">mag</span>
+        <span class="n">xml_tform</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">transform</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">xml_tform</span><span class="o">.</span><span class="n">tform</span><span class="p">()[:</span><span class="mi">2</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Section: </span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s2"> does not contain any image data.&quot;</span><span class="p">)</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.00254</span>
+        <span class="n">xml_tform</span> <span class="o">=</span> <span class="n">XMLTransform</span><span class="p">(</span><span class="n">xcoef</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ycoef</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># get thickness</span>
+    <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xml_section</span><span class="o">.</span><span class="n">thickness</span>
+
+    <span class="c1"># get transform data</span>
+    <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">alignment_dict</span><span class="p">:</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alignment_dict</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">getList</span><span class="p">()</span>
+    <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;align_locked&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xml_section</span><span class="o">.</span><span class="n">alignLocked</span>
+
+    <span class="c1"># get trace/contour data</span>
+    <span class="n">contours</span> <span class="o">=</span> <span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]</span>  <span class="c1"># for ease of access</span>
+    <span class="k">for</span> <span class="n">xml_contour</span> <span class="ow">in</span> <span class="n">xml_section</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="o">.</span><span class="n">fromXMLObj</span><span class="p">(</span>
+            <span class="n">xml_contour</span><span class="p">,</span>
+            <span class="n">xml_tform</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># reduce the points on the trace</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">reducePoints</span><span class="p">(</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">,</span>
+            <span class="n">closed</span><span class="o">=</span><span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+            <span class="n">mag</span><span class="o">=</span><span class="mi">2</span><span class="o">/</span><span class="n">section_dict</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">xml_contour</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">contours</span><span class="p">:</span>
+            <span class="n">contours</span><span class="p">[</span><span class="n">xml_contour</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getList</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">contours</span><span class="p">[</span><span class="n">xml_contour</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">getList</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span>
+    
+    <span class="c1"># save the section</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hidden_dir</span><span class="p">,</span> <span class="n">fname</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">section_dict</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    
+    <span class="c1"># return the section&#39;s transform</span>
+    <span class="k">return</span> <span class="n">tform</span></div>
+
+
+<div class="viewcode-block" id="jsonToXML">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.jsonToXML">[docs]</a>
+<span class="k">def</span> <span class="nf">jsonToXML</span><span class="p">(</span><span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">new_dir</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a series in JSON to XML.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            original_series (Series): the series to convert</span>
+<span class="sd">            new_dir (str): the directory to store the new files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># convert the series</span>
+    <span class="n">seriesJSONtoXML</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">new_dir</span><span class="p">)</span>
+
+    <span class="c1"># convert the sections</span>
+    <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Exporting series as XML...&quot;</span><span class="p">):</span>
+        <span class="n">sectionJSONtoXML</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">new_dir</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="seriesJSONtoXML">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.seriesJSONtoXML">[docs]</a>
+<span class="k">def</span> <span class="nf">seriesJSONtoXML</span><span class="p">(</span><span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">new_dir</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># create the blank series and replace text as needed</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">blank_series_no_contours</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[SECTION_NUM]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">current_section</span><span class="p">))</span>
+
+    <span class="n">xml_palette</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]]:</span>
+        <span class="n">xml_palette</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getXMLObj</span><span class="p">(</span><span class="n">legacy_format</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">all_contours</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml_palette</span><span class="p">)</span>
+
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[CONTOURS]&quot;</span><span class="p">,</span> <span class="n">all_contours</span><span class="p">)</span>
+
+    <span class="c1"># create the series file</span>
+    <span class="n">series_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_dir</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.ser&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">series_fp</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">xml_text</span><span class="p">)</span>
+    
+    <span class="c1"># load the series file and insert ztraces</span>
+    <span class="n">xml_series</span> <span class="o">=</span> <span class="n">process_series_file</span><span class="p">(</span><span class="n">series_fp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ztrace</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">xml_series</span><span class="o">.</span><span class="n">zcontours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">getXMLObj</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+    <span class="n">write_series</span><span class="p">(</span>
+        <span class="n">xml_series</span><span class="p">,</span>
+        <span class="n">directory</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">series_fp</span><span class="p">),</span>
+        <span class="n">outpath</span><span class="o">=</span><span class="n">series_fp</span><span class="p">,</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span></div>
+
+        
+
+<div class="viewcode-block" id="sectionJSONtoXML">
+<a class="viewcode-back" href="../../../../modules.backend.func.html#modules.backend.func.xml_json_conversions.sectionJSONtoXML">[docs]</a>
+<span class="k">def</span> <span class="nf">sectionJSONtoXML</span><span class="p">(</span><span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">new_dir</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># create a blank xml section</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">blank_section</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[SECTION_INDEX]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[SECTION_THICKNESS]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">thickness</span><span class="p">))</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[TRANSFORM_DIM]&quot;</span><span class="p">,</span> <span class="s2">&quot;3&quot;</span><span class="p">)</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[XCOEF]&quot;</span><span class="p">,</span> <span class="s2">&quot;0 1 0 0 0 0&quot;</span><span class="p">)</span> <span class="c1"># to be replaced</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[YCOEF]&quot;</span><span class="p">,</span> <span class="s2">&quot;0 0 1 0 0 0&quot;</span><span class="p">)</span> <span class="c1"># to be replaced</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[IMAGE_MAG]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">))</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[IMAGE_SOURCE]&quot;</span><span class="p">,</span> <span class="n">section</span><span class="o">.</span><span class="n">src</span><span class="p">)</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[IMAGE_LENGTH]&quot;</span><span class="p">,</span> <span class="s2">&quot;100000&quot;</span><span class="p">)</span>
+    <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[IMAGE_HEIGHT]&quot;</span><span class="p">,</span> <span class="s2">&quot;100000&quot;</span><span class="p">)</span>
+
+    <span class="c1"># save the file</span>
+    <span class="n">section_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">new_dir</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">section_fp</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">xml_file</span><span class="p">:</span>
+        <span class="n">xml_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">xml_text</span><span class="p">)</span>
+    
+    <span class="c1"># load the xml section and input data</span>
+    <span class="n">xml_section</span> <span class="o">=</span> <span class="n">process_section_file</span><span class="p">(</span><span class="n">section_fp</span><span class="p">)</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">src</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">alignLocked</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">align_locked</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">thickness</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">tform</span><span class="o">.</span><span class="n">getList</span><span class="p">()</span>
+    <span class="n">xcoef</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">ycoef</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span>
+    <span class="n">xml_tform</span> <span class="o">=</span> <span class="n">XMLTransform</span><span class="p">(</span><span class="n">xcoef</span><span class="o">=</span><span class="n">xcoef</span><span class="p">,</span> <span class="n">ycoef</span><span class="o">=</span><span class="n">ycoef</span><span class="p">)</span><span class="o">.</span><span class="n">inverse</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">xml_tform</span>
+    <span class="n">xml_section</span><span class="o">.</span><span class="n">contours</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">():</span>
+        <span class="n">xml_section</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getXMLObj</span><span class="p">(</span><span class="n">xml_tform</span><span class="p">))</span>
+    <span class="n">write_section</span><span class="p">(</span>
+        <span class="n">xml_section</span><span class="p">,</span>
+        <span class="n">directory</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">section_fp</span><span class="p">),</span>
+        <span class="n">outpath</span><span class="o">=</span><span class="n">section_fp</span><span class="p">,</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span></div>
+
+
+
+
+        
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

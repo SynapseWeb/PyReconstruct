@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.view.trace_layer &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.view.trace_layer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">skimage.draw</span> <span class="kn">import</span> <span class="n">polygon</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="n">QLabel</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span><span class="p">,</span> <span class="n">QPoint</span><span class="p">,</span> <span class="n">QLine</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QPixmap</span><span class="p">,</span>
+    <span class="n">QPen</span><span class="p">,</span>
+    <span class="n">QColor</span><span class="p">,</span>
+    <span class="n">QPainter</span><span class="p">,</span>
+    <span class="n">QBrush</span><span class="p">,</span>
+    <span class="n">QPainterPath</span><span class="p">,</span>
+    <span class="n">QFont</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span> 
+    <span class="n">Section</span><span class="p">,</span>
+    <span class="n">Trace</span><span class="p">,</span>
+    <span class="n">Ztrace</span><span class="p">,</span>
+    <span class="n">Transform</span><span class="p">,</span>
+    <span class="n">Flag</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">pointInPoly</span><span class="p">,</span>
+    <span class="n">pixmapPointToField</span><span class="p">,</span>
+    <span class="n">fieldPointToPixmap</span><span class="p">,</span>
+    <span class="n">getDistanceFromTrace</span><span class="p">,</span>
+    <span class="n">getExterior</span><span class="p">,</span> 
+    <span class="n">mergeTraces</span><span class="p">,</span> 
+    <span class="n">reducePoints</span><span class="p">,</span> 
+    <span class="n">cutTraces</span><span class="p">,</span>
+    <span class="n">area</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">notify</span><span class="p">,</span> <span class="n">drawOutlinedText</span>
+
+<div class="viewcode-block" id="TraceLayer">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer">[docs]</a>
+<span class="k">class</span> <span class="nc">TraceLayer</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a trace layer.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section object for the layer</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span> <span class="o">=</span> <span class="n">section</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zsegments_in_view</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_all_traces</span> <span class="o">=</span> <span class="kc">False</span>
+    
+<div class="viewcode-block" id="TraceLayer.pointToPix">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pointToPix">[docs]</a>
+    <span class="k">def</span> <span class="nf">pointToPix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pt</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">apply_tform</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">qpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the pixel point corresponding to a field point.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pt (tuple): the trace to convert</span>
+<span class="sd">                apply_tform (bool): true if section transform should be applied to the point</span>
+<span class="sd">                tform (Transform): the transform to apply (otherwise, uses series data)</span>
+<span class="sd">                qpoints (bool): True if points should be converted QPoint</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (tuple): the pixel point</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">apply_tform</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tform</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">fieldPointToPixmap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">qpoint</span><span class="p">:</span>
+            <span class="n">new_pt</span> <span class="o">=</span> <span class="n">QPoint</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_pt</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">new_pt</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.traceToPix">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.traceToPix">[docs]</a>
+    <span class="k">def</span> <span class="nf">traceToPix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">qpoints</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of pixel points corresponding to a trace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to convert</span>
+<span class="sd">                tform (Transform): the transform to apply</span>
+<span class="sd">                qpoints (bool): True if points should be converted QPoint</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): list of pixel points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_pts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">new_pts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">tform</span><span class="o">=</span><span class="n">tform</span><span class="p">,</span> <span class="n">qpoint</span><span class="o">=</span><span class="n">qpoints</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_pts</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.getTrace">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Trace</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;Return the closest trace to the given field coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_x (float): the x-coord of the point in the widget</span>
+<span class="sd">                pix_y (float): the y-coord of the point in the widget</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Trace): the closest trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+
+        <span class="c1"># calculate radius based on window size (5% of window size)</span>
+        <span class="n">window_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">window_size</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.05</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">findClosest</span><span class="p">(</span>
+            <span class="n">field_x</span><span class="p">,</span>
+            <span class="n">field_y</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">,</span>
+            <span class="n">traces_in_view</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="p">,</span>
+            <span class="n">include_hidden</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">show_all_traces</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.getTraces">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_poly</span> <span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;Select all traces that are completely in a polygon</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_poly (list): a list of screen points</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list[Trace]): the list of traces within the polygon</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pix_poly</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># convert the pix_poly into its exterior</span>
+        <span class="n">pix_poly</span> <span class="o">=</span> <span class="n">getExterior</span><span class="p">(</span><span class="n">pix_poly</span><span class="p">)</span>
+
+        <span class="n">traces_in_poly</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># only check traces in the view</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="p">:</span>
+            <span class="n">pix_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traceToPix</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="n">inside_poly</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># check if ANY point is inside the polygon for inc</span>
+            <span class="c1"># check if EVERY point is inside the polygon for exc</span>
+            <span class="n">inc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;pointer&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;inc&quot;</span>
+            <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">pix_points</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">inc</span> <span class="ow">and</span> <span class="n">pointInPoly</span><span class="p">(</span><span class="o">*</span><span class="n">point</span><span class="p">,</span> <span class="n">pix_poly</span><span class="p">):</span>
+                    <span class="n">traces_in_poly</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="n">inc</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pointInPoly</span><span class="p">(</span><span class="o">*</span><span class="n">point</span><span class="p">,</span> <span class="n">pix_poly</span><span class="p">):</span>
+                    <span class="n">inside_poly</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">inc</span> <span class="ow">and</span> <span class="n">inside_poly</span><span class="p">:</span>
+                <span class="n">traces_in_poly</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        
+        <span class="c1"># ztraces_in_poly = []</span>
+        <span class="c1"># if self.series.options[&quot;show_ztraces&quot;]:</span>
+        <span class="c1">#     for ztrace in self.series.ztraces.values():</span>
+        <span class="c1">#         # check if point is inside polygon</span>
+        <span class="c1">#         for i, (x, y, snum) in enumerate(ztrace.points):</span>
+        <span class="c1">#             if snum == self.section.n:</span>
+        <span class="c1">#                 pix_point = self.pointToPix((x, y))</span>
+        <span class="c1">#                 if pointInPoly(*pix_point, pix_poly):</span>
+        <span class="c1">#                     ztraces_in_poly.append((ztrace, i))</span>
+
+        <span class="k">return</span> <span class="n">traces_in_poly</span></div>
+
+
+<div class="viewcode-block" id="TraceLayer.getZsegment">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getZsegment">[docs]</a>
+    <span class="k">def</span> <span class="nf">getZsegment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the closest ztrace segment (does not have a point on the section).</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_x (float): the screen pixel x</span>
+<span class="sd">                pix_y (float): the screen pixel y</span>
+<span class="sd">                radius (float): the max radius for finding a ztrace segment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">zsegments_in_view</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">closest_dist</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">closest_ztrace</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">line</span><span class="p">,</span> <span class="n">ztrace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">zsegments_in_view</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">getDistanceFromTrace</span><span class="p">(</span>
+                <span class="n">pix_x</span><span class="p">,</span>
+                <span class="n">pix_y</span><span class="p">,</span>
+                <span class="n">line</span><span class="p">,</span>
+                <span class="n">factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">absolute</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">radius</span> <span class="ow">and</span> 
+                <span class="p">(</span><span class="n">closest_dist</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">closest_dist</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">closest_dist</span> <span class="o">=</span> <span class="n">d</span>
+                <span class="n">closest_ztrace</span> <span class="o">=</span> <span class="n">ztrace</span>
+        
+        <span class="k">return</span> <span class="n">closest_ztrace</span></div>
+
+
+<div class="viewcode-block" id="TraceLayer.newTrace">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.newTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">newTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_trace</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">base_trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduce_points</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new trace from pixel coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_trace (list): pixel coordinates for the new trace</span>
+<span class="sd">                base_trace (Trace): the trace containing the desired attributes</span>
+<span class="sd">                closed (bool): whether or not the new trace is closed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pix_trace</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># do not create a new trace if there is only one point</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">closed</span><span class="p">:</span>
+            <span class="n">pix_trace</span> <span class="o">=</span> <span class="n">getExterior</span><span class="p">(</span><span class="n">pix_trace</span><span class="p">)</span>  <span class="c1"># get exterior if closed (will reduce points)</span>
+        <span class="k">elif</span> <span class="n">reduce_points</span><span class="p">:</span>
+            <span class="n">pix_trace</span> <span class="o">=</span> <span class="n">reducePoints</span><span class="p">(</span><span class="n">pix_trace</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># only reduce points if trace is open</span>
+
+        <span class="c1"># create the new trace</span>
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="n">base_trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># force trace to be open if only two points</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pix_trace</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">new_trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">closed</span>
+
+        <span class="c1"># get the points</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">pix_trace</span><span class="p">:</span>
+            <span class="n">field_point</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+            <span class="n">rtform_point</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">field_point</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># apply the inverse tform to fix trace to base image</span>
+            <span class="n">new_trace</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rtform_point</span><span class="p">)</span>
+        
+        <span class="c1"># add the trace to the section and select</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">new_trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="n">log_event</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.placeStamp">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeStamp">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeStamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when mouse is pressed in stamp mode.</span>
+<span class="sd">        </span>
+<span class="sd">        Creates a stamp centered on the mouse location.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_x (int): pixel x-coord to place stamp</span>
+<span class="sd">                pix_y (int): pixel y-coord to place stamp</span>
+<span class="sd">                trace (Trace): the trace to place down</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get mouse coords and convert to field coords</span>
+        <span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+        <span class="c1"># create new stamp trace</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">field_point</span> <span class="o">=</span> <span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">field_x</span><span class="p">,</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">field_y</span><span class="p">)</span>
+            <span class="n">rtform_point</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">field_point</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># fix the coords to image</span>
+            <span class="n">new_trace</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rtform_point</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.placeGrid">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeGrid">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeGrid</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">ref_trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span>
+        <span class="n">w</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">dx</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dy</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">nx</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ny</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Place a grid on the field.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_x (float): the x-coord of the mouse location</span>
+<span class="sd">                pix_y (float): the y-coord of the mouse location</span>
+<span class="sd">                trace (Trace): the trace to use in the grid</span>
+<span class="sd">                w (float): the desired width of the trace</span>
+<span class="sd">                h (float): the desired height of the trace</span>
+<span class="sd">                dx (float): the x distance between traces in the grid</span>
+<span class="sd">                dy (float): the y distance between traces in the grid</span>
+<span class="sd">                nx (int): the number of columns</span>
+<span class="sd">                ny (int): the number of rows</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get mouse coords and convert to field coords</span>
+        <span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="n">field_x</span> <span class="o">+</span> <span class="n">w</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">-</span> <span class="n">h</span><span class="o">/</span><span class="mi">2</span>
+
+        <span class="c1"># create custom trace if using the sampling grid</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;sampling_frame_grid&quot;</span><span class="p">):</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="n">nw</span><span class="p">,</span> <span class="n">nh</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">w</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="n">h</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">nw</span><span class="p">,</span> <span class="n">nh</span><span class="p">)</span>
+            <span class="n">exc_points</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="o">-</span><span class="n">nw</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="o">-</span><span class="n">nw</span><span class="p">,</span> <span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="o">-</span><span class="n">nw</span><span class="p">,</span> <span class="o">-</span><span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">nw</span><span class="p">,</span> <span class="o">-</span><span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">nw</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">nh</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">inc_points</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="o">-</span><span class="n">nw</span><span class="p">,</span> <span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">nw</span><span class="p">,</span> <span class="n">nh</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">nw</span><span class="p">,</span> <span class="o">-</span><span class="n">nh</span><span class="p">)</span>
+            <span class="p">]</span>
+            
+            <span class="n">exc_trace</span> <span class="o">=</span> <span class="n">ref_trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">exc_trace</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">exc_trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">exc_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">exc_points</span>
+
+            <span class="n">inc_trace</span> <span class="o">=</span> <span class="n">ref_trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">inc_trace</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">inc_trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">inc_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">inc_points</span>
+
+            <span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">exc_trace</span><span class="p">,</span> <span class="n">inc_trace</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># stretch the reference trace to desired size</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">ref_trace</span><span class="o">.</span><span class="n">getStretched</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)]</span>
+
+        <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ny</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+                    <span class="c1"># create new trace</span>
+                    <span class="n">new_trace</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+                        <span class="n">field_point</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">x</span> <span class="o">+</span> <span class="n">origin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">dx</span> <span class="o">*</span> <span class="n">c</span><span class="p">,</span>
+                            <span class="n">y</span> <span class="o">+</span> <span class="n">origin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">r</span>
+                        <span class="p">)</span>
+                        <span class="n">rtform_point</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">field_point</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># fix the coords to image</span>
+                        <span class="n">new_trace</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rtform_point</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="TraceLayer.placeFlag">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">color</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">comment</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a flag on the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                title (str): the title of the flag</span>
+<span class="sd">                pix_x (float): the x-coord of the mouse location</span>
+<span class="sd">                pix_y (float): the y-coord of the mouse location</span>
+<span class="sd">                color (tuple): the color of the flag</span>
+<span class="sd">                comment (str): the flag comment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get field coords then fix to image</span>
+        <span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># create flag</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">Flag</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">comment</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">addComment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">addFlag</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.mergeSelectedTraces">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.mergeSelectedTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">mergeSelectedTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">merge_attrs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge all selected traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                merge_attrs (bool): True if only trace attributes should be merged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select two or more traces to merge.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># set attributes to be the first object selected</span>
+        <span class="k">if</span> <span class="n">merge_attrs</span><span class="p">:</span>
+            <span class="n">first_trace</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">editTraceAttributes</span><span class="p">(</span>
+                <span class="n">traces</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">first_trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">first_trace</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+                <span class="n">tags</span><span class="o">=</span><span class="n">first_trace</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">first_trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">,</span>
+                <span class="n">log_event</span><span class="o">=</span><span class="n">log_event</span>
+            <span class="p">)</span>
+
+        <span class="c1"># merge traces</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pix_traces</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">first_trace</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">first_trace</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+                    <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please merge traces with the same name.&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please merge only closed traces.&quot;</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="c1"># collect pixel values for trace points</span>
+                <span class="n">pix_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traceToPix</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+                <span class="c1"># if merge_objects:</span>
+                <span class="c1">#     pix_points = [(round(x*factor), round(y*factor)) for x, y in pix_points]</span>
+                <span class="n">pix_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pix_points</span><span class="p">)</span>
+            
+            <span class="n">merged_traces</span> <span class="o">=</span> <span class="n">mergeTraces</span><span class="p">(</span><span class="n">pix_traces</span><span class="p">)</span>  <span class="c1"># merge the pixel traces</span>
+            <span class="c1"># delete the old traces</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">deleteTraces</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1"># create new merged trace</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">merged_traces</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">newTrace</span><span class="p">(</span>
+                    <span class="n">trace</span><span class="p">,</span>
+                    <span class="n">first_trace</span><span class="p">,</span>
+                    <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.cutTrace">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.cutTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">cutTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">knife_trace</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cuts the selected trace along the knife line.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                knife_trace (list): the knife trace in pixmap points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">closed</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span>
+        <span class="n">trace_to_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traceToPix</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        <span class="n">cut_traces</span> <span class="o">=</span> <span class="n">cutTraces</span><span class="p">(</span>
+            <span class="n">trace_to_cut</span><span class="p">,</span> 
+            <span class="n">knife_trace</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;knife_del_threshold&quot;</span><span class="p">),</span> 
+            <span class="n">closed</span><span class="o">=</span><span class="n">closed</span>
+        <span class="p">)</span>  <span class="c1"># merge the pixel traces</span>
+        <span class="c1"># delete the old traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">deleteTraces</span><span class="p">()</span>
+        <span class="c1"># create new traces</span>
+        <span class="k">for</span> <span class="n">piece</span> <span class="ow">in</span> <span class="n">cut_traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">newTrace</span><span class="p">(</span>
+                <span class="n">piece</span><span class="p">,</span>
+                <span class="n">trace</span><span class="p">,</span>
+                <span class="n">closed</span><span class="o">=</span><span class="n">closed</span><span class="p">,</span>
+                <span class="n">reduce_points</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.eraseArea">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.eraseArea">[docs]</a>
+    <span class="k">def</span> <span class="nf">eraseArea</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Erase an area of the field.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pix_x (int): the x coord for erasing</span>
+<span class="sd">                pix_y (int): the y coord for erasing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTrace</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">trace</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.getCopiedTraces">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getCopiedTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">getCopiedTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cut</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when user presses Ctrl+C or Ctrl+X.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                cut (bool): whether or not to delete the traces</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): the traces to copy</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">copied_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">]</span>
+            <span class="n">copied_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">cut</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">deleteTraces</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">copied_traces</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.pasteTraces">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pasteTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">pasteTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when the user presses Ctrl+V.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): a list of trace objects to paste</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TraceLayer.pasteAttributes">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pasteAttributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">pasteAttributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when the user pressed Ctrl+B.&quot;&quot;&quot;</span>
+        <span class="c1"># if len(traces) != 1:</span>
+        <span class="c1">#     return</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">name</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">editTraceAttributes</span><span class="p">(</span>
+            <span class="n">traces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span>
+        <span class="p">)</span></div>
+
+    
+    <span class="k">def</span> <span class="nf">_drawTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_layer</span> <span class="p">:</span> <span class="n">QPixmap</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw a trace on the current trace layer and return bool indicating if trace is in the current view.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace_layer (QPixmap): the pixmap to draw the traces</span>
+<span class="sd">                trace (Trace): the trace to draw on the pixmap</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (bool) if the trace is within the current field window view</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="c1"># convert to screen coordinates</span>
+        <span class="n">qpoints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traceToPix</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">qpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">qpoints</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EMPTY TRACE DETECTED&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the bounds</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="n">qpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="n">xmin</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="n">qpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="n">ymin</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">qpoints</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">xmin</span><span class="p">:</span>
+                <span class="n">xmin</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">elif</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">xmax</span><span class="p">:</span>
+                <span class="n">xmax</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">ymin</span><span class="p">:</span>
+                <span class="n">ymin</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">elif</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="n">ymax</span><span class="p">:</span>
+                <span class="n">ymax</span> <span class="o">=</span> <span class="n">y</span>
+        
+        <span class="n">trace_bounds</span> <span class="o">=</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span>
+        <span class="n">screen_bounds</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span>
+
+        <span class="c1"># draw if within view</span>
+        <span class="k">if</span> <span class="n">boundsOverlap</span><span class="p">(</span><span class="n">trace_bounds</span><span class="p">,</span> <span class="n">screen_bounds</span><span class="p">):</span>
+            <span class="c1"># set up painter</span>
+            <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">)</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="c1"># draw trace</span>
+            <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">drawPolygon</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">drawPolyline</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+            
+            <span class="c1"># draw highlight</span>
+            <span class="k">if</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">8</span><span class="p">))</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                    <span class="n">painter</span><span class="o">.</span><span class="n">drawPolygon</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">painter</span><span class="o">.</span><span class="n">drawPolyline</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+            
+            <span class="c1"># determine if user requested fill</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">)</span> <span class="ow">or</span>
+                    <span class="p">((</span><span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;selected&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">))</span>
+                <span class="p">)</span>
+            <span class="p">):</span> <span class="n">fill</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">fill</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># fill in shape if requested</span>
+            <span class="k">if</span> <span class="n">fill</span><span class="p">:</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">QBrush</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">)))</span>
+                <span class="c1"># determine the type of fill</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;transparent&quot;</span><span class="p">:</span>  <span class="c1"># transparent fill</span>
+                    <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;solid&quot;</span><span class="p">:</span>  <span class="c1"># solid</span>
+                    <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">drawPolygon</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+        
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">_drawZtrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_layer</span> <span class="p">:</span> <span class="n">QPixmap</span><span class="p">,</span> <span class="n">ztrace</span> <span class="p">:</span> <span class="n">Ztrace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw points on the current trace layer.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace_layer (QPixmap): the pixmap to draw the point</span>
+<span class="sd">                points (list): the list of points to draw</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span><span class="p">,</span> <span class="n">lines</span> <span class="o">=</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">getSectionData</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="p">)</span>
+        <span class="c1"># convert to screen coordinates</span>
+        <span class="n">qpoints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+            <span class="n">qpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">(</span>
+                <span class="n">pt</span><span class="p">,</span>
+                <span class="n">apply_tform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">qpoint</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">))</span>
+        <span class="n">qlines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">qp1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">(</span>
+                <span class="n">p1</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">apply_tform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">qpoint</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">qp2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">(</span>
+                <span class="n">p2</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">apply_tform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">qpoint</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">qlines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">QLine</span><span class="p">(</span><span class="n">qp1</span><span class="p">,</span> <span class="n">qp2</span><span class="p">))</span>
+        
+        <span class="c1"># set up painter</span>
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">ztrace</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">6</span><span class="p">))</span>
+
+        <span class="c1"># draw points and lines</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">drawPoints</span><span class="p">(</span><span class="n">qpoints</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">ztrace</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">qlines</span><span class="p">:</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">p1</span><span class="p">()</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">p2</span><span class="p">()</span>
+            <span class="n">p1_arrow</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">p2_arrow</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">p1</span> <span class="ow">in</span> <span class="n">qpoints</span><span class="p">:</span>
+                <span class="n">p1_arrow</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">p2</span> <span class="ow">in</span> <span class="n">qpoints</span><span class="p">:</span>
+                <span class="n">p2_arrow</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">drawArrow</span><span class="p">(</span>
+                <span class="n">painter</span><span class="p">,</span>
+                <span class="n">line</span><span class="p">,</span>
+                <span class="n">p1_arrow</span><span class="p">,</span>
+                <span class="n">p2_arrow</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zsegments_in_view</span> <span class="o">+=</span> <span class="p">[(</span>
+                <span class="p">((</span><span class="n">p1</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">p1</span><span class="o">.</span><span class="n">y</span><span class="p">()),</span>
+                <span class="p">(</span><span class="n">p2</span><span class="o">.</span><span class="n">x</span><span class="p">(),</span> <span class="n">p2</span><span class="o">.</span><span class="n">y</span><span class="p">())),</span>
+                <span class="n">ztrace</span>
+            <span class="p">)]</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_drawZtraceHighlights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_layer</span> <span class="p">:</span> <span class="n">QPixmap</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw highlighted points on the current trace layer.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace_layer (QPixmap): the pixmap to draw the points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ztrace</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_ztraces</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ztrace</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">temp_hide</span><span class="p">:</span>
+                <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][:</span><span class="mi">2</span><span class="p">])</span>
+                <span class="n">colors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+
+        <span class="c1"># convert to screen coordinates</span>
+        <span class="n">qpoints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+            <span class="n">qpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">(</span>
+                <span class="n">pt</span><span class="p">,</span>
+                <span class="n">qpoint</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">))</span>
+        
+        <span class="c1"># set up painter</span>
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">))</span>
+
+        <span class="c1"># draw points</span>
+        <span class="k">for</span> <span class="n">qpoint</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">qpoints</span><span class="p">,</span> <span class="n">colors</span><span class="p">):</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">color</span><span class="p">),</span> <span class="mi">15</span><span class="p">))</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">drawPoint</span><span class="p">(</span><span class="n">qpoint</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_drawFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_layer</span> <span class="p">:</span> <span class="n">QPixmap</span><span class="p">,</span> <span class="n">flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw the flag on the field.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                flag (Flag): the flag to draw on the field</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointToPix</span><span class="p">((</span><span class="n">flag</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">flag</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">flag</span><span class="o">.</span><span class="n">color</span>
+
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">)</span>
+        <span class="n">drawOutlinedText</span><span class="p">(</span>
+            <span class="n">painter</span><span class="p">,</span>
+            <span class="n">x</span><span class="p">,</span>
+            <span class="n">y</span><span class="p">,</span>
+            <span class="s2">&quot;⚑&quot;</span><span class="p">,</span>
+            <span class="n">c</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># draw highlight if necessary</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">selected_flags</span><span class="p">:</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="o">*</span><span class="n">flag</span><span class="o">.</span><span class="n">color</span><span class="p">),</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">setBrush</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">transparent</span><span class="p">)</span>
+            <span class="n">lbl</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;⚑&quot;</span><span class="p">)</span>
+            <span class="n">lbl</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">QFont</span><span class="p">(</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">),</span> <span class="n">QFont</span><span class="o">.</span><span class="n">Bold</span><span class="p">))</span>
+            <span class="n">lbl</span><span class="o">.</span><span class="n">adjustSize</span><span class="p">()</span>
+            <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">lbl</span><span class="o">.</span><span class="n">width</span><span class="p">(),</span> <span class="n">lbl</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">*</span> <span class="mi">3</span><span class="o">/</span><span class="mi">4</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="o">-</span><span class="n">w</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="n">w</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">3</span><span class="o">*</span><span class="n">h</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">h</span> <span class="o">*=</span> <span class="mi">2</span>
+            <span class="n">painter</span><span class="o">.</span><span class="n">drawRect</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+   
+<div class="viewcode-block" id="TraceLayer.generateTraceLayer">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.generateTraceLayer">[docs]</a>
+    <span class="k">def</span> <span class="nf">generateTraceLayer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">show_all_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window_moved</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QPixmap</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the traces on a transparent background.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pixmap_dim (tuple): the w and h of the pixmap to be output</span>
+<span class="sd">                window (list): the view of the window (x, y, w, h)</span>
+<span class="sd">                show_all_traces (bool): True if all traces are displayed regardless of hidden status</span>
+<span class="sd">                window_moved (bool): True if the window has moved (upstream: same as generate_image)</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (QPixmap): the pixmap with traces drawn in</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span> <span class="o">=</span> <span class="n">pixmap_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_all_traces</span> <span class="o">=</span> <span class="n">show_all_traces</span>
+        <span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">)</span>
+        <span class="n">trace_layer</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span><span class="p">)</span>
+        <span class="n">trace_layer</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">transparent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">window_moved</span><span class="p">:</span>
+            <span class="n">trace_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trace_found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">removed_traces</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">view_trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">isSameTrace</span><span class="p">(</span><span class="n">view_trace</span><span class="p">):</span>
+                        <span class="n">trace_found</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="n">trace_found</span> <span class="ow">and</span> <span class="n">view_trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">view_trace</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">added_traces</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="n">trace_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">trace</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">temp_hide</span> <span class="ow">and</span>
+                <span class="p">(</span><span class="n">show_all_traces</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">trace</span><span class="o">.</span><span class="n">hidden</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">trace_in_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_drawTrace</span><span class="p">(</span>
+                    <span class="n">trace_layer</span><span class="p">,</span>
+                    <span class="n">trace</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">trace_in_view</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">traces_in_view</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        
+        <span class="c1"># draw ztraces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zsegments_in_view</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ztrace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">ztrace</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">temp_hide</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_drawZtrace</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">,</span> <span class="n">ztrace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_drawZtraceHighlights</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">)</span>
+        
+        <span class="c1"># draw flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags_in_view</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;unresolved&quot;</span> <span class="ow">and</span> <span class="n">flag</span><span class="o">.</span><span class="n">resolved</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">flag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">temp_hide</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_drawFlag</span><span class="p">(</span><span class="n">trace_layer</span><span class="p">,</span> <span class="n">flag</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">trace_layer</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_drawTraceLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">label</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw labels of a trace on a trace layer.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                arr (np.ndarray): the array to draw the labels on</span>
+<span class="sd">                trace (Trace): the trace to draw</span>
+<span class="sd">                label (int): the label to use</span>
+<span class="sd">                tform (Transform): the transform to apply to the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># convert to screen coordinates</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traceToPix</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">tform</span><span class="o">=</span><span class="n">tform</span><span class="p">)</span>
+
+        <span class="c1"># get polygon coords</span>
+        <span class="n">y_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+        <span class="n">x_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+        <span class="n">yy</span><span class="p">,</span> <span class="n">xx</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span><span class="n">y_vals</span><span class="p">,</span> <span class="n">x_vals</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># insert in trace_layer</span>
+        <span class="n">arr</span><span class="p">[</span><span class="n">yy</span><span class="p">,</span> <span class="n">xx</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+    
+<div class="viewcode-block" id="TraceLayer.generateLabelsArray">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.generateLabelsArray">[docs]</a>
+    <span class="k">def</span> <span class="nf">generateLabelsArray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">],</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate numpy array with traces drawn as labels.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pixmap_dim (tuple): the w and h of the 2D array</span>
+<span class="sd">                window (list): the view of the window (x, y, w, h)</span>
+<span class="sd">                traces (list[Traces]): the traces to include as labels</span>
+<span class="sd">                tform (Transform): the unique transform to apply to the traces</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (np.ndarray): the numpy array with traces drawn in as labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set up the trace layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span> <span class="o">=</span> <span class="n">pixmap_dim</span>
+        <span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">pixmap_h</span><span class="p">,</span> <span class="n">pixmap_w</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">)</span>   
+
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_drawTraceLabel</span><span class="p">(</span>
+                <span class="n">arr</span><span class="p">,</span> 
+                <span class="n">trace</span><span class="p">,</span> 
+                <span class="n">hashName</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> 
+                <span class="n">tform</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">arr</span></div>
+</div>
+
+
+<div class="viewcode-block" id="hashName">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.hashName">[docs]</a>
+<span class="k">def</span> <span class="nf">hashName</span><span class="p">(</span><span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a hash label for a name.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            name (str): the name to hash</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">hash</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">add_to_hash</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="k">if</span> <span class="mi">48</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">58</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">-=</span> <span class="mi">48</span>
+            <span class="n">add_to_hash</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="mi">97</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">123</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">-=</span> <span class="mi">87</span>
+            <span class="n">add_to_hash</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">add_to_hash</span><span class="p">:</span>
+            <span class="nb">hash</span> <span class="o">+=</span> <span class="n">n</span> <span class="o">*</span> <span class="mi">36</span> <span class="o">**</span> <span class="n">p</span>
+            <span class="n">p</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="nb">hash</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">:</span>
+                <span class="nb">hash</span> <span class="o">%=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span>
+    <span class="k">return</span> <span class="nb">hash</span></div>
+
+
+<span class="k">def</span> <span class="nf">boundsOverlap</span><span class="p">(</span><span class="n">b1</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">b2</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if two bounding boxes intersect.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            b1 (tuple): xmin, ymin, xmax, ymax</span>
+<span class="sd">            b2 (tuple): xmin, ymin, xmax, ymax</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): True if bounds have any overlap</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+        <span class="n">b1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="boundsOverlap">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.boundsOverlap">[docs]</a>
+<span class="k">def</span> <span class="nf">boundsOverlap</span><span class="p">(</span><span class="n">b1</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">b2</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if two bounding boxes intersect.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            b1 (tuple): xmin, ymin, xmax, ymax</span>
+<span class="sd">            b2 (tuple): xmin, ymin, xmax, ymax</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): True if bounds have any overlap</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+        <span class="n">b1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> 
+        <span class="n">b1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">b2</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="getTheta">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.getTheta">[docs]</a>
+<span class="k">def</span> <span class="nf">getTheta</span><span class="p">(</span><span class="n">line</span> <span class="p">:</span> <span class="n">QLine</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the angle a line makes with the x-axis.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            line (QLine): the qline to get the angle for</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">p1</span><span class="p">()</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">p2</span><span class="p">()</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">p2</span> <span class="o">-</span> <span class="n">p1</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">y</span><span class="p">()</span><span class="o">/</span><span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">y</span><span class="p">()</span><span class="o">/</span><span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">())</span>
+    
+    <span class="k">return</span> <span class="n">theta</span></div>
+
+    
+<div class="viewcode-block" id="drawArrowHead">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.drawArrowHead">[docs]</a>
+<span class="k">def</span> <span class="nf">drawArrowHead</span><span class="p">(</span><span class="n">painter</span> <span class="p">:</span> <span class="n">QPainter</span><span class="p">,</span> <span class="n">pt</span> <span class="p">:</span> <span class="n">QPoint</span><span class="p">,</span> <span class="n">theta</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">l</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw an arrowhead in a given direction.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            painter (QPainter): the painter to draw the arrowhead</span>
+<span class="sd">            pt (QPoint): the point on which the arrowhead is located</span>
+<span class="sd">            theta (float): the angle (in radians) of the arrowhead (cc from x-axis)</span>
+<span class="sd">            l (int): the length of the arrowhead</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">theta</span> <span class="o">+=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">6</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">6</span>
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">QPoint</span><span class="p">(</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">+</span> <span class="n">l</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t1</span><span class="p">),</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">+</span> <span class="n">l</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t1</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">pt</span>
+    <span class="n">p3</span> <span class="o">=</span> <span class="n">QPoint</span><span class="p">(</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">+</span> <span class="n">l</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t2</span><span class="p">),</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">+</span> <span class="n">l</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t2</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">l1</span> <span class="o">=</span> <span class="n">QLine</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)</span>
+    <span class="n">l2</span> <span class="o">=</span> <span class="n">QLine</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">p3</span><span class="p">)</span>
+    <span class="n">painter</span><span class="o">.</span><span class="n">drawLine</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span>
+    <span class="n">painter</span><span class="o">.</span><span class="n">drawLine</span><span class="p">(</span><span class="n">l2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="drawArrow">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.trace_layer.drawArrow">[docs]</a>
+<span class="k">def</span> <span class="nf">drawArrow</span><span class="p">(</span><span class="n">painter</span> <span class="p">:</span> <span class="n">QPainter</span><span class="p">,</span> <span class="n">line</span> <span class="p">:</span> <span class="n">QLine</span><span class="p">,</span> <span class="n">p1_arrow</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">p2_arrow</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw an line with one or two arrowheads.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            painter (QPainter): the painter used to draw the arrow</span>
+<span class="sd">            line (QLine): the ztrace qline</span>
+<span class="sd">            p1_arrow (bool): True if arrowhead on the first point</span>
+<span class="sd">            p2_arrow (bool): True if arrowhead on the second point</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">painter</span><span class="o">.</span><span class="n">drawLine</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">getTheta</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p1_arrow</span><span class="p">:</span>
+            <span class="n">drawArrowHead</span><span class="p">(</span><span class="n">painter</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">p1</span><span class="p">(),</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">p2_arrow</span><span class="p">:</span>
+            <span class="n">drawArrowHead</span><span class="p">(</span><span class="n">painter</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">p2</span><span class="p">(),</span> <span class="n">theta</span><span class="p">)</span></div>
+
+
+        
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

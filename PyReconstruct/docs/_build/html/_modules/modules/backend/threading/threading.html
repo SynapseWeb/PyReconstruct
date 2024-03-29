@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.threading.threading &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.threading.threading</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="n">QProgressDialog</span><span class="p">,</span> <span class="n">QProgressBar</span><span class="p">,</span> <span class="n">QApplication</span><span class="p">,</span> <span class="n">QLabel</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">getProgbar</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QRunnable</span><span class="p">,</span>
+    <span class="n">Slot</span><span class="p">,</span>
+    <span class="n">Signal</span><span class="p">,</span>
+    <span class="n">QObject</span><span class="p">,</span>
+    <span class="n">QThreadPool</span><span class="p">,</span>
+    <span class="n">Qt</span>
+<span class="p">)</span>
+
+<span class="c1"># THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/</span>
+
+<div class="viewcode-block" id="WorkerSignals">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals">[docs]</a>
+<span class="k">class</span> <span class="nc">WorkerSignals</span><span class="p">(</span><span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Defines the signals available from a running worker thread.</span>
+
+<span class="sd">    Supported signals are:</span>
+
+<span class="sd">    finished</span>
+<span class="sd">        No data</span>
+
+<span class="sd">    error</span>
+<span class="sd">        tuple (exctype, value, traceback.format_exc() )</span>
+
+<span class="sd">    result</span>
+<span class="sd">        object data returned from processing, anything</span>
+
+<span class="sd">    progress</span>
+<span class="sd">        int indicating % progress</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Worker">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.Worker">[docs]</a>
+<span class="k">class</span> <span class="nc">Worker</span><span class="p">(</span><span class="n">QRunnable</span><span class="p">,</span> <span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Worker thread</span>
+
+<span class="sd">    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.</span>
+
+<span class="sd">    :param callback: The function callback to run on this worker thread. Supplied args and</span>
+<span class="sd">                     kwargs will be passed through to the runner.</span>
+<span class="sd">    :type callback: function</span>
+<span class="sd">    :param args: Arguments to pass to the callback function</span>
+<span class="sd">    :param kwargs: Keywords to pass to the callback function</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Worker</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># Store constructor arguments (re-used for processing)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signals</span> <span class="o">=</span> <span class="n">WorkerSignals</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Worker.run">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.Worker.run">[docs]</a>
+    <span class="nd">@Slot</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Initialise the runner function with passed args.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># Retrieve args/kwargs here; and fire processing using them</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+            <span class="n">exctype</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">emit</span><span class="p">((</span><span class="n">exctype</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># Return the result of the processing</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+</div>
+
+
+<div class="viewcode-block" id="ThreadPool">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.ThreadPool">[docs]</a>
+<span class="k">class</span> <span class="nc">ThreadPool</span><span class="p">(</span><span class="n">QThreadPool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extended from QThreadPool class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwritten from parent class.</span>
+<span class="sd">        </span>
+<span class="sd">        Params:</span>
+<span class="sd">            update (function): the update functino for a loading bar</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxThreadCount</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setMaxThreadCount</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_finished</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finished_fn</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ThreadPool.createWorker">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.ThreadPool.createWorker">[docs]</a>
+    <span class="k">def</span> <span class="nf">createWorker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create and return a worker object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                fn (function): the function for the worker to run</span>
+<span class="sd">                *args: the args to be passed into the function&quot;&quot;&quot;</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">Worker</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">w</span></div>
+</div>
+
+
+<div class="viewcode-block" id="MemoryInt">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.MemoryInt">[docs]</a>
+<span class="k">class</span> <span class="nc">MemoryInt</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+    
+<div class="viewcode-block" id="MemoryInt.inc">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.MemoryInt.inc">[docs]</a>
+    <span class="k">def</span> <span class="nf">inc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span></div>
+</div>
+
+
+<div class="viewcode-block" id="ThreadPoolProgBar">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.ThreadPoolProgBar">[docs]</a>
+<span class="k">class</span> <span class="nc">ThreadPoolProgBar</span><span class="p">(</span><span class="n">ThreadPool</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ThreadPoolProgBar.startAll">
+<a class="viewcode-back" href="../../../../modules.backend.threading.html#modules.backend.threading.threading.ThreadPoolProgBar.startAll">[docs]</a>
+    <span class="k">def</span> <span class="nf">startAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">status_bar</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">final_value</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">)</span>
+        <span class="n">maximum</span> <span class="o">=</span> <span class="n">final_value</span> <span class="k">if</span> <span class="n">final_value</span> <span class="o">&gt;=</span> <span class="mi">4</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">status_bar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">progbar</span> <span class="o">=</span> <span class="n">getProgbar</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">cancel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="n">maximum</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># custom progbar for status bar</span>
+            <span class="n">lbl</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">()</span>
+            <span class="n">lbl</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">progbar</span> <span class="o">=</span> <span class="n">QProgressBar</span><span class="p">()</span>
+            <span class="n">progbar</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="n">status_bar</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">-</span> <span class="mi">6</span><span class="p">)</span>
+            <span class="n">progbar</span><span class="o">.</span><span class="n">setMinimum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">progbar</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">status_bar</span><span class="o">.</span><span class="n">addPermanentWidget</span><span class="p">(</span><span class="n">lbl</span><span class="p">)</span>
+            <span class="n">status_bar</span><span class="o">.</span><span class="n">addPermanentWidget</span><span class="p">(</span><span class="n">progbar</span><span class="p">)</span>
+        
+        <span class="n">counter</span> <span class="o">=</span> <span class="n">MemoryInt</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">:</span>
+            <span class="n">QApplication</span><span class="o">.</span><span class="n">processEvents</span><span class="p">()</span>
+            <span class="n">worker</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">inc</span><span class="p">)</span>
+            <span class="n">worker</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">progbar</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">worker</span><span class="p">)</span>
+        
+        <span class="k">while</span> <span class="n">counter</span><span class="o">.</span><span class="n">n</span> <span class="o">&lt;</span> <span class="n">final_value</span><span class="p">:</span>
+            <span class="n">QApplication</span><span class="o">.</span><span class="n">processEvents</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">maximum</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">progbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">status_bar</span><span class="p">:</span>
+            <span class="n">lbl</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

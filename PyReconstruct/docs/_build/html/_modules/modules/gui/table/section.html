@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.table.section &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.table.section</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QMainWindow</span><span class="p">,</span> 
+    <span class="n">QDockWidget</span><span class="p">,</span> 
+    <span class="n">QTableWidgetItem</span><span class="p">,</span> 
+    <span class="n">QAbstractItemView</span><span class="p">,</span> 
+    <span class="n">QWidget</span><span class="p">,</span> 
+    <span class="n">QInputDialog</span><span class="p">,</span> 
+    <span class="n">QMenu</span><span class="p">,</span> 
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.copy_table_widget</span> <span class="kn">import</span> <span class="n">CopyTableWidget</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">populateMenuBar</span><span class="p">,</span>
+    <span class="n">populateMenu</span><span class="p">,</span>
+    <span class="n">noUndoWarning</span><span class="p">,</span>
+    <span class="n">notify</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="n">QuickDialog</span><span class="p">,</span> <span class="n">FileDialog</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+
+<div class="viewcode-block" id="SectionTableWidget">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">SectionTableWidget</span><span class="p">(</span><span class="n">QDockWidget</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span> <span class="p">:</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the trace table dock widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                mainwindow (QWidget): the main window the dock is connected to</span>
+<span class="sd">                manager: the trace table manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initialize the widget</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mainwindow</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+
+        <span class="c1"># set desired format for widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAllowedAreas</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">RightDockWidgetArea</span><span class="p">)</span>  <span class="c1"># ccan be docked to right or left side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Section List&quot;</span><span class="p">)</span>
+
+        <span class="c1"># create the main window widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span> <span class="o">=</span> <span class="n">QMainWindow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+        
+        <span class="c1"># create the table and the menu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createMenus</span><span class="p">()</span>
+
+        <span class="c1"># save manager object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="SectionTableWidget.createMenus">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.createMenus">[docs]</a>
+    <span class="k">def</span> <span class="nf">createMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the menu for the trace table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># Create menubar menu</span>
+        <span class="n">menubar_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;listmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;List&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;export_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Export...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;modifymenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Modify&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;modifyallsrc_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Section image sources...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">modifyAllSrc</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;reordersections_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Reorder sections&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reorderSections</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        <span class="c1"># create the menubar object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="o">.</span><span class="n">setNativeMenuBar</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># attach menu to the window</span>
+        <span class="c1"># fill in the menu bar object</span>
+        <span class="n">populateMenuBar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="p">,</span> <span class="n">menubar_list</span><span class="p">)</span>
+
+        <span class="c1"># create the right-click menu</span>
+        <span class="n">context_menu_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;lock_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Lock sections&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lockSections</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;unlock_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Unlock sections&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lockSections</span><span class="p">(</span><span class="kc">False</span><span class="p">)),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;bcmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Brightness/contrast&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;setbc_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Set brightness/contrast...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setBC</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;matchbc_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Match brightness/contrast to section in view&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchBC</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">(</span><span class="s2">&quot;thickness_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit thickness...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editThickness</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;editsrc_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit image source...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editSrc</span><span class="p">),</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;insertmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Insert&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;insertabove_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Above&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">insertSection</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;insertbelow_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Below&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">insertSection</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;copy_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Copy&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">copy</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;delete_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteSections</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span> <span class="o">=</span> <span class="n">QMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">populateMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="p">,</span> <span class="n">context_menu_list</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.format">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.format">[docs]</a>
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format the rows and columns of the table.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowsToContents</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.setRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.setRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the data for a row.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                r (int): the row index</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">section_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot; (calgrid)&quot;</span> <span class="k">if</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;calgrid&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="s2">&quot;Locked&quot;</span> <span class="k">if</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;locked&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;Unlocked&quot;</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">])</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">])</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span>
+        <span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.createTable">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.createTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># close an existing table and save scroll position</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c1"># establish table headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Section&quot;</span><span class="p">,</span> <span class="s2">&quot;Thickness&quot;</span><span class="p">,</span> <span class="s2">&quot;Locked&quot;</span><span class="p">,</span> <span class="s2">&quot;Brightness&quot;</span><span class="p">,</span> <span class="s2">&quot;Contrast&quot;</span><span class="p">,</span> <span class="s2">&quot;Image Source&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">CopyTableWidget</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">))</span>
+
+        <span class="c1"># connect table functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">contextMenuEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sectionContextMenu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">mouseDoubleClickEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findSection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">backspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteSections</span>
+
+        <span class="c1"># format table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setShowGrid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setAlternatingRowColors</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># alternate row colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setEditTriggers</span><span class="p">(</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">NoEditTriggers</span><span class="p">)</span>  <span class="c1"># cannot be edited</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>  <span class="c1"># titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>  <span class="c1"># no veritcal header</span>
+        
+        <span class="c1"># fill in section data</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">()</span>
+
+        <span class="c1"># set the saved scroll value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span>
+
+        <span class="c1"># set table as central widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.updateSection">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the tables for a single section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># iterate through rows to find section number</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="n">snum</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.getSelectedSection">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.getSelectedSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedSection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the section that is selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">selected_indeces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># check for calgrid text</span>
+        <span class="k">return</span> <span class="n">n</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.getSelectedSections">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.getSelectedSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedSections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the trace items that iare selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">selected_indeces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">n_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">selected_indeces</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">n_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">n_list</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.resizeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.resizeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the table when window is resized.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span></div>
+
+
+    <span class="c1"># RIGHT CLICK FUNCTIONS</span>
+
+<div class="viewcode-block" id="SectionTableWidget.lockSections">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.lockSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">lockSections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lock</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lock or unlock a set of sections.&quot;&quot;&quot;</span>
+        <span class="n">section_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">lockSections</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">,</span> <span class="n">lock</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.setBC">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.setBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">setBC</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the brightness/contrast for a set of sections.&quot;&quot;&quot;</span>
+        <span class="n">section_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Brightness (-100 - 100):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">101</span><span class="p">)))],</span>
+            <span class="p">[</span><span class="s2">&quot;Contrast (-100 - 100):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Set brightness/contrast&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">setBC</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">,</span> <span class="o">*</span><span class="n">response</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.matchBC">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.matchBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">matchBC</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Match the brightness/contrast of the selected sections with the current section.&quot;&quot;&quot;</span>
+        <span class="n">section_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">matchBC</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.editThickness">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.editThickness">[docs]</a>
+    <span class="k">def</span> <span class="nf">editThickness</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the section thickness for a set of sections.&quot;&quot;&quot;</span>
+        <span class="n">section_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># get the existing section thickness</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="n">section_numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">sthickness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">sthickness</span><span class="p">:</span>
+                <span class="n">sthickness</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">sthickness</span><span class="p">:</span>
+            <span class="n">sthickness</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sthickness</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sthickness</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># get the new section thickness from the user</span>
+        <span class="n">new_st</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Section Thickness&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter section thickness (microns):&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">sthickness</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_st</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_st</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editThickness</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">,</span> <span class="n">new_st</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.editSrc">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.editSrc">[docs]</a>
+    <span class="k">def</span> <span class="nf">editSrc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the image source for a single section.&quot;&quot;&quot;</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSection</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">snum</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># get the existing section source</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]</span>
+
+        <span class="c1"># get the new image source from the user</span>
+        <span class="n">new_src</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Image source&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter image source:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">src</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editSrc</span><span class="p">(</span><span class="n">snum</span><span class="p">,</span> <span class="n">new_src</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.deleteSections">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.deleteSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteSections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete the sections selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">section_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;locked&quot;</span><span class="p">]:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Cannot delete locked sections.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">noUndoWarning</span><span class="p">():</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">deleteSections</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.findSection">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.findSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">findSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the section selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSection</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">findSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.sectionContextMenu">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.sectionContextMenu">[docs]</a>
+    <span class="k">def</span> <span class="nf">sectionContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when button is right-clicked: pulls up menu for user to modify traces.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">globalPos</span><span class="p">())</span></div>
+
+
+    <span class="c1"># MENU-RELATED FUNCTIONS</span>
+    
+<div class="viewcode-block" id="SectionTableWidget.export">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.export">[docs]</a>
+    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the trace list as a csv file.&quot;&quot;&quot;</span>
+        <span class="c1"># get the location from the user</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">FileDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;save&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save Section List&quot;</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;sections.csv&quot;</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="s2">&quot;Comma Separated Values (*.csv)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span> <span class="k">return</span>
+        <span class="c1"># unload the table into the csv file</span>
+        <span class="n">csv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="c1"># headers first</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># trace data</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># close file</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.modifyAllSrc">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.modifyAllSrc">[docs]</a>
+    <span class="k">def</span> <span class="nf">modifyAllSrc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the image source for all sections.&quot;&quot;&quot;</span>
+        <span class="c1"># attempt to use the last section src as an example</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">example_src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span> <span class="ow">in</span> <span class="n">example_src</span><span class="p">:</span>
+            <span class="n">example_src</span> <span class="o">=</span> <span class="n">example_src</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">snum</span><span class="p">),</span> <span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">example_src</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        
+        <span class="c1"># get the new source name from the user</span>
+        <span class="n">new_src</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">while</span> <span class="n">new_src</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">new_src</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="s2">&quot;Rename Image Sources&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;New image source name</span><span class="se">\n</span><span class="s2">(use a single &#39;#&#39; symbol to represent the section number)&quot;</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">example_src</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">new_src</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please use a &#39;#&#39; symbol to represent the section number.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please use only one &#39;#&#39; symbol to represent the section number.&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editSrc</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">new_src</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.reorderSections">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.reorderSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">reorderSections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder the sections so that they are in order.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">noUndoWarning</span><span class="p">():</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">reorderSections</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableWidget.insertSection">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.insertSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">insertSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Insert a section into the series.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">before</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getSelectedSections</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Image:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;*.jpg *.jpeg *.png *.tif *.tiff *.bmp&quot;</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Section number:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="n">index</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Calibration (μm/px):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Thickness (μm):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">thickness</span><span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Create Section&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">src</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">thickness</span> <span class="o">=</span> <span class="n">response</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">insertSection</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">thickness</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SectionTableWidget.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.section.SectionTableWidget.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove self from manager table list.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

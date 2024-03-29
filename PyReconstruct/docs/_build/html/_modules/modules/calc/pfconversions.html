@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.calc.pfconversions &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.calc.pfconversions</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="pixmapPointToField">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.pfconversions.pixmapPointToField">[docs]</a>
+<span></span><span class="k">def</span> <span class="nf">pixmapPointToField</span><span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert main window pixmap coordinates to field window coordinates.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            x (float): x-value for pixmap point</span>
+<span class="sd">            y (float): y-value for pixmap point</span>
+<span class="sd">            pixmap_dim (tuple): the w, h of pixmap</span>
+<span class="sd">            window (list): the field viewing window</span>
+<span class="sd">            mag (float): the image magnification (microns/pixel)</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (tuple) converted point in field coordinates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">)</span>
+    <span class="n">window_x</span><span class="p">,</span> <span class="n">window_y</span><span class="p">,</span> <span class="n">window_w</span><span class="p">,</span> <span class="n">window_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+    <span class="n">x_scaling</span> <span class="o">=</span> <span class="n">pixmap_w</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_w</span> <span class="o">/</span> <span class="n">mag</span><span class="p">)</span> <span class="c1"># screen pixel to actual image pixel ratio</span>
+    <span class="n">y_scaling</span> <span class="o">=</span> <span class="n">pixmap_h</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_h</span> <span class="o">/</span> <span class="n">mag</span><span class="p">)</span> <span class="c1"># should be the same number as previous</span>
+    <span class="c1"># assert abs(x_scaling - y_scaling) &lt; 1e-5</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">x_scaling</span> <span class="o">*</span> <span class="n">mag</span> <span class="o">+</span> <span class="n">window_x</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixmap_h</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_scaling</span> <span class="o">*</span> <span class="n">mag</span>  <span class="o">+</span> <span class="n">window_y</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="fieldPointToPixmap">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.pfconversions.fieldPointToPixmap">[docs]</a>
+<span class="k">def</span> <span class="nf">fieldPointToPixmap</span><span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert field window coordinates to main window pixmap coordinates.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            x (float): x-value for field point</span>
+<span class="sd">            y (float): y-value for field point</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (tuple) converted point in pixmap coordinates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">)</span>
+    <span class="n">window_x</span><span class="p">,</span> <span class="n">window_y</span><span class="p">,</span> <span class="n">window_w</span><span class="p">,</span> <span class="n">window_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+    <span class="n">x_scaling</span> <span class="o">=</span> <span class="n">pixmap_w</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_w</span> <span class="o">/</span> <span class="n">mag</span><span class="p">)</span> <span class="c1"># screen pixel to actual image pixel ratio</span>
+    <span class="n">y_scaling</span> <span class="o">=</span> <span class="n">pixmap_h</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_h</span> <span class="o">/</span> <span class="n">mag</span><span class="p">)</span> <span class="c1"># should be the same number as previous</span>
+    <span class="c1"># assert abs(x_scaling - y_scaling) &lt; 1e-5</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">window_x</span><span class="p">)</span> <span class="o">/</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">x_scaling</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">window_y</span><span class="p">)</span><span class="o">/</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">y_scaling</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">pixmap_h</span> <span class="o">-</span> <span class="n">y</span>
+
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">y</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

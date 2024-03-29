@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.view.zarr_layer &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.view.zarr_layer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">zarr</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Qt</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QPixmap</span><span class="p">,</span> 
+    <span class="n">QImage</span><span class="p">,</span> 
+    <span class="n">QPainter</span><span class="p">,</span> 
+<span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;QT_IMAGEIO_MAXALLOC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>  <span class="c1"># disable max image size</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span>
+    <span class="n">Section</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="n">colorize</span><span class="p">,</span> <span class="n">pixmapPointToField</span>
+
+<div class="viewcode-block" id="ZarrLayer">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer">[docs]</a>
+<span class="k">class</span> <span class="nc">ZarrLayer</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the image field.</span>
+
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section object for the field</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">zarr_overlay_fp</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loadZarrData</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ZarrLayer.loadZarrData">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.loadZarrData">[docs]</a>
+    <span class="k">def</span> <span class="nf">loadZarrData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the relevant data from the zarr file.&quot;&quot;&quot;</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">zarr</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">zarr_overlay_fp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">zarr_overlay_group</span><span class="p">]</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_resolution</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
+
+        <span class="c1"># check if labels or otherwise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c1"># get relevant data from overlay zarr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
+
+        <span class="c1"># get the relevant data from the raw in the zarr folder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;window&quot;</span><span class="p">][:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_s</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;srange&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;true_mag&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_resolution</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># modify attributes</span>
+        <span class="n">pixel_offset</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="o">/</span> <span class="n">r</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)]</span>
+        <span class="n">field_offset</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pixel_offset</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span> <span class="o">+=</span> <span class="n">field_offset</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span> <span class="o">+=</span> <span class="n">field_offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_s</span> <span class="o">+=</span> <span class="n">pixel_offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># load colors</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_colors</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+    
+<div class="viewcode-block" id="ZarrLayer.getID">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.getID">[docs]</a>
+    <span class="k">def</span> <span class="nf">getID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an ID from screen pixel coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            Params: </span>
+<span class="sd">                pix_x (int): the x coord in screen pixels</span>
+<span class="sd">                pix_y (int): the y coord in screen pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># check if the section is within the range</span>
+        <span class="n">bz</span><span class="p">,</span> <span class="n">bh</span><span class="p">,</span> <span class="n">bw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_s</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="n">bz</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># convert to field coordinates</span>
+        <span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span> <span class="o">=</span> <span class="n">pixmapPointToField</span><span class="p">(</span>
+            <span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+        <span class="p">)</span>
+
+        <span class="c1"># get zarr coordinates from field coordinates</span>
+        <span class="n">image_x</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">field_x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+        <span class="n">image_y</span> <span class="o">=</span> <span class="n">bh</span> <span class="o">-</span> <span class="nb">round</span><span class="p">((</span><span class="n">field_y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">image_x</span> <span class="o">&lt;</span> <span class="n">bw</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">image_y</span> <span class="o">&lt;</span> <span class="n">bh</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">[</span><span class="n">z</span><span class="p">,</span> <span class="n">image_y</span><span class="p">,</span> <span class="n">image_x</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ZarrLayer.selectID">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.selectID">[docs]</a>
+    <span class="k">def</span> <span class="nf">selectID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pix_y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select the ID at a given screen coord.</span>
+<span class="sd">        </span>
+<span class="sd">            Params: </span>
+<span class="sd">                pix_x (int): the x coord in screen pixels</span>
+<span class="sd">                pix_y (int): the y coord in screen pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">label_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getID</span><span class="p">(</span><span class="n">pix_x</span><span class="p">,</span> <span class="n">pix_y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">label_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">label_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">label_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ZarrLayer.deselectAll">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.deselectAll">[docs]</a>
+    <span class="k">def</span> <span class="nf">deselectAll</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deselect all the IDs.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+    
+<div class="viewcode-block" id="ZarrLayer.mergeLabels">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.mergeLabels">[docs]</a>
+    <span class="k">def</span> <span class="nf">mergeLabels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge the selected labels.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">return</span>
+        
+        <span class="n">min_id</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">min_id</span><span class="p">)</span>     
+
+        <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">[</span><span class="n">z</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">label_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">:</span>
+                <span class="n">section</span><span class="p">[</span><span class="n">section</span> <span class="o">==</span> <span class="n">label_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_id</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_id</span><span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="ZarrLayer.generateZarrLayer">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.generateZarrLayer">[docs]</a>
+    <span class="k">def</span> <span class="nf">generateZarrLayer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QPixmap</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the zarr layer.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the current section object</span>
+<span class="sd">                pixmap_dim (tuple): the w and h of the main window</span>
+<span class="sd">                window (list): the x, y, w, and h of the field window</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                zarr_layer (QPixmap): the zarr layer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span> <span class="o">=</span> <span class="n">section</span>
+
+        <span class="c1"># return nothing if there is no zarr file</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span><span class="p">:</span>
+            <span class="n">bz</span><span class="p">,</span> <span class="n">bh</span><span class="p">,</span> <span class="n">bw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bz</span><span class="p">,</span> <span class="n">bh</span><span class="p">,</span> <span class="n">bw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        
+        <span class="c1"># check if the section is within the range</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_s</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="n">bz</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># save and unpack window and pixmap values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span> <span class="o">=</span> <span class="n">pixmap_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="n">pixmap_w</span><span class="p">,</span> <span class="n">pixmap_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">)</span>
+        <span class="n">window_x</span><span class="p">,</span> <span class="n">window_y</span><span class="p">,</span> <span class="n">window_w</span><span class="p">,</span> <span class="n">window_h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> 
+
+        <span class="c1"># scaling: ratio of screen pixels to actual image pixels (should be equal)</span>
+        <span class="n">x_scaling</span> <span class="o">=</span> <span class="n">pixmap_w</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_w</span> <span class="o">/</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+        <span class="n">y_scaling</span> <span class="o">=</span> <span class="n">pixmap_h</span> <span class="o">/</span> <span class="p">(</span><span class="n">window_h</span> <span class="o">/</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">)</span>
+        <span class="c1"># assert(abs(x_scaling - y_scaling) &lt; 1e-6)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_scaling</span> <span class="o">=</span> <span class="n">x_scaling</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span> <span class="o">/</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+
+        <span class="c1"># calculate the coordinates to crop the image</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="p">((</span><span class="n">window_x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="p">((</span><span class="n">window_x</span> <span class="o">+</span> <span class="n">window_w</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+
+        <span class="n">ymin</span> <span class="o">=</span> <span class="n">bh</span> <span class="o">-</span> <span class="p">((</span><span class="n">window_y</span> <span class="o">+</span> <span class="n">window_h</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="n">bh</span> <span class="o">-</span> <span class="p">((</span><span class="n">window_y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_mag</span><span class="p">)</span>
+        
+        <span class="c1"># calculate the shift in origin</span>
+        <span class="n">origin_shift</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">window_x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_x</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">window_y</span> <span class="o">+</span> <span class="n">window_h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_y</span>
+        <span class="p">]</span>
+
+        <span class="c1"># space to insert if crop falls outside image</span>
+        <span class="n">blank_space</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># space to append if crop falls outside image</span>
+        <span class="n">extra_space</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># check if requested view is completely out of bounds</span>
+        <span class="n">oob</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">oob</span> <span class="o">|=</span> <span class="n">xmin</span> <span class="o">&gt;=</span> <span class="n">bw</span>
+        <span class="n">oob</span> <span class="o">|=</span> <span class="n">xmax</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+        <span class="n">oob</span> <span class="o">|=</span> <span class="n">ymin</span> <span class="o">&gt;=</span> <span class="n">bh</span>
+        <span class="n">oob</span> <span class="o">|=</span> <span class="n">ymax</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+        <span class="c1"># return nothing if coords are out of bounds</span>
+        <span class="k">if</span> <span class="n">oob</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># trim crop coords to be within image</span>
+        <span class="k">if</span> <span class="n">xmin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">blank_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">xmin</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">ymin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">blank_space</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">ymin</span>
+            <span class="n">ymin</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">xmax</span> <span class="o">&gt;</span> <span class="n">bw</span><span class="p">:</span>
+            <span class="n">extra_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">xmax</span> <span class="o">-</span> <span class="n">bw</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="n">bw</span>
+        <span class="k">if</span> <span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">bh</span><span class="p">:</span>
+            <span class="n">extra_space</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ymax</span> <span class="o">-</span> <span class="n">bh</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="n">bh</span>
+
+        <span class="c1"># crop image</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_labels</span><span class="p">:</span>
+            <span class="n">zarr_crop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">[</span><span class="n">z</span><span class="p">,</span> <span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+            <span class="c1"># generate all labels</span>
+            <span class="n">zarr_crop_colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                        <span class="n">colorize</span><span class="p">(</span><span class="n">zarr_crop</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+                    <span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">im_crop</span> <span class="o">=</span> <span class="n">QImage</span><span class="p">(</span>
+                <span class="n">zarr_crop_colors</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">,</span>
+                <span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">,</span>
+                <span class="n">zarr_crop_colors</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">QImage</span><span class="o">.</span><span class="n">Format</span><span class="o">.</span><span class="n">Format_RGB888</span>
+            <span class="p">)</span>
+            <span class="c1"># generate overlay for selected labels</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">:</span>
+                <span class="n">zarr_crop_selected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">zarr_crop</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">label_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">:</span>
+                    <span class="n">zarr_crop_selected</span><span class="p">[</span><span class="n">zarr_crop</span> <span class="o">==</span> <span class="n">label_id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
+                <span class="n">im_crop_selected</span> <span class="o">=</span> <span class="n">QImage</span><span class="p">(</span>
+                    <span class="n">zarr_crop_selected</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                    <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">,</span>
+                    <span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">,</span>
+                    <span class="n">zarr_crop_selected</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">QImage</span><span class="o">.</span><span class="n">Format</span><span class="o">.</span><span class="n">Format_Grayscale8</span>
+                <span class="p">)</span>
+                <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">im_crop</span><span class="p">)</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">setOpacity</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="n">painter</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">im_crop_selected</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">zarr_crop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+            <span class="n">zarr_crop_colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">zarr_crop</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">im_crop</span> <span class="o">=</span> <span class="n">QImage</span><span class="p">(</span>
+                <span class="n">zarr_crop_colors</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">,</span>
+                <span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">,</span>
+                <span class="n">zarr_crop_colors</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">QImage</span><span class="o">.</span><span class="n">Format</span><span class="o">.</span><span class="n">Format_RGB888</span>
+            <span class="p">)</span>
+
+        <span class="c1"># make the crop the size of the screen</span>
+        <span class="n">im_scaled</span> <span class="o">=</span> <span class="n">im_crop</span><span class="o">.</span><span class="n">scaled</span><span class="p">(</span>
+            <span class="n">im_crop</span><span class="o">.</span><span class="n">width</span><span class="p">()</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr_scaling</span><span class="p">,</span> 
+            <span class="n">im_crop</span><span class="o">.</span><span class="n">height</span><span class="p">()</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr_scaling</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="n">blank_space</span><span class="p">,</span> <span class="n">extra_space</span><span class="p">,</span> <span class="n">origin_shift</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pair</span><span class="p">)):</span>
+                <span class="n">pair</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_scaling</span>
+
+        <span class="c1"># get padded pixmap dim</span>
+        <span class="n">padded_w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">blank_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">im_scaled</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">+</span> <span class="n">extra_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">padded_w</span> <span class="o">&lt;</span> <span class="n">pixmap_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">padded_w</span> <span class="o">=</span> <span class="n">pixmap_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">padded_h</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">blank_space</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">im_scaled</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">+</span> <span class="n">extra_space</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">padded_h</span> <span class="o">&lt;</span> <span class="n">pixmap_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">padded_h</span> <span class="o">=</span> <span class="n">pixmap_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># add blank space on each side</span>
+        <span class="n">zarr_layer</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="n">padded_w</span><span class="p">,</span> <span class="n">padded_h</span><span class="p">)</span>
+        <span class="n">zarr_layer</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">transparent</span><span class="p">)</span>
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">zarr_layer</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span>
+            <span class="n">blank_space</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">blank_space</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">im_scaled</span>
+        <span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">zarr_layer</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

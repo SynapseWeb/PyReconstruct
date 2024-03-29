@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.trace &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.trace</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">skimage.draw</span> <span class="kn">import</span> <span class="n">polygon</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="kn">import</span> <span class="n">Transform</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="n">centroid</span><span class="p">,</span> <span class="n">distance</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.constants</span> <span class="kn">import</span> <span class="n">blank_palette_contour</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes_legacy</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Contour</span> <span class="k">as</span> <span class="n">XMLContour</span><span class="p">,</span>
+    <span class="n">Transform</span> <span class="k">as</span> <span class="n">XMLTransform</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="Trace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace">[docs]</a>
+<span class="k">class</span> <span class="nc">Trace</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">color</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Trace object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the trace</span>
+<span class="sd">                color (tuple): the color of the trace: (R, G, B) 0-255</span>
+<span class="sd">                closed (bool): True if trace is closed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">closed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">negative</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># default to False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_mode</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Trace.copy">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.copy">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a copy of the trace object.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Trace): a copy of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">copy_trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">copy_trace</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">copy_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">copy_trace</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">copy_trace</span></div>
+
+    
+<div class="viewcode-block" id="Trace.add">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.add">[docs]</a>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a point to the trace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                point (tuple): a coordinate pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Trace.isSameTrace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.isSameTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">isSameTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if traces have the same name, color, and points.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Trace): the trace to compare</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (bool) whether or not the traces are the same</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">color</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Trace.overlaps">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.overlaps">[docs]</a>
+    <span class="k">def</span> <span class="nf">overlaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.99</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if trace points overlap.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Trace): the trace to compare</span>
+<span class="sd">                threshold (float): the threshold overlap ratio to define overlapping (exclusive)</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (bool): whether or not trace traces overlap</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># compare points directly</span>
+        <span class="n">points_match</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">points</span><span class="p">):</span>
+            <span class="n">points_match</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>      
+            <span class="k">for</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">points</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="n">x2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-2</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y1</span><span class="o">-</span><span class="n">y2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-2</span><span class="p">:</span>
+                    <span class="n">points_match</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+        <span class="k">if</span> <span class="n">points_match</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        
+        <span class="c1"># compare amount of overlap</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOverlapRatio</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">threshold</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">threshold</span> <span class="o">==</span> <span class="n">r</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="Trace.setHidden">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.setHidden">[docs]</a>
+    <span class="k">def</span> <span class="nf">setHidden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set whether the trace is hidden.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                hidden (bool): whether the trace is hidden</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden</span> <span class="o">=</span> <span class="n">hidden</span></div>
+
+    
+<div class="viewcode-block" id="Trace.addTag">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.addTag">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the tag for the trace:</span>
+<span class="sd">            </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tag (str): the tag for the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Trace.getList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getList">[docs]</a>
+    <span class="k">def</span> <span class="nf">getList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_name</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the trace data as a dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                include_name (bool): True if name should be included in dict</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list) list containing the trace data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">7</span><span class="p">))</span>
+            <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">7</span><span class="p">))</span>
+        
+        <span class="n">l</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">include_name</span><span class="p">:</span>
+            <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="n">l</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">x</span><span class="p">,</span> 
+            <span class="n">y</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">negative</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">l</span></div>
+
+    
+<div class="viewcode-block" id="Trace.getXMLObj">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getXMLObj">[docs]</a>
+    <span class="k">def</span> <span class="nf">getXMLObj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml_image_tform</span> <span class="p">:</span> <span class="n">XMLTransform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">legacy_format</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the trace data as an XML object.</span>
+<span class="sd">            Params:</span>
+<span class="sd">                xml_image_tform (XMLTransform): the xml image transform object</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (XMLContour) the trace as an xml contour object or (Str)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">border_color</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">border_color</span><span class="p">)):</span>
+            <span class="n">border_color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">255</span>
+
+        <span class="c1"># reverse point order if negative trace</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">negative</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span>
+
+        <span class="n">xml_contour</span> <span class="o">=</span> <span class="n">XMLContour</span><span class="p">(</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden</span><span class="p">,</span>
+            <span class="n">closed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+            <span class="n">simplified</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="n">convertMode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">),</span>
+            <span class="n">border</span> <span class="o">=</span> <span class="n">border_color</span><span class="p">,</span>
+            <span class="n">fill</span> <span class="o">=</span> <span class="n">border_color</span><span class="p">,</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="p">,</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="n">xml_image_tform</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">legacy_format</span><span class="p">:</span>
+
+            <span class="c1"># get scaling to modify the radius of the trace (for palette traces)</span>
+            <span class="n">r_scaling</span> <span class="o">=</span> <span class="n">getLegacyRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRadius</span><span class="p">()</span>
+            
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">blank_palette_contour</span>
+
+            <span class="n">border</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">xml_contour</span><span class="o">.</span><span class="n">border</span><span class="p">))</span>
+            <span class="n">border</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">border</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">border</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">border</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+
+            <span class="n">fill</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">xml_contour</span><span class="o">.</span><span class="n">fill</span><span class="p">))</span>
+            <span class="n">fill</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">fill</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">fill</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">fill</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+
+            <span class="n">xml_points</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">xml_contour</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_scaling</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_scaling</span>  <span class="c1"># modify radius for palette trace</span>
+                <span class="n">formatted_point</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s1">, &#39;</span>
+                <span class="n">xml_points</span> <span class="o">+=</span> <span class="n">formatted_point</span>
+            
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[NAME]&quot;</span><span class="p">,</span> <span class="n">xml_contour</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[CLOSED]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">xml_contour</span><span class="o">.</span><span class="n">closed</span><span class="p">))</span>
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[BORDER]&quot;</span><span class="p">,</span> <span class="n">border</span><span class="p">)</span>
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[FILL]&quot;</span><span class="p">,</span> <span class="n">fill</span><span class="p">)</span>
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[MODE]&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">xml_contour</span><span class="o">.</span><span class="n">mode</span><span class="p">))</span>
+            <span class="n">xml_text</span> <span class="o">=</span> <span class="n">xml_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[POINTS]&quot;</span><span class="p">,</span> <span class="n">xml_points</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">xml_text</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            
+            <span class="k">return</span> <span class="n">xml_contour</span></div>
+
+    
+    <span class="c1"># STATIC METHOD</span>
+<div class="viewcode-block" id="Trace.fromList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.fromList">[docs]</a>
+    <span class="k">def</span> <span class="nf">fromList</span><span class="p">(</span><span class="n">l</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a trace object from a dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                list (dict): the list trace data</span>
+<span class="sd">                name (str): the name of the trace</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Trace) a Trace object constructed from the dictionary data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">==</span> <span class="mi">9</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        
+        <span class="p">(</span>
+            <span class="n">x</span><span class="p">,</span>
+            <span class="n">y</span><span class="p">,</span>
+            <span class="n">color</span><span class="p">,</span>
+            <span class="n">closed</span><span class="p">,</span>
+            <span class="n">negative</span><span class="p">,</span>
+            <span class="n">hidden</span><span class="p">,</span>
+            <span class="n">fill_mode</span><span class="p">,</span>
+            <span class="n">tags</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">color</span><span class="p">,</span> <span class="n">closed</span><span class="p">)</span>  <span class="c1"># strip trace name</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">negative</span> <span class="o">=</span> <span class="n">negative</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">hidden</span> <span class="o">=</span> <span class="n">hidden</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">fill_mode</span> <span class="o">=</span> <span class="n">fill_mode</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_trace</span></div>
+
+    
+    <span class="c1"># STATIC METHOD</span>
+<div class="viewcode-block" id="Trace.fromXMLObj">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.fromXMLObj">[docs]</a>
+    <span class="k">def</span> <span class="nf">fromXMLObj</span><span class="p">(</span><span class="n">xml_trace</span> <span class="p">:</span> <span class="n">XMLContour</span><span class="p">,</span> <span class="n">xml_image_tform</span> <span class="p">:</span> <span class="n">XMLTransform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a trace from an xml contour object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                xml_trace (XMLContour): the xml contour object</span>
+<span class="sd">                xml_image_tform (XMLTransform): the xml image transform object</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Trace) the trace object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get basic attributes</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">xml_trace</span><span class="o">.</span><span class="n">border</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">color</span><span class="p">)):</span>
+            <span class="n">color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span>
+        <span class="n">closed</span> <span class="o">=</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">closed</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">negative</span> <span class="o">=</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">isNegative</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">negative</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">closed</span><span class="p">)</span>
+
+        <span class="c1"># get the transform</span>
+        <span class="k">if</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">xml_trace</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">transformPoints</span><span class="p">(</span><span class="n">xml_trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xml_image_tform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">xml_image_tform</span><span class="o">.</span><span class="n">inverseTransformPoints</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">fill_mode</span> <span class="o">=</span> <span class="n">convertMode</span><span class="p">(</span><span class="n">xml_trace</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">negative</span> <span class="o">=</span> <span class="n">negative</span>
+        
+        <span class="k">return</span> <span class="n">new_trace</span></div>
+
+
+<div class="viewcode-block" id="Trace.getBounds">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getBounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">getBounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the most extreme coordinates for the trace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform): optional parameter to find extremeties of transformed trace</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (float) min x value</span>
+<span class="sd">                (float) min y value</span>
+<span class="sd">                (float) max x value</span>
+<span class="sd">                (float) max y value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">tform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">xmin</span> <span class="o">=</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># BUG: Should this be &#39;points&#39; and not &#39;self.points&#39;?</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">xmin</span><span class="p">:</span> <span class="n">xmin</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">elif</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">xmax</span><span class="p">:</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">ymin</span><span class="p">:</span> <span class="n">ymin</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">elif</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="n">ymax</span><span class="p">:</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">y</span>
+        
+        <span class="k">return</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span></div>
+
+    
+<div class="viewcode-block" id="Trace.getMidpoint">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getMidpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">getMidpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the midpoint of the trace (avg of extremes).</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform): transform to apply to calculation</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (tuple) x, y of midpoint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">(</span><span class="n">tform</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">xmin</span> <span class="o">+</span> <span class="n">xmax</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">ymin</span> <span class="o">+</span> <span class="n">ymax</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="Trace.getCentroid">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getCentroid">[docs]</a>
+    <span class="k">def</span> <span class="nf">getCentroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the centroid of the trace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform)&quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">c</span></div>
+
+    
+<div class="viewcode-block" id="Trace.getRadius">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getRadius">[docs]</a>
+    <span class="k">def</span> <span class="nf">getRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distance from the centroid of the trace to its farthest point.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform): the transform to apply to the points</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (float): the radius of the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">distance</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">r</span></div>
+
+        
+<div class="viewcode-block" id="Trace.centerAtOrigin">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.centerAtOrigin">[docs]</a>
+    <span class="k">def</span> <span class="nf">centerAtOrigin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Centers the trace at the origin (ignores transformations).&quot;&quot;&quot;</span>
+        <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">,</span> <span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Trace.resize">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.resize">[docs]</a>
+    <span class="k">def</span> <span class="nf">resize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_radius</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize a trace beased on its radius</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                new_radius (float): the new radius for the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c1"># calculate constants</span>
+        <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">distance</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="n">new_radius</span> <span class="o">/</span> <span class="n">r</span>
+
+        <span class="c1"># center trace at origin and apply scale factor</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">scale_factor</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="n">cx</span><span class="p">,</span> 
+                <span class="n">scale_factor</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span> <span class="o">+</span> <span class="n">cy</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">points</span>
+        <span class="p">]</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span></div>
+
+
+<div class="viewcode-block" id="Trace.reshape">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.reshape">[docs]</a>
+    <span class="k">def</span> <span class="nf">reshape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_points</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize a trace beased on its radius</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                new_points (float): the new points for the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRadius</span><span class="p">(</span><span class="n">tform</span><span class="p">)</span>
+        <span class="n">xc</span><span class="p">,</span> <span class="n">yc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getCentroid</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">new_points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="c1"># apply reverse transform if applicable</span>
+        <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">getLinear</span><span class="p">()</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x</span> <span class="o">+</span> <span class="n">xc</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="n">yc</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="Trace.getStretched">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getStretched">[docs]</a>
+    <span class="k">def</span> <span class="nf">getStretched</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the trace stretched to a specific w and h.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                w (float): the width of the resulting trace</span>
+<span class="sd">                h (float): the height of the resulting trace</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Trace): the resulting trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># get constants</span>
+        <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">()</span>
+
+        <span class="c1"># get scale factors</span>
+        <span class="n">scale_x</span> <span class="o">=</span> <span class="n">w</span> <span class="o">/</span> <span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">)</span>
+        <span class="n">scale_y</span> <span class="o">=</span> <span class="n">h</span> <span class="o">/</span> <span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)</span>
+
+        <span class="c1"># center trace at origin and apply scale factor</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">scale_x</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="n">cx</span><span class="p">,</span> 
+                <span class="n">scale_y</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span> <span class="o">+</span> <span class="n">cy</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">new_trace</span><span class="o">.</span><span class="n">points</span>
+        <span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">new_trace</span></div>
+
+    
+<div class="viewcode-block" id="Trace.magScale">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.magScale">[docs]</a>
+    <span class="k">def</span> <span class="nf">magScale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prev_mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">new_mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Scale the trace to magnification changes.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                prev_mag (float): the previous magnification</span>
+<span class="sd">                new_mag (float): the new magnification</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="n">x</span> <span class="o">*=</span> <span class="n">new_mag</span> <span class="o">/</span> <span class="n">prev_mag</span>
+            <span class="n">y</span> <span class="o">*=</span> <span class="n">new_mag</span> <span class="o">/</span> <span class="n">prev_mag</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Trace.mergeTags">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.mergeTags">[docs]</a>
+    <span class="k">def</span> <span class="nf">mergeTags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge the tags of two traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Trace): the trace to merge tags with</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Trace.getOverlapRatio">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.Trace.getOverlapRatio">[docs]</a>
+    <span class="k">def</span> <span class="nf">getOverlapRatio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the amount of intersection between two traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Trace): the trace to compare against</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xmin1</span><span class="p">,</span> <span class="n">ymin1</span><span class="p">,</span> <span class="n">xmax1</span><span class="p">,</span> <span class="n">ymax1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">()</span>
+        <span class="n">xmin2</span><span class="p">,</span> <span class="n">ymin2</span><span class="p">,</span> <span class="n">xmax2</span><span class="p">,</span> <span class="n">ymax2</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">getBounds</span><span class="p">()</span>
+
+        <span class="c1"># if the shapes don&#39;t remotely intersect, ignore</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">xmax1</span> <span class="o">&lt;</span> <span class="n">xmin2</span> <span class="ow">or</span> <span class="n">xmax2</span> <span class="o">&lt;</span> <span class="n">xmin1</span> <span class="ow">or</span>
+            <span class="n">ymax1</span> <span class="o">&lt;</span> <span class="n">ymin2</span> <span class="ow">or</span> <span class="n">ymax2</span> <span class="o">&lt;</span> <span class="n">ymin1</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        
+        <span class="n">pts1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">pts2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        
+        <span class="c1"># calculate a scaling factor</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xmin1</span><span class="p">,</span> <span class="n">xmin2</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">xmax1</span><span class="p">,</span> <span class="n">xmax2</span><span class="p">)</span>
+        <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">ymin1</span><span class="p">,</span> <span class="n">ymin2</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">ymax1</span><span class="p">,</span> <span class="n">ymax2</span><span class="p">)</span>
+        <span class="n">initial_area</span> <span class="o">=</span> <span class="p">(</span><span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">)</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1e4</span> <span class="o">/</span> <span class="n">initial_area</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
+
+        <span class="c1"># scale the points</span>
+        <span class="n">pts1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">pts1</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">pts2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">pts2</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">xmin</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">xmax</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">ymin</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">ymax</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+
+        <span class="c1"># translate the points</span>
+        <span class="n">pts1</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">xmin</span>
+        <span class="n">pts1</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ymin</span>
+        <span class="n">pts2</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">xmin</span>
+        <span class="n">pts2</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ymin</span>
+
+        <span class="c1"># generate the polygons</span>
+        <span class="n">r1</span><span class="p">,</span> <span class="n">c1</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span><span class="n">pts1</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">pts1</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">r2</span><span class="p">,</span> <span class="n">c2</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span><span class="n">pts2</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">pts2</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">mask1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask1</span><span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">c1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">mask2</span><span class="p">[</span><span class="n">r2</span><span class="p">,</span> <span class="n">c2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># get the union and intersect areas</span>
+        <span class="n">union_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">mask1</span><span class="p">,</span> <span class="n">mask2</span><span class="p">))</span>
+        <span class="n">intersect_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">mask1</span><span class="p">,</span> <span class="n">mask2</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">intersect_area</span> <span class="o">/</span> <span class="n">union_area</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="convertMode">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.convertMode">[docs]</a>
+<span class="k">def</span> <span class="nf">convertMode</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Translate between Reconstruct and PyReconstruct fill modes.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">fill_mode</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">11</span><span class="p">:</span>
+            <span class="n">fill_mode</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">13</span><span class="p">:</span>
+                <span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;solid&quot;</span>
+            <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">9</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">15</span><span class="p">:</span>
+                <span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;transparent&quot;</span>
+            <span class="k">if</span> <span class="n">arg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;unselected&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;selected&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">fill_mode</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">tuple</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="mi">11</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;transparent&quot;</span><span class="p">:</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="mi">9</span>
+            <span class="k">elif</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;solid&quot;</span><span class="p">:</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="mi">13</span>
+            <span class="k">if</span> <span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;unselected&quot;</span><span class="p">:</span>
+                <span class="n">mode</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">mode</span></div>
+
+
+<div class="viewcode-block" id="getLegacyRadius">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.trace.getLegacyRadius">[docs]</a>
+<span class="k">def</span> <span class="nf">getLegacyRadius</span><span class="p">(</span><span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the legacy radius for a palette trace.&quot;&quot;&quot;</span>
+    <span class="n">legacy_radii</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;circle&quot;</span><span class="p">:</span> <span class="mf">6.324555320336759</span><span class="p">,</span>
+        <span class="s2">&quot;star&quot;</span><span class="p">:</span> <span class="mf">5.656854249492381</span><span class="p">,</span>
+        <span class="s2">&quot;triangle&quot;</span><span class="p">:</span> <span class="mf">7.333333</span><span class="p">,</span>
+        <span class="s2">&quot;cross&quot;</span><span class="p">:</span> <span class="mf">9.899494936611665</span><span class="p">,</span>
+        <span class="s2">&quot;square&quot;</span><span class="p">:</span> <span class="mf">14.485601376004034</span><span class="p">,</span>
+        <span class="s2">&quot;diamond&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+        <span class="s2">&quot;curved_arrow&quot;</span><span class="p">:</span> <span class="mf">12.952950706944307</span><span class="p">,</span>
+        <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="mf">12.649110640673518</span><span class="p">,</span>
+        <span class="s2">&quot;straight_arrow&quot;</span><span class="p">:</span> <span class="mf">16.646921637347848</span>
+    <span class="p">}</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;triangle&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;diamond&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;straight_arrow&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;circle&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;square&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">16</span><span class="p">:</span>
+        <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;star&quot;</span>
+    <span class="k">elif</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+        <span class="c1"># three possibilities for length 12</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">):</span>
+                <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;cross&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;plus&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trace_type</span> <span class="o">=</span> <span class="s2">&quot;curved_arrow&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">8</span>
+    
+    <span class="k">return</span> <span class="n">legacy_radii</span><span class="p">[</span><span class="n">trace_type</span><span class="p">]</span></div>
+
+        
+
+
+        
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

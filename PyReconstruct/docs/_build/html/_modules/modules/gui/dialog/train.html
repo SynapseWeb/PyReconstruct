@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.dialog.train &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.dialog.train</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">zarr</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QCheckBox</span><span class="p">,</span>
+    <span class="n">QDialog</span><span class="p">,</span> 
+    <span class="n">QDialogButtonBox</span><span class="p">,</span> 
+    <span class="n">QLabel</span><span class="p">,</span> 
+    <span class="n">QLineEdit</span><span class="p">,</span>
+    <span class="n">QVBoxLayout</span><span class="p">,</span>
+    <span class="n">QGridLayout</span><span class="p">,</span>
+    <span class="n">QComboBox</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.helper</span> <span class="kn">import</span> <span class="n">BrowseWidget</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">notify</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+
+<div class="viewcode-block" id="TrainDialog">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.train.TrainDialog">[docs]</a>
+<span class="k">class</span> <span class="nc">TrainDialog</span><span class="p">(</span><span class="n">QDialog</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">models</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">opts</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a dialog for training an autoseg model.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                parent (QWidget): the parent of the dialog</span>
+<span class="sd">                series (Series): the series</span>
+<span class="sd">                models (dict): the dictionary containing the model paths</span>
+<span class="sd">                retrain (bool): True if user is retraining (picks tag and groups by default)</span>
+<span class="sd">                opts (dict): dictionry holding autoseg options</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Train Model&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retrain</span> <span class="o">=</span> <span class="n">retrain</span>
+
+        <span class="n">zarr_fp_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Zarr&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zarr_fp_input</span> <span class="o">=</span> <span class="n">BrowseWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;zarr_current&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zarr_fp_input</span><span class="o">.</span><span class="n">le</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;zarr_current&quot;</span><span class="p">])</span>
+
+        <span class="n">iter_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Iterations&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iter_input</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;iters&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iter_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;iters&quot;</span><span class="p">]))</span>
+
+        <span class="n">savefreq_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Save checkpoints every&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">savefreq_input</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;save_every&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">savefreq_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;save_every&quot;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">retrain</span><span class="p">:</span>
+            <span class="n">group_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Training object group name&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_input</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">group_items</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupList</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_input</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="n">group_items</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;group&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="n">current_group</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">current_group</span> <span class="ow">in</span> <span class="n">group_items</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">group_input</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">current_group</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
+        <span class="n">model_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Training model&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_input</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">g</span><span class="p">]:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_input</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;model_path&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="n">original_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;model_path&quot;</span><span class="p">])</span>
+            <span class="n">original_choice</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">original_path</span><span class="p">)</span>
+            <span class="n">original_type</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">original_path</span><span class="p">))</span>
+            <span class="n">orig</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">original_type</span><span class="si">}</span><span class="s1"> - </span><span class="si">{</span><span class="n">original_choice</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="k">if</span> <span class="n">orig</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model_input</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+
+        <span class="n">cdir_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Checkpoints Directory&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cdir_input</span> <span class="o">=</span> <span class="n">BrowseWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;checkpts_dir&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cdir_input</span><span class="o">.</span><span class="n">le</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;checkpts_dir&quot;</span><span class="p">])</span>
+
+        <span class="n">pre_cache_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Pre Cache&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;10, 40&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;pre_cache&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="n">pc</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;pre_cache&quot;</span><span class="p">]</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">pc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="n">minmasked_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Min Masked (0-1)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;0.05&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;min_masked&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;min_masked&quot;</span><span class="p">]))</span>
+            
+        <span class="n">downsample_text</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Downsample&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">downsample_input</span> <span class="o">=</span> <span class="n">QCheckBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;downsample_bool&quot;</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">downsample_input</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;downsample_bool&quot;</span><span class="p">])</span>
+        
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">QGridLayout</span><span class="p">()</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">zarr_fp_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr_fp_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">iter_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iter_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">savefreq_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savefreq_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">retrain</span><span class="p">:</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">group_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">model_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">cdir_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cdir_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">pre_cache_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">minmasked_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">downsample_text</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">downsample_input</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">QBtn</span> <span class="o">=</span> <span class="n">QDialogButtonBox</span><span class="o">.</span><span class="n">Ok</span> <span class="o">|</span> <span class="n">QDialogButtonBox</span><span class="o">.</span><span class="n">Cancel</span>
+        <span class="n">buttonbox</span> <span class="o">=</span> <span class="n">QDialogButtonBox</span><span class="p">(</span><span class="n">QBtn</span><span class="p">)</span>
+        <span class="n">buttonbox</span><span class="o">.</span><span class="n">accepted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accept</span><span class="p">)</span>
+        <span class="n">buttonbox</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reject</span><span class="p">)</span>
+
+        <span class="n">vlayout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="n">vlayout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">vlayout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+        <span class="n">vlayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">buttonbox</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">vlayout</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="TrainDialog.accept">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.train.TrainDialog.accept">[docs]</a>
+    <span class="k">def</span> <span class="nf">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwritten from parent class.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zarr_fp_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;zarr&quot;</span><span class="p">)):</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select a valid zarr file.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iter_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()):</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please enter a valid number for iterations.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savefreq_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()):</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please enter a valid number for saving frequency.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrain</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_input</span><span class="o">.</span><span class="n">currentText</span><span class="p">():</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select a group to use for training.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_input</span><span class="o">.</span><span class="n">currentText</span><span class="p">():</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select a model.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cdir_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">t</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select a checkpoint directory.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">pc</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">pc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">n</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">():</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please enter a valid pair of numbers for the pre cache.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please enter a number between 0 and 1 for the min masked.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please enter a valid number for the min masked value.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="TrainDialog.exec">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.train.TrainDialog.exec">[docs]</a>
+    <span class="k">def</span> <span class="nf">exec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Run the dialog.&quot;</span>
+        <span class="n">confirmed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="n">group</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_input</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; - &quot;</span><span class="p">)</span>
+            <span class="n">model_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">group</span><span class="p">][</span><span class="n">model</span><span class="p">]</span>
+
+            <span class="n">zarr_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zarr_fp_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+            <span class="n">iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iter_input</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">save_freq</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savefreq_input</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrain</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_input</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span>
+            <span class="n">checkpoints_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cdir_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+            <span class="n">pre_cache</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_cache_input</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)])</span>
+            <span class="n">minmask</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minmasked_input</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">downsample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample_input</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+
+            <span class="n">response</span> <span class="o">=</span> <span class="p">[</span>
+                
+                <span class="n">zarr_dir</span><span class="p">,</span>
+                <span class="n">iterations</span><span class="p">,</span>
+                <span class="n">save_freq</span><span class="p">,</span>
+                <span class="n">groups</span><span class="p">,</span>
+                <span class="n">model_path</span><span class="p">,</span>
+                <span class="n">checkpoints_dir</span><span class="p">,</span>
+                <span class="n">pre_cache</span><span class="p">,</span>
+                <span class="n">minmask</span><span class="p">,</span>
+                <span class="n">downsample</span>
+                
+            <span class="p">]</span>
+                
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">response</span><span class="p">),</span> <span class="kc">True</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

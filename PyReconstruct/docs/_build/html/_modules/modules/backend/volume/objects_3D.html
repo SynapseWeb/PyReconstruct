@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.volume.objects_3D &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.volume.objects_3D</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">skimage.draw</span> <span class="kn">import</span> <span class="n">polygon</span>
+<span class="kn">import</span> <span class="nn">trimesh</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="n">centroid</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">Transform</span>
+
+<div class="viewcode-block" id="Object3D">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Object3D">[docs]</a>
+<span class="k">class</span> <span class="nc">Object3D</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># xmin, xmax, ymin, ymax, zmin, zmax</span>
+    
+<div class="viewcode-block" id="Object3D.addToExtremes">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Object3D.addToExtremes">[docs]</a>
+    <span class="k">def</span> <span class="nf">addToExtremes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Keep track of the extreme values.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">if</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">4</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">5</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span></div>
+</div>
+
+
+<div class="viewcode-block" id="Surface">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Surface">[docs]</a>
+<span class="k">class</span> <span class="nc">Surface</span><span class="p">(</span><span class="n">Object3D</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a 3D Surface object.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="Surface.addTrace">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Surface.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trace to the surface data.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mi">255</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;pos&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;neg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">pts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">pt</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addToExtremes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+            <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">negative</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;neg&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Surface.generate3D">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Surface.generate3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_mag</span><span class="p">,</span> <span class="n">section_thickness</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the numpy array volumes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set voxel resolution to arbitrary x times average sections mag</span>
+        <span class="n">vres</span> <span class="o">=</span> <span class="n">section_mag</span> <span class="o">*</span> <span class="mi">8</span>
+
+        <span class="c1"># calculate the dimensions of bounding box for empty array</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">smin</span><span class="p">,</span> <span class="n">smax</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">)</span>
+        <span class="n">vshape</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">round</span><span class="p">((</span><span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">)</span><span class="o">/</span><span class="n">vres</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+            <span class="nb">round</span><span class="p">((</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">)</span><span class="o">/</span><span class="n">vres</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">smax</span><span class="o">-</span><span class="n">smin</span><span class="o">+</span><span class="mi">1</span>
+        <span class="p">)</span>
+    
+        <span class="c1"># create empty numpy volume</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">vshape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+        <span class="c1"># add the traces to the volume</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">trace_lists</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">trace_lists</span><span class="p">[</span><span class="s2">&quot;pos&quot;</span><span class="p">]:</span>
+                <span class="n">x_values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">trace</span><span class="p">:</span>
+                    <span class="n">x_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">vres</span><span class="p">))</span>
+                    <span class="n">y_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">y</span><span class="o">-</span><span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">vres</span><span class="p">))</span>
+                <span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_values</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">volume</span><span class="p">[</span><span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span><span class="p">,</span> <span class="n">snum</span> <span class="o">-</span> <span class="n">smin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># subtract out the negative traces</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">trace_lists</span><span class="p">[</span><span class="s2">&quot;neg&quot;</span><span class="p">]:</span>
+                <span class="n">x_values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">trace</span><span class="p">:</span>
+                    <span class="n">x_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">vres</span><span class="p">))</span>
+                    <span class="n">y_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">y</span><span class="o">-</span><span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">vres</span><span class="p">))</span>
+                <span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_values</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">volume</span><span class="p">[</span><span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span><span class="p">,</span> <span class="n">snum</span> <span class="o">-</span> <span class="n">smin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># generate trimesh</span>
+        <span class="n">tm</span> <span class="o">=</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">voxel</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">matrix_to_marching_cubes</span><span class="p">(</span><span class="n">volume</span><span class="p">)</span>
+        <span class="n">tm</span> <span class="p">:</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">Trimesh</span>
+
+        <span class="c1"># add metadata</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span>
+        <span class="n">tm</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
+
+        <span class="c1"># smooth trimesh</span>
+        <span class="k">if</span> <span class="n">smoothing</span> <span class="o">==</span> <span class="s2">&quot;humphrey&quot;</span><span class="p">:</span>
+            <span class="n">trimesh</span><span class="o">.</span><span class="n">smoothing</span><span class="o">.</span><span class="n">filter_humphrey</span><span class="p">(</span><span class="n">tm</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">smoothing</span> <span class="o">==</span> <span class="s2">&quot;laplacian&quot;</span><span class="p">:</span>
+            <span class="n">trimesh</span><span class="o">.</span><span class="n">smoothing</span><span class="o">.</span><span class="n">filter_laplacian</span><span class="p">(</span><span class="n">tm</span><span class="p">)</span>
+
+        <span class="n">faces</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">faces</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">vertices</span>
+
+        <span class="c1"># provide real vertex locations</span>
+        <span class="c1"># (i.e., normalize to real world dimensions)</span>
+        <span class="n">verts</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="n">vres</span>
+        <span class="n">verts</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">xmin</span>
+        <span class="n">verts</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ymin</span>
+        <span class="n">verts</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">smin</span>
+        <span class="n">verts</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="n">section_thickness</span>
+
+        <span class="n">mesh_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+            <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
+            <span class="s2">&quot;vertices&quot;</span><span class="p">:</span> <span class="n">verts</span><span class="p">,</span>
+            <span class="s2">&quot;faces&quot;</span><span class="p">:</span> <span class="n">faces</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">mesh_data</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Spheres">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres">[docs]</a>
+<span class="k">class</span> <span class="nc">Spheres</span><span class="p">(</span><span class="n">Object3D</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a 3D Spheres object.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centroids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radii</span> <span class="o">=</span> <span class="p">[]</span>
+    
+<div class="viewcode-block" id="Spheres.addTrace">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trace to the spheres data.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mi">255</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">]))</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">centroid</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centroids</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addToExtremes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">radii</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getRadius</span><span class="p">(</span><span class="n">tform</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="Spheres.generate3D">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres.generate3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_thickness</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the opengl meshes for the spheres.&quot;&quot;&quot;</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">faces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">radius</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centroids</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radii</span>
+        <span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">s</span> <span class="o">*</span> <span class="n">section_thickness</span>
+            <span class="n">sphere</span> <span class="o">=</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">primitives</span><span class="o">.</span><span class="n">Sphere</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">),</span> <span class="n">subdivisions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">faces</span> <span class="o">+=</span> <span class="p">(</span><span class="n">sphere</span><span class="o">.</span><span class="n">faces</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">verts</span> <span class="o">+=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        
+        <span class="n">mesh_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
+            <span class="s2">&quot;vertices&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">verts</span><span class="p">),</span>
+            <span class="s2">&quot;faces&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+        <span class="k">return</span> <span class="n">mesh_data</span></div>
+</div>
+
+
+<div class="viewcode-block" id="Contours">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Contours">[docs]</a>
+<span class="k">class</span> <span class="nc">Contours</span><span class="p">(</span><span class="n">Object3D</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a 3D Surface object.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="Contours.addTrace">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Contours.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trace to the surface data.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mi">255</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">pts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tform</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">pt</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addToExtremes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+            <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contours.generate3D">
+<a class="viewcode-back" href="../../../../modules.backend.volume.html#modules.backend.volume.objects_3D.Contours.generate3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_thickness</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate trace slabs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">verts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">faces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="c1"># get the z values</span>
+            <span class="n">z1</span> <span class="o">=</span> <span class="n">snum</span> <span class="o">*</span> <span class="n">section_thickness</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">+</span> <span class="n">section_thickness</span><span class="o">/</span><span class="mi">2</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="c1"># get the xy coords of the points</span>
+                    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="c1"># gather the four points to create the slab section</span>
+                    <span class="n">verts</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z1</span><span class="p">])</span>
+                    <span class="n">verts</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z1</span><span class="p">])</span>
+                    <span class="n">verts</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z2</span><span class="p">])</span>
+                    <span class="n">verts</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z2</span><span class="p">])</span>
+                    <span class="c1"># create the faces</span>
+                    <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span>
+                    <span class="n">faces</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">l</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">l</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="n">l</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+                    <span class="n">faces</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">l</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">l</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="n">mesh_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+            <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
+            <span class="s2">&quot;vertices&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">verts</span><span class="p">),</span>
+            <span class="s2">&quot;faces&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">mesh_data</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

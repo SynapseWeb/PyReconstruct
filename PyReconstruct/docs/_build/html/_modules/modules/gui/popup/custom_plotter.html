@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.popup.custom_plotter &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.popup.custom_plotter</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">vedo</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="n">QuickDialog</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">notify</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.table</span> <span class="kn">import</span> <span class="n">HelpWidget</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.backend.volume</span> <span class="kn">import</span> <span class="n">generateVolumes</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.backend.threading</span> <span class="kn">import</span> <span class="n">ThreadPoolProgBar</span>
+
+<span class="kn">from</span> <span class="nn">vtk.qt.QVTKRenderWindowInteractor</span> <span class="kn">import</span> <span class="n">QVTKRenderWindowInteractor</span>
+
+<div class="viewcode-block" id="VPlotter">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter">[docs]</a>
+<span class="k">class</span> <span class="nc">VPlotter</span><span class="p">(</span><span class="n">vedo</span><span class="o">.</span><span class="n">Plotter</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qt_parent</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qt_parent</span> <span class="o">=</span> <span class="n">qt_parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">qt_parent</span><span class="o">.</span><span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">series</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc_side</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_text</span> <span class="o">=</span> <span class="n">vedo</span><span class="o">.</span><span class="n">Text2D</span><span class="p">(</span><span class="n">pos</span><span class="o">=</span><span class="s2">&quot;top-left&quot;</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_text</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_text</span> <span class="o">=</span> <span class="n">vedo</span><span class="o">.</span><span class="n">Text2D</span><span class="p">(</span><span class="n">pos</span><span class="o">=</span><span class="s2">&quot;bottom-left&quot;</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_text</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="s2">&quot;MouseMove&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mouseMoveEvent</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="s2">&quot;LeftButtonClick&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">leftButtonClickEvent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">click_time</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="s2">&quot;RightButtonClick&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rightButtonClickEvent</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">help_widget</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="VPlotter.getSectionFromZ">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.getSectionFromZ">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSectionFromZ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the section number from a z coordinate.&quot;&quot;&quot;</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">z</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span>  <span class="c1"># probably change this</span>
+
+        <span class="c1"># if the section is not in the seris, find closest section</span>
+        <span class="n">all_sections</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_sections</span><span class="p">:</span>
+            <span class="n">diffs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">s</span> <span class="o">-</span> <span class="n">snum</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_sections</span><span class="p">]</span>
+            <span class="n">snum</span> <span class="o">=</span> <span class="n">all_sections</span><span class="p">[</span><span class="n">diffs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">diffs</span><span class="p">))]</span>
+        
+        <span class="k">return</span> <span class="n">snum</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.createScaleCube">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.createScaleCube">[docs]</a>
+    <span class="k">def</span> <span class="nf">createScaleCube</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the scale cube in the 3D scene.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+                <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="o">=</span> <span class="n">vedo</span><span class="o">.</span><span class="n">Cube</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_side</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sc_color</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Scale Cube&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;scale_cube&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">lw</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VPlotter.mouseMoveEvent">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.mouseMoveEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">mouseMoveEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when mouse is moved -- display coordinates.&quot;&quot;&quot;</span>
+        <span class="n">msh</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">actor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">msh</span> <span class="ow">or</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_text</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+            <span class="k">return</span>                       <span class="c1"># mouse hits nothing, return.</span>
+        
+        <span class="n">name</span> <span class="o">=</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># not sure why it returns as a list?</span>
+
+        <span class="n">pt</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picked3d</span>                <span class="c1"># 3d coords of point under mouse</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSectionFromZ</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">txt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">section </span><span class="si">{</span><span class="n">section</span><span class="si">}</span><span class="se">\n</span><span class="s2">x=</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> y=</span><span class="si">{</span><span class="n">y</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_text</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">txt</span><span class="p">)</span>                    <span class="c1"># update text message</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.updateSelected">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.updateSelected">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSelected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the selected names text.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_text</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">name_str</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">...&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_text</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected:</span><span class="se">\n</span><span class="si">{</span><span class="n">name_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.leftButtonClickEvent">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.leftButtonClickEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">leftButtonClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when left mouse button is clicked.&quot;&quot;&quot;</span>
+        <span class="c1"># record the time of click</span>
+        <span class="n">prev_click_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">click_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">click_time</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">time</span>
+        <span class="c1"># check for double clicks</span>
+        <span class="k">if</span> <span class="n">prev_click_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">click_time</span> <span class="o">-</span> <span class="n">prev_click_time</span> <span class="o">&lt;</span> <span class="mf">0.25</span><span class="p">:</span>
+            <span class="n">msh</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">actor</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">msh</span><span class="p">:</span>
+                <span class="k">return</span>                       <span class="c1"># mouse hits nothing, return.</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picked3d</span>                <span class="c1"># 3d coords of point under mouse</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSectionFromZ</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">activateWindow</span><span class="p">()</span>
+        
+        <span class="n">msh</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">actor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">msh</span> <span class="ow">or</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSelected</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.rightButtonClickEvent">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.rightButtonClickEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">rightButtonClickEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when the right click button is pressed.&quot;&quot;&quot;</span>
+        <span class="n">msh</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">actor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">msh</span> <span class="ow">or</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Scale Cube&quot;</span><span class="p">:</span>
+            <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s2">&quot;Side length:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_side</span><span class="p">)],</span>
+                <span class="p">[</span><span class="s2">&quot;Color:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_color</span><span class="p">)]</span>
+            <span class="p">]</span>
+            <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Scale Cube&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc_side</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc_color</span> <span class="o">=</span> <span class="n">response</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">createScaleCube</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iren</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called when a key is pressed.&quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">iren</span><span class="o">.</span><span class="n">GetKeySym</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;_L&quot;</span> <span class="ow">in</span> <span class="n">key</span> <span class="ow">or</span> <span class="s2">&quot;_R&quot;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">iren</span><span class="o">.</span><span class="n">GetShiftKey</span><span class="p">():</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;Shift+&quot;</span> <span class="o">+</span> <span class="n">key</span>
+
+        <span class="k">if</span> <span class="n">iren</span><span class="o">.</span><span class="n">GetControlKey</span><span class="p">():</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;Ctrl+&quot;</span> <span class="o">+</span> <span class="n">key</span>
+
+        <span class="k">if</span> <span class="n">iren</span><span class="o">.</span><span class="n">GetAltKey</span><span class="p">():</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;Alt+&quot;</span> <span class="o">+</span> <span class="n">key</span>
+        
+        <span class="n">overwrite</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Left&quot;</span><span class="p">,</span> <span class="s2">&quot;Right&quot;</span><span class="p">,</span> <span class="s2">&quot;Up&quot;</span><span class="p">,</span> <span class="s2">&quot;Down&quot;</span><span class="p">,</span> <span class="s2">&quot;Ctrl+Up&quot;</span><span class="p">,</span> <span class="s2">&quot;Ctrl+Down&quot;</span><span class="p">,</span>
+                   <span class="s2">&quot;Shift+S&quot;</span><span class="p">,</span> <span class="s2">&quot;Shift+E&quot;</span><span class="p">,</span> <span class="s2">&quot;Shift+F&quot;</span><span class="p">):</span>
+            <span class="n">overwrite</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">createScaleCube</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Left&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Right&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Up&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Down&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Ctrl+Up&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Ctrl+Down&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">)</span>
+        
+        <span class="c1"># custom opacity changer</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Bracketleft&quot;</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Bracketright&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">actor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meshes</span><span class="p">():</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+                    <span class="n">new_opacity</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">alpha</span><span class="p">()</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Bracketleft&quot;</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">actor</span><span class="o">.</span><span class="n">alpha</span><span class="p">(</span><span class="n">new_opacity</span><span class="p">)</span>
+                    <span class="c1"># set the opacity in series 3D options</span>
+                    <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span>
+                        <span class="n">type_3D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">type_3D</span><span class="p">,</span> <span class="n">new_opacity</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># select/deselect all</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Ctrl+D&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateSelected</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Ctrl+A&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">actor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meshes</span><span class="p">():</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateSelected</span><span class="p">()</span>
+        
+        <span class="c1"># help menu</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Shift+Question&quot;</span><span class="p">:</span>
+            <span class="n">overwrite</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">help_widget</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">help_widget</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">help_widget</span> <span class="o">=</span> <span class="n">HelpWidget</span><span class="p">(</span><span class="s2">&quot;3D&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_keypress</span><span class="p">(</span><span class="n">iren</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="VPlotter.removeObjects">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.removeObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove objects from the scene.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">actor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getObjects</span><span class="p">():</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSelected</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.addObjects">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.addObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">addObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span><span class="p">,</span> <span class="n">remove_first</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add objects to the scene.&quot;&quot;&quot;</span>
+        <span class="c1"># remove existing object from scene</span>
+        <span class="k">if</span> <span class="n">remove_first</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+
+        <span class="c1"># create threadpool</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threadpool</span> <span class="o">=</span> <span class="n">ThreadPoolProgBar</span><span class="p">()</span>
+        <span class="n">worker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threadpool</span><span class="o">.</span><span class="n">createWorker</span><span class="p">(</span><span class="n">generateVolumes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span> <span class="n">obj_names</span><span class="p">)</span>
+        <span class="n">worker</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">placeInScene</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threadpool</span><span class="o">.</span><span class="n">startAll</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Generating 3D...&quot;</span><span class="p">,</span> <span class="n">status_bar</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">statusbar</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.placeInScene">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.placeInScene">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeInScene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called by addObjects after thread is completed&quot;&quot;&quot;</span>
+        <span class="c1"># add object to scene</span>
+        <span class="n">mesh_data_list</span><span class="p">,</span> <span class="n">extremes</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="n">extremes</span>
+        <span class="k">for</span> <span class="n">md</span> <span class="ow">in</span> <span class="n">mesh_data_list</span><span class="p">:</span>
+            <span class="n">vm</span> <span class="o">=</span> <span class="n">vedo</span><span class="o">.</span><span class="n">Mesh</span><span class="p">([</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;vertices&quot;</span><span class="p">],</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;faces&quot;</span><span class="p">]],</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">],</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">])</span>
+            <span class="n">vm</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="n">vm</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;object&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.removeZtraces">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.removeZtraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeZtraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_names</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove ztraces from the scene.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">actor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getZtraces</span><span class="p">():</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSelected</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.addZtraces">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.addZtraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">addZtraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_names</span><span class="p">,</span> <span class="n">remove_first</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add ztraces to the scene.&quot;&quot;&quot;</span>
+        <span class="c1"># remove existing ztraces from the scene</span>
+        <span class="k">if</span> <span class="n">remove_first</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeZtraces</span><span class="p">(</span><span class="n">ztrace_names</span><span class="p">)</span>
+
+        <span class="n">extremes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="n">ztrace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">pt</span>
+                <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span><span class="p">]</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="n">s</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span>  <span class="c1"># ASSUME UNIFORM SECTION THICKNESS</span>
+                <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span>
+
+                <span class="c1"># keep track of extremes</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">extremes</span><span class="p">:</span>
+                    <span class="n">extremes</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># is minimum</span>
+                            <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                                <span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                                <span class="n">extremes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            
+            <span class="n">d</span> <span class="o">=</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">getDistance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span>
+            <span class="n">curve</span> <span class="o">=</span> <span class="n">vedo</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">vedo</span><span class="o">.</span><span class="n">Tube</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="p">(</span><span class="n">d</span><span class="o">/</span><span class="mi">1000</span><span class="p">)),</span> <span class="n">c</span><span class="o">=</span><span class="n">ztrace</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">curve</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="n">curve</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ztrace&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">curve</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="n">extremes</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.getObjects">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.getObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">getObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all mesh objects in the scene.&quot;&quot;&quot;</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">msh</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meshes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span>
+                <span class="n">objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msh</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">objs</span></div>
+
+    
+<div class="viewcode-block" id="VPlotter.getZtraces">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.getZtraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">getZtraces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all ztraces in the scene.&quot;&quot;&quot;</span>
+        <span class="n">ztraces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">msh</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meshes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ztrace&quot;</span><span class="p">:</span>
+                <span class="n">ztraces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msh</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ztraces</span></div>
+
+
+<div class="viewcode-block" id="VPlotter.getSelected">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.VPlotter.getSelected">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ztraces</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all of the selected meshes.&quot;&quot;&quot;</span>
+        <span class="n">selected_meshes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">msh</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getObjects</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">getZtraces</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">msh</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_names</span><span class="p">:</span>
+                <span class="n">selected_meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msh</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">selected_meshes</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CustomPlotter">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.CustomPlotter">[docs]</a>
+<span class="k">class</span> <span class="nc">CustomPlotter</span><span class="p">(</span><span class="n">QVTKRenderWindowInteractor</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mainwindow</span><span class="p">,</span> <span class="n">obj_names</span><span class="p">,</span> <span class="n">ztraces</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">series</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extremes</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help_widget</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mouse_x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mouse_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Create vedo renderer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span> <span class="o">=</span> <span class="n">VPlotter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qt_widget</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># connect functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addObjects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">addObjects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeObjects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">removeObjects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addZtraces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">addZtraces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeZtraces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">removeZtraces</span>
+
+        <span class="c1"># gerenate objects and display</span>
+        <span class="k">if</span> <span class="n">ztraces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addZtraces</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">remove_first</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">remove_first</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">actors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="CustomPlotter.keyPressEvent">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.CustomPlotter.keyPressEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="CustomPlotter.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.popup.html#modules.gui.popup.custom_plotter.CustomPlotter.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

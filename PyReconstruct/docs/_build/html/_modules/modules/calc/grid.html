@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.calc.grid &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.calc.grid</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.quantification</span> <span class="kn">import</span> <span class="n">area</span><span class="p">,</span> <span class="n">lineDistance</span>
+
+<div class="viewcode-block" id="Grid">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid">[docs]</a>
+<span class="k">class</span> <span class="nc">Grid</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span><span class="p">,</span> <span class="n">cutline</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a grid object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): a list of traces, each one being a list of points</span>
+<span class="sd">                cutline (list): a list of points created by the knife tool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cutline</span> <span class="o">=</span> <span class="n">cutline</span>  <span class="c1"># knife line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generateGrid</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_generateGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw all the traces on the grid.&quot;&quot;&quot;</span>
+        <span class="c1"># get the boundaries of the trace</span>
+        <span class="n">xvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">]</span>
+        <span class="n">yvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">]</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xvals</span><span class="p">])</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">yvals</span><span class="p">])</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xvals</span><span class="p">])</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">yvals</span><span class="p">])</span>
+
+        <span class="c1"># create an empty grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="o">+</span><span class="mi">2</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int&quot;</span><span class="p">)</span>
+
+        <span class="c1"># draw knife line on grid if applicable</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutline</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cutline</span><span class="p">)):</span>
+                <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutline</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutline</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">x1</span> <span class="o">-=</span> <span class="n">xmin</span>
+                <span class="n">y1</span> <span class="o">-=</span> <span class="n">ymin</span>
+                <span class="n">x2</span> <span class="o">-=</span> <span class="n">xmin</span>
+                <span class="n">y2</span> <span class="o">-=</span> <span class="n">ymin</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_drawGridLine</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">knife</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># draw the trace(s) on the grid (ASSUMES CLOSED)</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)):</span>
+                <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">x1</span> <span class="o">-=</span> <span class="n">xmin</span>
+                <span class="n">y1</span> <span class="o">-=</span> <span class="n">ymin</span>
+                <span class="n">x2</span> <span class="o">-=</span> <span class="n">xmin</span>
+                <span class="n">y2</span> <span class="o">-=</span> <span class="n">ymin</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_drawGridLine</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+        
+        <span class="c1"># save grid information</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_shift</span> <span class="o">=</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span>
+    
+    <span class="c1"># DDA algorithm</span>
+    <span class="c1"># Source: https://www.tutorialspoint.com/computer_graphics/line_generation_algorithm.htm</span>
+    <span class="k">def</span> <span class="nf">_drawGridLine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y0</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x1</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y1</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">knife</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw a line on self.grid.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                x0 (int): x value of start point</span>
+<span class="sd">                y0 (int): y value of start point</span>
+<span class="sd">                x1 (int): x value of end point</span>
+<span class="sd">                y1 (int): y value of end point</span>
+<span class="sd">                knife (bool): True if the trace is a knife trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">x0</span> <span class="o">==</span> <span class="n">x1</span> <span class="ow">and</span> <span class="n">y0</span> <span class="o">==</span> <span class="n">y1</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span>
+        <span class="n">dy</span> <span class="o">=</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">dx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dy</span><span class="p">)):</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dx</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dy</span><span class="p">)</span>    
+        <span class="n">x_increment</span> <span class="o">=</span> <span class="n">dx</span> <span class="o">/</span> <span class="n">steps</span>
+        <span class="n">y_increment</span> <span class="o">=</span> <span class="n">dy</span> <span class="o">/</span> <span class="n">steps</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">w</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">h</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">knife</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>  <span class="c1"># knife traces are negative</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># traces are positive</span>
+        <span class="n">last_x</span><span class="p">,</span> <span class="n">last_y</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">x_increment</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">y_increment</span>
+            <span class="n">rx</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">ry</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">rx</span> <span class="o">!=</span> <span class="n">last_x</span> <span class="ow">or</span> <span class="n">ry</span> <span class="o">!=</span> <span class="n">last_y</span><span class="p">):</span>
+                <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">rx</span> <span class="o">&lt;</span> <span class="n">w</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">ry</span> <span class="o">&lt;</span> <span class="n">h</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">knife</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span> <span class="n">rx</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span> <span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span> <span class="n">rx</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">last_x</span><span class="p">,</span> <span class="n">last_y</span> <span class="o">=</span> <span class="n">rx</span><span class="p">,</span> <span class="n">ry</span>
+
+<div class="viewcode-block" id="Grid.removeCuts">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.removeCuts">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeCuts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Turn grid cuts into normal lines.</span>
+<span class="sd">        </span>
+<span class="sd">        Negative values within the shape are made positive.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">y_vals</span><span class="p">,</span> <span class="n">x_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># get positions of negative numbers (cut line)</span>
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_vals</span><span class="p">,</span> <span class="n">y_vals</span><span class="p">):</span>
+            <span class="n">inside</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="c1"># check if the point is inside any of the traces</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+                <span class="n">ptest</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">pointPolygonTest</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span>
+                                        <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_shift</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_shift</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+                                        <span class="n">measureDist</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ptest</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">inside</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">inside</span><span class="p">:</span> <span class="c1"># if cut is not within any trace, remove it</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># otherwise, make it part of the trace</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="Grid.printGrid">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.printGrid">[docs]</a>
+    <span class="k">def</span> <span class="nf">printGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print the grid to the console.</span>
+<span class="sd">        </span>
+<span class="sd">        For debugging purposes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">r</span><span class="p">])):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">c</span><span class="p">]:</span> <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">c</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="Grid.isAnchorPoint">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.isAnchorPoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">isAnchorPoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span> <span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a grid point should be included in the final trace points.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                x (int): the x-coord of the point to check</span>
+<span class="sd">                y (int): the y-coord of the point to check</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (bool) whether or not the point is important to the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># point is automatically included if it is greater than 1</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># otherwise, check surrounding points</span>
+            <span class="n">cc_list</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span> <span class="ow">in</span> <span class="n">cc_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span> <span class="o">+</span> <span class="n">dy</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">dx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span> <span class="c1"># if the point as three or more nonzero neighbors, include it</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="Grid.getAnchorTrace">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.getAnchorTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">getAnchorTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the &quot;anchor&quot; trace from a numpy cv2 trace.</span>
+<span class="sd">        </span>
+<span class="sd">        Often run after cv2.findContours is run on the grid.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (np.ndarray): the trace returned by cv2.findContours</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (np.ndarray) the anchor points of the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_trace</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">trace</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isAnchorPoint</span><span class="p">(</span><span class="o">*</span><span class="n">point</span><span class="p">):</span>
+                <span class="n">new_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Grid.getExterior">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.getExterior">[docs]</a>
+    <span class="k">def</span> <span class="nf">getExterior</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the exterior of the trace(s) on the grid.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list) the exterior of the trace(s) (also represented as lists)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cv_traces</span><span class="p">,</span> <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_EXTERNAL</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_NONE</span><span class="p">)</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">cv_traces</span><span class="p">:</span>
+            <span class="n">new_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAnchorTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:])</span>
+            <span class="n">new_trace</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_shift</span>
+            <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">traces</span></div>
+
+
+<div class="viewcode-block" id="Grid.getInteriors">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.Grid.getInteriors">[docs]</a>
+    <span class="k">def</span> <span class="nf">getInteriors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the interiors of the traces on the grid.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list) the interiors of the traces (also represented as lists)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeCuts</span><span class="p">()</span>
+        <span class="n">cv_traces</span><span class="p">,</span> <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_LIST</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_NONE</span><span class="p">)</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">cv_traces</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">new_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAnchorTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:])</span>
+            <span class="n">new_trace</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_shift</span>
+            <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">traces</span></div>
+</div>
+
+
+
+<span class="c1"># METHODS (used to access the class functions)</span>
+
+<div class="viewcode-block" id="reducePoints">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.reducePoints">[docs]</a>
+<span class="k">def</span> <span class="nf">reducePoints</span><span class="p">(</span><span class="n">points</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">ep</span><span class="o">=</span><span class="mf">0.80</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reduce the number of points in a trace (uses cv2.approxPolyDP).</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            points (list): the list of points in the trace</span>
+<span class="sd">            ep (float): the epsilon value for the approximation</span>
+<span class="sd">            iterations (int): the number of times the approximation is run</span>
+<span class="sd">            closed (bool): whether or not the trace is closed</span>
+<span class="sd">            mag (float): magnifcation for the trace</span>
+<span class="sd">            array (bool): True if returns as np.ndarray</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list) the final points after the approximation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">np_pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mag</span><span class="p">:</span>
+        <span class="n">np_pts</span> <span class="o">*=</span> <span class="n">mag</span>
+        <span class="n">np_pts</span> <span class="o">=</span> <span class="n">np_pts</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+        <span class="n">reduced_points</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">approxPolyDP</span><span class="p">(</span><span class="n">np_pts</span><span class="p">,</span> <span class="n">ep</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="n">closed</span><span class="p">)</span>
+        <span class="c1"># print(len(reduced_points) / len(points))</span>
+    
+    <span class="k">if</span> <span class="n">mag</span><span class="p">:</span>
+        <span class="n">reduced_points</span> <span class="o">=</span> <span class="n">reduced_points</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">reduced_points</span> <span class="o">/=</span> <span class="n">mag</span>
+    
+    <span class="k">if</span> <span class="n">array</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">reduced_points</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">reduced_points</span><span class="p">[:,</span><span class="mi">0</span><span class="p">,:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="getExterior">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.getExterior">[docs]</a>
+<span class="k">def</span> <span class="nf">getExterior</span><span class="p">(</span><span class="n">points</span> <span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the exterior of a single set of points.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            points (list): points describing the trace</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list) points describing trace exterior</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">([</span><span class="n">points</span><span class="p">])</span>
+    <span class="n">exteriors</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">getExterior</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">exteriors</span><span class="p">:</span>
+        <span class="n">new_points</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">getExterior</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">new_points</span> <span class="o">=</span> <span class="n">reducePoints</span><span class="p">(</span><span class="n">new_points</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_points</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="mergeTraces">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.mergeTraces">[docs]</a>
+<span class="k">def</span> <span class="nf">mergeTraces</span><span class="p">(</span><span class="n">trace_list</span> <span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the exterior(s) of a set of traces.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            trace_list (list): set of traces</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list) merged set of traces</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)</span>
+    <span class="n">new_traces</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">getExterior</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_traces</span><span class="p">)):</span>
+        <span class="n">new_traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">reducePoints</span><span class="p">(</span><span class="n">new_traces</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">new_traces</span></div>
+
+
+<div class="viewcode-block" id="cutTraces">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.cutTraces">[docs]</a>
+<span class="k">def</span> <span class="nf">cutTraces</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">cut_trace</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">del_threshold</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cut a set of traces.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            trace_list (list): set of traces</span>
+<span class="sd">            cut_line (list): a single curve</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list) the newly cut traces</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">closed</span><span class="p">:</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">area</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">del_threshold</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">([</span><span class="n">trace</span><span class="p">],</span> <span class="n">cut_trace</span><span class="p">)</span>
+        <span class="n">interiors</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">getInteriors</span><span class="p">()</span>
+        <span class="n">new_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">interiors</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">area</span><span class="p">(</span><span class="n">interiors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">:</span> <span class="c1"># exclude traces that are smaller than 1% of the original trace area</span>
+                <span class="n">new_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reducePoints</span><span class="p">(</span><span class="n">interiors</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">lineDistance</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">del_threshold</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">new_traces</span> <span class="o">=</span> <span class="n">cutOpenTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">cut_trace</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">new_traces</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">lineDistance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
+                <span class="n">new_traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">new_traces</span></div>
+
+
+<span class="c1"># Function to check if two line segments intersect</span>
+<div class="viewcode-block" id="intersection">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.intersection">[docs]</a>
+<span class="k">def</span> <span class="nf">intersection</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="p">),</span> <span class="p">(</span><span class="n">x4</span><span class="p">,</span> <span class="n">y4</span><span class="p">)</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">line2</span><span class="p">)</span>
+
+    <span class="c1"># Calculate the slopes of the lines</span>
+    <span class="n">m1</span> <span class="o">=</span> <span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="k">if</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+    <span class="n">m2</span> <span class="o">=</span> <span class="p">(</span><span class="n">y4</span> <span class="o">-</span> <span class="n">y3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x4</span> <span class="o">-</span> <span class="n">x3</span><span class="p">)</span> <span class="k">if</span> <span class="n">x4</span> <span class="o">-</span> <span class="n">x3</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check if the lines are parallel</span>
+    <span class="k">if</span> <span class="n">m1</span> <span class="o">==</span> <span class="n">m2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># The lines do not intersect</span>
+
+    <span class="c1"># Calculate the intersection point</span>
+    <span class="k">if</span> <span class="n">m1</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>  <span class="c1"># Line1 is vertical</span>
+        <span class="n">x_intersection</span> <span class="o">=</span> <span class="n">x1</span>
+        <span class="n">y_intersection</span> <span class="o">=</span> <span class="n">m2</span> <span class="o">*</span> <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x3</span><span class="p">)</span> <span class="o">+</span> <span class="n">y3</span>
+    <span class="k">elif</span> <span class="n">m2</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>  <span class="c1"># Line2 is vertical</span>
+        <span class="n">x_intersection</span> <span class="o">=</span> <span class="n">x3</span>
+        <span class="n">y_intersection</span> <span class="o">=</span> <span class="n">m1</span> <span class="o">*</span> <span class="p">(</span><span class="n">x3</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">+</span> <span class="n">y1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x_intersection</span> <span class="o">=</span> <span class="p">(</span><span class="n">m1</span> <span class="o">*</span> <span class="n">x1</span> <span class="o">-</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">m2</span> <span class="o">*</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">y3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">m1</span> <span class="o">-</span> <span class="n">m2</span><span class="p">)</span>
+        <span class="n">y_intersection</span> <span class="o">=</span> <span class="n">m1</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_intersection</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">+</span> <span class="n">y1</span>
+
+    <span class="c1"># Check if the intersection point is within the line segments</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">min</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">x_intersection</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="nb">min</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">x4</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">x_intersection</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">x4</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="nb">min</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">y_intersection</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="nb">min</span><span class="p">(</span><span class="n">y3</span><span class="p">,</span> <span class="n">y4</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">y_intersection</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">y3</span><span class="p">,</span> <span class="n">y4</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x_intersection</span><span class="p">,</span> <span class="n">y_intersection</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># The lines do not intersect within the line segments</span></div>
+
+
+<div class="viewcode-block" id="cutOpenTrace">
+<a class="viewcode-back" href="../../../modules.calc.html#modules.calc.grid.cutOpenTrace">[docs]</a>
+<span class="k">def</span> <span class="nf">cutOpenTrace</span><span class="p">(</span><span class="n">trace</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">cut_trace</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cut an open trace.</span>
+<span class="sd">    </span>
+<span class="sd">        Params:</span>
+<span class="sd">            trace (list): the trace to cut</span>
+<span class="sd">            cut_trace (list): the trace used to cut</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># insert interect points into trace</span>
+    <span class="n">new_trace</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cut_indexes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">new_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cut_trace</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">line1</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">line2</span> <span class="o">=</span> <span class="p">[</span><span class="n">cut_trace</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">cut_trace</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="n">intersection</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pt</span><span class="p">:</span>
+                <span class="n">cut_indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_trace</span><span class="p">))</span>
+                <span class="n">new_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+    <span class="n">new_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="c1"># split up the trace</span>
+    <span class="n">last_i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cut_indexes</span><span class="p">:</span>
+        <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">[</span><span class="n">last_i</span> <span class="p">:</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">last_i</span> <span class="o">=</span> <span class="n">i</span>
+    <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">[</span><span class="n">last_i</span><span class="p">:])</span>
+
+    <span class="k">return</span> <span class="n">traces</span></div>
+
+        
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

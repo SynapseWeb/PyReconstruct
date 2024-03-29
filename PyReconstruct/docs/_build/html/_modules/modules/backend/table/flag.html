@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.table.flag &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.table.flag</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.table</span> <span class="kn">import</span> <span class="n">FlagTableWidget</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span>
+    <span class="n">Section</span><span class="p">,</span>
+    <span class="n">Flag</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="FlagTableManager">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager">[docs]</a>
+<span class="k">class</span> <span class="nc">FlagTableManager</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the object table manager.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                mainwindow (MainWindow): the parent main window object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">series_states</span>
+    
+<div class="viewcode-block" id="FlagTableManager.newTable">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.newTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">newTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new object list widget.&quot;&quot;&quot;</span>
+        <span class="n">new_table</span> <span class="o">=</span> <span class="n">FlagTableWidget</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span>
+            <span class="bp">self</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_table</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">addDockWidget</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span><span class="p">,</span> <span class="n">new_table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableManager.updateSection">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the data and the table for a specific section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section object</span>
+<span class="sd">                section_num (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># refresh any removed traces</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU FUNCTIONS</span>
+
+<div class="viewcode-block" id="FlagTableManager.refresh">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reload all of the section data.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableManager.updateTable">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span> <span class="p">:</span> <span class="n">FlagTableWidget</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a table with the current data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                table (ObjectTableWidget): the table to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableManager.updateTables">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateTables">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update all tables.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableManager.deleteFlags">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.deleteFlags">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">match_name</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an object or objects on every section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                flags (list): the list of flags to delete</span>
+<span class="sd">                match_name (bool): True if flags with same name should be deleted</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="c1"># organize flags into dictionary</span>
+        <span class="n">flags_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="n">snum</span> <span class="o">=</span> <span class="n">flag</span><span class="o">.</span><span class="n">snum</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">:</span>
+                <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+
+        <span class="c1"># iterate through sections and delete</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Deleting flag(s)...&quot;</span><span class="p">,</span>
+            <span class="n">series_states</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">series_states</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">delete_flag</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">section_flag</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">match_name</span> <span class="ow">and</span> <span class="n">section_flag</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">delete_flag</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                            <span class="n">section</span><span class="o">.</span><span class="n">removeFlag</span><span class="p">(</span><span class="n">section_flag</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="ow">not</span> <span class="n">match_name</span> <span class="ow">and</span> <span class="n">section_flag</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">delete_flag</span><span class="p">):</span>
+                            <span class="n">section</span><span class="o">.</span><span class="n">removeFlag</span><span class="p">(</span><span class="n">section_flag</span><span class="p">)</span>
+                            <span class="k">break</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+                <span class="c1"># update the tables</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FlagTableManager.editFlag">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.editFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">editFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">new_flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit a flag.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number containing the flag</span>
+<span class="sd">                flag (Flag): the flag to modify</span>
+<span class="sd">                new_flag (Flag): the flag to replace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+
+        <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">loadSection</span><span class="p">(</span><span class="n">old_flag</span><span class="o">.</span><span class="n">snum</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">old_flag</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">flag</span><span class="p">):</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_flag</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">flags_modified</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="c1"># manually create a section and series state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="p">[</span><span class="n">section</span><span class="p">]</span><span class="o">.</span><span class="n">addState</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addSectionUndo</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
+
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="FlagTableManager.markResolved">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.markResolved">[docs]</a>
+    <span class="k">def</span> <span class="nf">markResolved</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">resolved</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the resolved status of a flag.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                flags (list): the list of flags to modify</span>
+<span class="sd">                resolved (bool): the resolve status to set for the flag</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="c1"># organize flags into dictionary</span>
+        <span class="n">flags_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="n">snum</span> <span class="o">=</span> <span class="n">flag</span><span class="o">.</span><span class="n">snum</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">:</span>
+                <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+
+        <span class="c1"># iterate through sections and resolve</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Modifying flag(s)...&quot;</span><span class="p">,</span>
+            <span class="n">series_states</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">series_states</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">modify_flag</span> <span class="ow">in</span> <span class="n">flags_dict</span><span class="p">[</span><span class="n">snum</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">section_flag</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">section_flag</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">modify_flag</span><span class="p">):</span>
+                            <span class="n">section_flag</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">resolved</span><span class="p">)</span>
+                            <span class="n">section</span><span class="o">.</span><span class="n">flags_modified</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+                <span class="c1"># update the tables</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FlagTableManager.close">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.flag.FlagTableManager.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close all tables.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

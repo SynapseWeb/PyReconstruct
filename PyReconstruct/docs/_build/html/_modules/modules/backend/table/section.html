@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.table.section &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.table.section</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.table</span> <span class="kn">import</span> <span class="n">SectionTableWidget</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+
+<div class="viewcode-block" id="SectionTableManager">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager">[docs]</a>
+<span class="k">class</span> <span class="nc">SectionTableManager</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the trace table manager.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                mainwindow (MainWindow): the main window widget</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+    
+<div class="viewcode-block" id="SectionTableManager.newTable">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.newTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">newTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new trace list.&quot;&quot;&quot;</span>
+        <span class="n">new_table</span> <span class="o">=</span> <span class="n">SectionTableWidget</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span>
+            <span class="bp">self</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_table</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">addDockWidget</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span><span class="p">,</span> <span class="n">new_table</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU-RELATED FUNCTIONS</span>
+
+<div class="viewcode-block" id="SectionTableManager.refresh">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Refresh the section data.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.updateTables">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateTables">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a table with the current data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                table (ObjectTableWidget): the table to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.updateSection">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the data for a section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section number with data to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.updateSections">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the tables for a set of sections.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.lockSections">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.lockSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">lockSections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">lock</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lock or unlock a set of sections.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_numbers (list): the list of section numbers to modify</span>
+<span class="sd">                lock (bool): True if sections should be locked</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">loadSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">align_locked</span> <span class="o">=</span> <span class="n">lock</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Lock&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">lock</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;Unlock&#39;</span><span class="si">}</span><span class="s2"> section&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># update the field</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># update the tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SectionTableManager.setBC">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.setBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">setBC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">b</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">c</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the brightness and contrast for a set of sections.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_numbers (list): the list of section numbers to set</span>
+<span class="sd">                b (int): the brightness to set</span>
+<span class="sd">                c (int): the contrast to set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">loadSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">brightness</span> <span class="o">=</span> <span class="n">b</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">contrast</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="s2">&quot;Modify brightness/contrast&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># update the field</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># update the tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.matchBC">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.matchBC">[docs]</a>
+    <span class="k">def</span> <span class="nf">matchBC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Match the brightness and contrast of a set of sections to the current section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_numbers (list): the sections to modify</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">brightness</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">contrast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setBC</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SectionTableManager.editThickness">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.editThickness">[docs]</a>
+    <span class="k">def</span> <span class="nf">editThickness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">thickness</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the section thickness for a set of sections.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_numbers (list): the list of section numbers to modify</span>
+<span class="sd">                thickness (float): the new thickness to set for the sections</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">loadSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">thickness</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Change section thickness to </span><span class="si">{</span><span class="n">thickness</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSections</span><span class="p">(</span><span class="n">section_numbers</span><span class="p">)</span>
+
+        <span class="c1"># refresh data and tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.editSrc">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.editSrc">[docs]</a>
+    <span class="k">def</span> <span class="nf">editSrc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">new_src</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the image source for a single section (and possible for all sections).</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the number of the section to modify (none if edit all sections)</span>
+<span class="sd">                new_src (str): the new image source for the section</span>
+<span class="sd">                edit_all (bool): True if ALL section sources should be modified</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="c1"># edit all sections </span>
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">new_src</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">max_digits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+            <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Modifying section image sources...&quot;</span><span class="p">):</span>
+                <span class="n">section_src</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="n">max_digits</span><span class="p">)</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">section_src</span>
+                <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+        <span class="c1"># edit only the current section</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">loadSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">new_src</span>
+            <span class="n">section</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Change section image source to </span><span class="si">{</span><span class="n">new_src</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reloadImage</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.deleteSections">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.deleteSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteSections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_numbers</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a set of sections.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_numbers (list): the list of sections to delete</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">snum</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="c1"># delete the file</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getwdir</span><span class="p">(),</span> <span class="n">filename</span><span class="p">))</span>
+            <span class="c1"># delete link to file</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">snum</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="s2">&quot;Delete section&quot;</span><span class="p">)</span>
+                
+        <span class="c1"># refresh the data in all tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># clear the states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">clearStates</span><span class="p">()</span>
+        
+        <span class="c1"># switch to first section if current section is deleted</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">current_section</span> <span class="ow">in</span> <span class="n">section_numbers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeSection</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">()))[</span><span class="mi">0</span><span class="p">],</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTables</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.reorderSections">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.reorderSections">[docs]</a>
+    <span class="k">def</span> <span class="nf">reorderSections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reorder the sections in the series.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">tuple</span><span class="p">((</span><span class="n">snum</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snum</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">reorderSections</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Reorder sections&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># refresh all table data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># clear the states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">clearStates</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTables</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SectionTableManager.insertSection">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.insertSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">insertSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">src</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">thickness</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                index (int): the index of the new section</span>
+<span class="sd">                src (str): the path to the image for the new section</span>
+<span class="sd">                mag (float): the mag of the new section</span>
+<span class="sd">                thickness (float): the thickness of the new section</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">insertSection</span><span class="p">(</span>
+            <span class="n">index</span><span class="p">,</span>
+            <span class="n">src</span><span class="p">,</span>
+            <span class="n">mag</span><span class="p">,</span>
+            <span class="n">thickness</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="s2">&quot;Insert section&quot;</span><span class="p">)</span>
+
+        <span class="c1"># refresh the data for all tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># clear the field section states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">clearStates</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTables</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span></div>
+
+            
+<div class="viewcode-block" id="SectionTableManager.findSection">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.findSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">findSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_number</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Focus the view on a specific section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_number (int): the section the focus on</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">changeSection</span><span class="p">(</span><span class="n">section_number</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="SectionTableManager.close">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.section.SectionTableManager.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close all tables.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

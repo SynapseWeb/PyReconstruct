@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.obj_group_dict &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.obj_group_dict</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+
+<div class="viewcode-block" id="ObjGroupDict">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict">[docs]</a>
+<span class="k">class</span> <span class="nc">ObjGroupDict</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a two-way dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">        Params:</span>
+<span class="sd">            groups (dict): an existing group dictionary to build from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">group</span><span class="p">,</span> <span class="n">obj_list</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">obj_list</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ObjGroupDict.add">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.add">[docs]</a>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add items to the two-way dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                group (str): the group</span>
+<span class="sd">                obj (str): the object to add to the group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.remove">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.remove">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove items from the two-way dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                group (str): the group</span>
+<span class="sd">                obj (str): the object to remove from the group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="ow">and</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+        <span class="c1"># check if anything is empty</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ObjGroupDict.removeObject">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.removeObject">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an object from all its associated groups.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj (str): the name of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.removeGroup">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.removeGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a group.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                groups (str): the group to remove</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getGroupObjects</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.renameGroup">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.renameGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">renameGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename a group.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                group (str): the group to rename</span>
+<span class="sd">                new_group (str): the new name for the group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getGroupObjects</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeGroup</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_group</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.getObjectGroups">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.getObjectGroups">[docs]</a>
+    <span class="k">def</span> <span class="nf">getObjectGroups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the groups for a given object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj (str): the object to get the groups for</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (set): the groups associated with the obj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.getGroupObjects">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.getGroupObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">getGroupObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the objects for a given group.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                group (str): the group to get objects for</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (set): the objects associated with the group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ObjGroupDict.getGroupDict">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.getGroupDict">[docs]</a>
+    <span class="k">def</span> <span class="nf">getGroupDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a JSON serializable dictionary.&quot;&quot;&quot;</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">groups</span><span class="p">[</span><span class="n">g</span><span class="p">]:</span>
+                <span class="n">groups</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">groups</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">groups</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.getGroupList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.getGroupList">[docs]</a>
+    <span class="k">def</span> <span class="nf">getGroupList</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of groups.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.getObjectList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.getObjectList">[docs]</a>
+    <span class="k">def</span> <span class="nf">getObjectList</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of objects.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.merge">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.merge">[docs]</a>
+    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">regex_filters</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge other object group dict into self.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">getObjectList</span><span class="p">():</span>
+            <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">regex_filters</span> <span class="k">else</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">regex_filters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">obj</span><span class="p">)):</span>
+                    <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">passes_filters</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjGroupDict.copy">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.obj_group_dict.ObjGroupDict.copy">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the two-way dict.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ObjGroupDict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span></div>
+</div>
+
+    
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

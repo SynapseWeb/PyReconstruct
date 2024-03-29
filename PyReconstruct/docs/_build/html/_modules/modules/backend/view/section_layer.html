@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.view.section_layer &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.view.section_layer</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="n">QPainter</span><span class="p">,</span> <span class="n">QPixmap</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.image_layer</span> <span class="kn">import</span> <span class="n">ImageLayer</span>
+<span class="kn">from</span> <span class="nn">.trace_layer</span> <span class="kn">import</span> <span class="n">TraceLayer</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span>
+    <span class="n">Section</span><span class="p">,</span>
+    <span class="n">Transform</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="SectionLayer">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.section_layer.SectionLayer">[docs]</a>
+<span class="k">class</span> <span class="nc">SectionLayer</span><span class="p">(</span><span class="n">ImageLayer</span><span class="p">,</span> <span class="n">TraceLayer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">load_image_layer</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the section layer object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section object for the layer</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">load_image_layer</span><span class="p">:</span>
+            <span class="n">ImageLayer</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+        <span class="n">TraceLayer</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="SectionLayer.generateView">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.section_layer.SectionLayer.generateView">[docs]</a>
+    <span class="k">def</span> <span class="nf">generateView</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pixmap_dim</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
+        <span class="n">window</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">generate_image</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">generate_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">hide_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_all_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">hide_image</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the pixmap view for the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                pixmap_dim (tuple): the dimensions of the view</span>
+<span class="sd">                window (list): the x, y, w, h of the field view</span>
+<span class="sd">                generate_image (bool): whether or not to regenerate the image</span>
+<span class="sd">                generate_traces (bool): whether or not to regenerate the traces</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixmap_dim</span> <span class="o">=</span> <span class="n">pixmap_dim</span>
+        
+        <span class="c1"># set the series screen mag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">screen_mag</span> <span class="o">=</span> <span class="n">window</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">pixmap_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># generate image</span>
+        <span class="k">if</span> <span class="n">hide_image</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image_layer</span> <span class="o">=</span> <span class="n">QPixmap</span><span class="p">(</span><span class="o">*</span><span class="n">pixmap_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image_layer</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">black</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">generate_image</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">image_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generateImageLayer</span><span class="p">(</span><span class="n">pixmap_dim</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
+        
+        <span class="c1"># if user requests traces to be hidden</span>
+        <span class="k">if</span> <span class="n">hide_traces</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_layer</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>        
+            
+        <span class="k">if</span> <span class="n">generate_traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trace_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generateTraceLayer</span><span class="p">(</span>
+                <span class="n">pixmap_dim</span><span class="p">,</span>
+                <span class="n">window</span><span class="p">,</span>
+                <span class="n">show_all_traces</span><span class="p">,</span>
+                <span class="n">generate_image</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># combine pixmaps</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_layer</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">drawPixmap</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trace_layer</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">view</span></div>
+
+    
+<div class="viewcode-block" id="SectionLayer.changeTform">
+<a class="viewcode-back" href="../../../../modules.backend.view.html#modules.backend.view.section_layer.SectionLayer.changeTform">[docs]</a>
+    <span class="k">def</span> <span class="nf">changeTform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_tform</span> <span class="p">:</span> <span class="n">Transform</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the transform for the image.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                new_tform (Transform): the new transform to set for the section</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tform</span> <span class="o">=</span> <span class="n">new_tform</span>
+
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify transform&quot;</span><span class="p">)</span></div>
+</div>
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

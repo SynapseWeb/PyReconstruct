@@ -1,0 +1,1343 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.gui.main package" href="modules.gui.main.html" /><link rel="prev" title="modules.gui package" href="modules.gui.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.gui.dialog package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-gui-dialog-package">
+<h1>modules.gui.dialog package<a class="headerlink" href="#modules-gui-dialog-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.gui.dialog.addto_zarr">
+<span id="modules-gui-dialog-addto-zarr-module"></span><h2>modules.gui.dialog.addto_zarr module<a class="headerlink" href="#module-modules.gui.dialog.addto_zarr" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AddToZarrDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from QDialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.addInput">
+<span class="sig-name descname"><span class="pre">addInput</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog.addInput"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.addInput" title="Link to this definition">#</a></dt>
+<dd><p>Add a group input.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.removeInput">
+<span class="sig-name descname"><span class="pre">removeInput</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog.removeInput"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.removeInput" title="Link to this definition">#</a></dt>
+<dd><p>Remove a group input.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;AddToZarrDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.addto_zarr.AddToZarrDialog.updateButtons">
+<span class="sig-name descname"><span class="pre">updateButtons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/addto_zarr.html#AddToZarrDialog.updateButtons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.updateButtons" title="Link to this definition">#</a></dt>
+<dd><p>Show/hide buttons according to number of inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.alignment">
+<span id="modules-gui-dialog-alignment-module"></span><h2>modules.gui.dialog.alignment module<a class="headerlink" href="#module-modules.gui.dialog.alignment" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AlignmentDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.newAlignment">
+<span class="sig-name descname"><span class="pre">newAlignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog.newAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.newAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Add a new alignment to the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.removeAlignments">
+<span class="sig-name descname"><span class="pre">removeAlignments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog.removeAlignments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.removeAlignments" title="Link to this definition">#</a></dt>
+<dd><p>Remove selected alignments from the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.renameAlignment">
+<span class="sig-name descname"><span class="pre">renameAlignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentDialog.renameAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.renameAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Rename a selected alignment.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;AlignmentDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AlignmentList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTableWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.addAlignment">
+<span class="sig-name descname"><span class="pre">addAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList.addAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.addAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Add an alignment to the list.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>alignment (str): the name for the new alignment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.getSelectedAlignments">
+<span class="sig-name descname"><span class="pre">getSelectedAlignments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList.getSelectedAlignments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.getSelectedAlignments" title="Link to this definition">#</a></dt>
+<dd><p>Get the name of the objects highlighted by the user.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(list): the name of the objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.removeAlignment">
+<span class="sig-name descname"><span class="pre">removeAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList.removeAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.removeAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Remove an alignment from the list.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>alignment(str): the name of the alignment to remove</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.renameAlignment">
+<span class="sig-name descname"><span class="pre">renameAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/alignment.html#AlignmentList.renameAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.renameAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Rename an alignment on the list.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>alignment (str): the alignment to rename
+new_name (str): the new name for the alignment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.alignment.AlignmentList.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;AlignmentList&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QTableWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.alignment.AlignmentList.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.all_options">
+<span id="modules-gui-dialog-all-options-module"></span><h2>modules.gui.dialog.all_options module<a class="headerlink" href="#module-modules.gui.dialog.all_options" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AllOptionsDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten–called when OK is pressed</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.addOptionWidget">
+<span class="sig-name descname"><span class="pre">addOptionWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setOption</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.addOptionWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.addOptionWidget" title="Link to this definition">#</a></dt>
+<dd><p>Add a widget to the all_widgets dictionary</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the desired name for the widget
+structure (list): the QuickDialog structure for the widget
+setOption (function): the function for setting the widget option once accepted
+grid (bool): True if widget structure should be a grid instead of rows</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.createWidgets">
+<span class="sig-name descname"><span class="pre">createWidgets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.createWidgets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.createWidgets" title="Link to this definition">#</a></dt>
+<dd><p>Create the widgets for each of the options</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>use_defaults (bool): True if all values should be set at defaults instead of current settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.getWidgetsLayout">
+<span class="sig-name descname"><span class="pre">getWidgetsLayout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.getWidgetsLayout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.getWidgetsLayout" title="Link to this definition">#</a></dt>
+<dd><p>Create a layout from a predifined widget structure</p>
+<p>(Ideally the structure for a full tab)</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Params:</dt><dd><p>structure (list): the desired layout structure</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.placeWidgets">
+<span class="sig-name descname"><span class="pre">placeWidgets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.placeWidgets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.placeWidgets" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.resetDefaults">
+<span class="sig-name descname"><span class="pre">resetDefaults</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#AllOptionsDialog.resetDefaults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.resetDefaults" title="Link to this definition">#</a></dt>
+<dd><p>Reset the default values for the widget inputs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.AllOptionsDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;AllOptionsDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.all_options.AllOptionsDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.OptionWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OptionWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setOption</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#OptionWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.OptionWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog" title="modules.gui.dialog.quick_dialog.QuickDialog"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuickDialog</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.OptionWidget.paintEvent">
+<span class="sig-name descname"><span class="pre">paintEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PySide6.QtGui.QPaintEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#OptionWidget.paintEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.OptionWidget.paintEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.OptionWidget.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/all_options.html#OptionWidget.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.all_options.OptionWidget.set" title="Link to this definition">#</a></dt>
+<dd><p>Set the series option for the widget</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.all_options.OptionWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;OptionWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QuickDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.all_options.OptionWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.color_button">
+<span id="modules-gui-dialog-color-button-module"></span><h2>modules.gui.dialog.color_button module<a class="headerlink" href="#module-modules.gui.dialog.color_button" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ColorButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/color_button.html#ColorButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QPushButton</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton.getColor">
+<span class="sig-name descname"><span class="pre">getColor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/color_button.html#ColorButton.getColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton.getColor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PySide6.QtGui.QResizeEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/modules/gui/dialog/color_button.html#ColorButton.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton.resizeEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton.selectColor">
+<span class="sig-name descname"><span class="pre">selectColor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/color_button.html#ColorButton.selectColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton.selectColor" title="Link to this definition">#</a></dt>
+<dd><p>Called when button is clicked: prompts user to change color</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton.setColor">
+<span class="sig-name descname"><span class="pre">setColor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/color_button.html#ColorButton.setColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton.setColor" title="Link to this definition">#</a></dt>
+<dd><p>Sets the visual color for the button.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.color_button.ColorButton.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ColorButton&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QPushButton&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.color_button.ColorButton.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.create_zarr">
+<span id="modules-gui-dialog-create-zarr-module"></span><h2>modules.gui.dialog.create_zarr module<a class="headerlink" href="#module-modules.gui.dialog.create_zarr" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.create_zarr.CreateZarrDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CreateZarrDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/create_zarr.html#CreateZarrDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.create_zarr.CreateZarrDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.create_zarr.CreateZarrDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/create_zarr.html#CreateZarrDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from QDialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.create_zarr.CreateZarrDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/create_zarr.html#CreateZarrDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.create_zarr.CreateZarrDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;CreateZarrDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.file_dialog">
+<span id="modules-gui-dialog-file-dialog-module"></span><h2>modules.gui.dialog.file_dialog module<a class="headerlink" href="#module-modules.gui.dialog.file_dialog" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.file_dialog.FileDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FileDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/file_dialog.html#FileDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.file_dialog.FileDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QFileDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.file_dialog.FileDialog.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caption</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/file_dialog.html#FileDialog.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.file_dialog.FileDialog.get" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.file_dialog.FileDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;FileDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QFileDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.file_dialog.FileDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.file_dialog.FileDialog.updateSettings">
+<span class="sig-name descname"><span class="pre">updateSettings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/file_dialog.html#FileDialog.updateSettings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.file_dialog.FileDialog.updateSettings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.flag">
+<span id="modules-gui-dialog-flag-module"></span><h2>modules.gui.dialog.flag module<a class="headerlink" href="#module-modules.gui.dialog.flag" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlagDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.createRow">
+<span class="sig-name descname"><span class="pre">createRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog.createRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.createRow" title="Link to this definition">#</a></dt>
+<dd><p>Create a row of the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.removeRow">
+<span class="sig-name descname"><span class="pre">removeRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog.removeRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.removeRow" title="Link to this definition">#</a></dt>
+<dd><p>Remove a row from the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.resizeNewComment">
+<span class="sig-name descname"><span class="pre">resizeNewComment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog.resizeNewComment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.resizeNewComment" title="Link to this definition">#</a></dt>
+<dd><p>Resize the new comment field to its contents.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.resizeToContents">
+<span class="sig-name descname"><span class="pre">resizeToContents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/flag.html#FlagDialog.resizeToContents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.resizeToContents" title="Link to this definition">#</a></dt>
+<dd><p>Adjust the size of the dialog to fit its contents</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.flag.FlagDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;FlagDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.flag.FlagDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.grid">
+<span id="modules-gui-dialog-grid-module"></span><h2>modules.gui.dialog.grid module<a class="headerlink" href="#module-modules.gui.dialog.grid" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.grid.GridDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GridDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/grid.html#GridDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.grid.GridDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.grid.GridDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/grid.html#GridDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.grid.GridDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.grid.GridDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/grid.html#GridDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.grid.GridDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.grid.GridDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;GridDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.grid.GridDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.grid.GridDialog.toggleSF">
+<span class="sig-name descname"><span class="pre">toggleSF</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/grid.html#GridDialog.toggleSF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.grid.GridDialog.toggleSF" title="Link to this definition">#</a></dt>
+<dd><p>Toggle the sampling frame widgets.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.helper">
+<span id="modules-gui-dialog-helper-module"></span><h2>modules.gui.dialog.helper module<a class="headerlink" href="#module-modules.gui.dialog.helper" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.helper.BrowseWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BrowseWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'file'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_fp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/helper.html#BrowseWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.helper.BrowseWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.helper.BrowseWidget.browse">
+<span class="sig-name descname"><span class="pre">browse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/helper.html#BrowseWidget.browse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.helper.BrowseWidget.browse" title="Link to this definition">#</a></dt>
+<dd><p>Change the selected folder.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.helper.BrowseWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;BrowseWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.helper.BrowseWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.helper.BrowseWidget.text">
+<span class="sig-name descname"><span class="pre">text</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/helper.html#BrowseWidget.text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.helper.BrowseWidget.text" title="Link to this definition">#</a></dt>
+<dd><p>Get the displayed text.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.dialog.helper.resizeLineEdit">
+<span class="sig-name descname"><span class="pre">resizeLineEdit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">le</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QLineEdit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/helper.html#resizeLineEdit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.helper.resizeLineEdit" title="Link to this definition">#</a></dt>
+<dd><p>Resize a line edit to fit a specific string.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>le (QLineEdit): the widget to modify
+text (str): the string to resize the line edit</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.object_group">
+<span id="modules-gui-dialog-object-group-module"></span><h2>modules.gui.dialog.object_group module<a class="headerlink" href="#module-modules.gui.dialog.object_group" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.object_group.ObjectGroupDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ObjectGroupDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objgroupdict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ObjGroupDict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/object_group.html#ObjectGroupDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.object_group.ObjectGroupDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.object_group.ObjectGroupDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/object_group.html#ObjectGroupDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.object_group.ObjectGroupDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.object_group.ObjectGroupDialog.newGroup">
+<span class="sig-name descname"><span class="pre">newGroup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/object_group.html#ObjectGroupDialog.newGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.object_group.ObjectGroupDialog.newGroup" title="Link to this definition">#</a></dt>
+<dd><p>Add a new group to the list.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.object_group.ObjectGroupDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ObjectGroupDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.object_group.ObjectGroupDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.predict">
+<span id="modules-gui-dialog-predict-module"></span><h2>modules.gui.dialog.predict module<a class="headerlink" href="#module-modules.gui.dialog.predict" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.predict.PredictDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PredictDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/predict.html#PredictDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.predict.PredictDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.predict.PredictDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/predict.html#PredictDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.predict.PredictDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.predict.PredictDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/predict.html#PredictDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.predict.PredictDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.predict.PredictDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;PredictDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.predict.PredictDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.quick_dialog">
+<span id="modules-gui-dialog-quick-dialog-module"></span><h2>modules.gui.dialog.quick_dialog module<a class="headerlink" href="#module-modules.gui.dialog.quick_dialog" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.InputField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InputField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#InputField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.InputField" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.InputField.getResponse">
+<span class="sig-name descname"><span class="pre">getResponse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#InputField.getResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.InputField.getResponse" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">QuickDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_confirm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Dialog'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickDialog.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog.get" title="Link to this definition">#</a></dt>
+<dd><p>Create a quick dialog and return the inputs.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>parent (QWidget): the parent of the input dialog
+structure (list): the structure of the input dialog
+title (str): the title of the dialog
+grid (bool): True if grid layout</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog.getLayout">
+<span class="sig-name descname"><span class="pre">getLayout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickDialog.getLayout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog.getLayout" title="Link to this definition">#</a></dt>
+<dd><p>Return the layout for a given structure.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;QuickDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickTabDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">QuickTabDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structures</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Dialog'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scrollable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickTabDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickTabDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog" title="modules.gui.dialog.quick_dialog.QuickDialog"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuickDialog</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickTabDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickTabDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickTabDialog.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structures</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Dialog'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/quick_dialog.html#QuickTabDialog.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.get" title="Link to this definition">#</a></dt>
+<dd><p>Create a quick dialog with tabs and return the inputs.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>parent (QWidget): the parent of the input dialog
+structures (list): the structure of the input dialog
+title (str): the title of the dialog
+grid (bool): True if grid layout</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.quick_dialog.QuickTabDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;QuickTabDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QuickDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.segment">
+<span id="modules-gui-dialog-segment-module"></span><h2>modules.gui.dialog.segment module<a class="headerlink" href="#module-modules.gui.dialog.segment" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.segment.SegmentDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SegmentDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/segment.html#SegmentDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.segment.SegmentDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.segment.SegmentDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/segment.html#SegmentDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.segment.SegmentDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.segment.SegmentDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/segment.html#SegmentDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.segment.SegmentDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.segment.SegmentDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;SegmentDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.segment.SegmentDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.shape_button">
+<span id="modules-gui-dialog-shape-button-module"></span><h2>modules.gui.dialog.shape_button module<a class="headerlink" href="#module-modules.gui.dialog.shape_button" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ShapeButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shape_button.html#ShapeButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QPushButton</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton.getShape">
+<span class="sig-name descname"><span class="pre">getShape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shape_button.html#ShapeButton.getShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton.getShape" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shape_button.html#ShapeButton.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Called when button is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton.selectShape">
+<span class="sig-name descname"><span class="pre">selectShape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shape_button.html#ShapeButton.selectShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton.selectShape" title="Link to this definition">#</a></dt>
+<dd><p>Called when button is clicked: prompts user to change shape</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton.setShape">
+<span class="sig-name descname"><span class="pre">setShape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shape_button.html#ShapeButton.setShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton.setShape" title="Link to this definition">#</a></dt>
+<dd><p>Sets the shape for the button.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.shape_button.ShapeButton.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ShapeButton&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QPushButton&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.shape_button.ShapeButton.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.shapes">
+<span id="modules-gui-dialog-shapes-module"></span><h2>modules.gui.dialog.shapes module<a class="headerlink" href="#module-modules.gui.dialog.shapes" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.shapes.ShapesDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ShapesDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shapes.html#ShapesDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shapes.ShapesDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.shapes.ShapesDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shapes.html#ShapesDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shapes.ShapesDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.shapes.ShapesDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ShapesDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.shapes.ShapesDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.dialog.shapes.resizeShape">
+<span class="sig-name descname"><span class="pre">resizeShape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shapes.html#resizeShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shapes.resizeShape" title="Link to this definition">#</a></dt>
+<dd><p>Modify a set of points so that they have a radius of 1 centered about the origin.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>points (list): the set of points describing the shape</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.dialog.shapes.shapeToIcon">
+<span class="sig-name descname"><span class="pre">shapeToIcon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/shapes.html#shapeToIcon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.shapes.shapeToIcon" title="Link to this definition">#</a></dt>
+<dd><p>Convert a trace to an icon.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>points (list): the list of points describing the shape
+size (int): the side length of the icon</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.swift_importer">
+<span id="modules-gui-dialog-swift-importer-module"></span><h2>modules.gui.dialog.swift_importer module<a class="headerlink" href="#module-modules.gui.dialog.swift_importer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.swift_importer.SwiftDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SwiftDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/swift_importer.html#SwiftDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.swift_importer.SwiftDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.swift_importer.SwiftDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/swift_importer.html#SwiftDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.swift_importer.SwiftDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.swift_importer.SwiftDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/swift_importer.html#SwiftDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.swift_importer.SwiftDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.swift_importer.SwiftDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;SwiftDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.swift_importer.SwiftDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.dialog.swift_importer.get_available_scales">
+<span class="sig-name descname"><span class="pre">get_available_scales</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_filepath</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/swift_importer.html#get_available_scales"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.swift_importer.get_available_scales" title="Link to this definition">#</a></dt>
+<dd><p>Return scales in a project file as a list of ints.</p>
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.trace">
+<span id="modules-gui-dialog-trace-module"></span><h2>modules.gui.dialog.trace module<a class="headerlink" href="#module-modules.gui.dialog.trace" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace.TraceDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TraceDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_palette</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_obj_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace.html#TraceDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace.TraceDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace.TraceDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace.html#TraceDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace.TraceDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace.TraceDialog.checkDisplayCondition">
+<span class="sig-name descname"><span class="pre">checkDisplayCondition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace.html#TraceDialog.checkDisplayCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace.TraceDialog.checkDisplayCondition" title="Link to this definition">#</a></dt>
+<dd><p>Determine whether the “fill when selected” checkbox should be displayed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace.TraceDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace.html#TraceDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace.TraceDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace.TraceDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;TraceDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.trace.TraceDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.trace_palette">
+<span id="modules-gui-dialog-trace-palette-module"></span><h2>modules.gui.dialog.trace_palette module<a class="headerlink" href="#module-modules.gui.dialog.trace_palette" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TracePaletteDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickTabDialog" title="modules.gui.dialog.quick_dialog.QuickTabDialog"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuickTabDialog</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.addPalette">
+<span class="sig-name descname"><span class="pre">addPalette</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog.addPalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.addPalette" title="Link to this definition">#</a></dt>
+<dd><p>Add a palette.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.editTab">
+<span class="sig-name descname"><span class="pre">editTab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog.editTab"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.editTab" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from QTabWidget: allows user to edit tab names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.getStructure">
+<span class="sig-name descname"><span class="pre">getStructure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog.getStructure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.getStructure" title="Link to this definition">#</a></dt>
+<dd><p>Create a dialog from a trace list.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace_list (list): the list of traces to create the dialog</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.removePalette">
+<span class="sig-name descname"><span class="pre">removePalette</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/trace_palette.html#TracePaletteDialog.removePalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.removePalette" title="Link to this definition">#</a></dt>
+<dd><p>Remove a palette.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.trace_palette.TracePaletteDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;TracePaletteDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QuickTabDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog.train">
+<span id="modules-gui-dialog-train-module"></span><h2>modules.gui.dialog.train module<a class="headerlink" href="#module-modules.gui.dialog.train" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.dialog.train.TrainDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TrainDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/train.html#TrainDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.train.TrainDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.train.TrainDialog.accept">
+<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/train.html#TrainDialog.accept"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.train.TrainDialog.accept" title="Link to this definition">#</a></dt>
+<dd><p>Overwritten from parent class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.dialog.train.TrainDialog.exec">
+<span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/dialog/train.html#TrainDialog.exec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.dialog.train.TrainDialog.exec" title="Link to this definition">#</a></dt>
+<dd><p>Run the dialog.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.dialog.train.TrainDialog.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;TrainDialog&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDialog&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.dialog.train.TrainDialog.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.dialog">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.gui.dialog" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.gui.main.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.gui.main package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.gui.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.gui package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.gui.dialog package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.addto_zarr">modules.gui.dialog.addto_zarr module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.accept"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.addInput"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.addInput()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.exec"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.removeInput"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.removeInput()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.addto_zarr.AddToZarrDialog.updateButtons"><code class="docutils literal notranslate"><span class="pre">AddToZarrDialog.updateButtons()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.alignment">modules.gui.dialog.alignment module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.accept"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.exec"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.newAlignment"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.newAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.removeAlignments"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.removeAlignments()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.renameAlignment"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.renameAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">AlignmentDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList"><code class="docutils literal notranslate"><span class="pre">AlignmentList</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.addAlignment"><code class="docutils literal notranslate"><span class="pre">AlignmentList.addAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.createTable"><code class="docutils literal notranslate"><span class="pre">AlignmentList.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.getSelectedAlignments"><code class="docutils literal notranslate"><span class="pre">AlignmentList.getSelectedAlignments()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.removeAlignment"><code class="docutils literal notranslate"><span class="pre">AlignmentList.removeAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.renameAlignment"><code class="docutils literal notranslate"><span class="pre">AlignmentList.renameAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.alignment.AlignmentList.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">AlignmentList.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.all_options">modules.gui.dialog.all_options module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.accept"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.addOptionWidget"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.addOptionWidget()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.createWidgets"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.createWidgets()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.getWidgetsLayout"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.getWidgetsLayout()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.placeWidgets"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.placeWidgets()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.resetDefaults"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.resetDefaults()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.AllOptionsDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">AllOptionsDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.OptionWidget"><code class="docutils literal notranslate"><span class="pre">OptionWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.OptionWidget.paintEvent"><code class="docutils literal notranslate"><span class="pre">OptionWidget.paintEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.OptionWidget.set"><code class="docutils literal notranslate"><span class="pre">OptionWidget.set()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.all_options.OptionWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">OptionWidget.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.color_button">modules.gui.dialog.color_button module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton"><code class="docutils literal notranslate"><span class="pre">ColorButton</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton.getColor"><code class="docutils literal notranslate"><span class="pre">ColorButton.getColor()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton.resizeEvent"><code class="docutils literal notranslate"><span class="pre">ColorButton.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton.selectColor"><code class="docutils literal notranslate"><span class="pre">ColorButton.selectColor()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton.setColor"><code class="docutils literal notranslate"><span class="pre">ColorButton.setColor()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.color_button.ColorButton.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ColorButton.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.create_zarr">modules.gui.dialog.create_zarr module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.create_zarr.CreateZarrDialog"><code class="docutils literal notranslate"><span class="pre">CreateZarrDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.accept"><code class="docutils literal notranslate"><span class="pre">CreateZarrDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.exec"><code class="docutils literal notranslate"><span class="pre">CreateZarrDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.create_zarr.CreateZarrDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">CreateZarrDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.file_dialog">modules.gui.dialog.file_dialog module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.file_dialog.FileDialog"><code class="docutils literal notranslate"><span class="pre">FileDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.file_dialog.FileDialog.get"><code class="docutils literal notranslate"><span class="pre">FileDialog.get()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.file_dialog.FileDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">FileDialog.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.file_dialog.FileDialog.updateSettings"><code class="docutils literal notranslate"><span class="pre">FileDialog.updateSettings()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.flag">modules.gui.dialog.flag module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog"><code class="docutils literal notranslate"><span class="pre">FlagDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.createRow"><code class="docutils literal notranslate"><span class="pre">FlagDialog.createRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.exec"><code class="docutils literal notranslate"><span class="pre">FlagDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.removeRow"><code class="docutils literal notranslate"><span class="pre">FlagDialog.removeRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.resizeNewComment"><code class="docutils literal notranslate"><span class="pre">FlagDialog.resizeNewComment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.resizeToContents"><code class="docutils literal notranslate"><span class="pre">FlagDialog.resizeToContents()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.flag.FlagDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">FlagDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.grid">modules.gui.dialog.grid module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.grid.GridDialog"><code class="docutils literal notranslate"><span class="pre">GridDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.grid.GridDialog.accept"><code class="docutils literal notranslate"><span class="pre">GridDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.grid.GridDialog.exec"><code class="docutils literal notranslate"><span class="pre">GridDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.grid.GridDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">GridDialog.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.grid.GridDialog.toggleSF"><code class="docutils literal notranslate"><span class="pre">GridDialog.toggleSF()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.helper">modules.gui.dialog.helper module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.helper.BrowseWidget"><code class="docutils literal notranslate"><span class="pre">BrowseWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.helper.BrowseWidget.browse"><code class="docutils literal notranslate"><span class="pre">BrowseWidget.browse()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.helper.BrowseWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">BrowseWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.helper.BrowseWidget.text"><code class="docutils literal notranslate"><span class="pre">BrowseWidget.text()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.helper.resizeLineEdit"><code class="docutils literal notranslate"><span class="pre">resizeLineEdit()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.object_group">modules.gui.dialog.object_group module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.object_group.ObjectGroupDialog"><code class="docutils literal notranslate"><span class="pre">ObjectGroupDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.object_group.ObjectGroupDialog.exec"><code class="docutils literal notranslate"><span class="pre">ObjectGroupDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.object_group.ObjectGroupDialog.newGroup"><code class="docutils literal notranslate"><span class="pre">ObjectGroupDialog.newGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.object_group.ObjectGroupDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ObjectGroupDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.predict">modules.gui.dialog.predict module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.predict.PredictDialog"><code class="docutils literal notranslate"><span class="pre">PredictDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.predict.PredictDialog.accept"><code class="docutils literal notranslate"><span class="pre">PredictDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.predict.PredictDialog.exec"><code class="docutils literal notranslate"><span class="pre">PredictDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.predict.PredictDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">PredictDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.quick_dialog">modules.gui.dialog.quick_dialog module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.InputField"><code class="docutils literal notranslate"><span class="pre">InputField</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.InputField.getResponse"><code class="docutils literal notranslate"><span class="pre">InputField.getResponse()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog"><code class="docutils literal notranslate"><span class="pre">QuickDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog.accept"><code class="docutils literal notranslate"><span class="pre">QuickDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog.exec"><code class="docutils literal notranslate"><span class="pre">QuickDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog.get"><code class="docutils literal notranslate"><span class="pre">QuickDialog.get()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog.getLayout"><code class="docutils literal notranslate"><span class="pre">QuickDialog.getLayout()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">QuickDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickTabDialog"><code class="docutils literal notranslate"><span class="pre">QuickTabDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.accept"><code class="docutils literal notranslate"><span class="pre">QuickTabDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.get"><code class="docutils literal notranslate"><span class="pre">QuickTabDialog.get()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.quick_dialog.QuickTabDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">QuickTabDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.segment">modules.gui.dialog.segment module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.segment.SegmentDialog"><code class="docutils literal notranslate"><span class="pre">SegmentDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.segment.SegmentDialog.accept"><code class="docutils literal notranslate"><span class="pre">SegmentDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.segment.SegmentDialog.exec"><code class="docutils literal notranslate"><span class="pre">SegmentDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.segment.SegmentDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">SegmentDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.shape_button">modules.gui.dialog.shape_button module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton"><code class="docutils literal notranslate"><span class="pre">ShapeButton</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton.getShape"><code class="docutils literal notranslate"><span class="pre">ShapeButton.getShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton.resizeEvent"><code class="docutils literal notranslate"><span class="pre">ShapeButton.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton.selectShape"><code class="docutils literal notranslate"><span class="pre">ShapeButton.selectShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton.setShape"><code class="docutils literal notranslate"><span class="pre">ShapeButton.setShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shape_button.ShapeButton.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ShapeButton.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.shapes">modules.gui.dialog.shapes module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.shapes.ShapesDialog"><code class="docutils literal notranslate"><span class="pre">ShapesDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.shapes.ShapesDialog.exec"><code class="docutils literal notranslate"><span class="pre">ShapesDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shapes.ShapesDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ShapesDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.shapes.resizeShape"><code class="docutils literal notranslate"><span class="pre">resizeShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.shapes.shapeToIcon"><code class="docutils literal notranslate"><span class="pre">shapeToIcon()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.swift_importer">modules.gui.dialog.swift_importer module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.swift_importer.SwiftDialog"><code class="docutils literal notranslate"><span class="pre">SwiftDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.swift_importer.SwiftDialog.accept"><code class="docutils literal notranslate"><span class="pre">SwiftDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.swift_importer.SwiftDialog.exec"><code class="docutils literal notranslate"><span class="pre">SwiftDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.swift_importer.SwiftDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">SwiftDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.dialog.swift_importer.get_available_scales"><code class="docutils literal notranslate"><span class="pre">get_available_scales()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.trace">modules.gui.dialog.trace module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.trace.TraceDialog"><code class="docutils literal notranslate"><span class="pre">TraceDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.trace.TraceDialog.accept"><code class="docutils literal notranslate"><span class="pre">TraceDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace.TraceDialog.checkDisplayCondition"><code class="docutils literal notranslate"><span class="pre">TraceDialog.checkDisplayCondition()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace.TraceDialog.exec"><code class="docutils literal notranslate"><span class="pre">TraceDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace.TraceDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">TraceDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.trace_palette">modules.gui.dialog.trace_palette module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.addPalette"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.addPalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.editTab"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.editTab()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.exec"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.getStructure"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.getStructure()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.removePalette"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.removePalette()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.trace_palette.TracePaletteDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">TracePaletteDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog.train">modules.gui.dialog.train module</a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.train.TrainDialog"><code class="docutils literal notranslate"><span class="pre">TrainDialog</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.dialog.train.TrainDialog.accept"><code class="docutils literal notranslate"><span class="pre">TrainDialog.accept()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.train.TrainDialog.exec"><code class="docutils literal notranslate"><span class="pre">TrainDialog.exec()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.dialog.train.TrainDialog.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">TrainDialog.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.dialog">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

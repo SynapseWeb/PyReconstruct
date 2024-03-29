@@ -1,0 +1,787 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.backend.table package" href="modules.backend.table.html" /><link rel="prev" title="modules.backend.autoseg package" href="modules.backend.autoseg.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.backend.func package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-backend-func-package">
+<h1>modules.backend.func package<a class="headerlink" href="#modules-backend-func-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.backend.func.import_swift_transforms">
+<span id="modules-backend-func-import-swift-transforms-module"></span><h2>modules.backend.func.import_swift_transforms module<a class="headerlink" href="#module-modules.backend.func.import_swift_transforms" title="Link to this heading">#</a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.IncorrectFormatError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IncorrectFormatError</span></span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#IncorrectFormatError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.IncorrectFormatError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.IncorrectSecNumError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IncorrectSecNumError</span></span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#IncorrectSecNumError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.IncorrectSecNumError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.cafm_to_matrix">
+<span class="sig-name descname"><span class="pre">cafm_to_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#cafm_to_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.cafm_to_matrix" title="Link to this definition">#</a></dt>
+<dd><p>Convert c_afm to Numpy matrix.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.cafm_to_sanity">
+<span class="sig-name descname"><span class="pre">cafm_to_sanity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_swift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#cafm_to_sanity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.cafm_to_sanity" title="Link to this definition">#</a></dt>
+<dd><p>Convert c_afm to something sane.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.getDateTime">
+<span class="sig-name descname"><span class="pre">getDateTime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#getDateTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.getDateTime" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.get_img_dim">
+<span class="sig-name descname"><span class="pre">get_img_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#get_img_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.get_img_dim" title="Link to this definition">#</a></dt>
+<dd><p>Get image dimensions (height and width) from scale data.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.importSwiftTransforms">
+<span class="sig-name descname"><span class="pre">importSwiftTransforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cal_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#importSwiftTransforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.importSwiftTransforms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.make_pyr_transforms">
+<span class="sig-name descname"><span class="pre">make_pyr_transforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cal_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#make_pyr_transforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.make_pyr_transforms" title="Link to this definition">#</a></dt>
+<dd><p>Return a list of PyReconstruct-formatted transformations.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_swift_transforms.transforms_as_strings">
+<span class="sig-name descname"><span class="pre">transforms_as_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recon_transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_swift_transforms.html#transforms_as_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_swift_transforms.transforms_as_strings" title="Link to this definition">#</a></dt>
+<dd><p>Return transform matrices as string.</p>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.func.import_transforms">
+<span id="modules-backend-func-import-transforms-module"></span><h2>modules.backend.func.import_transforms module<a class="headerlink" href="#module-modules.backend.func.import_transforms" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_transforms.getDateTime">
+<span class="sig-name descname"><span class="pre">getDateTime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_transforms.html#getDateTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_transforms.getDateTime" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.import_transforms.importTransforms">
+<span class="sig-name descname"><span class="pre">importTransforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tforms_fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/import_transforms.html#importTransforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.import_transforms.importTransforms" title="Link to this definition">#</a></dt>
+<dd><p>Import transforms from a text file.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series to import transforms to
+tforms_fp (str): the file path for the transforms file
+series_states (SereisStates): series states object from GUI</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.func.scan_zarr">
+<span id="modules-backend-func-scan-zarr-module"></span><h2>modules.backend.func.scan_zarr module<a class="headerlink" href="#module-modules.backend.func.scan_zarr" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.func.scan_zarr.ZarrScanner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZarrScanner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zarr_fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/scan_zarr.html#ZarrScanner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.scan_zarr.ZarrScanner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.scan_zarr.ZarrScanner.addZarrayFile">
+<span class="sig-name descname"><span class="pre">addZarrayFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/scan_zarr.html#ZarrScanner.addZarrayFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.scan_zarr.ZarrScanner.addZarrayFile" title="Link to this definition">#</a></dt>
+<dd><p>Keep track of number of specific zarray files.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>group_name (str): the name of the group containing the zarray file
+file_str (str): the .zarray file in string format</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.scan_zarr.ZarrScanner.rectifyZarr">
+<span class="sig-name descname"><span class="pre">rectifyZarr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/scan_zarr.html#ZarrScanner.rectifyZarr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.scan_zarr.ZarrScanner.rectifyZarr" title="Link to this definition">#</a></dt>
+<dd><p>Correct the internal files in the zarr.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.scan_zarr.ZarrScanner.scanFolder">
+<span class="sig-name descname"><span class="pre">scanFolder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/scan_zarr.html#ZarrScanner.scanFolder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.scan_zarr.ZarrScanner.scanFolder" title="Link to this definition">#</a></dt>
+<dd><p>San a folder within a zarr file for missing and corrupt files</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>folder (str): the folder to scan</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.scan_zarr.removeEmptyFolders">
+<span class="sig-name descname"><span class="pre">removeEmptyFolders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/scan_zarr.html#removeEmptyFolders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.scan_zarr.removeEmptyFolders" title="Link to this definition">#</a></dt>
+<dd><p>Remove empty folders within a folder.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>folder (str): the parent folder.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.func.state_manager">
+<span id="modules-backend-func-state-manager-module"></span><h2>modules.backend.func.state_manager module<a class="headerlink" href="#module-modules.backend.func.state_manager" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FieldState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">contours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ztraces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contours_fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updated_contours</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updated_ztraces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.copy" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getContours">
+<span class="sig-name descname"><span class="pre">getContours</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getContours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getContours" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getFlags">
+<span class="sig-name descname"><span class="pre">getFlags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getFlags" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getModifiedContours">
+<span class="sig-name descname"><span class="pre">getModifiedContours</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getModifiedContours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getModifiedContours" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getModifiedZtraces">
+<span class="sig-name descname"><span class="pre">getModifiedZtraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getModifiedZtraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getModifiedZtraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getTforms">
+<span class="sig-name descname"><span class="pre">getTforms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getTforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getTforms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.FieldState.getZtraces">
+<span class="sig-name descname"><span class="pre">getZtraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#FieldState.getZtraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.FieldState.getZtraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SectionStates">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SectionStates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SectionStates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SectionStates" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SectionStates.addState">
+<span class="sig-name descname"><span class="pre">addState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SectionStates.addState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SectionStates.addState" title="Link to this definition">#</a></dt>
+<dd><p>Add a new undo state (called when an action is performed.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SectionStates.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SectionStates.initialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SectionStates.initialize" title="Link to this definition">#</a></dt>
+<dd><p>Create the section state manager.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section object to store states for
+series (Series): the series that contains the sections</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SectionStates.redoState">
+<span class="sig-name descname"><span class="pre">redoState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SectionStates.redoState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SectionStates.redoState" title="Link to this definition">#</a></dt>
+<dd><p>Restore a redo state on the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section to restore</p>
+</dd>
+<dt>Returns:</dt><dd><p>(set): the names of modified contours</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SectionStates.undoState">
+<span class="sig-name descname"><span class="pre">undoState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SectionStates.undoState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SectionStates.undoState" title="Link to this definition">#</a></dt>
+<dd><p>Restore an undo state on the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section to restore
+series (Series): the series with ztraces to restore</p>
+</dd>
+<dt>Returns:</dt><dd><p>(set): the names of modified contours</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SeriesState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">breakable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesState" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesState.applySeriesAttributes">
+<span class="sig-name descname"><span class="pre">applySeriesAttributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesState.applySeriesAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesState.applySeriesAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Apply the stored series attributes to a series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series to apply attributes to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesState.getSeriesAttributes">
+<span class="sig-name descname"><span class="pre">getSeriesAttributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesState.getSeriesAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesState.getSeriesAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Reset the stored series attributes.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series to store attributes for</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesState.resetSeriesAttributes">
+<span class="sig-name descname"><span class="pre">resetSeriesAttributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesState.resetSeriesAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesState.resetSeriesAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Reset the stored series attributes.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series to store attributes for</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SeriesStates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.addSectionUndo">
+<span class="sig-name descname"><span class="pre">addSectionUndo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.addSectionUndo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.addSectionUndo" title="Link to this definition">#</a></dt>
+<dd><p>Flag the section’s latest undo state as part of the most recent series undo.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the section number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.addState">
+<span class="sig-name descname"><span class="pre">addState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">breakable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.addState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.addState" title="Link to this definition">#</a></dt>
+<dd><p>Create a new series undo state.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>breakable (bool): True if series state can be broken (aka dissolved and left as individual section events)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.canUndo">
+<span class="sig-name descname"><span class="pre">canUndo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.canUndo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.canUndo" title="Link to this definition">#</a></dt>
+<dd><p>Checks if an undo is possible.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>current_section (int): the section the user is on</p>
+</dd>
+<dt>Returns:</dt><dd><p>(3D undo possible, 2D undo possible, 3D and 2D undo are linked)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.checkOverwrite">
+<span class="sig-name descname"><span class="pre">checkOverwrite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.checkOverwrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.checkOverwrite" title="Link to this definition">#</a></dt>
+<dd><p>Check if a series undo/redo should be removed.</p>
+<p>(Called after a state has just been written to the given section)</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the section number to check</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.clear" title="Link to this definition">#</a></dt>
+<dd><p>Clear all state tracking.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.undoSection">
+<span class="sig-name descname"><span class="pre">undoSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.undoSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.undoSection" title="Link to this definition">#</a></dt>
+<dd><p>Undo/redo on a section</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section to undo/redo on
+redo (bool): True if redo, False if undo</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.SeriesStates.undoState">
+<span class="sig-name descname"><span class="pre">undoState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#SeriesStates.undoState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.SeriesStates.undoState" title="Link to this definition">#</a></dt>
+<dd><p>Perform a series-wide undo or redo.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>redo (bool): True if redo should be performed instead of undo</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.alignmentPreferencesChanged">
+<span class="sig-name descname"><span class="pre">alignmentPreferencesChanged</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pre_series_attrs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_series_attrs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#alignmentPreferencesChanged"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.alignmentPreferencesChanged" title="Link to this definition">#</a></dt>
+<dd><p>Check if the alignment preferences for objects and ztraces has changed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.getAlignment">
+<span class="sig-name descname"><span class="pre">getAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attrs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#getAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.getAlignment" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.state_manager.restoreZtraceOnSection">
+<span class="sig-name descname"><span class="pre">restoreZtraceOnSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orig_ztrace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Ztrace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_ztrace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Ztrace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Ztrace</span></span></span><a class="reference internal" href="_modules/modules/backend/func/state_manager.html#restoreZtraceOnSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.state_manager.restoreZtraceOnSection" title="Link to this definition">#</a></dt>
+<dd><p>Restore the ztrace for a specific section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>orig_ztrace (Ztrace): the ztrace to be modified
+new_ztrace (Ztrace): the ztrace with data to be imported
+snum (int): the section number</p>
+</dd>
+<dt>Returns:</dt><dd><p>(Ztrace): the newly formed ztrace</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.func.xml_json_conversions">
+<span id="modules-backend-func-xml-json-conversions-module"></span><h2>modules.backend.func.xml_json_conversions module<a class="headerlink" href="#module-modules.backend.func.xml_json_conversions" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.getReconcropperData">
+<span class="sig-name descname"><span class="pre">getReconcropperData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_fp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#getReconcropperData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.getReconcropperData" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.jsonToXML">
+<span class="sig-name descname"><span class="pre">jsonToXML</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#jsonToXML"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.jsonToXML" title="Link to this definition">#</a></dt>
+<dd><p>Convert a series in JSON to XML.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>original_series (Series): the series to convert
+new_dir (str): the directory to store the new files</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.sectionJSONtoXML">
+<span class="sig-name descname"><span class="pre">sectionJSONtoXML</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#sectionJSONtoXML"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.sectionJSONtoXML" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.sectionXMLtoJSON">
+<span class="sig-name descname"><span class="pre">sectionXMLtoJSON</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_fp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#sectionXMLtoJSON"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.sectionXMLtoJSON" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.seriesJSONtoXML">
+<span class="sig-name descname"><span class="pre">seriesJSONtoXML</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#seriesJSONtoXML"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.seriesJSONtoXML" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.seriesXMLToJSON">
+<span class="sig-name descname"><span class="pre">seriesXMLToJSON</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series_fp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section_fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#seriesXMLToJSON"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.seriesXMLToJSON" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.func.xml_json_conversions.xmlToJSON">
+<span class="sig-name descname"><span class="pre">xmlToJSON</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xml_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/modules/backend/func/xml_json_conversions.html#xmlToJSON"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.func.xml_json_conversions.xmlToJSON" title="Link to this definition">#</a></dt>
+<dd><p>Convert a series in XML to JSON.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>xml_dir (str): the directory for the xml series</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.func">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.backend.func" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.backend.table.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.backend.table package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.backend.autoseg.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.backend.autoseg package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.backend.func package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.backend.func.import_swift_transforms">modules.backend.func.import_swift_transforms module</a><ul>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.IncorrectFormatError"><code class="docutils literal notranslate"><span class="pre">IncorrectFormatError</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.IncorrectSecNumError"><code class="docutils literal notranslate"><span class="pre">IncorrectSecNumError</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.cafm_to_matrix"><code class="docutils literal notranslate"><span class="pre">cafm_to_matrix()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.cafm_to_sanity"><code class="docutils literal notranslate"><span class="pre">cafm_to_sanity()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.getDateTime"><code class="docutils literal notranslate"><span class="pre">getDateTime()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.get_img_dim"><code class="docutils literal notranslate"><span class="pre">get_img_dim()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.importSwiftTransforms"><code class="docutils literal notranslate"><span class="pre">importSwiftTransforms()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.make_pyr_transforms"><code class="docutils literal notranslate"><span class="pre">make_pyr_transforms()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_swift_transforms.transforms_as_strings"><code class="docutils literal notranslate"><span class="pre">transforms_as_strings()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.func.import_transforms">modules.backend.func.import_transforms module</a><ul>
+<li><a class="reference internal" href="#modules.backend.func.import_transforms.getDateTime"><code class="docutils literal notranslate"><span class="pre">getDateTime()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.import_transforms.importTransforms"><code class="docutils literal notranslate"><span class="pre">importTransforms()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.func.scan_zarr">modules.backend.func.scan_zarr module</a><ul>
+<li><a class="reference internal" href="#modules.backend.func.scan_zarr.ZarrScanner"><code class="docutils literal notranslate"><span class="pre">ZarrScanner</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.func.scan_zarr.ZarrScanner.addZarrayFile"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.addZarrayFile()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.scan_zarr.ZarrScanner.rectifyZarr"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.rectifyZarr()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.scan_zarr.ZarrScanner.scanFolder"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.scanFolder()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.func.scan_zarr.removeEmptyFolders"><code class="docutils literal notranslate"><span class="pre">removeEmptyFolders()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.func.state_manager">modules.backend.func.state_manager module</a><ul>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState"><code class="docutils literal notranslate"><span class="pre">FieldState</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.copy"><code class="docutils literal notranslate"><span class="pre">FieldState.copy()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getContours"><code class="docutils literal notranslate"><span class="pre">FieldState.getContours()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getFlags"><code class="docutils literal notranslate"><span class="pre">FieldState.getFlags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getModifiedContours"><code class="docutils literal notranslate"><span class="pre">FieldState.getModifiedContours()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getModifiedZtraces"><code class="docutils literal notranslate"><span class="pre">FieldState.getModifiedZtraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getTforms"><code class="docutils literal notranslate"><span class="pre">FieldState.getTforms()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.FieldState.getZtraces"><code class="docutils literal notranslate"><span class="pre">FieldState.getZtraces()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SectionStates"><code class="docutils literal notranslate"><span class="pre">SectionStates</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SectionStates.addState"><code class="docutils literal notranslate"><span class="pre">SectionStates.addState()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SectionStates.initialize"><code class="docutils literal notranslate"><span class="pre">SectionStates.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SectionStates.redoState"><code class="docutils literal notranslate"><span class="pre">SectionStates.redoState()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SectionStates.undoState"><code class="docutils literal notranslate"><span class="pre">SectionStates.undoState()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesState"><code class="docutils literal notranslate"><span class="pre">SeriesState</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesState.applySeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.applySeriesAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesState.getSeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.getSeriesAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesState.resetSeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.resetSeriesAttributes()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates"><code class="docutils literal notranslate"><span class="pre">SeriesStates</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.addSectionUndo"><code class="docutils literal notranslate"><span class="pre">SeriesStates.addSectionUndo()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.addState"><code class="docutils literal notranslate"><span class="pre">SeriesStates.addState()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.canUndo"><code class="docutils literal notranslate"><span class="pre">SeriesStates.canUndo()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.checkOverwrite"><code class="docutils literal notranslate"><span class="pre">SeriesStates.checkOverwrite()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.clear"><code class="docutils literal notranslate"><span class="pre">SeriesStates.clear()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.undoSection"><code class="docutils literal notranslate"><span class="pre">SeriesStates.undoSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.SeriesStates.undoState"><code class="docutils literal notranslate"><span class="pre">SeriesStates.undoState()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.alignmentPreferencesChanged"><code class="docutils literal notranslate"><span class="pre">alignmentPreferencesChanged()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.getAlignment"><code class="docutils literal notranslate"><span class="pre">getAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.state_manager.restoreZtraceOnSection"><code class="docutils literal notranslate"><span class="pre">restoreZtraceOnSection()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.func.xml_json_conversions">modules.backend.func.xml_json_conversions module</a><ul>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.getReconcropperData"><code class="docutils literal notranslate"><span class="pre">getReconcropperData()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.jsonToXML"><code class="docutils literal notranslate"><span class="pre">jsonToXML()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.sectionJSONtoXML"><code class="docutils literal notranslate"><span class="pre">sectionJSONtoXML()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.sectionXMLtoJSON"><code class="docutils literal notranslate"><span class="pre">sectionXMLtoJSON()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.seriesJSONtoXML"><code class="docutils literal notranslate"><span class="pre">seriesJSONtoXML()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.seriesXMLToJSON"><code class="docutils literal notranslate"><span class="pre">seriesXMLToJSON()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.func.xml_json_conversions.xmlToJSON"><code class="docutils literal notranslate"><span class="pre">xmlToJSON()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.func">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

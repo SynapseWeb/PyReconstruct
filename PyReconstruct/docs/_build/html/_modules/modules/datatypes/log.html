@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.log &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.log</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<div class="viewcode-block" id="getDateTime">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.getDateTime">[docs]</a>
+<span class="k">def</span> <span class="nf">getDateTime</span><span class="p">():</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">minute</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">,</span> <span class="n">t</span></div>
+
+
+
+<div class="viewcode-block" id="Log">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log">[docs]</a>
+<span class="k">class</span> <span class="nc">Log</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">time</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">event</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a single log entry.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                date (str): the date of the log creation YY-MM-DD</span>
+<span class="sd">                time (str): the time of the log creation HHMM</span>
+<span class="sd">                user (str): the username of the person making the log</span>
+<span class="sd">                obj_name (str): the name of the object being modified</span>
+<span class="sd">                section (int OR list): the section or section ranges of the log</span>
+<span class="sd">                event (str): the description of what happened</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">user</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj_name</span> <span class="o">=</span> <span class="n">obj_name</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">section</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="n">section</span><span class="p">,</span> <span class="n">section</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">section</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="o">=</span> <span class="n">section</span>
+        <span class="k">elif</span> <span class="n">section</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span>
+    
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare log objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Log): the log to compare to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_name</span><span class="p">:</span>
+            <span class="n">obj_name</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_name</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+            <span class="n">section_ranges</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">section_ranges</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">srange</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">section_ranges</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">section_ranges</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">obj_name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">section_ranges</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+<div class="viewcode-block" id="Log.fromStr">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log.fromStr">[docs]</a>
+    <span class="k">def</span> <span class="nf">fromStr</span><span class="p">(</span><span class="n">s</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a log object from a string.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                s (str): the string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+
+        <span class="c1"># check for commas in event</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="n">l</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">5</span><span class="p">:])</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">l</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
+
+        <span class="p">(</span>
+            <span class="n">date</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="n">user</span><span class="p">,</span>
+            <span class="n">obj_name</span><span class="p">,</span>
+            <span class="n">section_ranges</span><span class="p">,</span>
+            <span class="n">event</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_name</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span>
+            <span class="n">obj_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">section_ranges</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span>
+            <span class="n">section_ranges</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">section_ranges</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="n">section_ranges</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">sr</span> <span class="ow">in</span> <span class="n">srs</span><span class="p">:</span>
+                <span class="n">ends</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ends</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">sr</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">sr</span><span class="p">)))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">ends</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ends</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        
+        <span class="k">return</span> <span class="n">Log</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">obj_name</span><span class="p">,</span> <span class="n">section_ranges</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="Log.checkSectionRanges">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log.checkSectionRanges">[docs]</a>
+    <span class="k">def</span> <span class="nf">checkSectionRanges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate through the section ranges and combine adjacent ones.&quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="nb">next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">current</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="nb">next</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">new</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">current</span> <span class="o">+</span> <span class="nb">next</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">current</span> <span class="o">+</span> <span class="nb">next</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+    
+<div class="viewcode-block" id="Log.addSection">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log.addSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">addSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a section number to the section range.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int) the section number to add</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot add section number to non section-specific log.&quot;</span><span class="p">)</span>
+        <span class="n">loop_broken</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">srange</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">):</span>
+            <span class="n">loop_broken</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="o">&lt;</span> <span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">snum</span> <span class="o">==</span> <span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">snum</span><span class="p">,</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">snum</span><span class="p">,</span> <span class="n">snum</span><span class="p">))</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">snum</span> <span class="o">&lt;=</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">snum</span> <span class="o">==</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">snum</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="n">loop_broken</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">loop_broken</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">snum</span><span class="p">,</span> <span class="n">snum</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">checkSectionRanges</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="Log.containsSection">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log.containsSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">containsSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the logs section range contains the given section number.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">for</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">snum</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="Log.trimSectionRange">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.Log.trimSectionRange">[docs]</a>
+    <span class="k">def</span> <span class="nf">trimSectionRange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">srange</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Trim the section range of the log.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sections</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="o">*</span><span class="n">srange</span><span class="p">)</span>
+            <span class="n">new_section_ranges</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">s1</span> <span class="ow">and</span> <span class="n">s2</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                    <span class="n">new_section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">s1</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                    <span class="n">new_section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">s1</span><span class="p">,</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">s2</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                    <span class="n">new_section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">s2</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">s1</span> <span class="o">&lt;</span> <span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">s2</span> <span class="o">&gt;=</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">new_section_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">srange</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">srange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">new_section_ranges</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">section_ranges</span> <span class="o">=</span> <span class="n">new_section_ranges</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LogSet">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet">[docs]</a>
+<span class="k">class</span> <span class="nc">LogSet</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the log set.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># organized by name and event</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span> <span class="o">=</span> <span class="p">[]</span>
+    
+<div class="viewcode-block" id="LogSet.addLog">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.addLog">[docs]</a>
+    <span class="k">def</span> <span class="nf">addLog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">event</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a log to the set.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                user (str): the user creating the log</span>
+<span class="sd">                obj_name (str): the name of the object associated with the log</span>
+<span class="sd">                snum (int): the section number associated with the log</span>
+<span class="sd">                event (str): the description of the event</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># compare the user to the last log</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span> <span class="ow">and</span> <span class="n">user</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">user</span><span class="p">:</span>
+            <span class="c1"># clear dynamic log if so</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># dynamic log</span>
+            <span class="n">obj_key</span> <span class="o">=</span> <span class="n">obj_name</span> <span class="k">if</span> <span class="n">obj_name</span> <span class="k">else</span> <span class="s2">&quot;-&quot;</span>
+            <span class="k">if</span> <span class="n">obj_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span> <span class="ow">and</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">][</span><span class="n">event</span><span class="p">]</span><span class="o">.</span><span class="n">addSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">obj_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">d</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getDateTime</span><span class="p">()</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="n">Log</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">obj_name</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">][</span><span class="n">event</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># static log</span>
+            <span class="n">d</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getDateTime</span><span class="p">()</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">Log</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">obj_name</span><span class="p">,</span> <span class="n">snum</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+            <span class="c1"># special cases: creating or deleting an object</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Create object&quot;</span><span class="p">:</span>
+                <span class="c1"># check the previous log to see if traces were created</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">obj_name</span> <span class="o">==</span> <span class="n">obj_name</span> <span class="ow">and</span> 
+                    <span class="s2">&quot;Create trace(s)&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event</span><span class="p">):</span>
+                    <span class="n">event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;trace(s)&quot;</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;Delete object&quot;</span><span class="p">:</span>
+                <span class="c1"># remove object from dynamic log</span>
+                <span class="k">if</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">:</span>
+                    <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_name</span><span class="p">])</span>
+                <span class="c1"># remove all previous logs associated with the object</span>
+                <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">obj_name</span> <span class="o">==</span> <span class="n">obj_name</span> <span class="ow">and</span> <span class="s2">&quot;Create object&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">event</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+            <span class="c1"># non-special cases</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log</span><span class="p">)</span></div>
+
+        
+        <span class="c1"># # for debugging</span>
+        <span class="c1"># # Clear console</span>
+        <span class="c1"># if os.name == &#39;nt&#39;:  # Windows</span>
+        <span class="c1">#     _ = os.system(&#39;cls&#39;)</span>
+        <span class="c1"># else:  # Mac and Linux</span>
+        <span class="c1">#     _ = os.system(&#39;clear&#39;)</span>
+        <span class="c1"># print(str(self).replace(&quot;, &quot;, &quot;\t&quot;))</span>
+    
+<div class="viewcode-block" id="LogSet.addExistingLog">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.addExistingLog">[docs]</a>
+    <span class="k">def</span> <span class="nf">addExistingLog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log</span> <span class="p">:</span> <span class="n">Log</span><span class="p">,</span> <span class="n">track_dyn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an existing log object to the set.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                log (Log): the log to add to the set</span>
+<span class="sd">                track_dyn (bool): True if log should be dynamically tracked</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">track_dyn</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">section_ranges</span><span class="p">:</span>
+                <span class="n">obj_key</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="k">else</span> <span class="s2">&quot;-&quot;</span>
+                <span class="k">if</span> <span class="n">obj_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dyn_logs</span><span class="p">[</span><span class="n">obj_key</span><span class="p">][</span><span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">]</span> <span class="o">=</span> <span class="n">log</span></div>
+
+    
+<div class="viewcode-block" id="LogSet.getLogList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.getLogList">[docs]</a>
+    <span class="k">def</span> <span class="nf">getLogList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">as_str</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the stored logs as a list.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                as_str (bool): True if the log should be returned in str format</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                the log list in list or str format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">as_str</span><span class="p">:</span>
+            <span class="n">logs_str</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">:</span>
+                <span class="n">logs_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">log</span><span class="p">))</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">logs_str</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLogList</span><span class="p">(</span><span class="n">as_str</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LogSet.getList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.getList">[docs]</a>
+    <span class="k">def</span> <span class="nf">getList</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return log set as a list&quot;&quot;&quot;</span>
+        <span class="n">log_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLogList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">log</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">log_list</span><span class="p">):</span>
+            <span class="n">log_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">log_list</span></div>
+
+    
+<div class="viewcode-block" id="LogSet.fromList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.fromList">[docs]</a>
+    <span class="k">def</span> <span class="nf">fromList</span><span class="p">(</span><span class="n">log_list</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a log set from a list.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                log_list (list): the list representation of the logs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_set</span> <span class="o">=</span> <span class="n">LogSet</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">log_str</span> <span class="ow">in</span> <span class="n">log_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">log_str</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="n">log</span> <span class="o">=</span> <span class="n">Log</span><span class="o">.</span><span class="n">fromStr</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
+                <span class="n">log_set</span><span class="o">.</span><span class="n">addExistingLog</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">log_set</span></div>
+
+    
+<div class="viewcode-block" id="LogSet.removeCuration">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.removeCuration">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeCuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove all curation logs in the session.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to remove curation for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">obj_name</span> <span class="o">==</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="ow">and</span> 
+                <span class="p">(</span><span class="s2">&quot;curated&quot;</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span> <span class="ow">or</span> <span class="s2">&quot;curation&quot;</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">log</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="LogSet.getLastIndex">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSet.getLastIndex">[docs]</a>
+    <span class="k">def</span> <span class="nf">getLastIndex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cname</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Scan the history and return the date for a contour on a given section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">                cname (str): the contour name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_logs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="o">==</span> <span class="n">cname</span> <span class="ow">and</span> 
+                <span class="p">(</span><span class="s2">&quot;ztrace&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">)</span> <span class="ow">and</span> 
+                <span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="n">containsSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="n">section_ranges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">i</span>
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">i</span></div>
+</div>
+
+
+<div class="viewcode-block" id="LogSetPair">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSetPair">[docs]</a>
+<span class="k">class</span> <span class="nc">LogSetPair</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logset0</span> <span class="p">:</span> <span class="n">LogSet</span><span class="p">,</span> <span class="n">logset1</span> <span class="p">:</span> <span class="n">LogSet</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a logset pair (ideally when dealing with two series).</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                logset1 (LogSet): the first logset (usually self)</span>
+<span class="sd">                logset2 (LogSet): the second logset (usually other)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logset0</span> <span class="o">=</span> <span class="n">logset0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logset1</span> <span class="o">=</span> <span class="n">logset1</span>
+
+        <span class="c1"># get the index for the diverge</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="p">(</span>
+            <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logset0</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logset1</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logset0</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">logset1</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_shared_index</span> <span class="o">=</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">complete_match</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logset0</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logset1</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)</span>
+        <span class="p">)</span>
+    
+<div class="viewcode-block" id="LogSetPair.importLogs">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.log.LogSetPair.importLogs">[docs]</a>
+    <span class="k">def</span> <span class="nf">importLogs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">,</span>
+        <span class="n">traces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">ztraces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">srange</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">regex_filters</span><span class="o">=</span><span class="p">[],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Import the history data from the other logset into the series logset</span>
+
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series to modify the history for</span>
+<span class="sd">                traces (bool): True if trace history should be imported</span>
+<span class="sd">                ztraces (bool): True if the ztrace history should be imported</span>
+<span class="sd">                srange (tuple): the range of sections (exclusive)</span>
+<span class="sd">                regex_filters (list): the list of regex filters used to filter names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># filter out similar history</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_shared_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logset1</span><span class="o">.</span><span class="n">all_logs</span><span class="p">)):</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logset1</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="c1"># check for trace/ztrace status</span>
+            <span class="n">include_log</span> <span class="o">=</span> <span class="n">traces</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;ztrace&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">)</span>
+            <span class="n">include_log</span> <span class="o">|=</span> <span class="n">ztraces</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;ztrace&quot;</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">)</span>
+            <span class="n">include_log</span> <span class="o">&amp;=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="n">obj_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">include_log</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c1"># skip if not desired status</span>
+
+            <span class="c1"># check filters</span>
+            <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">regex_filters</span> <span class="k">else</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">regex_filters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span><span class="p">)):</span>
+                    <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">passes_filters</span><span class="p">:</span> 
+                <span class="k">continue</span> <span class="c1"># skip if does not pass filters</span>
+
+            <span class="c1"># trim section range and check if contains sections within range</span>
+            <span class="k">if</span> <span class="n">srange</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">log</span><span class="o">.</span><span class="n">trimSectionRange</span><span class="p">(</span><span class="n">srange</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># update both the self series logs</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">log_set</span><span class="o">.</span><span class="n">addExistingLog</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logset0</span><span class="o">.</span><span class="n">addExistingLog</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="c1"># iterate through the series log and update the last users</span>
+            <span class="n">last_user_data</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># obj_name : (user, datetime)</span>
+            <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">logset0</span><span class="o">.</span><span class="n">all_logs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">last_shared_index</span><span class="o">+</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">log</span> <span class="p">:</span> <span class="n">Log</span>
+                <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;ztrace&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log</span><span class="o">.</span><span class="n">event</span><span class="p">):</span>
+                    <span class="n">user0</span><span class="p">,</span> <span class="n">dt0</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="n">date</span> <span class="o">+</span> <span class="n">log</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+                    <span class="c1"># if obj name exists in data, check against date</span>
+                    <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">obj_name</span> <span class="ow">in</span> <span class="n">last_user_data</span><span class="p">:</span>
+                        <span class="n">user1</span><span class="p">,</span> <span class="n">dt1</span> <span class="o">=</span> <span class="n">last_user_data</span><span class="p">[</span><span class="n">log</span><span class="o">.</span><span class="n">obj_name</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">dt0</span> <span class="o">&gt;=</span> <span class="n">dt1</span><span class="p">:</span>
+                            <span class="n">last_user_data</span><span class="p">[</span><span class="n">log</span><span class="o">.</span><span class="n">obj_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">user0</span><span class="p">,</span> <span class="n">dt0</span><span class="p">)</span>
+                    <span class="c1"># if it does not exist in data so far, store</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">last_user_data</span><span class="p">[</span><span class="n">log</span><span class="o">.</span><span class="n">obj_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">user0</span><span class="p">,</span> <span class="n">dt0</span><span class="p">)</span>
+            
+            <span class="c1"># update the series attributes</span>
+            <span class="k">for</span> <span class="n">obj_name</span><span class="p">,</span> <span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span> <span class="ow">in</span> <span class="n">last_user_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="s2">&quot;last_user&quot;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

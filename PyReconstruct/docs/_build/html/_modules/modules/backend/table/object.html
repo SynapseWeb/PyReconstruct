@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.backend.table.object &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.backend.table.object</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.table</span> <span class="kn">import</span> <span class="n">ObjectTableWidget</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Series</span><span class="p">,</span>
+    <span class="n">Section</span><span class="p">,</span>
+    <span class="n">Trace</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="ObjectTableManager">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager">[docs]</a>
+<span class="k">class</span> <span class="nc">ObjectTableManager</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the object table manager.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                mainwindow (MainWindow): the parent main window object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">series_states</span>
+    
+<div class="viewcode-block" id="ObjectTableManager.newTable">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.newTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">newTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new object list widget.&quot;&quot;&quot;</span>
+        <span class="n">new_table</span> <span class="o">=</span> <span class="n">ObjectTableWidget</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span>
+            <span class="bp">self</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_table</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">addDockWidget</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span><span class="p">,</span> <span class="n">new_table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.updateSection">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the data and the table for a specific section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section object</span>
+<span class="sd">                section_num (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if the transform was modified, update all traces on section</span>
+        <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">tformsModified</span><span class="p">(</span><span class="n">scaling_only</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">updated_contours</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">updated_contours</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">getAllModifiedNames</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">updated_contours</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.toggleCuration">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.toggleCuration">[docs]</a>
+    <span class="k">def</span> <span class="nf">toggleCuration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Quick shortcut to toggle curation on/off for the tables.&quot;&quot;&quot;</span>
+        <span class="n">cr_on</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Curate&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Curate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">cr_on</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="n">table</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU FUNCTIONS</span>
+
+<div class="viewcode-block" id="ObjectTableManager.refresh">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reload all of the section data.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">(</span><span class="n">refresh_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.updateTable">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span> <span class="p">:</span> <span class="n">ObjectTableWidget</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a table with the current data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                table (ObjectTableWidget): the table to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.updateTables">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateTables">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update all tables.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.updateObjects">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the objects each table.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the list objects to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.findObject">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.findObject">[docs]</a>
+    <span class="k">def</span> <span class="nf">findObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find an object in the series.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object</span>
+<span class="sd">                first (bool): whether to find first or last object in series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+            <span class="n">snum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getStart</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getEnd</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">setToObject</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableManager.deleteObjects">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.deleteObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an object or objects on every section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the list of names for the objects to delete</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="c1"># delete the object on every section</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">deleteObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="p">)</span>
+
+        <span class="c1"># update the dictionary data and tables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableManager.editAttributes">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editAttributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">editAttributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">attr_trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">sections</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit objects on every section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                obj_names (list): the names of the objects to rename</span>
+<span class="sd">                attr_trace (Trace): the trace holding the new attributes</span>
+<span class="sd">                section (list): the sections to modify attributes for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        
+        <span class="c1"># modify the object on every section</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">attr_trace</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">fill_mode</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">editObjectAttributes</span><span class="p">(</span>
+            <span class="n">obj_names</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="n">color</span><span class="p">,</span>
+            <span class="n">tags</span><span class="p">,</span>
+            <span class="n">mode</span><span class="p">,</span>
+            <span class="n">sections</span><span class="p">,</span>
+            <span class="n">series_states</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">series_states</span>
+        <span class="p">)</span>
+
+        <span class="n">all_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span><span class="p">:</span> <span class="n">all_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># update the table data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">all_names</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableManager.editRadius">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editRadius">[docs]</a>
+    <span class="k">def</span> <span class="nf">editRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">new_rad</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the radii of all traces of an object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the names of objects to modify</span>
+<span class="sd">                new_rad (float): the new radius for the traces of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        
+        <span class="c1"># iterate through all sections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">editObjectRadius</span><span class="p">(</span>
+            <span class="n">obj_names</span><span class="p">,</span>
+            <span class="n">new_rad</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># update the table data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.editShape">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editShape">[docs]</a>
+    <span class="k">def</span> <span class="nf">editShape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">new_shape</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the shapes of all traces of an object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the names of objects to modify</span>
+<span class="sd">                new_shape (list): the new shape for the traces of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        
+        <span class="c1"># iterate through all sections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">editObjectShape</span><span class="p">(</span>
+            <span class="n">obj_names</span><span class="p">,</span>
+            <span class="n">new_shape</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># update the table data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+        
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.removeAllTraceTags">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.removeAllTraceTags">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeAllTraceTags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove all tags from all trace on a selected object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): a list of object names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="c1"># iterate through all the sections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">removeAllTraceTags</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableManager.hideObjects">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.hideObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">hideObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">hide</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide all traces of an object throughout the series.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the names of objects to hide</span>
+<span class="sd">                hide (bool): True if object should be hidden</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+
+        <span class="c1"># iterate through sections and hide the traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">hideObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">hide</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="p">)</span>
+            
+        <span class="c1"># update the view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.edit3D">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.edit3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">edit3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">new_type</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_opacity</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the 3D settings for a set of objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the objects to modify</span>
+<span class="sd">                new_type (str): the 3D type for the objects</span>
+<span class="sd">                new_opacity (float): the opacity for the 3D objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+
+        <span class="c1"># set the series settings</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="n">obj_settings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_type</span><span class="p">:</span>
+                <span class="n">obj_settings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_type</span>
+            <span class="k">if</span> <span class="n">new_opacity</span><span class="p">:</span>
+                <span class="n">obj_settings</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_opacity</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">,</span> <span class="n">obj_settings</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.createZtrace">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.createZtrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">createZtrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_names</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">cross_sectioned</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create ztraces from a set of objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_names (list): the objects to create ztraces for</span>
+<span class="sd">                croess_sectioned (bool): True if object is cross-sectioned</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">saveAllData</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">createZtrace</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cross_sectioned</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">refreshTables</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableManager.close">
+<a class="viewcode-back" href="../../../../modules.backend.table.html#modules.backend.table.object.ObjectTableManager.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close all tables.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

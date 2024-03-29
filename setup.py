@@ -24,7 +24,8 @@ INSTALL_REQUIRES = [
       'vedo',
       'zarr',
       'lxml',
-      'gitpython'
+      'gitpython',
+      'orgparse'
 ]
 
 

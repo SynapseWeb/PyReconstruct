@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.section &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.section</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">.contour</span> <span class="kn">import</span> <span class="n">Contour</span>
+<span class="kn">from</span> <span class="nn">.trace</span> <span class="kn">import</span> <span class="n">Trace</span>
+<span class="kn">from</span> <span class="nn">.flag</span> <span class="kn">import</span> <span class="n">Flag</span>
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="kn">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">LogSetPair</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">getDistanceFromTrace</span><span class="p">,</span>
+    <span class="n">distance</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.constants</span> <span class="kn">import</span> <span class="n">assets_dir</span>
+
+
+<div class="viewcode-block" id="Section">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section">[docs]</a>
+<span class="k">class</span> <span class="nc">Section</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the section file.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                n (int): the section number</span>
+<span class="sd">                series (Series): the series that contains the section</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getwdir</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ztraces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_hide</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">section_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        
+        <span class="n">Section</span><span class="o">.</span><span class="n">updateJSON</span><span class="p">(</span><span class="n">section_data</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>  <span class="c1"># update any missing attributes</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brightness</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_locked</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;align_locked&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="n">a</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contours</span> <span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Contour</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]:</span>
+            <span class="n">trace_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">trace_data</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]:</span>
+                <span class="n">trace</span> <span class="o">=</span> <span class="n">Trace</span><span class="o">.</span><span class="n">fromList</span><span class="p">(</span><span class="n">trace_data</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="c1"># screen for defective traces</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="n">l</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">trace_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">trace_list</span>
+            <span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="n">Flag</span><span class="o">.</span><span class="n">fromList</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">calgrid</span> <span class="o">=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;calgrid&quot;</span><span class="p">]</span>
+
+        <span class="c1"># for use with GUI</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clearTracking</span><span class="p">()</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tform</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span> <span class="o">!=</span> <span class="s2">&quot;no-alignment&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Transform</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="nd">@tform</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">tform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_tform</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span> <span class="o">!=</span> <span class="s2">&quot;no-alignment&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_tform</span>
+    
+    <span class="c1"># STATIC METHOD</span>
+<div class="viewcode-block" id="Section.updateJSON">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.updateJSON">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateJSON</span><span class="p">(</span><span class="n">section_data</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add missing attributes to section JSON.</span>
+
+<span class="sd">        (Updates the dictionary in place)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section_data (dict): the JSON data to update</span>
+<span class="sd">                n (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">empty_section</span> <span class="o">=</span> <span class="n">Section</span><span class="o">.</span><span class="n">getEmptyDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">empty_section</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">:</span>
+                <span class="n">section_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">empty_section</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        
+        <span class="c1"># modify brightness/contrast</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">])</span>
+
+        <span class="c1"># scan contours</span>
+        <span class="n">flagged_contours</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]:</span>
+            <span class="n">flagged_traces</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">]):</span>
+                <span class="c1"># convert trace to list format if needed</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                    <span class="n">trace</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;closed&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;negative&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;hidden&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;mode&quot;</span><span class="p">],</span>
+                        <span class="n">trace</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span>
+                    <span class="p">]</span>
+                    <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">trace</span>
+                <span class="c1"># remove history from trace if it exists</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="o">==</span> <span class="mi">9</span><span class="p">:</span>
+                    <span class="n">trace</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="c1"># check for trace mode</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+                    <span class="n">trace</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]</span>
+                <span class="c1"># check for empty/defective traces</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">flagged_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="c1"># remove the flagged defective traces</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">flagged_traces</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="c1"># check if the contour is empty</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">]:</span>
+                <span class="n">flagged_contours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cname</span><span class="p">)</span>
+        <span class="c1"># remove flagged contours</span>
+        <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">flagged_contours</span><span class="p">:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">])</span>
+        
+        <span class="c1"># scan contour names and remove errant whitespace</span>
+        <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">s_cname</span> <span class="o">=</span> <span class="n">cname</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cname</span> <span class="o">!=</span> <span class="n">s_cname</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">s_cname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]:</span>
+                    <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">s_cname</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">s_cname</span><span class="p">]</span> <span class="o">+=</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">]</span>
+                <span class="k">del</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">cname</span><span class="p">])</span>
+        
+        <span class="c1"># remove no-alignment if present</span>
+        <span class="k">if</span> <span class="s2">&quot;no-alignment&quot;</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="s2">&quot;no-alignment&quot;</span><span class="p">])</span>
+        
+        <span class="c1"># iterate through flags and add resolved status or section number and ID</span>
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">flag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="n">flag</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Flag</span><span class="o">.</span><span class="n">generateID</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Section.getDict">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.getDict">[docs]</a>
+    <span class="k">def</span> <span class="nf">getDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert section object into a dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (dict) all of the compiled section data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">brightness</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;align_locked&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_locked</span>
+
+        <span class="c1"># save tforms</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="o">.</span><span class="n">getList</span><span class="p">()</span>
+
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span>
+
+        <span class="c1"># save contours</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">contour_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">contour_name</span><span class="p">]</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span>
+                <span class="n">d</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">][</span><span class="n">contour_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">trace</span><span class="o">.</span><span class="n">getList</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">contour_name</span><span class="p">]</span>
+                <span class="p">]</span>
+        
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">getList</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">]</span>
+
+        <span class="n">d</span><span class="p">[</span><span class="s2">&quot;calgrid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calgrid</span>
+
+        <span class="k">return</span> <span class="n">d</span></div>
+
+    
+    <span class="c1"># STATIC METHOD</span>
+<div class="viewcode-block" id="Section.getEmptyDict">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.getEmptyDict">[docs]</a>
+    <span class="k">def</span> <span class="nf">getEmptyDict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a dict representing an empty section.&quot;&quot;&quot;</span>
+        <span class="n">section_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># image location</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.00254</span>  <span class="c1"># microns per pixel</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;align_locked&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># section thickness</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span><span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># identity matrix default</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;contours&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;calgrid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">section_data</span></div>
+
+    
+    <span class="c1"># STATIC METHOD</span>
+<div class="viewcode-block" id="Section.new">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.new">[docs]</a>
+    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span><span class="n">series_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">image_location</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">thickness</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">wdir</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new blank section file.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series_name (str): the name for the series</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">                image_location (str): the file path for the image</span>
+<span class="sd">                mag (float): microns per pixel for the section</span>
+<span class="sd">                thickness (float): the section thickness in microns</span>
+<span class="sd">                wdir (str): the working directory for the sections</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (Section): the newly created section object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">section_data</span> <span class="o">=</span> <span class="n">Section</span><span class="o">.</span><span class="n">getEmptyDict</span><span class="p">()</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">image_location</span><span class="p">)</span>  <span class="c1"># image location</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mag</span>  <span class="c1"># microns per pixel</span>
+        <span class="n">section_data</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">thickness</span>  <span class="c1"># section thickness</span>
+
+        <span class="n">section_fp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wdir</span><span class="p">,</span> <span class="n">series_name</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">snum</span><span class="p">))</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">section_fp</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">section_file</span><span class="p">:</span>
+            <span class="n">section_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">section_data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
+
+   
+<div class="viewcode-block" id="Section.save">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.save">[docs]</a>
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update_series_data</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save file into json.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                update_series_data (bool): True if series data object should be updated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">isWelcomeSeries</span><span class="p">():</span>
+            <span class="k">return</span>
+
+        <span class="c1"># update the series data</span>
+        <span class="k">if</span> <span class="n">update_series_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDict</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="Section.tracesAsList">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.tracesAsList">[docs]</a>
+    <span class="k">def</span> <span class="nf">tracesAsList</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the trace dictionary as a list. Does NOT copy traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): a list of traces</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">trace_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">contour_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">contour_name</span><span class="p">]:</span>
+                <span class="n">trace_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">trace_list</span></div>
+
+    
+<div class="viewcode-block" id="Section.setAlignLocked">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.setAlignLocked">[docs]</a>
+    <span class="k">def</span> <span class="nf">setAlignLocked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">align_locked</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the alignment locked status of the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                align_locked (bool): the new locked status</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_locked</span> <span class="o">=</span> <span class="n">align_locked</span></div>
+
+    
+<div class="viewcode-block" id="Section.getAllModifiedNames">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.getAllModifiedNames">[docs]</a>
+    <span class="k">def</span> <span class="nf">getAllModifiedNames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the names of all the modified traces.&quot;&quot;&quot;</span>
+        <span class="n">trace_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">added_traces</span><span class="p">])</span>
+        <span class="n">trace_names</span> <span class="o">=</span> <span class="n">trace_names</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">removed_traces</span><span class="p">]))</span>
+        <span class="n">trace_names</span> <span class="o">=</span> <span class="n">trace_names</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">trace_names</span></div>
+
+    
+<div class="viewcode-block" id="Section.tformsModified">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.tformsModified">[docs]</a>
+    <span class="k">def</span> <span class="nf">tformsModified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tforms_values_copy</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tforms_values_copy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">scaling_only</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">t1</span><span class="o">.</span><span class="n">det</span> <span class="o">-</span> <span class="n">t2</span><span class="o">.</span><span class="n">det</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">t1</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">t2</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="Section.clearTracking">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.clearTracking">[docs]</a>
+    <span class="k">def</span> <span class="nf">clearTracking</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear the added_traces and removed_traces lists.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">added_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removed_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tforms_values_copy</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags_modified</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+    
+<div class="viewcode-block" id="Section.setMag">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.setMag">[docs]</a>
+    <span class="k">def</span> <span class="nf">setMag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mag</span> <span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the magnification for the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                new_mag (float): the new magnification for the section</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># modify the translation component of the transformation</span>
+        <span class="k">for</span> <span class="n">tform</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">tform</span><span class="o">.</span><span class="n">magScale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag</span><span class="p">,</span> <span class="n">new_mag</span><span class="p">)</span>
+        
+        <span class="c1"># modify the traces</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">():</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">magScale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag</span><span class="p">,</span> <span class="n">new_mag</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="n">new_mag</span></div>
+
+    
+<div class="viewcode-block" id="Section.addTrace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trace to the trace dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to add</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="c1"># do not add trace if less than two points</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># force trace to be open if only two points</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># add to log</span>
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Create trace(s)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">[</span><span class="n">trace</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">added_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.removeTrace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.removeTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a trace from the trace dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to remove from the traces dictionary</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removed_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Delete trace(s)&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.addFlag">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.addFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">addFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a flag to the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                flag (Flag): the flag to add to the section</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags_modified</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Create flag(s)&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.removeFlag">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.removeFlag">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span> <span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a flag from the section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                flag (Flag): the flag to remove from the section</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flags_modified</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Delete flag(s)&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Section.editTraceAttributes">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.editTraceAttributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">editTraceAttributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">],</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">color</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">tags</span> <span class="p">:</span> <span class="nb">set</span><span class="p">,</span> <span class="n">mode</span> <span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">add_tags</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the name and/or color of a trace or set of traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): the list of traces to modify</span>
+<span class="sd">                name (str): the new name</span>
+<span class="sd">                color (tuple): the new color</span>
+<span class="sd">                tags (set): the new set of tags</span>
+<span class="sd">                mode (tuple): the new fill mode for the traces</span>
+<span class="sd">                add_tags (bool): True if tags should be added (rather than replaced)</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="c1"># check if trace was highlighted</span>
+            <span class="k">if</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+                <span class="n">selected</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">selected</span> <span class="o">=</span> <span class="kc">False</span>
+            
+            <span class="c1"># remove the trace and modify</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">new_trace</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_trace</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_trace</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+            <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">add_tags</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+                        <span class="n">new_trace</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_trace</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span>
+            <span class="n">fill_mode</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">style</span><span class="p">,</span> <span class="n">condition</span> <span class="o">=</span> <span class="n">mode</span>
+                <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">style</span>
+                <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">condition</span>
+                <span class="n">new_trace</span><span class="o">.</span><span class="n">fill_mode</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">fill_mode</span><span class="p">)</span>
+            
+            <span class="c1"># log the event</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">new_trace</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Rename to </span><span class="si">{</span><span class="n">new_trace</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Create trace(s) from </span><span class="si">{</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">new_trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># add trace back to scene and highlight if needed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">new_trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">selected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.editTraceRadius">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.editTraceRadius">[docs]</a>
+    <span class="k">def</span> <span class="nf">editTraceRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">],</span> <span class="n">new_rad</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the radius of a trace or set of traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): the list of traces to change</span>
+<span class="sd">                new_rad (float): the new radius for the trace(s)</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_rad</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify radius&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.editTraceShape">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.editTraceShape">[docs]</a>
+    <span class="k">def</span> <span class="nf">editTraceShape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">],</span> <span class="n">new_shape</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the shape of a trace or set of traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): the list of traces to change</span>
+<span class="sd">                new_shape (list): the new shape for the trace(s)</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tform</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify shape&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.findClosest">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.findClosest">[docs]</a>
+    <span class="k">def</span> <span class="nf">findClosest</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">field_x</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">field_y</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="n">traces_in_view</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">include_hidden</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find closest trace/ztrace to field coordinates in a given radius.</span>
+<span class="sd">        </span>
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                field_x (float): x coordinate of search center</span>
+<span class="sd">                field_y (float): y coordinate of search center</span>
+<span class="sd">                radius (float): 1/2 of the side length of search square</span>
+<span class="sd">                traces_in_view (list): the traces in the window viewed by the user</span>
+<span class="sd">                include_hidden (bool): True if hidden traces can be returned</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (tuple): the object closest to the point and the type</span>
+<span class="sd">                None if no trace points are found within the radius</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">min_distance</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">closest</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">closest_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">min_interior_distance</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">closest_trace_interior</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tform</span>
+
+        <span class="c1"># only check the traces within the view if provided</span>
+        <span class="k">if</span> <span class="n">traces_in_view</span><span class="p">:</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="n">traces_in_view</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">()</span>
+        
+        <span class="c1"># iterate through all traces to get closest</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="c1"># skip hidden traces</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">include_hidden</span> <span class="ow">and</span> <span class="n">trace</span><span class="o">.</span><span class="n">hidden</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">point</span><span class="p">)</span>
+                <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+            
+            <span class="c1"># find the distance of the point from each trace</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">getDistanceFromTrace</span><span class="p">(</span>
+                <span class="n">field_x</span><span class="p">,</span>
+                <span class="n">field_y</span><span class="p">,</span>
+                <span class="n">points</span><span class="p">,</span>
+                <span class="n">factor</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">mag</span><span class="p">,</span>
+                <span class="n">absolute</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">closest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">:</span>
+                <span class="n">min_distance</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+                <span class="n">closest</span> <span class="o">=</span> <span class="n">trace</span>
+                <span class="n">closest_type</span> <span class="o">=</span> <span class="s2">&quot;trace&quot;</span>
+            
+            <span class="c1"># check if the point is inside any filled trace</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">trace</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span>
+                <span class="n">dist</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> 
+                <span class="p">(</span><span class="n">closest_trace_interior</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">min_interior_distance</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">min_interior_distance</span> <span class="o">=</span> <span class="n">dist</span>
+                <span class="n">closest_trace_interior</span> <span class="o">=</span> <span class="n">trace</span>
+        
+        <span class="c1"># check for ztrace points close by</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ztrace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+                        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">pt</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+                        <span class="n">dist</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">closest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">:</span>
+                            <span class="n">min_distance</span> <span class="o">=</span> <span class="n">dist</span>
+                            <span class="n">closest</span> <span class="o">=</span> <span class="p">(</span><span class="n">ztrace</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                            <span class="n">closest_type</span> <span class="o">=</span> <span class="s2">&quot;ztrace_pt&quot;</span>
+        
+        <span class="c1"># check for flags close by</span>
+        <span class="n">show_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show_flags</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;unresolved&quot;</span> <span class="ow">and</span> <span class="n">flag</span><span class="o">.</span><span class="n">resolved</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">flag</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">field_x</span><span class="p">,</span> <span class="n">field_y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">closest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">:</span>
+                    <span class="n">min_distance</span> <span class="o">=</span> <span class="n">dist</span>
+                    <span class="n">closest</span> <span class="o">=</span> <span class="n">flag</span>
+                    <span class="n">closest_type</span> <span class="o">=</span> <span class="s2">&quot;flag&quot;</span>
+        
+        <span class="c1"># check for radius and if pointer is in interior</span>
+        <span class="k">if</span> <span class="n">min_distance</span> <span class="o">&gt;</span> <span class="n">radius</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">closest_trace_interior</span><span class="p">:</span>
+                <span class="n">closest</span> <span class="o">=</span> <span class="n">closest_trace_interior</span>
+                <span class="n">closest_type</span> <span class="o">=</span> <span class="s2">&quot;trace&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">closest</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">closest_type</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">closest</span><span class="p">,</span> <span class="n">closest_type</span></div>
+
+    
+<div class="viewcode-block" id="Section.deselectAllTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.deselectAllTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">deselectAllTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deselect all traces.</span>
+<span class="sd">        </span>
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_ztraces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+    
+<div class="viewcode-block" id="Section.selectAllTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.selectAllTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">selectAllTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select all traces.</span>
+<span class="sd">        </span>
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="Section.hideTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.hideTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">hideTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hide</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide traces.</span>
+
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): the traces to hide</span>
+<span class="sd">                hide (bool): True if traces should be hidden</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modified</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span>
+
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="n">modified</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">setHidden</span><span class="p">(</span><span class="n">hide</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">return</span> <span class="n">modified</span></div>
+
+    
+<div class="viewcode-block" id="Section.unhideAllTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.unhideAllTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">unhideAllTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unhide all traces on the section.</span>
+
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modified</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracesAsList</span><span class="p">():</span>
+            <span class="n">hidden</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">hidden</span>
+            <span class="k">if</span> <span class="n">hidden</span><span class="p">:</span>
+                <span class="n">modified</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">trace</span><span class="o">.</span><span class="n">setHidden</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">modified</span></div>
+
+    
+<div class="viewcode-block" id="Section.makeNegative">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.makeNegative">[docs]</a>
+    <span class="k">def</span> <span class="nf">makeNegative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a set of traces negative.</span>
+
+<span class="sd">        (Only meant for GUI use.)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                negative (bool): the negative status of the traces to modify</span>
+<span class="sd">                log_event (bool): true if the event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">negative</span> <span class="o">=</span> <span class="n">negative</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.deleteTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.deleteTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">flags</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete selected traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                traces (list): a list of traces to delete (default is selected traces)</span>
+<span class="sd">                flags (list): a list of flags to delete (default is selected flags)</span>
+<span class="sd">                log_event (bool): True if event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modified</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">traces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="n">modified</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">flags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="n">modified</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeFlag</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="n">log_event</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">modified</span></div>
+
+    
+<div class="viewcode-block" id="Section.translateTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.translateTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">translateTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dx</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dy</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Translate the selected traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                dx (float): x-translate</span>
+<span class="sd">                dy (float): y-translate</span>
+<span class="sd">                log_event (bool): True if event should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tform</span>
+
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removeTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">):</span>
+                <span class="c1"># apply forward transform</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+                <span class="c1"># apply translate</span>
+                <span class="n">x</span> <span class="o">+=</span> <span class="n">dx</span>
+                <span class="n">y</span> <span class="o">+=</span> <span class="n">dy</span>
+                <span class="c1"># apply reverse transform</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="c1"># replace point</span>
+                <span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify trace(s)&quot;</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">ztrace</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ztraces</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span> <span class="o">=</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="c1"># apply forward tform</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="c1"># apply translate</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">dx</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">dy</span>
+            <span class="c1"># apply reverse transform</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># replace point</span>
+            <span class="n">ztrace</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+            <span class="c1"># keep track of modified ztrace</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">modified_ztraces</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">ztrace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify ztrace&quot;</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_flags</span><span class="p">:</span>
+            <span class="c1"># apply forward tform</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">flag</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="c1"># apply translate</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">dx</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">dy</span>
+            <span class="c1"># apply reverse tform</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">inverted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># replace point</span>
+            <span class="n">flag</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">flag</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+            <span class="c1"># keep track of modified flag</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;Modify flag&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Section.importTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.section.Section.importTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">importTraces</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="n">other</span><span class="p">,</span>
+            <span class="n">regex_filters</span><span class="o">=</span><span class="p">[],</span> 
+            <span class="n">threshold</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span> 
+            <span class="n">flag_conflicts</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> 
+            <span class="n">histories</span> <span class="p">:</span> <span class="n">LogSetPair</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+            <span class="n">favored</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">dt_str</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import the traces from another section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Section): the section with traces to import</span>
+<span class="sd">                regex_filters (list): the list of regex filters for objects</span>
+<span class="sd">                threshold (float): the overlap threshold</span>
+<span class="sd">                flag_conflicts (bool): True if conflicts should be flagged</span>
+<span class="sd">                histories (LogSetPair): the self history and the other history</span>
+<span class="sd">                favored (str): the favored series in the case of a conflict (&quot;self&quot;, &quot;other&quot;, or &quot;&quot;)</span>
+<span class="sd">                dt_str (str): the datetime string for tagging purposes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_contour_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">all_contour_names</span><span class="p">:</span>
+            <span class="c1"># check filters, skip if does not pass</span>
+            <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">regex_filters</span> <span class="k">else</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">regex_filters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">cname</span><span class="p">)):</span>
+                    <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">passes_filters</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># create an empty contour if does not exist</span>
+            <span class="k">if</span> <span class="n">cname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="n">cname</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">if</span> <span class="n">cname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+                <span class="n">other</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="n">cname</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="c1"># check the histories to find which contour has been modified since diverge</span>
+            <span class="n">conflict_inclusive</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># variable to keep track if all conflicts should always be flagged or only when both series have a conflict</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">histories</span><span class="p">:</span>
+                <span class="n">conflict_inclusive</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># be conflict inclusive if user explicitly requested to not check history</span>
+            <span class="k">elif</span> <span class="n">histories</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">histories</span><span class="o">.</span><span class="n">complete_match</span> <span class="ow">and</span> <span class="n">histories</span><span class="o">.</span><span class="n">last_shared_index</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># determine which series have not been modified since diverge</span>
+                <span class="n">modified_since_diverge</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">((</span><span class="n">histories</span><span class="o">.</span><span class="n">logset0</span><span class="p">,</span> <span class="n">histories</span><span class="o">.</span><span class="n">logset1</span><span class="p">)):</span>
+                    <span class="n">last_index</span> <span class="o">=</span> <span class="n">ls</span><span class="o">.</span><span class="n">getLastIndex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">cname</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">last_index</span> <span class="o">&gt;</span> <span class="n">histories</span><span class="o">.</span><span class="n">last_shared_index</span><span class="p">:</span>
+                        <span class="n">modified_since_diverge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                
+                <span class="k">if</span> <span class="n">modified_since_diverge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">modified_since_diverge</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>  <span class="c1"># if only one of the contours has been modified since diverge</span>
+                    <span class="c1"># if the other series is the one modified, replace contour and move to next</span>
+                    <span class="k">if</span> <span class="n">modified_since_diverge</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cname</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span> <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">])</span>  <span class="c1"># remove contour from self if empty</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">modified_since_diverge</span><span class="p">):</span>  <span class="c1"># if neither contour has been modified since diverge, skip completely (risky)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span> <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">])</span>  <span class="c1"># remove contour from self if empty</span>
+                    <span class="k">continue</span>
+                <span class="n">conflict_inclusive</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># be conflict inclusive if history was checked</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">conflict_inclusive</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># be conflict EXCLUSIVE if history is inconclusive</span>
+            
+            <span class="c1"># create an empty contour if does not exist</span>
+            <span class="k">if</span> <span class="n">cname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="n">cname</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="c1"># import the contour</span>
+            <span class="n">conflict_traces_s</span><span class="p">,</span> <span class="n">conflict_traces_o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">importTraces</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">],</span> <span class="n">threshold</span><span class="p">)</span>
+
+            <span class="c1"># continue if no conflict traces</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">conflict_traces_s</span> <span class="ow">or</span> <span class="n">conflict_traces_o</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="c1"># add to modified contours set otherwise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">modified_contours</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cname</span><span class="p">)</span>
+
+            <span class="c1"># iterate through conflict pool and favor the requested traces</span>
+            <span class="k">if</span> <span class="n">favored</span><span class="p">:</span>
+                <span class="c1"># set traces1 variable to be favored traces and traces2 to be unfavored traces</span>
+                <span class="k">if</span> <span class="n">favored</span> <span class="o">==</span> <span class="s2">&quot;self&quot;</span><span class="p">:</span>
+                    <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span> <span class="o">=</span> <span class="n">conflict_traces_s</span><span class="p">,</span> <span class="n">conflict_traces_o</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">traces1</span><span class="p">,</span> <span class="n">traces2</span> <span class="o">=</span> <span class="n">conflict_traces_o</span><span class="p">,</span> <span class="n">conflict_traces_s</span>
+                <span class="c1"># iterate through traces and delete overlaps in unfavored series</span>
+                <span class="k">for</span> <span class="n">trace1</span> <span class="ow">in</span> <span class="n">traces1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">trace2</span> <span class="ow">in</span> <span class="n">traces2</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">trace1</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">trace2</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+                            <span class="n">traces2</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace2</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace2</span><span class="p">)</span>
+                <span class="c1"># clear favored traces, as they will never be conflicts</span>
+                <span class="n">traces1</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="c1"># any traces left in unfavored traces will be flagged</span>
+            
+            <span class="c1"># flag the remaining conflicts</span>
+            <span class="k">if</span> <span class="n">flag_conflicts</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">conflict_inclusive</span> <span class="ow">and</span> <span class="p">(</span><span class="n">conflict_traces_s</span> <span class="ow">or</span> <span class="n">conflict_traces_o</span><span class="p">)</span> <span class="ow">or</span>  <span class="c1"># if history has been checked, be inclusive with conflicts</span>
+                <span class="ow">not</span> <span class="n">conflict_inclusive</span> <span class="ow">and</span> <span class="p">(</span><span class="n">conflict_traces_s</span> <span class="ow">and</span> <span class="n">conflict_traces_o</span><span class="p">)</span>  <span class="c1"># if history has not been checked, be exclusive with conflicts</span>
+            <span class="p">):</span>                                        
+                <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">conflict_traces_s</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">dt_str</span><span class="p">:</span>
+                        <span class="n">trace</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt_str</span><span class="si">}</span><span class="s2">-ic1&quot;</span><span class="p">)</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">getCentroid</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Flag</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;import-conflict_</span><span class="si">{</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">conflict_traces_o</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">dt_str</span><span class="p">:</span>
+                        <span class="n">trace</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt_str</span><span class="si">}</span><span class="s2">-ic2&quot;</span><span class="p">)</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">getCentroid</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Flag</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;import-conflict_</span><span class="si">{</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">color</span><span class="p">))</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span> <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">cname</span><span class="p">])</span>  <span class="c1"># remove contour from self if empty</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

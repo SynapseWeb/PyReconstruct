@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.dialog.all_options &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.dialog.all_options</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QDialog</span><span class="p">,</span>
+    <span class="n">QWidget</span><span class="p">,</span>
+    <span class="n">QTabWidget</span><span class="p">,</span>
+    <span class="n">QVBoxLayout</span><span class="p">,</span>
+    <span class="n">QHBoxLayout</span><span class="p">,</span>
+    <span class="n">QDialogButtonBox</span><span class="p">,</span>
+    <span class="n">QPushButton</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtGui</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QPainter</span><span class="p">,</span>
+    <span class="n">QColor</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.quick_dialog</span> <span class="kn">import</span> <span class="n">QuickDialog</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+
+<div class="viewcode-block" id="AllOptionsDialog">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog">[docs]</a>
+<span class="k">class</span> <span class="nc">AllOptionsDialog</span><span class="p">(</span><span class="n">QDialog</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the dialog for all series/user options</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                parent (QWidget): the parent widget</span>
+<span class="sd">                series (Series): the series with optionsto view/modify</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="n">QTabWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createWidgets</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeWidgets</span><span class="p">()</span>
+
+        <span class="n">full_vlayout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="n">full_vlayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="p">)</span>    
+
+        <span class="n">QBtn</span> <span class="o">=</span> <span class="n">QDialogButtonBox</span><span class="o">.</span><span class="n">Ok</span> <span class="o">|</span> <span class="n">QDialogButtonBox</span><span class="o">.</span><span class="n">Cancel</span>
+        <span class="n">buttonbox</span> <span class="o">=</span> <span class="n">QDialogButtonBox</span><span class="p">(</span><span class="n">QBtn</span><span class="p">)</span>
+        <span class="n">buttonbox</span><span class="o">.</span><span class="n">accepted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accept</span><span class="p">)</span>
+        <span class="n">buttonbox</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reject</span><span class="p">)</span>
+
+        <span class="n">reset_defaults_button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="s2">&quot;Reset Defaults&quot;</span><span class="p">)</span>
+        <span class="n">reset_defaults_button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resetDefaults</span><span class="p">)</span>
+        <span class="n">buttonbox</span><span class="o">.</span><span class="n">addButton</span><span class="p">(</span><span class="n">reset_defaults_button</span><span class="p">,</span> <span class="n">QDialogButtonBox</span><span class="o">.</span><span class="n">ResetRole</span><span class="p">)</span>
+
+        <span class="n">full_vlayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">buttonbox</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">full_vlayout</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="AllOptionsDialog.getWidgetsLayout">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.getWidgetsLayout">[docs]</a>
+    <span class="k">def</span> <span class="nf">getWidgetsLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a layout from a predifined widget structure</span>
+
+<span class="sd">        (Ideally the structure for a full tab)</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                structure (list): the desired layout structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vlayout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">structure</span><span class="p">:</span>
+            <span class="n">hlayout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                    <span class="n">l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWidgetsLayout</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="n">hlayout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_widgets</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+                    <span class="n">hlayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+            <span class="n">vlayout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">hlayout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vlayout</span></div>
+
+
+<div class="viewcode-block" id="AllOptionsDialog.placeWidgets">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.placeWidgets">[docs]</a>
+    <span class="k">def</span> <span class="nf">placeWidgets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+        <span class="c1"># this is what goes into </span>
+        <span class="n">tab_structure</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Mouse Tools&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s2">&quot;pointer&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;closed_trace&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;knife&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;flag_defaults&quot;</span><span class="p">]</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;View&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;show_flags&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;find_zoom&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;smoothing_3D&quot;</span><span class="p">]</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;User/Series&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;backup&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;left_handed&quot;</span><span class="p">]</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;Lists&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s2">&quot;object_columns&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;trace_columns&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s2">&quot;flag_columns&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">tab_name</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="ow">in</span> <span class="n">tab_structure</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">widget</span> <span class="o">=</span> <span class="n">QWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">vlayout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getWidgetsLayout</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+            <span class="n">widget</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">vlayout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addTab</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="n">tab_name</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="AllOptionsDialog.createWidgets">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.createWidgets">[docs]</a>
+    <span class="k">def</span> <span class="nf">createWidgets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_defaults</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the widgets for each of the options</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                use_defaults (bool): True if all values should be set at defaults instead of current settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_widgets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># pointer</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;pointer&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Shape:&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;radio&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Rectangle&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">==</span><span class="s2">&quot;rect&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;Lasso&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">==</span><span class="s2">&quot;lasso&quot;</span><span class="p">))],</span>
+            <span class="p">[</span><span class="s2">&quot;Type:&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;radio&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Include intersected traces&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">==</span><span class="s2">&quot;inc&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;Exclude intersected traces&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">==</span><span class="s2">&quot;exc&quot;</span><span class="p">))],</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Diplay closest field item&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;display_closest&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;rect&quot;</span> <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;lasso&quot;</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="s2">&quot;inc&quot;</span> <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;exc&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;pointer&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">t</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;display_closest&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;pointer&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># closed_trace</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Automatically merge selected traces&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;auto_merge&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;auto_merge&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;closed_trace&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># grid</span>
+        <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;Element size:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">w</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">h</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Distance:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">dx</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">dy</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Number&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="n">nx</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="n">ny</span><span class="p">)],</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Sampling frame&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;sampling_frame_grid&quot;</span><span class="p">)))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[:</span><span class="mi">6</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;sampling_frame_grid&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># flag_defaults</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Default name:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_name&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)),</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;Default color:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_color&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)),</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_name&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_color&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;flag_defaults&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># knife</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;When using the knife, objects smaller than this percent&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;of the original trace area will be automatically deleted.&quot;</span><span class="p">],</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">[</span><span class="s2">&quot;Knife delete threshold (%):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;knife_del_threshold&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;knife_del_threshold&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;knife&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># smoothing_3D</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;3D_smoothing&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;3D smoothing:&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;radio&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="s2">&quot;Laplacian (most smooth)&quot;</span><span class="p">,</span> <span class="n">opt</span> <span class="o">==</span> <span class="s2">&quot;laplacian&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;Humphrey (less smooth)&quot;</span><span class="p">,</span> <span class="n">opt</span> <span class="o">==</span> <span class="s2">&quot;humphrey&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;None (blocky)&quot;</span><span class="p">,</span> <span class="n">opt</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">smoothing_alg</span> <span class="o">=</span> <span class="s2">&quot;laplacian&quot;</span>
+            <span class="k">elif</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">smoothing_alg</span> <span class="o">=</span> <span class="s2">&quot;humphrey&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">smoothing_alg</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;3D_smoothing&quot;</span><span class="p">,</span> <span class="n">smoothing_alg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;smoothing_3D&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># show_ztraces</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;show ztraces in field&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)))],</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;show_ztraces&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># show_flags</span>
+        <span class="n">show_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Display flags:&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;radio&quot;</span><span class="p">,</span>
+              <span class="p">(</span><span class="s2">&quot;All flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">),</span>
+              <span class="p">(</span><span class="s2">&quot;Only unresolved flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;unresolved&quot;</span><span class="p">),</span>
+              <span class="p">(</span><span class="s2">&quot;No flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">)</span>
+            <span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+            <span class="k">elif</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span> <span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">show_flags</span> <span class="o">=</span> <span class="s2">&quot;unresolved&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">,</span> <span class="n">show_flags</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;show_flags&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># flag_size</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Flag size:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;flag_size&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># fill_opacity</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Transparent fill opacity:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;fill_opacity&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># find_zoom</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Zoom level for finding contours:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;find_zoom&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;find_zoom&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;find_zoom&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># user</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Username:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span><span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># left_handed</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;left-handed&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;left_handed&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;left_handed&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;left_handed&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># columns</span>
+        <span class="k">for</span> <span class="n">table_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;trace&quot;</span><span class="p">,</span> <span class="s2">&quot;flag&quot;</span><span class="p">):</span>
+            <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">table_type</span> <span class="o">+</span> <span class="s2">&quot;_columns&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()))]</span>
+            <span class="p">]</span>
+            <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="n">table_type</span> <span class="o">+</span> <span class="s2">&quot;_columns&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="n">table_type</span> <span class="o">+</span> <span class="s2">&quot;_columns&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+        
+        <span class="c1"># backup</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Backup directory:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span>
+
+        <span class="c1"># step</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Course step:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;big_dist&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))],</span>
+            <span class="p">[</span><span class="s2">&quot;Fine step:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;med_dist&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))],</span>
+            <span class="p">[</span><span class="s2">&quot;Finest step:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;small_dist&quot;</span><span class="p">,</span> <span class="n">use_defaults</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">setOption</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;big_dist&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;med_dist&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;small_dist&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addOptionWidget</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">setOption</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="AllOptionsDialog.addOptionWidget">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.addOptionWidget">[docs]</a>
+    <span class="k">def</span> <span class="nf">addOptionWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">structure</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">setOption</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a widget to the all_widgets dictionary</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the desired name for the widget</span>
+<span class="sd">                structure (list): the QuickDialog structure for the widget</span>
+<span class="sd">                setOption (function): the function for setting the widget option once accepted</span>
+<span class="sd">                grid (bool): True if widget structure should be a grid instead of rows</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_widgets</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">OptionWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">,</span> <span class="n">setOption</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="AllOptionsDialog.accept">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.accept">[docs]</a>
+    <span class="k">def</span> <span class="nf">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwritten--called when OK is pressed&quot;&quot;&quot;</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_widgets</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">widgets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">w</span><span class="o">.</span><span class="n">accept</span><span class="p">():</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">widgets</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="AllOptionsDialog.resetDefaults">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.AllOptionsDialog.resetDefaults">[docs]</a>
+    <span class="k">def</span> <span class="nf">resetDefaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the default values for the widget inputs&quot;&quot;&quot;</span>
+        <span class="c1"># keep track of the current tab</span>
+        <span class="n">current_tab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()</span>
+        <span class="c1"># reset the widget and use defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createWidgets</span><span class="p">(</span><span class="n">use_defaults</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">placeWidgets</span><span class="p">()</span>
+        <span class="c1"># set the tab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">current_tab</span><span class="p">)</span></div>
+</div>
+
+
+<div class="viewcode-block" id="OptionWidget">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.OptionWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">OptionWidget</span><span class="p">(</span><span class="n">QuickDialog</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="n">parent</span><span class="p">,</span> 
+            <span class="n">title</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+            <span class="n">structure</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> 
+            <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> 
+            <span class="n">setOption</span><span class="p">,</span> 
+            <span class="n">grid</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a widget for a series option</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                parent (QWidget): the parent widget</span>
+<span class="sd">                title (str): the title of the widget</span>
+<span class="sd">                structure (list): the structure for the widget</span>
+<span class="sd">                series (Series): the series lnked to the options</span>
+<span class="sd">                setOption (function): the function to set the options</span>
+<span class="sd">                grid (bool): True if structure should be grid instead of rows</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">include_confirm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOption</span> <span class="o">=</span> <span class="n">setOption</span>
+    
+<div class="viewcode-block" id="OptionWidget.set">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.OptionWidget.set">[docs]</a>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the series option for the widget&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="OptionWidget.paintEvent">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.all_options.OptionWidget.paintEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">paintEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">paintEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="c1"># draw the border manually</span>
+        <span class="n">painter</span> <span class="o">=</span> <span class="n">QPainter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">setPen</span><span class="p">(</span><span class="n">QColor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>  <span class="c1"># Set the color of the border</span>
+        <span class="n">painter</span><span class="o">.</span><span class="n">drawRect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rect</span><span class="p">()</span><span class="o">.</span><span class="n">adjusted</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># Adjust the rectangle to draw inside the border</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

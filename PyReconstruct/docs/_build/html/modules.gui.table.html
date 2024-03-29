@@ -1,0 +1,1647 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.gui.utils package" href="modules.gui.utils.html" /><link rel="prev" title="modules.gui.popup package" href="modules.gui.popup.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.gui.table package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-gui-table-package">
+<h1>modules.gui.table package<a class="headerlink" href="#modules-gui-table-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.gui.table.copy_table_widget">
+<span id="modules-gui-table-copy-table-widget-module"></span><h2>modules.gui.table.copy_table_widget module<a class="headerlink" href="#module-modules.gui.table.copy_table_widget" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CopyTableWidget</span></span><a class="reference internal" href="_modules/modules/gui/table/copy_table_widget.html#CopyTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTableWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget.backspace">
+<span class="sig-name descname"><span class="pre">backspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/copy_table_widget.html#CopyTableWidget.backspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget.backspace" title="Link to this definition">#</a></dt>
+<dd><p>Called when backspace is pressed.
+Extended in container classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/copy_table_widget.html#CopyTableWidget.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget.copy" title="Link to this definition">#</a></dt>
+<dd><p>Copy table data onto the clipboard.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget.getRowIndex">
+<span class="sig-name descname"><span class="pre">getRowIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/copy_table_widget.html#CopyTableWidget.getRowIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget.getRowIndex" title="Link to this definition">#</a></dt>
+<dd><p>Get the row index of an item in the table (or where it SHOULD be on the table).</p>
+<dl class="simple">
+<dt>Parmas:</dt><dd><p>name (str): the name of the item</p>
+</dd>
+<dt>Returns:</dt><dd><p>(int): the row index for that object in the table
+(bool): whether or not the object actually exists in the table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget.keyPressEvent">
+<span class="sig-name descname"><span class="pre">keyPressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PySide6.QtGui.QKeyEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/modules/gui/table/copy_table_widget.html#CopyTableWidget.keyPressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget.keyPressEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.copy_table_widget.CopyTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;CopyTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QTableWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.copy_table_widget.CopyTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.flag">
+<span id="modules-gui-table-flag-module"></span><h2>modules.gui.table.flag module<a class="headerlink" href="#module-modules.gui.table.flag" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlagTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Remove self from manager table list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.createMenus">
+<span class="sig-name descname"><span class="pre">createMenus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.createMenus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.createMenus" title="Link to this definition">#</a></dt>
+<dd><p>Create the menu for the object table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>objdata (dict): the dictionary containing the object table data objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.deleteFlags">
+<span class="sig-name descname"><span class="pre">deleteFlags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">match_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.deleteFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.deleteFlags" title="Link to this definition">#</a></dt>
+<dd><p>Delete an object or objects on every section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.editFlag">
+<span class="sig-name descname"><span class="pre">editFlag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.editFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.editFlag" title="Link to this definition">#</a></dt>
+<dd><p>Edit a flag.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.export" title="Link to this definition">#</a></dt>
+<dd><p>Export the object list as a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.find">
+<span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.find"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.find" title="Link to this definition">#</a></dt>
+<dd><p>Focus the field on a flag in the series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.flagContextMenu">
+<span class="sig-name descname"><span class="pre">flagContextMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.flagContextMenu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.flagContextMenu" title="Link to this definition">#</a></dt>
+<dd><p>Executed when button is right-clicked: pulls up menu for user to modify objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.getFilteredFlags">
+<span class="sig-name descname"><span class="pre">getFilteredFlags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.getFilteredFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.getFilteredFlags" title="Link to this definition">#</a></dt>
+<dd><p>Get the flags that pass the filters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.getSelectedFlag">
+<span class="sig-name descname"><span class="pre">getSelectedFlag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.getSelectedFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.getSelectedFlag" title="Link to this definition">#</a></dt>
+<dd><p>Get the name of the object highlighted by the user.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(str): the name of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.getSelectedFlags">
+<span class="sig-name descname"><span class="pre">getSelectedFlags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.getSelectedFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.getSelectedFlags" title="Link to this definition">#</a></dt>
+<dd><p>Get the name of the objects highlighted by the user.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(list): the name of the objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.insertRow">
+<span class="sig-name descname"><span class="pre">insertRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.insertRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.insertRow" title="Link to this definition">#</a></dt>
+<dd><p>Add a row to the table.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>r (int): the row to add to the table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.markResolved">
+<span class="sig-name descname"><span class="pre">markResolved</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resolved</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.markResolved"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.markResolved" title="Link to this definition">#</a></dt>
+<dd><p>Mark a flag as resolved or unresolved.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>resolved (bool): the resolved status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.passesFilters">
+<span class="sig-name descname"><span class="pre">passesFilters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.passesFilters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.passesFilters" title="Link to this definition">#</a></dt>
+<dd><p>Check if an object passes the filters.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Refresh the object lists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.removeColorFilter">
+<span class="sig-name descname"><span class="pre">removeColorFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.removeColorFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.removeColorFilter" title="Link to this definition">#</a></dt>
+<dd><p>Remove the color filter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.removeRow">
+<span class="sig-name descname"><span class="pre">removeRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.removeRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.removeRow" title="Link to this definition">#</a></dt>
+<dd><p>Remove a row from the table.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>r (int): the row to remove</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Resize the table when window is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.setColorFilter">
+<span class="sig-name descname"><span class="pre">setColorFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_selected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.setColorFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.setColorFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set the color filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.setColumns">
+<span class="sig-name descname"><span class="pre">setColumns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.setColumns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.setColumns" title="Link to this definition">#</a></dt>
+<dd><p>Set the columns to display.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.setCommentFilter">
+<span class="sig-name descname"><span class="pre">setCommentFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.setCommentFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.setCommentFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new regex filter for the comments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.setREFilter">
+<span class="sig-name descname"><span class="pre">setREFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.setREFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.setREFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new regex filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Set the data for a row of the table.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the object
+row (int): the row to enter this data into</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;FlagTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.toggleDisplayResolved">
+<span class="sig-name descname"><span class="pre">toggleDisplayResolved</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.toggleDisplayResolved"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.toggleDisplayResolved" title="Link to this definition">#</a></dt>
+<dd><p>Toggle whether or not resolved flags are displayed in the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.updateSection">
+<span class="sig-name descname"><span class="pre">updateSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.updateSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.updateSection" title="Link to this definition">#</a></dt>
+<dd><p>Update the flags for a section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.flag.FlagTableWidget.updateTitle">
+<span class="sig-name descname"><span class="pre">updateTitle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/flag.html#FlagTableWidget.updateTitle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.flag.FlagTableWidget.updateTitle" title="Link to this definition">#</a></dt>
+<dd><p>Update the title of the table.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.help">
+<span id="modules-gui-table-help-module"></span><h2>modules.gui.table.help module<a class="headerlink" href="#module-modules.gui.table.help" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.help.HelpWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">HelpWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/help.html#HelpWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.help.HelpWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.help.HelpWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PySide6.QtGui.QCloseEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/modules/gui/table/help.html#HelpWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.help.HelpWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.help.HelpWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/help.html#HelpWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.help.HelpWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.help.HelpWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_desc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/help.html#HelpWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.help.HelpWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Set the data for a row.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>r (int): the row index
+key_desc (tuple): key, description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.help.HelpWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;HelpWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.help.HelpWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.history">
+<span id="modules-gui-table-history-module"></span><h2>modules.gui.table.history module<a class="headerlink" href="#module-modules.gui.table.history" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.history.HistoryTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">HistoryTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogSet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/history.html#HistoryTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.history.HistoryTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.history.HistoryTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogSet</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/history.html#HistoryTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.history.HistoryTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.history.HistoryTableWidget.filterLogs">
+<span class="sig-name descname"><span class="pre">filterLogs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogSet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/history.html#HistoryTableWidget.filterLogs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.history.HistoryTableWidget.filterLogs" title="Link to this definition">#</a></dt>
+<dd><p>Remove logs unrelated to objects of interest.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.history.HistoryTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Log</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/history.html#HistoryTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.history.HistoryTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Set the data for a row.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>r (int): the row index
+snum (int): the section number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.history.HistoryTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;HistoryTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.history.HistoryTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.object">
+<span id="modules-gui-table-object-module"></span><h2>modules.gui.table.object module<a class="headerlink" href="#module-modules.gui.table.object" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ObjectTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.addTo3D">
+<span class="sig-name descname"><span class="pre">addTo3D</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.addTo3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.addTo3D" title="Link to this definition">#</a></dt>
+<dd><p>Generate a 3D view of an object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.addToGroup">
+<span class="sig-name descname"><span class="pre">addToGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.addToGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.addToGroup" title="Link to this definition">#</a></dt>
+<dd><p>Add objects to a group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.bulkCurate">
+<span class="sig-name descname"><span class="pre">bulkCurate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">curation_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.bulkCurate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.bulkCurate" title="Link to this definition">#</a></dt>
+<dd><p>Set the curation status for multiple selected objects.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>curation_status (str): “”, “Needs curation” or “Curated”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.checkCurate">
+<span class="sig-name descname"><span class="pre">checkCurate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QTableWidgetItem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.checkCurate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.checkCurate" title="Link to this definition">#</a></dt>
+<dd><p>User checked a curate checkbox.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Remove self from manager table list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.createMenus">
+<span class="sig-name descname"><span class="pre">createMenus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.createMenus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.createMenus" title="Link to this definition">#</a></dt>
+<dd><p>Create the menu for the object table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>objdata (dict): the dictionary containing the object table data objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.createZtrace">
+<span class="sig-name descname"><span class="pre">createZtrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cross_sectioned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.createZtrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.createZtrace" title="Link to this definition">#</a></dt>
+<dd><p>Create a ztrace from selected objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.deleteGroup">
+<span class="sig-name descname"><span class="pre">deleteGroup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.deleteGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.deleteGroup" title="Link to this definition">#</a></dt>
+<dd><p>Delete an object group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.deleteObjects">
+<span class="sig-name descname"><span class="pre">deleteObjects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.deleteObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.deleteObjects" title="Link to this definition">#</a></dt>
+<dd><p>Delete an object from the entire series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.edit3D">
+<span class="sig-name descname"><span class="pre">edit3D</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.edit3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.edit3D" title="Link to this definition">#</a></dt>
+<dd><p>Edit the 3D options for an object or set of objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.editAlignment">
+<span class="sig-name descname"><span class="pre">editAlignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.editAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.editAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Edit alignment for object(s).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.editAttributes">
+<span class="sig-name descname"><span class="pre">editAttributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.editAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.editAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Edit the name of an object in the entire series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.editComment">
+<span class="sig-name descname"><span class="pre">editComment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.editComment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.editComment" title="Link to this definition">#</a></dt>
+<dd><p>Edit the comment of the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.editRadius">
+<span class="sig-name descname"><span class="pre">editRadius</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.editRadius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.editRadius" title="Link to this definition">#</a></dt>
+<dd><p>Modify the radius of the trace on an entire object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.editShape">
+<span class="sig-name descname"><span class="pre">editShape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.editShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.editShape" title="Link to this definition">#</a></dt>
+<dd><p>Modify the shape of the traces on an entire object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.export" title="Link to this definition">#</a></dt>
+<dd><p>Export the object list as a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.findFirst">
+<span class="sig-name descname"><span class="pre">findFirst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.findFirst"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.findFirst" title="Link to this definition">#</a></dt>
+<dd><p>Focus the field on the first occurence of an object in the series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.findLast">
+<span class="sig-name descname"><span class="pre">findLast</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.findLast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.findLast" title="Link to this definition">#</a></dt>
+<dd><p>Focus the field on the last occurence of an object in the series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.getFilteredObjects">
+<span class="sig-name descname"><span class="pre">getFilteredObjects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.getFilteredObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.getFilteredObjects" title="Link to this definition">#</a></dt>
+<dd><p>Get the names of the objects that pass the filter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.getSelectedObject">
+<span class="sig-name descname"><span class="pre">getSelectedObject</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.getSelectedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.getSelectedObject" title="Link to this definition">#</a></dt>
+<dd><p>Get the name of the object highlighted by the user.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(str): the name of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.getSelectedObjects">
+<span class="sig-name descname"><span class="pre">getSelectedObjects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.getSelectedObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.getSelectedObjects" title="Link to this definition">#</a></dt>
+<dd><p>Get the name of the objects highlighted by the user.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(list): the name of the objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.hideObj">
+<span class="sig-name descname"><span class="pre">hideObj</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hide</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.hideObj"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.hideObj" title="Link to this definition">#</a></dt>
+<dd><p>Edit whether or not an object is hidden in the entire series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>hide (bool): True if the object should be hidden</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.objectContextMenu">
+<span class="sig-name descname"><span class="pre">objectContextMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.objectContextMenu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.objectContextMenu" title="Link to this definition">#</a></dt>
+<dd><p>Executed when button is right-clicked: pulls up menu for user to modify objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.passesFilters">
+<span class="sig-name descname"><span class="pre">passesFilters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.passesFilters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.passesFilters" title="Link to this definition">#</a></dt>
+<dd><p>Check if an object passes the filters.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Refresh the object lists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.remove3D">
+<span class="sig-name descname"><span class="pre">remove3D</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.remove3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.remove3D" title="Link to this definition">#</a></dt>
+<dd><p>Remove object(s) from the scene.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.removeAllTags">
+<span class="sig-name descname"><span class="pre">removeAllTags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.removeAllTags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.removeAllTags" title="Link to this definition">#</a></dt>
+<dd><p>Remove all tags from all traces on selected objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.removeFromAllGroups">
+<span class="sig-name descname"><span class="pre">removeFromAllGroups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.removeFromAllGroups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.removeFromAllGroups" title="Link to this definition">#</a></dt>
+<dd><p>Remove a set of traces from all groups.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.removeFromGroup">
+<span class="sig-name descname"><span class="pre">removeFromGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.removeFromGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.removeFromGroup" title="Link to this definition">#</a></dt>
+<dd><p>Remove objects from a group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.renameGroup">
+<span class="sig-name descname"><span class="pre">renameGroup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.renameGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.renameGroup" title="Link to this definition">#</a></dt>
+<dd><p>Rename an object group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Resize the table when window is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setCRFilter">
+<span class="sig-name descname"><span class="pre">setCRFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setCRFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setCRFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set the filter for curation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setColumns">
+<span class="sig-name descname"><span class="pre">setColumns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setColumns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setColumns" title="Link to this definition">#</a></dt>
+<dd><p>Set the columns to display.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setGroupFilter">
+<span class="sig-name descname"><span class="pre">setGroupFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setGroupFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setGroupFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new group filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setREFilter">
+<span class="sig-name descname"><span class="pre">setREFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setREFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setREFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new regex filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Set the data for a row of the table.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the object
+row (int): the row to enter this data into</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.setTagFilter">
+<span class="sig-name descname"><span class="pre">setTagFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.setTagFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.setTagFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new tag filter for the list.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ObjectTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.updateObjects">
+<span class="sig-name descname"><span class="pre">updateObjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.updateObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.updateObjects" title="Link to this definition">#</a></dt>
+<dd><p>Update the data for a set of objects.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>names (iterable): the names of the objects to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.updateTitle">
+<span class="sig-name descname"><span class="pre">updateTitle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.updateTitle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.updateTitle" title="Link to this definition">#</a></dt>
+<dd><p>Update the title of the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.object.ObjectTableWidget.viewHistory">
+<span class="sig-name descname"><span class="pre">viewHistory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#ObjectTableWidget.viewHistory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.ObjectTableWidget.viewHistory" title="Link to this definition">#</a></dt>
+<dd><p>View the history for a set of objects.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.table.object.getDateTime">
+<span class="sig-name descname"><span class="pre">getDateTime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/object.html#getDateTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.object.getDateTime" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-modules.gui.table.section">
+<span id="modules-gui-table-section-module"></span><h2>modules.gui.table.section module<a class="headerlink" href="#module-modules.gui.table.section" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SectionTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Remove self from manager table list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.createMenus">
+<span class="sig-name descname"><span class="pre">createMenus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.createMenus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.createMenus" title="Link to this definition">#</a></dt>
+<dd><p>Create the menu for the trace table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.deleteSections">
+<span class="sig-name descname"><span class="pre">deleteSections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.deleteSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.deleteSections" title="Link to this definition">#</a></dt>
+<dd><p>Delete the sections selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.editSrc">
+<span class="sig-name descname"><span class="pre">editSrc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.editSrc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.editSrc" title="Link to this definition">#</a></dt>
+<dd><p>Modify the image source for a single section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.editThickness">
+<span class="sig-name descname"><span class="pre">editThickness</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.editThickness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.editThickness" title="Link to this definition">#</a></dt>
+<dd><p>Modify the section thickness for a set of sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.export" title="Link to this definition">#</a></dt>
+<dd><p>Export the trace list as a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.findSection">
+<span class="sig-name descname"><span class="pre">findSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.findSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.findSection" title="Link to this definition">#</a></dt>
+<dd><p>Find the section selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.format" title="Link to this definition">#</a></dt>
+<dd><p>Format the rows and columns of the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.getSelectedSection">
+<span class="sig-name descname"><span class="pre">getSelectedSection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.getSelectedSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.getSelectedSection" title="Link to this definition">#</a></dt>
+<dd><p>Get the section that is selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.getSelectedSections">
+<span class="sig-name descname"><span class="pre">getSelectedSections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.getSelectedSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.getSelectedSections" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace items that iare selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.insertSection">
+<span class="sig-name descname"><span class="pre">insertSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">before</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.insertSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.insertSection" title="Link to this definition">#</a></dt>
+<dd><p>Insert a section into the series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.lockSections">
+<span class="sig-name descname"><span class="pre">lockSections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.lockSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.lockSections" title="Link to this definition">#</a></dt>
+<dd><p>Lock or unlock a set of sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.matchBC">
+<span class="sig-name descname"><span class="pre">matchBC</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.matchBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.matchBC" title="Link to this definition">#</a></dt>
+<dd><p>Match the brightness/contrast of the selected sections with the current section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.modifyAllSrc">
+<span class="sig-name descname"><span class="pre">modifyAllSrc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.modifyAllSrc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.modifyAllSrc" title="Link to this definition">#</a></dt>
+<dd><p>Modify the image source for all sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.reorderSections">
+<span class="sig-name descname"><span class="pre">reorderSections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.reorderSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.reorderSections" title="Link to this definition">#</a></dt>
+<dd><p>Reorder the sections so that they are in order.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Resize the table when window is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.sectionContextMenu">
+<span class="sig-name descname"><span class="pre">sectionContextMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.sectionContextMenu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.sectionContextMenu" title="Link to this definition">#</a></dt>
+<dd><p>Executed when button is right-clicked: pulls up menu for user to modify traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.setBC">
+<span class="sig-name descname"><span class="pre">setBC</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.setBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.setBC" title="Link to this definition">#</a></dt>
+<dd><p>Set the brightness/contrast for a set of sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Set the data for a row.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>r (int): the row index
+snum (int): the section number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;SectionTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.section.SectionTableWidget.updateSection">
+<span class="sig-name descname"><span class="pre">updateSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/section.html#SectionTableWidget.updateSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.section.SectionTableWidget.updateSection" title="Link to this definition">#</a></dt>
+<dd><p>Update the tables for a single section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the section number to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.str_helper">
+<span id="modules-gui-table-str-helper-module"></span><h2>modules.gui.table.str_helper module<a class="headerlink" href="#module-modules.gui.table.str_helper" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.str_helper.SortStr">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SortStr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/str_helper.html#SortStr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.str_helper.SortStr" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.table.str_helper.lessThan">
+<span class="sig-name descname"><span class="pre">lessThan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/str_helper.html#lessThan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.str_helper.lessThan" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.gui.table.str_helper.sortList">
+<span class="sig-name descname"><span class="pre">sortList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/str_helper.html#sortList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.str_helper.sortList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-modules.gui.table.trace">
+<span id="modules-gui-table-trace-module"></span><h2>modules.gui.table.trace module<a class="headerlink" href="#module-modules.gui.table.trace" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TraceTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Remove self from manager table list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.createMenus">
+<span class="sig-name descname"><span class="pre">createMenus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.createMenus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.createMenus" title="Link to this definition">#</a></dt>
+<dd><p>Create the menu for the trace table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>tracedict (dict): the dictionary containing the object table data objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.deleteTraces">
+<span class="sig-name descname"><span class="pre">deleteTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.deleteTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.deleteTraces" title="Link to this definition">#</a></dt>
+<dd><p>Delete a set of traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.editRadius">
+<span class="sig-name descname"><span class="pre">editRadius</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.editRadius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.editRadius" title="Link to this definition">#</a></dt>
+<dd><p>Edit the radius for a set of traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.editShape">
+<span class="sig-name descname"><span class="pre">editShape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.editShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.editShape" title="Link to this definition">#</a></dt>
+<dd><p>Modify the shape of the traces on an entire object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.editTraces">
+<span class="sig-name descname"><span class="pre">editTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.editTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.editTraces" title="Link to this definition">#</a></dt>
+<dd><p>Edit a set of traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.export" title="Link to this definition">#</a></dt>
+<dd><p>Export the trace list as a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.findTrace">
+<span class="sig-name descname"><span class="pre">findTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.findTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.findTrace" title="Link to this definition">#</a></dt>
+<dd><p>Select a trace on the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.getFilteredObjects">
+<span class="sig-name descname"><span class="pre">getFilteredObjects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.getFilteredObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.getFilteredObjects" title="Link to this definition">#</a></dt>
+<dd><p>Get the names of the objects that pass the filter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.getSelectedItem">
+<span class="sig-name descname"><span class="pre">getSelectedItem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.getSelectedItem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.getSelectedItem" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace item that is selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.getSelectedItems">
+<span class="sig-name descname"><span class="pre">getSelectedItems</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.getSelectedItems"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.getSelectedItems" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace items that iare selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.hideTraces">
+<span class="sig-name descname"><span class="pre">hideTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hide</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.hideTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.hideTraces" title="Link to this definition">#</a></dt>
+<dd><p>Hide a set of traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>hide (bool): True if the traces should be hidden</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.passesFilters">
+<span class="sig-name descname"><span class="pre">passesFilters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.passesFilters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.passesFilters" title="Link to this definition">#</a></dt>
+<dd><p>Check if an object passes the filters.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Resize the table when window is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setColumns">
+<span class="sig-name descname"><span class="pre">setColumns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setColumns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setColumns" title="Link to this definition">#</a></dt>
+<dd><p>Set the columns to display.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setContours">
+<span class="sig-name descname"><span class="pre">setContours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setContours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setContours" title="Link to this definition">#</a></dt>
+<dd><p>Set the table data for a set of contours.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (iterable): the names of contours to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setGroupFilter">
+<span class="sig-name descname"><span class="pre">setGroupFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setGroupFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setGroupFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new group filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setREFilter">
+<span class="sig-name descname"><span class="pre">setREFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setREFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setREFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new regex filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TraceData</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resize_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Populate a row with trace item data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the trace
+index (int): the index of the trace in the contour
+trace_data (TraceData): the object containing the relevant trace data
+row (int): the row to modify</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.setTagFilter">
+<span class="sig-name descname"><span class="pre">setTagFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.setTagFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.setTagFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new tag filter for the list.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;TraceTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.traceContextMenu">
+<span class="sig-name descname"><span class="pre">traceContextMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.traceContextMenu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.traceContextMenu" title="Link to this definition">#</a></dt>
+<dd><p>Executed when button is right-clicked: pulls up menu for user to modify traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.trace.TraceTableWidget.updateTitle">
+<span class="sig-name descname"><span class="pre">updateTitle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/trace.html#TraceTableWidget.updateTitle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.trace.TraceTableWidget.updateTitle" title="Link to this definition">#</a></dt>
+<dd><p>Update the title of the table.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table.ztrace">
+<span id="modules-gui-table-ztrace-module"></span><h2>modules.gui.table.ztrace module<a class="headerlink" href="#module-modules.gui.table.ztrace" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZtraceTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDockWidget</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.addTo3D">
+<span class="sig-name descname"><span class="pre">addTo3D</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.addTo3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.addTo3D" title="Link to this definition">#</a></dt>
+<dd><p>Generate a 3D view of an object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.addToGroup">
+<span class="sig-name descname"><span class="pre">addToGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.addToGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.addToGroup" title="Link to this definition">#</a></dt>
+<dd><p>Add objects to a group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.closeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Remove self from manager table list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.createMenus">
+<span class="sig-name descname"><span class="pre">createMenus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.createMenus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.createMenus" title="Link to this definition">#</a></dt>
+<dd><p>Create the menu for the trace table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.createTable">
+<span class="sig-name descname"><span class="pre">createTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.createTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.createTable" title="Link to this definition">#</a></dt>
+<dd><p>Create the table widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.delete" title="Link to this definition">#</a></dt>
+<dd><p>Delete a set of ztraces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.editAlignment">
+<span class="sig-name descname"><span class="pre">editAlignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.editAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.editAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Edit alignment for ztrace(s).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.editAttributes">
+<span class="sig-name descname"><span class="pre">editAttributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.editAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.editAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Edit the name of a ztrace.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.export" title="Link to this definition">#</a></dt>
+<dd><p>Export the trace list as a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.getSelectedName">
+<span class="sig-name descname"><span class="pre">getSelectedName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.getSelectedName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedName" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace item that is selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.getSelectedNames">
+<span class="sig-name descname"><span class="pre">getSelectedNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.getSelectedNames"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedNames" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace items that iare selected by the user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.passesFilters">
+<span class="sig-name descname"><span class="pre">passesFilters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.passesFilters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.passesFilters" title="Link to this definition">#</a></dt>
+<dd><p>Determine if an object will be displayed in the table based on existing filters.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>ztrace_name (str): the name of the ztrace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Refresh the tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.remove3D">
+<span class="sig-name descname"><span class="pre">remove3D</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.remove3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.remove3D" title="Link to this definition">#</a></dt>
+<dd><p>Remove object(s) from the scene.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.removeFromAllGroups">
+<span class="sig-name descname"><span class="pre">removeFromAllGroups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.removeFromAllGroups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.removeFromAllGroups" title="Link to this definition">#</a></dt>
+<dd><p>Remove a set of traces from all groups.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.removeFromGroup">
+<span class="sig-name descname"><span class="pre">removeFromGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.removeFromGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.removeFromGroup" title="Link to this definition">#</a></dt>
+<dd><p>Remove objects from a group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.resizeEvent">
+<span class="sig-name descname"><span class="pre">resizeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.resizeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.resizeEvent" title="Link to this definition">#</a></dt>
+<dd><p>Resize the table when window is resized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.setGroupFilter">
+<span class="sig-name descname"><span class="pre">setGroupFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.setGroupFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.setGroupFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new group filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.setREFilter">
+<span class="sig-name descname"><span class="pre">setREFilter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.setREFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.setREFilter" title="Link to this definition">#</a></dt>
+<dd><p>Set a new regex filter for the list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.setRow">
+<span class="sig-name descname"><span class="pre">setRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ztrace_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.setRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.setRow" title="Link to this definition">#</a></dt>
+<dd><p>Populate a row with trace item data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>ztrace_name (str): the name of the ztrace
+row (int): the row to insert the data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.smooth">
+<span class="sig-name descname"><span class="pre">smooth</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.smooth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.smooth" title="Link to this definition">#</a></dt>
+<dd><p>Smooth a set of ztraces.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.staticMetaObject">
+<span class="sig-name descname"><span class="pre">staticMetaObject</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PySide6.QtCore.QMetaObject(&quot;ZtraceTableWidget&quot;</span> <span class="pre">inherits</span> <span class="pre">&quot;QDockWidget&quot;:</span> <span class="pre">)</span></em><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.staticMetaObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.updateTitle">
+<span class="sig-name descname"><span class="pre">updateTitle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.updateTitle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.updateTitle" title="Link to this definition">#</a></dt>
+<dd><p>Update the title of the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.updateZtraces">
+<span class="sig-name descname"><span class="pre">updateZtraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ztrace_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.updateZtraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.updateZtraces" title="Link to this definition">#</a></dt>
+<dd><p>Update the specified ztraces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.gui.table.ztrace.ZtraceTableWidget.ztraceContextMenu">
+<span class="sig-name descname"><span class="pre">ztraceContextMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/gui/table/ztrace.html#ZtraceTableWidget.ztraceContextMenu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.gui.table.ztrace.ZtraceTableWidget.ztraceContextMenu" title="Link to this definition">#</a></dt>
+<dd><p>Executed when button is right-clicked: pulls up menu for user to modify objects.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.gui.table">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.gui.table" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.gui.utils.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.gui.utils package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.gui.popup.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.gui.popup package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.gui.table package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.gui.table.copy_table_widget">modules.gui.table.copy_table_widget module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget.backspace"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget.backspace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget.copy"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget.copy()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget.getRowIndex"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget.getRowIndex()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget.keyPressEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.copy_table_widget.CopyTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">CopyTableWidget.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.flag">modules.gui.table.flag module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.createMenus"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.createMenus()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.deleteFlags"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.deleteFlags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.editFlag"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.editFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.export"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.export()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.find"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.find()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.flagContextMenu"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.flagContextMenu()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.getFilteredFlags"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.getFilteredFlags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.getSelectedFlag"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.getSelectedFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.getSelectedFlags"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.getSelectedFlags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.insertRow"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.insertRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.markResolved"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.markResolved()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.passesFilters"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.passesFilters()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.refresh"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.removeColorFilter"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.removeColorFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.removeRow"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.removeRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.resizeEvent"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.setColorFilter"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.setColorFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.setColumns"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.setColumns()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.setCommentFilter"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.setCommentFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.setREFilter"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.setREFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.toggleDisplayResolved"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.toggleDisplayResolved()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.updateSection"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.updateSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.flag.FlagTableWidget.updateTitle"><code class="docutils literal notranslate"><span class="pre">FlagTableWidget.updateTitle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.help">modules.gui.table.help module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.help.HelpWidget"><code class="docutils literal notranslate"><span class="pre">HelpWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.help.HelpWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">HelpWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.help.HelpWidget.createTable"><code class="docutils literal notranslate"><span class="pre">HelpWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.help.HelpWidget.setRow"><code class="docutils literal notranslate"><span class="pre">HelpWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.help.HelpWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">HelpWidget.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.history">modules.gui.table.history module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.history.HistoryTableWidget"><code class="docutils literal notranslate"><span class="pre">HistoryTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.history.HistoryTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">HistoryTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.history.HistoryTableWidget.filterLogs"><code class="docutils literal notranslate"><span class="pre">HistoryTableWidget.filterLogs()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.history.HistoryTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">HistoryTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.history.HistoryTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">HistoryTableWidget.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.object">modules.gui.table.object module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.addTo3D"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.addTo3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.addToGroup"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.addToGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.bulkCurate"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.bulkCurate()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.checkCurate"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.checkCurate()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.createMenus"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.createMenus()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.createZtrace"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.createZtrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.deleteGroup"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.deleteGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.deleteObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.deleteObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.edit3D"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.edit3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.editAlignment"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.editAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.editAttributes"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.editAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.editComment"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.editComment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.editRadius"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.editRadius()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.editShape"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.editShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.export"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.export()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.findFirst"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.findFirst()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.findLast"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.findLast()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.getFilteredObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.getFilteredObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.getSelectedObject"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.getSelectedObject()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.getSelectedObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.getSelectedObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.hideObj"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.hideObj()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.objectContextMenu"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.objectContextMenu()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.passesFilters"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.passesFilters()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.refresh"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.remove3D"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.remove3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.removeAllTags"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.removeAllTags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.removeFromAllGroups"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.removeFromAllGroups()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.removeFromGroup"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.removeFromGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.renameGroup"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.renameGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.resizeEvent"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setCRFilter"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setCRFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setColumns"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setColumns()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setGroupFilter"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setGroupFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setREFilter"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setREFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.setTagFilter"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.setTagFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.updateObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.updateObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.updateTitle"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.updateTitle()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.object.ObjectTableWidget.viewHistory"><code class="docutils literal notranslate"><span class="pre">ObjectTableWidget.viewHistory()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.gui.table.object.getDateTime"><code class="docutils literal notranslate"><span class="pre">getDateTime()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.section">modules.gui.table.section module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.createMenus"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.createMenus()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.deleteSections"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.deleteSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.editSrc"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.editSrc()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.editThickness"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.editThickness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.export"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.export()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.findSection"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.findSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.format"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.format()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.getSelectedSection"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.getSelectedSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.getSelectedSections"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.getSelectedSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.insertSection"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.insertSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.lockSections"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.lockSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.matchBC"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.matchBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.modifyAllSrc"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.modifyAllSrc()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.reorderSections"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.reorderSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.resizeEvent"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.sectionContextMenu"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.sectionContextMenu()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.setBC"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.setBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.section.SectionTableWidget.updateSection"><code class="docutils literal notranslate"><span class="pre">SectionTableWidget.updateSection()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.str_helper">modules.gui.table.str_helper module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.str_helper.SortStr"><code class="docutils literal notranslate"><span class="pre">SortStr</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.str_helper.lessThan"><code class="docutils literal notranslate"><span class="pre">lessThan()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.str_helper.sortList"><code class="docutils literal notranslate"><span class="pre">sortList()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.trace">modules.gui.table.trace module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.createMenus"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.createMenus()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.deleteTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.deleteTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.editRadius"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.editRadius()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.editShape"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.editShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.editTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.editTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.export"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.export()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.findTrace"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.findTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.getFilteredObjects"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.getFilteredObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.getSelectedItem"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.getSelectedItem()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.getSelectedItems"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.getSelectedItems()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.hideTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.hideTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.passesFilters"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.passesFilters()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.resizeEvent"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setColumns"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setColumns()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setContours"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setContours()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setGroupFilter"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setGroupFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setREFilter"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setREFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.setTagFilter"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.setTagFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.traceContextMenu"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.traceContextMenu()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.trace.TraceTableWidget.updateTitle"><code class="docutils literal notranslate"><span class="pre">TraceTableWidget.updateTitle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table.ztrace">modules.gui.table.ztrace module</a><ul>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget</span></code></a><ul>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.addTo3D"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.addTo3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.addToGroup"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.addToGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.closeEvent"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.closeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.createMenus"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.createMenus()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.createTable"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.createTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.delete"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.delete()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.editAlignment"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.editAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.editAttributes"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.editAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.export"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.export()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedName"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.getSelectedName()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedNames"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.getSelectedNames()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.passesFilters"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.passesFilters()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.refresh"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.remove3D"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.remove3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.removeFromAllGroups"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.removeFromAllGroups()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.removeFromGroup"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.removeFromGroup()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.resizeEvent"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.resizeEvent()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.setGroupFilter"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.setGroupFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.setREFilter"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.setREFilter()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.setRow"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.setRow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.smooth"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.smooth()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.staticMetaObject</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.updateTitle"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.updateTitle()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.updateZtraces"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.updateZtraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.gui.table.ztrace.ZtraceTableWidget.ztraceContextMenu"><code class="docutils literal notranslate"><span class="pre">ZtraceTableWidget.ztraceContextMenu()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.gui.table">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

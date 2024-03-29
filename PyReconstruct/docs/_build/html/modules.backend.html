@@ -1,0 +1,700 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.backend.autoseg package" href="modules.backend.autoseg.html" /><link rel="prev" title="modules package" href="modules.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.backend package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">modules.backend package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-backend-package">
+<h1>modules.backend package<a class="headerlink" href="#modules-backend-package" title="Link to this heading">#</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.autoseg.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.autoseg.html#module-modules.backend.autoseg.conversions">modules.backend.autoseg.conversions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.borderToWindow"><code class="docutils literal notranslate"><span class="pre">borderToWindow()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.createZarrName"><code class="docutils literal notranslate"><span class="pre">createZarrName()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.exportSection"><code class="docutils literal notranslate"><span class="pre">exportSection()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.exportTraces"><code class="docutils literal notranslate"><span class="pre">exportTraces()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.getExteriors"><code class="docutils literal notranslate"><span class="pre">getExteriors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.importSection"><code class="docutils literal notranslate"><span class="pre">importSection()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.labelsToObjects"><code class="docutils literal notranslate"><span class="pre">labelsToObjects()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.seriesToLabels"><code class="docutils literal notranslate"><span class="pre">seriesToLabels()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.seriesToZarr"><code class="docutils literal notranslate"><span class="pre">seriesToZarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html#modules.backend.autoseg.conversions.setDT"><code class="docutils literal notranslate"><span class="pre">setDT()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.autoseg.html#module-modules.backend.autoseg">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func.import_swift_transforms">modules.backend.func.import_swift_transforms module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.IncorrectFormatError"><code class="docutils literal notranslate"><span class="pre">IncorrectFormatError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.IncorrectSecNumError"><code class="docutils literal notranslate"><span class="pre">IncorrectSecNumError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.cafm_to_matrix"><code class="docutils literal notranslate"><span class="pre">cafm_to_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.cafm_to_sanity"><code class="docutils literal notranslate"><span class="pre">cafm_to_sanity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.getDateTime"><code class="docutils literal notranslate"><span class="pre">getDateTime()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.get_img_dim"><code class="docutils literal notranslate"><span class="pre">get_img_dim()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.importSwiftTransforms"><code class="docutils literal notranslate"><span class="pre">importSwiftTransforms()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.make_pyr_transforms"><code class="docutils literal notranslate"><span class="pre">make_pyr_transforms()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_swift_transforms.transforms_as_strings"><code class="docutils literal notranslate"><span class="pre">transforms_as_strings()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func.import_transforms">modules.backend.func.import_transforms module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_transforms.getDateTime"><code class="docutils literal notranslate"><span class="pre">getDateTime()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.import_transforms.importTransforms"><code class="docutils literal notranslate"><span class="pre">importTransforms()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func.scan_zarr">modules.backend.func.scan_zarr module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.scan_zarr.ZarrScanner"><code class="docutils literal notranslate"><span class="pre">ZarrScanner</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.scan_zarr.ZarrScanner.addZarrayFile"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.addZarrayFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.scan_zarr.ZarrScanner.rectifyZarr"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.rectifyZarr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.scan_zarr.ZarrScanner.scanFolder"><code class="docutils literal notranslate"><span class="pre">ZarrScanner.scanFolder()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.scan_zarr.removeEmptyFolders"><code class="docutils literal notranslate"><span class="pre">removeEmptyFolders()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func.state_manager">modules.backend.func.state_manager module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState"><code class="docutils literal notranslate"><span class="pre">FieldState</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.copy"><code class="docutils literal notranslate"><span class="pre">FieldState.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getContours"><code class="docutils literal notranslate"><span class="pre">FieldState.getContours()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getFlags"><code class="docutils literal notranslate"><span class="pre">FieldState.getFlags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getModifiedContours"><code class="docutils literal notranslate"><span class="pre">FieldState.getModifiedContours()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getModifiedZtraces"><code class="docutils literal notranslate"><span class="pre">FieldState.getModifiedZtraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getTforms"><code class="docutils literal notranslate"><span class="pre">FieldState.getTforms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.FieldState.getZtraces"><code class="docutils literal notranslate"><span class="pre">FieldState.getZtraces()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SectionStates"><code class="docutils literal notranslate"><span class="pre">SectionStates</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SectionStates.addState"><code class="docutils literal notranslate"><span class="pre">SectionStates.addState()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SectionStates.initialize"><code class="docutils literal notranslate"><span class="pre">SectionStates.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SectionStates.redoState"><code class="docutils literal notranslate"><span class="pre">SectionStates.redoState()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SectionStates.undoState"><code class="docutils literal notranslate"><span class="pre">SectionStates.undoState()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesState"><code class="docutils literal notranslate"><span class="pre">SeriesState</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesState.applySeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.applySeriesAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesState.getSeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.getSeriesAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesState.resetSeriesAttributes"><code class="docutils literal notranslate"><span class="pre">SeriesState.resetSeriesAttributes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates"><code class="docutils literal notranslate"><span class="pre">SeriesStates</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.addSectionUndo"><code class="docutils literal notranslate"><span class="pre">SeriesStates.addSectionUndo()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.addState"><code class="docutils literal notranslate"><span class="pre">SeriesStates.addState()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.canUndo"><code class="docutils literal notranslate"><span class="pre">SeriesStates.canUndo()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.checkOverwrite"><code class="docutils literal notranslate"><span class="pre">SeriesStates.checkOverwrite()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.clear"><code class="docutils literal notranslate"><span class="pre">SeriesStates.clear()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.undoSection"><code class="docutils literal notranslate"><span class="pre">SeriesStates.undoSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.SeriesStates.undoState"><code class="docutils literal notranslate"><span class="pre">SeriesStates.undoState()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.alignmentPreferencesChanged"><code class="docutils literal notranslate"><span class="pre">alignmentPreferencesChanged()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.getAlignment"><code class="docutils literal notranslate"><span class="pre">getAlignment()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.state_manager.restoreZtraceOnSection"><code class="docutils literal notranslate"><span class="pre">restoreZtraceOnSection()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func.xml_json_conversions">modules.backend.func.xml_json_conversions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.getReconcropperData"><code class="docutils literal notranslate"><span class="pre">getReconcropperData()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.jsonToXML"><code class="docutils literal notranslate"><span class="pre">jsonToXML()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.sectionJSONtoXML"><code class="docutils literal notranslate"><span class="pre">sectionJSONtoXML()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.sectionXMLtoJSON"><code class="docutils literal notranslate"><span class="pre">sectionXMLtoJSON()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.seriesJSONtoXML"><code class="docutils literal notranslate"><span class="pre">seriesJSONtoXML()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.seriesXMLToJSON"><code class="docutils literal notranslate"><span class="pre">seriesXMLToJSON()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html#modules.backend.func.xml_json_conversions.xmlToJSON"><code class="docutils literal notranslate"><span class="pre">xmlToJSON()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.func.html#module-modules.backend.func">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table.flag">modules.backend.table.flag module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager"><code class="docutils literal notranslate"><span class="pre">FlagTableManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.close"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.deleteFlags"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.deleteFlags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.editFlag"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.editFlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.markResolved"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.markResolved()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.newTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.refresh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.flag.FlagTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table.object">modules.backend.table.object module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.close"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.createZtrace"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.createZtrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.deleteObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.deleteObjects()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.edit3D"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.edit3D()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editAttributes"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editRadius"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editRadius()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.editShape"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editShape()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.findObject"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.findObject()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.hideObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.hideObjects()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.newTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.refresh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.removeAllTraceTags"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.removeAllTraceTags()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.toggleCuration"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.toggleCuration()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateObjects()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.object.ObjectTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table.section">modules.backend.table.section module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager"><code class="docutils literal notranslate"><span class="pre">SectionTableManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.close"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.deleteSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.deleteSections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.editSrc"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.editSrc()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.editThickness"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.editThickness()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.findSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.findSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.insertSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.insertSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.lockSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.lockSections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.matchBC"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.matchBC()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.newTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.refresh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.reorderSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.reorderSections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.setBC"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.setBC()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateSections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.section.SectionTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table.trace">modules.backend.table.trace module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager"><code class="docutils literal notranslate"><span class="pre">TraceTableManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.close"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.deleteTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.deleteTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.editRadius"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editRadius()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.editShape"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editShape()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.editTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.findTrace"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.findTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.getTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.getTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.hideTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.hideTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.loadSection"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.loadSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.newTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.update"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.trace.TraceTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.updateTable()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table.ztrace">modules.backend.table.ztrace module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.close"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.delete"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.delete()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.editAttributes"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.editAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.newTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.refresh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.smooth"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.smooth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.update"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.updateTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.table.html#modules.backend.table.ztrace.ZtraceTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.table.html#module-modules.backend.table">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.threading.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.threading.html#module-modules.backend.threading.threading">modules.backend.threading.threading module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.MemoryInt"><code class="docutils literal notranslate"><span class="pre">MemoryInt</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.MemoryInt.inc"><code class="docutils literal notranslate"><span class="pre">MemoryInt.inc()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPool"><code class="docutils literal notranslate"><span class="pre">ThreadPool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPool.createWorker"><code class="docutils literal notranslate"><span class="pre">ThreadPool.createWorker()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPool.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ThreadPool.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPoolProgBar"><code class="docutils literal notranslate"><span class="pre">ThreadPoolProgBar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPoolProgBar.startAll"><code class="docutils literal notranslate"><span class="pre">ThreadPoolProgBar.startAll()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.ThreadPoolProgBar.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">ThreadPoolProgBar.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.Worker"><code class="docutils literal notranslate"><span class="pre">Worker</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.Worker.run"><code class="docutils literal notranslate"><span class="pre">Worker.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.Worker.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">Worker.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals"><code class="docutils literal notranslate"><span class="pre">WorkerSignals</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals.error"><code class="docutils literal notranslate"><span class="pre">WorkerSignals.error</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals.finished"><code class="docutils literal notranslate"><span class="pre">WorkerSignals.finished</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals.result"><code class="docutils literal notranslate"><span class="pre">WorkerSignals.result</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.threading.html#modules.backend.threading.threading.WorkerSignals.staticMetaObject"><code class="docutils literal notranslate"><span class="pre">WorkerSignals.staticMetaObject</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.threading.html#module-modules.backend.threading">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view.field_view">modules.backend.view.field_view module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView"><code class="docutils literal notranslate"><span class="pre">FieldView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.affineAlign"><code class="docutils literal notranslate"><span class="pre">FieldView.affineAlign()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.calibrateMag"><code class="docutils literal notranslate"><span class="pre">FieldView.calibrateMag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.changeAlignment"><code class="docutils literal notranslate"><span class="pre">FieldView.changeAlignment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.changeBrightness"><code class="docutils literal notranslate"><span class="pre">FieldView.changeBrightness()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.changeContrast"><code class="docutils literal notranslate"><span class="pre">FieldView.changeContrast()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.changeSection"><code class="docutils literal notranslate"><span class="pre">FieldView.changeSection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.changeTform"><code class="docutils literal notranslate"><span class="pre">FieldView.changeTform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.clearStates"><code class="docutils literal notranslate"><span class="pre">FieldView.clearStates()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.copy"><code class="docutils literal notranslate"><span class="pre">FieldView.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.createFieldView"><code class="docutils literal notranslate"><span class="pre">FieldView.createFieldView()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.createZarrLayer"><code class="docutils literal notranslate"><span class="pre">FieldView.createZarrLayer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.cut"><code class="docutils literal notranslate"><span class="pre">FieldView.cut()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.cutTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.cutTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.deleteTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.deleteTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.deselectAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.deselectAllTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.findContour"><code class="docutils literal notranslate"><span class="pre">FieldView.findContour()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.findFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.findFlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.findTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.findTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.generateView"><code class="docutils literal notranslate"><span class="pre">FieldView.generateView()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.hideTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.hideTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.home"><code class="docutils literal notranslate"><span class="pre">FieldView.home()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.makeNegative"><code class="docutils literal notranslate"><span class="pre">FieldView.makeNegative()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.mergeSelectedTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.mergeSelectedTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.moveTo"><code class="docutils literal notranslate"><span class="pre">FieldView.moveTo()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.newTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.newTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.paste"><code class="docutils literal notranslate"><span class="pre">FieldView.paste()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.pasteAttributes"><code class="docutils literal notranslate"><span class="pre">FieldView.pasteAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.placeFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.placeFlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.placeGrid"><code class="docutils literal notranslate"><span class="pre">FieldView.placeGrid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.placeStamp"><code class="docutils literal notranslate"><span class="pre">FieldView.placeStamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.propagateTo"><code class="docutils literal notranslate"><span class="pre">FieldView.propagateTo()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.quickAlign"><code class="docutils literal notranslate"><span class="pre">FieldView.quickAlign()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.reload"><code class="docutils literal notranslate"><span class="pre">FieldView.reload()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.reloadImage"><code class="docutils literal notranslate"><span class="pre">FieldView.reloadImage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.resizeWindow"><code class="docutils literal notranslate"><span class="pre">FieldView.resizeWindow()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.rotateTform"><code class="docutils literal notranslate"><span class="pre">FieldView.rotateTform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.saveState"><code class="docutils literal notranslate"><span class="pre">FieldView.saveState()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.selectAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.selectAllTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.selectFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.selectFlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.selectTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.selectTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.selectTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.selectTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.selectZtrace"><code class="docutils literal notranslate"><span class="pre">FieldView.selectZtrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.seriesUndo"><code class="docutils literal notranslate"><span class="pre">FieldView.seriesUndo()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.setPropagationMode"><code class="docutils literal notranslate"><span class="pre">FieldView.setPropagationMode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.setView"><code class="docutils literal notranslate"><span class="pre">FieldView.setView()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.swapABsections"><code class="docutils literal notranslate"><span class="pre">FieldView.swapABsections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.toggleHideAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleHideAllTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.toggleHideImage"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleHideImage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.toggleShowAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleShowAllTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.translate"><code class="docutils literal notranslate"><span class="pre">FieldView.translate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.translateTform"><code class="docutils literal notranslate"><span class="pre">FieldView.translateTform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.undoState"><code class="docutils literal notranslate"><span class="pre">FieldView.undoState()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.unhideAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.unhideAllTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.field_view.FieldView.updateData"><code class="docutils literal notranslate"><span class="pre">FieldView.updateData()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view.image_layer">modules.backend.view.image_layer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer"><code class="docutils literal notranslate"><span class="pre">ImageLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.changeBrightness"><code class="docutils literal notranslate"><span class="pre">ImageLayer.changeBrightness()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.changeContrast"><code class="docutils literal notranslate"><span class="pre">ImageLayer.changeContrast()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.generateImageArray"><code class="docutils literal notranslate"><span class="pre">ImageLayer.generateImageArray()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.generateImageLayer"><code class="docutils literal notranslate"><span class="pre">ImageLayer.generateImageLayer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.loadImage"><code class="docutils literal notranslate"><span class="pre">ImageLayer.loadImage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.setBrightness"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setBrightness()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.setContrast"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setContrast()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.ImageLayer.setSrcDir"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setSrcDir()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.image_layer.getBoundingRect"><code class="docutils literal notranslate"><span class="pre">getBoundingRect()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view.section_layer">modules.backend.view.section_layer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.section_layer.SectionLayer"><code class="docutils literal notranslate"><span class="pre">SectionLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.section_layer.SectionLayer.changeTform"><code class="docutils literal notranslate"><span class="pre">SectionLayer.changeTform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.section_layer.SectionLayer.generateView"><code class="docutils literal notranslate"><span class="pre">SectionLayer.generateView()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view.trace_layer">modules.backend.view.trace_layer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer"><code class="docutils literal notranslate"><span class="pre">TraceLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.cutTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.cutTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.eraseArea"><code class="docutils literal notranslate"><span class="pre">TraceLayer.eraseArea()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.generateLabelsArray"><code class="docutils literal notranslate"><span class="pre">TraceLayer.generateLabelsArray()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.generateTraceLayer"><code class="docutils literal notranslate"><span class="pre">TraceLayer.generateTraceLayer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getCopiedTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getCopiedTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.getZsegment"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getZsegment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.mergeSelectedTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.mergeSelectedTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.newTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.newTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pasteAttributes"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pasteAttributes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pasteTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pasteTraces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeFlag"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeFlag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeGrid"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeGrid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.placeStamp"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeStamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.pointToPix"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pointToPix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.TraceLayer.traceToPix"><code class="docutils literal notranslate"><span class="pre">TraceLayer.traceToPix()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.boundsOverlap"><code class="docutils literal notranslate"><span class="pre">boundsOverlap()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.drawArrow"><code class="docutils literal notranslate"><span class="pre">drawArrow()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.drawArrowHead"><code class="docutils literal notranslate"><span class="pre">drawArrowHead()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.getTheta"><code class="docutils literal notranslate"><span class="pre">getTheta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.trace_layer.hashName"><code class="docutils literal notranslate"><span class="pre">hashName()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view.zarr_layer">modules.backend.view.zarr_layer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer"><code class="docutils literal notranslate"><span class="pre">ZarrLayer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.deselectAll"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.deselectAll()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.generateZarrLayer"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.generateZarrLayer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.getID"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.getID()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.loadZarrData"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.loadZarrData()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.mergeLabels"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.mergeLabels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.view.html#modules.backend.view.zarr_layer.ZarrLayer.selectID"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.selectID()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.view.html#module-modules.backend.view">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.volume.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.volume.html#module-modules.backend.volume.generate_volumes">modules.backend.volume.generate_volumes module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.generate_volumes.addToExtremes"><code class="docutils literal notranslate"><span class="pre">addToExtremes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.generate_volumes.generateVolumes"><code class="docutils literal notranslate"><span class="pre">generateVolumes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.volume.html#module-modules.backend.volume.objects_3D">modules.backend.volume.objects_3D module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Contours"><code class="docutils literal notranslate"><span class="pre">Contours</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Contours.addTrace"><code class="docutils literal notranslate"><span class="pre">Contours.addTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Contours.generate3D"><code class="docutils literal notranslate"><span class="pre">Contours.generate3D()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Object3D"><code class="docutils literal notranslate"><span class="pre">Object3D</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Object3D.addToExtremes"><code class="docutils literal notranslate"><span class="pre">Object3D.addToExtremes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres"><code class="docutils literal notranslate"><span class="pre">Spheres</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres.addTrace"><code class="docutils literal notranslate"><span class="pre">Spheres.addTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Spheres.generate3D"><code class="docutils literal notranslate"><span class="pre">Spheres.generate3D()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Surface.addTrace"><code class="docutils literal notranslate"><span class="pre">Surface.addTrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="modules.backend.volume.html#modules.backend.volume.objects_3D.Surface.generate3D"><code class="docutils literal notranslate"><span class="pre">Surface.generate3D()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.backend.volume.html#module-modules.backend.volume">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-modules.backend">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.backend" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.backend.autoseg.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.backend.autoseg package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.backend package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#module-modules.backend">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

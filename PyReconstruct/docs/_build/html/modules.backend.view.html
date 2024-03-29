@@ -1,0 +1,1299 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.backend.volume package" href="modules.backend.volume.html" /><link rel="prev" title="modules.backend.threading package" href="modules.backend.threading.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.backend.view package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.table.html">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-backend-view-package">
+<h1>modules.backend.view package<a class="headerlink" href="#modules-backend-view-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.backend.view.field_view">
+<span id="modules-backend-view-field-view-module"></span><h2>modules.backend.view.field_view module<a class="headerlink" href="#module-modules.backend.view.field_view" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FieldView</span></span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.affineAlign">
+<span class="sig-name descname"><span class="pre">affineAlign</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.affineAlign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.affineAlign" title="Link to this definition">#</a></dt>
+<dd><p>Modify the linear transformation using points from the selected trace.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.calibrateMag">
+<span class="sig-name descname"><span class="pre">calibrateMag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace_lengths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.calibrateMag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.calibrateMag" title="Link to this definition">#</a></dt>
+<dd><p>Calibrate the pixel mag based on the lengths of given traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace_lengths (dict): the lengths of the selected traces (name: length)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.changeAlignment">
+<span class="sig-name descname"><span class="pre">changeAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.changeAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.changeAlignment" title="Link to this definition">#</a></dt>
+<dd><p>Change the alignment setting for the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>new_alignment (str): the name of the new alignment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.changeBrightness">
+<span class="sig-name descname"><span class="pre">changeBrightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.changeBrightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.changeBrightness" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.changeContrast">
+<span class="sig-name descname"><span class="pre">changeContrast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.changeContrast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.changeContrast" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.changeSection">
+<span class="sig-name descname"><span class="pre">changeSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_section_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.changeSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.changeSection" title="Link to this definition">#</a></dt>
+<dd><p>Change the displayed section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>new_section_num (int): the new section number to display</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.changeTform">
+<span class="sig-name descname"><span class="pre">changeTform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_tform</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.changeTform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.changeTform" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.clearStates">
+<span class="sig-name descname"><span class="pre">clearStates</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.clearStates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.clearStates" title="Link to this definition">#</a></dt>
+<dd><p>Create/clear the states for each section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.copy" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.createFieldView">
+<span class="sig-name descname"><span class="pre">createFieldView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.createFieldView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.createFieldView" title="Link to this definition">#</a></dt>
+<dd><p>Create the field view object.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.createZarrLayer">
+<span class="sig-name descname"><span class="pre">createZarrLayer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.createZarrLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.createZarrLayer" title="Link to this definition">#</a></dt>
+<dd><p>Create a zarr layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.cut" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.cutTrace">
+<span class="sig-name descname"><span class="pre">cutTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scalpel_trace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.cutTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.cutTrace" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.deleteTraces">
+<span class="sig-name descname"><span class="pre">deleteTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.deleteTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.deleteTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.deselectAllTraces">
+<span class="sig-name descname"><span class="pre">deselectAllTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.deselectAllTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.deselectAllTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.findContour">
+<span class="sig-name descname"><span class="pre">findContour</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">contour_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.findContour"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.findContour" title="Link to this definition">#</a></dt>
+<dd><p>Focus the window view on a given trace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>contour_name (str): the name of the contour to focus on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.findFlag">
+<span class="sig-name descname"><span class="pre">findFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.findFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.findFlag" title="Link to this definition">#</a></dt>
+<dd><p>Find a flag on the current section</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.findTrace">
+<span class="sig-name descname"><span class="pre">findTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.findTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.findTrace" title="Link to this definition">#</a></dt>
+<dd><p>Focus the window view on a given trace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace_name (str): the name of the trace to focus on
+index (int): find the nth trace on the section</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.generateView">
+<span class="sig-name descname"><span class="pre">generateView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.generateView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.generateView" title="Link to this definition">#</a></dt>
+<dd><p>Generate the view seen by the user in the main window.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the pixmap view
+generate_image (bool): whether or not to redraw the image
+generate_traces (bool): whether or not to redraw the traces</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.hideTraces">
+<span class="sig-name descname"><span class="pre">hideTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.hideTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.hideTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.home">
+<span class="sig-name descname"><span class="pre">home</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.home"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.home" title="Link to this definition">#</a></dt>
+<dd><p>Set the view to the image.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.makeNegative">
+<span class="sig-name descname"><span class="pre">makeNegative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">negative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.makeNegative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.makeNegative" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.mergeSelectedTraces">
+<span class="sig-name descname"><span class="pre">mergeSelectedTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.mergeSelectedTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.mergeSelectedTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.moveTo">
+<span class="sig-name descname"><span class="pre">moveTo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.moveTo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.moveTo" title="Link to this definition">#</a></dt>
+<dd><p>Move to a specified section number and coordinates (used from 3D scene).</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the section number to move to
+x (int): the x coordinate to focus on
+y (int): the y coordinate to focus on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.newTrace">
+<span class="sig-name descname"><span class="pre">newTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tracing_trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.newTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.newTrace" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.paste">
+<span class="sig-name descname"><span class="pre">paste</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.paste"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.paste" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.pasteAttributes">
+<span class="sig-name descname"><span class="pre">pasteAttributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.pasteAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.pasteAttributes" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.placeFlag">
+<span class="sig-name descname"><span class="pre">placeFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comment</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.placeFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.placeFlag" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.placeGrid">
+<span class="sig-name descname"><span class="pre">placeGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ny</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.placeGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.placeGrid" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.placeStamp">
+<span class="sig-name descname"><span class="pre">placeStamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stamp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.placeStamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.placeStamp" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.propagateTo">
+<span class="sig-name descname"><span class="pre">propagateTo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.propagateTo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.propagateTo" title="Link to this definition">#</a></dt>
+<dd><p>Propagate the stored transform to the start/end of series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>to_end (bool): True propagates to the end, False propagates to beginning</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.quickAlign">
+<span class="sig-name descname"><span class="pre">quickAlign</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.quickAlign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.quickAlign" title="Link to this definition">#</a></dt>
+<dd><p>Do a quick translational alignment of the current secion and b section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.reload">
+<span class="sig-name descname"><span class="pre">reload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clear_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.reload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.reload" title="Link to this definition">#</a></dt>
+<dd><p>Reload the section data (used if section files were modified, usually through object list).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.reloadImage">
+<span class="sig-name descname"><span class="pre">reloadImage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.reloadImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.reloadImage" title="Link to this definition">#</a></dt>
+<dd><p>Reload the section images (used if transform or image source is modified).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.resizeWindow">
+<span class="sig-name descname"><span class="pre">resizeWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.resizeWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.resizeWindow" title="Link to this definition">#</a></dt>
+<dd><p>Convert the window to match the proportions of the pixmap.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the pixmap view</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.rotateTform">
+<span class="sig-name descname"><span class="pre">rotateTform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.rotateTform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.rotateTform" title="Link to this definition">#</a></dt>
+<dd><p>Rotate the section transform.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.saveState">
+<span class="sig-name descname"><span class="pre">saveState</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.saveState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.saveState" title="Link to this definition">#</a></dt>
+<dd><p>Save the current traces and transform.</p>
+<p>ALSO updates the lists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.selectAllTraces">
+<span class="sig-name descname"><span class="pre">selectAllTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.selectAllTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.selectAllTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.selectFlag">
+<span class="sig-name descname"><span class="pre">selectFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.selectFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.selectFlag" title="Link to this definition">#</a></dt>
+<dd><p>Select/deselect a single flag.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>flag (Flag): the flag to select</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.selectTrace">
+<span class="sig-name descname"><span class="pre">selectTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.selectTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.selectTrace" title="Link to this definition">#</a></dt>
+<dd><p>Select/deselect a single trace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace (Trace): the trace to select</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.selectTraces">
+<span class="sig-name descname"><span class="pre">selectTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ztraces_i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.selectTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.selectTraces" title="Link to this definition">#</a></dt>
+<dd><p>Select/deselect a set of traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list[Trace]): the traces to select</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.selectZtrace">
+<span class="sig-name descname"><span class="pre">selectZtrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ztrace_i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.selectZtrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.selectZtrace" title="Link to this definition">#</a></dt>
+<dd><p>Select/deselect a single ztrace point.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>ztrace_i (tuple): the ztrace, index of point selected</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.seriesUndo">
+<span class="sig-name descname"><span class="pre">seriesUndo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.seriesUndo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.seriesUndo" title="Link to this definition">#</a></dt>
+<dd><p>Undo an action across the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>redo (bool): True if should redo instead of undo</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.setPropagationMode">
+<span class="sig-name descname"><span class="pre">setPropagationMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">propagate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.setPropagationMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.setPropagationMode" title="Link to this definition">#</a></dt>
+<dd><p>Set the propagation mode.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>propagate (bool): whether to begin or finish propagating</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.setView">
+<span class="sig-name descname"><span class="pre">setView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.setView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.setView" title="Link to this definition">#</a></dt>
+<dd><p>Set the scaling value for the view.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>scaling (float): the new scaling value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.swapABsections">
+<span class="sig-name descname"><span class="pre">swapABsections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.swapABsections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.swapABsections" title="Link to this definition">#</a></dt>
+<dd><p>Switch the A and B sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.toggleHideAllTraces">
+<span class="sig-name descname"><span class="pre">toggleHideAllTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.toggleHideAllTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.toggleHideAllTraces" title="Link to this definition">#</a></dt>
+<dd><p>Hide the trace layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.toggleHideImage">
+<span class="sig-name descname"><span class="pre">toggleHideImage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.toggleHideImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.toggleHideImage" title="Link to this definition">#</a></dt>
+<dd><p>Toggle hide the image from view.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.toggleShowAllTraces">
+<span class="sig-name descname"><span class="pre">toggleShowAllTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.toggleShowAllTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.toggleShowAllTraces" title="Link to this definition">#</a></dt>
+<dd><p>Toggle show all traces regardless of hiding status.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.translate">
+<span class="sig-name descname"><span class="pre">translate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.translate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.translate" title="Link to this definition">#</a></dt>
+<dd><p>Translate the transform OR the selected traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>dx (float): x-translate
+dy (float): y-translate</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.translateTform">
+<span class="sig-name descname"><span class="pre">translateTform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.translateTform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.translateTform" title="Link to this definition">#</a></dt>
+<dd><p>Translate the transform for the entire section.
+Params:</p>
+<blockquote>
+<div><p>dx (float): x-translate
+dy (float): y-translate</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.undoState">
+<span class="sig-name descname"><span class="pre">undoState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.undoState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.undoState" title="Link to this definition">#</a></dt>
+<dd><p>Undo last action (switch to last state).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.unhideAllTraces">
+<span class="sig-name descname"><span class="pre">unhideAllTraces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.unhideAllTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.unhideAllTraces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.field_view.FieldView.updateData">
+<span class="sig-name descname"><span class="pre">updateData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clear_tracking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/field_view.html#FieldView.updateData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.field_view.FieldView.updateData" title="Link to this definition">#</a></dt>
+<dd><p>Update the series data object and the tables.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.view.image_layer">
+<span id="modules-backend-view-image-layer-module"></span><h2>modules.backend.view.image_layer module<a class="headerlink" href="#module-modules.backend.view.image_layer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ImageLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.changeBrightness">
+<span class="sig-name descname"><span class="pre">changeBrightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.changeBrightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.changeBrightness" title="Link to this definition">#</a></dt>
+<dd><p>Change the brightness of the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>change (int): the degree to which brightness is changed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.changeContrast">
+<span class="sig-name descname"><span class="pre">changeContrast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.changeContrast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.changeContrast" title="Link to this definition">#</a></dt>
+<dd><p>Change the contrast of the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>change (float): the degree to which contrast is changed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.generateImageArray">
+<span class="sig-name descname"><span class="pre">generateImageArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.generateImageArray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.generateImageArray" title="Link to this definition">#</a></dt>
+<dd><p>Generate the image layer.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the 2D array
+window (list): the x, y, w, and h of the field window</p>
+</dd>
+<dt>Returns:</dt><dd><p>(numpy.ndarray) the image as a numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.generateImageLayer">
+<span class="sig-name descname"><span class="pre">generateImageLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QPixmap</span></span></span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.generateImageLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.generateImageLayer" title="Link to this definition">#</a></dt>
+<dd><p>Generate the image layer.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the main window
+window (list): the x, y, w, and h of the field window</p>
+</dd>
+<dt>Returns:</dt><dd><p>image_layer (QPixmap): the image laye</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.loadImage">
+<span class="sig-name descname"><span class="pre">loadImage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.loadImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.loadImage" title="Link to this definition">#</a></dt>
+<dd><p>Load the image.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.setBrightness">
+<span class="sig-name descname"><span class="pre">setBrightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.setBrightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.setBrightness" title="Link to this definition">#</a></dt>
+<dd><p>Set the brightness of the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.setContrast">
+<span class="sig-name descname"><span class="pre">setContrast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.setContrast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.setContrast" title="Link to this definition">#</a></dt>
+<dd><p>Set the contrast of the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.ImageLayer.setSrcDir">
+<span class="sig-name descname"><span class="pre">setSrcDir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#ImageLayer.setSrcDir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.ImageLayer.setSrcDir" title="Link to this definition">#</a></dt>
+<dd><p>Set the immediate source directory and reload image.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>src_dir (str): the new directory for the images</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.image_layer.getBoundingRect">
+<span class="sig-name descname"><span class="pre">getBoundingRect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/image_layer.html#getBoundingRect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.image_layer.getBoundingRect" title="Link to this definition">#</a></dt>
+<dd><p>Get the bounding rectangle and shift in origin for a set of points.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>points (list): a list of points</p>
+</dd>
+<dt>Returns:</dt><dd><p>(tuple): xmin, ymin, xmax, ymax</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.view.section_layer">
+<span id="modules-backend-view-section-layer-module"></span><h2>modules.backend.view.section_layer module<a class="headerlink" href="#module-modules.backend.view.section_layer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.view.section_layer.SectionLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SectionLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_image_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/section_layer.html#SectionLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.section_layer.SectionLayer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer" title="modules.backend.view.image_layer.ImageLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></a>, <a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer" title="modules.backend.view.trace_layer.TraceLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">TraceLayer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.section_layer.SectionLayer.changeTform">
+<span class="sig-name descname"><span class="pre">changeTform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_tform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/section_layer.html#SectionLayer.changeTform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.section_layer.SectionLayer.changeTform" title="Link to this definition">#</a></dt>
+<dd><p>Set the transform for the image.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>new_tform (Transform): the new transform to set for the section</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.section_layer.SectionLayer.generateView">
+<span class="sig-name descname"><span class="pre">generateView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_all_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/section_layer.html#SectionLayer.generateView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.section_layer.SectionLayer.generateView" title="Link to this definition">#</a></dt>
+<dd><p>Generate the pixmap view for the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the dimensions of the view
+window (list): the x, y, w, h of the field view
+generate_image (bool): whether or not to regenerate the image
+generate_traces (bool): whether or not to regenerate the traces</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.view.trace_layer">
+<span id="modules-backend-view-trace-layer-module"></span><h2>modules.backend.view.trace_layer module<a class="headerlink" href="#module-modules.backend.view.trace_layer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TraceLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.cutTrace">
+<span class="sig-name descname"><span class="pre">cutTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">knife_trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.cutTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.cutTrace" title="Link to this definition">#</a></dt>
+<dd><p>Cuts the selected trace along the knife line.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>knife_trace (list): the knife trace in pixmap points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.eraseArea">
+<span class="sig-name descname"><span class="pre">eraseArea</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.eraseArea"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.eraseArea" title="Link to this definition">#</a></dt>
+<dd><p>Erase an area of the field.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_x (int): the x coord for erasing
+pix_y (int): the y coord for erasing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.generateLabelsArray">
+<span class="sig-name descname"><span class="pre">generateLabelsArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Transform</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.generateLabelsArray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.generateLabelsArray" title="Link to this definition">#</a></dt>
+<dd><p>Generate numpy array with traces drawn as labels.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the 2D array
+window (list): the view of the window (x, y, w, h)
+traces (list[Traces]): the traces to include as labels
+tform (Transform): the unique transform to apply to the traces</p>
+</dd>
+<dt>Returns:</dt><dd><p>(np.ndarray): the numpy array with traces drawn in as labels</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.generateTraceLayer">
+<span class="sig-name descname"><span class="pre">generateTraceLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_all_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_moved</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QPixmap</span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.generateTraceLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.generateTraceLayer" title="Link to this definition">#</a></dt>
+<dd><p>Generate the traces on a transparent background.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pixmap_dim (tuple): the w and h of the pixmap to be output
+window (list): the view of the window (x, y, w, h)
+show_all_traces (bool): True if all traces are displayed regardless of hidden status
+window_moved (bool): True if the window has moved (upstream: same as generate_image)</p>
+</dd>
+<dt>Returns:</dt><dd><p>(QPixmap): the pixmap with traces drawn in</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.getCopiedTraces">
+<span class="sig-name descname"><span class="pre">getCopiedTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.getCopiedTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.getCopiedTraces" title="Link to this definition">#</a></dt>
+<dd><p>Called when user presses Ctrl+C or Ctrl+X.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>cut (bool): whether or not to delete the traces</p>
+</dd>
+<dt>Returns:</dt><dd><p>(list): the traces to copy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.getTrace">
+<span class="sig-name descname"><span class="pre">getTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Trace</span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.getTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.getTrace" title="Link to this definition">#</a></dt>
+<dd><p>“Return the closest trace to the given field coordinates.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_x (float): the x-coord of the point in the widget
+pix_y (float): the y-coord of the point in the widget</p>
+</dd>
+<dt>Returns:</dt><dd><p>(Trace): the closest trace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.getTraces">
+<span class="sig-name descname"><span class="pre">getTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_poly</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.getTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.getTraces" title="Link to this definition">#</a></dt>
+<dd><p>“Select all traces that are completely in a polygon</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_poly (list): a list of screen points</p>
+</dd>
+<dt>Returns:</dt><dd><p>(list[Trace]): the list of traces within the polygon</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.getZsegment">
+<span class="sig-name descname"><span class="pre">getZsegment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.getZsegment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.getZsegment" title="Link to this definition">#</a></dt>
+<dd><p>Find the closest ztrace segment (does not have a point on the section).</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_x (float): the screen pixel x
+pix_y (float): the screen pixel y
+radius (float): the max radius for finding a ztrace segment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.mergeSelectedTraces">
+<span class="sig-name descname"><span class="pre">mergeSelectedTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.mergeSelectedTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.mergeSelectedTraces" title="Link to this definition">#</a></dt>
+<dd><p>Merge all selected traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>merge_attrs (bool): True if only trace attributes should be merged</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.newTrace">
+<span class="sig-name descname"><span class="pre">newTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduce_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.newTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.newTrace" title="Link to this definition">#</a></dt>
+<dd><p>Create a new trace from pixel coordinates.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_trace (list): pixel coordinates for the new trace
+base_trace (Trace): the trace containing the desired attributes
+closed (bool): whether or not the new trace is closed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.pasteAttributes">
+<span class="sig-name descname"><span class="pre">pasteAttributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.pasteAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.pasteAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Called when the user pressed Ctrl+B.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.pasteTraces">
+<span class="sig-name descname"><span class="pre">pasteTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Trace</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.pasteTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.pasteTraces" title="Link to this definition">#</a></dt>
+<dd><p>Called when the user presses Ctrl+V.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): a list of trace objects to paste</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.placeFlag">
+<span class="sig-name descname"><span class="pre">placeFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.placeFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.placeFlag" title="Link to this definition">#</a></dt>
+<dd><p>Create a flag on the section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>title (str): the title of the flag
+pix_x (float): the x-coord of the mouse location
+pix_y (float): the y-coord of the mouse location
+color (tuple): the color of the flag
+comment (str): the flag comment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.placeGrid">
+<span class="sig-name descname"><span class="pre">placeGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ny</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.placeGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.placeGrid" title="Link to this definition">#</a></dt>
+<dd><p>Place a grid on the field.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pix_x (float): the x-coord of the mouse location
+pix_y (float): the y-coord of the mouse location
+trace (Trace): the trace to use in the grid
+w (float): the desired width of the trace
+h (float): the desired height of the trace
+dx (float): the x distance between traces in the grid
+dy (float): the y distance between traces in the grid
+nx (int): the number of columns
+ny (int): the number of rows</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.placeStamp">
+<span class="sig-name descname"><span class="pre">placeStamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.placeStamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.placeStamp" title="Link to this definition">#</a></dt>
+<dd><p>Called when mouse is pressed in stamp mode.</p>
+<p>Creates a stamp centered on the mouse location.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Params:</dt><dd><p>pix_x (int): pixel x-coord to place stamp
+pix_y (int): pixel y-coord to place stamp
+trace (Trace): the trace to place down</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.pointToPix">
+<span class="sig-name descname"><span class="pre">pointToPix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_tform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Transform</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.pointToPix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.pointToPix" title="Link to this definition">#</a></dt>
+<dd><p>Return the pixel point corresponding to a field point.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>pt (tuple): the trace to convert
+apply_tform (bool): true if section transform should be applied to the point
+tform (Transform): the transform to apply (otherwise, uses series data)
+qpoints (bool): True if points should be converted QPoint</p>
+</dd>
+<dt>Returns:</dt><dd><p>(tuple): the pixel point</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.TraceLayer.traceToPix">
+<span class="sig-name descname"><span class="pre">traceToPix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Transform</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qpoints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#TraceLayer.traceToPix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.TraceLayer.traceToPix" title="Link to this definition">#</a></dt>
+<dd><p>Return the set of pixel points corresponding to a trace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>trace (Trace): the trace to convert
+tform (Transform): the transform to apply
+qpoints (bool): True if points should be converted QPoint</p>
+</dd>
+<dt>Returns:</dt><dd><p>(list): list of pixel points</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.boundsOverlap">
+<span class="sig-name descname"><span class="pre">boundsOverlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#boundsOverlap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.boundsOverlap" title="Link to this definition">#</a></dt>
+<dd><p>Check if two bounding boxes intersect.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>b1 (tuple): xmin, ymin, xmax, ymax
+b2 (tuple): xmin, ymin, xmax, ymax</p>
+</dd>
+<dt>Returns:</dt><dd><p>(bool): True if bounds have any overlap</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.drawArrow">
+<span class="sig-name descname"><span class="pre">drawArrow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">painter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QPainter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QLine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p1_arrow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p2_arrow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#drawArrow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.drawArrow" title="Link to this definition">#</a></dt>
+<dd><p>Draw an line with one or two arrowheads.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>painter (QPainter): the painter used to draw the arrow
+line (QLine): the ztrace qline
+p1_arrow (bool): True if arrowhead on the first point
+p2_arrow (bool): True if arrowhead on the second point</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.drawArrowHead">
+<span class="sig-name descname"><span class="pre">drawArrowHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">painter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QPainter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QPoint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#drawArrowHead"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.drawArrowHead" title="Link to this definition">#</a></dt>
+<dd><p>Draw an arrowhead in a given direction.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>painter (QPainter): the painter to draw the arrowhead
+pt (QPoint): the point on which the arrowhead is located
+theta (float): the angle (in radians) of the arrowhead (cc from x-axis)
+l (int): the length of the arrowhead</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.getTheta">
+<span class="sig-name descname"><span class="pre">getTheta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QLine</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#getTheta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.getTheta" title="Link to this definition">#</a></dt>
+<dd><p>Get the angle a line makes with the x-axis.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>line (QLine): the qline to get the angle for</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modules.backend.view.trace_layer.hashName">
+<span class="sig-name descname"><span class="pre">hashName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/trace_layer.html#hashName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.trace_layer.hashName" title="Link to this definition">#</a></dt>
+<dd><p>Create a hash label for a name.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name to hash</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.view.zarr_layer">
+<span id="modules-backend-view-zarr-layer-module"></span><h2>modules.backend.view.zarr_layer module<a class="headerlink" href="#module-modules.backend.view.zarr_layer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZarrLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.deselectAll">
+<span class="sig-name descname"><span class="pre">deselectAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.deselectAll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.deselectAll" title="Link to this definition">#</a></dt>
+<dd><p>Deselect all the IDs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.generateZarrLayer">
+<span class="sig-name descname"><span class="pre">generateZarrLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixmap_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QPixmap</span></span></span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.generateZarrLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.generateZarrLayer" title="Link to this definition">#</a></dt>
+<dd><p>Generate the zarr layer.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the current section object
+pixmap_dim (tuple): the w and h of the main window
+window (list): the x, y, w, and h of the field window</p>
+</dd>
+<dt>Returns:</dt><dd><p>zarr_layer (QPixmap): the zarr layer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.getID">
+<span class="sig-name descname"><span class="pre">getID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.getID"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.getID" title="Link to this definition">#</a></dt>
+<dd><p>Get an ID from screen pixel coordinates.</p>
+<dl class="simple">
+<dt>Params: </dt><dd><p>pix_x (int): the x coord in screen pixels
+pix_y (int): the y coord in screen pixels</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.loadZarrData">
+<span class="sig-name descname"><span class="pre">loadZarrData</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.loadZarrData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.loadZarrData" title="Link to this definition">#</a></dt>
+<dd><p>Load the relevant data from the zarr file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.mergeLabels">
+<span class="sig-name descname"><span class="pre">mergeLabels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.mergeLabels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.mergeLabels" title="Link to this definition">#</a></dt>
+<dd><p>Merge the selected labels.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.view.zarr_layer.ZarrLayer.selectID">
+<span class="sig-name descname"><span class="pre">selectID</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pix_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/view/zarr_layer.html#ZarrLayer.selectID"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.view.zarr_layer.ZarrLayer.selectID" title="Link to this definition">#</a></dt>
+<dd><p>Select the ID at a given screen coord.</p>
+<dl class="simple">
+<dt>Params: </dt><dd><p>pix_x (int): the x coord in screen pixels
+pix_y (int): the y coord in screen pixels</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.view">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.backend.view" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.backend.volume.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.backend.volume package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.backend.threading.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.backend.threading package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.backend.view package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.backend.view.field_view">modules.backend.view.field_view module</a><ul>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView"><code class="docutils literal notranslate"><span class="pre">FieldView</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.affineAlign"><code class="docutils literal notranslate"><span class="pre">FieldView.affineAlign()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.calibrateMag"><code class="docutils literal notranslate"><span class="pre">FieldView.calibrateMag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.changeAlignment"><code class="docutils literal notranslate"><span class="pre">FieldView.changeAlignment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.changeBrightness"><code class="docutils literal notranslate"><span class="pre">FieldView.changeBrightness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.changeContrast"><code class="docutils literal notranslate"><span class="pre">FieldView.changeContrast()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.changeSection"><code class="docutils literal notranslate"><span class="pre">FieldView.changeSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.changeTform"><code class="docutils literal notranslate"><span class="pre">FieldView.changeTform()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.clearStates"><code class="docutils literal notranslate"><span class="pre">FieldView.clearStates()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.copy"><code class="docutils literal notranslate"><span class="pre">FieldView.copy()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.createFieldView"><code class="docutils literal notranslate"><span class="pre">FieldView.createFieldView()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.createZarrLayer"><code class="docutils literal notranslate"><span class="pre">FieldView.createZarrLayer()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.cut"><code class="docutils literal notranslate"><span class="pre">FieldView.cut()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.cutTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.cutTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.deleteTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.deleteTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.deselectAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.deselectAllTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.findContour"><code class="docutils literal notranslate"><span class="pre">FieldView.findContour()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.findFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.findFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.findTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.findTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.generateView"><code class="docutils literal notranslate"><span class="pre">FieldView.generateView()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.hideTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.hideTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.home"><code class="docutils literal notranslate"><span class="pre">FieldView.home()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.makeNegative"><code class="docutils literal notranslate"><span class="pre">FieldView.makeNegative()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.mergeSelectedTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.mergeSelectedTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.moveTo"><code class="docutils literal notranslate"><span class="pre">FieldView.moveTo()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.newTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.newTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.paste"><code class="docutils literal notranslate"><span class="pre">FieldView.paste()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.pasteAttributes"><code class="docutils literal notranslate"><span class="pre">FieldView.pasteAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.placeFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.placeFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.placeGrid"><code class="docutils literal notranslate"><span class="pre">FieldView.placeGrid()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.placeStamp"><code class="docutils literal notranslate"><span class="pre">FieldView.placeStamp()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.propagateTo"><code class="docutils literal notranslate"><span class="pre">FieldView.propagateTo()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.quickAlign"><code class="docutils literal notranslate"><span class="pre">FieldView.quickAlign()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.reload"><code class="docutils literal notranslate"><span class="pre">FieldView.reload()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.reloadImage"><code class="docutils literal notranslate"><span class="pre">FieldView.reloadImage()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.resizeWindow"><code class="docutils literal notranslate"><span class="pre">FieldView.resizeWindow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.rotateTform"><code class="docutils literal notranslate"><span class="pre">FieldView.rotateTform()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.saveState"><code class="docutils literal notranslate"><span class="pre">FieldView.saveState()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.selectAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.selectAllTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.selectFlag"><code class="docutils literal notranslate"><span class="pre">FieldView.selectFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.selectTrace"><code class="docutils literal notranslate"><span class="pre">FieldView.selectTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.selectTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.selectTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.selectZtrace"><code class="docutils literal notranslate"><span class="pre">FieldView.selectZtrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.seriesUndo"><code class="docutils literal notranslate"><span class="pre">FieldView.seriesUndo()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.setPropagationMode"><code class="docutils literal notranslate"><span class="pre">FieldView.setPropagationMode()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.setView"><code class="docutils literal notranslate"><span class="pre">FieldView.setView()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.swapABsections"><code class="docutils literal notranslate"><span class="pre">FieldView.swapABsections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.toggleHideAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleHideAllTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.toggleHideImage"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleHideImage()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.toggleShowAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.toggleShowAllTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.translate"><code class="docutils literal notranslate"><span class="pre">FieldView.translate()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.translateTform"><code class="docutils literal notranslate"><span class="pre">FieldView.translateTform()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.undoState"><code class="docutils literal notranslate"><span class="pre">FieldView.undoState()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.unhideAllTraces"><code class="docutils literal notranslate"><span class="pre">FieldView.unhideAllTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.field_view.FieldView.updateData"><code class="docutils literal notranslate"><span class="pre">FieldView.updateData()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.view.image_layer">modules.backend.view.image_layer module</a><ul>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer"><code class="docutils literal notranslate"><span class="pre">ImageLayer</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.changeBrightness"><code class="docutils literal notranslate"><span class="pre">ImageLayer.changeBrightness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.changeContrast"><code class="docutils literal notranslate"><span class="pre">ImageLayer.changeContrast()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.generateImageArray"><code class="docutils literal notranslate"><span class="pre">ImageLayer.generateImageArray()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.generateImageLayer"><code class="docutils literal notranslate"><span class="pre">ImageLayer.generateImageLayer()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.loadImage"><code class="docutils literal notranslate"><span class="pre">ImageLayer.loadImage()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.setBrightness"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setBrightness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.setContrast"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setContrast()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.ImageLayer.setSrcDir"><code class="docutils literal notranslate"><span class="pre">ImageLayer.setSrcDir()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.view.image_layer.getBoundingRect"><code class="docutils literal notranslate"><span class="pre">getBoundingRect()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.view.section_layer">modules.backend.view.section_layer module</a><ul>
+<li><a class="reference internal" href="#modules.backend.view.section_layer.SectionLayer"><code class="docutils literal notranslate"><span class="pre">SectionLayer</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.view.section_layer.SectionLayer.changeTform"><code class="docutils literal notranslate"><span class="pre">SectionLayer.changeTform()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.section_layer.SectionLayer.generateView"><code class="docutils literal notranslate"><span class="pre">SectionLayer.generateView()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.view.trace_layer">modules.backend.view.trace_layer module</a><ul>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer"><code class="docutils literal notranslate"><span class="pre">TraceLayer</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.cutTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.cutTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.eraseArea"><code class="docutils literal notranslate"><span class="pre">TraceLayer.eraseArea()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.generateLabelsArray"><code class="docutils literal notranslate"><span class="pre">TraceLayer.generateLabelsArray()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.generateTraceLayer"><code class="docutils literal notranslate"><span class="pre">TraceLayer.generateTraceLayer()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.getCopiedTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getCopiedTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.getTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.getTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.getZsegment"><code class="docutils literal notranslate"><span class="pre">TraceLayer.getZsegment()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.mergeSelectedTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.mergeSelectedTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.newTrace"><code class="docutils literal notranslate"><span class="pre">TraceLayer.newTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.pasteAttributes"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pasteAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.pasteTraces"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pasteTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.placeFlag"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.placeGrid"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeGrid()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.placeStamp"><code class="docutils literal notranslate"><span class="pre">TraceLayer.placeStamp()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.pointToPix"><code class="docutils literal notranslate"><span class="pre">TraceLayer.pointToPix()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.TraceLayer.traceToPix"><code class="docutils literal notranslate"><span class="pre">TraceLayer.traceToPix()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.boundsOverlap"><code class="docutils literal notranslate"><span class="pre">boundsOverlap()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.drawArrow"><code class="docutils literal notranslate"><span class="pre">drawArrow()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.drawArrowHead"><code class="docutils literal notranslate"><span class="pre">drawArrowHead()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.getTheta"><code class="docutils literal notranslate"><span class="pre">getTheta()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.trace_layer.hashName"><code class="docutils literal notranslate"><span class="pre">hashName()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.view.zarr_layer">modules.backend.view.zarr_layer module</a><ul>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer"><code class="docutils literal notranslate"><span class="pre">ZarrLayer</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.deselectAll"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.deselectAll()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.generateZarrLayer"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.generateZarrLayer()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.getID"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.getID()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.loadZarrData"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.loadZarrData()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.mergeLabels"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.mergeLabels()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.view.zarr_layer.ZarrLayer.selectID"><code class="docutils literal notranslate"><span class="pre">ZarrLayer.selectID()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.view">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes_legacy.utils.reconstruct_reader &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes_legacy.utils.reconstruct_reader</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Functions for creating Python objects from RECONSTRUCT XML files.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">lxml</span> <span class="kn">import</span> <span class="n">etree</span>
+
+<span class="kn">from</span> <span class="nn">..classes.series</span> <span class="kn">import</span> <span class="n">Series</span>
+<span class="kn">from</span> <span class="nn">..classes.section</span> <span class="kn">import</span> <span class="n">Section</span>
+<span class="kn">from</span> <span class="nn">..classes.contour</span> <span class="kn">import</span> <span class="n">Contour</span>
+<span class="kn">from</span> <span class="nn">..classes.image</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span> <span class="nn">..classes.transform</span> <span class="kn">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">..classes.zcontour</span> <span class="kn">import</span> <span class="n">ZContour</span>
+
+
+<div class="viewcode-block" id="str_to_bool">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.str_to_bool">[docs]</a>
+<span class="k">def</span> <span class="nf">str_to_bool</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts str to str_to_bool(bool.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">string</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;True&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="process_series_directory">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.process_series_directory">[docs]</a>
+<span class="k">def</span> <span class="nf">process_series_directory</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">data_check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">progbar</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a Series, fully loaded with data found in the provided path.&quot;&quot;&quot;</span>
+    <span class="c1"># Gather Series from provided path</span>
+    <span class="n">series_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;.ser&quot;</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">series_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;There is more than one Series file in the provided directory&quot;</span>
+    <span class="n">series_file</span> <span class="o">=</span> <span class="n">series_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">series_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">series_file</span><span class="p">)</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">process_series_file</span><span class="p">(</span><span class="n">series_path</span><span class="p">)</span>
+
+    <span class="c1"># if there is a progress bar, set up</span>
+    <span class="n">section_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.[0-9]+$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">final_value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">progbar</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">section_regex</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+                <span class="n">final_value</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">prog_value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Gather Sections from provided path</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">section_regex</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+            <span class="n">section_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="n">section</span> <span class="o">=</span> <span class="n">process_section_file</span><span class="p">(</span><span class="n">section_path</span><span class="p">,</span> <span class="n">data_check</span><span class="o">=</span><span class="n">data_check</span><span class="p">)</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">section</span><span class="o">.</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span>
+            <span class="k">if</span> <span class="n">progbar</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">progbar</span><span class="o">.</span><span class="n">wasCanceled</span><span class="p">():</span> <span class="k">return</span>
+                <span class="n">prog_value</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">progbar</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">prog_value</span><span class="o">/</span><span class="n">final_value</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>    
+
+    <span class="k">if</span> <span class="n">data_check</span><span class="p">:</span>
+        <span class="n">thickness_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">sec</span><span class="o">.</span><span class="n">thickness</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">thickness_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;One or more section(s) in series </span><span class="si">{}</span><span class="s2"> contain different thicknesses.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">series</span></div>
+
+
+
+<div class="viewcode-block" id="process_series_file">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.process_series_file">[docs]</a>
+<span class="k">def</span> <span class="nf">process_series_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a Series object from Series XML file.&quot;&quot;&quot;</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+
+    <span class="c1"># Create Series and populate with metadata</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">extract_series_attributes</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.ser&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">Series</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># Add Contours, ZContours</span>
+    <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Contour&quot;</span><span class="p">:</span>
+            <span class="c1"># TODO: no Contour import</span>
+            <span class="n">contour_data</span> <span class="o">=</span> <span class="n">extract_series_contour_attributes</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+            <span class="n">contour</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="o">**</span><span class="n">contour_data</span><span class="p">)</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">elem</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;ZContour&quot;</span><span class="p">:</span>
+            <span class="c1"># TODO: no ZContour import</span>
+            <span class="n">zcontour_data</span> <span class="o">=</span> <span class="n">extract_zcontour_attributes</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>  <span class="c1"># TODO</span>
+            <span class="n">zcontour</span> <span class="o">=</span> <span class="n">ZContour</span><span class="p">(</span><span class="o">**</span><span class="n">zcontour_data</span><span class="p">)</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">zcontours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zcontour</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">series</span></div>
+
+
+
+<div class="viewcode-block" id="process_section_file">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.process_section_file">[docs]</a>
+<span class="k">def</span> <span class="nf">process_section_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">data_check</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a Section object from a Section XML file.&quot;&quot;&quot;</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+
+    <span class="c1"># Create Section and populate with metadata</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">extract_section_attributes</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">section</span> <span class="o">=</span> <span class="n">Section</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># Process Images, Contours, Transforms</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+        <span class="c1"># make Transform object</span>
+        <span class="n">transform_data</span> <span class="o">=</span> <span class="n">extract_transform_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">(</span><span class="o">**</span><span class="n">transform_data</span><span class="p">)</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="p">]</span>
+
+        <span class="c1"># Image node</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span> <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Image&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">images</span><span class="p">:</span>
+            <span class="n">image_data</span> <span class="o">=</span> <span class="n">extract_image_attributes</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">image_data</span><span class="p">[</span><span class="s2">&quot;_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">_path</span>
+            <span class="n">image_data</span><span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transform</span>
+
+            <span class="c1"># Image contours</span>
+            <span class="n">image_contours</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span> <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Contour&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_contours</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No support for images with multiple domain contours: index </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">image_contours</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No support for images without domain contour: index </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">image_contour_data</span> <span class="o">=</span> <span class="n">extract_section_contour_attributes</span><span class="p">(</span>
+                    <span class="n">image_contours</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">image_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">image_contour_data</span><span class="p">)</span>
+
+            <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="o">**</span><span class="n">image_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data_check</span><span class="p">:</span>
+                <span class="c1"># Check if ref exists</span>
+                <span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">_path</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">src</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">image_path</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: Could not find referenced image: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_path</span><span class="p">))</span>
+
+            <span class="n">section</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+
+        <span class="c1"># Non-Image Node</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Contour&quot;</span><span class="p">:</span>
+                    <span class="n">contour_data</span> <span class="o">=</span> <span class="n">extract_section_contour_attributes</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                    <span class="n">contour_data</span><span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transform</span>
+                    <span class="n">contour</span> <span class="o">=</span> <span class="n">Contour</span><span class="p">(</span><span class="o">**</span><span class="n">contour_data</span><span class="p">)</span>
+                    <span class="n">section</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">data_check</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">section</span><span class="o">.</span><span class="n">images</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: section </span><span class="si">{}</span><span class="s2"> is missing an Image.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">images</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: section </span><span class="si">{}</span><span class="s2"> contains more than one Image.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">section</span></div>
+
+
+
+
+<span class="k">def</span> <span class="nf">_get_points_int</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">points</span><span class="o">.</span><span class="n">split</span><span class="p">()][</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span>
+        <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">points</span><span class="o">.</span><span class="n">split</span><span class="p">()][</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_points_float</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">points</span><span class="o">.</span><span class="n">split</span><span class="p">()][</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span>
+        <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">points</span><span class="o">.</span><span class="n">split</span><span class="p">()][</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_series_contour_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_series_contour_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_series_contour_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dict of Series&#39; Contour&#39;s attributes.&quot;&quot;&quot;</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;closed&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;closed&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;border&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;border&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;fill&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+    <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;points&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_points_int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;points&quot;</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c1"># series contour points can be ints or floats</span>
+        <span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;points&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_points_float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;points&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_section_contour_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_section_contour_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_section_contour_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dict of Section Contour&#39;s attributes.&quot;&quot;&quot;</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;comment&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hidden&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;closed&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;closed&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;simplified&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;simplified&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;border&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;border&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;fill&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">_get_points_float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;points&quot;</span><span class="p">)),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_image_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_image_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_image_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;src&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;mag&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mag&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;contrast&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;contrast&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;brightness&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;brightness&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;red&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;red&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;green&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;green&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;blue&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;blue&quot;</span><span class="p">)),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_section_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_section_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_section_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;index&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;thickness&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thickness&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;alignLocked&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignLocked&quot;</span><span class="p">)),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_series_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_series_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_series_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;index&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;viewport&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;viewport&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;autoSaveSeries&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autoSaveSeries&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;autoSaveSection&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autoSaveSection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;warnSaveSection&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;warnSaveSection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;beepDeleting&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beepDeleting&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;beepPaging&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beepPaging&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;hideTraces&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hideTraces&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;unhideTraces&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unhideTraces&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;hideDomains&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hideDomains&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;unhideDomains&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hideDomains&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;useAbsolutePaths&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;useAbsolutePaths&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultThickness&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultThickness&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;zMidSection&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;zMidSection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;thumbWidth&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thumbWidth&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;thumbHeight&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thumbHeight&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;fitThumbSections&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fitThumbSections&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;firstThumbSection&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;firstThumbSection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;lastThumbSection&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lastThumbSection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;skipSections&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;skipSections&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;displayThumbContours&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;displayThumbContours&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;useFlipbookStyle&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;useFlipbookStyle&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>  <span class="o">==</span> <span class="s2">&quot;True&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;flipRate&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;flipRate&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;useProxies&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;useProxies&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;widthUseProxies&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;widthUseProxies&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;heightUseProxies&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;heightUseProxies&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;scaleProxies&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scaleProxies&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;significantDigits&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;significantDigits&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultBorder&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultBorder&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultFill&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultFill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultMode&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultMode&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultName&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultName&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;defaultComment&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;defaultComment&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listSectionThickness&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listSectionThickness&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listDomainSource&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listDomainSource&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listDomainPixelsize&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listDomainPixelsize&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listDomainLength&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listDomainLength&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listDomainArea&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listDomainArea&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listDomainMidpoint&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listDomainMidpoint&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceComment&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceComment&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceLength&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceLength&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>  <span class="o">==</span> <span class="s2">&quot;True&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;listTraceArea&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceArea&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceCentroid&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceCentroid&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceExtent&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceExtent&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceZ&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceZ&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listTraceThickness&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listTraceThickness&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listObjectRange&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listObjectRange&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listObjectCount&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listObjectCount&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listObjectSurfarea&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listObjectSurfarea&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listObjectFlatarea&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listObjectFlatarea&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listObjectVolume&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listObjectVolume&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listZTraceNote&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listZTraceNote&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listZTraceRange&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listZTraceRange&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;listZTraceLength&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;listZTraceLength&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;borderColors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;borderColors&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span><span class="p">],</span>
+        <span class="s2">&quot;fillColors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fillColors&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span><span class="p">],</span>
+        <span class="s2">&quot;offset3D&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;offset3D&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;type3Dobject&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type3Dobject&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;first3Dsection&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;first3Dsection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;last3Dsection&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last3Dsection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;max3Dconnection&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max3Dconnection&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;upper3Dfaces&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;upper3Dfaces&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;lower3Dfaces&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lower3Dfaces&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;faceNormals&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;faceNormals&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;vertexNormals&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vertexNormals&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;facets3D&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;facets3D&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;dim3D&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dim3D&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()),</span>
+        <span class="s2">&quot;gridType&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridType&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;gridSize&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridSize&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;gridDistance&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridDistance&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;gridNumber&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridNumber&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;hueStopWhen&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hueStopWhen&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;hueStopValue&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hueStopValue&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;satStopWhen&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;satStopWhen&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;satStopValue&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;satStopValue&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;brightStopWhen&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;brightStopWhen&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;brightStopValue&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;brightStopValue&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;tracesStopWhen&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tracesStopWhen&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;areaStopPercent&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;areaStopPercent&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;areaStopSize&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;areaStopSize&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;ContourMaskWidth&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ContourMaskWidth&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;smoothingLength&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;smoothingLength&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;mvmtIncrement&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mvmtIncrement&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;ctrlIncrement&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ctrlIncrement&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;shiftIncrement&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;shiftIncrement&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_transform_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_transform_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_transform_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">intorfloat</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns number data type from string.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>  <span class="c1"># TODO</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="se">\n\t</span><span class="s2">reconstruct_reader.intorfloat(): &quot;</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> &quot;</span>
+                    <span class="s2">&quot;converted to float &quot;</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">))</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;dim&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dim&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;xcoef&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">intorfloat</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;xcoef&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)],</span>
+        <span class="s2">&quot;ycoef&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">intorfloat</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ycoef&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)],</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+
+
+<div class="viewcode-block" id="extract_zcontour_attributes">
+<a class="viewcode-back" href="../../../../modules.datatypes_legacy.utils.html#modules.datatypes_legacy.utils.reconstruct_reader.extract_zcontour_attributes">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_zcontour_attributes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;closed&quot;</span><span class="p">:</span> <span class="n">str_to_bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;closed&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;border&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;border&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;fill&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">)),</span>
+        <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;points&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span><span class="p">],</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">attributes</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.contour &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.contour</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.trace</span> <span class="kn">import</span> <span class="n">Trace</span>
+<span class="kn">from</span> <span class="nn">.flag</span> <span class="kn">import</span> <span class="n">Flag</span>
+
+<div class="viewcode-block" id="Contour">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour">[docs]</a>
+<span class="k">class</span> <span class="nc">Contour</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a contour object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the contour</span>
+<span class="sd">                traces (list): the existing list of traces</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="n">traces</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Trace name does not match contour name&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]</span> <span class="o">=</span> <span class="n">traces</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Trace</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the iterator object for the traces list&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Trace</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allow the user to index the traces list.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the length of the trace list.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Combine contours.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only contours with the same name can be summed.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Contour</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">traces</span>
+        <span class="p">)</span>
+    
+<div class="viewcode-block" id="Contour.append">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.append">[docs]</a>
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append a trace to the existing traces.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to append to the contour</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Trace name does not match contour name&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contour.remove">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.remove">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a trace from the list.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to remove from the contour</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contour.index">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.index">[docs]</a>
+    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the index of a trace in the list.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to find the index for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contour.isEmpty">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.isEmpty">[docs]</a>
+    <span class="k">def</span> <span class="nf">isEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if no traces associated with contour.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contour.getTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.getTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the list of traces.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="Contour.copy">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.copy">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the contour.&quot;&quot;&quot;</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">Contour</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">traces</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Contour.getBounds">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.getBounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">getBounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the bounds of the contour.</span>
+
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform): the transform to apply to the traces</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (tuple): the (xmin, ymin, xmax, ymax) extremes for the contours&quot;&quot;&quot;</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]]</span>
+        <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">getBounds</span><span class="p">(</span><span class="n">tform</span><span class="p">)):</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        
+        <span class="n">xmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span></div>
+
+
+<div class="viewcode-block" id="Contour.getMidpoint">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.getMidpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">getMidpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tform</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the midpoint of the contour (average of extremes).</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                tform (Transform): the transform to apply to the traces</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (tuple): the x, y coords for the midpoint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBounds</span><span class="p">(</span><span class="n">tform</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">xmax</span> <span class="o">+</span> <span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">ymax</span> <span class="o">+</span> <span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="Contour.importTraces">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.contour.Contour.importTraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">importTraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">threshold</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import all of the traces from another contour.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                other (Contour): the contour with traces to import</span>
+<span class="sd">                threshold (float): the overlap threshold</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># assume that the first few traces are the same to save time</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">s_trace</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">o_trace</span> <span class="o">=</span> <span class="n">other</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">s_trace</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">o_trace</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+                <span class="n">s_trace</span><span class="o">.</span><span class="n">mergeTags</span><span class="p">(</span><span class="n">o_trace</span><span class="p">)</span>  <span class="c1"># import tags</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># gather remaining traces that aren&#39;t the same between series</span>
+        <span class="n">rem_s_traces</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+        <span class="n">rem_o_traces</span> <span class="o">=</span> <span class="n">other</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+        <span class="n">first_comparison</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">o_trace</span> <span class="ow">in</span> <span class="n">rem_o_traces</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">found_i</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s_trace</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rem_s_traces</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">first_comparison</span><span class="p">:</span>  <span class="c1"># skip the first comparison -- we already know its false</span>
+                    <span class="n">first_comparison</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">s_trace</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">o_trace</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
+                    <span class="n">s_trace</span><span class="o">.</span><span class="n">mergeTags</span><span class="p">(</span><span class="n">o_trace</span><span class="p">)</span>  <span class="c1"># import tags</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">found_i</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                <span class="n">rem_s_traces</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">found_i</span><span class="p">)</span>
+                <span class="n">rem_o_traces</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">o_trace</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o_trace</span><span class="p">)</span>
+        
+        <span class="c1"># return the possible conflict traces</span>
+        <span class="k">return</span> <span class="n">rem_s_traces</span><span class="p">,</span> <span class="n">rem_o_traces</span></div>
+</div>
+
+
+        
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

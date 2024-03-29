@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.dialog.trace_palette &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.dialog.trace_palette</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QInputDialog</span><span class="p">,</span>
+    <span class="n">QToolButton</span><span class="p">,</span>
+    <span class="n">QMessageBox</span><span class="p">,</span>
+    <span class="n">QWidget</span><span class="p">,</span>
+    <span class="n">QScrollArea</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span><span class="p">,</span> <span class="n">Trace</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="n">notify</span>
+
+<span class="kn">from</span> <span class="nn">.quick_dialog</span> <span class="kn">import</span> <span class="n">QuickTabDialog</span>
+
+<div class="viewcode-block" id="TracePaletteDialog">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog">[docs]</a>
+<span class="k">class</span> <span class="nc">TracePaletteDialog</span><span class="p">(</span><span class="n">QuickTabDialog</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a multi-tabbed trace palette dialog.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="n">structures</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">palette</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">structures</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getStructure</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+        
+        <span class="n">QuickTabDialog</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">structures</span><span class="p">,</span> <span class="s2">&quot;Trace Palette&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># set up the tab widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">mousePressEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">editTab</span>  <span class="c1"># allow tabs to be edited</span>
+
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>  <span class="c1"># select the current tab widget</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">tabText</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                <span class="k">break</span>
+        
+        <span class="c1"># allow tabs to be added</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span> <span class="o">=</span> <span class="n">QToolButton</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">)</span>
+        <span class="n">font</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span><span class="o">.</span><span class="n">font</span><span class="p">()</span>
+        <span class="n">font</span><span class="o">.</span><span class="n">setBold</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span><span class="o">.</span><span class="n">setFont</span><span class="p">(</span><span class="n">font</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setCornerWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bttn</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">addPalette</span><span class="p">)</span>
+
+        <span class="c1"># allow tabs to be removed</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">tabCloseRequested</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">removePalette</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="TracePaletteDialog.getStructure">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog.getStructure">[docs]</a>
+    <span class="k">def</span> <span class="nf">getStructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_list</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a dialog from a trace list.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace_list (list): the list of traces to create the dialog</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Color&quot;</span><span class="p">,</span> <span class="s2">&quot;Shape&quot;</span><span class="p">,</span> <span class="s2">&quot;Tags&quot;</span><span class="p">,</span> <span class="s2">&quot;Fill Mode&quot;</span><span class="p">,</span> <span class="s2">&quot;Fill Condition&quot;</span><span class="p">,</span> <span class="s2">&quot;Stamp Radius&quot;</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">:</span>
+            <span class="n">t_copy</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">t_copy</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">t_copy</span><span class="o">.</span><span class="n">points</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">color</span><span class="p">),</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">tags</span><span class="p">)),</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;transparent&quot;</span><span class="p">,</span> <span class="s2">&quot;solid&quot;</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;selected&quot;</span><span class="p">,</span> <span class="s2">&quot;unselected&quot;</span><span class="p">,</span> <span class="s2">&quot;always&quot;</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">fill_mode</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">getRadius</span><span class="p">(),</span> <span class="mi">7</span><span class="p">))</span>
+            <span class="p">]</span>
+            <span class="n">structure</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">structure</span></div>
+
+    
+<div class="viewcode-block" id="TracePaletteDialog.editTab">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog.editTab">[docs]</a>
+    <span class="k">def</span> <span class="nf">editTab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwritten from QTabWidget: allows user to edit tab names.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">mousePressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">buttons</span><span class="p">()</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">RightButton</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">tabBar</span><span class="p">()</span><span class="o">.</span><span class="n">tabAt</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">tabText</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">new_text</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="s2">&quot;Rename&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Enter new palette name:&quot;</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">text</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">new_text</span> <span class="ow">or</span> <span class="n">new_text</span> <span class="o">==</span> <span class="n">text</span><span class="p">:</span>
+                <span class="k">return</span>
+            
+            <span class="k">if</span> <span class="n">new_text</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Palette name already exists.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="c1"># iterate to preserve order</span>
+            <span class="n">new_inputs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="n">text</span><span class="p">:</span>
+                    <span class="n">new_inputs</span><span class="p">[</span><span class="n">new_text</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">text</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_inputs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">new_inputs</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabText</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">new_text</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TracePaletteDialog.addPalette">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog.addPalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">addPalette</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a palette.&quot;&quot;&quot;</span>
+        <span class="n">new_text</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;New palette&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter new palette name:&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">new_text</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">new_text</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;This palette name already exists.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">structure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getStructure</span><span class="p">(</span><span class="n">Series</span><span class="o">.</span><span class="n">getDefaultPaletteTraces</span><span class="p">())</span>
+        <span class="n">layout</span><span class="p">,</span> <span class="n">inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getLayout</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">new_text</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span>
+
+        <span class="n">w</span> <span class="o">=</span> <span class="n">QWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">addTab</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">new_text</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="TracePaletteDialog.removePalette">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog.removePalette">[docs]</a>
+    <span class="k">def</span> <span class="nf">removePalette</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a palette.&quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">tabText</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;WARNING: Are you sure you would like to remove </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">?&quot;</span><span class="p">,</span>
+            <span class="n">QMessageBox</span><span class="o">.</span><span class="n">Ok</span><span class="p">,</span>
+            <span class="n">QMessageBox</span><span class="o">.</span><span class="n">Cancel</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span> <span class="o">==</span> <span class="n">QMessageBox</span><span class="o">.</span><span class="n">Ok</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">text</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">removeTab</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tab_widget</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TracePaletteDialog.exec">
+<a class="viewcode-back" href="../../../../modules.gui.dialog.html#modules.gui.dialog.trace_palette.TracePaletteDialog.exec">[docs]</a>
+    <span class="k">def</span> <span class="nf">exec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the dialog.&quot;&quot;&quot;</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span>
+        
+        <span class="c1"># modify the series directly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;current_tab_text&quot;</span><span class="p">]</span>
+        <span class="k">del</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;current_tab_text&quot;</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">palette_name</span><span class="p">,</span> <span class="n">inputs</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">palette_traces</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="n">inputs</span><span class="p">:</span>
+                <span class="p">(</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">color</span><span class="p">,</span>
+                    <span class="n">shape</span><span class="p">,</span>
+                    <span class="n">tags</span><span class="p">,</span>
+                    <span class="n">fill_mode</span><span class="p">,</span>
+                    <span class="n">fill_condition</span><span class="p">,</span>
+                    <span class="n">stamp_radius</span>
+                <span class="p">)</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[:</span><span class="mi">7</span><span class="p">]</span>
+                <span class="n">inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span>
+
+                <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">]</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+
+                <span class="n">t</span> <span class="o">=</span> <span class="n">Trace</span><span class="o">.</span><span class="n">fromList</span><span class="p">([</span>
+                    <span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">fill_mode</span><span class="p">,</span> <span class="n">fill_condition</span><span class="p">),</span> <span class="n">tags</span>
+                <span class="p">])</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">stamp_radius</span><span class="p">)</span>
+                
+                <span class="n">palette_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">palette_traces</span><span class="p">[</span><span class="n">palette_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">palette_traces</span>
+        
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">True</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

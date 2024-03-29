@@ -1,0 +1,1013 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="modules.backend.threading package" href="modules.backend.threading.html" /><link rel="prev" title="modules.backend.func package" href="modules.backend.func.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+        <title>modules.backend.table package - PyReconstruct 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">PyReconstruct 0.0.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">PyReconstruct 0.0.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">modules package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of modules package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="modules.backend.html">modules.backend package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of modules.backend package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.autoseg.html">modules.backend.autoseg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.func.html">modules.backend.func package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">modules.backend.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.threading.html">modules.backend.threading package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.view.html">modules.backend.view package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.backend.volume.html">modules.backend.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.calc.html">modules.calc package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.constants.html">modules.constants package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.datatypes.html">modules.datatypes package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.datatypes_legacy.html">modules.datatypes_legacy package</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of modules.datatypes_legacy package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.classes.html">modules.datatypes_legacy.classes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.datatypes_legacy.utils.html">modules.datatypes_legacy.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="modules.gui.html">modules.gui package</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of modules.gui package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.dialog.html">modules.gui.dialog package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.main.html">modules.gui.main package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.palette.html">modules.gui.palette package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.popup.html">modules.gui.popup package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.table.html">modules.gui.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules.gui.utils.html">modules.gui.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="modules-backend-table-package">
+<h1>modules.backend.table package<a class="headerlink" href="#modules-backend-table-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-modules.backend.table.flag">
+<span id="modules-backend-table-flag-module"></span><h2>modules.backend.table.flag module<a class="headerlink" href="#module-modules.backend.table.flag" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlagTableManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.deleteFlags">
+<span class="sig-name descname"><span class="pre">deleteFlags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.deleteFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.deleteFlags" title="Link to this definition">#</a></dt>
+<dd><p>Delete an object or objects on every section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>flags (list): the list of flags to delete
+match_name (bool): True if flags with same name should be deleted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.editFlag">
+<span class="sig-name descname"><span class="pre">editFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.editFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.editFlag" title="Link to this definition">#</a></dt>
+<dd><p>Edit a flag.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the section number containing the flag
+flag (Flag): the flag to modify
+new_flag (Flag): the flag to replace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.markResolved">
+<span class="sig-name descname"><span class="pre">markResolved</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolved</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.markResolved"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.markResolved" title="Link to this definition">#</a></dt>
+<dd><p>Edit the resolved status of a flag.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>flags (list): the list of flags to modify
+resolved (bool): the resolve status to set for the flag</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.newTable">
+<span class="sig-name descname"><span class="pre">newTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.newTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.newTable" title="Link to this definition">#</a></dt>
+<dd><p>Create a new object list widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Reload all of the section data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.updateSection">
+<span class="sig-name descname"><span class="pre">updateSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.updateSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.updateSection" title="Link to this definition">#</a></dt>
+<dd><p>Update the data and the table for a specific section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section object
+section_num (int): the section number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.updateTable">
+<span class="sig-name descname"><span class="pre">updateTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FlagTableWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.updateTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.updateTable" title="Link to this definition">#</a></dt>
+<dd><p>Updates a table with the current data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>table (ObjectTableWidget): the table to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.flag.FlagTableManager.updateTables">
+<span class="sig-name descname"><span class="pre">updateTables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/flag.html#FlagTableManager.updateTables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.flag.FlagTableManager.updateTables" title="Link to this definition">#</a></dt>
+<dd><p>Update all tables.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.table.object">
+<span id="modules-backend-table-object-module"></span><h2>modules.backend.table.object module<a class="headerlink" href="#module-modules.backend.table.object" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ObjectTableManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.createZtrace">
+<span class="sig-name descname"><span class="pre">createZtrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cross_sectioned</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.createZtrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.createZtrace" title="Link to this definition">#</a></dt>
+<dd><p>Create ztraces from a set of objects.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the objects to create ztraces for
+croess_sectioned (bool): True if object is cross-sectioned</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.deleteObjects">
+<span class="sig-name descname"><span class="pre">deleteObjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.deleteObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.deleteObjects" title="Link to this definition">#</a></dt>
+<dd><p>Delete an object or objects on every section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the list of names for the objects to delete</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.edit3D">
+<span class="sig-name descname"><span class="pre">edit3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_opacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.edit3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.edit3D" title="Link to this definition">#</a></dt>
+<dd><p>Modify the 3D settings for a set of objects.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the objects to modify
+new_type (str): the 3D type for the objects
+new_opacity (float): the opacity for the 3D objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.editAttributes">
+<span class="sig-name descname"><span class="pre">editAttributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_trace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sections</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.editAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.editAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Edit objects on every section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>series (Series): the series object
+obj_names (list): the names of the objects to rename
+attr_trace (Trace): the trace holding the new attributes
+section (list): the sections to modify attributes for</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.editRadius">
+<span class="sig-name descname"><span class="pre">editRadius</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_rad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.editRadius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.editRadius" title="Link to this definition">#</a></dt>
+<dd><p>Change the radii of all traces of an object.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the names of objects to modify
+new_rad (float): the new radius for the traces of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.editShape">
+<span class="sig-name descname"><span class="pre">editShape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.editShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.editShape" title="Link to this definition">#</a></dt>
+<dd><p>Change the shapes of all traces of an object.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the names of objects to modify
+new_shape (list): the new shape for the traces of the object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.findObject">
+<span class="sig-name descname"><span class="pre">findObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.findObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.findObject" title="Link to this definition">#</a></dt>
+<dd><p>Find an object in the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_name (str): the name of the object
+first (bool): whether to find first or last object in series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.hideObjects">
+<span class="sig-name descname"><span class="pre">hideObjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.hideObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.hideObjects" title="Link to this definition">#</a></dt>
+<dd><p>Hide all traces of an object throughout the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the names of objects to hide
+hide (bool): True if object should be hidden</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.newTable">
+<span class="sig-name descname"><span class="pre">newTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.newTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.newTable" title="Link to this definition">#</a></dt>
+<dd><p>Create a new object list widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Reload all of the section data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.removeAllTraceTags">
+<span class="sig-name descname"><span class="pre">removeAllTraceTags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.removeAllTraceTags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.removeAllTraceTags" title="Link to this definition">#</a></dt>
+<dd><p>Remove all tags from all trace on a selected object.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): a list of object names</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.toggleCuration">
+<span class="sig-name descname"><span class="pre">toggleCuration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.toggleCuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.toggleCuration" title="Link to this definition">#</a></dt>
+<dd><p>Quick shortcut to toggle curation on/off for the tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.updateObjects">
+<span class="sig-name descname"><span class="pre">updateObjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.updateObjects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.updateObjects" title="Link to this definition">#</a></dt>
+<dd><p>Update the objects each table.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>obj_names (list): the list objects to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.updateSection">
+<span class="sig-name descname"><span class="pre">updateSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.updateSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.updateSection" title="Link to this definition">#</a></dt>
+<dd><p>Update the data and the table for a specific section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section object
+section_num (int): the section number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.updateTable">
+<span class="sig-name descname"><span class="pre">updateTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ObjectTableWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.updateTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.updateTable" title="Link to this definition">#</a></dt>
+<dd><p>Updates a table with the current data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>table (ObjectTableWidget): the table to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.object.ObjectTableManager.updateTables">
+<span class="sig-name descname"><span class="pre">updateTables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/object.html#ObjectTableManager.updateTables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.object.ObjectTableManager.updateTables" title="Link to this definition">#</a></dt>
+<dd><p>Update all tables.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.table.section">
+<span id="modules-backend-table-section-module"></span><h2>modules.backend.table.section module<a class="headerlink" href="#module-modules.backend.table.section" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SectionTableManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.deleteSections">
+<span class="sig-name descname"><span class="pre">deleteSections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.deleteSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.deleteSections" title="Link to this definition">#</a></dt>
+<dd><p>Delete a set of sections.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_numbers (list): the list of sections to delete</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.editSrc">
+<span class="sig-name descname"><span class="pre">editSrc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_src</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.editSrc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.editSrc" title="Link to this definition">#</a></dt>
+<dd><p>Set the image source for a single section (and possible for all sections).</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>snum (int): the number of the section to modify (none if edit all sections)
+new_src (str): the new image source for the section
+edit_all (bool): True if ALL section sources should be modified</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.editThickness">
+<span class="sig-name descname"><span class="pre">editThickness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.editThickness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.editThickness" title="Link to this definition">#</a></dt>
+<dd><p>Set the section thickness for a set of sections.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_numbers (list): the list of section numbers to modify
+thickness (float): the new thickness to set for the sections</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.findSection">
+<span class="sig-name descname"><span class="pre">findSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.findSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.findSection" title="Link to this definition">#</a></dt>
+<dd><p>Focus the view on a specific section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_number (int): the section the focus on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.insertSection">
+<span class="sig-name descname"><span class="pre">insertSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.insertSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.insertSection" title="Link to this definition">#</a></dt>
+<dd><p>Create a new section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>index (int): the index of the new section
+src (str): the path to the image for the new section
+mag (float): the mag of the new section
+thickness (float): the thickness of the new section</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.lockSections">
+<span class="sig-name descname"><span class="pre">lockSections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.lockSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.lockSections" title="Link to this definition">#</a></dt>
+<dd><p>Lock or unlock a set of sections.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_numbers (list): the list of section numbers to modify
+lock (bool): True if sections should be locked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.matchBC">
+<span class="sig-name descname"><span class="pre">matchBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.matchBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.matchBC" title="Link to this definition">#</a></dt>
+<dd><p>Match the brightness and contrast of a set of sections to the current section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_numbers (list): the sections to modify</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.newTable">
+<span class="sig-name descname"><span class="pre">newTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.newTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.newTable" title="Link to this definition">#</a></dt>
+<dd><p>Create a new trace list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Refresh the section data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.reorderSections">
+<span class="sig-name descname"><span class="pre">reorderSections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.reorderSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.reorderSections" title="Link to this definition">#</a></dt>
+<dd><p>Reorder the sections in the series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.setBC">
+<span class="sig-name descname"><span class="pre">setBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.setBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.setBC" title="Link to this definition">#</a></dt>
+<dd><p>Set the brightness and contrast for a set of sections.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section_numbers (list): the list of section numbers to set
+b (int): the brightness to set
+c (int): the contrast to set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.updateSection">
+<span class="sig-name descname"><span class="pre">updateSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snum</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.updateSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.updateSection" title="Link to this definition">#</a></dt>
+<dd><p>Update the data for a section.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section number with data to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.updateSections">
+<span class="sig-name descname"><span class="pre">updateSections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.updateSections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.updateSections" title="Link to this definition">#</a></dt>
+<dd><p>Update the tables for a set of sections.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.section.SectionTableManager.updateTables">
+<span class="sig-name descname"><span class="pre">updateTables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/section.html#SectionTableManager.updateTables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.section.SectionTableManager.updateTables" title="Link to this definition">#</a></dt>
+<dd><p>Updates a table with the current data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>table (ObjectTableWidget): the table to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.table.trace">
+<span id="modules-backend-table-trace-module"></span><h2>modules.backend.table.trace module<a class="headerlink" href="#module-modules.backend.table.trace" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TraceTableManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.deleteTraces">
+<span class="sig-name descname"><span class="pre">deleteTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.deleteTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.deleteTraces" title="Link to this definition">#</a></dt>
+<dd><p>Delete a set of traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): the trace to delete</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.editRadius">
+<span class="sig-name descname"><span class="pre">editRadius</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_rad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.editRadius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.editRadius" title="Link to this definition">#</a></dt>
+<dd><p>Edit the radius of a set of traces</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): the list of traces to modify
+new_rad (float): the new radius for the traces</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.editShape">
+<span class="sig-name descname"><span class="pre">editShape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.editShape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.editShape" title="Link to this definition">#</a></dt>
+<dd><p>Edit the shape of a set of traces</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): the list of traces to modify
+new_rad (float): the new shape for the traces</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.editTraces">
+<span class="sig-name descname"><span class="pre">editTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.editTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.editTraces" title="Link to this definition">#</a></dt>
+<dd><p>Edit a set of traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): the list of traces to modify
+name (str): the new trace name
+color (tuple): the new trace color
+tags (set): the new trace tags
+mode (tuple): the fill mode for the traces</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.findTrace">
+<span class="sig-name descname"><span class="pre">findTrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.findTrace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.findTrace" title="Link to this definition">#</a></dt>
+<dd><p>Find an object in the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>item (tuple): the iname, index of the desired trace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.getTraces">
+<span class="sig-name descname"><span class="pre">getTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.getTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.getTraces" title="Link to this definition">#</a></dt>
+<dd><p>Get the trace objects for a list of table items.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>items (list): the list of trace table items (name, index)</p>
+</dd>
+<dt>Returns:</dt><dd><p>traces (list): the list of actual trace objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.hideTraces">
+<span class="sig-name descname"><span class="pre">hideTraces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traces</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.hideTraces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.hideTraces" title="Link to this definition">#</a></dt>
+<dd><p>Hide/unhide a set of traces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>traces (list): the list of traces to hide/unhide
+hide (bool): True if traces should be hidden</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.loadSection">
+<span class="sig-name descname"><span class="pre">loadSection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Section</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.loadSection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.loadSection" title="Link to this definition">#</a></dt>
+<dd><p>Load all of the data for each object in the series.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>section (Section): the section to load data for</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.newTable">
+<span class="sig-name descname"><span class="pre">newTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.newTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.newTable" title="Link to this definition">#</a></dt>
+<dd><p>Create a new trace list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.update" title="Link to this definition">#</a></dt>
+<dd><p>Update the table for a section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.trace.TraceTableManager.updateTable">
+<span class="sig-name descname"><span class="pre">updateTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TraceTableWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/trace.html#TraceTableManager.updateTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.trace.TraceTableManager.updateTable" title="Link to this definition">#</a></dt>
+<dd><p>Updates a table with the current data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>table (ObjectTableWidget): the table to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.table.ztrace">
+<span id="modules-backend-table-ztrace-module"></span><h2>modules.backend.table.ztrace module<a class="headerlink" href="#module-modules.backend.table.ztrace" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZtraceTableManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mainwindow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.close" title="Link to this definition">#</a></dt>
+<dd><p>Close all the tables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.delete" title="Link to this definition">#</a></dt>
+<dd><p>Delete a set of ztraces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>names (list): the list of ztraces to delete</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.editAttributes">
+<span class="sig-name descname"><span class="pre">editAttributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.editAttributes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.editAttributes" title="Link to this definition">#</a></dt>
+<dd><p>Edit the name of a ztrace.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>name (str): the name of the ztrace to change
+new_name (str): the new name for the trace
+new_color (tuple): the new color for the trace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.newTable">
+<span class="sig-name descname"><span class="pre">newTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.newTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.newTable" title="Link to this definition">#</a></dt>
+<dd><p>Create a new ztrace list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Refresh the series data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.smooth">
+<span class="sig-name descname"><span class="pre">smooth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newztrace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.smooth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.smooth" title="Link to this definition">#</a></dt>
+<dd><p>Smooth a set of ztraces.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>names (list): the names of the ztraces to smooth
+smooth (int): the smoothing factor
+newztrace (bool): False if ztrace should be overwritten</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clear_tracking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.update" title="Link to this definition">#</a></dt>
+<dd><p>Update the data for a set of ztraces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.updateTable">
+<span class="sig-name descname"><span class="pre">updateTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ZtraceTableWidget</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.updateTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.updateTable" title="Link to this definition">#</a></dt>
+<dd><p>Update a table’s data.</p>
+<dl class="simple">
+<dt>Params:</dt><dd><p>table: the table to update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modules.backend.table.ztrace.ZtraceTableManager.updateTables">
+<span class="sig-name descname"><span class="pre">updateTables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modules/backend/table/ztrace.html#ZtraceTableManager.updateTables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modules.backend.table.ztrace.ZtraceTableManager.updateTables" title="Link to this definition">#</a></dt>
+<dd><p>Update all the ztrace tables.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-modules.backend.table">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-modules.backend.table" title="Link to this heading">#</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="modules.backend.threading.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">modules.backend.threading package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modules.backend.func.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">modules.backend.func package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Julian Falco and Michael Chirillo
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">modules.backend.table package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-modules.backend.table.flag">modules.backend.table.flag module</a><ul>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager"><code class="docutils literal notranslate"><span class="pre">FlagTableManager</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.close"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.deleteFlags"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.deleteFlags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.editFlag"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.editFlag()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.markResolved"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.markResolved()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.newTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.flag.FlagTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">FlagTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.table.object">modules.backend.table.object module</a><ul>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.close"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.createZtrace"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.createZtrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.deleteObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.deleteObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.edit3D"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.edit3D()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.editAttributes"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.editRadius"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editRadius()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.editShape"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.editShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.findObject"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.findObject()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.hideObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.hideObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.newTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.removeAllTraceTags"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.removeAllTraceTags()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.toggleCuration"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.toggleCuration()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.updateObjects"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateObjects()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.object.ObjectTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">ObjectTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.table.section">modules.backend.table.section module</a><ul>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager"><code class="docutils literal notranslate"><span class="pre">SectionTableManager</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.close"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.deleteSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.deleteSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.editSrc"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.editSrc()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.editThickness"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.editThickness()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.findSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.findSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.insertSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.insertSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.lockSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.lockSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.matchBC"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.matchBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.newTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.reorderSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.reorderSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.setBC"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.setBC()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.updateSection"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.updateSections"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateSections()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.section.SectionTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">SectionTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.table.trace">modules.backend.table.trace module</a><ul>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager"><code class="docutils literal notranslate"><span class="pre">TraceTableManager</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.close"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.deleteTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.deleteTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.editRadius"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editRadius()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.editShape"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editShape()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.editTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.editTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.findTrace"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.findTrace()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.getTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.getTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.hideTraces"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.hideTraces()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.loadSection"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.loadSection()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.newTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.update"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.update()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.trace.TraceTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">TraceTableManager.updateTable()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.table.ztrace">modules.backend.table.ztrace module</a><ul>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager</span></code></a><ul>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.close"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.close()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.delete"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.delete()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.editAttributes"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.editAttributes()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.newTable"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.newTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.refresh"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.refresh()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.smooth"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.smooth()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.update"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.update()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.updateTable"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.updateTable()</span></code></a></li>
+<li><a class="reference internal" href="#modules.backend.table.ztrace.ZtraceTableManager.updateTables"><code class="docutils literal notranslate"><span class="pre">ZtraceTableManager.updateTables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-modules.backend.table">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

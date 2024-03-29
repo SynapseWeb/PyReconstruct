@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.table.ztrace &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.table.ztrace</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QMainWindow</span><span class="p">,</span> 
+    <span class="n">QDockWidget</span><span class="p">,</span> 
+    <span class="n">QTableWidgetItem</span><span class="p">,</span> 
+    <span class="n">QAbstractItemView</span><span class="p">,</span> 
+    <span class="n">QWidget</span><span class="p">,</span> 
+    <span class="n">QInputDialog</span><span class="p">,</span> 
+    <span class="n">QMenu</span><span class="p">,</span> 
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.copy_table_widget</span> <span class="kn">import</span> <span class="n">CopyTableWidget</span>
+<span class="kn">from</span> <span class="nn">.str_helper</span> <span class="kn">import</span> <span class="n">sortList</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">populateMenuBar</span><span class="p">,</span>
+    <span class="n">populateMenu</span><span class="p">,</span>
+    <span class="n">notify</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QuickDialog</span><span class="p">,</span>
+    <span class="n">ObjectGroupDialog</span><span class="p">,</span>
+    <span class="n">FileDialog</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="ZtraceTableWidget">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">ZtraceTableWidget</span><span class="p">(</span><span class="n">QDockWidget</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span> <span class="p">:</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the object table dock widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series object</span>
+<span class="sd">                mainwindow (QWidget): the main window the dock is connected to</span>
+<span class="sd">                manager: the object table manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initialize the widget</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mainwindow</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">series_states</span>
+
+        <span class="c1"># set desired format for widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAllowedAreas</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">RightDockWidgetArea</span><span class="p">)</span>  <span class="c1"># ccan be docked to right or left side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Ztrace List&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;.*&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># create the main window widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span> <span class="o">=</span> <span class="n">QMainWindow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+        
+        <span class="c1"># create the table and the menu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createMenus</span><span class="p">()</span>
+
+        <span class="c1"># save manager object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="ZtraceTableWidget.setRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.setRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Populate a row with trace item data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                ztrace_name (str): the name of the ztrace</span>
+<span class="sd">                row (int): the row to insert the data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ztrace_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">row</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">insertRow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">())</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getZtraceStart</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getZtraceEnd</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getZtraceDist</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+            <span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">)</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">ztrace_name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="n">ztrace</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="n">resize</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowToContents</span><span class="p">(</span><span class="n">row</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.createMenus">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.createMenus">[docs]</a>
+    <span class="k">def</span> <span class="nf">createMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the menu for the trace table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># Create menubar menu</span>
+        <span class="n">menubar_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;listmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;List&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;refresh_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Refresh&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;export_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Export...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;filtermenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;refilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Regex filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setREFilter</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;groupfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Group filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setGroupFilter</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        <span class="c1"># create the menubar object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="o">.</span><span class="n">setNativeMenuBar</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># attach menu to the window</span>
+        <span class="c1"># fill in the menu bar object</span>
+        <span class="n">populateMenuBar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="p">,</span> <span class="n">menubar_list</span><span class="p">)</span>
+
+        <span class="c1"># create the right-click menu</span>
+        <span class="n">context_menu_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;editname_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit attributes...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editAttributes</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;smooth_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Smooth&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smooth</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;menu_3D&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;3D&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;addto3D_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Add to scene&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTo3D</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;remove3D_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from scene&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove3D</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span> <span class="p">:</span> <span class="s2">&quot;group_menu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;addgroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Add to group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addToGroup</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;removegroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeFromGroup</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;removeallgroups_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from all groups&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeFromAllGroups</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">(</span><span class="s2">&quot;setalignment_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Change ztrace alignment...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editAlignment</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;copy_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Copy&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">copy</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;delete_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span> <span class="o">=</span> <span class="n">QMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">populateMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="p">,</span> <span class="n">context_menu_list</span><span class="p">)</span></div>
+
+            
+<div class="viewcode-block" id="ZtraceTableWidget.passesFilters">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.passesFilters">[docs]</a>
+    <span class="k">def</span> <span class="nf">passesFilters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if an object will be displayed in the table based on existing filters.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                ztrace_name (str): the name of the ztrace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check groups</span>
+        <span class="n">filters_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filters_len</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">groups_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+            <span class="n">union_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">union_len</span> <span class="o">==</span> <span class="n">groups_len</span> <span class="o">+</span> <span class="n">filters_len</span><span class="p">:</span>  <span class="c1"># intersection does not exist</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check regex</span>
+        <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="k">else</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">re_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">re_filter</span><span class="p">,</span> <span class="n">name</span><span class="p">)):</span>
+                <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">passes_filters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ZtraceTableWidget.updateTitle">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.updateTitle">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTitle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the title of the table.&quot;&quot;&quot;</span>
+        <span class="n">is_regex</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">,)</span>
+        <span class="n">is_group</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Ztrace List &quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">is_regex</span><span class="p">,</span> <span class="n">is_group</span><span class="p">)):</span>
+            <span class="n">strs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">is_regex</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;regex&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_group</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">)</span>
+            <span class="n">title</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(Filtered by: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strs</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.createTable">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.createTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># close an existing table and save scroll position</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c1"># establish table headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Start&quot;</span><span class="p">,</span> <span class="s2">&quot;End&quot;</span><span class="p">,</span> <span class="s2">&quot;Distance&quot;</span><span class="p">,</span> <span class="s2">&quot;Groups&quot;</span><span class="p">,</span> <span class="s2">&quot;Alignment&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTitle</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">CopyTableWidget</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">))</span>
+
+        <span class="c1"># connect table functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">contextMenuEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ztraceContextMenu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">mouseDoubleClickEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTo3D</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">backspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span>
+        
+        <span class="c1"># filter the objects</span>
+        <span class="n">filtered_ztrace_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">passesFilters</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">filtered_ztrace_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">filtered_ztrace_list</span> <span class="o">=</span> <span class="n">sortList</span><span class="p">(</span><span class="n">filtered_ztrace_list</span><span class="p">)</span>
+
+        <span class="c1"># format table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setWordWrap</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setShowGrid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setAlternatingRowColors</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># alternate row colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setEditTriggers</span><span class="p">(</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">NoEditTriggers</span><span class="p">)</span>  <span class="c1"># cannot be edited</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>  <span class="c1"># titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>  <span class="c1"># no veritcal header</span>
+        
+        <span class="c1"># fill in object data</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filtered_ztrace_list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># format rows and columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowsToContents</span><span class="p">()</span>
+
+        <span class="c1"># set the saved scroll value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span>
+
+        <span class="c1"># set table as central widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.updateZtraces">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.updateZtraces">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateZtraces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_names</span> <span class="p">:</span> <span class="nb">set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the specified ztraces.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="n">r</span><span class="p">,</span> <span class="n">is_in_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_in_table</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">insertRow</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">checkActions</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.getSelectedName">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedName">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedName</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the trace item that is selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">selected_indeces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.getSelectedNames">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.getSelectedNames">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the trace items that iare selected by the user.&quot;&quot;&quot;</span>
+        <span class="n">selected_indeces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indeces</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">selected_indeces</span>
+        <span class="p">]</span>    </div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.resizeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.resizeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the table when window is resized.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span></div>
+
+
+    <span class="c1"># RIGHT CLICK FUNCTIONS</span>
+
+<div class="viewcode-block" id="ZtraceTableWidget.ztraceContextMenu">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.ztraceContextMenu">[docs]</a>
+    <span class="k">def</span> <span class="nf">ztraceContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when button is right-clicked: pulls up menu for user to modify objects.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">globalPos</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ZtraceTableWidget.editAttributes">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.editAttributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">editAttributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the name of a ztrace.&quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please modify one ztrace at a time.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">ztrace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Name:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Color:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="n">ztrace</span><span class="o">.</span><span class="n">color</span><span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Set Attributes&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">new_name</span><span class="p">,</span> <span class="n">new_color</span> <span class="o">=</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="n">new_name</span> <span class="o">!=</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">new_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;This ztrace already exists.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># keep track of scroll bar position</span>
+        <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+        <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editAttributes</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">new_name</span><span class="p">,</span> <span class="n">new_color</span><span class="p">)</span>
+        
+        <span class="c1"># reset scroll bar position</span>
+        <span class="n">vscroll</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.smooth">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.smooth">[docs]</a>
+    <span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Smooth a set of ztraces.&quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Smoothing factor:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)],</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Create new ztrace&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))]</span>
+        <span class="p">]</span>
+        
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Smooth Ztrace&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">smooth</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">newztrace</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">smooth</span><span class="p">,</span> <span class="n">newztrace</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.addTo3D">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.addTo3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTo3D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a 3D view of an object&quot;&quot;&quot;</span>
+        <span class="n">ztrace_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">addTo3D</span><span class="p">(</span><span class="n">ztrace_names</span><span class="p">,</span> <span class="n">ztraces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.remove3D">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.remove3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove3D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove object(s) from the scene.&quot;&quot;&quot;</span>
+        <span class="n">ztrace_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">removeFrom3D</span><span class="p">(</span><span class="n">ztrace_names</span><span class="p">,</span> <span class="n">ztraces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.addToGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.addToGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">addToGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add objects to a group.&quot;&quot;&quot;</span>
+        <span class="n">ztrace_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># ask the user for the group</span>
+        <span class="n">group_name</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">ObjectGroupDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># save the series state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Add to group &#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">modified_ztraces</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clear_tracking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.removeFromGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.removeFromGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeFromGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove objects from a group.&quot;&quot;&quot;</span>
+        <span class="n">ztrace_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># ask the user for the group</span>
+        <span class="n">group_name</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">ObjectGroupDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="p">,</span> <span class="n">new_group</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># save the series state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Remove from group &#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">modified_ztraces</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clear_tracking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.removeFromAllGroups">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.removeFromAllGroups">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeFromAllGroups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a set of traces from all groups.&quot;&quot;&quot;</span>
+        <span class="n">ztrace_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># save the series state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ztrace_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztrace_groups</span><span class="o">.</span><span class="n">removeObject</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Remove from all object groups&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">modified_ztraces</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clear_tracking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.editAlignment">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.editAlignment">[docs]</a>
+    <span class="k">def</span> <span class="nf">editAlignment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit alignment for ztrace(s).&quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select at least one ztrace.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Alignment:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;no-alignment&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">keys</span><span class="p">()))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Object Alignment&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># save the series state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="n">alignment</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">alignment</span><span class="p">:</span> <span class="n">alignment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="n">alignment</span><span class="p">,</span> <span class="n">ztrace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Edit default alignment&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.delete">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.delete">[docs]</a>
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a set of ztraces.&quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">names</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU-RELATED FUNCTIONS</span>
+
+<div class="viewcode-block" id="ZtraceTableWidget.refresh">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Refresh the tables.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.export">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.export">[docs]</a>
+    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the trace list as a csv file.&quot;&quot;&quot;</span>
+        <span class="c1"># get the location from the user</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">FileDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;save&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save Ztrace List&quot;</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;ztraces.csv&quot;</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="s2">&quot;Comma Separated Values (*.csv)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span> <span class="k">return</span>
+        <span class="c1"># unload the table into the csv file</span>
+        <span class="n">csv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="c1"># headers first</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># trace data</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># close file</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>        </div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.setREFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.setREFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setREFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new regex filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">re_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+        <span class="n">new_re_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Ztraces&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the ztrace filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">re_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new regex filter for the set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="n">new_re_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.*&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="nb">filter</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="s2">&quot;[0-9]&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.setGroupFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.setGroupFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setGroupFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new group filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">group_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        <span class="n">new_group_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Ztraces&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the group filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">group_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new group filter for the list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="n">new_group_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ZtraceTableWidget.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.ztrace.ZtraceTableWidget.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove self from manager table list.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

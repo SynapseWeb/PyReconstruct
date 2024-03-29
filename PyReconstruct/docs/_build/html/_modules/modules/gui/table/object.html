@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.gui.table.object &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.gui.table.object</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span> <span class="nn">PySide6.QtWidgets</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QMainWindow</span><span class="p">,</span> 
+    <span class="n">QDockWidget</span><span class="p">,</span> 
+    <span class="n">QTableWidgetItem</span><span class="p">,</span>  
+    <span class="n">QWidget</span><span class="p">,</span> 
+    <span class="n">QInputDialog</span><span class="p">,</span> 
+    <span class="n">QMenu</span><span class="p">,</span> 
+    <span class="n">QAbstractItemView</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PySide6.QtCore</span> <span class="kn">import</span> <span class="n">Qt</span>
+
+<span class="kn">from</span> <span class="nn">.copy_table_widget</span> <span class="kn">import</span> <span class="n">CopyTableWidget</span>
+<span class="kn">from</span> <span class="nn">.history</span> <span class="kn">import</span> <span class="n">HistoryTableWidget</span>
+<span class="kn">from</span> <span class="nn">.str_helper</span> <span class="kn">import</span> <span class="n">sortList</span>
+
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.datatypes</span> <span class="kn">import</span> <span class="n">Series</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">populateMenuBar</span><span class="p">,</span>
+    <span class="n">populateMenu</span><span class="p">,</span>
+    <span class="n">notify</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">PyReconstruct.modules.gui.dialog</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ObjectGroupDialog</span><span class="p">,</span>
+    <span class="n">TraceDialog</span><span class="p">,</span>
+    <span class="n">ShapesDialog</span><span class="p">,</span>
+    <span class="n">QuickDialog</span><span class="p">,</span>
+    <span class="n">FileDialog</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="getDateTime">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.getDateTime">[docs]</a>
+<span class="k">def</span> <span class="nf">getDateTime</span><span class="p">():</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">minute</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">,</span> <span class="n">t</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget">[docs]</a>
+<span class="k">class</span> <span class="nc">ObjectTableWidget</span><span class="p">(</span><span class="n">QDockWidget</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span> <span class="p">:</span> <span class="n">Series</span><span class="p">,</span> <span class="n">mainwindow</span> <span class="p">:</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the object table dock widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the Series object</span>
+<span class="sd">                mainwindow (MainWindow): the main window the dock is connected to</span>
+<span class="sd">                manager: the object table manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initialize the widget</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mainwindow</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span> <span class="o">=</span> <span class="n">mainwindow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">series_states</span>
+
+        <span class="c1"># set desired format for widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAllowedAreas</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">LeftDockWidgetArea</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">RightDockWidgetArea</span><span class="p">)</span>  <span class="c1"># can be docked to right or left side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Object List&quot;</span><span class="p">)</span>
+
+        <span class="c1"># set defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="s2">&quot;object_columns&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;.*&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Blank&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;Needs curation&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;Curated&quot;</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># create the main window widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span> <span class="o">=</span> <span class="n">QMainWindow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+        
+        <span class="c1"># create the table and the menu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_check_event</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createTable</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">createMenus</span><span class="p">()</span>
+
+        <span class="c1"># save manager object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="ObjectTableWidget.createMenus">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.createMenus">[docs]</a>
+    <span class="k">def</span> <span class="nf">createMenus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the menu for the object table widget.&quot;&quot;&quot;</span>
+        <span class="c1"># Create menubar menu</span>
+        <span class="n">menubar_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;listmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;List&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;refresh_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Refresh&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;columns_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Set columns...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setColumns</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;export_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Export...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;filtermenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;refilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Regex filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setREFilter</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;groupfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Group filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setGroupFilter</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;tagfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Tag filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setTagFilter</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;crstatusfilter_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Curation filter...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">setCRFilter</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;findmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Find&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;findfirst_act&quot;</span><span class="p">,</span> <span class="s2">&quot;First&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">findFirst</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;findlast_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Last&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">findLast</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;groupmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;renamegroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Rename group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">renameGroup</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;deletegroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteGroup</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        <span class="c1"># create the menubar object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="o">.</span><span class="n">setNativeMenuBar</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># attach menu to the window</span>
+        <span class="c1"># fill in the menu bar object</span>
+        <span class="n">populateMenuBar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">menubar</span><span class="p">,</span> <span class="n">menubar_list</span><span class="p">)</span>
+
+        <span class="c1"># create the right-click menu</span>
+        <span class="n">context_menu_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;editattribtues_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit attributes...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editAttributes</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;editcomment_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Comment...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editComment</span><span class="p">),</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;stampmenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Stamp attributes&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;editradius_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit radius...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editRadius</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;editshape_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit shape...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editShape</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">(</span><span class="s2">&quot;removealltags_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove all tags&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeAllTags</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;hideobj_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Hide&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hideObj</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;unhideobj_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Unhide&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hideObj</span><span class="p">(</span><span class="kc">False</span><span class="p">)),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;curatemenu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Set curation&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;blankcurate_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Blank&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bulkCurate</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)),</span>
+                    <span class="p">(</span><span class="s2">&quot;needscuration_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Needs curation&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bulkCurate</span><span class="p">(</span><span class="s2">&quot;Needs curation&quot;</span><span class="p">)),</span>
+                    <span class="p">(</span><span class="s2">&quot;curated_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Curated&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bulkCurate</span><span class="p">(</span><span class="s2">&quot;Curated&quot;</span><span class="p">))</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;menu_3D&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;3D&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;addto3D_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Add to scene&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTo3D</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;remove3D_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from scene&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove3D</span><span class="p">),</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="p">(</span><span class="s2">&quot;edit3D_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Edit 3D settings...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edit3D</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span> <span class="p">:</span> <span class="s2">&quot;group_menu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;addgroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Add to group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addToGroup</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;removegroup_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from group...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeFromGroup</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;removeallgroups_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Remove from all groups&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">removeFromAllGroups</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="p">(</span><span class="s2">&quot;setalignment_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Change object alignment...&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">editAlignment</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;history_act&quot;</span><span class="p">,</span> <span class="s2">&quot;View history&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">viewHistory</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;attr_name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztrace_menu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Create ztrace&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;opts&quot;</span><span class="p">:</span>
+                <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;csztrace_act&quot;</span><span class="p">,</span> <span class="s2">&quot;On contour midpoints&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">createZtrace</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;atztrace_act&quot;</span><span class="p">,</span> <span class="s2">&quot;From trace sequence&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">createZtrace</span><span class="p">(</span><span class="n">cross_sectioned</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;copy_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Copy&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">copy</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;delete_act&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteObjects</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span> <span class="o">=</span> <span class="n">QMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">populateMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="p">,</span> <span class="n">context_menu_list</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.updateTitle">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.updateTitle">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateTitle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the title of the table.&quot;&quot;&quot;</span>
+        <span class="n">is_regex</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">,)</span>
+        <span class="n">is_tag</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span><span class="p">)</span>
+        <span class="n">is_group</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        <span class="n">is_cr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Curate&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="p">)</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Object List &quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">is_regex</span><span class="p">,</span> <span class="n">is_tag</span><span class="p">,</span> <span class="n">is_group</span><span class="p">,</span> <span class="n">is_cr</span><span class="p">)):</span>
+            <span class="n">strs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">is_regex</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;regex&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_tag</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_group</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_cr</span><span class="p">:</span> <span class="n">strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;curation&quot;</span><span class="p">)</span>
+            <span class="n">title</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(Filtered by: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strs</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setRow">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setRow">[docs]</a>
+    <span class="k">def</span> <span class="nf">setRow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the data for a row of the table.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the object</span>
+<span class="sd">                row (int): the row to enter this data into</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_check_event</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Range&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getStart</span><span class="p">(</span><span class="n">name</span><span class="p">))))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getEnd</span><span class="p">(</span><span class="n">name</span><span class="p">))))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Count&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getCount</span><span class="p">(</span><span class="n">name</span><span class="p">))))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Flat area&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getFlatArea</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="mi">5</span><span class="p">))))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Volume&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getVolume</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="mi">5</span><span class="p">))))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Groups&quot;</span><span class="p">]:</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">groups_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">groups_str</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Trace tags&quot;</span><span class="p">]:</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getTags</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">tags_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">tags_str</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Last user&quot;</span><span class="p">]:</span>
+            <span class="n">last_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;last_user&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">last_user</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Curate&quot;</span><span class="p">]:</span>
+            <span class="n">check_item</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">status_item</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">user_item</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">date_item</span> <span class="o">=</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">cr_items</span> <span class="o">=</span> <span class="p">[</span><span class="n">check_item</span><span class="p">,</span> <span class="n">status_item</span><span class="p">,</span> <span class="n">user_item</span><span class="p">,</span> <span class="n">date_item</span><span class="p">]</span>
+            <span class="n">check_item</span><span class="o">.</span><span class="n">setFlags</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">ItemFlag</span><span class="o">.</span><span class="n">ItemIsUserTristate</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">ItemFlag</span><span class="o">.</span><span class="n">ItemIsUserCheckable</span> <span class="o">|</span> <span class="n">Qt</span><span class="o">.</span><span class="n">ItemFlag</span><span class="o">.</span><span class="n">ItemIsEnabled</span><span class="p">)</span>
+
+            <span class="n">obj_curation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;curation&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_curation</span><span class="p">:</span>
+                <span class="n">check_item</span><span class="o">.</span><span class="n">setCheckState</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">Unchecked</span><span class="p">)</span>
+                <span class="n">cr_color</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">curated</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="n">obj_curation</span>
+                <span class="k">if</span> <span class="n">curated</span><span class="p">:</span>
+                    <span class="n">check_item</span><span class="o">.</span><span class="n">setCheckState</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">Checked</span><span class="p">)</span>
+                    <span class="n">status_item</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Curated&quot;</span><span class="p">)</span>
+                    <span class="n">cr_color</span> <span class="o">=</span> <span class="n">Qt</span><span class="o">.</span><span class="n">cyan</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">check_item</span><span class="o">.</span><span class="n">setCheckState</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">PartiallyChecked</span><span class="p">)</span>
+                    <span class="n">status_item</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Needs curation&quot;</span><span class="p">)</span>
+                    <span class="n">cr_color</span> <span class="o">=</span> <span class="n">Qt</span><span class="o">.</span><span class="n">yellow</span>
+                <span class="n">user_item</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+                <span class="n">date_item</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">cr_items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cr_color</span><span class="p">:</span>
+                    <span class="n">item</span><span class="o">.</span><span class="n">setBackground</span><span class="p">(</span><span class="n">cr_color</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Alignment&quot;</span><span class="p">]:</span>
+            <span class="n">alignment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">alignment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">alignment</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">alignment</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Comment&quot;</span><span class="p">]:</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setItem</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">QTableWidgetItem</span><span class="p">(</span><span class="n">comment</span><span class="p">))</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">resize</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowToContents</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_check_event</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.passesFilters">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.passesFilters">[docs]</a>
+    <span class="k">def</span> <span class="nf">passesFilters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if an object passes the filters.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check groups</span>
+        <span class="n">filters_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filters_len</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">object_groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getObjectGroups</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">groups_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">object_groups</span><span class="p">)</span>
+            <span class="n">union_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">object_groups</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">union_len</span> <span class="o">==</span> <span class="n">groups_len</span> <span class="o">+</span> <span class="n">filters_len</span><span class="p">:</span>  <span class="c1"># intersection does not exist</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check tags</span>
+        <span class="n">filters_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filters_len</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">object_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getTags</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">object_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">object_tags</span><span class="p">)</span>
+            <span class="n">union_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">object_tags</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">union_len</span> <span class="o">==</span> <span class="n">object_len</span> <span class="o">+</span> <span class="n">filters_len</span><span class="p">:</span>  <span class="c1"># intersection does not exist</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check curation status and user</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;Curate&quot;</span><span class="p">]:</span>
+            <span class="n">obj_curation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;curation&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj_curation</span><span class="p">:</span>
+                <span class="n">cr_status</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">obj_curation</span><span class="p">)</span>
+                <span class="n">cr_status</span> <span class="o">=</span> <span class="s2">&quot;Curated&quot;</span> <span class="k">if</span> <span class="n">cr_status</span> <span class="k">else</span> <span class="s2">&quot;Needs curation&quot;</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span><span class="p">[</span><span class="n">cr_status</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span> <span class="ow">and</span> <span class="n">user</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>          
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span><span class="p">[</span><span class="s2">&quot;Blank&quot;</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="c1"># check regex</span>
+        <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="k">else</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">re_filter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">re_filter</span><span class="p">,</span> <span class="n">name</span><span class="p">)):</span>
+                <span class="n">passes_filters</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">passes_filters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.getFilteredObjects">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.getFilteredObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">getFilteredObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the names of the objects that pass the filter.&quot;&quot;&quot;</span>
+        <span class="n">filtered_object_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">passesFilters</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">filtered_object_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">sortList</span><span class="p">(</span><span class="n">filtered_object_list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.createTable">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.createTable">[docs]</a>
+    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the table widget.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                objdata (dict): the dictionary containing the object table data objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># close an existing table and save scroll position</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scroll_pos</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># create the table title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateTitle</span><span class="p">()</span>
+
+        <span class="c1"># establish table headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curate_column</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Range&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Start&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;End&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">b</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Curate&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curate_column</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;CR&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Status&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Date&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">b</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c1"># filter the objects</span>
+        <span class="n">filtered_obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getFilteredObjects</span><span class="p">()</span>
+
+        <span class="c1"># create the table object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">CopyTableWidget</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filtered_obj_names</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="p">)</span>
+
+        <span class="c1"># connect table functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">mouseDoubleClickEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findFirst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">contextMenuEvent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objectContextMenu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">backspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteObjects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">itemChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">checkCurate</span><span class="p">)</span>
+
+        <span class="c1"># format table</span>
+        <span class="c1"># self.table.setWordWrap(False)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setShowGrid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># no grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setAlternatingRowColors</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># alternate row colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setEditTriggers</span><span class="p">(</span><span class="n">QAbstractItemView</span><span class="o">.</span><span class="n">NoEditTriggers</span><span class="p">)</span>  <span class="c1"># cannot be edited</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">setHorizontalHeaderLabels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_headers</span><span class="p">)</span>  <span class="c1"># titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalHeader</span><span class="p">()</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>  <span class="c1"># no veritcal header</span>
+        
+        <span class="c1"># fill in object data</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filtered_obj_names</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># format rows and columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeColumnsToContents</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resizeRowsToContents</span><span class="p">()</span>
+
+        <span class="c1"># set the saved scroll value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span>
+
+        <span class="c1"># set table as central widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_widget</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.updateObjects">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.updateObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the data for a set of objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                names (iterable): the names of the objects to update</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="c1"># check if object passes filters</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">passesFilters</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+                <span class="c1"># special case: does not pass filter anymore but exists on table</span>
+                <span class="n">row</span><span class="p">,</span> <span class="n">exists_in_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">exists_in_table</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="c1"># update if it does</span>
+            <span class="n">row</span><span class="p">,</span> <span class="n">exists_in_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">exists_in_table</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>  <span class="c1"># completely delete object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">removeRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">exists_in_table</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>  <span class="c1"># update existing object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">exists_in_table</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>  <span class="c1"># add new object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">insertRow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">checkActions</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.resizeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.resizeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">resizeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the table when window is resized.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">resizeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">width</span><span class="p">()</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.getSelectedObject">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.getSelectedObject">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedObject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the object highlighted by the user.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (str): the name of the object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_indexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_indexes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">selected_indexes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+        <span class="n">obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">obj_name</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.getSelectedObjects">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.getSelectedObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">getSelectedObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the objects highlighted by the user.</span>
+<span class="sd">        </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): the name of the objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_indexes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">()</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">selected_indexes</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+            <span class="n">obj_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">obj_names</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.checkCurate">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.checkCurate">[docs]</a>
+    <span class="k">def</span> <span class="nf">checkCurate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span> <span class="p">:</span> <span class="n">QTableWidgetItem</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;User checked a curate checkbox.&quot;&quot;&quot;</span>
+        <span class="c1"># check for curation</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_check_event</span> <span class="ow">or</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">curate_column</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> 
+            <span class="n">item</span><span class="o">.</span><span class="n">column</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curate_column</span><span class="p">):</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">column</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">checkState</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">Unchecked</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setCuration</span><span class="p">([</span><span class="n">name</span><span class="p">],</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">PartiallyChecked</span><span class="p">:</span>
+            <span class="n">assign_to</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="s2">&quot;Assign to&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Assign curation to username:</span><span class="se">\n</span><span class="s2">(press enter to leave blank)&quot;</span> 
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">setCheckState</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">Unchecked</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setCuration</span><span class="p">([</span><span class="n">name</span><span class="p">],</span> <span class="s2">&quot;Needs curation&quot;</span><span class="p">,</span> <span class="n">assign_to</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">Qt</span><span class="o">.</span><span class="n">CheckState</span><span class="o">.</span><span class="n">Checked</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setCuration</span><span class="p">([</span><span class="n">name</span><span class="p">],</span> <span class="s2">&quot;Curated&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRow</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">([</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+    <span class="c1"># RIGHT CLICK FUNCTIONS</span>
+
+<div class="viewcode-block" id="ObjectTableWidget.objectContextMenu">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.objectContextMenu">[docs]</a>
+    <span class="k">def</span> <span class="nf">objectContextMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executed when button is right-clicked: pulls up menu for user to modify objects.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">selectedIndexes</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context_menu</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">globalPos</span><span class="p">())</span>   </div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.editAttributes">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.editAttributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">editAttributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the name of an object in the entire series.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># ask the user for the new object name</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">displayed_name</span> <span class="o">=</span> <span class="n">obj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">getTags</span><span class="p">(</span><span class="n">obj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">displayed_name</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">tags</span><span class="o">=</span><span class="kc">None</span>
+        
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">TraceDialog</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="n">name</span><span class="o">=</span><span class="n">displayed_name</span><span class="p">,</span> 
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> 
+            <span class="n">is_obj_list</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">attr_trace</span><span class="p">,</span> <span class="n">sections</span> <span class="o">=</span> <span class="n">response</span>
+        
+        <span class="c1"># keep track of scroll bar position</span>
+        <span class="n">vscroll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span>
+        <span class="n">scroll_pos</span> <span class="o">=</span> <span class="n">vscroll</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editAttributes</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">attr_trace</span><span class="p">,</span> <span class="n">sections</span><span class="p">)</span>
+        
+        <span class="c1"># reset scroll bar position</span>
+        <span class="n">vscroll</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">scroll_pos</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.editComment">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.editComment">[docs]</a>
+    <span class="k">def</span> <span class="nf">editComment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the comment of the object.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">obj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;comment&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">new_comment</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Object Comment&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Comment:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">comment</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">,</span> <span class="n">new_comment</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Edit object comment&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.editAlignment">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.editAlignment">[docs]</a>
+    <span class="k">def</span> <span class="nf">editAlignment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit alignment for object(s).&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Please select one object to edit.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Alignment:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;no-alignment&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">keys</span><span class="p">()))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Object Alignment&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="n">alignment</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">alignment</span><span class="p">:</span> <span class="n">alignment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="n">alignment</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Edit default alignment&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="ObjectTableWidget.editRadius">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.editRadius">[docs]</a>
+    <span class="k">def</span> <span class="nf">editRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the radius of the trace on an entire object.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">new_rad</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="s2">&quot;Object Trace Radius&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the new radius:&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_rad</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_rad</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">new_rad</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editRadius</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">new_rad</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.editShape">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.editShape">[docs]</a>
+    <span class="k">def</span> <span class="nf">editShape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Modify the shape of the traces on an entire object.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">new_shape</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">ShapesDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">editShape</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">new_shape</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.hideObj">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.hideObj">[docs]</a>
+    <span class="k">def</span> <span class="nf">hideObj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hide</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit whether or not an object is hidden in the entire series.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                hide (bool): True if the object should be hidden</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">hideObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">hide</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.addTo3D">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.addTo3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTo3D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a 3D view of an object&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">addTo3D</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.remove3D">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.remove3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove3D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove object(s) from the scene.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">removeFrom3D</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.addToGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.addToGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">addToGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add objects to a group.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># ask the user for the group</span>
+        <span class="n">group_name</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">ObjectGroupDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Add to group &#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.removeFromGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.removeFromGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeFromGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove objects from a group.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># ask the user for the group</span>
+        <span class="n">group_name</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">ObjectGroupDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="p">,</span> <span class="n">new_group</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">group_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Remove from group &#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.removeFromAllGroups">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.removeFromAllGroups">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeFromAllGroups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_event</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a set of traces from all groups.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">removeObject</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">log_event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Remove from all object groups&quot;</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.removeAllTags">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.removeAllTags">[docs]</a>
+    <span class="k">def</span> <span class="nf">removeAllTags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove all tags from all traces on selected objects.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">removeAllTraceTags</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.viewHistory">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.viewHistory">[docs]</a>
+    <span class="k">def</span> <span class="nf">viewHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;View the history for a set of objects.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">HistoryTableWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getFullHistory</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="p">,</span> <span class="n">obj_names</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.createZtrace">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.createZtrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">createZtrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cross_sectioned</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a ztrace from selected objects.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">createZtrace</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">cross_sectioned</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjectTableWidget.deleteObjects">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.deleteObjects">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an object from the entire series.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">deleteObjects</span><span class="p">(</span><span class="n">obj_names</span><span class="p">)</span></div>
+
+
+    <span class="c1"># MENU-RELATED FUNCTIONS</span>
+
+<div class="viewcode-block" id="ObjectTableWidget.refresh">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Refresh the object lists.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setColumns">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setColumns">[docs]</a>
+    <span class="k">def</span> <span class="nf">setColumns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the columns to display.&quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[(</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Table Columns&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setOption</span><span class="p">(</span><span class="s2">&quot;object_columns&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.export">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.export">[docs]</a>
+    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the object list as a csv file.&quot;&quot;&quot;</span>
+        <span class="c1"># get the location from the user</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">FileDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;save&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save Object List&quot;</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;objects.csv&quot;</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="s2">&quot;Comma Separated Values (*.csv)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span> <span class="k">return</span>
+        <span class="c1"># unload the table into the csv file</span>
+        <span class="n">csv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="c1"># headers first</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># object data</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">rowCount</span><span class="p">()):</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columnCount</span><span class="p">()):</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
+            <span class="n">csv_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># close file</span>
+        <span class="n">csv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>        </div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setREFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setREFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setREFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new regex filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">re_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+        <span class="n">new_re_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Objects&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the object filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">re_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new regex filter for the set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="n">new_re_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.*&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="nb">filter</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="s2">&quot;[0-9]&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">re_filters</span><span class="p">)</span>
+
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setGroupFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setGroupFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setGroupFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new group filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">group_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        <span class="n">new_group_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Objects&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the group filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">group_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new group filter for the list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="n">new_group_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_filters</span><span class="p">)</span>
+        
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setTagFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setTagFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setTagFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a new tag filter for the list.&quot;&quot;&quot;</span>
+        <span class="c1"># get a new filter from the user</span>
+        <span class="n">tag_filter_str</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span><span class="p">)</span>
+        <span class="n">new_tag_filter</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Filter Objects&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Enter the tag filters:&quot;</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">tag_filter_str</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># get the new tag filter for the list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span> <span class="o">=</span> <span class="n">new_tag_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_filters</span><span class="p">)</span>
+        
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.setCRFilter">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.setCRFilter">[docs]</a>
+    <span class="k">def</span> <span class="nf">setCRFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the filter for curation.&quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Curation status:&quot;</span><span class="p">],</span>
+            <span class="p">[(</span>
+                <span class="s2">&quot;check&quot;</span><span class="p">,</span>
+                <span class="o">*</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Users (separate with comma and space):&quot;</span><span class="p">],</span>
+            <span class="p">[(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Curation Filters&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">cr_status_filter</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cr_user_filters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># call through manager to update self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.findFirst">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.findFirst">[docs]</a>
+    <span class="k">def</span> <span class="nf">findFirst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Focus the field on the first occurence of an object in the series.&quot;&quot;&quot;</span>
+        <span class="n">obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObject</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obj_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">findObject</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.findLast">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.findLast">[docs]</a>
+    <span class="k">def</span> <span class="nf">findLast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Focus the field on the last occurence of an object in the series.&quot;&quot;&quot;</span>
+        <span class="n">obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObject</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obj_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">findObject</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.edit3D">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.edit3D">[docs]</a>
+    <span class="k">def</span> <span class="nf">edit3D</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the 3D options for an object or set of objects.&quot;&quot;&quot;</span>
+        <span class="n">obj_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># check for object names and opacities</span>
+        <span class="n">type_3D</span><span class="p">,</span> <span class="n">opacity</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">obj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">obj_names</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">new_type</span><span class="p">,</span> <span class="n">new_opacity</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;3D_modes&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">type_3D</span> <span class="o">!=</span> <span class="n">new_type</span><span class="p">:</span>
+                <span class="n">type_3D</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">opacity</span> <span class="o">!=</span> <span class="n">new_opacity</span><span class="p">:</span>
+                <span class="n">opacity</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;3D Type:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;surface&quot;</span><span class="p">,</span> <span class="s2">&quot;spheres&quot;</span><span class="p">,</span> <span class="s2">&quot;contours&quot;</span><span class="p">],</span> <span class="n">type_3D</span><span class="p">)],</span>
+            <span class="p">[</span><span class="s2">&quot;Opacity (0-1):&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">opacity</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;3D Object Settings&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">new_type</span><span class="p">,</span> <span class="n">new_opacity</span> <span class="o">=</span> <span class="n">response</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">edit3D</span><span class="p">(</span><span class="n">obj_names</span><span class="p">,</span> <span class="n">new_type</span><span class="p">,</span> <span class="n">new_opacity</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.bulkCurate">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.bulkCurate">[docs]</a>
+    <span class="k">def</span> <span class="nf">bulkCurate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">curation_status</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the curation status for multiple selected objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                curation_status (str): &quot;&quot;, &quot;Needs curation&quot; or &quot;Curated&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSelectedObjects</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># prompt assign to</span>
+        <span class="k">if</span> <span class="n">curation_status</span> <span class="o">==</span> <span class="s2">&quot;Needs curation&quot;</span><span class="p">:</span>
+            <span class="n">assign_to</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QInputDialog</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="s2">&quot;Assign to&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Assign curation to username:</span><span class="se">\n</span><span class="s2">(press enter to leave blank)&quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+                <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">assign_to</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setCuration</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">curation_status</span><span class="p">,</span> <span class="n">assign_to</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mainwindow</span><span class="o">.</span><span class="n">seriesModified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.renameGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.renameGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">renameGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename an object group.&quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Group:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupList</span><span class="p">())],</span>
+            <span class="p">[</span><span class="s2">&quot;New name:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Rename Group&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="n">group</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">new_group</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">new_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupList</span><span class="p">():</span>
+            <span class="n">notify</span><span class="p">(</span><span class="s2">&quot;This group already exists.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+
+        <span class="n">objs_to_update</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupObjects</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">renameGroup</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">new_group</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">objs_to_update</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.deleteGroup">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.deleteGroup">[docs]</a>
+    <span class="k">def</span> <span class="nf">deleteGroup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an object group.&quot;&quot;&quot;</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;Group:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;combo&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupList</span><span class="p">())]</span>
+        <span class="p">]</span>
+        <span class="n">response</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="n">QuickDialog</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;Delete Group&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">series_states</span><span class="o">.</span><span class="n">addState</span><span class="p">()</span>
+        
+        <span class="n">group</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupList</span><span class="p">():</span>
+            <span class="n">objs_to_update</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">getGroupObjects</span><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">object_groups</span><span class="o">.</span><span class="n">removeGroup</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateObjects</span><span class="p">(</span><span class="n">objs_to_update</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectTableWidget.closeEvent">
+<a class="viewcode-back" href="../../../../modules.gui.table.html#modules.gui.table.object.ObjectTableWidget.closeEvent">[docs]</a>
+    <span class="k">def</span> <span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove self from manager table list.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">closeEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

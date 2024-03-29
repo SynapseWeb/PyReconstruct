@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>modules.datatypes.series_data &#8212; PyReconstruct 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modules.datatypes.series_data</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PyReconstruct.modules.calc</span> <span class="kn">import</span> <span class="n">lineDistance</span><span class="p">,</span> <span class="n">area</span>
+
+<span class="kn">from</span> <span class="nn">.section</span> <span class="kn">import</span> <span class="n">Section</span>
+<span class="kn">from</span> <span class="nn">.transform</span> <span class="kn">import</span> <span class="n">Transform</span>
+<span class="kn">from</span> <span class="nn">.trace</span> <span class="kn">import</span> <span class="n">Trace</span>
+
+<div class="viewcode-block" id="TraceData">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.TraceData">[docs]</a>
+<span class="k">class</span> <span class="nc">TraceData</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">tform</span> <span class="p">:</span> <span class="n">Transform</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a trace table item.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace object for the trace</span>
+<span class="sd">                tform (Transform): the transform applied to the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">closed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">negative</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">negative</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">tags</span>
+        <span class="n">tformed_points</span> <span class="o">=</span> <span class="n">tform</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">lineDistance</span><span class="p">(</span><span class="n">tformed_points</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="n">trace</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span><span class="p">(</span><span class="n">tformed_points</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">negative</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">getRadius</span><span class="p">(</span><span class="n">tform</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="TraceData.getTags">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.TraceData.getTags">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span></div>
+
+
+<div class="viewcode-block" id="TraceData.getLength">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.TraceData.getLength">[docs]</a>
+    <span class="k">def</span> <span class="nf">getLength</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span></div>
+
+    
+<div class="viewcode-block" id="TraceData.getArea">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.TraceData.getArea">[docs]</a>
+    <span class="k">def</span> <span class="nf">getArea</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span></div>
+
+    
+<div class="viewcode-block" id="TraceData.getRadius">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.TraceData.getRadius">[docs]</a>
+    <span class="k">def</span> <span class="nf">getRadius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ObjectData">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.ObjectData">[docs]</a>
+<span class="k">class</span> <span class="nc">ObjectData</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an object data object.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="ObjectData.isEmpty">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.ObjectData.isEmpty">[docs]</a>
+    <span class="k">def</span> <span class="nf">isEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True of object data is empty.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectData.addTrace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.ObjectData.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trace to the object data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to add</span>
+<span class="sd">                section (Section): the section containing the trace</span>
+<span class="sd">                series (Series): the series containing the trace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">alignment</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">alignment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alignment</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">alignment</span>
+        <span class="k">elif</span> <span class="n">alignment</span> <span class="o">!=</span> <span class="s2">&quot;no-alignment&quot;</span> <span class="ow">and</span> <span class="n">alignment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="p">:</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">alignment</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">alignment</span>
+
+        <span class="k">if</span> <span class="n">alignment</span> <span class="o">==</span> <span class="s2">&quot;no-alignment&quot;</span><span class="p">:</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tform</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="p">[</span><span class="n">alignment</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">TraceData</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">tform</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ObjectData.clearSection">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.ObjectData.clearSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">clearSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear the traces on a specific section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number to clear</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">snum</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">])</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SeriesData">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData">[docs]</a>
+<span class="k">class</span> <span class="nc">SeriesData</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a series data object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                series (Series): the series to keep track of data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;sections&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;objects&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">supress_logging</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allow the user to directly index the data dictionary.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    
+<div class="viewcode-block" id="SeriesData.refresh">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.refresh">[docs]</a>
+    <span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Completely refresh the series data.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;sections&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;objects&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">enumerateSections</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">update_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_events</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.updateSection">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.updateSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">updateSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">,</span> <span class="n">update_traces</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">all_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_events</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the existing section data.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                section (Section): the section with data to update</span>
+<span class="sd">                update_traces (bool): True if all traces should also be updated</span>
+<span class="sd">                all_traces (bool): True if all traces on the section should be updated IF NO TRACES HAVE BEEN MARKED AS MODIFIED</span>
+<span class="sd">                log_events (bool): True if events (creating and deleting objects) should be logged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># create/update the data for a section</span>
+        <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">]:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;thickness&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span>
+                <span class="s2">&quot;calgrid&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">calgrid</span><span class="p">,</span>
+                <span class="s2">&quot;locked&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">align_locked</span><span class="p">,</span>
+                <span class="s2">&quot;brightness&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">brightness</span><span class="p">,</span>
+                <span class="s2">&quot;contrast&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">contrast</span><span class="p">,</span>
+                <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">src</span><span class="p">,</span>
+                <span class="s2">&quot;mag&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span><span class="p">,</span>
+                <span class="s2">&quot;flags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">],</span>
+                <span class="s2">&quot;tforms&quot;</span><span class="p">:</span> <span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="s2">&quot;no-alignment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">thickness</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;locked&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">align_locked</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;brightness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">brightness</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;contrast&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">contrast</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">src</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">mag</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">flags</span><span class="p">]</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">tforms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">d</span><span class="p">[</span><span class="s2">&quot;tforms&quot;</span><span class="p">][</span><span class="s2">&quot;no-alignment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Transform</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="n">update_traces</span><span class="p">:</span>
+            <span class="c1"># check if there are specific traces to be updated</span>
+            <span class="n">trace_names</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">getAllModifiedNames</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">tformsModified</span><span class="p">(</span><span class="n">scaling_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">all_traces</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">trace_names</span><span class="p">):</span>
+                <span class="n">trace_names</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">contours</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+            <span class="c1"># keep track of objects that are newly created/destroyed</span>
+            <span class="n">added_objects</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">removed_objects</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="c1"># clear existing trace data on this section</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">trace_names</span><span class="p">:</span>
+                <span class="c1"># check if object is newly created</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">clearSection</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+                <span class="c1"># add new trace data</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">contours</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">contours</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="n">is_new_object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">section</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">is_new_object</span><span class="p">:</span>
+                            <span class="n">added_objects</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            
+            <span class="c1"># check for removed objects</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">trace_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]:</span>
+                    <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span>
+                        <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">])</span>
+                        <span class="n">removed_objects</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            
+            <span class="c1"># log the newly created/destroyed objects</span>
+            <span class="k">if</span> <span class="n">log_events</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">supress_logging</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="n">added_objects</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Create object&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">setAttr</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">alignment</span><span class="p">)</span>  <span class="c1"># set the fixed alignment of the object to creation</span>
+                <span class="k">for</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="n">removed_objects</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">addLog</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Delete object&quot;</span><span class="p">)</span>
+                    <span class="c1"># remove object from object attributes dicts</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">removeObjAttrs</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.addTrace">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.addTrace">[docs]</a>
+    <span class="k">def</span> <span class="nf">addTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span> <span class="p">:</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">section</span> <span class="p">:</span> <span class="n">Section</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add trace data to the existing object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                trace (Trace): the trace to add</span>
+<span class="sd">                section (Section): the section containing the trace</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (bool): True if a new object was just created</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># create the section data if not existing already</span>
+        <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updateSection</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">update_traces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># ASSUME TRACE IS ALREADY ON THE SECTION</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># create object if not already</span>
+        <span class="n">object_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">object_data</span><span class="p">:</span>
+            <span class="n">new_object</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">object_data</span><span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ObjectData</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_object</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="n">object_data</span><span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">addTrace</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_object</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.getStart">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getStart">[docs]</a>
+    <span class="k">def</span> <span class="nf">getStart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the first section of the object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+        
+<div class="viewcode-block" id="SeriesData.getEnd">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getEnd">[docs]</a>
+    <span class="k">def</span> <span class="nf">getEnd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the last section of the object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.getCount">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getCount">[docs]</a>
+    <span class="k">def</span> <span class="nf">getCount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the number of traces associated with the object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">trace_list</span> <span class="ow">in</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">c</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">c</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.getFlatArea">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getFlatArea">[docs]</a>
+    <span class="k">def</span> <span class="nf">getFlatArea</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the flat area of the object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">fa</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">trace_list</span> <span class="ow">in</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">trace_data</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">trace_data</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                    <span class="n">fa</span> <span class="o">+=</span> <span class="n">trace_data</span><span class="o">.</span><span class="n">getArea</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fa</span> <span class="o">+=</span> <span class="n">trace_data</span><span class="o">.</span><span class="n">getLength</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">fa</span></div>
+
+
+<div class="viewcode-block" id="SeriesData.getVolume">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getVolume">[docs]</a>
+    <span class="k">def</span> <span class="nf">getVolume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the volume of the object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">v</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">snum</span><span class="p">,</span> <span class="n">trace_list</span> <span class="ow">in</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">trace_data</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">+=</span> <span class="n">trace_data</span><span class="o">.</span><span class="n">getArea</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">][</span><span class="n">snum</span><span class="p">][</span><span class="s2">&quot;thickness&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">v</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.getTags">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getTags">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the tags associated with an object.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                obj_name (str): the name of the object to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">trace_list</span> <span class="ow">in</span> <span class="n">obj_data</span><span class="o">.</span><span class="n">traces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">trace_data</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">:</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">trace_data</span><span class="o">.</span><span class="n">getTags</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">tags</span></div>
+
+
+<div class="viewcode-block" id="SeriesData.getZtraceDist">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getZtraceDist">[docs]</a>
+    <span class="k">def</span> <span class="nf">getZtraceDist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distance of a ztrace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                ztrace_name (str): the name of the ztrace to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">[</span><span class="n">ztrace_name</span><span class="p">]</span><span class="o">.</span><span class="n">getDistance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SeriesData.getZtraceStart">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getZtraceStart">[docs]</a>
+    <span class="k">def</span> <span class="nf">getZtraceStart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the first section of a ztrace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                ztrace_name (str): the name of the ztrace to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">[</span><span class="n">ztrace_name</span><span class="p">]</span><span class="o">.</span><span class="n">getStart</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.getZtraceEnd">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getZtraceEnd">[docs]</a>
+    <span class="k">def</span> <span class="nf">getZtraceEnd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ztrace_name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the last section of a ztrace.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                ztrace_name (str): the name of the ztrace to retrieve data for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">ztraces</span><span class="p">[</span><span class="n">ztrace_name</span><span class="p">]</span><span class="o">.</span><span class="n">getEnd</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="SeriesData.clearSection">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.clearSection">[docs]</a>
+    <span class="k">def</span> <span class="nf">clearSection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear the object data for a speicified section.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">obj_data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">obj_data</span><span class="o">.</span><span class="n">clearSection</span><span class="p">(</span><span class="n">snum</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="SeriesData.getTraceData">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getTraceData">[docs]</a>
+    <span class="k">def</span> <span class="nf">getTraceData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">snum</span> <span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of trace data objects.</span>
+<span class="sd">        </span>
+<span class="sd">            Params:</span>
+<span class="sd">                name (str): the name of the object/trace</span>
+<span class="sd">                snum (int): the section number</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                (list): the list of TraceData objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">snum</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">traces</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">traces</span><span class="p">[</span><span class="n">snum</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SeriesData.getFlagCount">
+<a class="viewcode-back" href="../../../modules.datatypes.html#modules.datatypes.series_data.SeriesData.getFlagCount">[docs]</a>
+    <span class="k">def</span> <span class="nf">getFlagCount</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the number of flags in the series.&quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;sections&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">c</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;flags&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">c</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">PyReconstruct</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Julian Falco and Michael Chirillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

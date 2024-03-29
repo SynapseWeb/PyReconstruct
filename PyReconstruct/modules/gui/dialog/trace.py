@@ -293,6 +293,10 @@ class TraceDialog(QDialog):
                 r1 = int(self.range_input1.text())
                 r2 = int(self.range_input2.text())
                 sections = tuple(range(r1, r2+1))
+            
+            # notify user if name is changed
+            if trace.name and trace.name != self.name_input.text():
+                notify(f'Invalid name "{self.name_input.text()}" changed to "{trace.name}".')
 
             if self.is_obj_list:
                 return (trace, sections),  True

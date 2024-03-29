@@ -13,6 +13,7 @@ from PyReconstruct.modules.constants import (
     locations as loc
 )
 from PyReconstruct.modules.gui.dialog import TracePaletteDialog, QuickDialog
+from PyReconstruct.modules.gui.popup import TextWidget
 
 class MousePalette():
 
@@ -87,6 +88,8 @@ class MousePalette():
         self.palette_hidden = False
         self.inc_hidden = False
         self.bc_hidden = False
+        
+        self.help_widget = None
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
@@ -179,16 +182,19 @@ class MousePalette():
     def placePaletteSideButtons(self):
         x, y = self.getButtonCoords("trace")
 
-        up, down, opts = tuple(self.palette_side_buttons)
+        up, down, opts, help = tuple(self.palette_side_buttons)
 
         x1 = x + 3 + 5 * self.pblen
-        y1 = y + 1 - self.pblen
-        
+        y1 = y - self.pblen
         up.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+
         y1 += self.pblen // 2 + 1
         down.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
 
         y1 = y + 1 + self.pblen // 2
+        help.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
+
+        y1 -= opts.height()
         opts.setGeometry(x1, y1, self.pblen // 2, self.pblen // 2)
     
     def setPaletteButtonTip(self, b : PaletteButton, pos : int):
@@ -243,7 +249,13 @@ class MousePalette():
         b_opts.setToolTip("Modify all palettes")
         b_opts.show()
 
-        self.palette_side_buttons = [b_up, b_down, b_opts]
+        b_help = MoveableButton(self.mainwindow, self, "trace")
+        b_help.setText("?")
+        b_help.setFont(f)
+        b_help.clicked.connect(self.displayHelp)
+        b_help.show()
+
+        self.palette_side_buttons = [b_up, b_down, b_opts, b_help]
         self.placePaletteSideButtons()
     
     def placeLabel(self):
@@ -262,7 +274,7 @@ class MousePalette():
         g, i = tuple(self.series.palette_index)
         selected_trace = self.series.palette_traces[g][i]
         n = selected_trace.name
-        for c in "{}":
+        for c in "{}<>":
             n = n.replace(c, "")
         self.label.setText(n)
 
@@ -608,6 +620,42 @@ class MousePalette():
             new_trace = w.trace.copy()
             new_trace.name = n
             self.modifyPaletteButton(bpos, new_trace)
+    
+    def incrementButton(self, bpos : int = None, up=True):
+        """Increment a specific button.
+        
+            Params:
+                bpos (int): the position of the button to increment
+                up (bool): True if increment the number higher
+        """
+        if self.is_dragging:
+            return
+        
+        if not bpos:
+            bpos = self.series.palette_index[1]
+
+
+        pattern = r"\<(\d+)\>"
+        name = self.palette_buttons[bpos].trace.name
+        if not re.search(pattern, name):
+            print(pattern, name)
+            return
+        
+        def incStr(s):
+            min = 0
+            max = 10**len(s) - 1
+            n = int(s) + (1 if up else -1)
+            if n < min: n = max
+            elif n > max: n = min
+            return str(n).rjust(len(s), "0")
+
+        def replace(match):
+            return "<" + incStr(match.group(1)) + ">"
+        
+        n = re.sub(pattern, replace, name)
+        new_trace = self.palette_buttons[bpos].trace.copy()
+        new_trace.name = n
+        self.modifyPaletteButton(bpos, new_trace)
         
     def modifyAllPaletteButtons(self):
         """Modify all the palette buttons through a single dialog."""
@@ -677,6 +725,17 @@ class MousePalette():
         else: show_flags = "unresolved"
         
         self.setFlag(response[0], response[1], response[2], show_flags)
+    
+    def displayHelp(self):
+        """Display the help associated with the trace palette."""
+        if self.help_widget and self.help_widget.isVisible():
+            self.help_widget.close()
+        self.help_widget = TextWidget(
+            self.mainwindow, 
+            palette_help, 
+            "Palette Help", 
+            html=True
+        )
         
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -711,3 +770,35 @@ class MousePalette():
             b.close()
             s.close()
         
+palette_help = """<b>Palette Help</b>
+<br><br>
+The trace palette is how you modify the traces you make in the field.
+Each palette button has a trace, and when you create traces in the field,
+the traces you create will match the name, color, and other settings set through the palette buttons.
+<br><br>
+Right-click on a palette button to edit its trace.
+Additionally, you can edit every palette trace at once by clicking on the "☰" icon (directly above the help icon).
+<br><br>
+Any whitespace and commas are NOT accepted in trace names, and will be replaced with underscores.
+<br><br>
+<b>SPECIAL CHARACTERS &lt;#&gt;</b>:
+<br><br>
+If you enter a number within the "&lt;" and "&gt;" symbols, the number inside the symbols will be incremented every time you create a trace.
+The "&lt;&gt;" symbols will not be included in the trace name.
+<br><br>
+Example: "my_trace&lt;01&gt;"
+<br><br>
+The first trace created will be "my_trace01", the next trace created will be "my_trace02", and so on.
+<br><br>
+<b>SPECIAL CHARACTERS {#}</b>:
+<br><br>
+If you enter a number within the "{" and "}" symbols, the number inside the symbols
+will be incremented ONLY when you press the "+" or "-" buttons at the right side of the palette.
+The "{}" symbols will not be included in the trace name.
+Note that ALL traces in the palette that follow this pattern will be incremented when the "+" or "-" buttons are pressed.
+<br><br>
+Example: "a_trace_{01}" and "b_trace_{05}" (two separate buttons)
+<br><br>
+These buttons will trace as "a_trace_01" and "b_trace_05".
+When the user presses the "+" button, these buttons will now trace as "a_trace_02" and "b_trace_06".
+"""

@@ -207,7 +207,7 @@ class Section():
         # iterate through the contours and remove whitespace
         for cname in tuple(section_data["contours"].keys()):
             cname = cname.strip()
-            updated_cname = "_".join(cname.split())
+            updated_cname = "_".join(cname.split()).replace(",", "_")
             if cname != updated_cname:
                 if updated_cname not in section_data["contours"]:
                     section_data["contours"][updated_cname] = []

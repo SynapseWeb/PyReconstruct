@@ -864,7 +864,7 @@ class FieldWidget(QWidget, FieldView):
         """
         self.endPendingEvents()
         t = trace.copy()
-        for c in "{}":
+        for c in "{}<>":  # increment characters
             t.name = t.name.replace(c, "")
         self.tracing_trace = t
     
@@ -1915,15 +1915,11 @@ class FieldWidget(QWidget, FieldView):
             self.trace_table_manager.loadSection(self.section)
         if self.flag_table_manager:
             self.flag_table_manager.updateTables()
-    
-    def optimizeBC(self):
-        """Optimize the brightness and contrast on a section."""
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             self.lineRelease(override=True)
-
 
 def formatAsParagraph(text : str, per_line=50, max_lines=20):
     """Format text as a paragraph.

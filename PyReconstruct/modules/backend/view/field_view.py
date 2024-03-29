@@ -1049,6 +1049,7 @@ class FieldView():
             return
         self.section_layer.newTrace(pix_trace, tracing_trace, closed=closed, log_event=log_event)
         self.generateView(generate_image=False)
+        self.mainwindow.mouse_palette.incrementButton()  # increment the mouse palette if necessary
         self.saveState()
     
     def placeStamp(self, pix_x, pix_y, stamp):

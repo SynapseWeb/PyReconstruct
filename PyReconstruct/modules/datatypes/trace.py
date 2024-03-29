@@ -38,7 +38,7 @@ class Trace():
         assert (value is None or type(value) is str)
         if value is not None:
             value = value.strip()
-            value = "_".join(value.split())  # replace all whitespace with underscores
+            value = "_".join(value.split()).replace(",", "_")  # replace all whitespace and commas with underscores
         self._name = value
     
     def copy(self):

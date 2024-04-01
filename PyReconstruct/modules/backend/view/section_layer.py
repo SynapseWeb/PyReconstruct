@@ -45,8 +45,9 @@ class SectionLayer(ImageLayer, TraceLayer):
         self.window = window
         self.pixmap_dim = pixmap_dim
         
-        # set the series screen mag
+        # set the series screen mag and scaling
         self.series.screen_mag = window[2] / pixmap_dim[0]
+        self.scaling = pixmap_dim[0] / (window[2] / self.section.mag)
 
         # generate image
         if hide_image:

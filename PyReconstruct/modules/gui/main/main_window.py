@@ -1889,8 +1889,6 @@ class MainWindow(QMainWindow):
         
         self.series.setOption("autoversion", True)
         self.series.setOption("autoversion_dir", response[0])
-
-        print("yeet")
         
         self.seriesModified()
     
@@ -2920,7 +2918,7 @@ class MainWindow(QMainWindow):
             if not code_is_valid:
                 notify("Please enter a code for the series.")
     
-    def setPaletteButtonName(self, name : str):
+    def setPaletteButtonFromObj(self, name : str):
         """Set the name for the selected palette button.
         
         (Used by the object list)
@@ -2928,9 +2926,19 @@ class MainWindow(QMainWindow):
             Params:
                 name (str): the name to set the button
         """
+        # get the first instance of the object
+        first_section = self.series.data.getStart(name)
+        if first_section is None:
+            return
+        
+        section = self.series.loadSection(first_section)
+        obj_trace = section.contours[name][0].copy()
+
         pname, i = self.series.palette_index
         trace = self.series.palette_traces[pname][i]
         trace.name = name
+        trace.color = obj_trace.color
+        trace.fill_mode = obj_trace.fill_mode
         self.mouse_palette.modifyPaletteButton(i, trace)
         
     def restart(self):

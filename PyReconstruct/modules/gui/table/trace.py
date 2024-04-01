@@ -542,7 +542,6 @@ class TraceTableWidget(QDockWidget):
         if not items:
             return
         
-        print("yeet")
         traces = self.manager.getTraces(items)
 
         self.manager.deleteTraces(traces) 

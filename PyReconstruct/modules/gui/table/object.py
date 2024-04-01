@@ -148,24 +148,42 @@ class ObjectTableWidget(QDockWidget):
 
         # create the right-click menu
         context_menu_list = [
-            ("editattribtues_act", "Edit attributes...", "", self.editAttributes),
-            ("editcomment_act", "Comment...", "", self.editComment),
+            ("editattribtues_act", "Edit attributes of traces...", "", self.editAttributes),
+            None,
             {
-                "attr_name": "stampmenu",
-                "text": "Stamp attributes",
+                "attr_name" : "objattrsmenu",
+                "text": "Object attributes",
+                "opts":
+                [
+                    ("editcomment_act", "Comment...", "", self.editComment),
+                    None,
+                    ("addgroup_act", "Add to group...", "", self.addToGroup),
+                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
+                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups),
+                    None,
+                    ("setalignment_act", "Change object alignment...", "", self.editAlignment),
+                    None,
+                    ("lockobj_act", "Lock", "", self.lockObjects),
+                ]
+            },
+            {
+                "attr_name": "operationsmenu",
+                "text": "Operations",
                 "opts":
                 [
                     ("editradius_act", "Edit radius...", "", self.editRadius),
                     ("editshape_act", "Edit shape...", "", self.editShape),
                     None,
                     ("splitobj_act", "Split traces into individual objects", "", self.splitObject),
+                    None,
+                    ("hideobj_act", "Hide", "", self.hideObj),
+                    ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
+                    None,
+                    ("removealltags_act", "Remove all tags", "", self.removeAllTags),
+
+
                 ]
             },
-            ("removealltags_act", "Remove all tags", "", self.removeAllTags),
-            None,
-            ("hideobj_act", "Hide", "", self.hideObj),
-            ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
-            None,
             {
                 "attr_name": "curatemenu",
                 "text": "Set curation",
@@ -176,9 +194,6 @@ class ObjectTableWidget(QDockWidget):
                     ("curated_act", "Curated", "", lambda : self.bulkCurate("Curated"))
                 ]
             },
-            None,
-            ("lockobj_act", "Lock", "", self.lockObjects),
-            None,
             {
                 "attr_name": "menu_3D",
                 "text": "3D",
@@ -203,21 +218,6 @@ class ObjectTableWidget(QDockWidget):
                     ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
                 ]
             },
-            None,
-            {
-                "attr_name" : "group_menu",
-                "text": "Group",
-                "opts":
-                [
-                    ("addgroup_act", "Add to group...", "", self.addToGroup),
-                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
-                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
-                ]
-            },
-            ("setalignment_act", "Change object alignment...", "", self.editAlignment),
-            None,
-            ("history_act", "View history", "", self.viewHistory),
-            None,
             {
                 "attr_name": "ztrace_menu",
                 "text": "Create ztrace",
@@ -228,8 +228,9 @@ class ObjectTableWidget(QDockWidget):
                 ]
             },
             None,
+            ("history_act", "View history", "", self.viewHistory),
             None,
-            ("setpalettename_act", "Copy name to palette", "", self.setPaletteName),
+            ("setpalette_act", "Copy attributes to palette", "", self.setPalette),
             ("copy_act", "Copy", "", self.table.copy),
             None,
             ("delete_act", "Delete", "", self.deleteObjects)
@@ -1119,13 +1120,13 @@ class ObjectTableWidget(QDockWidget):
         self.manager.updateObjects(names)
         self.mainwindow.field.deselectAllTraces()
     
-    def setPaletteName(self):
+    def setPalette(self):
         """Set the selected object name as the name of the selected palette trace."""
         name = self.getSelectedObject()
         if not name:
             return
         
-        self.mainwindow.setPaletteButtonName(name)
+        self.mainwindow.setPaletteButtonFromObj(name)
     
     def splitObject(self):
         """Split an object into one object per trace."""

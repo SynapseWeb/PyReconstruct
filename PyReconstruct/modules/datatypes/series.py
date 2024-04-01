@@ -1829,7 +1829,6 @@ class Series():
         """Return a list of alignment names."""
         snum = list(self.sections.keys())[0]  # get a valid section number
         anames = list(self.data["sections"][snum]["tforms"].keys())
-        print(anames)
         return anames
 
     def updateCurationFromHistory(self):

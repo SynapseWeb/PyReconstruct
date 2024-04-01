@@ -638,7 +638,6 @@ class MousePalette():
         pattern = r"\<(\d+)\>"
         name = self.palette_buttons[bpos].trace.name
         if not re.search(pattern, name):
-            print(pattern, name)
             return
         
         def incStr(s):
@@ -704,7 +703,6 @@ class MousePalette():
     def modifyFlag(self):
         """Modify the default flag."""
         show_flags = self.series.getOption("show_flags")
-        print(show_flags)
         structure = [
             ["Default name:", ("text", self.series.getOption("flag_name"))],
             ["Default color:", ("color", self.series.getOption("flag_color"))],

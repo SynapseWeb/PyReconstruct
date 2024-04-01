@@ -932,6 +932,25 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget class.
         """
+        # check what was clicked
+        self.lclick = Qt.LeftButton in event.buttons()
+        self.rclick = Qt.RightButton in event.buttons()
+        self.mclick = Qt.MiddleButton in event.buttons()
+
+        # ignore middle clicks combined with other clicks
+        if self.mclick and (self.lclick or self.rclick):
+            if self.is_panzooming:
+                self.lclick = False
+                self.rclick = False
+            else:
+                self.mclick = False
+            return
+        # favor right click if both left and right are clicked
+        if self.lclick and self.rclick:
+            if not self.is_line_tracing:
+                self.current_trace = []
+            self.lclick = False
+
         self.setFocus()
         self.mouse_x = event.x()
         self.mouse_y = event.y()
@@ -955,20 +974,17 @@ class FieldWidget(QWidget, FieldView):
             self.erasing = True
             return
 
-        # check what was clicked
-        self.lclick = event.buttons() == Qt.LeftButton
-        self.rclick = event.buttons() == Qt.RightButton
-        self.mclick = event.buttons() == Qt.MiddleButton
-
         # pan if middle button clicked
         if self.mclick:
             self.mousePanzoomPress(event)
             return
 
         # pull up right-click menu if requirements met
-        context_menu = self.rclick
-        context_menu &= not (self.mouse_mode == FieldWidget.PANZOOM)
-        context_menu &= not self.is_line_tracing
+        context_menu = (
+            self.rclick and
+            not (self.mouse_mode == FieldWidget.PANZOOM) and
+            not self.is_line_tracing
+        )
         if context_menu:
             clicked_label = None
             if self.zarr_layer:
@@ -1075,6 +1091,9 @@ class FieldWidget(QWidget, FieldView):
         
         Overwritten from QWidget Class.
         """
+        # wait until all buttons are released
+        if event.buttons(): return
+        
         # ignore ALL finger touch for windows
         if os.name == "nt":
             if event.pointerType() == QPointingDevice.PointerType.Finger:

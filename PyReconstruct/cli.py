@@ -17,7 +17,7 @@ def main():
     parser.add_argument('-u', '--update', action='store_true', help='Update PyReconstruct')
     parser.add_argument('-b', '--branch', action='store_true', help='Show current branch')
     parser.add_argument('-c', '--commit', action='store_true', help='Show current commit')
-    parser.add_argument('--change', type=str, required=False, default=None, help='Change PyReconstruct branch')
+    parser.add_argument('-s', '--switch', type=str, required=False, default=None, help='Switch PyReconstruct branch')
     
     args = parser.parse_args()
 
@@ -33,9 +33,9 @@ def main():
         
         print(repo_info.get("commit"))
         
-    elif args.change:
+    elif args.switch:
         
-        update(args.change)
+        update(args.switch)
         
     else:
         

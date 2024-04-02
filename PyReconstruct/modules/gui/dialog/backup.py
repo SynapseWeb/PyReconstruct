@@ -1,4 +1,5 @@
 import os
+import webbrowser
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -8,19 +9,14 @@ from PySide6.QtWidgets import (
     QLineEdit, 
     QVBoxLayout,
     QHBoxLayout,
-    QCheckBox
+    QCheckBox,
+    QPushButton
 )
 
 from .helper import BrowseWidget, resizeLineEdit
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}",f"{dt.month:02d}",f"{dt.day:02d}"
-    t = f"{dt.hour:02d}",f"{dt.minute:02d}"
-    return d, t
 
 class BackupDialog(QDialog):
 
@@ -31,7 +27,7 @@ class BackupDialog(QDialog):
         self.series = series
 
         name = series.code
-        self.date, self.time = getDateTime()
+        self.now = datetime.now()
 
         user = series.user
         self.fp = ""
@@ -48,16 +44,24 @@ class BackupDialog(QDialog):
         hbl.addWidget(self.dir_widget)
         vlayout.addLayout(hbl)
 
-        # create the delimiter widget
+        # create the delimiter + utc widget
         r = QHBoxLayout()
-        lbl = QLabel(self, text="Delimiter between parts:")
+        lbl = QLabel(self, text="Delimiter:")
         self.delimiter_le = QLineEdit(
             self, 
             text=self.series.getOption("manual_backup_delimiter")
         )
+        # resizeLineEdit(self.delimiter_le, "000")
         self.delimiter_le.textChanged.connect(self.updateWidgets)
         r.addWidget(lbl)
         r.addWidget(self.delimiter_le)
+
+        self.utc_cb = QCheckBox(self, text="Use UTC for date and time")
+        self.utc_cb.setToolTip(utc_tip)
+        self.utc_cb.setChecked(self.series.getOption("manual_backup_utc"))
+        self.utc_cb.stateChanged.connect(self.updateNow)
+        r.addWidget(self.utc_cb)
+
         vlayout.addLayout(r)
 
         self.widgets = {}
@@ -84,17 +88,13 @@ class BackupDialog(QDialog):
             r.addWidget(cb)
             r.addWidget(le)
 
-            # manually add widgets for date and time delimiters
             if k in ("date", "time"):
-                r.addWidget(QLabel(self, text="Delimiter:"))
-                dle = QLineEdit(
-                    self,
-                    text=self.series.getOption(f"manual_backup_{k}_delimiter")
-                )
-                resizeLineEdit(dle, "000")
-                dle.textChanged.connect(self.updateWidgets)
-                setattr(self, f"{k}_delimiter_le", dle)
-                r.addWidget(dle)
+                le.setText(self.series.getOption(f"manual_backup_{k}_str"))
+                bttn = QPushButton(self, text="?")
+                bttn.clicked.connect(openCodesLink)
+                tip = date_tip if k == "date" else time_tip
+                bttn.setToolTip(tip)
+                r.addWidget(bttn)
 
             vlayout.addLayout(r)
             self.widgets[k] = (cb, le)
@@ -113,18 +113,25 @@ class BackupDialog(QDialog):
         self.setLayout(vlayout)
         self.updateWidgets()
     
+    def updateNow(self, utc : bool):
+        """Toggle the time between local and UTC time."""
+        if utc:
+            self.now = datetime.utcnow()
+        else:
+            self.now = datetime.now()
+        self.updateWidgets()
+    
     def updateWidgets(self):
         """Update the display widgets."""
         l = []
         dl = self.delimiter_le.text()
         for name, (cb, le) in self.widgets.items():
-            if name in ("date", "time"):
-                dle = getattr(self, f"{name}_delimiter_le")
-                d = dle.text()
-                le.setText(d.join(getattr(self, name)))
             if cb.isChecked() and le.text():
-                l.append(le.text().replace(" ", dl))
-                    
+                if name in ("date", "time"):
+                    text = self.now.strftime(le.text())
+                else:
+                    text = le.text()
+                l.append(text.replace(" ", dl))
         self.save_name_lbl.setText(dl.join(l))
     
     def accept(self):
@@ -150,15 +157,19 @@ class BackupDialog(QDialog):
                 f"manual_backup_{name}",
                 cb.isChecked()
             )
+            if name in ("date", "time"):
+                self.series.setOption(
+                    f"manual_backup_{name}_str", 
+                    le.text()
+                )
         self.series.setOption(
             "manual_backup_delimiter",
             self.delimiter_le.text()
         )
-        for s in ("date", "time"):
-            self.series.setOption(
-                f"manual_backup_{s}_delimiter",
-                getattr(self, f"{s}_delimiter_le").text()
-            )
+        self.series.setOption(
+            "manual_backup_utc",
+            self.utc_cb.isChecked()
+        )
 
         super().accept()
     
@@ -169,3 +180,28 @@ class BackupDialog(QDialog):
             return self.fp, True
         else:
             return None, False
+        
+utc_tip = """UTC stands for Coordinated Universal Time
+UTC is used as a standard for all time zones. It lines up with
+GMT (Greenwich Mean Time)."""
+
+date_tip = """Date codes:
+%y = two-digit year (ex. 24)
+%Y = four-digit year (ex. 2024)
+%m = two-digit month (ex. 04)
+%d = two-digit day (ex. 02)
+
+Click for more information."""
+
+time_tip = """Time codes:
+%H = two-digit hour (24-hour clock; ex. 14)
+%I = two-digit hour (12-hour clock; ex. 02)
+%p = AM or PM
+%M = two-digit minute (ex. 47)
+%S = two-digit second (ex. 13)
+
+Click for more information."""
+
+def openCodesLink():
+    dtcodes_link = "https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes"
+    webbrowser.open(dtcodes_link)

@@ -27,15 +27,4 @@ class TextWidget(QDockWidget):
             s, s
         )
 
-        # pt = parent.mapToGlobal(parent.pos())
-        # px, py = pt.x(), pt.y()
-        # pw, ph = parent.width(), parent.height()
-        # x = px + pw // 4
-        # y = py + ph // 4
-        # pt = self.mapFromGlobal(QPoint(x, y))
-        # x, y = pt.x(), pt.y()
-        # w = pw // 2
-        # h = ph // 2
-        # self.setGeometry(x, y, w, h)
-
         self.show()

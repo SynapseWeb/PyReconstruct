@@ -1870,6 +1870,8 @@ class Series():
         
         # get the proper settings and defaults
         if option_name in Series.qsettings_series_defaults:
+            if self.isWelcomeSeries():  # return defaults if accessing series setting
+                return Series.qsettings_series_defaults[option_name]
             settings = QSettings("KHLab", f"PyReconstruct-{self.code}")
             defaults = Series.qsettings_series_defaults
         elif option_name in Series.qsettings_defaults:
@@ -1914,6 +1916,8 @@ class Series():
         
         # get the proper settings
         if option_name in Series.qsettings_series_defaults:
+            if self.isWelcomeSeries():
+                return  # prevent setting for the welcome series
             settings = QSettings("KHLab", f"PyReconstruct-{self.code}")
         elif option_name in Series.qsettings_defaults:
             settings = QSettings("KHLab", "PyReconstruct")

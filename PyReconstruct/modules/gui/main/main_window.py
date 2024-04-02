@@ -660,6 +660,7 @@ class MainWindow(QMainWindow):
         self.save_act.setEnabled(is_not_welcome_series)
         self.saveas_act.setEnabled(is_not_welcome_series)
         self.autoversion_act.setEnabled(is_not_welcome_series)
+        self.exportjser_act.setEnabled(is_not_welcome_series)
 
         # check for backup directory
         is_autoversioning = (

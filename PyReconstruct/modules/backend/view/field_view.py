@@ -1058,6 +1058,7 @@ class FieldView():
             return
         self.section_layer.placeStamp(pix_x, pix_y, stamp)
         self.generateView(generate_image=False)
+        self.mainwindow.mouse_palette.incrementButton()  # increment the mouse palette if necessary
         self.saveState()
     
     def placeGrid(self, pix_x, pix_y, trace, w, h, dx, dy, nx, ny):
@@ -1068,6 +1069,7 @@ class FieldView():
             pix_x, pix_y, trace, w, h, dx, dy, nx, ny
         )
         self.generateView(generate_image=False)
+        self.mainwindow.mouse_palette.incrementButton()  # increment the mouse palette if necessary
         self.saveState()
     
     def placeFlag(self, title, pix_x, pix_y, color, comment):

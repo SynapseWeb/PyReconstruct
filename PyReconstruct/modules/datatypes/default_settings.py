@@ -25,6 +25,10 @@ default_settings = {
     "backup_date_str": "%Y-%m-%d",
     "backup_time": True,
     "backup_time_str": "%H-%M",
+    "backup_prefix" : False,
+    "backup_prefix_str": "",
+    "backup_suffix": False,
+    "backup_suffix_str": "",
 
     # misc preferences
     "left_handed": False,

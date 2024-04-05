@@ -1996,19 +1996,30 @@ class Series():
                 check_existing (bool): check for existing file and append numbers if exists
         """
         fname_list = []
+
+        if self.getOption("backup_prefix"):
+            s = self.getOption("backup_prefix_str")
+            if s: fname_list.append(s)
+
         if self.getOption("backup_name"):
             fname_list.append(self.code)
         
         now = datetime.utcnow() if self.getOption("utc") else datetime.now()
+
         if self.getOption("backup_date"):
             date = now.strftime(self.getOption("backup_date_str"))
             fname_list.append(date)
+        
         if self.getOption("backup_time"):
             time = now.strftime(self.getOption("backup_time_str"))
             fname_list.append(time)
         
         if self.getOption("backup_user"):
             fname_list.append(self.user)
+
+        if self.getOption("backup_suffix"):
+            s = self.getOption("backup_suffix_str")
+            if s: fname_list.append(s)
         
         if comment:
             fname_list.append(comment)

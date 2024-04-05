@@ -26,11 +26,8 @@ class BackupDialog(QDialog):
         self.setWindowTitle("Backup Settings")
         self.series = series
 
-        name = series.code
         utc = self.series.getOption("utc")
         self.now = datetime.utcnow() if utc else datetime.now()
-
-        user = series.user
         self.fp = ""
 
         vlayout = QVBoxLayout()
@@ -75,10 +72,12 @@ class BackupDialog(QDialog):
         self.widgets = {}
 
         widget_info = [
-            ("name", name),
+            ("prefix", ""), # updated later
+            ("name", self.series.code),
             ("date", ""),  # updated later
             ("time", ""),  # updated later
-            ("user", user),
+            ("user", self.series.user),
+            ("suffix", "") # updated later
         ]
 
         self.save_name_lbl = QLabel(self)
@@ -92,20 +91,21 @@ class BackupDialog(QDialog):
             cb.stateChanged.connect(self.updateWidgets)
             r.addWidget(cb)
 
-            if k in ("date", "time"):
-                w = QLineEdit(self, text=v)
-                w.textChanged.connect(self.updateWidgets)
-                w.setText(self.series.getOption(f"backup_{k}_str"))
-                bttn = QPushButton(self, text="?")
-                bttn.clicked.connect(openCodesLink)
-                tip = date_tip if k == "date" else time_tip
-                bttn.setToolTip(tip)
-                r.addWidget(w)
-                r.addWidget(bttn)
-            else:
+            if v:
                 w = QLabel(self, text=v)
                 r.addWidget(w)
                 r.addStretch()
+            else:
+                w = QLineEdit(self, text=v)
+                w.textChanged.connect(self.updateWidgets)
+                w.setText(self.series.getOption(f"backup_{k}_str"))
+                r.addWidget(w)
+                if k in ("date", "time"):
+                    bttn = QPushButton(self, text="?")
+                    bttn.clicked.connect(openCodesLink)
+                    tip = date_tip if k == "date" else time_tip
+                    bttn.setToolTip(tip)
+                    r.addWidget(bttn)
 
             vlayout2.addLayout(r)
             self.widgets[k] = (cb, w)
@@ -158,7 +158,7 @@ class BackupDialog(QDialog):
                 f"backup_{name}",
                 cb.isChecked()
             )
-            if name in ("date", "time"):
+            if name in ("date", "time", "prefix", "suffix"):
                 self.series.setOption(
                     f"backup_{name}_str", 
                     w.text()

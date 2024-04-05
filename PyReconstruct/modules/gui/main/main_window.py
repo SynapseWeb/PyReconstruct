@@ -37,7 +37,8 @@ from PyReconstruct.modules.gui.dialog import (
     BCProfilesDialog,
     BackupDialog,
     ShortcutsDialog,
-    ImportTracesDialog
+    ImportTracesDialog,
+    BackupCommentDialog
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter, AboutWidget
 from PyReconstruct.modules.gui.utils import (
@@ -1886,15 +1887,16 @@ class MainWindow(QMainWindow):
         """Back up the series to a specified location."""
         self.saveAllData()
 
-        response, confirmed = QInputDialog.getText(
-            self,
-            "Backup Comment",
-            "Enter backup comment\n(press enter to leave blank)"
-        )
+        response, confirmed = BackupCommentDialog(self, self.series).exec()
         if not confirmed:
             return
         
-        self.backup(comment=response)
+        comment, open_settings = response
+        if open_settings:
+            self.setBackup()
+            self.manualBackup()
+        else:
+            self.backup(comment=comment)
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

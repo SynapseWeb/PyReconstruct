@@ -17,3 +17,4 @@ from .bc_profiles import BCProfilesDialog
 from .backup import BackupDialog
 from .shortcuts import ShortcutsDialog
 from .import_traces import ImportTracesDialog
+from .backup_comment import BackupCommentDialog

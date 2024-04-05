@@ -164,6 +164,7 @@ class ObjectTableWidget(QDockWidget):
                     ("setalignment_act", "Change object alignment...", "", self.editAlignment),
                     None,
                     ("lockobj_act", "Lock", "", self.lockObjects),
+                    ("unlockobj_act", "Unlock", "", lambda : self.lockObjects(False))
                 ]
             },
             {
@@ -182,6 +183,7 @@ class ObjectTableWidget(QDockWidget):
                     ("removealltags_act", "Remove all tags", "", self.removeAllTags),
                     None,
                     ("lockobj_act1", "Lock", "", self.lockObjects),
+                    ("unlockobj_act1", "Unlock", "", lambda : self.lockObjects(False))
                 ]
             },
             {
@@ -237,6 +239,23 @@ class ObjectTableWidget(QDockWidget):
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
+
+        self.locked_actions = [
+            "editattribtues_act",
+            "editcomment_act",
+            "addgroup_act",
+            "removegroup_act",
+            "removeallgroups_act",
+            "setalignment_act",
+            "editradius_act",
+            "editshape_act",
+            "splitobj_act",
+            "hideobj_act",
+            "unhideobj_act",
+            "removealltags_act",
+            "curatemenu",
+            "delete_act",
+        ]
     
     def updateTitle(self):
         """Update the title of the table."""
@@ -519,7 +538,26 @@ class ObjectTableWidget(QDockWidget):
         else:
             self.findFirst()
     
-    def getSelectedObject(self, include_locked=False) -> str:
+    def checkLocked(self, obj_names : list, lock_actions=True):
+        """Check for locked objects within a list of obj names.
+        
+            Params:
+                obj_list (list): the names to check
+                lock_actions (bool): True if actions should be locked if locked object detected
+        """
+        locked = False
+        for name in obj_names:
+            if self.series.getAttr(name, "locked"):
+                locked = True
+                break
+        
+        if lock_actions:
+            for act_name in self.locked_actions:
+                getattr(self, act_name).setEnabled(not locked)
+        
+        return locked
+    
+    def getSelectedObject(self) -> str:
         """Get the name of the object highlighted by the user.
         
             Returns:
@@ -530,17 +568,10 @@ class ObjectTableWidget(QDockWidget):
             return None
         r = selected_indexes[0].row()
         obj_name = self.table.item(r, 0).text()
-        unlocked = True
-        if not include_locked and self.series.getAttr(obj_name, "locked"):
-            unlocked = notifyLocked([obj_name], self.series, self.series_states)
-        
-        if unlocked:
-            self.manager.updateObjects([obj_name])
-            return obj_name
-        else:
-            return None
+        self.checkLocked([obj_name])
+        return obj_name
     
-    def getSelectedObjects(self, include_locked=False) -> list[str]:
+    def getSelectedObjects(self) -> list[str]:
         """Get the name of the objects highlighted by the user.
         
             Returns:
@@ -548,23 +579,13 @@ class ObjectTableWidget(QDockWidget):
         """
         selected_indexes = self.table.selectedIndexes()
         obj_names = []
-        locked_objs = []
         for i in selected_indexes:
             r = i.row()
             n = self.table.item(r, 0).text()
-            if not include_locked and self.series.getAttr(n, "locked"):
-                locked_objs.append(n)
             obj_names.append(n)
         
-        unlocked = True
-        if locked_objs:
-            unlocked = notifyLocked(locked_objs, self.series, self.series_states)
-            if unlocked: self.manager.updateObjects(obj_names)
-
-        if unlocked:
-            return obj_names
-        else:
-            return None
+        self.checkLocked(obj_names)
+        return obj_names
 
     def itemChecked(self, item : QTableWidgetItem):
         """User checked a curate checkbox."""
@@ -623,8 +644,10 @@ class ObjectTableWidget(QDockWidget):
 
     def objectContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify objects."""
-        if not self.getSelectedObjects():
+        names = self.getSelectedObjects()  # also updates the available actions
+        if not names:
             return
+
         self.context_menu.exec(event.globalPos())   
     
     def editAttributes(self):
@@ -780,13 +803,13 @@ class ObjectTableWidget(QDockWidget):
 
     def addTo3D(self):
         """Generate a 3D view of an object"""
-        obj_names = self.getSelectedObjects(include_locked=True)
+        obj_names = self.getSelectedObjects()
         if obj_names:
             self.mainwindow.addTo3D(obj_names)
     
     def remove3D(self):
         """Remove object(s) from the scene."""
-        obj_names = self.getSelectedObjects(include_locked=True)
+        obj_names = self.getSelectedObjects()
         if obj_names:
             self.mainwindow.removeFrom3D(obj_names)
 
@@ -864,7 +887,7 @@ class ObjectTableWidget(QDockWidget):
     
     def viewHistory(self):
         """View the history for a set of objects."""
-        obj_names = self.getSelectedObjects(include_locked=True)
+        obj_names = self.getSelectedObjects()
         if not obj_names:
             return
         
@@ -872,7 +895,7 @@ class ObjectTableWidget(QDockWidget):
     
     def createZtrace(self, cross_sectioned=True):
         """Create a ztrace from selected objects."""
-        obj_names = self.getSelectedObjects(include_locked=True)
+        obj_names = self.getSelectedObjects()
         if not obj_names:
             return
         self.manager.createZtrace(obj_names, cross_sectioned)
@@ -881,6 +904,10 @@ class ObjectTableWidget(QDockWidget):
         """Delete an object from the entire series."""
         obj_names = self.getSelectedObjects()
         if not obj_names:
+            return
+        
+        # SPECIAL CASE: this can be accessed be a keyboard shortcut and bypass the initial check
+        if self.checkLocked(obj_names):
             return
         
         self.manager.deleteObjects(obj_names)
@@ -1000,14 +1027,14 @@ class ObjectTableWidget(QDockWidget):
     
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
-        obj_name = self.getSelectedObject(include_locked=True)
+        obj_name = self.getSelectedObject()
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=True)
     
     def findLast(self):
         """Focus the field on the last occurence of an object in the series."""
-        obj_name = self.getSelectedObject(include_locked=True)
+        obj_name = self.getSelectedObject()
         if obj_name is None:
             return
         self.manager.findObject(obj_name, first=False)
@@ -1108,14 +1135,14 @@ class ObjectTableWidget(QDockWidget):
             self.series.object_groups.removeGroup(group)
             self.manager.updateObjects(objs_to_update)
     
-    def lockObjects(self):
+    def lockObjects(self, lock=True):
         """Locked the selected objects."""
-        names = self.getSelectedObjects(include_locked=True)
+        names = self.getSelectedObjects()
 
         self.series_states.addState()
 
         for name in names:
-            self.series.setAttr(name, "locked", True)
+            self.series.setAttr(name, "locked", lock)
 
         self.manager.updateObjects(names)
         self.mainwindow.field.deselectAllTraces()

@@ -92,7 +92,8 @@ class AllOptionsDialog(QDialog):
                 ["user"],
                 # ["auto-versioning"],
                 ["step"],
-                ["left_handed"]
+                ["left_handed"],
+                ["time"]
             ],
             "Lists": [
                 ["object_columns"],
@@ -286,6 +287,14 @@ class AllOptionsDialog(QDialog):
         def setOption(response):
             self.series.setOption("left_handed", response[0][0][1])
         self.addOptionWidget("left_handed", structure, setOption)
+
+        # utc
+        structure = [
+            [("check", ("use UTC time", self.series.getOption("utc", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("utc", response[0][0][1])
+        self.addOptionWidget("time", structure, setOption)
 
         # columns
         for table_type in ("object", "trace", "flag"):

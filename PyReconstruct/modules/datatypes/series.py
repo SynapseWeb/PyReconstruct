@@ -20,7 +20,8 @@ from .default_settings import default_settings, default_series_settings
 from PyReconstruct.modules.constants import (
     createHiddenDir,
     assets_dir,
-    welcome_series_dir
+    welcome_series_dir,
+    getDateTime
 )
 from PyReconstruct.modules.calc import mergeTraces
 from PyReconstruct.modules.constants import welcome_series_dir
@@ -39,12 +40,6 @@ default_traces = [
     ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], []],
     ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
 ]
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
 
 class Series():
     qsettings_defaults = default_settings.copy()

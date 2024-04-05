@@ -27,7 +27,8 @@ class BackupDialog(QDialog):
         self.series = series
 
         name = series.code
-        self.updateNow(self.series.getOption("utc"), update_widgets=False)
+        utc = self.series.getOption("utc")
+        self.now = datetime.utcnow() if utc else datetime.now()
 
         user = series.user
         self.fp = ""
@@ -57,7 +58,7 @@ class BackupDialog(QDialog):
         bw1.addTitle("Backup Options")
         vlayout.addWidget(bw1)
 
-        # create the delimiter + utc widget
+        # create the delimiter widget
         r = QHBoxLayout()
         lbl = QLabel(self, text="Delimiter:")
         self.delimiter_le = QLineEdit(
@@ -68,12 +69,6 @@ class BackupDialog(QDialog):
         self.delimiter_le.textChanged.connect(self.updateWidgets)
         r.addWidget(lbl)
         r.addWidget(self.delimiter_le)
-
-        self.utc_cb = QCheckBox(self, text="Use UTC for date and time")
-        self.utc_cb.setToolTip(utc_tip)
-        self.utc_cb.setChecked(self.series.getOption("utc"))
-        self.utc_cb.stateChanged.connect(self.updateNow)
-        r.addWidget(self.utc_cb)
 
         vlayout2.addLayout(r)
 
@@ -135,15 +130,6 @@ class BackupDialog(QDialog):
         self.setLayout(vlayout)
         self.updateWidgets()
     
-    def updateNow(self, utc : bool, update_widgets=True):
-        """Toggle the time between local and UTC time."""
-        if utc:
-            self.now = datetime.utcnow()
-        else:
-            self.now = datetime.now()
-        if update_widgets:
-            self.updateWidgets()
-    
     def updateWidgets(self):
         """Update the display widgets."""
         l = []
@@ -181,10 +167,6 @@ class BackupDialog(QDialog):
             "backup_delimiter",
             self.delimiter_le.text()
         )
-        self.series.setOption(
-            "utc",
-            self.utc_cb.isChecked()
-        )
 
         super().accept()
     
@@ -192,10 +174,6 @@ class BackupDialog(QDialog):
         "Run the dialog."
         confirmed = super().exec()
         return bool(confirmed)
-        
-utc_tip = """UTC stands for Coordinated Universal Time
-UTC is used as a standard for all time zones. It lines up with
-GMT (Greenwich Mean Time)."""
 
 date_tip = """Date codes:
 %y = two-digit year (ex. 24)

@@ -1,6 +1,8 @@
 from datetime import datetime
 import random
 
+from PyReconstruct.modules.constants import getDateTime
+
 possible_chars = (
     [chr(n) for n in range(65, 91)] +
     [chr(n) for n in range(97, 123)] +
@@ -134,12 +136,6 @@ class Flag():
         """
         self.x *= new_mag / prev_mag
         self.y *= new_mag / prev_mag
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
 
 class Comment():
 

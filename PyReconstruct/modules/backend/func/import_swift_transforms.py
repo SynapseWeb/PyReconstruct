@@ -4,6 +4,7 @@ from datetime import datetime
 import numpy as np
 
 from PyReconstruct.modules.datatypes import Series, Transform
+from PyReconstruct.modules.constants import getDateTime
 
 
 class IncorrectFormatError(Exception):
@@ -12,13 +13,6 @@ class IncorrectFormatError(Exception):
 
 class IncorrectSecNumError(Exception):
     pass
-
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
 
 
 def cafm_to_matrix(t):

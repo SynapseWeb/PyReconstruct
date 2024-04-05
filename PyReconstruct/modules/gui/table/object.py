@@ -34,12 +34,6 @@ from PyReconstruct.modules.gui.dialog import (
     FileDialog
 )
 
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
-
 class ObjectTableWidget(QDockWidget):
 
     def __init__(self, series : Series, mainwindow : QWidget, manager):

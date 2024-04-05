@@ -180,8 +180,8 @@ class ObjectTableWidget(QDockWidget):
                     ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
                     None,
                     ("removealltags_act", "Remove all tags", "", self.removeAllTags),
-
-
+                    None,
+                    ("lockobj_act1", "Lock", "", self.lockObjects),
                 ]
             },
             {

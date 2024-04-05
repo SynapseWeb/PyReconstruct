@@ -12,8 +12,8 @@ def returnRepoInfo():
     try:
 
         ## Check if git repo available
-        
-        repo = git.Repo(PyReconstruct.__file__, search_parent_directories=True)
+        repo_dir = Path(PyReconstruct.__file__).parents[1]
+        repo = git.Repo(repo_dir)
         commit = repo.head.commit.hexsha[0:7]
         branch = repo.active_branch.name
 

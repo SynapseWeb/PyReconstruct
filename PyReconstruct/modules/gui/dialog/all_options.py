@@ -90,7 +90,7 @@ class AllOptionsDialog(QDialog):
             ],
             "User/Series": [
                 ["user"],
-                ["auto-versioning"],
+                # ["auto-versioning"],
                 ["step"],
                 ["left_handed"]
             ],
@@ -297,22 +297,22 @@ class AllOptionsDialog(QDialog):
             self.addOptionWidget(table_type + "_columns", structure, setOption)
         
         # backup
-        structure = [
-            [" "],
-            [("check", ("Use auto-versioning", self.series.getOption("autoversion")))],
-            [f"Auto-version directory for {self.series.code}:"],
-            [("dir", self.series.getOption("autoversion_dir", use_defaults))],
-        ]
-        def setOption(response):
-            if response[0][0][1] and response[1] and os.path.isdir(response[1]):
-                    self.series.setOption("autoversion", True)
-                    self.series.setOption("autoversion_dir", response[1])
-            else:
-                self.series.setOption("autoversion", False)
-                if not response[1] or not os.path.isdir(response[1]):
-                    self.series.setOption("autoversion_dir", "")
+        # structure = [
+        #     [" "],
+        #     [("check", ("Use auto-versioning", self.series.getOption("autoversion")))],
+        #     [f"Auto-version directory for {self.series.code}:"],
+        #     [("dir", self.series.getOption("autoversion_dir", use_defaults))],
+        # ]
+        # def setOption(response):
+        #     if response[0][0][1] and response[1] and os.path.isdir(response[1]):
+        #             self.series.setOption("autoversion", True)
+        #             self.series.setOption("autoversion_dir", response[1])
+        #     else:
+        #         self.series.setOption("autoversion", False)
+        #         if not response[1] or not os.path.isdir(response[1]):
+        #             self.series.setOption("autoversion_dir", "")
 
-        self.addOptionWidget("auto-versioning", structure, setOption)
+        # self.addOptionWidget("auto-versioning", structure, setOption)
 
         # step
         structure = [

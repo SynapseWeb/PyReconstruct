@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QPushButton
 )
 
-from .helper import BrowseWidget, resizeLineEdit
+from .helper import BrowseWidget, BorderedWidget
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
@@ -21,35 +21,48 @@ from PyReconstruct.modules.gui.utils import notify
 class BackupDialog(QDialog):
 
     def __init__(self, parent, series : Series):
-        """Create a dialog for brightness/contrast."""
+        """Create a dialog for backing up."""
         super().__init__(parent)
-        self.setWindowTitle("Backup Series")
+        self.setWindowTitle("Backup Settings")
         self.series = series
 
         name = series.code
-        self.now = datetime.now()
+        self.updateNow(self.series.getOption("utc"), update_widgets=False)
 
         user = series.user
         self.fp = ""
 
         vlayout = QVBoxLayout()
+        vlayout1 = QVBoxLayout()
+        vlayout2 = QVBoxLayout()
 
         # create the directory widget first
         hbl = QHBoxLayout()
-        bdir = series.getOption("manual_backup_dir")
+        bdir = series.getOption("backup_dir")
         if not os.path.isdir(bdir):
             bdir = ""
         self.dir_widget = BrowseWidget(self, "dir", bdir)
         hbl.addWidget(QLabel(self, text="Backup Folder:"))
         hbl.addWidget(self.dir_widget)
-        vlayout.addLayout(hbl)
+        vlayout1.addLayout(hbl)
+
+        # checkbox for autobackup
+        self.auto_cb = QCheckBox(self, text="Automatically create a backup file for every save")
+        self.auto_cb.setChecked(self.series.getOption("autobackup"))
+        vlayout1.addWidget(self.auto_cb)
+
+        # group the directory and autobackup widgets
+        bw1 = BorderedWidget(self)
+        bw1.setLayout(vlayout1)
+        bw1.addTitle("Backup Options")
+        vlayout.addWidget(bw1)
 
         # create the delimiter + utc widget
         r = QHBoxLayout()
         lbl = QLabel(self, text="Delimiter:")
         self.delimiter_le = QLineEdit(
             self, 
-            text=self.series.getOption("manual_backup_delimiter")
+            text=self.series.getOption("backup_delimiter")
         )
         # resizeLineEdit(self.delimiter_le, "000")
         self.delimiter_le.textChanged.connect(self.updateWidgets)
@@ -58,11 +71,11 @@ class BackupDialog(QDialog):
 
         self.utc_cb = QCheckBox(self, text="Use UTC for date and time")
         self.utc_cb.setToolTip(utc_tip)
-        self.utc_cb.setChecked(self.series.getOption("manual_backup_utc"))
+        self.utc_cb.setChecked(self.series.getOption("utc"))
         self.utc_cb.stateChanged.connect(self.updateNow)
         r.addWidget(self.utc_cb)
 
-        vlayout.addLayout(r)
+        vlayout2.addLayout(r)
 
         self.widgets = {}
 
@@ -71,7 +84,6 @@ class BackupDialog(QDialog):
             ("date", ""),  # updated later
             ("time", ""),  # updated later
             ("user", user),
-            ("comment", "")
         ]
 
         self.save_name_lbl = QLabel(self)
@@ -81,29 +93,39 @@ class BackupDialog(QDialog):
             r = QHBoxLayout()
             cb = QCheckBox(self)
             cb.setText(f"{k.title()}:")
-            cb.setChecked(series.getOption(f"manual_backup_{k}"))
+            cb.setChecked(series.getOption(f"backup_{k}"))
             cb.stateChanged.connect(self.updateWidgets)
-            le = QLineEdit(self, text=v)
-            le.textChanged.connect(self.updateWidgets)
             r.addWidget(cb)
-            r.addWidget(le)
 
             if k in ("date", "time"):
-                le.setText(self.series.getOption(f"manual_backup_{k}_str"))
+                w = QLineEdit(self, text=v)
+                w.textChanged.connect(self.updateWidgets)
+                w.setText(self.series.getOption(f"backup_{k}_str"))
                 bttn = QPushButton(self, text="?")
                 bttn.clicked.connect(openCodesLink)
                 tip = date_tip if k == "date" else time_tip
                 bttn.setToolTip(tip)
+                r.addWidget(w)
                 r.addWidget(bttn)
+            else:
+                w = QLabel(self, text=v)
+                r.addWidget(w)
+                r.addStretch()
 
-            vlayout.addLayout(r)
-            self.widgets[k] = (cb, le)
+            vlayout2.addLayout(r)
+            self.widgets[k] = (cb, w)
 
         # display name
-        vlayout.addSpacing(10)
-        vlayout.addWidget(QLabel(self, text="Backup File Name:"))
-        vlayout.addWidget(self.save_name_lbl)
-        
+        vlayout2.addSpacing(10)
+        vlayout2.addWidget(QLabel(self, text="Example Backup File Name:"))
+        vlayout2.addWidget(self.save_name_lbl)
+
+        # group the naming widgets
+        bw2 = BorderedWidget(self)
+        bw2.setLayout(vlayout2)
+        bw2.addTitle("Backup Naming")
+        vlayout.addWidget(bw2)
+
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         buttonbox = QDialogButtonBox(QBtn)
         buttonbox.accepted.connect(self.accept)
@@ -113,26 +135,27 @@ class BackupDialog(QDialog):
         self.setLayout(vlayout)
         self.updateWidgets()
     
-    def updateNow(self, utc : bool):
+    def updateNow(self, utc : bool, update_widgets=True):
         """Toggle the time between local and UTC time."""
         if utc:
             self.now = datetime.utcnow()
         else:
             self.now = datetime.now()
-        self.updateWidgets()
+        if update_widgets:
+            self.updateWidgets()
     
     def updateWidgets(self):
         """Update the display widgets."""
         l = []
         dl = self.delimiter_le.text()
-        for name, (cb, le) in self.widgets.items():
-            if cb.isChecked() and le.text():
+        for name, (cb, w) in self.widgets.items():
+            if cb.isChecked() and w.text():
                 if name in ("date", "time"):
-                    text = self.now.strftime(le.text())
+                    text = self.now.strftime(w.text())
                 else:
-                    text = le.text()
+                    text = w.text()
                 l.append(text.replace(" ", dl))
-        self.save_name_lbl.setText(dl.join(l))
+        self.save_name_lbl.setText(dl.join(l) + ".jser")
     
     def accept(self):
         """Overwritten from parent class."""
@@ -140,34 +163,26 @@ class BackupDialog(QDialog):
         if not os.path.isdir(bdir):
             notify("Please enter a valid directory.")
             return
-        
-        fname = self.save_name_lbl.text() + ".jser"
-        self.fp = os.path.join(bdir, fname)
-
-        ## do not overwrite existing backups
-        if os.path.exists(self.fp):
-            time_now = datetime.now().strftime("%H%M%S")
-            unique_fname = self.save_name_lbl.text() + "-" + time_now + ".jser"
-            self.fp = os.path.join(bdir, unique_fname)
 
         # set the series options
-        self.series.setOption("manual_backup_dir", bdir)
-        for name, (cb, le) in self.widgets.items():
+        self.series.setOption("autobackup", self.auto_cb.isChecked())
+        self.series.setOption("backup_dir", bdir)
+        for name, (cb, w) in self.widgets.items():
             self.series.setOption(
-                f"manual_backup_{name}",
+                f"backup_{name}",
                 cb.isChecked()
             )
             if name in ("date", "time"):
                 self.series.setOption(
-                    f"manual_backup_{name}_str", 
-                    le.text()
+                    f"backup_{name}_str", 
+                    w.text()
                 )
         self.series.setOption(
-            "manual_backup_delimiter",
+            "backup_delimiter",
             self.delimiter_le.text()
         )
         self.series.setOption(
-            "manual_backup_utc",
+            "utc",
             self.utc_cb.isChecked()
         )
 
@@ -176,10 +191,7 @@ class BackupDialog(QDialog):
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
-        if confirmed:
-            return self.fp, True
-        else:
-            return None, False
+        return bool(confirmed)
         
 utc_tip = """UTC stands for Coordinated Universal Time
 UTC is used as a standard for all time zones. It lines up with

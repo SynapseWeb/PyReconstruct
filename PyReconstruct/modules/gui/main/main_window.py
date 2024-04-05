@@ -179,12 +179,14 @@ class MainWindow(QMainWindow):
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
                     {
-                        "attr_name": "autoversionmenu",
-                        "text": "Auto-versioning",
+                        "attr_name": "backupmenu",
+                        "text": "Backup",
                         "opts":
                         [
-                            ("autoversion_act", "Toggle auto-versioning", "checkbox", self.toggleAutoVersion),
-                            ("setautoversion_act", "Set directory", "", self.setAutoVersion)
+                            ("setbackup_act", "Settings...", "", self.setBackup),
+                            ("manualbackup_act", "Backup with comment...", self.series, self.manualBackup),
+                            # None,
+                            # ("autobackup_act", "Toggle auto-backup", "checkbox", self.toggleAutoBackup),
                         ]
                     },
                     None,
@@ -251,7 +253,6 @@ class MainWindow(QMainWindow):
                         "text": "Export",
                         "opts":
                         [
-                            ("exportjser_act", "as backup jser...", self.series, self.manualBackup),
                             ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
                             ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
                         ]
@@ -659,17 +660,7 @@ class MainWindow(QMainWindow):
         is_not_welcome_series = not self.series.isWelcomeSeries()
         self.save_act.setEnabled(is_not_welcome_series)
         self.saveas_act.setEnabled(is_not_welcome_series)
-        self.autoversion_act.setEnabled(is_not_welcome_series)
-        self.exportjser_act.setEnabled(is_not_welcome_series)
-
-        # check for backup directory
-        is_autoversioning = (
-            self.series.getOption("autoversion") and 
-            os.path.isdir(self.series.getOption("autoversion_dir"))
-        )
-        self.autoversion_act.setChecked(is_autoversioning)
-        self.series.setOption("autoversion", is_autoversioning)  # ensure consistency
-        self.setautoversion_act.setEnabled(self.autoversion_act.isChecked())
+        self.backupmenu.setEnabled(is_not_welcome_series)
 
         # check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
@@ -1783,6 +1774,32 @@ class MainWindow(QMainWindow):
         self.field.section.save(update_series_data=False)
         self.series.save()
     
+    def backup(self, check_auto=False, comment=""):
+        """Automatically backup the jser if requested."""
+        if check_auto and not self.series.getOption("autobackup"):
+            return
+        
+        # make sure the backup directory exists
+        if not os.path.isdir(self.series.getOption("backup_dir")):
+            notify(
+                "Backup folder not found.\n" + 
+                "Please set the backup folder in following dialog."
+            )
+            self.series.setOption("backup_dir", "")
+            self.setBackup()
+        
+        # double check if user entered a valid backup directory
+        if os.path.isdir(self.series.getOption("backup_dir")):
+            fp = self.series.getBackupPath(comment)
+            self.series.saveJser(fp)
+        else:
+            notify(
+                "Backup folder not found.\n" +
+                "Backup file not saved."
+            )
+            self.series.setOption("backup_dir", "")
+            self.series.setOption("autobackup", False)
+    
     def saveToJser(self, notify=False, close=False):
         """Save all data to JSER file.
         
@@ -1815,7 +1832,8 @@ class MainWindow(QMainWindow):
         # run save as if there is no jser filepath
         if not self.series.jser_fp:
             self.saveAsToJser(close=close)
-        else:        
+        else:  
+            self.backup(check_auto=True)
             self.series.saveJser(close=close)
         
         # set the series to unmodified
@@ -1853,55 +1871,30 @@ class MainWindow(QMainWindow):
             self.field.series_states[self.field.b_section]
         
         # save the file
+        self.backup(check_auto=True)
         self.series.saveJser(close=close)
 
         # set the series to unmodified
         self.seriesModified(False)
     
-    def toggleAutoVersion(self):
-        """Toggle auto-versioning."""
-        if self.autoversion_act.isChecked():
-            self.series.setOption("autoversion", True)
-            if not os.path.isdir(self.series.getOption("autoversion_dir")):
-                self.setAutoVersion()
-        else:
-            self.series.setOption("autoversion", False)
-        self.seriesModified()
-    
-    def setAutoVersion(self):
-        """Set up the autoversioning directory for the series."""
-        structure = [
-            ["When an auto-version folder is set, an extra JSER file marked\n" +
-                "with the date and time will be automatically saved to the \n" +
-                "auto-version folder every time you save this series."],
-            [" "],
-            [f"Auto-version folder for {self.series.code}:"],
-            [(True, "dir", self.series.getOption("autoversion_dir"))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Auto-versioning")
-        if not confirmed:
-            if (
-                self.series.getOption("autoversion") and
-                not os.path.isdir(self.series.getOption("autoversion_dir"))
-            ):
-                self.series.setOption("autoversion", False)
-                self.autoversion_act.setChecked(False)
-            return
-        
-        self.series.setOption("autoversion", True)
-        self.series.setOption("autoversion_dir", response[0])
-        
+    def setBackup(self):
+        """Set up the autobackup directory and settings."""
+        confirmed = BackupDialog(self, self.series).exec()
         self.seriesModified()
     
     def manualBackup(self):
         """Back up the series to a specified location."""
         self.saveAllData()
 
-        backup_fp, confirmed = BackupDialog(self, self.series).exec()
+        response, confirmed = QInputDialog.getText(
+            self,
+            "Backup Comment",
+            "Enter backup comment\n(press enter to leave blank)"
+        )
         if not confirmed:
             return
         
-        self.series.saveJser(save_fp=backup_fp)
+        self.backup(comment=response)
     
     def viewSeriesHistory(self):
         """View the history for the entire series."""

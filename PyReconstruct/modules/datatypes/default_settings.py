@@ -3,20 +3,36 @@ import os
 default_settings = {
     # user
     "user": os.getlogin(),
+
+    # backup
     # "backup_dir": "",
     # "manual_backup_dir": "",
-    "manual_backup_delimiter": "-",
+    # "manual_backup_delimiter": "-",
     # "manual_backup_date_delimiter": "-",
     # "manual_backup_time_delimiter": "-",
-    "manual_backup_name": True,
-    "manual_backup_utc": False,
-    "manual_backup_date": True,
-    "manual_backup_date_str": "%Y-%m-%d",
-    "manual_backup_time": False,
-    "manual_backup_time_str": "%H-%M",
-    "manual_backup_user": True,
-    "manual_backup_comment": True,
+    # "manual_backup_name": True,
+    # "manual_backup_utc": False,
+    # "manual_backup_date": True,
+    # "manual_backup_date_str": "%Y-%m-%d",
+    # "manual_backup_time": False,
+    # "manual_backup_time_str": "%H-%M",
+    # "manual_backup_user": True,
+    # "manual_backup_comment": True,
+    "backup_delimiter": "-",
+    "backup_name": True,
+    "backup_user": True,
+    "backup_date": True,
+    "backup_date_str": "%Y-%m-%d",
+    "backup_time": True,
+    "backup_time_str": "%H-%M",
+    "backup_prefix" : False,
+    "backup_prefix_str": "",
+    "backup_suffix": False,
+    "backup_suffix_str": "",
+
+    # misc preferences
     "left_handed": False,
+    "utc": False,
 
     # view
     "3D_xy_res": 0,  # 0-100
@@ -105,7 +121,7 @@ default_settings = {
     "goto_act": "Ctrl+G",
     "open_act": "Ctrl+O",
     "save_act": "Ctrl+S",
-    "exportjser_act": "Ctrl+Shift+B",
+    "manualbackup_act": "Ctrl+Shift+B",
     "newfromimages_act": "Ctrl+N",
     "restart_act": "Ctrl+R",
     "quit_act": "Ctrl+Q",
@@ -133,7 +149,9 @@ default_settings = {
 }
 
 default_series_settings = {
-    "autoversion": False,
-    "autoversion_dir": "",
-    "manual_backup_dir": ""
+    # "autoversion": False,
+    # "autoversion_dir": "",
+    # "manual_backup_dir": ""
+    "autobackup": False,
+    "backup_dir": "",
 }

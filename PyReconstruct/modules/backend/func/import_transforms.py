@@ -2,12 +2,7 @@ import os
 from datetime import datetime
 
 from PyReconstruct.modules.datatypes import Series, Transform
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
+from PyReconstruct.modules.constants import getDateTime
 
 def importTransforms(series : Series, tforms_fp : str, series_states=None, log_event=True):
         """Import transforms from a text file.

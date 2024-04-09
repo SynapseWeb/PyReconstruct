@@ -131,6 +131,22 @@ class BorderedWidget(QWidget):
         painter = QPainter(self)
         painter.setPen(QColor(0, 0, 0))  # Set the color of the border
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Adjust the rectangle to draw inside the border
+    
+    def addTitle(self, title : str):
+        if not isinstance(self.layout(), QVBoxLayout):
+            return
+        
+        hlayout = QHBoxLayout()
+        hlayout.addStretch()
+        lbl = QLabel(self.parent(), text=title)
+        f = lbl.font()
+        f.setBold(True)
+        lbl.setFont(f)
+        hlayout.addWidget(lbl)
+        hlayout.addStretch()
+        l : QVBoxLayout = self.layout()
+        l.insertLayout(0, hlayout)
+
 
 class RadioButtonGroup(QWidget):
 

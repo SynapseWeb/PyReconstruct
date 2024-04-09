@@ -104,17 +104,6 @@ class ImportTracesDialog(QDialog):
         # create container widget for overlap-related parameters
         container = BorderedWidget(self)
         cvlayout = QVBoxLayout()
-        
-        # overlap container title
-        hlayout = QHBoxLayout()
-        hlayout.addStretch()
-        lbl = QLabel(self, text="Differentiate Duplicate and Non-duplicate Traces")
-        f = lbl.font()
-        f.setBold(True)
-        lbl.setFont(f)
-        hlayout.addWidget(lbl)
-        hlayout.addStretch()
-        cvlayout.addLayout(hlayout)
 
         # overlap threshold text
         hlayout = QHBoxLayout()
@@ -183,6 +172,7 @@ class ImportTracesDialog(QDialog):
 
         # add container to master layout
         container.setLayout(cvlayout)
+        container.addTitle("Differentiate Duplicate and Non-duplicate Traces")
         vlayout.addWidget(container)
         
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel

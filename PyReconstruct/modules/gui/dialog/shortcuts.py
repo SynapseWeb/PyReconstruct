@@ -183,7 +183,7 @@ help_shortcuts = [
     "File",
     ("open_act", "Open a series file"),
     ("save_act", "Save"),
-    ("exportjser_act", "Backup series"),
+    ("manualbackup_act", "Backup series"),
     ("newfromimages_act", "New"),
     ("restart_act", "Restart"),
     ("quit_act", "Quit"),

@@ -1,12 +1,7 @@
 import re
 from datetime import datetime
 
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
-
+from PyReconstruct.modules.constants import getDateTime
 
 class Log():
 

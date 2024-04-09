@@ -20,7 +20,8 @@ from .default_settings import default_settings, default_series_settings
 from PyReconstruct.modules.constants import (
     createHiddenDir,
     assets_dir,
-    welcome_series_dir
+    welcome_series_dir,
+    getDateTime
 )
 from PyReconstruct.modules.calc import mergeTraces
 from PyReconstruct.modules.constants import welcome_series_dir
@@ -39,12 +40,6 @@ default_traces = [
     ['plus', [-0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285, 0.0316285, -0.0316285, -0.0316285], [0.0316285, -0.0316285, -0.0316285, -0.0948664, -0.0948664, -0.0316285, -0.0316285, 0.0316285, 0.0316285, 0.0948664, 0.0948664, 0.0316285], [0, 255, 0], True, False, False, ['none', 'none'], []],
     ['arrow2', [-0.0096108, 0.0144234, -0.0816992, -0.0576649, 0.0384433, 0.0624775, 0.0624775], [0.0624775, 0.0384433, -0.0576649, -0.0816992, 0.0144234, -0.0096108, 0.0624775], [0, 255, 255], True, False, False, ['none', 'none'], []]
 ]
-
-def getDateTime():
-    dt = datetime.now()
-    d = f"{dt.year % 1000}-{dt.month:02d}-{dt.day:02d}"
-    t = f"{dt.hour:02d}:{dt.minute:02d}"
-    return d, t
 
 class Series():
     qsettings_defaults = default_settings.copy()
@@ -332,24 +327,6 @@ class Series():
         jser_fp = self.jser_fp if not save_fp else save_fp
         with open(jser_fp, "w") as f:
             f.write(save_str)
-
-        # backup the series if requested
-        if save_fp is None and self.getOption("autoversion") and os.path.isdir(self.getOption("autoversion_dir")):
-            # get the file name
-            fn = os.path.basename(self.jser_fp)
-            # create the new file name
-            t = datetime.now()
-            dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
-            fn = fn[:fn.rfind(".")] + "_" + dt + fn[fn.rfind("."):]
-            # save the file
-            backup_fp = os.path.join(
-                self.getOption("autoversion_dir"),
-                fn
-            )
-            with open(backup_fp, "w") as f:
-                f.write(save_str)
-        else:
-            self.setOption("autoversion", False)
         
         if close:
             self.close()
@@ -2011,6 +1988,60 @@ class Series():
                 editors.add(l.user)
         return editors
 
+    def getBackupPath(self, comment : str = "", check_existing : bool = True):
+        """Get the file path for a backup file for this series.
+        
+            Params:
+                comment (str): an optional comment to add to the end of the filename.
+                check_existing (bool): check for existing file and append numbers if exists
+        """
+        fname_list = []
+
+        if self.getOption("backup_prefix"):
+            s = self.getOption("backup_prefix_str")
+            if s: fname_list.append(s)
+
+        if self.getOption("backup_name"):
+            fname_list.append(self.code)
+        
+        now = datetime.utcnow() if self.getOption("utc") else datetime.now()
+
+        if self.getOption("backup_date"):
+            date = now.strftime(self.getOption("backup_date_str"))
+            fname_list.append(date)
+        
+        if self.getOption("backup_time"):
+            time = now.strftime(self.getOption("backup_time_str"))
+            fname_list.append(time)
+        
+        if self.getOption("backup_user"):
+            fname_list.append(self.user)
+
+        if self.getOption("backup_suffix"):
+            s = self.getOption("backup_suffix_str")
+            if s: fname_list.append(s)
+        
+        if comment:
+            fname_list.append(comment)
+        
+        dl = self.getOption("backup_delimiter")
+        fname_list = [s.strip() for s in fname_list]
+        fname = dl.join(fname_list)
+        fname = dl.join(fname.split())
+
+        folder = self.getOption("backup_dir")
+        fp = os.path.join(folder, fname)
+
+        if check_existing and os.path.isfile(f"{fp}.jser"):
+            n = 1
+            while os.path.isfile(f"{fp}-{n:02d}.jser"):
+                n += 1
+            fp = f"{fp}-{n:02d}.jser"
+        else:
+            fp += ".jser"
+
+        return fp
+        
 
 class SeriesIterator():
 

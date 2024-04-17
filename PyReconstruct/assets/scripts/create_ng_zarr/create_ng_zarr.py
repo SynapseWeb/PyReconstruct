@@ -152,7 +152,7 @@ sections = sorted(list(series.sections.keys()))
 ## Sample a section to get image magnification and dimensions
 ## Assume all sections have the same dimensions for now
 
-section = series.loadSection(sections[5])  # steer clear of cal grid
+section = series.loadSection(sections[1])  # steer clear of cal grid
 img_mag = section.mag
 
 if series.src_dir.endswith(".zarr"):  ## TODO: Need to validate zarrs more appropriately

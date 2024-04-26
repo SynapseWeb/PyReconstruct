@@ -34,16 +34,18 @@ def returnRepoInfo():
             with direct_url.open("r") as fp:
                 data = json.load(fp)
 
-            vcs_info = data["vcs_info"]
+            vcs_info = data.get("vcs_info", None)
 
-            commit = vcs_info.get("commit_id", "unknown")
-            
-            if commit != "unknown":
-                commit = commit[0:7]
+            if vcs_info is not None:
 
-            branch = vcs_info.get("requested_revision", "main")  # if no revision, on main
+                commit = vcs_info.get("commit_id", "unknown")
+                
+                if commit != "unknown":
+                    commit = commit[0:7]
 
-            return {"branch": branch, "commit": commit}
+                    branch = vcs_info.get("requested_revision", "main")  # if no revision, on main
+
+                    return {"branch": branch, "commit": commit}
 
     ## If above fail to return, cannot determing repo details and return "unknown"
         

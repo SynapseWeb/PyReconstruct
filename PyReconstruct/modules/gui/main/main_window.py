@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
             Global exception hook to display a notification window.
             """
             sys.__excepthook__(exctype, value, traceback)  # Call the default exception hook
-            message = f"An error occurred: {str(value)}\n(see console)"
+            message = f"An error occurred:\n\n{str(value)}\n\n(See console for more info.)\n\nIf you think this is a bug or need help, please issue a bug report at:\n\nhttps://github.com/synapseweb/pyreconstruct/issues"
             QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
 
         # Set the exception hook

@@ -35,3 +35,8 @@ from .repo_info import (
 from .getdatetime import(
     getDateTime
 )
+
+from .svg import(
+    svg_blank,
+    path_blank
+)

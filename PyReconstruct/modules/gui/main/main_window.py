@@ -77,6 +77,7 @@ from PyReconstruct.modules.constants import (
     developers_mailto_str,
     repo_info
 )
+from PyReconstruct.assets.scripts import exportTraces
 
 class MainWindow(QMainWindow):
 
@@ -337,6 +338,7 @@ class MainWindow(QMainWindow):
                     ("flicker_act", "Flicker section", self.series, self.flickerSections),
                     None,
                     ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
+                    ("exporttraces_act", "Export traces as svg", "", lambda : self.exportTracesAsSVG(series=self.series))
                 ]
             },
             {
@@ -2150,6 +2152,11 @@ class MainWindow(QMainWindow):
             notify("Magnification cannot be less than or equal to zero.")
         
         self.field.setMag(response)
+
+    def exportTracesAsSVG(self, series=None):
+        """Export traces as svg."""
+
+        exportTraces(series)
     
     def modifyPointer(self, event=None):
         """Modify the pointer properties."""

@@ -16,7 +16,7 @@ LONG_DESCRIPTION = (HERE / "readme.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
-      'PySide6',
+      'PySide6==6.6.1',
       'opencv-python',
       'numpy',
       'scikit-image',

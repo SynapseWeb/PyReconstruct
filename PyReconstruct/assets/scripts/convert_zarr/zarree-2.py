@@ -5,6 +5,7 @@ os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = "18500000000"  # Go big or go home?
 import cv2
 import zarr
 from multiprocessing import Pool
+import time
 
 if len(sys.argv) == 3:
     
@@ -33,7 +34,11 @@ else:
 print(message)
 
 def create2D(filename):
+    
     print(f"Working on {filename}...", flush=True)
+    
+    t_start = time.perf_counter()
+    
     try:
         # get the image
         if create_new:
@@ -62,17 +67,34 @@ def create2D(filename):
                 zg[scale_group].create_dataset(filename, data=downscaled_cvim)
 
     except Exception as e:
+        
         print(f"Error with {filename}: ", end="", flush=True)
         print(e, flush=True)
 
+    t_end = time.perf_counter()
+
+    return filename, t_end - t_start
+
 if __name__ == "__main__":
 
-    with Pool(1) as p:
+    t_all_start = time.perf_counter()
+
+    with Pool() as p:
 
         if create_new:
             
-            p.map(create2D, os.listdir(img_dir))
+            results = p.imap_unordered(create2D, os.listdir(img_dir))
             
         else:
             
-            p.map(create2D, list(zg["scale_1"]))
+            results = p.imap_unordered(create2D, list(zg["scale_1"]))
+
+        for filename, duration in results:
+
+            print(f"Time for conversion {filename}: {round(duration, 2)} s")
+
+    t_all_end = time.perf_counter()
+
+    duration = round(t_all_end - t_all_start, 2)
+
+    print(f"All tasks completed: {duration} s")

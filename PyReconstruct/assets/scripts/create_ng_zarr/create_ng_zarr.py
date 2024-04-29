@@ -25,6 +25,19 @@ from PyReconstruct.modules.backend.autoseg import (
 )
 
 
+def flatten_list(nested_list):
+    """Recursively flatten lists to handle groups."""
+
+    if not (bool(nested_list)):  # if empty list
+        return nested_list
+
+    if isinstance(nested_list[0], list):
+
+        return flatten_list(*nested_list[:1]) + flatten_list(nested_list[1:])
+
+    return nested_list[:1] + flatten_list(nested_list[1:])
+
+
 parser = argparse.ArgumentParser(
     prog="ng-create-zarr",
     description=__doc__,
@@ -32,6 +45,7 @@ parser = argparse.ArgumentParser(
 )
 
 # poitional args
+
 parser.add_argument("jser", type=str, nargs="?", help="Filepath of a valid jser file.")
 
 # optional args
@@ -114,6 +128,8 @@ if args.config:
         )  # override toml acting as defaults if --groups called
     args = parser.parse_args()
 
+#print(f"{args = }")
+
 # Make sure "valid" jser provided
 if not args.jser or not os.path.exists(args.jser):
     parser.error("Please provide filepath to a valid jser.")
@@ -126,20 +142,6 @@ secs = int(args.sections)
 mag = float(args.mag)
 padding = int(args.padding)
 get_all = bool(args.max_tissue)
-
-
-def flatten_list(nested_list):
-    """Recursively flatten lists to handle groups."""
-
-    if not (bool(nested_list)):  # if empty list
-        return nested_list
-
-    if isinstance(nested_list[0], list):
-
-        return flatten_list(*nested_list[:1]) + flatten_list(nested_list[1:])
-
-    return nested_list[:1] + flatten_list(nested_list[1:])
-
 
 groups = flatten_list(args.groups) if args.groups else None
 
@@ -167,7 +169,9 @@ else:
 
 convert_microns = lambda x: x * img_mag
 img_corners = [(0, 0), (w, 0), (h, w), (0, h)]
+print(f"{img_corners = }")
 img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
+print(f"{img_corners = }")
 
 ## Procedures
 
@@ -175,11 +179,10 @@ get_most = None
 
 if get_all:  # request all available (include black space)
 
-    mid = len(sections) // 2
-    start = mid - (secs // 2) - 1
-    end_exclude = mid + (secs // 2) - 1
+    srange = (sections[1], sections[-1])  # assume cal grid on section 0
 
-    srange = (sections[start], sections[end_exclude])
+    start = 1
+    end_exclude = len(sections)
 
     x_mins, y_mins, x_maxs, y_maxs = ([], [], [], [])
 

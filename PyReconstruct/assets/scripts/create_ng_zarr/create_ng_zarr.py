@@ -155,7 +155,7 @@ sections = sorted(list(series.sections.keys()))
 section = series.loadSection(sections[1])  # steer clear of cal grid
 img_mag = section.mag
 
-if series.src_dir.endswith(".zarr"):  ## TODO: Need to validate zarrs more appropriately
+if series.src_dir.endswith("zarr"):  ## TODO: Need to validate zarrs more appropriately
 
     img_scale_1 = os.path.join(series.src_dir, "scale_1", section.src)
     h, w = zarr.open(img_scale_1).shape

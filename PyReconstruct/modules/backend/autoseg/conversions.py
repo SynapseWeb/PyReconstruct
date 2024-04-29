@@ -206,7 +206,7 @@ def seriesToLabels(series : Series,
         group_or_tag = f"{del_group}_keep"
 
     # create labels datasets
-    data_zg.create_dataset(f"labels_{group_or_tag}", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
+    data_zg.create_dataset(f"labels_{group_or_tag}", shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
     data_zg[f"labels_{group_or_tag}"].attrs["offset"] = offset
     data_zg[f"labels_{group_or_tag}"].attrs["resolution"] = resolution
 

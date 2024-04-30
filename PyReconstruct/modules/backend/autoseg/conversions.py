@@ -107,8 +107,8 @@ def seriesToZarr(
     # calculate field attributes
     shape = (
         srange[1] - srange[0],  # z
-        round(window[3]/mag),   # height
-        round(window[2]/mag)    # width
+        round(window[3]/mag),   # y (height)
+        round(window[2]/mag)    # x (width)
     )
 
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
@@ -302,7 +302,7 @@ def exportSection(data_zg, snum : int, series : Series, srange : tuple, window :
         window
     )
     data_zg["raw"][z] = arr
-    # print(f"Section {snum} exporting finished")
+    print(f"Section {snum} exporting finished")
 
 def exportTraces(data_zg,
                  snum : int,

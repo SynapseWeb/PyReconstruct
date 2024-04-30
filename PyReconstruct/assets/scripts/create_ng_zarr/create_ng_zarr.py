@@ -169,9 +169,9 @@ else:
 
 convert_microns = lambda x: x * img_mag
 img_corners = [(0, 0), (w, 0), (h, w), (0, h)]
-print(f"{img_corners = }")
+#print(f"{img_corners = }")
 img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
-print(f"{img_corners = }")
+#print(f"{img_corners = }")
 
 ## Procedures
 
@@ -190,6 +190,9 @@ if get_all:  # request all available (include black space)
 
         sec_tform = series.loadSection(section).tform
         corners_transformed = sec_tform.map(img_corners)
+        #corners_transformed = list(map(lambda elem: round(elem, 4), corners_transformed))
+
+        print(f"{corners_transformed = }")
 
         x_vals, y_vals = list(zip(*corners_transformed))
 

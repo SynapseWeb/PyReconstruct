@@ -242,17 +242,19 @@ def jsonToXML(series : Series, new_dir : str):
             original_series (Series): the series to convert
             new_dir (str): the directory to store the new files
     """
-    # convert the series
-    seriesJSONtoXML(series, new_dir)
-
     # convert the sections
     for snum, section in series.enumerateSections(message="Exporting series as XML..."):
-        sectionJSONtoXML(series, section, new_dir)
+        thickness = sectionJSONtoXML(series, section, new_dir)
 
-def seriesJSONtoXML(series : Series, new_dir : str):
+    # convert the series
+    seriesJSONtoXML(series, new_dir, thickness)
+    
+
+def seriesJSONtoXML(series : Series, new_dir : str, thickness: float):
     # create the blank series and replace text as needed
     xml_text = blank_series_no_contours
     xml_text = xml_text.replace("[SECTION_NUM]", str(series.current_section))
+    xml_text = xml_text.replace("[SECTION_THICKNESS]", str(thickness))
 
     xml_palette = []
     for trace in series.palette_traces[series.palette_index[0]]:
@@ -319,6 +321,8 @@ def sectionJSONtoXML(series : Series, section : Section, new_dir : str):
         outpath=section_fp,
         overwrite=True
     )
+
+    return section.thickness
 
 
 

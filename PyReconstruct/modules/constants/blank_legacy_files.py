@@ -375,7 +375,7 @@ blank_series_no_contours = """<?xml version="1.0"?>
     hideDomains="false"
     unhideDomains="false"
     useAbsolutePaths="false"
-    defaultThickness="0.05"
+    defaultThickness="[SECTION_THICKNESS]"
     zMidSection="false"
     thumbWidth="128"
     thumbHeight="96"

@@ -126,7 +126,7 @@ def seriesToZarr(
     if os.path.isdir(data_fp): shutil.rmtree(data_fp)  # delete existing zarr
         
     data_zg = zarr.open(data_fp, "a")
-    data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
+    data_zg.create_dataset("raw", shape=shape, chunks=(8, 256, 256), dtype=np.uint8)
 
     # get values for saving zarr files (from last known section)
     section_thickness = series.loadSection(srange[0]).thickness

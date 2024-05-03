@@ -240,7 +240,7 @@ print("Creating zarr...")
 zarr_fp = seriesToZarr(
     series,
     srange,
-    mag,
+    img_mag,
     window=window,
     data_fp=output_zarr,
 )

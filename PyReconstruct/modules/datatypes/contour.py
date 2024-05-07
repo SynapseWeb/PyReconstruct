@@ -14,7 +14,7 @@ class Contour():
         if traces:
             for trace in traces:
                 if trace.name != name:
-                    raise Exception("Trace name does not match contour name")
+                    raise Exception(f"Trace name \"{trace.name}\" does not match contour name \"{name}\"")
             self.traces : list[Trace] = traces
         else:
             self.traces : list[Trace] = []

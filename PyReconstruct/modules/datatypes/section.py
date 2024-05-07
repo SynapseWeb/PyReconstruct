@@ -41,7 +41,7 @@ class Section():
             section_data = json.load(f)
         
         Section.updateJSON(section_data, n)  # update any missing attributes
-        
+
         self.src = os.path.basename(section_data["src"])
         self.bc_profiles = section_data["brightness_contrast_profiles"]
         self.mag = section_data["mag"]
@@ -53,6 +53,7 @@ class Section():
         
         self.thickness = section_data["thickness"]
         self.contours : dict[str, Contour] = {}
+
         for name in section_data["contours"]:
             trace_list = []
             for trace_data in section_data["contours"][name]:
@@ -206,12 +207,17 @@ class Section():
         
         # iterate through the contours and remove whitespace
         for cname in tuple(section_data["contours"].keys()):
-            cname = cname.strip()
-            updated_cname = "_".join(cname.split()).replace(",", "_")
+            
+            cname_trimmed = cname.strip()
+            updated_cname = "_".join(cname_trimmed.split()).replace(",", "_")
+            
             if cname != updated_cname:
+                
                 if updated_cname not in section_data["contours"]:
                     section_data["contours"][updated_cname] = []
+                    
                 section_data["contours"][updated_cname] += section_data["contours"][cname]
+                
                 del(section_data["contours"][cname])
 
     def getDict(self) -> dict:

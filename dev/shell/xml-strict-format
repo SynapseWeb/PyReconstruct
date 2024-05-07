@@ -1,0 +1,139 @@
+#!/bin/bash
+
+if [ -z $1 ] ; then
+  echo "Format legacy RECONSTRUCT XML series strictly for use in Neuropil tools."
+  echo "Requires the gsed command if on a mac machine."
+  echo "Usage: xml-strict-format <directory with an xml series>"
+  exit 0
+fi
+
+uname=$(uname -s) # get user's environment
+
+# Test which cmd available
+if which gsed > /dev/null 2>&1 ; then
+  cmd=gsed
+else
+  cmd=sed
+  if [ $uname == "Darwin" ] ; then
+    echo "Please install the gsed command if you're using a mac."
+    exit 1
+  fi
+fi
+
+dir=$1 # dir to operate on
+dir=$(echo "$dir" | sed 's:/*$::') # trim trailing slash if present
+
+fix_ser_file(){
+
+  ## Manipulate .ser file
+
+  $cmd -i 's/units/\'\nunits'/g' $1
+  $cmd -i 's/autoSaveSeries/\'\nautoSaveSeries'/g' $1
+  $cmd -i 's/autoSaveSection/\'\nautoSaveSection'/g' $1
+  $cmd -i 's/warnSaveSection/\'\nwarnSaveSection'/g' $1
+  $cmd -i 's/beepDeleting/\'\nbeepDeleting'/g' $1
+  $cmd -i 's/beepPaging/\'\nbeepPaging'/g' $1
+  $cmd -i 's/hideTraces/\'\nhideTraces'/g' $1
+  $cmd -i 's/unhideTraces/\'\nunhideTraces'/g' $1
+  $cmd -i 's/hideDomains/\'\nhideDomains'/g' $1
+  $cmd -i 's/unhideDomains/\'\nunhideDomains'/g' $1
+  $cmd -i 's/useAbsolutePaths/\'\nuseAbsolutePaths'/g' $1
+  $cmd -i 's/defaultThickness/\'\ndefaultThickness'/g' $1
+  $cmd -i 's/zMidSection/\'\nzMidSection'/g' $1
+  $cmd -i 's/thumbWidth/\'\nthumbWidth'/g' $1
+  $cmd -i 's/thumbHeight/\'\nthumbHeight'/g' $1
+  $cmd -i 's/fitThumbSections/\'\nfitThumbSections'/g' $1
+  $cmd -i 's/firstThumbSection/\'\nfirstThumbSection'/g' $1
+  $cmd -i 's/lastThumbSection/\'\nlastThumbSection'/g' $1
+  $cmd -i 's/skipSections/\'\nskipSections'/g' $1
+  $cmd -i 's/displayThumbContours/\'\ndisplayThumbContours'/g' $1
+  $cmd -i 's/useFlipbookStyle/\'\nuseFlipbookStyle'/g' $1
+  $cmd -i 's/flipRate/\'\nflipRate'/g' $1
+  $cmd -i 's/useProxies/\'\nuseProxies'/g' $1
+  $cmd -i 's/widthUseProxies/\'\nwidthUseProxies'/g' $1
+  $cmd -i 's/heightUseProxies/\'\nheightUseProxies'/g' $1
+  $cmd -i 's/scaleProxies/\'\nscaleProxies'/g' $1
+  $cmd -i 's/significantDigits/\'\nsignificantDigits'/g' $1
+  $cmd -i 's/defaultBorder/\'\ndefaultBorder'/g' $1
+  $cmd -i 's/defaultFill/\'\ndefaultFill'/g' $1
+  $cmd -i 's/defaultMode/\'\ndefaultMode'/g' $1
+  $cmd -i 's/defaultName/\'\ndefaultName'/g' $1
+  $cmd -i 's/defaultComment/\'\ndefaultComment'/g' $1
+  $cmd -i 's/listSectionThickness/\'\nlistSectionThickness'/g' $1
+  $cmd -i 's/listDomainSource/\'\nlistDomainSource'/g' $1
+  $cmd -i 's/listDomainPixelsize/\'\nlistDomainPixelsize'/g' $1
+  $cmd -i 's/listDomainLength/\'\nlistDomainLength'/g' $1
+  $cmd -i 's/listDomainArea/\'\nlistDomainArea'/g' $1
+  $cmd -i 's/listDomainMidpoint/\'\nlistDomainMidpoint'/g' $1
+  $cmd -i 's/listTraceComment/\'\nlistTraceComment'/g' $1
+  $cmd -i 's/listTraceLength/\'\nlistTraceLength'/g' $1
+  $cmd -i 's/listTraceArea/\'\nlistTraceArea'/g' $1
+  $cmd -i 's/listTraceCentroid/\'\nlistTraceCentroid'/g' $1
+  $cmd -i 's/listTraceExtent/\'\nlistTraceExtent'/g' $1
+  $cmd -i 's/listTraceZ/\'\nlistTraceZ'/g' $1
+  $cmd -i 's/listTraceThickness/\'\nlistTraceThickness'/g' $1
+  $cmd -i 's/listObjectRange/\'\nlistObjectRange'/g' $1
+  $cmd -i 's/listObjectCount/\'\nlistObjectCount'/g' $1
+  $cmd -i 's/listObjectSurfarea/\'\nlistObjectSurfarea'/g' $1
+  $cmd -i 's/listObjectFlatarea/\'\nlistObjectFlatarea'/g' $1
+  $cmd -i 's/listObjectVolume/\'\nlistObjectVolume'/g' $1
+  $cmd -i 's/listZTraceNote/\'\nlistZTraceNote'/g' $1
+  $cmd -i 's/listZTraceRange/\'\nlistZTraceRange'/g' $1
+  $cmd -i 's/listZTraceLength/\'\nlistZTraceLength'/g' $1
+  $cmd -i 's/borderColors/\'\nborderColors'/g' $1
+  $cmd -i 's/fillColors/\'\nfillColors'/g' $1
+  $cmd -i 's/offset3D/\'\noffset3D'/g' $1
+  $cmd -i 's/type3Dobject/\'\ntype3Dobject'/g' $1
+  $cmd -i 's/first3Dsection/\'\nfirst3Dsection'/g' $1
+  $cmd -i 's/last3Dsection/\'\nlast3Dsection'/g' $1
+  $cmd -i 's/max3Dconnection/\'\nmax3Dconnection'/g' $1
+  $cmd -i 's/upper3Dfaces/\'\nupper3Dfaces'/g' $1
+  $cmd -i 's/lower3Dfaces/\'\nlower3Dfaces'/g' $1
+  $cmd -i 's/faceNormals/\'\nfaceNormals'/g' $1
+  $cmd -i 's/vertexNormals/\'\nvertexNormals'/g' $1
+  $cmd -i 's/facets3D/\'\nfacets3D'/g' $1
+  $cmd -i 's/dim3D/\'\ndim3D'/g' $1
+  $cmd -i 's/gridType/\'\ngridType'/g' $1
+  $cmd -i 's/gridSize/\'\ngridSize'/g' $1
+  $cmd -i 's/gridDistance/\'\ngridDistance'/g' $1
+  $cmd -i 's/gridNumber/\'\ngridNumber'/g' $1
+  $cmd -i 's/hueStopWhen/\'\nhueStopWhen'/g' $1
+  $cmd -i 's/hueStopValue/\'\nhueStopValue'/g' $1
+  $cmd -i 's/satStopWhen/\'\nsatStopWhen'/g' $1
+  $cmd -i 's/satStopValue/\'\nsatStopValue'/g' $1
+  $cmd -i 's/brightStopWhen/\'\nbrightStopWhen'/g' $1
+  $cmd -i 's/brightStopValue/\'\nbrightStopValue'/g' $1
+  $cmd -i 's/tracesStopWhen/\'\ntracesStopWhen'/g' $1
+  $cmd -i 's/areaStopPercent/\'\nareaStopPercent'/g' $1
+  $cmd -i 's/areaStopSize/\'\nareaStopSize'/g' $1
+  $cmd -i 's/ContourMaskWidth/\'\nContourMaskWidth'/g' $1
+  $cmd -i 's/smoothingLength/\'\nsmoothingLength'/g' $1
+  $cmd -i 's/mvmtIncrement/\'\nmvmtIncrement'/g' $1
+  $cmd -i 's/ctrlIncrement/\'\nctrlIncrement'/g' $1
+  $cmd -i 's/shiftIncrement/\'\nshiftIncrement'/g' $1
+  
+}
+
+fix_trace_file() {
+
+  $cmd -i '1d' $1
+  #    $cmd -i '1 a <!DOCTYPE Section SYSTEM "section.dtd">\n' $1
+  #    $cmd -i '1s/^/<!DOCTYPE Section SYSTEM "section.dtd">\n/' $1
+  $cmd -i '1s/^/<?xml version="1.0"?>\n/' $1
+  $cmd -i '2i<!DOCTYPE Section SYSTEM "section.dtd">\n' $1
+  $cmd -i 's/xcoef/\'\nxcoef'/g;s/ycoef/\'\nycoef'/g' $1
+  $cmd -i 's/points/\'\npoints'/g;s/,/,\n/g' $1
+
+}
+
+for f in $dir/*
+do
+  if [[ "${f: -4:4}" == $'.ser' ]]
+  then
+    fix_ser_file $f
+  else
+    fix_trace_file $f
+  fi
+done
+
+echo "Done processing."

@@ -39,7 +39,10 @@ echo 'Adding repo to path...'
 REPO_PATH=$(realpath ..)
 PYTHON=$($ENV_BIN/python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
 CONDA_PTH=$ENV_DIR/lib/$PYTHON/site-packages/conda.pth
-echo $REPO_PATH >> $CONDA_PTH
+
+if ! grep -q $REPO_PATH $CONDA_PTH ; then
+  echo $REPO_PATH >> $CONDA_PTH
+fi
 
 echo 'Repo added to path.'
 

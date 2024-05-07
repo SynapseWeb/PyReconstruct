@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from cv2 import transform
+
 from .objects_3D import Surface, Spheres, Contours
 
 from PyReconstruct.modules.datatypes import Series
@@ -37,17 +39,34 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     for snum, section in series.enumerateSections(show_progress=False):
 
-        # Assume somewhat uniform section thickness
-        tform = section.tform
+        if obj_name not in section.contours:
+            
+            continue
+
+        # # Assume somewhat uniform section thickness
+        # tform = section.tform
 
         for obj_name in obj_names:
-            
-            if obj_name in section.contours:
-                
-                for trace in section.contours[obj_name]:
 
-                    # collect all points if generating a full surface
-                    obj_data[obj_name].addTrace(trace, snum, tform)
+            ## Get objects alignment
+            obj_alignment = series.getAttr(obj_name, "alignment")
+
+            if not obj_alignment:
+                
+                tform = section.tform
+                
+            elif obj_alignment != "no-alignment":
+                
+                tform = section.tforms[obj_alignment]
+                
+            else:
+                
+                tform = None
+            
+            for trace in section.contours[obj_name]:
+
+                # collect all points if generating a full surface
+                obj_data[obj_name].addTrace(trace, snum, tform)
 
     # iterate through all objects and export 3D meshes
 

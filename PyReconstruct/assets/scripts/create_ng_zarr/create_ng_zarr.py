@@ -248,7 +248,7 @@ zarr_fp = seriesToZarr(
 # Add labels to zarr if PyReconstruct groups provided
 if groups:
     for group in groups:
-        print(f"Coverting group {group} to labels...")
+        print(f"Converting group {group} to labels...")
         seriesToLabels(series, zarr_fp, group)
 
 series.close()

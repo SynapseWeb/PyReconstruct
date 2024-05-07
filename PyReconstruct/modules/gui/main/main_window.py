@@ -2661,6 +2661,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Select folder to export objects to",
             )
+        if not export_dir: return
         export3DObjects(self.series, obj_names, export_dir, export_type)
     
     def toggleCuration(self):

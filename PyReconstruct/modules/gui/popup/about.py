@@ -26,8 +26,8 @@ class AboutWidget(QDockWidget):
         self.add("Series code:", series.code)
         self.add("Editors:", ", ".join(series.editors))
         self.add("Image folder:", series.src_dir)
-        self.add("Average section thickness:", str(round(series.avg_thickness, 4)))
-        self.add("Average section magnification:", str(round(series.avg_mag, 4)))
+        self.add("Section thickness (μm):", str(round(series.avg_thickness, 4)))
+        self.add("Section magnification (μm/pixel):", str(round(series.avg_mag, 4)))
 
         w = QWidget(self)
         w.setLayout(self.grid)

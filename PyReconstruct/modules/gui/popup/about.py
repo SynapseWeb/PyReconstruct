@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QDockWidget, 
     QGridLayout,
@@ -17,11 +19,15 @@ class AboutWidget(QDockWidget):
 
         self.grid = QGridLayout()
 
-        self.add("Name:", series.name)
+        jser_loc = Path(series.filepath).parents[1] / f"{series.name}.jser"
+
+        self.add("Filename:", f"{series.name}.jser")
+        self.add("Path:", str(jser_loc))
+        self.add("Series code:", series.code)
         self.add("Editors:", ", ".join(series.editors))
         self.add("Image folder:", series.src_dir)
-        self.add("Average section thickness:", str(round(series.avg_thickness, 7)))
-        self.add("Average section magnification:", str(round(series.avg_mag, 7)))
+        self.add("Average section thickness:", str(round(series.avg_thickness, 4)))
+        self.add("Average section magnification:", str(round(series.avg_mag, 4)))
 
         w = QWidget(self)
         w.setLayout(self.grid)

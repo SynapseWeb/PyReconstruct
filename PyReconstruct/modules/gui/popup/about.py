@@ -22,7 +22,7 @@ class AboutWidget(QDockWidget):
         jser_loc = Path(series.filepath).parents[1] / f"{series.name}.jser"
 
         self.add("Filename:", f"{series.name}.jser")
-        self.add("Path:", str(jser_loc))
+        self.add("Path:", str(jser_loc.absolute()))
         self.add("Series code:", series.code)
         self.add("Editors:", ", ".join(series.editors))
         self.add("Image folder:", series.src_dir)

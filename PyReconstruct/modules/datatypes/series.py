@@ -2001,8 +2001,11 @@ class Series():
             s = self.getOption("backup_prefix_str")
             if s: fname_list.append(s)
 
-        if self.getOption("backup_name"):
+        if self.getOption("backup_series"):
             fname_list.append(self.code)
+
+        if self.getOption("backup_filename"):
+            fname_list.append(self.name)
         
         now = datetime.utcnow() if self.getOption("utc") else datetime.now()
 

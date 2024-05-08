@@ -73,7 +73,8 @@ class BackupDialog(QDialog):
 
         widget_info = [
             ("prefix", ""), # updated later
-            ("name", self.series.code),
+            ("series", self.series.code),
+            ("filename", self.series.name),
             ("date", ""),  # updated later
             ("time", ""),  # updated later
             ("user", self.series.user),

@@ -45,7 +45,7 @@ class BackupDialog(QDialog):
         vlayout1.addLayout(hbl)
 
         # checkbox for autobackup
-        self.auto_cb = QCheckBox(self, text="Automatically create a backup file for every save")
+        self.auto_cb = QCheckBox(self, text="Auto-backup (create backup on every save)")
         self.auto_cb.setChecked(self.series.getOption("autobackup"))
         vlayout1.addWidget(self.auto_cb)
 
@@ -86,7 +86,8 @@ class BackupDialog(QDialog):
         for k, v in widget_info:
             r = QHBoxLayout()
             cb = QCheckBox(self)
-            cb.setText(f"{k.title()}:")
+            opt_heading = "Series" if k == "name" else k.title()
+            cb.setText(opt_heading)
             cb.setChecked(series.getOption(f"backup_{k}"))
             cb.stateChanged.connect(self.updateWidgets)
             r.addWidget(cb)

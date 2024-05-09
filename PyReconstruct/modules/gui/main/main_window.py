@@ -2546,7 +2546,7 @@ class MainWindow(QMainWindow):
             opt = self.series.getOption("3D_smoothing")
             structure = [
                 [("radio",
-                  ("Laplacian (most smooth)", opt == "laplacian"),
+                  ("Laplacian (most smooth, for visualizations only)", opt == "laplacian"),
                   ("Humphrey (less smooth)", opt == "humphrey"),
                   ("None (blocky)", opt == "none"))]
             ]

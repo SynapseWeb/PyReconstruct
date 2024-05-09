@@ -200,7 +200,7 @@ class AllOptionsDialog(QDialog):
             [" "],
             ["3D smoothing:"],
             [("radio",
-                ("Laplacian (smoothest)", opt == "laplacian"),
+                ("Laplacian (smoothest, for visualizations only)", opt == "laplacian"),
                 ("Humphrey", opt == "humphrey"),
                 ("Mutable Diffusion Laplcian", opt == "mut_dif_laplacian"),
                 ("Taubin", opt == "taubin"),

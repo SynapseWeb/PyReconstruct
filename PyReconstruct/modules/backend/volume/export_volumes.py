@@ -39,14 +39,14 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     for snum, section in series.enumerateSections(show_progress=False):
 
-        if obj_name not in section.contours:
-            
-            continue
-
         # # Assume somewhat uniform section thickness
         # tform = section.tform
 
         for obj_name in obj_names:
+
+            if obj_name not in section.contours:
+
+                continue
 
             ## Get objects alignment
             obj_alignment = series.getAttr(obj_name, "alignment")

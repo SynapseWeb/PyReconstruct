@@ -88,7 +88,8 @@ def seriesToZarr(
         mag : float,
         window : list,
         data_fp: str = None,
-        output_dir: str = None
+        output_dir: str = None,
+        other_attrs: dict = None,
 ):
     """Convert a series (images) into a neuroglancer-compatible zarr.
     
@@ -99,6 +100,7 @@ def seriesToZarr(
             window (list): the window (x, y, height, width) for the resulting zarr
             data_fp (str): filename of output zarr
             output_dir (str): directory to store zarr
+            other_attrs (dict): other infoformation to store in .zattrs
 
         Returns:
             the filepath for the zarr, the threadpool
@@ -126,7 +128,7 @@ def seriesToZarr(
     if os.path.isdir(data_fp): shutil.rmtree(data_fp)  # delete existing zarr
         
     data_zg = zarr.open(data_fp, "a")
-    data_zg.create_dataset("raw", shape=shape, chunks=(8, 256, 256), dtype=np.uint8)
+    data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
 
     # get values for saving zarr files (from last known section)
     section_thickness = series.loadSection(srange[0]).thickness
@@ -149,6 +151,11 @@ def seriesToZarr(
     data_zg["raw"].attrs["srange"] = srange
     data_zg["raw"].attrs["true_mag"] = mag
     data_zg["raw"].attrs["alignment"] = alignment
+
+    # save other info to root .zattrs
+    if other_attrs:
+        for k, v in other_attrs.items():
+            data_zg.attrs[k] = v
     
     # create threadpool and interate through series
     threadpool = ThreadPoolProgBar()

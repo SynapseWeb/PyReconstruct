@@ -5,11 +5,12 @@
 import sys
 import os
 from pathlib import Path
+from datetime import datetime, timezone
 import zarr
-import subprocess
 import argparse
 import tomllib
 import cv2
+import hashlib
 
 from PySide6.QtWidgets import QApplication
 
@@ -59,7 +60,7 @@ parser.add_argument(
     "--mag",
     "-m",
     type=float,
-    default=0.008,
+    default=0.002,
     help="output zarr mag in μm/vox (default %(default)s μm/vox)",
 )
 
@@ -141,6 +142,21 @@ def flatten_list(nested_list):
     return nested_list[:1] + flatten_list(nested_list[1:])
 
 
+def get_sha1sum(filepath):
+    """Get sha1sum of file."""
+    
+    sha1sum = hashlib.sha1()
+
+    with open(filepath, 'rb') as source:
+        block = source.read(2**16)
+        while len(block) != 0:
+            sha1sum.update(block)
+            block = source.read(2**16)
+            
+    return sha1sum.hexdigest()
+
+
+
 groups = flatten_list(args.groups) if args.groups else None
 
 print("Opening series...")
@@ -175,11 +191,12 @@ get_most = None
 
 if get_all:  # request all available (include black space)
 
-    mid = len(sections) // 2
-    start = mid - (secs // 2) - 1
-    end_exclude = mid + (secs // 2) - 1
+    # mid = len(sections) // 2
+    
+    start = sections[1]  # assume cal grid on section 0
+    end_include = sections[-1]
 
-    srange = (sections[start], sections[end_exclude])
+    srange = (start, end_include + 1)
 
     x_mins, y_mins, x_maxs, y_maxs = ([], [], [], [])
 
@@ -234,15 +251,22 @@ else:  # default to zarr around image center
 print(f"window: {window}")
 
 print("Initializing pyqt...")
+
 app = QApplication(sys.argv)
 
 print("Creating zarr...")
+
 zarr_fp = seriesToZarr(
     series,
     srange,
     img_mag,
     window=window,
     data_fp=output_zarr,
+    other_attrs={
+        "filepath": str(Path(jser_fp).absolute()),
+        "sha1sum": get_sha1sum(jser_fp),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M:%S")
+    }
 )
 
 # Add labels to zarr if PyReconstruct groups provided
@@ -256,6 +280,6 @@ series.close()
 print(f"\nSeries {series.name} exported as zarr")
 print("")
 print(f"Window:          {[round(elem, 2) for elem in window]}")
-print(f"Sections:        {secs} ({start}-{end_exclude - 1})")
+print(f"Sections:        {secs} ({start}-{end_include})")
 print(f"Mag:             {mag}")
 print(f"Zarr location:   {zarr_fp}\n")

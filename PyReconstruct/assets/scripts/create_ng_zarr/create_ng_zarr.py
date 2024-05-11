@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from datetime import datetime, timezone
 import zarr
+import json
 import argparse
 import tomllib
 import cv2
@@ -14,10 +15,11 @@ import hashlib
 
 from PySide6.QtWidgets import QApplication
 
-# Imports are a nightmare (set repo root here)
+# Imports are a nightmare (set repo root here if necessary)
 project_dir = Path(__file__).parents[4]
-sys.path.append(str(project_dir))
-
+if str(project_dir) not in sys.path:
+    sys.path.append(str(project_dir))
+    
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.backend.autoseg import (
     seriesToZarr,
@@ -64,8 +66,6 @@ parser.add_argument(
     help="output zarr mag in μm/vox (default %(default)s μm/vox)",
 )
 
-## parser.add_argument("--obj", "-o", type=str, help='object used to define a zarr window')
-
 parser.add_argument(
     "--output",
     "-o",
@@ -98,8 +98,6 @@ parser.add_argument(
     help="Inclue all possible tissue and black space",
 )
 
-# parser.add_argument("--min_tissue", action='store_true', help='Crop images to include only tissue')
-
 args = parser.parse_args()
 
 # Change defaults according to optional toml config file
@@ -115,18 +113,18 @@ if args.config:
         )  # override toml acting as defaults if --groups called
     args = parser.parse_args()
 
-# Make sure "valid" jser provided
+# Make sure jser filepath provided and exists
 if not args.jser or not os.path.exists(args.jser):
     parser.error("Please provide filepath to a valid jser.")
 
 jser_fp = args.jser
 output_zarr = args.output
-# h_out    = float(args.height)
-# w_out    = float(args.width)
 secs = int(args.sections)
 mag = float(args.mag)
 padding = int(args.padding)
 get_all = bool(args.max_tissue)
+# h_out    = float(args.height)
+# w_out    = float(args.width)
 
 
 def flatten_list(nested_list):
@@ -143,18 +141,18 @@ def flatten_list(nested_list):
 
 
 def get_sha1sum(filepath):
-    """Get sha1sum of file."""
+    """Get sha1sum of jser file."""
     
-    sha1sum = hashlib.sha1()
+    with open(filepath, 'r') as source:
+        obj = json.load(source)
 
-    with open(filepath, 'rb') as source:
-        block = source.read(2**16)
-        while len(block) != 0:
-            sha1sum.update(block)
-            block = source.read(2**16)
-            
-    return sha1sum.hexdigest()
+    ## Make src_dir empty str as this key can differ betweeen users
+    obj["series"]["src_dir"] = ""
 
+    ## Sort keys and encode
+    obj = json.dumps(obj, sort_keys=True).encode("utf-8")
+
+    return hashlib.sha1(obj).hexdigest()
 
 
 groups = flatten_list(args.groups) if args.groups else None
@@ -187,14 +185,11 @@ img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
 
 ## Procedures
 
-get_most = None
+if get_all:  # request all available (include possible black space)
 
-if get_all:  # request all available (include black space)
-
-    # mid = len(sections) // 2
-    
     start = sections[1]  # assume cal grid on section 0
     end_include = sections[-1]
+    secs = (end_include + 1) - start
 
     srange = (start, end_include + 1)
 
@@ -218,10 +213,6 @@ if get_all:  # request all available (include black space)
         max(y_maxs) - min(y_mins),
         max(x_maxs) - min(x_mins),
     ]
-
-elif get_most:  # request max amount of tissue
-
-    pass
 
 elif groups:  # request zarr around group(s)
 
@@ -248,7 +239,13 @@ else:  # default to zarr around image center
         h_out,  # h
     ]
 
-print(f"window: {window}")
+additional_attrs = {
+        "filepath": str(Path(jser_fp).absolute()),
+        "sha1sum": get_sha1sum(jser_fp),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M:%S")
+    }
+
+##print(f"window: {window}")
 
 print("Initializing pyqt...")
 
@@ -262,11 +259,7 @@ zarr_fp = seriesToZarr(
     img_mag,
     window=window,
     data_fp=output_zarr,
-    other_attrs={
-        "filepath": str(Path(jser_fp).absolute()),
-        "sha1sum": get_sha1sum(jser_fp),
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M:%S")
-    }
+    other_attrs=additional_attrs
 )
 
 # Add labels to zarr if PyReconstruct groups provided
@@ -277,9 +270,9 @@ if groups:
 
 series.close()
 
-print(f"\nSeries {series.name} exported as zarr")
+print(f"\nSeries \"{series.name}\" exported as zarr")
 print("")
 print(f"Window:          {[round(elem, 2) for elem in window]}")
 print(f"Sections:        {secs} ({start}-{end_include})")
-print(f"Mag:             {mag}")
+print(f"Zarr mag:        {mag}")
 print(f"Zarr location:   {zarr_fp}\n")

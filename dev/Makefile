@@ -34,7 +34,6 @@ env:
 .PHONY: update
 update:
 	conda env update -n $(ENV_NAME) -f $(ENV_YAML) --prune
-	. ./link_shell.sh
 
 .PHONY: clean
 clean:

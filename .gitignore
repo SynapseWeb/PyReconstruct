@@ -2,6 +2,7 @@
 env/
 venv/
 build/
+dist/
 PyReconstruct.egg-info/
 **/__pycache__/
 *.pyc

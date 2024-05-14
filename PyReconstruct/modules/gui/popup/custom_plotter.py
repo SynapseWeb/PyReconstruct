@@ -1,7 +1,10 @@
 import vedo
+import json
 
-from PyReconstruct.modules.gui.dialog import QuickDialog
-from PyReconstruct.modules.gui.utils import notify
+from PySide6.QtWidgets import QMainWindow
+
+from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
+from PyReconstruct.modules.gui.utils import populateMenuBar, notify
 from PyReconstruct.modules.gui.table import Help3DWidget
 from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
@@ -147,25 +150,10 @@ class VPlotter(vedo.Plotter):
             overwrite = True
 
         if key == "C":
-            if self.sc is None:
-                self.createScaleCube()
-            else:
-                self.remove(self.sc)
-                self.sc = None
+            self.toggleScaleCube(bool(self.sc is None))
+        
         elif key == "Shift+C":
-            if self.sc is None:
-                return
-            
-            structure = [
-                ["Side length:", ("float", self.sc_side)],
-                ["Color:", ("color", self.sc_color)]
-            ]
-            response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
-            if not confirmed:
-                return
-            self.sc_side, self.sc_color = response
-            self.createScaleCube()
-            self.render()
+            self.modifyScaleCube()
 
         elif key == "Left" and self.sc is not None:
             x, y, z = self.sc.pos()
@@ -222,11 +210,40 @@ class VPlotter(vedo.Plotter):
         else:
             self.render()
     
+    def toggleScaleCube(self, show : bool):
+        """Toggle the scale cube display in the scene.
+        
+            Params:
+                show (bool): True if scale cube should be displayed
+        """
+        if show:
+            self.createScaleCube()
+        else:
+            self.remove(self.sc)
+            self.sc = None
+        # update the menubar display
+        self.qt_parent.togglesc_act.setChecked(show)
+    
+    def modifyScaleCube(self):
+        """Modify the size and color of the scale cube."""
+        structure = [
+            ["Side length:", ("float", self.sc_side)],
+            ["Color:", ("color", self.sc_color)]
+        ]
+        response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
+        if not confirmed:
+            return
+        self.sc_side, self.sc_color = response
+
+        if self.sc is not None:
+            self.createScaleCube()
+            self.render()
+    
     def removeObjects(self, obj_names):
         """Remove objects from the scene."""
         for actor in self.getObjects():
             name = actor.metadata["name"][0]
-            if name in obj_names:
+            if name  in obj_names:
                 self.remove(actor)
                 if name in self.selected_names:
                     self.selected_names.remove(name)
@@ -335,10 +352,21 @@ class VPlotter(vedo.Plotter):
         return selected_meshes
 
 
+class Container(QMainWindow):
+
+    def closeEvent(self, event):
+        self.centralWidget().close()
+        super().closeEvent(event)
+
+
 class CustomPlotter(QVTKRenderWindowInteractor):
 
-    def __init__(self, mainwindow, obj_names, ztraces=False):
-        super().__init__()
+    def __init__(self, mainwindow, obj_names=[], ztraces=False, load_fp=None):
+        # use container to create menubar
+        self.container = Container()
+        super().__init__(self.container)
+        self.container.setCentralWidget(self)
+
         self.mainwindow = mainwindow
         self.series = self.mainwindow.series
 
@@ -351,6 +379,32 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         # Create vedo renderer
         self.plt = VPlotter(self, qt_widget=self)
 
+        # create the menu bar
+        menubar_list = [
+            {
+                "attr_name": "filemenu",
+                "text": "File",
+                "opts":
+                [
+                    ("savescene_act", "Save scene...", "", self.saveScene),
+                    ("loadscene_act", "Load scene...", "", self.loadScene)
+                ]
+            },
+            {
+                "attr_name": "scmenu",
+                "text": "Scale Cube",
+                "opts":
+                [
+                    ("togglesc_act", "Display in scene", "checkbox", self.toggleScaleCube),
+                    ("modifysc_act", "Modify...", "", self.plt.modifyScaleCube),
+                    ("movehelp_act", "Move scale cube...", "", self.moveScaleCubeHelp),
+                ]
+            }
+        ]
+        self.menubar_widget = self.container.menuBar()
+        self.menubar_widget.setNativeMenuBar(False)
+        populateMenuBar(self, self.menubar_widget, menubar_list)
+
         # connect functions
         self.addObjects = self.plt.addObjects
         self.removeObjects = self.plt.removeObjects
@@ -358,19 +412,134 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.removeZtraces = self.plt.removeZtraces
 
         # gerenate objects and display
-        if ztraces:
-            self.addZtraces(obj_names, remove_first=False)
-        else:
-            self.addObjects(obj_names, remove_first=False)
+        if load_fp:
+            self.loadScene(load_fp)
+        elif obj_names:
+            if ztraces:
+                self.addZtraces(obj_names, remove_first=False)
+            else:
+                self.addObjects(obj_names, remove_first=False)
         
         self.plt.show(*self.plt.actors)
         self.show()
+        self.container.show()
     
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
         self.plt._keypress(self, event)
     
+    def toggleScaleCube(self):
+        """Toggle the scale cube."""
+        self.plt.toggleScaleCube(
+            self.togglesc_act.isChecked()
+        )
+    
+    def moveScaleCubeHelp(self):
+        """Inform the user of how to move the scale cube."""
+        notify(sc_help_message)
+
+    def saveScene(self):
+        """Save the 3D scene to be opened later."""
+        save_fp = FileDialog.get(
+            "save",
+            self,
+            "Save 3D Scene",
+            "JSON File (*.json)",
+            "scene.json"
+        )
+        if not save_fp:
+            return
+
+        d = {}
+
+        # get the names of the displayed objects
+        d["objects"] = set()
+        for actor in self.plt.getObjects():
+            name = actor.metadata["name"][0]
+            d["objects"].add(name)
+        d["objects"] = list(d["objects"])
+
+        # get the names of the displated ztraces
+        d["ztraces"] = set()
+        for actor in self.plt.getZtraces():
+            name = actor.metadata["name"][0]
+            d["ztraces"].add(name)
+        d["ztraces"] = list(d["ztraces"])
+
+        # get the scale cube information
+        if self.plt.sc is not None:
+            d["sc"] = {}
+            d["sc"]["side"] = self.plt.sc_side
+            d["sc"]["color"] = self.plt.sc_color
+            d["sc"]["pos"] = tuple(self.plt.sc.pos())
+        else:
+            d["sc"] = None
+        
+        # get the camera attributes
+        d["camera"] = {}
+        d["camera"]["position"] = self.plt.camera.GetPosition()
+        d["camera"]["focal_point"] = self.plt.camera.GetFocalPoint()
+        d["camera"]["view_up"] = self.plt.camera.GetViewUp()
+        d["camera"]["distance"] = self.plt.camera.GetDistance()
+
+        print(d)
+
+        with open(save_fp, "w") as f:
+            json.dump(d, f)
+    
+    def loadScene(self, load_fp : str = None):
+        """Load a scene.
+        
+            Params:
+                load_fp (str): the filepath to the saved scene.
+        """
+        if not load_fp:
+            load_fp = FileDialog.get(
+                "file",
+                self,
+                "Load 3D Scene",
+                "JSON file (*.json)"
+            )
+            if not load_fp:
+                return
+        
+        # load the JSON file
+        with open(load_fp, "r") as f:
+            d = json.load(f)
+        
+        # clear the plot
+        obj_names = [a.metadata["name"][0] for a in self.plt.getObjects()]
+        ztrace_names = [a.metadata["name"][0] for a in self.plt.getZtraces()]
+        self.plt.removeObjects(obj_names)
+        self.plt.removeZtraces(ztrace_names)
+        self.plt.toggleScaleCube(False)
+
+        # add the objects
+        self.plt.addObjects(d["objects"])
+        # add the ztraces
+        self.plt.addZtraces(d["ztraces"])
+
+        # add the scale cube
+        if d["sc"]:
+            self.plt.sc_side = d["sc"]["side"]
+            self.plt.sc_color = tuple(d["sc"]["color"])
+            self.plt.createScaleCube()
+            self.plt.sc.pos(*tuple(d["sc"]["pos"]))
+        
+        # move the camera
+        self.plt.camera.SetPosition(d["camera"]["position"])
+        self.plt.camera.SetFocalPoint(d["camera"]["focal_point"])
+        self.plt.camera.SetViewUp(d["camera"]["view_up"])
+        self.plt.camera.SetDistance(d["camera"]["distance"])
+
+        self.plt.show()
+    
     def closeEvent(self, event):
         self.plt.close()
         self.is_closed = True
+        self.container = None
         super().closeEvent(event)
+
+sc_help_message = """Move the scale cube in XY using the arrow keys (Up/Down/Left/Right).
+
+Move the scale cube in Z using Ctrl+Up/Down."""

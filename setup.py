@@ -1,18 +1,17 @@
-import os
 import pathlib
 from setuptools import setup, find_packages
 
-HERE = pathlib.Path(__file__).parent
+ROOT = pathlib.Path(__file__).parent
 
-VERSION = '0.1.0'
+VERSION = '1.9.0'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'julian.falco@utexas.edu'
 URL = 'https://github.com/SynapseWeb/PyReconstruct'
-LICENSE = 'None'
-DESCRIPTION = 'A version of RECONSTRUCT written in Python'
+LICENSE = 'GNU GLPv3'
+DESCRIPTION = 'RECONSTRUCT written in Python'
 
-LONG_DESCRIPTION = (HERE / "readme.md").read_text()
+LONG_DESCRIPTION = (ROOT / "readme.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
@@ -28,7 +27,7 @@ INSTALL_REQUIRES = [
 ]
 
 
-SHELL_SCRIPTS = []  # List shell scripts to install
+SHELL_SCRIPTS = []  # any shell scripts to install
 
 setup(
     name=PACKAGE_NAME,

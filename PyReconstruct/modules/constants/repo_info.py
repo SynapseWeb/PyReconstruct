@@ -2,6 +2,7 @@ import json
 import git
 from pathlib import Path
 from packaging.version import parse as v_check
+from importlib.metadata import version as get_version
 
 import PyReconstruct
 
@@ -31,25 +32,48 @@ def returnRepoInfo():
             dist_dirs.sort(key = lambda x: v_check(x.stem.split('-')[-1]))  # explicitly sort versions
             direct_url = dist_dirs[-1] / "direct_url.json"  # get latest version json
 
-            with direct_url.open("r") as fp:
-                data = json.load(fp)
-
-            vcs_info = data.get("vcs_info", None)
-
-            if vcs_info is not None:
-
-                commit = vcs_info.get("commit_id", "unknown")
+            try:
                 
-                if commit != "unknown":
-                    commit = commit[0:7]
+                with direct_url.open("r") as fp:
+                    data = json.load(fp)
+
+                vcs_info = data.get("vcs_info", None)
+
+                if vcs_info is not None:
+
+                    commit = vcs_info.get("commit_id", "unknown")
+                    if commit != "unknown": commit = commit[0:7]
 
                     branch = vcs_info.get("requested_revision", "main")  # if no revision, on main
 
                     return {"branch": branch, "commit": commit}
 
-    ## If above fail to return, cannot determing repo details and return "unknown"
+            except FileNotFoundError:
+
+                pass
+
+    ## Try getting installed version
+                
+    try:
+
+        version = get_version("PyReconstruct")
+        return {"branch": "PyReconstruct", "commit": f"{version}"}
+
+    except:
+
+        pass
+
+    ## If above fail to return, cannot determining repo details and return "unknown"
         
     return {"branch": "unknown", "commit": "unknown"}
 
 
 repo_info = returnRepoInfo()
+
+if repo_info["branch"] == "PyReconstruct":
+    
+    repo_string = f"PyReconstruct version {repo_info['commit']}"
+    
+else:
+    
+    repo_string = f"Repo info - {repo_info['branch']} ({repo_info['commit']})"

@@ -75,7 +75,8 @@ from PyReconstruct.modules.constants import (
     gh_issues,
     gh_submit,
     developers_mailto_str,
-    repo_info
+    repo_info,
+    repo_string
 )
 
 class MainWindow(QMainWindow):
@@ -445,7 +446,7 @@ class MainWindow(QMainWindow):
                 "text": "Help",
                 "opts":
                 [
-                    ("repobranch_act", f"Repo info - {repo_info['branch']} ({repo_info['commit']})", "", self.copyCommit),
+                    ("repobranch_act", repo_string, "", self.copyCommit),
                     None,
                     ("shortcutshelp_act", "Shortcuts list", "?", self.displayShortcuts),
                     None,

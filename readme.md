@@ -4,7 +4,7 @@
 
 # PyReconstruct
 
-PyReconstruct is an actively maintained, extensible version of **RECONSTRUCT** written entirely in Python. This repo is under heavy development, but we are happy to make the source code available now.
+PyReconstruct is an actively maintained, extensible version of **RECONSTRUCT** written entirely in Python in the lab of Kristen Harris at the University of Texas at Austin. The project is currently under heavy development, but we are happy to make the application publically available now.
 
 Please do not hesitate to send us a message should you have questions:
 
@@ -15,15 +15,10 @@ Please do not hesitate to send us a message should you have questions:
 
 # Documentation
 
-Documentation, including installation guide, quickstart, and manuals, can be found in our lab's [wiki site](https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide) hosted at the University of Texas at Austin and [this repo's wiki](https://github.com/SynapseWeb/PyReconstruct/wiki).
-
+Documentation, including installation guide, quickstart, and manuals, can be found in our lab's [wiki site](https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide) hosted at UT Austin and at the [PyReconstruct repo wiki](https://github.com/SynapseWeb/PyReconstruct/wiki).
 
 <a id="submitting-bug-reports-and-feature-requests"></a>
 
 # Submitting bug reports and feature requests
 
-PyReconstruct is hot off the presses and inevitably there will be bugs. If you notice a problem, would like to suggest a feature, or have ideas on improving our documentation, click `Issues` at the top of this page and then `New Issue`.
-
-![img](./manual/img/issues.png "img")
-
-We appreciate the help!
+PyReconstruct is hot off the presses and inevitably there will be bugs. If you notice a problem, would like to suggest a feature, or have ideas on improving our documentation, please [submit an issue](https://github.com/SynapseWeb/PyReconstruct/issues/). We appreciate the help!

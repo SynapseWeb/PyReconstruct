@@ -29,7 +29,8 @@ from .developers import (
 )
 
 from .repo_info import (
-    repo_info
+    repo_info,
+    repo_string
 )
 
 from .getdatetime import(

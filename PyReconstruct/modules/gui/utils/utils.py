@@ -124,16 +124,26 @@ def notify(message):
         QMessageBox.Ok
     )
 
-def notifyConfirm(message):
+def notifyConfirm(message, yn=False):
     """Notify the user and give option to OK or cancel."""
-    response = QMessageBox.warning(
-        mainwindow,
-        " ",
-        message,
-        QMessageBox.Ok,
-        QMessageBox.Cancel
-    )
-    return response == QMessageBox.Ok
+    if yn:
+        response = QMessageBox.question(
+            mainwindow,
+            " ",
+            message,
+            QMessageBox.Yes,
+            QMessageBox.No
+        )
+        return response == QMessageBox.Yes
+    else:
+        response = QMessageBox.warning(
+            mainwindow,
+            " ",
+            message,
+            QMessageBox.Ok,
+            QMessageBox.Cancel
+        )
+        return response == QMessageBox.Ok
 
 def noUndoWarning():
     """Inform the user of an action that can't be undone."""

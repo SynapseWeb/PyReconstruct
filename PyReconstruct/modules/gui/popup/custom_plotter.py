@@ -4,7 +4,7 @@ import json
 from PySide6.QtWidgets import QMainWindow
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
-from PyReconstruct.modules.gui.utils import populateMenuBar, notify
+from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
 from PyReconstruct.modules.gui.table import Help3DWidget
 from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
@@ -253,9 +253,32 @@ class VPlotter(vedo.Plotter):
     
     def addObjects(self, obj_names, remove_first=True):
         """Add objects to the scene."""
+        if not obj_names:
+            return
+        
         # remove existing object from scene
         if remove_first:
             self.removeObjects(obj_names)
+
+        # check for objects that don't exist in the series
+        obj_names = obj_names.copy()
+        removed = []
+        for i, name in enumerate(obj_names):
+            if name not in self.series.data["objects"]:
+                removed.append(obj_names.pop(i))
+        
+        if removed:
+            if not obj_names:
+                notify("None of the requested objects exist in this series.")
+                return
+            else:
+                confirm = notifyConfirm(
+                    f"The object(s) {', '.join(removed)} do not exist in this series.\n" +
+                    "Would you like to continue with the other objects?",
+                    yn=True
+                )
+                if not confirm:
+                    return
 
         # create threadpool
         self.threadpool = ThreadPoolProgBar()
@@ -290,6 +313,9 @@ class VPlotter(vedo.Plotter):
     
     def addZtraces(self, ztrace_names, remove_first=True):
         """Add ztraces to the scene."""
+        if not ztrace_names:
+            return
+        
         # remove existing ztraces from the scene
         if remove_first:
             self.removeZtraces(ztrace_names)
@@ -387,7 +413,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 "opts":
                 [
                     ("savescene_act", "Save scene...", "", self.saveScene),
-                    ("loadscene_act", "Load scene...", "", self.loadScene)
+                    ("loadscene_act", "Load scene...", "", self.loadScene),
+                    ("addtoscene_act", "Add to scene from file...", "", lambda : self.loadScene(add_only=True))
                 ]
             },
             {
@@ -450,7 +477,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         if not save_fp:
             return
 
-        d = {}
+        d = {"series_code": self.series.code}
 
         # get the names of the displayed objects
         d["objects"] = set()
@@ -482,12 +509,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         d["camera"]["view_up"] = self.plt.camera.GetViewUp()
         d["camera"]["distance"] = self.plt.camera.GetDistance()
 
-        print(d)
-
         with open(save_fp, "w") as f:
             json.dump(d, f)
     
-    def loadScene(self, load_fp : str = None):
+    def loadScene(self, load_fp : str = None, add_only=False):
         """Load a scene.
         
             Params:
@@ -507,32 +532,49 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         with open(load_fp, "r") as f:
             d = json.load(f)
         
+        # check the series code
+        if d["series_code"] != self.series.code:
+            confirm = notifyConfirm(
+                "This scene was not made from this series.\n" +
+                "Would you like to continue?",
+                yn=True
+            )
+            if not confirm:
+                return
+        
         # clear the plot
-        obj_names = [a.metadata["name"][0] for a in self.plt.getObjects()]
-        ztrace_names = [a.metadata["name"][0] for a in self.plt.getZtraces()]
-        self.plt.removeObjects(obj_names)
-        self.plt.removeZtraces(ztrace_names)
-        self.plt.toggleScaleCube(False)
+        if not add_only:
+            obj_names = [a.metadata["name"][0] for a in self.plt.getObjects()]
+            ztrace_names = [a.metadata["name"][0] for a in self.plt.getZtraces()]
+            self.plt.removeObjects(obj_names)
+            self.plt.removeZtraces(ztrace_names)
+            self.plt.toggleScaleCube(False)
 
         # add the objects
         self.plt.addObjects(d["objects"])
         # add the ztraces
         self.plt.addZtraces(d["ztraces"])
 
-        # add the scale cube
-        if d["sc"]:
+        # add the scale cube if making from new or adding
+        if (
+            d["sc"] and (
+                not add_only or
+                add_only and not self.plt.sc
+            )
+        ):
             self.plt.sc_side = d["sc"]["side"]
             self.plt.sc_color = tuple(d["sc"]["color"])
             self.plt.createScaleCube()
             self.plt.sc.pos(*tuple(d["sc"]["pos"]))
-        
-        # move the camera
-        self.plt.camera.SetPosition(d["camera"]["position"])
-        self.plt.camera.SetFocalPoint(d["camera"]["focal_point"])
-        self.plt.camera.SetViewUp(d["camera"]["view_up"])
-        self.plt.camera.SetDistance(d["camera"]["distance"])
 
-        self.plt.show()
+        if not add_only:
+            # move the camera
+            self.plt.camera.SetPosition(d["camera"]["position"])
+            self.plt.camera.SetFocalPoint(d["camera"]["focal_point"])
+            self.plt.camera.SetViewUp(d["camera"]["view_up"])
+            self.plt.camera.SetDistance(d["camera"]["distance"])
+
+            self.plt.show()
     
     def closeEvent(self, event):
         self.plt.close()

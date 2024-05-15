@@ -11,9 +11,9 @@ assignees: ''
 
 [A clear and concise description of what the bug is.]
 
-### Current commit
+### Commit or version
 
-[Current commit]
+[Current commit or version of PyReconstruct you are using. (Find this in PyReconstruct by going to the help menu.)]
 
 ### To Reproduce
 
@@ -34,7 +34,7 @@ Steps to reproduce the behavior:
 
 ### Python version
 
-[Python version you are using (e.g., 3.10)]
+[Python version you are using (e.g., 3.11)]
 
 ### Error messages
 

@@ -1002,7 +1002,7 @@ class Series():
         # preemptively create log
         if log_event:
             for obj_name in obj_names:
-                if obj_name != name:
+                if name and obj_name != name:
                     self.addLog(obj_name, None, f"Rename object to {name}")
                     self.addLog(name, None, f"Create trace(s) from {obj_name}")
                     # move object attrs

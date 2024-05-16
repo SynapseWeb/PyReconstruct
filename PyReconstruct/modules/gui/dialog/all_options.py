@@ -200,8 +200,7 @@ class AllOptionsDialog(QDialog):
             [" "],
             ["3D smoothing:"],
             [("radio",
-                ("Laplacian (smoothest, for visualizations only)", opt == "laplacian"),
-                ("Humphrey", opt == "humphrey"),
+                ("Humphrey (recommended)", opt == "humphrey"),
                 ("Mutable Diffusion Laplcian", opt == "mut_dif_laplacian"),
                 ("Taubin", opt == "taubin"),
                 ("None (least smooth)", opt == "none"))],
@@ -210,12 +209,10 @@ class AllOptionsDialog(QDialog):
         def setOption(response):
             self.series.setOption("3D_xy_res", response[0])
             if response[1][0][1]:
-                smoothing_alg = "laplacian"
-            elif response[1][1][1]:
                 smoothing_alg = "humphrey"
-            elif response[1][2][1]:
+            elif response[1][1][1]:
                 smoothing_alg = "mut_dif_laplacian"
-            elif response[1][3][1]:
+            elif response[1][2][1]:
                 smoothing_alg = "taubin"
             else:
                 smoothing_alg = "none"

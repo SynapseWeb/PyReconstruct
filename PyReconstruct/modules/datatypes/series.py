@@ -1872,6 +1872,11 @@ class Series():
             option = defaults[option_name]
             self.setOption(option_name, option)
         
+        # check for disallowing the laplacian smoothing algorithm
+        if option_name == "3D_smoothing" and option == "laplacian":
+            option = "humphrey"
+            self.setOption(option_name, option)
+        
         return option
                     
     def setOption(self, option_name : str, value):

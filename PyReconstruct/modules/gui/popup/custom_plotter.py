@@ -1,5 +1,7 @@
+import os
 import vedo
 import json
+import numpy as np
 
 from PySide6.QtWidgets import QMainWindow
 
@@ -20,6 +22,16 @@ class VPlotter(vedo.Plotter):
         super().__init__(*args, **kwargs)
 
         self.extremes = None
+        self.translations = {
+            "object": {},
+            "ztrace": {},
+            "scale_cube": {}
+        }
+        self.rotations = {
+            "object": {},
+            "ztrace": {},
+            "scale_cube": {}
+        }
 
         self.sc = None
         self.sc_color = (150, 150, 150)
@@ -27,7 +39,7 @@ class VPlotter(vedo.Plotter):
 
         self.selected_text = vedo.Text2D(pos="top-left", font="Courier")
         self.add(self.selected_text)
-        self.selected_names = []
+        self.selected = []
 
         self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier")
         self.add(self.pos_text)
@@ -37,7 +49,8 @@ class VPlotter(vedo.Plotter):
         self.click_time = None
 
         self.help_widget = None
-
+        self.flash_on = False
+    
     def getSectionFromZ(self, z):
         """Get the section number from a z coordinate."""
         snum = round(z / self.mainwindow.field.section.thickness)  # probably change this
@@ -54,15 +67,23 @@ class VPlotter(vedo.Plotter):
         """Create the scale cube in the 3D scene."""
         if self.sc is None:
             pos = []
+            rot = (0, 0, 0)
             for i in (1, 3, 5):
                 pos.append((self.extremes[i] + self.extremes[i-1]) / 2)
         else:
+            # get the current position and rotation of the scale cube
             pos = self.sc.pos()
-            self.remove(self.sc)
+            if "Scale Cube" in self.rotations["scale_cube"]:
+                rot = self.rotations["scale_cube"]["Scale Cube"]
+            else:
+                rot = (0, 0, 0)
+            self.toggleScaleCube(False)
         self.sc = vedo.Cube(tuple(pos), self.sc_side, c=self.sc_color)
         self.sc.metadata["name"] = "Scale Cube"
         self.sc.metadata["type"] = "scale_cube"
+        self.sc.metadata["color"] = self.sc_color
         self.sc.lw(5)
+        self.rotate(self.sc, *rot, save=False)
         self.add(self.sc)
 
     def mouseMoveEvent(self, event):
@@ -86,14 +107,30 @@ class VPlotter(vedo.Plotter):
     
     def updateSelected(self):
         """Update the selected names text."""
-        if not self.selected_names:
+        # update the text
+        if not self.selected:
             self.selected_text.text("")
         else:
-            name_str = "\n".join(self.selected_names[:5])
-            if len(self.selected_names) > 5:
+            names = [msh.metadata["name"][0] for msh in self.selected]
+            name_str = "\n".join(names[:5])
+            if len(self.selected) > 5:
                 name_str += "\n..."
             self.selected_text.text(f"Selected:\n{name_str}")
 
+        # update the object highlight
+        for actor in self.actors:
+            if isinstance(actor, vedo.Mesh):
+                if actor in self.selected:
+                    if actor is self.sc:
+                        actor.color((64, 64, 64))
+                    else:
+                        actor.lw(1)
+                else:
+                    if actor is self.sc:
+                        actor.color(self.sc_color)
+                    else:
+                        actor.lw(0)
+        
         self.render()
     
     def leftButtonClickEvent(self, event):
@@ -117,11 +154,10 @@ class VPlotter(vedo.Plotter):
         msh = event.actor
         if not msh or msh.metadata["name"] is None:
             return
-        name = msh.metadata["name"][0]
-        if name in self.selected_names:
-            self.selected_names.remove(name)
+        if msh in self.selected:
+            self.selected.remove(msh)
         else:
-            self.selected_names.append(name)
+            self.selected.append(msh)
         
         self.updateSelected()
 
@@ -155,31 +191,42 @@ class VPlotter(vedo.Plotter):
         elif key == "Shift+C":
             self.modifyScaleCube()
 
-        elif key == "Left" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.x(x - 0.1)
-        elif key == "Right" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.x(x + 0.1)
-        elif key == "Up" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.y(y + 0.1)
-        elif key == "Down" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.y(y - 0.1)
-        elif key == "Ctrl+Up" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.z(z + 0.1)
-        elif key == "Ctrl+Down" and self.sc is not None:
-            x, y, z = self.sc.pos()
-            self.sc.z(z - 0.1)
+        # direction key pressed
+        elif any((direction in key) for direction in ("Left", "Right", "Up", "Down")):
+            split_key = key.split("+")
+
+            if "Shift" in split_key:
+                fn = self.rotateSelected
+                step = 10
+            else:
+                fn = self.translateSelected
+                step = 0.1
+            
+            xyz = (0, 0, 0)
+
+            if "Left" in key and "Ctrl" not in key:
+                xyz = (-step, 0, 0)
+            elif "Right" in key and "Ctrl" not in key:
+                xyz = (step, 0, 0)
+            elif "Up" in key:
+                if "Ctrl" in key:
+                    xyz = (0, 0, step)
+                else:
+                    xyz = (0, step, 0)
+            elif "Down" in key:
+                if "Ctrl" in key:
+                    xyz = (0, 0, -step)
+                else:
+                    xyz = (0, -step, 0)
+            
+            fn(*xyz)
         
         # custom opacity changer
         elif key == "Bracketleft" or key == "Bracketright":
             for actor in self.get_meshes():
                 name = actor.metadata["name"][0]
                 t = actor.metadata["type"][0]
-                if name in self.selected_names:
+                if actor in self.selected:
                     new_opacity = actor.alpha() + 0.05 * (-1 if key == "Bracketleft" else 1)
                     actor.alpha(new_opacity)
                     # set the opacity in series 3D options
@@ -189,21 +236,37 @@ class VPlotter(vedo.Plotter):
         
         # select/deselect all
         elif key == "Ctrl+D":
-            self.selected_names = []
+            self.selected = []
             self.updateSelected()
         elif key == "Ctrl+A":
-            self.selected_names = []
+            self.selected = []
             for actor in self.get_meshes():
                 name = actor.metadata["name"][0]
                 if name is not None:
-                    self.selected_names.append(name)
+                    self.selected.append(actor)
             self.updateSelected()
+        
+        # remove selected object from scene
+        if key in ("Delete", "Backspace"):
+            obj_names = []
+            ztrace_names = []
+            for msh in self.selected:
+                n = msh.metadata["name"][0]
+                t = msh.metadata["type"][0]
+                if t == "object":
+                    obj_names.append(n)
+                elif t == "ztrace":
+                    ztrace_names.append(n)
+                elif t == "scale_cube":
+                    self.toggleScaleCube(False)
+            
+            self.removeObjects(obj_names)
+            self.removeZtraces(ztrace_names)
         
         # help menu
         if key == "Shift+Question":
             overwrite = True
-            if not self.help_widget or self.help_widget.closed:
-                self.help_widget = Help3DWidget()
+            self.showHelp()
 
         if not overwrite:
             super()._keypress(iren, event)
@@ -220,6 +283,9 @@ class VPlotter(vedo.Plotter):
             self.createScaleCube()
         else:
             self.remove(self.sc)
+            if self.sc in self.selected:
+                self.selected.remove(self.sc)
+                self.updateSelected()
             self.sc = None
         # update the menubar display
         self.qt_parent.togglesc_act.setChecked(show)
@@ -239,14 +305,86 @@ class VPlotter(vedo.Plotter):
             self.createScaleCube()
             self.render()
     
+    def translate(self, msh, dx : float, dy : float, dz : float, save=True):
+        """Translate a meshe.
+        
+            Params:
+                msh: the mesh to translate
+                dx (float): the x translate
+                dy (float): the y translate
+                dz (float): the z translate
+        """
+        x, y, z = msh.pos()
+        msh.pos(x + dx, y + dy, z + dz)
+        # store translation data in case of saving
+        if save:
+            n = msh.metadata["name"][0]
+            t = msh.metadata["type"][0]
+            if n in self.translations[t]:
+                x, y, z = self.translations[t][n]
+            else:
+                x, y, z = 0, 0, 0
+            self.translations[t][n] = (x + dx, y + dy, z + dz)
+    
+    def rotate(self, msh, rx : float, ry : float, rz : float, save=True):
+        """Rotate the selected meshes.
+        
+            Params:
+                msh: the mesh to rotate
+                rx (float): the x rotate angle
+                ry (float): the y rotate angle
+                rz (float): the z rotate angle
+        """
+        cm = tuple(msh.center_of_mass())
+        if rx: msh.rotate_x(rx, around=cm)
+        if ry: msh.rotate_y(ry, around=cm)
+        if rz: msh.rotate_z(rz, around=cm)
+        # store rotation data in case of saving
+        if save:
+            n = msh.metadata["name"][0]
+            t = msh.metadata["type"][0]
+            if n in self.rotations[t]:
+                x, y, z = self.rotations[t][n]
+            else:
+                x, y, z = 0, 0, 0
+            self.rotations[t][n] = (x + rx, y + ry, z + rz)
+        
+    def translateSelected(self, dx : float, dy : float, dz : float):
+        """Translate the selected meshes.
+        
+            Params:
+                dx (float): the x translate
+                dy (float): the y translate
+                dz (float): the z translate
+        """
+        for msh in self.selected:
+            self.translate(msh, dx, dy, dz)
+    
+    def rotateSelected(self, rx : float, ry : float, rz : float):
+        """Rotate the selected meshes.
+        
+            Params:
+                rx (float): the x rotate angle
+                ry (float): the y rotate angle
+                rz (float): the z rotate angle
+        """
+        for msh in self.selected:
+            self.rotate(msh, rx, ry, rz)
+            
     def removeObjects(self, obj_names):
         """Remove objects from the scene."""
         for actor in self.getObjects():
             name = actor.metadata["name"][0]
-            if name  in obj_names:
+            if name in obj_names:
                 self.remove(actor)
-                if name in self.selected_names:
-                    self.selected_names.remove(name)
+                # remove from selected
+                if actor in self.selected:
+                    self.selected.remove(actor)
+                # remove from rotations and translations
+                if name in self.rotations["object"]:
+                    del(self.rotations["object"][name])
+                if name in self.translations["object"]:
+                    del(self.translations["object"][name]) 
         
         self.updateSelected()
         self.render()
@@ -296,6 +434,7 @@ class VPlotter(vedo.Plotter):
             vm = vedo.Mesh([md["vertices"], md["faces"]], md["color"], md["alpha"])
             vm.metadata["name"] = md["name"]
             vm.metadata["type"] = "object"
+            vm.metadata["color"] = md["color"]
             self.add(vm)
         self.render()
     
@@ -305,8 +444,13 @@ class VPlotter(vedo.Plotter):
             name = actor.metadata["name"][0]
             if name in ztrace_names:
                 self.remove(actor)
-                if name in self.selected_names:
-                    self.selected_names.remove(name)
+                if actor in self.selected:
+                    self.selected.remove(actor)
+                # remove from rotations and translations
+                if name in self.rotations["ztrace"]:
+                    del(self.rotations["ztrace"][name])
+                if name in self.translations["ztrace"]:
+                    del(self.translations["ztrace"][name])
         
         self.updateSelected()
         self.render()
@@ -344,9 +488,11 @@ class VPlotter(vedo.Plotter):
                                 extremes[i] = val
             
             d = ztrace.getDistance(self.series)
-            curve = vedo.Mesh(vedo.Tube(pts, r=(d/1000)), c=ztrace.color, alpha=1)
+            color = [c/255 for c in ztrace.color]
+            curve = vedo.Mesh(vedo.Tube(pts, r=(d/1000)), c=color, alpha=1)
             curve.metadata["name"] = name
             curve.metadata["type"] = "ztrace"
+            curve.metadata["color"] = color
             self.add(curve)
         self.render()
         
@@ -369,13 +515,10 @@ class VPlotter(vedo.Plotter):
                 ztraces.append(msh)
         return ztraces
 
-    def getSelected(self, objects=True, ztraces=True):
-        """Return all of the selected meshes."""
-        selected_meshes = []
-        for msh in self.getObjects() + self.getZtraces():
-            if msh.metadata["name"][0] in self.selected_names:
-                selected_meshes.append(msh)
-        return selected_meshes
+    def showHelp(self):
+        """Show the keyboard shortcuts available to the user."""
+        if not self.help_widget or self.help_widget.closed:
+            self.help_widget = Help3DWidget()
 
 
 class Container(QMainWindow):
@@ -426,6 +569,14 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     ("modifysc_act", "Modify...", "", self.plt.modifyScaleCube),
                     ("movehelp_act", "Move scale cube...", "", self.moveScaleCubeHelp),
                 ]
+            },
+            {
+                "attr_name": "helpmenu",
+                "text": "Help",
+                "opts":
+                [
+                    ("shortcuts_act", "Shortcuts", "", self.plt.showHelp)
+                ]
             }
         ]
         self.menubar_widget = self.container.menuBar()
@@ -447,7 +598,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             else:
                 self.addObjects(obj_names, remove_first=False)
         
-        self.plt.show(*self.plt.actors)
+        self.plt.show(*self.plt.actors, resetcam=(False if load_fp else None))
         self.show()
         self.container.show()
     
@@ -464,6 +615,24 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     def moveScaleCubeHelp(self):
         """Inform the user of how to move the scale cube."""
         notify(sc_help_message)
+    
+    def clearScene(self):
+        """Clear the scene."""
+        obj_names = [a.metadata["name"][0] for a in self.plt.getObjects()]
+        ztrace_names = [a.metadata["name"][0] for a in self.plt.getZtraces()]
+        self.plt.removeObjects(obj_names)
+        self.plt.removeZtraces(ztrace_names)
+        self.plt.toggleScaleCube(False)
+        self.plt.translations = {
+            "object": {},
+            "ztrace": {},
+            "scale_cube": {}
+        }
+        self.plt.rotations = {
+            "object": {},
+            "ztrace": {},
+            "scale_cube": {}
+        }
 
     def saveScene(self):
         """Save the 3D scene to be opened later."""
@@ -493,12 +662,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             d["ztraces"].add(name)
         d["ztraces"] = list(d["ztraces"])
 
+        # store the translations and rotations
+        d["translations"] = self.plt.translations
+        d["rotations"] = self.plt.rotations
+
         # get the scale cube information
         if self.plt.sc is not None:
             d["sc"] = {}
             d["sc"]["side"] = self.plt.sc_side
             d["sc"]["color"] = self.plt.sc_color
-            d["sc"]["pos"] = tuple(self.plt.sc.pos())
         else:
             d["sc"] = None
         
@@ -542,40 +714,57 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             if not confirm:
                 return
         
-        # clear the plot
-        if not add_only:
-            obj_names = [a.metadata["name"][0] for a in self.plt.getObjects()]
-            ztrace_names = [a.metadata["name"][0] for a in self.plt.getZtraces()]
-            self.plt.removeObjects(obj_names)
-            self.plt.removeZtraces(ztrace_names)
-            self.plt.toggleScaleCube(False)
+        # do not touch the already existing objects if adding
+        if add_only:
+            for obj_name in self.plt.getObjects():
+                if obj_name in d["objects"]:
+                    d["objects"].remove(obj_name)
+            for ztrace_name in self.plt.getZtraces():
+                if ztrace_name in d["ztraces"]:
+                    d["ztraces"].remove(ztrace_name)
+        # clear the plot otherwise
+        else:
+            self.clearScene()
 
         # add the objects
         self.plt.addObjects(d["objects"])
         # add the ztraces
         self.plt.addZtraces(d["ztraces"])
 
-        # add the scale cube if making from new or adding
-        if (
-            d["sc"] and (
-                not add_only or
-                add_only and not self.plt.sc
-            )
-        ):
+        # add the scale cube if making from new
+        if d["sc"] and not add_only:
             self.plt.sc_side = d["sc"]["side"]
             self.plt.sc_color = tuple(d["sc"]["color"])
             self.plt.createScaleCube()
-            self.plt.sc.pos(*tuple(d["sc"]["pos"]))
 
+        # apply the rotations and translations
+        for meshes, mesh_type in [
+            (self.plt.getObjects(), "object"), 
+            (self.plt.getZtraces(), "ztrace"),
+            ([self.plt.sc] if self.plt.sc else [], "scale_cube")
+        ]:
+            for msh in meshes:
+                name = msh.metadata["name"][0]
+                # skip meshes that are not part of the loaded scene (most applicable in the case of add_only)
+                if mesh_type != "scale_cube" and name not in d[f"{mesh_type}s"]:
+                    continue
+                # modify/save translations
+                if name in d["translations"][mesh_type]:
+                    dx, dy, dz = tuple(d["translations"][mesh_type][name])
+                    self.plt.translate(msh, dx, dy, dz)
+                # modify/save rotations
+                if name in d["rotations"][mesh_type]:
+                    rx, ry, rz = tuple(d["rotations"][mesh_type][name])
+                    self.plt.rotate(msh, rx, ry, rz)
+
+        # move the camera
         if not add_only:
-            # move the camera
             self.plt.camera.SetPosition(d["camera"]["position"])
             self.plt.camera.SetFocalPoint(d["camera"]["focal_point"])
             self.plt.camera.SetViewUp(d["camera"]["view_up"])
             self.plt.camera.SetDistance(d["camera"]["distance"])
-
-            self.plt.show()
-    
+            self.plt.show(resetcam=False)
+                    
     def closeEvent(self, event):
         self.plt.close()
         self.is_closed = True

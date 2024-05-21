@@ -16,14 +16,13 @@ class FileDialog(QFileDialog):
         self.setDirectory(last_folder)
     
     def updateSettings(self, response):
-        """Update the last_folder setting in QSettings based on the user response."""
-        if type(response) is tuple:
-            response = response[0]
-        if type(response) is list:
-            response = response[0]
-        
+        """Update last_folder in QSettings based on response."""
+
         if not response:
             return
+        
+        if isinstance(response, (tuple, list)):
+            response = response[0]
         
         if os.path.isdir(response):
             new_dir = response
@@ -35,7 +34,9 @@ class FileDialog(QFileDialog):
             settings.setValue("last_folder", new_dir)
     
     def get(file_mode, parent=None, caption="", filter=None, file_name=""):
+        
         fd = FileDialog(parent)
+        
         if file_mode == "dir":
             if not caption: caption = "Open Folder"
             response = fd.getExistingDirectory(fd, caption)
@@ -51,6 +52,7 @@ class FileDialog(QFileDialog):
             last_folder = settings.value("last_folder", QDir.homePath())
             d = os.path.join(last_folder, file_name)
             response = fd.getSaveFileName(fd, caption, dir=d, filter=filter)[0]
+            
         fd.updateSettings(response)
         fd.close()
 

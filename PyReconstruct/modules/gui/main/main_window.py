@@ -390,27 +390,27 @@ class MainWindow(QMainWindow):
                     # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
                 ]
             },
-            {
-                "attr_name": "autosegmenu",
-                "text": "Autosegment",
-                "opts":
-                [
-                    ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
-                    ("trainzarr_act", "Train...", "", self.train),
-                    ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
-                    ("predictzarr_act", "Predict (infer)...", "", self.predict),
-                    ("sementzarr_act", "Segment...", "", self.segment),
-                    {
-                        "attr_name": "zarrlayermenu",
-                        "text": "Zarr layer",
-                        "opts":
-                        [
-                            ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
-                            ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
-                        ]
-                    }
-                ]
-            },
+            # {
+            #     "attr_name": "autosegmenu",
+            #     "text": "Autosegment",
+            #     "opts":
+            #     [
+            #         ("export_zarr_act", "Export to zarr...", "", self.exportToZarr),
+            #         ("trainzarr_act", "Train...", "", self.train),
+            #         ("retrainzarr_act", "Retrain...", "", lambda : self.train(retrain=True)),
+            #         ("predictzarr_act", "Predict (infer)...", "", self.predict),
+            #         ("sementzarr_act", "Segment...", "", self.segment),
+            #         {
+            #             "attr_name": "zarrlayermenu",
+            #             "text": "Zarr layer",
+            #             "opts":
+            #             [
+            #                 ("setzarrlayer_act", "Set zarr layer...", "", self.setZarrLayer),
+            #                 ("removezarrlayer_act", "Remove zarr layer", "", self.removeZarrLayer)
+            #             ]
+            #         }
+            #     ]
+            # },
             {
                 "attr_name": "viewmenu",
                 "text": "View",
@@ -689,8 +689,8 @@ class MainWindow(QMainWindow):
         # calibrate
         self.calibrate_act.setEnabled(bool(self.field.section.selected_traces))
 
-        # zarr layer
-        self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
+        # # zarr layer
+        # self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
             
     def createShortcuts(self):
         """Create shortcuts that are NOT included in any menus."""

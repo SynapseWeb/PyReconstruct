@@ -3,6 +3,7 @@ import re
 import json
 import shutil
 from datetime import datetime
+from copy import deepcopy
 
 from PySide6.QtCore import QSettings
 
@@ -122,6 +123,9 @@ class Series():
 
         # series code
         self.code = series_data["code"]
+
+        # user-defined columns
+        self.user_columns = series_data["user_columns"]
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -546,6 +550,7 @@ class Series():
 
         d["editors"] = list(self.editors)
         d["code"] = self.code
+        d["user_columns"] = self.user_columns
 
         return d
     
@@ -574,19 +579,52 @@ class Series():
 
         # ADDED SINCE JAN 25TH
 
-        series_data["options"] = {}
+        series_data["options"] = {
+            # table columns
+            "object_columns": list({
+                "Range": True,
+                "Count": False,
+                "Flat area": False,
+                "Volume": False,
+                "Radius": False,
+                "Groups": True,
+                "Trace tags": False,
+                "Locked": True,
+                "Last user": True,
+                "Curate": False,
+                "Alignment": False,
+                "Comment": True
+            }.items()),
+            "trace_columns": list({
+                "Index": False,
+                "Tags": True,
+                "Hidden": True,
+                "Closed": True,
+                "Length": True,
+                "Area": True,
+                "Radius": True,
+            }.items()),
+            "flag_columns": list({
+                "Section": True,
+                "Color": True,
+                "Flag": True,
+                "Resolved": False,
+                "Last Comment": True
+            }.items()),
 
-        options = series_data["options"]
-        options["small_dist"] = 0.01
-        options["med_dist"] = 0.1
-        options["big_dist"] = 1
-        options["autoseg"] = {}
+            # distances
+            "small_dist": 0.01,
+            "med_dist": 0.1,
+            "big_dist": 1,
+            "autoseg": {},
+        }
 
         series_data["obj_attrs"] = {}
         series_data["ztrace_attrs"] = {}
 
         series_data["editors"] = []
         series_data["code"] = ""
+        series_data["user_columns"] = {}
 
         return series_data
     
@@ -1164,6 +1202,80 @@ class Series():
         if log_event:
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
+    def importObjAttrs(self, other, regex_filters=[]):
+        """Import object attributes (including object groups)."""
+        # import the group data
+        self.object_groups.merge(other.object_groups, regex_filters)
+
+        # import the object attributes
+        for obj_name, obj_data in other.obj_attrs.items():
+            # check regex filters
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, obj_name)):
+                    passes_filters = True
+            if not passes_filters:
+                continue
+
+            for attr_name, attr_value in obj_data.items():
+                # skip user column data
+                if attr_name == "user_columns":
+                    continue
+
+                if obj_name not in self.obj_attrs:
+                    self.obj_attrs[obj_name] = {}
+                
+                if attr_name not in self.obj_attrs[obj_name]:
+                    self.obj_attrs[obj_name][attr_name] = attr_value
+                # special case: overwrite self curation if other is more recent
+                elif attr_name == "curation":
+                    self_date = self.obj_attrs[obj_name]["curation"][-1]
+                    other_date = attr_value[-1]
+                    if other_date >= self_date:
+                        self.obj_attrs[obj_name]["curation"] = attr_value
+    
+    def importUserCols(self, other, regex_filters=[]):
+        """Import user columns."""
+        # import the user columns
+        merged_user_columns = updateDictLists(
+            self.user_columns,
+            other.user_columns
+        )
+        # check if new user columns imported
+        if self.user_columns != merged_user_columns:
+            # update the object list columns
+            obj_columns = self.getOption("object_columns").copy()
+            for column_name in merged_user_columns:
+                if column_name not in dict(obj_columns):
+                    obj_columns.append((column_name, False))
+            self.setOption("object_columns", obj_columns)
+
+            self.user_columns = merged_user_columns
+
+        # import the user column object attributes
+        for obj_name, obj_data in other.obj_attrs.items():
+            # check regex filters
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, obj_name)):
+                    passes_filters = True
+            if not passes_filters:
+                continue
+
+            if "user_columns" in obj_data:
+                other_uc = obj_data["user_columns"]
+                if obj_name not in self.obj_attrs:
+                    self.obj_attrs[obj_name] = {}
+                if "user_columns" not in self.obj_attrs[obj_name]:
+                    self.obj_attrs[obj_name]["user_columns"] = {}
+                self_uc = self.obj_attrs[obj_name]["user_columns"]
+
+                for name, value in other_uc.items():
+                    if name not in self_uc:
+                        self_uc[name] = value
+                        # if the current series has a user_column setting already, do not override it
+                        # is there a better way to handle this?
+    
     def importTraces(
             self, other, 
             srange : tuple = None, 
@@ -1222,23 +1334,12 @@ class Series():
         
         # unsupress logging for object creation
         self.data.supress_logging = False
-        
-        # import the group data
-        self.object_groups.merge(other.object_groups, regex_filters)
 
-        # import the object attributes
-        for obj_name, obj_data in other.obj_attrs.items():
-            for attr_name, attr_value in obj_data.items():
-                if obj_name not in self.obj_attrs:
-                    self.obj_attrs[obj_name] = {}
-                if attr_name not in self.obj_attrs[obj_name]:
-                    self.obj_attrs[obj_name][attr_name] = attr_value
-                # overwrite self curation if other is more recent
-                elif attr_name == "curation":
-                    self_date = self.obj_attrs[obj_name]["curation"][-1]
-                    other_date = attr_value[-1]
-                    if other_date >= self_date:
-                        self.obj_attrs[obj_name]["curation"] = attr_value
+        # import object attributes
+        self.importObjAttrs(other, regex_filters)
+
+        # import user column data
+        self.importUserCols(other, regex_filters)
 
         # import the history
         if log_event:
@@ -1738,6 +1839,8 @@ class Series():
                 return None
             elif attr_name == "locked":
                 return False
+            elif attr_name == "user_columns":
+                return {}
             else:
                 return
         else:
@@ -1841,9 +1944,10 @@ class Series():
         # check for internal series option first
         if option_name in self.options:
             if get_default:
-                return Series.getEmptyDict()["options"][option_name]
+                opt = Series.getEmptyDict()["options"][option_name]
             else:
-                return self.options[option_name]
+                opt = self.options[option_name]
+            return opt
         
         # get the proper settings and defaults
         if option_name in Series.qsettings_series_defaults:
@@ -1872,10 +1976,17 @@ class Series():
             option = defaults[option_name]
             self.setOption(option_name, option)
         
+        # CHECKS FOR UPDATES
+
         # check for disallowing the laplacian smoothing algorithm
         if option_name == "3D_smoothing" and option == "laplacian":
             option = "humphrey"
             self.setOption(option_name, option)
+
+        # check for tables
+        if "_columns" in option_name:
+            if type(option) is not list:
+                raise Exception("boo")
         
         return option
                     
@@ -2049,8 +2160,119 @@ class Series():
             fp += ".jser"
 
         return fp
+    
+    def addUserCol(self, col_name : str, opts : list, log_event=True):
+        """Add a user-defined column to the series.
         
+            Params:
+                col_name (str): the name of the column to add
+                opts (list): the possible strings to put into the column
+        """
+        # refuse to add if already exists
+        if col_name in self.user_columns:
+            return
+        
+        self.user_columns[col_name] = opts
+        col_opts = self.options["object_columns"]
+        if col_name not in dict(col_opts):
+            col_opts.append((col_name, True))
+        
+        if log_event:
+            self.addLog(None, None, f"Add user column {col_name}")
+    
+    def removeUserCol(self, col_name : str, log_event=True):
+        """Remove a user-defined column.
+        
+            Params:
+                col_name (str): the name of the column to remove
+        """
+        if col_name in self.user_columns:
+            del(self.user_columns[col_name])
+        col_opts = self.options["object_columns"]
+        for i, (k, v) in enumerate(col_opts.copy()):
+            if k == col_name:
+                col_opts.pop(i)
+                break
 
+        # iterate through all object attributes and remove the column data
+        for attrs in self.obj_attrs.values():
+            if "user_columns" in attrs and col_name and attrs["user_columns"]:
+                del(attrs["user_columns"][col_name])
+        
+        if log_event:
+            self.addLog(None, None, f"Delete user column {col_name}")
+        
+    def editUserCol(self, col_name : str, new_name : str, new_opts : list, log_event=True):
+        """Edit a user-defined column.
+        
+            Params:
+                col_name (str): the original name of the column
+                new_name (str): the new name for the column
+                new_opts (list): the new options for the column
+        """
+        # refuse to edit if column does not exist or if new name already exists
+        if col_name not in self.user_columns:
+            return
+        if new_name != col_name and new_name in self.user_columns:
+            return
+        
+        if col_name != new_name:
+            # rename the column in the user_columns dict
+            self.user_columns[new_name] = self.user_columns[col_name]
+            del(self.user_columns[col_name])
+            # rename the column in the object_columns option
+            obj_columns = self.options["object_columns"]
+            for i, (k, v) in enumerate(obj_columns.copy()):
+                if k == col_name:
+                    obj_columns[i] = (new_name, v)
+                    break
+            # rename the column in all obj attrs
+            for attrs in self.obj_attrs.values():
+                if "user_columns" in attrs and col_name in attrs["user_columns"]:
+                    attrs["user_columns"][new_name] = attrs["user_columns"][col_name]
+                    del(attrs["user_columns"][col_name])
+        col_name = new_name
+
+        if self.user_columns[col_name] != new_opts:
+            # replace the options in the user_columns dict
+            self.user_columns[col_name] = new_opts
+            # remove old options from all obj attrs
+            for attrs in self.obj_attrs.values():
+                if "user_columns" in attrs and col_name in attrs["user_columns"]:
+                    if attrs["user_columns"][col_name] not in new_opts:
+                        del(attrs["user_columns"][col_name])
+        
+        if log_event:
+            self.addLog(None, None, f"Edit user column {new_name}")
+    
+    def getUserColAttr(self, obj_name : str, col_name : str):
+        """Get the user-defined column attribute of an object.
+
+            Params:
+                obj_name (str): the name of the object
+                col_name (str): the name of the user-defined column
+        """
+        column_data = self.getAttr(obj_name, "user_columns")
+        if col_name not in column_data:
+            return None
+        else:
+            return column_data[col_name]
+    
+    def setUserColAttr(self, obj_name : str, col_name : str, value : str):
+        """Set the user defined column attribute of an object.
+        
+            Params:
+                obj_name (str): the name of the object
+                col_name (str): the column of the object
+                value (str): the value to set the object column attribute
+        """
+        column_data = self.getAttr(obj_name, "user_columns")
+        if value:
+            column_data[col_name] = value
+        elif not value and col_name in column_data:
+            del(column_data[col_name])
+        self.setAttr(obj_name, "user_columns", column_data)
+    
 class SeriesIterator():
 
     def __init__(self, series : Series, show_progress : bool, message : str, series_states, breakable=True):
@@ -2112,3 +2334,13 @@ class SeriesIterator():
             if self.show_progress:
                 self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             raise StopIteration
+
+def updateDictLists(d1 : dict, d2 : dict):
+    """In the cases where two dictionaries have values as lists, combine the two lists for each value."""
+    d = deepcopy(d1)
+    for k, l in d2.items():
+        if k not in d:
+            d[k] = []
+        d[k] += l
+        d[k] = list(set(l))  # remove redundant values
+    return d

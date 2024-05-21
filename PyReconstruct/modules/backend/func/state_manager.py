@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from copy import deepcopy
 
 from PyReconstruct.modules.datatypes import (
     Series,
@@ -360,24 +361,18 @@ class SeriesState():
             Params:
                 series (Series): the series to store attributes for
         """
-        obj_attrs = {}
-        for key, value in series.obj_attrs.items():
-            try: obj_attrs[key] = value.copy()
-            except AttributeError: obj_attrs[key] = value
-        
-        ztrace_attrs = {}
-        for key, value in series.ztrace_attrs.items():
-            try: ztrace_attrs[key] = value.copy()
-            except AttributeError: ztrace_attrs[key] = value
+        obj_attrs = deepcopy(series.obj_attrs)
+        ztrace_attrs = deepcopy(series.ztrace_attrs)
         
         object_groups = series.object_groups.copy()
         ztrace_groups = series.ztrace_groups.copy()
 
         alignment = series.alignment
 
-        ztraces = {}
-        for name, ztrace in series.ztraces.items():
-            ztraces[name] = ztrace.copy()
+        ztraces = deepcopy(series.ztraces)
+
+        user_columns = deepcopy(series.user_columns)
+        object_columns = deepcopy(series.getOption("object_columns"))
         
         return {
             "obj_attrs" : obj_attrs,
@@ -385,7 +380,9 @@ class SeriesState():
             "object_groups" : object_groups,
             "ztrace_groups" : ztrace_groups,
             "alignment" : alignment,
-            "ztraces" : ztraces
+            "ztraces" : ztraces,
+            "user_columns": user_columns,
+            "object_columns": object_columns
         }
     
     def resetSeriesAttributes(self, series : Series):
@@ -404,11 +401,17 @@ class SeriesState():
         """
         pre_series_attrs = SeriesState.getSeriesAttributes(series)
         for attr, value in self.series_attrs.items():
+            if attr == "object_columns":
+                continue  # only replace obj columns under specific circumstances (below)
             setattr(series, attr, value)
 
         # specific case: no sections modified but the series data needs to be refreshed bc preferred alignments changed
         if not self.undo_lens and alignmentPreferencesChanged(pre_series_attrs, self.series_attrs):
             series.data.refresh()
+        
+        # specific case: switch to previous obj_columns if user_columns has been changed
+        if self.series_attrs["object_columns"] != pre_series_attrs["user_columns"]:
+            series.setOption("object_columns", self.series_attrs["object_columns"])
 
         self.series_attrs = pre_series_attrs
 

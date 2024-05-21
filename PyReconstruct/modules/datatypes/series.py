@@ -2196,7 +2196,7 @@ class Series():
 
         # iterate through all object attributes and remove the column data
         for attrs in self.obj_attrs.values():
-            if "user_columns" in attrs and col_name and attrs["user_columns"]:
+            if "user_columns" in attrs and col_name in attrs["user_columns"]:
                 del(attrs["user_columns"][col_name])
         
         if log_event:

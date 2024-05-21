@@ -74,6 +74,7 @@ class ObjectTableWidget(QDockWidget):
             "Curated": True
         }
         self.cr_user_filters = set()
+        self.user_col_filters = {}
 
         # create the main window widget
         self.main_widget = QMainWindow()
@@ -100,6 +101,35 @@ class ObjectTableWidget(QDockWidget):
             edit_user_cols.append(
                 (f"edit_user_col_{n}_act", col_name, "", getCall(col_name))
             )
+        
+        # create the submenu for adding categorical column filters
+        def getCall(col_name, opt_name, opt_index):
+            return (lambda : self.toggleUserColFilter(
+                col_name=col_name, 
+                opt_name=opt_name, 
+                opt_index=opt_index
+            ))
+        filter_submenus = [
+            ("clearusercolfilters_act", "Clear all", "", self.clearUserColFilters)
+        ]
+        menu_i = 0  # keep track of numbers for unique attribute
+        opts_i = 0
+        for col_name, opts in self.series.user_columns.items():
+            d = {
+                "attr_name": f"filter_user_col_{menu_i}_menu",
+                "text": col_name,
+                "opts": []
+            }
+            menu_i += 1
+            for opt in opts:
+                cb_str = "checkbox"
+                if col_name in self.user_col_filters and opt in self.user_col_filters[col_name]:
+                    cb_str += "-True"
+                d["opts"].append(
+                    (f"filter_user_col_{opts_i}_act", opt, cb_str, getCall(col_name, opt, opts_i))
+                )
+                opts_i += 1
+            filter_submenus.append(d)
 
         # Create menubar menu
         menubar_list = [
@@ -121,7 +151,12 @@ class ObjectTableWidget(QDockWidget):
                     ("refilter_act", "Regex filter...", "", self.setREFilter),
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                     ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
-                    ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
+                    ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter),
+                    {
+                        "attr_name": "usercolfiltersmenu",
+                        "text": "Categorical column filters",
+                        "opts": filter_submenus
+                    }
                 ]
             },
             {
@@ -315,14 +350,16 @@ class ObjectTableWidget(QDockWidget):
         is_cr = dict(self.columns)["Curate"] and (
             bool(self.cr_user_filters) or not all(self.cr_status_filter.values())
         )
+        is_user_col = bool(self.user_col_filters)
 
         title = "Object List "
-        if any((is_regex, is_tag, is_group, is_cr)):
+        if any((is_regex, is_tag, is_group, is_cr, is_user_col)):
             strs = []
             if is_regex: strs.append("regex")
             if is_tag: strs.append("tags")
             if is_group: strs.append("groups")
             if is_cr: strs.append("curation")
+            if is_user_col: strs.append("categorical columns")
             title += f"(Filtered by: {', '.join(strs)})"
         
         self.setWindowTitle(title)
@@ -436,6 +473,16 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 name (str): the name of the object
         """
+        # check user columns
+        if self.user_col_filters:
+            passes_filters = False
+            for n, value in self.series.getAttr(name, "user_columns").items():
+                if n in self.user_col_filters and value in self.user_col_filters[n]:
+                    passes_filters = True
+                    break
+            if not passes_filters:
+                return False
+
         # check groups
         filters_len = len(self.group_filters)
         if filters_len != 0:
@@ -1336,6 +1383,35 @@ class ObjectTableWidget(QDockWidget):
         self.manager.updateTable(self)
         self.createMenus()
         self.mainwindow.seriesModified(True)
+    
+    def toggleUserColFilter(self, col_name : str, opt_name : str, opt_index : int):
+        """Add/remove a user column filter.
+        
+            Params:
+                col_name (str): the name of the user column
+                opt_name (str): the name of the option to filter for
+                opt_index (int): the index of the option (for updating the action)
+        """
+        # check if the filter already exists
+        if col_name in self.user_col_filters and opt_name in self.user_col_filters[col_name]:
+            # remove the option from the list
+            self.user_col_filters[col_name].remove(opt_name)
+            # remove the dict option if it is empty
+            if not self.user_col_filters[col_name]:
+                del(self.user_col_filters[col_name])
+        else:
+            # add the filter
+            if col_name not in self.user_col_filters:
+                self.user_col_filters[col_name] = []
+            self.user_col_filters[col_name].append(opt_name)
+        
+        # call through manager to update self (action is updated here)
+        self.manager.updateTable(self)
+    
+    def clearUserColFilters(self):
+        """Clear the user column filters."""
+        self.user_col_filters = {}
+        self.manager.updateTable(self)
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

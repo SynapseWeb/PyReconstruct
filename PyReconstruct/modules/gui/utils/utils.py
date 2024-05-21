@@ -49,8 +49,10 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     
     # create the shorcut or checkbox
     if type(kbd) is str:
-        if kbd == "checkbox":
+        if "checkbox" in kbd:
             action.setCheckable(True)
+            if "True" in kbd:
+                action.setChecked(True)
         else:
             action.setShortcut(kbd)
     else:  # assume series was passed in

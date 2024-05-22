@@ -4,13 +4,15 @@ from PySide6.QtWidgets import (
     QDialogButtonBox, 
     QRadioButton, 
     QVBoxLayout, 
+    QApplication
 )
 
 from PySide6.QtGui import (
     QPainter,
     QPen,
     QPixmap,
-    QIcon
+    QIcon,
+    QPalette
 )
 
 from PySide6.QtCore import (
@@ -80,7 +82,10 @@ def shapeToIcon(points : list, size=30):
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.transparent)
     painter = QPainter(pixmap)
-    painter.setPen(QPen(Qt.black, 1))
+    painter.setPen(QPen(
+        QApplication.palette().color(QPalette.WindowText),  # use system black or white
+        1
+    ))
     painter.drawPolygon(pts)
     painter.end()
 

@@ -47,23 +47,22 @@ class TableColumnsDialog(QDialog):
         bttns = QVBoxLayout()
         bttns.setSpacing(0)
         bsize = (20, 20)
-
+        style_sheet = """
+        QPushButton {background-color: transparent;}
+        QPushButton:hover {border: 1px solid yellow;}
+        """
         # create up button
         up_bttn = QPushButton(self.columns_widget)
+        up_bttn.setStyleSheet(style_sheet)
+        up_bttn.setText("▲")
         up_bttn.setFixedSize(*bsize)
-        up_icon = up_bttn.style().standardIcon(
-            QStyle.SP_TitleBarShadeButton
-        )
-        up_bttn.setIcon(up_icon)
         up_bttn.clicked.connect(lambda : self.moveRow(index=index, up=True))
 
         # create down button
         down_bttn = QPushButton(self.columns_widget)
+        down_bttn.setStyleSheet(style_sheet)
+        down_bttn.setText("▼")
         down_bttn.setFixedSize(*bsize)
-        down_icon = down_bttn.style().standardIcon(
-            QStyle.SP_TitleBarUnshadeButton
-        )
-        down_bttn.setIcon(down_icon)
         down_bttn.clicked.connect(lambda : self.moveRow(index=index, up=False))
 
         bttns.addWidget(up_bttn)
@@ -86,7 +85,7 @@ class TableColumnsDialog(QDialog):
     def createColumnsWidget(self):
         """Create the widget containing all column checkboxes and buttons."""
         columns_layout = QVBoxLayout()
-        # columns_layout.setSpacing(0)
+        columns_layout.setSpacing(0)
         self.qsa = QScrollArea(self)
         self.columns_widget = QWidget(self)
 

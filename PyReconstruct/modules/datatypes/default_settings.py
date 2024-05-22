@@ -114,7 +114,10 @@ default_settings = {
     "useflag_act": "F",
 
     # series-related
-    "series_code_pattern": "[0-9A-Za-z]+"
+    "series_code_pattern": "[0-9A-Za-z]+",
+
+    # theme
+    "theme": "default",
 }
 
 default_series_settings = {

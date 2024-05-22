@@ -25,19 +25,26 @@ class MoveableButton(QPushButton):
         self.click_time = None
         self.clicked_x = None
         self.clicked_y = None
+        self.left_clicked = False
         self.right_clicked = False
         self.rc_act = None
+        self.setStyleSheet(
+            "QPushButton:checked {border: 1px solid yellow;}"
+        )
     
     def mousePressEvent(self, event):
         """Called when button is pressed."""
         self.click_time = time.time()
         self.clicked_x = event.globalX()
         self.clicked_y = event.globalY()
+        self.left_clicked = event.buttons() == Qt.LeftButton
         self.right_clicked = event.buttons() == Qt.RightButton
         super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
         """Called when button is moved."""
+        if not self.left_clicked:
+            return
         if time.time() - self.click_time < self.manager.mainwindow.field.max_click_time:
             return
         self.manager.is_dragging = True
@@ -55,6 +62,9 @@ class MoveableButton(QPushButton):
 
         if self.rc_act and self.right_clicked:
             self.rc_act.trigger()
+        
+        self.left_clicked = False
+        self.right_clicked = False
     
     def setRightClickEvent(self, fn):
         self.rc_act = QAction(self)
@@ -65,16 +75,6 @@ class ModeButton(MoveableButton):
 
     def __init__(self, parent, manager):
         super().__init__(parent, manager, "mode")
-
-    def paintEvent(self, event):
-        """Add a highlighting border to selected buttons."""
-        super().paintEvent(event)
-        if self.isChecked():
-            painter = QPainter(self)
-            painter.setPen(QPen(QColor(255, 255, 0), 2))
-            painter.setOpacity(1)
-            w, h = self.width(), self.height()
-            painter.drawRect(QRect(0, 0, w, h))
 
 
 class PaletteButton(MoveableButton):
@@ -106,14 +106,6 @@ class PaletteButton(MoveableButton):
         if self.trace.fill_mode[0] == "transparent":
             painter.setOpacity(0.3)
         painter.drawPolygon(points)
-
-        # highlight the button if selected
-        if self.isChecked():
-            painter.setPen(QPen(QColor(255, 255, 0), 2))
-            painter.setBrush(QBrush())
-            painter.setOpacity(1)
-            w, h = self.width(), self.height()
-            painter.drawRect(QRect(0, 0, w, h))
 
         painter.end()
 

@@ -405,18 +405,12 @@ class MousePalette():
     def createIncrementButtons(self):
         """Create the section increment buttons."""        
         self.up_bttn = MoveableButton(self.mainwindow, self, "inc")
-        up_icon = self.up_bttn.style().standardIcon(
-            QStyle.SP_TitleBarShadeButton
-        )
-        self.up_bttn.setIcon(up_icon)
+        self.up_bttn.setText("▲")
         self.up_bttn.clicked.connect(self.incrementSection)
         self.up_bttn.setToolTip("Next section (PgUp)")
 
         self.down_bttn = MoveableButton(self.mainwindow, self, "inc")
-        down_icon = self.up_bttn.style().standardIcon(
-            QStyle.SP_TitleBarUnshadeButton
-        )
-        self.down_bttn.setIcon(down_icon)
+        self.down_bttn.setText("▼")
         self.down_bttn.clicked.connect(lambda : self.incrementSection(down=True))
         self.down_bttn.setToolTip("Previous section (PgDown)")
 
@@ -475,6 +469,7 @@ class MousePalette():
             s = QSlider(Qt.Horizontal, self.mainwindow)
             s.setMinimum(-100)
             s.setMaximum(100)
+            s.setStyleSheet("QSlider { background-color: transparent; }")
             s.show()
             self.bc_widgets.append((b, s))
         self.placeBCButtons()
@@ -698,7 +693,7 @@ class MousePalette():
         button.setFont(QFont("Courier New", 20, QFont.Bold))
         button.setText("⚑")
         s = f"({','.join(map(str, color))})"
-        button.setStyleSheet(f"color:rgb{s}")
+        # button.setStyleSheet(f"color:rgb{s}")
     
     def modifyFlag(self):
         """Modify the default flag."""

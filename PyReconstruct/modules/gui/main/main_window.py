@@ -151,6 +151,9 @@ class MainWindow(QMainWindow):
         # set the main window as the parent of the progress bar
         setMainWindow(self)
 
+        # set the theme
+        self.setTheme(self.series.getOption("theme"))
+
         self.show()
 
         # prompt the user for a username
@@ -415,6 +418,8 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
+                    ("changetheme_act", "Change theme", "", self.setTheme),
+                    None,
                     ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
@@ -2899,6 +2904,44 @@ class MainWindow(QMainWindow):
             self.viewer.loadScene(load_fp)
         
         self.viewer.setFocus()
+    
+    def setTheme(self, new_theme=None):
+        """Change the theme."""
+        if new_theme is None:
+            theme = self.series.getOption("theme")
+            structure = [
+                ["Theme:"],
+                [("radio", ("Default", theme=="default"), ("Dark", theme=="qdark"))]
+            ]
+            response, confirmed = QuickDialog.get(
+                self, structure, "Theme"
+            )
+            if not confirmed:
+                return
+            
+            if response[0][0][1]:
+                new_theme = "default"
+            elif response[0][1][1]:
+                new_theme = "qdark"
+            else:
+                return
+        
+        app = QApplication.instance()
+        if new_theme == "default":
+            self.series.setOption("theme", "default")
+            app.setStyleSheet("")
+            app.setPalette(app.style().standardPalette())
+        elif new_theme == "qdark":
+            try:
+                import qdarkstyle
+            except:
+                notify("Unable to import dark theme.")
+                return
+            self.series.setOption("theme", "qdark")
+            app.setStyleSheet(
+                qdarkstyle.load_stylesheet_pyside6() + 
+                qdark_addon
+            )
         
     def restart(self):
         self.restart_mainwindow = True
@@ -2922,3 +2965,6 @@ class MainWindow(QMainWindow):
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()
+
+qdark_addon = """QTableWidget::item:alternate {background-color: #222C36;}
+QPushButton {border: 1px solid transparent}"""

@@ -275,7 +275,6 @@ class TraceLayer():
         if self.series.getOption("sampling_frame_grid"):
             n = 0.5
             nw, nh = n * w, n * h
-            print(nw, nh)
             exc_points = [
                 (-nw, 2*nh),
                 (-nw, nh),

@@ -2190,9 +2190,9 @@ class MainWindow(QMainWindow):
     def modifyKnife(self, event=None):
         """Modify the knife properties."""
         structure = [
-            ["When using the knife, objects smaller than this percent"],
-            ["of the original trace area will be automatically deleted."],
-            ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold"), (0, 100))]
+            ["Delete traces smaller than this percent of the"],
+            ["original trace when using the knife."],
+            ["% area:", ("float", self.series.getOption("knife_del_threshold"), (0, 100))],
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
         if not confirmed:

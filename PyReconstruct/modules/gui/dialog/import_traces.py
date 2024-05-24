@@ -22,6 +22,37 @@ from PySide6.QtCore import Qt
 from .helper import BrowseWidget, MultiLineEdit, BorderedWidget, RadioButtonGroup, resizeLineEdit
 from PyReconstruct.modules.gui.utils import notify
 
+
+tip_overlap = """Overlap fraction above which two traces are
+considered "functional duplicates" during import.
+
+When two users trace the same object, the traces
+may both appear valid by eye but differ slightly
+in their points. We refer to multiple valid, but
+non-identical traces for a single object as
+functional duplicates.
+
+Setting the overlap threshold to 1.0 will instruct
+PyReconstruct to consider traces duplicates only
+if their points match perfectly. This is in most
+cases too strict. A value of 0.95 is usually
+sufficient to identify overlapping, non-identical
+traces of a single object that are all valid.
+
+The overlap fraction is also known as the Jaccard
+index and is calculated as the intersection of the
+two traces divided by their union."""
+
+
+tip_history = """When this option is checked, contours that have NOT
+been modified since the divergence of the two series
+will be ignored."""
+
+
+tip_conflicts = """When this option is checked, traces that have not been
+resolved through overlap or history will be flagged."""
+
+
 class ImportTracesDialog(QDialog):
 
     def __init__(self, parent : QWidget, series):
@@ -67,22 +98,13 @@ class ImportTracesDialog(QDialog):
 
         # check series histories checkbox
         self.check_histories = QCheckBox(self, text="Check series histories")
-        addTip(
-            self.check_histories,
-            "When this option is checked, contours that have NOT\n" +
-            "been modified since the divergence of the two series\n" +
-            "will be ignored."
-        )
+        addTip(self.check_histories, tip_history)
         top_vlayout1.addSpacing(10)
         top_vlayout1.addWidget(self.check_histories)
 
         # flag conflicts checkbox
         self.flag_conflicts = QCheckBox(self, text="Flag conflicts")
-        addTip(
-            self.flag_conflicts,
-            "When this option is checked, traces that have not been\n" +
-            "resolved through overlap or history will be flagged."
-        )
+        addTip(self.flag_conflicts, tip_conflicts)
         self.flag_conflicts.setChecked(True)
         top_vlayout1.addSpacing(10)
         top_vlayout1.addWidget(self.flag_conflicts)
@@ -108,17 +130,7 @@ class ImportTracesDialog(QDialog):
         # overlap threshold text
         hlayout = QHBoxLayout()
         lbl = QLabel(self ,text="Overlap threshold:")
-        addTip(
-            lbl,
-            "The fraction of overlap necessary for two\n" +
-            'traces to be considered "functional duplicates."\n\n' +
-            "For example, the fraction of overlap between two\n" +
-            "identical traces is 1.0.\n\n" +
-            "In most cases, an overlap threshold of 0.95 is\n" +
-            "sufficient to identify traces that, by eye, appear\n" +
-            "to be duplicates but are not exactly identical.\n" +
-            "We term these traces functional duplicates."
-        )
+        addTip(lbl, tip_overlap)
         hlayout.addWidget(lbl)
         self.overlap_threshold = QLabel(self)
         hlayout.addWidget(self.overlap_threshold)

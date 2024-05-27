@@ -2966,5 +2966,5 @@ class MainWindow(QMainWindow):
             self.viewer.close()
         event.accept()
 
-qdark_addon = """QTableWidget::item:alternate {background-color: #222C36;}
-QPushButton {border: 1px solid transparent}"""
+qdark_addon = """QPushButton {border: 1px solid transparent}"""
+# """QTableWidget:item:alternate {background-color: #222C36;}"""  # removed because it overrides the background color of qtablewidgetitems

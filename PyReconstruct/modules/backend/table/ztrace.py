@@ -48,7 +48,7 @@ class ZtraceTableManager():
     def update(self, clear_tracking=False):
         """Update the data for a set of ztraces."""
         for table in self.tables:
-            table.updateZtraces(self.series.modified_ztraces)
+            table.updateData(self.series.modified_ztraces)
         if clear_tracking:
             self.series.modified_ztraces = set()
 

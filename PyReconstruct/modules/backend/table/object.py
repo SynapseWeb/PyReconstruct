@@ -78,7 +78,7 @@ class ObjectTableManager():
                 obj_names (list): the list objects to update
         """
         for table in self.tables:
-            table.updateObjects(obj_names)
+            table.updateData(obj_names)
     
     def findObject(self, obj_name : str, first=True):
         """Find an object in the series.

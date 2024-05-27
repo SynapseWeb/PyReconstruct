@@ -611,6 +611,20 @@ class Series():
                 "Resolved": False,
                 "Last Comment": True
             }.items()),
+            "section_columns": list({
+                "Thickness": True,
+                "Locked": True,
+                "Brightness": True,
+                "Contrast": True,
+                "Image Source": True
+            }.items()),
+            "ztrace_columns": list({
+                "Start": True,
+                "End": True,
+                "Distance": True,
+                "Groups": True,
+                "Alignment": True
+            }.items()),
 
             # distances
             "small_dist": 0.01,
@@ -1571,61 +1585,6 @@ class Series():
         for l in default_traces:
             palette_traces.append(Trace.fromList(l.copy()))
         return palette_traces * 2
-
-    # def mergeObjects(self, obj_names : list, new_name : str):
-    #     """Merge objects on every section.
-        
-    #         Params:
-    #             obj_names (list): the names of the objects to merge
-    #             new_name (str): the name for the merged object
-    #     """
-    #     # iterate through sections
-    #     for snum, section in self.enumerateSections(message="Merging objects..."):
-    #         # get the traces to modify
-    #         traces = []
-    #         for name in obj_names:
-    #             if name in section.contours:
-    #                 traces += section.contours[name].getTraces()
-    #                 del(section.contours[name])
-    #         if not traces:
-    #             continue
-
-    #         # get the color
-    #         color = traces[0].color
-    #         fill_mode = traces[0].fill_mode
-
-    #         # get the mag
-    #         if self.screen_mag:
-    #             mag = self.screen_mag
-    #         else:
-    #             mag = section.mag
-
-    #         # iterate through and gather pixel points
-    #         pix_traces = []
-    #         for trace in traces:
-    #             trace.name = new_name
-    #             pix_traces.append(
-    #                 [(round(x / mag), round(y / mag)) for x, y in trace.points]
-    #             )
-            
-    #         # merge the traces
-    #         new_pix_traces = mergeTraces(pix_traces)
-
-    #         # create a new contour from the traces
-    #         for pix_trace in new_pix_traces:
-    #             # convert pixels back to field coords
-    #             field_points = [
-    #                 (x * mag, y * mag) for x, y in pix_trace
-    #             ]
-    #             # create the trace
-    #             trace = Trace(new_name, color)
-    #             trace.fill_mode = fill_mode
-    #             trace.points = field_points
-    #             # add it to the contour
-    #             section.addTrace(trace, "Created by merging objects")
-
-    #         # save thes section
-    #         section.save()
     
     def getRecentSegGroup(self) -> str:
         """Return the most recent segmentation group name.
@@ -2272,6 +2231,25 @@ class Series():
         elif not value and col_name in column_data:
             del(column_data[col_name])
         self.setAttr(obj_name, "user_columns", column_data)
+    
+    def deleteSections(self, section_numbers : list, log_event=True):
+        """Delete sections in the series."""
+        for snum in section_numbers:
+            # delete the file
+            filename = self.sections[snum]
+            os.remove(os.path.join(self.getwdir(), filename))
+            # delete link to file
+            del(self.sections[snum])
+            if log_event:
+                self.addLog(None, snum, "Delete section")
+        
+        # remove ztrace links to sections
+        for ztrace in self.ztraces.values():
+            pts = []
+            for pt in ztrace.points:
+                if pt[2] not in section_numbers:
+                    pts.append(pt)
+            ztrace.points = pts
     
 class SeriesIterator():
 

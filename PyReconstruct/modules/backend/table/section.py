@@ -33,15 +33,19 @@ class SectionTableManager():
     def refresh(self):
         """Refresh the section data."""
         self.mainwindow.field.refreshTables(refresh_data=True)
-    
-    def updateTables(self):
+        
+    def updateTable(self, table):
         """Updates a table with the current data.
         
             Params:
                 table (ObjectTableWidget): the table to update
         """
+        table.createTable()
+    
+    def updateTables(self):
+        """Updates all tables with the current data."""
         for table in self.tables:
-            table.createTable()
+            self.updateTable(table)
     
     def updateSection(self, snum):
         """Update the data for a section.
@@ -50,7 +54,7 @@ class SectionTableManager():
                 section (Section): the section number with data to update
         """
         for table in self.tables:
-            table.updateSection(snum)
+            table.updateData(snum)
     
     def updateSections(self, section_numbers : list):
         """Update the tables for a set of sections."""
@@ -193,14 +197,7 @@ class SectionTableManager():
         """
         self.mainwindow.saveAllData()
         
-        for snum in section_numbers:
-            # delete the file
-            filename = self.series.sections[snum]
-            os.remove(os.path.join(self.series.getwdir(), filename))
-            # delete link to file
-            del(self.series.sections[snum])
-            if log_event:
-                self.series.addLog(None, snum, "Delete section")
+        self.series.deleteSections(section_numbers)
                 
         # refresh the data in all tables
         self.mainwindow.field.refreshTables(refresh_data=True)

@@ -2,23 +2,19 @@ import re
 import os
 
 from PySide6.QtWidgets import (
-    QMainWindow, 
-    QDockWidget, 
     QTableWidgetItem, 
-    QAbstractItemView, 
     QWidget, 
     QInputDialog, 
     QMenu
 )
 from PySide6.QtCore import Qt
 
-from .copy_table_widget import CopyTableWidget
+from .data_table import DataTable
 from .str_helper import sortList
 
 from PyReconstruct.modules.datatypes import (
     Series,
-    Section,
-    TraceData
+    Section
 )
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
@@ -32,7 +28,7 @@ from PyReconstruct.modules.gui.dialog import (
     FileDialog
 )
 
-class TraceTableWidget(QDockWidget):
+class TraceTableWidget(DataTable):
 
     def __init__(self, series : Series, section : Section, mainwindow : QWidget, manager):
         """Create the trace table dock widget.
@@ -43,104 +39,150 @@ class TraceTableWidget(QDockWidget):
                 mainwindow (QWidget): the main window the dock is connected to
                 manager: the trace table manager
         """
-        # initialize the widget
-        super().__init__(mainwindow)
-        self.mainwindow = mainwindow
-        self.series = series
         self.section = section
-
-        # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
-        self.setWindowTitle("Trace List")
-
-        # set defaults
-        self.columns = self.series.getOption("trace_columns")
-        # check for missing columns
-        defaults = self.series.getOption("trace_columns", get_default=True)
-        for col_name in defaults:
-            if col_name not in self.columns:
-                self.columns = defaults
-                self.series.setOption("trace_columns", self.columns)
-                break
 
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
         self.hide_filter = "all"
 
-        # create the main window widget
-        self.main_widget = QMainWindow()
-        self.setWidget(self.main_widget)
-        
-        # create the table and the menu
-        self.table = None
+        super().__init__("trace", series, mainwindow, manager)
+        self.static_columns = ["Name"]
+        self.rows = []
         self.createTable(self.section)
-        self.createMenus()
-
-        # save manager object
-        self.manager = manager
 
         self.show()
     
-    def setRow(self, name : str, trace_data : TraceData, row : int, resize_columns=True):
+    def getItems(self, name_trace_data : tuple, item_type : str):
         """Populate a row with trace item data.
         
             Params:
-                name (str): the name of the trace
-                index (int): the index of the trace in the contour
-                trace_data (TraceData): the object containing the relevant trace data
-                row (int): the row to modify
+                name_trace_data (tuple): the tuple container for the (name, TraceData) objects
+                item_type (str): the specific data to be retrieved
         """
-        while row > self.table.rowCount()-1:
-            self.table.insertRow(self.table.rowCount())
-            self.rows.append(None)
-        self.rows[row] = trace_data
-        col = 0
-        self.table.setItem(row, col, QTableWidgetItem(name))
-        col += 1
-        if self.columns["Index"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(trace_data.index)))
-            col += 1
-        if self.columns["Tags"]:
-            self.table.setItem(row, col, QTableWidgetItem(", ".join(trace_data.getTags())))
-            col += 1
-        if self.columns["Hidden"]:
-            self.enable_cb_event = False
+        name, trace_data = name_trace_data
+        items = []
+
+        if item_type == "Name":
+            items.append(QTableWidgetItem(name))
+        elif item_type == "Index":
+            items.append(QTableWidgetItem(str(trace_data.index)))
+        elif item_type == "Tags":
+            items.append(QTableWidgetItem(", ".join(trace_data.getTags())))
+        elif item_type == "Hidden":
             item = QTableWidgetItem("")
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if trace_data.hidden else Qt.CheckState.Unchecked)
-            self.table.setItem(row, col, item)
-            self.enable_cb_event = True
-            col += 1
-        if self.columns["Closed"]:
-            self.enable_cb_event = False
+            items.append(item)
+        elif item_type == "Closed":
             item = QTableWidgetItem("")
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if trace_data.closed else Qt.CheckState.Unchecked)
-            self.table.setItem(row, col, item)
-            self.enable_cb_event = True
-            col += 1
-        if self.columns["Length"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(trace_data.getLength(), 5))))
-            col += 1
-        if self.columns["Area"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(trace_data.getArea(), 5))))
-            col += 1
-        if self.columns["Radius"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(trace_data.getRadius(), 5))))
-            col += 1
+            items.append(item)
+        elif item_type == "Length":
+            items.append(QTableWidgetItem(str(round(trace_data.getLength(), 5))))
+        elif item_type == "Area":
+            items.append(QTableWidgetItem(str(round(trace_data.getArea(), 5))))
+        elif item_type == "Radius":
+            items.append(QTableWidgetItem(str(round(trace_data.getRadius(), 5))))
+        
+        return items
     
-    def setContours(self, names, resize=True):
+    def passesFilters(self, name_trace_data : tuple):
+        """Check if an object passes the filters.
+        
+            Params:
+                name_trace_data (tuple): the name, TraceData of the trace
+        """
+        name, trace_data = name_trace_data
+
+        # check groups
+        filters_len = len(self.group_filters)
+        if filters_len != 0:
+            object_groups = self.series.object_groups.getObjectGroups(name)
+            groups_len = len(object_groups)
+            union_len = len(object_groups.union(self.group_filters))
+            if union_len == groups_len + filters_len:  # intersection does not exist
+                return False
+        
+        # check tags
+        filters_len = len(self.tag_filters)
+        if filters_len != 0:
+            trace_tags = trace_data.getTags()
+            trace_len = len(trace_tags)
+            union_len = len(trace_tags.union(self.tag_filters))
+            if union_len == trace_len + filters_len:  # intersection does not exist
+                return False
+        
+        # check hidden
+        h = trace_data.hidden
+        if self.hide_filter == "hidden" and not h:
+            return False
+        elif self.hide_filter == "unhidden" and h:
+            return False
+        
+        # check regex
+        passes_filters = False if self.re_filters else True
+        for re_filter in self.re_filters:
+            if bool(re.fullmatch(re_filter, name)):
+                passes_filters = True
+        if not passes_filters:
+            return False
+        
+        return True
+
+    def getPassingTraces(self, contour_name : str):
+        """Get the name, TraceData pairs for the passing traces of a certain contour.
+        
+            Params:
+                contour_name (str): the name of the contour
+        """
+        trace_data_list = self.series.data.getTraceData(contour_name, self.section.n)
+        if not trace_data_list:
+            return []
+        
+        trace_data_list.sort()  # sort by trace index
+        passing = []
+        for trace_data in trace_data_list:
+            if self.passesFilters((contour_name, trace_data)):
+                passing.append((contour_name, trace_data))
+        return passing
+
+    def getFiltered(self):
+        """Get the names of the objects that pass the filter."""
+        contour_names = sortList(list(self.section.contours.keys()))
+        filtered = []
+
+        for name in contour_names:
+            filtered += self.getPassingTraces(name)
+        
+        return filtered
+    
+    def setRow(self, name_trace_data : tuple, row : int, resize=True):
+        """Set the data for a row of the table.
+        
+            Params:
+                name_trace_data (tuple): the container for the necessary data
+                row (int): the row to enter this data into
+        """
+        name, trace_data = name_trace_data
+        while row >= self.table.rowCount():
+            self.table.insertRow(self.table.rowCount())
+        while row >= len(self.rows):
+            self.rows.append(None)
+        self.rows[row] = trace_data
+
+        super().setRow(name_trace_data, row, resize)
+    
+    def updateData(self, names, resize=True):
         """Set the table data for a set of contours.
         
             Params:
                 name (iterable): the names of contours to update
         """
-        filters_len = len(self.tag_filters)  # use to later check tags
         for name in names:
-            r, is_in_table = self.table.getRowIndex(name)
-
             # remove existing instances
+            r, is_in_table = self.table.getRowIndex(name)
             if is_in_table:
                 i = self.table.item(r, 0)
                 while i and i.text() == name:
@@ -148,58 +190,20 @@ class TraceTableWidget(QDockWidget):
                     self.rows.pop(r)
                     i = self.table.item(r, 0)
             
-            # insert the new contour data
-            trace_data_list = self.series.data.getTraceData(name, self.section.n)
+            # get new instances
+            passing = self.getPassingTraces(name)
             modified_rows = []
-            if trace_data_list:
-                first_row = r
-                for trace_data in trace_data_list:
-                    # check for tags
-                    if filters_len != 0:
-                        trace_tags = trace_data.getTags()
-                        trace_len = len(trace_tags)
-                        union_len = len(trace_tags.union(self.tag_filters))
-                        if union_len == trace_len + filters_len:  # intersection does not exist
-                            continue
-                    # check for hidden
-                    if (
-                        (self.hide_filter == "hidden" and not trace_data.hidden) or
-                        (self.hide_filter == "unhidden" and trace_data.hidden)
-                    ):
-                        continue
-                    self.table.insertRow(r)
-                    self.rows.insert(r, None)
-                    self.setRow(name, trace_data, r)
-                    modified_rows.append(r)
-                    r += 1            
+            for name_trace_data in passing:
+                self.table.insertRow(r)
+                self.rows.insert(r, None)
+                self.setRow(name_trace_data, r)
+                modified_rows.append(r)
+                r += 1
+                      
             if resize:
                 self.table.resizeColumnsToContents()
                 for r in modified_rows:
                     self.table.resizeRowToContents(r)
-    
-    def itemChecked(self, item : QTableWidgetItem):
-        """Called when user checks a checkbox in the table."""
-        # prevent recursion
-        if not self.enable_cb_event:
-            return
-        self.enable_cb_event = False
-
-        c = item.column()
-        state = item.checkState()
-        value = state == Qt.CheckState.Checked
-        name, index = self.getSelectedItem(item)
-
-        if name:
-            items = [(name, index)]
-            if self.horizontal_headers[c] == "Hidden":
-                self.hideTraces(value, items)
-            elif self.horizontal_headers[c] == "Closed":
-                self.closeTraces(value, items)
-        else:
-            item.setCheckState(Qt.CheckState.Unchecked if value else Qt.CheckState.Checked)
-
-
-        self.enable_cb_event = True
 
     def createMenus(self):
         """Create the menu for the trace table widget."""
@@ -229,6 +233,7 @@ class TraceTableWidget(QDockWidget):
         ]
         # create the menubar object
         self.menubar = self.main_widget.menuBar()
+        self.menubar.clear()
         self.menubar.setNativeMenuBar(False) # attach menu to the window
         # fill in the menu bar object
         populateMenuBar(self, self.menubar, menubar_list)
@@ -257,49 +262,6 @@ class TraceTableWidget(QDockWidget):
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
-            
-    def passesFilters(self, name : str):
-        """Check if an object passes the filters.
-        
-            Params:
-                name (str): the name of the object
-        """
-        # check groups
-        filters_len = len(self.group_filters)
-        if filters_len != 0:
-            object_groups = self.series.object_groups.getObjectGroups(name)
-            groups_len = len(object_groups)
-            union_len = len(object_groups.union(self.group_filters))
-            if union_len == groups_len + filters_len:  # intersection does not exist
-                return False
-        
-        # check tags
-        filters_len = len(self.tag_filters)
-        if filters_len != 0:
-            object_tags = self.series.data.getTags(name)
-            object_len = len(object_tags)
-            union_len = len(object_tags.union(self.tag_filters))
-            if union_len == object_len + filters_len:  # intersection does not exist
-                return False
-        
-        # check regex
-        passes_filters = False if self.re_filters else True
-        for re_filter in self.re_filters:
-            if bool(re.fullmatch(re_filter, name)):
-                passes_filters = True
-        if not passes_filters:
-            return False
-        
-        return True
-
-    def getFilteredObjects(self):
-        """Get the names of the objects that pass the filter."""
-        filtered_object_list = []
-        for name in self.series.data["objects"]:
-            if self.passesFilters(name):
-                filtered_object_list.append(name)
-        
-        return sortList(filtered_object_list)
 
     def updateTitle(self):
         """Update the title of the table."""
@@ -318,86 +280,43 @@ class TraceTableWidget(QDockWidget):
         self.setWindowTitle(title)
     
     def createTable(self, section : Section):
-        """Create the table widget.
+        """Create the table.
         
             Params:
-                tracedict (dict): the dictionary containing the object table data objects
+                section (Section): the section the table is displaying data for
         """
-        # close an existing table and save scroll position
-        if self.table is not None:
-            vscroll = self.table.verticalScrollBar()
-            scroll_pos = vscroll.value()
-            self.table.close()
-        else:
-            scroll_pos = 0
-        
         self.section = section
-
-        self.updateTitle()
-
-        # establish table headers
-        self.horizontal_headers = ["Name"]
-        for c in self.columns:
-            if self.columns[c]:
-                self.horizontal_headers.append(c)
-        
-        # filter the traces
-        filtered_trace_names = self.getFilteredObjects()
-
-        # create the table
-        self.table = CopyTableWidget(0, len(self.horizontal_headers))
-        self.rows = []
-
-        # connect table functions
-        self.table.contextMenuEvent = self.traceContextMenu
-        self.table.mouseDoubleClickEvent = self.findTrace
-        self.table.backspace = self.deleteTraces
-
-        # format table
-        self.table.setWordWrap(False)
-        self.table.setShowGrid(False)  # no grid
-        self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
-        self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
-        self.table.verticalHeader().hide()  # no veritcal header
-        
-        # fill in trace data
-        self.setContours(filtered_trace_names, resize=False)
-
-        # format rows and columns
-        self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
-
-        # set the saved scroll value
-        self.table.verticalScrollBar().setValue(scroll_pos)
-
-        # set table as central widget
-        self.main_widget.setCentralWidget(self.table)
-
-        # checkbox for hidden and closed
-        self.table.itemChanged.connect(self.itemChecked)
-        self.enable_cb_event = True
+        super().createTable()
     
-    def getSelectedItem(self, item : QTableWidgetItem=None, include_locked=False):
-        """Get the trace item that is selected by the user."""
-        if item is None:
-            selected_indeces = self.table.selectedIndexes()
-            if len(selected_indeces) != 1:
-                return None, None
-            item = selected_indeces[0]
-        
+    def itemChanged(self, item : QTableWidgetItem):
+        """Called when user checks a checkbox in the table."""
+        # prevent recursion
+        if not self.process_check_event:
+            return
+        self.process_check_event = False
+
+        c = item.column()
+        state = item.checkState()
+        value = state == Qt.CheckState.Checked
         r = item.row()
         name = self.table.item(r, 0).text()
         index = self.rows[r].index
 
-        if not include_locked and self.series.getAttr(name, "locked"):
+        # check if object is locked
+        if self.series.getAttr(name, "locked"):
             unlocked = self.mainwindow.field.notifyLocked(name)
             if not unlocked:
-                return None, None
+                return
 
-        return name, index
+        items = [(name, index)]
+        if self.horizontal_headers[c] == "Hidden":
+            self.hideTraces(value, items)
+        elif self.horizontal_headers[c] == "Closed":
+            self.closeTraces(value, items)
+
+        self.process_check_event = True
     
-    def getSelectedItems(self, include_locked=False):
+    def getSelected(self, include_locked=False, single=False):
         """Get the trace items that iare selected by the user."""
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
@@ -413,25 +332,25 @@ class TraceTableWidget(QDockWidget):
                 locked_objs.add(name)
             selected_traces.append((name, index))
         
+        if single and len(selected_traces) != 1:
+            notify("Please select only one trace for this option.")
+            return
+        
         if locked_objs:
             unlocked = self.mainwindow.field.notifyLocked(locked_objs)
             if not unlocked:
-                return None
+                return
         
-        return selected_traces
-    
-    def resizeEvent(self, event):
-        """Resize the table when window is resized."""
-        super().resizeEvent(event)
-        w = event.size().width()
-        h = event.size().height()
-        self.table.resize(w, h-20)
+        if single:
+            return selected_traces[0]
+        else:
+            return selected_traces
 
     # RIGHT CLICK FUNCTIONS
 
     def editTraces(self):
         """Edit a set of traces."""
-        items = self.getSelectedItems()
+        items = self.getSelected()
         if items is None:
             return
         
@@ -461,7 +380,7 @@ class TraceTableWidget(QDockWidget):
                 items (list): the specific items indicating the traces to modify
         """
         if items is None:
-            items = self.getSelectedItems()
+            items = self.getSelected()
         if not items:
             return
         
@@ -476,7 +395,7 @@ class TraceTableWidget(QDockWidget):
                 items (list): the specific items indicating the traces to modify
         """
         if items is None:
-            items = self.getSelectedItems()
+            items = self.getSelected()
         if not items:
             return
         
@@ -485,7 +404,7 @@ class TraceTableWidget(QDockWidget):
     
     def editRadius(self):
         """Edit the radius for a set of traces."""
-        items = self.getSelectedItems()
+        items = self.getSelected()
         if items is None:
             return
         
@@ -516,7 +435,7 @@ class TraceTableWidget(QDockWidget):
     
     def editShape(self):
         """Modify the shape of the traces on an entire object."""
-        items = self.getSelectedItems()
+        items = self.getSelected()
         if items is None:
             return
         
@@ -529,16 +448,21 @@ class TraceTableWidget(QDockWidget):
         self.manager.editShape(traces, new_shape)
         self.manager.update()
           
-    def findTrace(self, event=None):
+    def findTrace(self):
         """Select a trace on the section."""
-        item = self.getSelectedItem(include_locked=True)
+        item = self.getSelected(include_locked=True, single=True)
         if item is None:
             return
         self.manager.findTrace(item)
+
+    def mouseDoubleClickEvent(self, event=None):
+        """Called when mouse is double-clicked."""
+        super().mouseDoubleClickEvent(event)
+        self.findTrace()
     
     def deleteTraces(self):
         """Delete a set of traces."""
-        items = self.getSelectedItems()
+        items = self.getSelected()
         if not items:
             return
         
@@ -547,54 +471,18 @@ class TraceTableWidget(QDockWidget):
         self.manager.deleteTraces(traces) 
         self.manager.update()
     
+    def backspace(self):
+        """Called when backspace is pressed."""
+        self.deleteTraces()
+    
     def traceContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify traces."""
-        if not self.getSelectedItems():
+        if not self.getSelected():
             return
         
         self.context_menu.exec(event.globalPos())
 
     # MENU-RELATED FUNCTIONS
-    
-    def setColumns(self):
-        """Set the columns to display."""
-        structure = [
-            [("check", *tuple(self.columns.items()))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Table Columns")
-        if not confirmed:
-            return
-        
-        self.columns = dict(response[0])
-        self.series.setOption("trace_columns", self.columns)
-        self.manager.updateTable(self)
-    
-    def export(self):
-        """Export the trace list as a csv file."""
-        # get the location from the user
-        file_path = FileDialog.get(
-            "save",
-            self,
-            "Save Trace List",
-            file_name="traces.csv",
-            filter="Comma Separated Values (*.csv)"
-        )
-        if not file_path: return
-        # unload the table into the csv file
-        csv_file = open(file_path, "w")
-        # headers first
-        items = []
-        for c in range(self.table.columnCount()):
-            items.append(self.table.horizontalHeaderItem(c).text())
-        csv_file.write(",".join(items) + "\n")
-        # trace data
-        for r in range(self.table.rowCount()):
-            items = []
-            for c in range(self.table.columnCount()):
-                items.append(self.table.item(r, c).text())
-            csv_file.write(",".join(items) + "\n")
-        # close file
-        csv_file.close()
 
     def exportAll(self):
         """Export the trace list as a csv file."""
@@ -679,8 +567,3 @@ class TraceTableWidget(QDockWidget):
 
         # call through manager to update self
         self.manager.updateTable(self)
-
-    def closeEvent(self, event):
-        """Remove self from manager table list."""
-        self.manager.tables.remove(self)
-        super().closeEvent(event)

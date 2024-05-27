@@ -39,6 +39,9 @@ class TraceData():
     def getRadius(self):
         return self.radius
 
+    def __lt__(self, other):
+        return self.index < other.index
+
 
 class ObjectData():
 

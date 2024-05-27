@@ -39,7 +39,7 @@ class TraceTableManager():
     def update(self):
         """Update the table for a section."""
         for table in self.tables:
-            table.setContours(self.section.getAllModifiedNames())
+            table.updateData(self.section.getAllModifiedNames())
     
     def newTable(self):
         """Create a new trace list."""

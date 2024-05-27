@@ -1,20 +1,15 @@
 import re
-import os
 
 from PySide6.QtWidgets import (
-    QMainWindow, 
-    QDockWidget, 
     QTableWidgetItem,  
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QAbstractItemView,
     QColorDialog
 )
 from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt
 
-from .copy_table_widget import CopyTableWidget
+from .data_table import DataTable
 
 from PyReconstruct.modules.datatypes import Series, Section, Flag
 from PyReconstruct.modules.gui.utils import (
@@ -25,10 +20,9 @@ from PyReconstruct.modules.gui.utils import (
 from PyReconstruct.modules.gui.dialog import (
     FlagDialog,
     QuickDialog,
-    FileDialog
 )
 
-class FlagTableWidget(QDockWidget):
+class FlagTableWidget(DataTable):
 
     def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the object table dock widget.
@@ -38,42 +32,16 @@ class FlagTableWidget(QDockWidget):
                 mainwindow (MainWindow): the main window the dock is connected to
                 manager: the object table manager
         """
-        # initialize the widget
-        super().__init__(mainwindow)
-        self.series = series
-        self.mainwindow = mainwindow
-
-        # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
-        self.setWindowTitle("Flag List")
-
-        # set defaults
-        self.columns = self.series.getOption("flag_columns")
-        # check for missing
-        defaults = self.series.getOption("flag_columns", get_default=True)
-        for col_name in defaults:
-            if col_name not in self.columns:
-                self.columns = defaults
-                self.series.setOption("flag_columns", self.columns)
-                break
-
+        # create the filters
         self.show_resolved = False
         self.re_filters = set([".*"])
         self.color_filter = None
         self.comment_filter = None
 
-        # create the main window widget
-        self.main_widget = QMainWindow()
-        self.setWidget(self.main_widget)
-        
-        # create the table and the menu
-        self.table = None
+        # initialize the widget
         self.displayed_flags = []
+        super().__init__("flag", series, mainwindow, manager)
         self.createTable()
-        self.createMenus()
-
-        # save manager object
-        self.manager = manager
 
         self.show()
     
@@ -113,6 +81,7 @@ class FlagTableWidget(QDockWidget):
         ]
         # create the menubar object
         self.menubar = self.main_widget.menuBar()
+        self.menubar.clear()
         self.menubar.setNativeMenuBar(False) # attach menu to the window
         # fill in the menu bar object
         populateMenuBar(self, self.menubar, menubar_list)
@@ -140,6 +109,33 @@ class FlagTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
+    def getItems(self, flag : Flag, item_type : str):
+        """Get the QTableWidgetItem(s) for an attribute of a flag.
+        
+            Params:
+                flag (Flag): the flag to retrieve the data for
+                item_type (str): the specific data to be retrieved
+        """
+        items = []
+        if item_type == "Section":
+            items.append(QTableWidgetItem(str(flag.snum)))
+        elif item_type == "Color":
+            item = QTableWidgetItem(" ")
+            item.setBackground(QColor(*flag.color))
+            items.append(item)
+        elif item_type == "Flag":
+            items.append(QTableWidgetItem(flag.name))
+        elif item_type == "Resolved":
+            resolved = "Resolved" if flag.resolved else "Unresolved"
+            items.append(QTableWidgetItem(resolved))
+        elif item_type == "Last Comment":
+            if flag.comments:
+                comment = flag.comments[-1].text
+            else:
+                comment = ""
+            items.append(QTableWidgetItem(comment))
+        return items
+    
     def setRow(self, flag : Flag, row : int, resize=True):
         """Set the data for a row of the table.
         
@@ -147,35 +143,11 @@ class FlagTableWidget(QDockWidget):
                 name (str): the name of the object
                 row (int): the row to enter this data into
         """
-        self.process_check_event = False
-        col = 0
-        if self.columns["Section"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(flag.snum)))
-            col += 1
-        if self.columns["Color"]:
-            item = QTableWidgetItem(" ")
-            item.setBackground(QColor(*flag.color))
-            self.table.setItem(row, col, item)
-            col += 1
-        if self.columns["Flag"]:
-            self.table.setItem(row, col, QTableWidgetItem(flag.name))
-            col += 1
-        if self.columns["Resolved"]:
-            resolved = "Resolved" if flag.resolved else "Unresolved"
-            self.table.setItem(row, col, QTableWidgetItem(resolved))
-        if self.columns["Last Comment"]:
-            if flag.comments:
-                comment = flag.comments[-1].text
-            else:
-                comment = ""
-            self.table.setItem(row, col, QTableWidgetItem(comment))
-            col += 1
-        
+        super().setRow(flag, row, resize)
+
+        while len(self.displayed_flags) <= row:
+            self.displayed_flags.append(None)
         self.displayed_flags[row] = flag
-        
-        if resize:
-            self.table.resizeColumnsToContents()
-            self.table.resizeRowToContents(row)
     
     def insertRow(self, r : int):
         """Add a row to the table.
@@ -229,7 +201,7 @@ class FlagTableWidget(QDockWidget):
         
         return True
     
-    def getFilteredFlags(self, section : Section = None):
+    def getFiltered(self, section : Section = None):
         """Get the flags that pass the filters."""
         passing_flags = []
         for snum, data in self.series.data["sections"].items():
@@ -258,63 +230,7 @@ class FlagTableWidget(QDockWidget):
         
         self.setWindowTitle(title)
     
-    def createTable(self):
-        """Create the table widget.
-        
-            Params:
-                objdata (dict): the dictionary containing the object table data objects
-        """
-        # close an existing table and save scroll position
-        if self.table is not None:
-            vscroll = self.table.verticalScrollBar()
-            scroll_pos = vscroll.value()
-            self.table.close()
-        else:
-            scroll_pos = 0
-        
-        self.updateTitle()
-
-        # establish table headers
-        self.horizontal_headers = []
-        for key, b in self.columns.items():
-            if b:
-                self.horizontal_headers.append(key)
-        
-        # filter the objects
-        passing_flags = self.getFilteredFlags()
-
-        # create the table object
-        self.table = CopyTableWidget(len(passing_flags), len(self.horizontal_headers), self.main_widget)
-        self.displayed_flags = [None] * len(passing_flags)
-
-        # connect table functions
-        self.table.mouseDoubleClickEvent = self.find
-        self.table.contextMenuEvent = self.flagContextMenu
-        self.table.backspace = self.deleteFlags
-
-        # format table
-        # self.table.setWordWrap(False)
-        self.table.setShowGrid(False)  # no grid
-        self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
-        self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
-        self.table.verticalHeader().hide()  # no veritcal header
-        
-        # fill in object data
-        for r, flag in enumerate(passing_flags):
-            self.setRow(flag, r, resize=False)
-
-        # format rows and columns
-        self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
-
-        # set the saved scroll value
-        self.table.verticalScrollBar().setValue(scroll_pos)
-
-        # set table as central widget
-        self.main_widget.setCentralWidget(self.table)
-    
-    def updateSection(self, section : Section):
+    def updateData(self, section : Section):
         """Update the flags for a section.
         
             Params:
@@ -331,47 +247,37 @@ class FlagTableWidget(QDockWidget):
                 self.setRow(flag, row)
                 row += 1
     
-    def resizeEvent(self, event):
-        """Resize the table when window is resized."""
-        super().resizeEvent(event)
-        w = event.size().width()
-        h = event.size().height()
-        self.table.resize(w, h-20)
-    
-    def getSelectedFlag(self):
-        """Get the name of the object highlighted by the user.
-        
-            Returns:
-                (str): the name of the object
-        """
-        selected_indexes = self.table.selectedIndexes()
-        if len(selected_indexes) != 1:
-            return None
-        return self.displayed_flags[selected_indexes[0].row()]
-    
-    def getSelectedFlags(self):
+    def getSelected(self, single=False):
         """Get the name of the objects highlighted by the user.
-        
+
+            Params:
+                single (bool): True if only accept single selection
             Returns:
-                (list): the name of the objects
+                (str | list): the name of the object(s)
         """
         selected_indexes = self.table.selectedIndexes()
-        return [self.displayed_flags[i.row()] for i in selected_indexes]
+        selected_flags = [self.displayed_flags[i.row()] for i in selected_indexes]
+
+        if single:
+            if len(selected_flags) != 1:
+                notify("Please select only one flag for this option.")
+                return
+            else:
+                return selected_flags[0]
+        else:
+            return selected_flags
 
     # RIGHT CLICK FUNCTIONS
-
-    def flagContextMenu(self, event=None):
-        """Executed when button is right-clicked: pulls up menu for user to modify objects."""
-        if len(self.table.selectedIndexes()) == 0:
-            return
-        self.context_menu.exec(event.globalPos())
     
     def editFlag(self):
         """Edit a flag."""
-        flag = self.getSelectedFlag()
-        if not flag:
+        flags = self.getSelected()
+        if not flags:
+            return
+        elif len(flags) != 1:
             notify("Please edit one flag at a time.")
             return
+        flag = flags[0]
         
         response, confirmed = FlagDialog(self.mainwindow, flag).exec()
         if not confirmed:
@@ -397,7 +303,7 @@ class FlagTableWidget(QDockWidget):
             Params:
                 resolved (bool): the resolved status
         """
-        flags = self.getSelectedFlags()
+        flags = self.getSelected()
         if not flags:
             return
         
@@ -406,54 +312,14 @@ class FlagTableWidget(QDockWidget):
     def deleteFlags(self, match_name=False):
         """Delete an object or objects on every section."""
         self.mainwindow.saveAllData()
-        selected_flags = self.getSelectedFlags()
+        selected_flags = self.getSelected()
         self.manager.deleteFlags(selected_flags, match_name)
+    
+    def backspace(self):
+        """Called when backspace is pressed."""
+        self.deleteFlags()
 
     # MENU-RELATED FUNCTIONS
-
-    def refresh(self):
-        """Refresh the object lists."""
-        self.manager.refresh()
-    
-    def setColumns(self):
-        """Set the columns to display."""
-        structure = [
-            [("check", *tuple(self.columns.items()))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Table Columns")
-        if not confirmed:
-            return
-        self.columns = dict(response[0])
-        self.series.setOption("flag_columns", self.columns)
-        
-        self.manager.updateTable(self)
-    
-    def export(self):
-        """Export the object list as a csv file."""
-        # get the location from the user
-        file_path = FileDialog.get(
-            "save",
-            self,
-            "Save Object List",
-            file_name="objects.csv",
-            filter="Comma Separated Values (*.csv)"
-        )
-        if not file_path: return
-        # unload the table into the csv file
-        csv_file = open(file_path, "w")
-        # headers first
-        items = []
-        for c in range(self.table.columnCount()):
-            items.append(self.table.horizontalHeaderItem(c).text())
-        csv_file.write(",".join(items) + "\n")
-        # object data
-        for r in range(self.table.rowCount()):
-            items = []
-            for c in range(self.table.columnCount()):
-                items.append(self.table.item(r, c).text())
-            csv_file.write(",".join(items) + "\n")
-        # close file
-        csv_file.close()
     
     def toggleDisplayResolved(self):
         """Toggle whether or not resolved flags are displayed in the table."""
@@ -480,10 +346,13 @@ class FlagTableWidget(QDockWidget):
     def setColorFilter(self, use_selected=True):
         """Set the color filter for the list."""
         if use_selected:
-            flag = self.getSelectedFlag()
-            if not flag:
+            flags = self.getSelected()
+            if not flags:
+                return
+            elif len(flags) != 1:
                 notify("Please select one flag to set the color filter.")
                 return
+            flag = flags[0]
             self.color_filter = tuple(flag.color)
         else:
             if self.color_filter:
@@ -520,14 +389,12 @@ class FlagTableWidget(QDockWidget):
         self.color_filter = None
         self.createTable()
     
-    def find(self, event=None):
+    def mouseDoubleClickEvent(self, event=None):
         """Focus the field on a flag in the series."""
-        flag = self.getSelectedFlag()
+        super().mouseDoubleClickEvent(event)
+        print("f")
+        flag = self.getSelected(single=True)
         if flag is None:
             return
+        print("FLAG")
         self.mainwindow.setToFlag(flag)
-    
-    def closeEvent(self, event):
-        """Remove self from manager table list."""
-        self.manager.tables.remove(self)
-        super().closeEvent(event)

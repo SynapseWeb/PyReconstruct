@@ -9,13 +9,11 @@ from PySide6.QtWidgets import (
     QRadioButton,
     QLabel,
     QApplication,
-    QStyle
 )
 from PySide6.QtGui import (
     QPainter,
-    QColor,
+    QPalette,
 )
-from PySide6.QtCore import QSize
 
 from .file_dialog import FileDialog
 
@@ -129,7 +127,7 @@ class BorderedWidget(QWidget):
         super().paintEvent(event)
         # draw the border manually
         painter = QPainter(self)
-        painter.setPen(QColor(0, 0, 0))  # Set the color of the border
+        painter.setPen(QApplication.palette().color(QPalette.WindowText))
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Adjust the rectangle to draw inside the border
     
     def addTitle(self, title : str):

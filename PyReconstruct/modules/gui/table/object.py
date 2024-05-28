@@ -29,6 +29,7 @@ from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
     ShapesDialog,
     QuickDialog,
+    FileDialog
 )
 
 class ObjectTableWidget(DataTable):
@@ -159,7 +160,10 @@ class ObjectTableWidget(DataTable):
                         "attr_name": "editcolumn_menu",
                         "text": "Edit column",
                         "opts": edit_user_cols
-                    }
+                    },
+                    None,
+                    ("exportcolumns_act", "Export user columns...", "", self.exportUserColText),
+                    ("importcolumns_act", "Import user columns...", "", self.importUserColText),
                 ]
             }
         ]
@@ -501,6 +505,11 @@ class ObjectTableWidget(DataTable):
             list(self.series.data["objects"].keys())
         )
         return sortList(filtered_list)
+
+    def createTable(self):
+        """Create the table widget."""
+        self.updateObjCols(recreate=False)
+        super().createTable()
     
     def updateData(self, names : list):
         """Update the data for a set of objects.
@@ -635,6 +644,38 @@ class ObjectTableWidget(DataTable):
                 self.mainwindow.seriesModified(True)
         
         self.process_check_event = True
+    
+    def updateObjCols(self, recreate=True):
+        """Update the object column options based on the series.user_columns.
+        
+            Params:
+                recreate (bool): True if menus and table should be recreated in the event of a column change
+        """
+        columns_changed = False
+        update_table = False
+        default_columns = self.series.getOption("object_columns", get_default=True)
+
+        # column has been removed
+        for pair in self.columns.copy():
+            col_name, b = pair
+            if col_name not in dict(default_columns) and col_name not in self.series.user_columns:
+                self.columns.remove(pair)
+                columns_changed = True
+                update_table |= b
+        
+        # column has been added
+        for col_name in self.series.user_columns:
+            if col_name not in dict(self.columns):
+                self.columns.append((col_name, True))
+                columns_changed = True
+                update_table = True
+        
+        if recreate:
+            if columns_changed:
+                self.series.setOption("object_columns", self.columns)
+                self.createMenus()
+            if update_table:
+                self.createTable()
 
     # RIGHT CLICK FUNCTIONS
     
@@ -1171,9 +1212,9 @@ class ObjectTableWidget(DataTable):
         self.series_states.addState()
 
         self.series.addUserCol(name, opts)
-        self.columns = self.series.getOption("object_columns")
+        self.updateObjCols()
+
         self.manager.updateTable(self)
-        self.createMenus()
         self.mainwindow.seriesModified(True)
     
     def removeUserCol(self):
@@ -1190,9 +1231,9 @@ class ObjectTableWidget(DataTable):
         self.series_states.addState()
         
         self.series.removeUserCol(response[0])
-        self.columns = self.series.getOption("object_columns")
+        self.updateObjCols()
+
         self.manager.updateTable(self)
-        self.createMenus()
         self.mainwindow.seriesModified(True)
     
     def editUserCol(self, col_name : str):
@@ -1222,9 +1263,9 @@ class ObjectTableWidget(DataTable):
         self.series_states.addState()
         
         self.series.editUserCol(col_name, name, opts)
-        self.columns = self.series.getOption("object_columns")
+        self.updateObjCols()
+
         self.manager.updateTable(self)
-        self.createMenus()
         self.mainwindow.seriesModified(True)
     
     def toggleUserColFilter(self, col_name : str, opt_name : str):
@@ -1254,4 +1295,32 @@ class ObjectTableWidget(DataTable):
         """Clear the user column filters."""
         self.user_col_filters = {}
         self.manager.updateTable(self)
+    
+    def exportUserColText(self):
+        """Export user columns to a text file."""
+        out_fp = FileDialog.get(
+            "save",
+            self,
+            "File User Columns Text File",
+            "*.txt"
+        )
+        if not out_fp:
+            return
+        
+        self.series.exportUserColsText(out_fp)
+    
+    def importUserColText(self):
+        """Import user columns from a text file."""
+        fp = FileDialog.get(
+            "file",
+            self,
+            "Save User Columns Text File",
+            "*.txt"
+        )
+        if not fp:
+            return
+        
+        self.series.importUserColsText(fp)
+        self.updateObjCols()
+
 

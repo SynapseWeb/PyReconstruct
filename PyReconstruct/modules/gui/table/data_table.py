@@ -42,20 +42,19 @@ class DataTable(QDockWidget):
         # set defaults
         if "static_columns" not in dir(self): self.static_columns = []
         self.columns = self.series.getOption(f"{self.name}_columns")
-        # check for missing columns
+        # check for missing default columns
         defaults = self.series.getOption(f"{self.name}_columns", get_default=True)
         for col_name, b in defaults:
             if col_name not in dict(self.columns):
                 self.columns.append((col_name, b))
                 self.series.setOption(f"{self.name}_columns", self.columns)
+        self.table = None
+        self.process_check_event = False
+        self.horizontal_headers = self.getHeaders()
 
         # create the main window widget
         self.main_widget = QMainWindow()
         self.setWidget(self.main_widget)
-        
-        # create the table
-        self.table = None
-        self.process_check_event = False
 
         # save manager object
         self.manager = manager
@@ -159,7 +158,6 @@ class DataTable(QDockWidget):
         self.columns = self.series.getOption(f"{self.name}_columns")
 
         # establish table headers
-        self.curate_column = None
         self.horizontal_headers = self.getHeaders()
         
         # filter the data

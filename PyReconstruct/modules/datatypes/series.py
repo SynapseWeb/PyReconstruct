@@ -1257,13 +1257,6 @@ class Series():
         )
         # check if new user columns imported
         if self.user_columns != merged_user_columns:
-            # update the object list columns
-            obj_columns = self.getOption("object_columns").copy()
-            for column_name in merged_user_columns:
-                if column_name not in dict(obj_columns):
-                    obj_columns.append((column_name, False))
-            self.setOption("object_columns", obj_columns)
-
             self.user_columns = merged_user_columns
 
         # import the user column object attributes
@@ -2132,9 +2125,6 @@ class Series():
             return
         
         self.user_columns[col_name] = opts
-        col_opts = self.options["object_columns"]
-        if col_name not in dict(col_opts):
-            col_opts.append((col_name, True))
         
         if log_event:
             self.addLog(None, None, f"Add user column {col_name}")
@@ -2147,11 +2137,6 @@ class Series():
         """
         if col_name in self.user_columns:
             del(self.user_columns[col_name])
-        col_opts = self.options["object_columns"]
-        for i, (k, v) in enumerate(col_opts.copy()):
-            if k == col_name:
-                col_opts.pop(i)
-                break
 
         # iterate through all object attributes and remove the column data
         for attrs in self.obj_attrs.values():
@@ -2179,12 +2164,6 @@ class Series():
             # rename the column in the user_columns dict
             self.user_columns[new_name] = self.user_columns[col_name]
             del(self.user_columns[col_name])
-            # rename the column in the object_columns option
-            obj_columns = self.options["object_columns"]
-            for i, (k, v) in enumerate(obj_columns.copy()):
-                if k == col_name:
-                    obj_columns[i] = (new_name, v)
-                    break
             # rename the column in all obj attrs
             for attrs in self.obj_attrs.values():
                 if "user_columns" in attrs and col_name in attrs["user_columns"]:
@@ -2231,6 +2210,39 @@ class Series():
         elif not value and col_name in column_data:
             del(column_data[col_name])
         self.setAttr(obj_name, "user_columns", column_data)
+    
+    def exportUserColsText(self, out_fp : str):
+        """Export the user columns to a text file."""
+        s = ""
+        for col_name, opts in self.user_columns.items():
+            s += f"{col_name}: {', '.join(opts)}\n"
+        with open(out_fp, "w") as f:
+            f.write(s)
+    
+    def importUserColsText(self, fp : str):
+        """Import user columns from a text file."""
+        # FORMAT:
+        # name: option, option, option
+        # name: option, option, option
+        new_columns = {}
+        with open(fp, "r") as f:
+            lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            # skip blank lines:
+            if not line:
+                continue
+            try:
+                col_name, opts_str = tuple(line.split(": "))
+                opts = opts_str.split(", ")
+                new_columns[col_name] = opts
+            except:
+                raise Exception("Incorrect user columns text formatting.")
+        
+        # update the user columns
+        for col_name, opts in new_columns.items():
+            if col_name not in self.user_columns:
+                self.user_columns[col_name] = opts
     
     def deleteSections(self, section_numbers : list, log_event=True):
         """Delete sections in the series."""

@@ -8,11 +8,12 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialogButtonBox,
     QPushButton,
-    QScrollArea
+    QScrollArea,
+    QApplication
 )
 from PySide6.QtGui import (
     QPainter,
-    QColor
+    QPalette
 )
 from .quick_dialog import QuickDialog
 
@@ -296,10 +297,10 @@ class AllOptionsDialog(QDialog):
         # columns
         for table_type in ("object", "trace", "flag"):
             structure = [
-                [("check", *tuple(self.series.getOption(table_type + "_columns", use_defaults).items()))]
+                [("check", *tuple(self.series.getOption(table_type + "_columns", use_defaults)))]
             ]
             def setOption(response):
-                self.series.setOption(table_type + "_columns", dict(response[0]))
+                self.series.setOption(table_type + "_columns", response[0])
             self.addOptionWidget(table_type + "_columns", structure, setOption)
         
         # backup
@@ -399,5 +400,5 @@ class OptionWidget(QuickDialog):
         super().paintEvent(event)
         # draw the border manually
         painter = QPainter(self)
-        painter.setPen(QColor(0, 0, 0))  # Set the color of the border
+        painter.setPen(QApplication.palette().color(QPalette.WindowText))  # Set the color of the border
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Adjust the rectangle to draw inside the border

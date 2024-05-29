@@ -1,21 +1,20 @@
 import re
-import os
-from datetime import datetime
 
 from PySide6.QtWidgets import (
-    QMainWindow, 
-    QDockWidget, 
     QTableWidgetItem,  
     QWidget, 
     QInputDialog, 
     QMenu, 
-    QAbstractItemView,
     QApplication,
-    QMessageBox
+    QMessageBox,
+)
+from PySide6.QtGui import (
+    QPalette,
+    QColor
 )
 from PySide6.QtCore import Qt
 
-from .copy_table_widget import CopyTableWidget
+from .data_table import DataTable
 from .history import HistoryTableWidget
 from .str_helper import sortList
 
@@ -24,7 +23,6 @@ from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
     notify,
-    notifyLocked
 )
 from PyReconstruct.modules.gui.dialog import (
     ObjectGroupDialog,
@@ -34,7 +32,7 @@ from PyReconstruct.modules.gui.dialog import (
     FileDialog
 )
 
-class ObjectTableWidget(QDockWidget):
+class ObjectTableWidget(DataTable):
 
     def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the object table dock widget.
@@ -44,26 +42,7 @@ class ObjectTableWidget(QDockWidget):
                 mainwindow (MainWindow): the main window the dock is connected to
                 manager: the object table manager
         """
-        # initialize the widget
-        super().__init__(mainwindow)
-        self.series = series
-        self.mainwindow = mainwindow
-        self.series_states = self.mainwindow.field.series_states
-
-        # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
-        self.setWindowTitle("Object List")
-
-        # set defaults
-        self.columns = self.series.getOption("object_columns")
-        # check for missing columns
-        defaults = self.series.getOption("object_columns", get_default=True)
-        for col_name in defaults:
-            if col_name not in self.columns:
-                self.columns = defaults
-                self.series.setOption("object_columns", self.columns)
-                break
-        
+        # set the filter defaults
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
@@ -73,24 +52,54 @@ class ObjectTableWidget(QDockWidget):
             "Curated": True
         }
         self.cr_user_filters = set()
+        self.user_col_filters = {}
 
-        # create the main window widget
-        self.main_widget = QMainWindow()
-        self.setWidget(self.main_widget)
-        
-        # create the table and the menu
-        self.table = None
-        self.process_check_event = False
+        super().__init__("object", series, mainwindow, manager)
+        self.static_columns = ["Name"]
         self.createTable()
-        self.createMenus()
-
-        # save manager object
-        self.manager = manager
 
         self.show()
     
     def createMenus(self):
         """Create the menu for the object table widget."""
+        # get the actions to edit the user columns
+        def getCall(col_name):
+            return (lambda : self.editUserCol(col_name=col_name))
+        edit_user_cols = []
+        n = 0
+        for col_name in self.series.user_columns:
+            edit_user_cols.append(
+                (f"edit_user_col_{n}_act", col_name, "", getCall(col_name))
+            )
+        
+        # create the submenu for adding categorical column filters
+        def getCall(col_name, opt_name):
+            return (lambda : self.toggleUserColFilter(
+                col_name=col_name, 
+                opt_name=opt_name, 
+            ))
+        filter_submenus = [
+            ("clearusercolfilters_act", "Clear all", "", self.clearUserColFilters)
+        ]
+        menu_i = 0  # keep track of numbers for unique attribute
+        opts_i = 0
+        for col_name, opts in self.series.user_columns.items():
+            d = {
+                "attr_name": f"filter_user_col_{menu_i}_menu",
+                "text": col_name,
+                "opts": []
+            }
+            menu_i += 1
+            for opt in opts:
+                cb_str = "checkbox"
+                if col_name in self.user_col_filters and opt in self.user_col_filters[col_name]:
+                    cb_str += "-True"
+                d["opts"].append(
+                    (f"filter_user_col_{opts_i}_act", opt, cb_str, getCall(col_name, opt))
+                )
+                opts_i += 1
+            filter_submenus.append(d)
+
         # Create menubar menu
         menubar_list = [
             {
@@ -111,7 +120,12 @@ class ObjectTableWidget(QDockWidget):
                     ("refilter_act", "Regex filter...", "", self.setREFilter),
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                     ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
-                    ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter)
+                    ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter),
+                    {
+                        "attr_name": "usercolfiltersmenu",
+                        "text": "Categorical column filters",
+                        "opts": filter_submenus
+                    }
                 ]
             },
             {
@@ -123,7 +137,6 @@ class ObjectTableWidget(QDockWidget):
                     ("findlast_act", "Last", "", self.findLast)
                 ]
             },
-
             {
                 "attr_name": "groupmenu",
                 "text": "Groups",
@@ -132,13 +145,58 @@ class ObjectTableWidget(QDockWidget):
                     ("renamegroup_act", "Rename group...", "", self.renameGroup),
                     ("deletegroup_act", "Delete group...", "", self.deleteGroup)
                 ]
+            },
+            {
+                "attr_name": "columnsmenu",
+                "text": "Columns",
+                "opts":
+                [
+                    ("columns_act", "Set columns...", "", self.setColumns),
+                    None,
+                    ("addcolumn_act", "Create categorical column...", "", self.addUserCol),
+                    ("removecolumn_act", "Delete categorical column...", "", self.removeUserCol),
+                    None,
+                    {
+                        "attr_name": "editcolumn_menu",
+                        "text": "Edit column",
+                        "opts": edit_user_cols
+                    },
+                    None,
+                    ("exportcolumns_act", "Export user columns...", "", self.exportUserColText),
+                    ("importcolumns_act", "Import user columns...", "", self.importUserColText),
+                ]
             }
         ]
         # create the menubar object
         self.menubar = self.main_widget.menuBar()
+        self.menubar.clear()
         self.menubar.setNativeMenuBar(False) # attach menu to the window
         # fill in the menu bar object
         populateMenuBar(self, self.menubar, menubar_list)
+
+        # create the submenu for adding to categorical column
+        def getCall(col_name, opt):
+            return (lambda : self.setUserCol(col_name=col_name, opt=opt))
+        custom_categories = []
+        menu_i = 0  # keep track of numbers for unique attribute
+        opts_i = 0
+        for col_name, opts in self.series.user_columns.items():
+            d = {
+                "attr_name": f"user_col_{menu_i}_menu",
+                "text": col_name,
+                "opts":
+                [
+                    (f"user_col_{opts_i}_act", "(blank)", "", getCall(col_name, ""))
+                ]
+            }
+            menu_i += 1
+            opts_i += 1
+            for opt in opts:
+                d["opts"].append(
+                    (f"user_col_{opts_i}_act", opt, "", getCall(col_name, opt))
+                )
+                opts_i += 1
+            custom_categories.append(d)
 
         # create the right-click menu
         context_menu_list = [
@@ -179,6 +237,11 @@ class ObjectTableWidget(QDockWidget):
                     ("lockobj_act1", "Lock", "", self.lockObjects),
                     ("unlockobj_act1", "Unlock", "", lambda : self.lockObjects(False))
                 ]
+            },
+            {
+                "attr_name": "customcatmenu",
+                "text": "Custom categories",
+                "opts": custom_categories
             },
             {
                 "attr_name": "curatemenu",
@@ -256,69 +319,79 @@ class ObjectTableWidget(QDockWidget):
         is_regex = tuple(self.re_filters) != (".*",)
         is_tag = bool(self.tag_filters)
         is_group = bool(self.group_filters)
-        is_cr = self.columns["Curate"] and (
+        is_cr = dict(self.columns)["Curate"] and (
             bool(self.cr_user_filters) or not all(self.cr_status_filter.values())
         )
+        is_user_col = bool(self.user_col_filters)
 
         title = "Object List "
-        if any((is_regex, is_tag, is_group, is_cr)):
+        if any((is_regex, is_tag, is_group, is_cr, is_user_col)):
             strs = []
             if is_regex: strs.append("regex")
             if is_tag: strs.append("tags")
             if is_group: strs.append("groups")
             if is_cr: strs.append("curation")
+            if is_user_col: strs.append("categorical columns")
             title += f"(Filtered by: {', '.join(strs)})"
         
         self.setWindowTitle(title)
     
-    def setRow(self, name : str, row : int, resize=True):
-        """Set the data for a row of the table.
+    def getHeaders(self):
+        """Get the headers for the table."""
+        self.curate_column = None
+        h = ["Name"]
+        for key, b in self.columns:
+            if b and key == "Range":
+                h.append("Start")
+                h.append("End")
+            elif b and key == "Curate":
+                self.curate_column = len(h)
+                h.append("CR")
+                h.append("Status")
+                h.append("User")
+                h.append("Date")
+            elif b:
+                h.append(key)
+        return h
+    
+    def getItems(self, name : str, item_type : str):
+        """Get the QTableWidgetItem(s) for an attribute of an object.
         
             Params:
-                name (str): the name of the object
-                row (int): the row to enter this data into
+                name (str): the name of the object to retrieve the data for
+                item_type (str): the specific data to be retrieved
         """
-        self.process_check_event = False
-        self.table.setItem(row, 0, QTableWidgetItem(name))
-        col = 1
-        if self.columns["Range"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getStart(name))))
-            col += 1
-            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getEnd(name))))
-            col += 1
-        if self.columns["Count"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(self.series.data.getCount(name))))
-            col += 1
-        if self.columns["Flat area"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getFlatArea(name), 5))))
-            col += 1
-        if self.columns["Volume"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
-            col += 1
-        if self.columns["Radius"]:
-            self.table.setItem(row, col, QTableWidgetItem(str(round(self.series.data.getAvgRadius(name), 5))))
-            col += 1
-        if self.columns["Groups"]:
+        items = []
+        if item_type == "Name":
+            items.append(QTableWidgetItem(name))
+        elif item_type == "Range":
+            items.append(QTableWidgetItem(str(self.series.data.getStart(name))))
+            items.append(QTableWidgetItem(str(self.series.data.getEnd(name))))
+        elif item_type == "Count":
+            items.append(QTableWidgetItem(str(self.series.data.getCount(name))))
+        elif item_type == "Flat area":
+            items.append(QTableWidgetItem(str(round(self.series.data.getFlatArea(name), 5))))
+        elif item_type == "Volume":
+            items.append(QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
+        elif item_type == "Radius":
+            items.append(QTableWidgetItem(str(round(self.series.data.getAvgRadius(name), 5))))
+        elif item_type == "Groups":
             groups = self.series.object_groups.getObjectGroups(name)
             groups_str = ", ".join(groups)
-            self.table.setItem(row, col, QTableWidgetItem(groups_str))
-            col += 1
-        if self.columns["Trace tags"]:
+            items.append(QTableWidgetItem(groups_str))
+        elif item_type == "Trace tags":
             tags = self.series.data.getTags(name)
             tags_str = ", ".join(tags)
-            self.table.setItem(row, col, QTableWidgetItem(tags_str))
-            col += 1
-        if self.columns["Locked"]:
+            items.append(QTableWidgetItem(tags_str))
+        elif item_type == "Locked":
             item = QTableWidgetItem("")
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if self.series.getAttr(name, "locked") else Qt.CheckState.Unchecked)
-            self.table.setItem(row, col, item)
-            col += 1
-        if self.columns["Last user"]:
+            items.append(item)
+        elif item_type == "Last user":
             last_user = self.series.getAttr(name, "last_user")
-            self.table.setItem(row, col, QTableWidgetItem(last_user))
-            col += 1
-        if self.columns["Curate"]:
+            items.append(QTableWidgetItem(last_user))
+        elif item_type == "Curate":
             check_item = QTableWidgetItem("")
             status_item = QTableWidgetItem("")
             user_item = QTableWidgetItem("")
@@ -332,35 +405,35 @@ class ObjectTableWidget(QDockWidget):
                 cr_color = None
             else:
                 curated, user, date = obj_curation
+                text_lightness = QApplication.palette().color(QPalette.WindowText).lightness()
                 if curated:
                     check_item.setCheckState(Qt.CheckState.Checked)
                     status_item.setText("Curated")
-                    cr_color = Qt.cyan
+                    cr_color = Qt.blue if text_lightness > 128 else Qt.cyan
                 else:
                     check_item.setCheckState(Qt.CheckState.PartiallyChecked)
                     status_item.setText(f"Needs curation")
-                    cr_color = Qt.yellow
+                    cr_color = QColor(100, 100, 0) if text_lightness > 128 else Qt.yellow
                 user_item.setText(user)
                 date_item.setText(date)
-            
             for item in cr_items:
                 if cr_color:
+                    item.setData(Qt.BackgroundRole, cr_color)
                     item.setBackground(cr_color)
-                self.table.setItem(row, col, item)
-                col += 1
-        if self.columns["Alignment"]:
+                items.append(item)
+        elif item_type == "Alignment":
             alignment = self.series.getAttr(name, "alignment")
             if alignment is None: alignment = ""
-            self.table.setItem(row, col, QTableWidgetItem(alignment))
-            col += 1
-        if self.columns["Comment"]:
+            items.append(QTableWidgetItem(alignment))
+        elif item_type == "Comment":
             comment = self.series.getAttr(name, "comment")
-            self.table.setItem(row, col, QTableWidgetItem(comment))
-            col += 1
-        if resize:
-            self.table.resizeColumnsToContents()
-            self.table.resizeRowToContents(row)
-        self.process_check_event = True
+            items.append(QTableWidgetItem(comment))
+        elif item_type in self.series.user_columns:
+            value = self.series.getUserColAttr(name, item_type)
+            if value is None: value = ""
+            items.append(QTableWidgetItem(value))
+        
+        return items
     
     def passesFilters(self, name : str):
         """Check if an object passes the filters.
@@ -368,6 +441,16 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 name (str): the name of the object
         """
+        # check user columns
+        if self.user_col_filters:
+            passes_filters = False
+            for n, value in self.series.getAttr(name, "user_columns").items():
+                if n in self.user_col_filters and value in self.user_col_filters[n]:
+                    passes_filters = True
+                    break
+            if not passes_filters:
+                return False
+
         # check groups
         filters_len = len(self.group_filters)
         if filters_len != 0:
@@ -387,7 +470,7 @@ class ObjectTableWidget(QDockWidget):
                 return False
         
         # check curation status and user
-        if self.columns["Curate"]:
+        if dict(self.columns)["Curate"]:
             obj_curation = self.series.getAttr(name, "curation")
             if obj_curation:
                 cr_status, user, date = tuple(obj_curation)
@@ -412,83 +495,23 @@ class ObjectTableWidget(QDockWidget):
         
         return True
 
-    def getFilteredObjects(self):
-        """Get the names of the objects that pass the filter."""
-        filtered_object_list = []
-        for name in self.series.data["objects"]:
-            if self.passesFilters(name):
-                filtered_object_list.append(name)
-        
-        return sortList(filtered_object_list)
-
-    def createTable(self):
-        """Create the table widget.
+    def getFiltered(self):
+        """Get the names of the objects that pass the filter.
         
             Params:
-                objdata (dict): the dictionary containing the object table data objects
+                obj_name_list (list): the list of object names
         """
-        # close an existing table and save scroll position
-        if self.table is not None:
-            vscroll = self.table.verticalScrollBar()
-            scroll_pos = vscroll.value()
-            self.table.close()
-        else:
-            scroll_pos = 0
+        filtered_list = super().getFiltered(
+            list(self.series.data["objects"].keys())
+        )
+        return sortList(filtered_list)
 
-        # create the table title
-        self.updateTitle()
-
-        # establish table headers
-        self.curate_column = None
-        self.horizontal_headers = ["Name"]
-        for key, b in self.columns.items():
-            if b and key == "Range":
-                self.horizontal_headers.append("Start")
-                self.horizontal_headers.append("End")
-            elif b and key == "Curate":
-                self.curate_column = len(self.horizontal_headers)
-                self.horizontal_headers.append("CR")
-                self.horizontal_headers.append("Status")
-                self.horizontal_headers.append("User")
-                self.horizontal_headers.append("Date")
-            elif b:
-                self.horizontal_headers.append(key)
-        
-        # filter the objects
-        filtered_obj_names = self.getFilteredObjects()
-
-        # create the table object
-        self.table = CopyTableWidget(len(filtered_obj_names), len(self.horizontal_headers), self.main_widget)
-
-        # connect table functions
-        self.table.mouseDoubleClickEvent = self.mouseDoubleClickEvent
-        self.table.contextMenuEvent = self.objectContextMenu
-        self.table.backspace = self.deleteObjects
-        self.table.itemChanged.connect(self.itemChecked)
-
-        # format table
-        # self.table.setWordWrap(False)
-        self.table.setShowGrid(False)  # no grid
-        self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
-        self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
-        self.table.verticalHeader().hide()  # no veritcal header
-        
-        # fill in object data
-        for r, n in enumerate(filtered_obj_names):
-            self.setRow(n, r, resize=False)
-
-        # format rows and columns
-        self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
-
-        # set the saved scroll value
-        self.table.verticalScrollBar().setValue(scroll_pos)
-
-        # set table as central widget
-        self.main_widget.setCentralWidget(self.table)
+    def createTable(self):
+        """Create the table widget."""
+        self.updateObjCols(recreate=False)
+        super().createTable()
     
-    def updateObjects(self, names):
+    def updateData(self, names : list):
         """Update the data for a set of objects.
         
             Params:
@@ -514,13 +537,6 @@ class ObjectTableWidget(QDockWidget):
                 self.setRow(name, row)
         
         self.mainwindow.checkActions()
-    
-    def resizeEvent(self, event):
-        """Resize the table when window is resized."""
-        super().resizeEvent(event)
-        w = event.size().width()
-        h = event.size().height()
-        self.table.resize(w, h-20)
     
     def mouseDoubleClickEvent(self, event):
         """Called when user double-clicks."""
@@ -551,25 +567,12 @@ class ObjectTableWidget(QDockWidget):
         
         return locked
     
-    def getSelectedObject(self) -> str:
-        """Get the name of the object highlighted by the user.
-        
-            Returns:
-                (str): the name of the object
-        """
-        selected_indexes = self.table.selectedIndexes()
-        if len(selected_indexes) != 1:
-            return None
-        r = selected_indexes[0].row()
-        obj_name = self.table.item(r, 0).text()
-        self.checkLocked([obj_name])
-        return obj_name
-    
-    def getSelectedObjects(self) -> list[str]:
+    def getSelected(self, single=False):
         """Get the name of the objects highlighted by the user.
-        
+            Params:
+                single (bool): True if only accept single selection
             Returns:
-                (list): the name of the objects
+                (str | list): the object name(s)
         """
         selected_indexes = self.table.selectedIndexes()
         obj_names = []
@@ -577,12 +580,20 @@ class ObjectTableWidget(QDockWidget):
             r = i.row()
             n = self.table.item(r, 0).text()
             obj_names.append(n)
-        
-        self.checkLocked(obj_names)
-        return obj_names
 
-    def itemChecked(self, item : QTableWidgetItem):
-        """User checked a curate checkbox."""
+        self.checkLocked(obj_names)
+        
+        if single:
+            if len(obj_names) != 1:
+                notify("Please select only one object for this option.")
+                return
+            else:
+                return obj_names[0]
+        else:
+            return obj_names
+
+    def itemChanged(self, item : QTableWidgetItem):
+        """User checked a checkbox."""
         # check for curation
         if not self.process_check_event:
             return
@@ -633,20 +644,44 @@ class ObjectTableWidget(QDockWidget):
                 self.mainwindow.seriesModified(True)
         
         self.process_check_event = True
+    
+    def updateObjCols(self, recreate=True):
+        """Update the object column options based on the series.user_columns.
+        
+            Params:
+                recreate (bool): True if menus and table should be recreated in the event of a column change
+        """
+        columns_changed = False
+        update_table = False
+        default_columns = self.series.getOption("object_columns", get_default=True)
+
+        # column has been removed
+        for pair in self.columns.copy():
+            col_name, b = pair
+            if col_name not in dict(default_columns) and col_name not in self.series.user_columns:
+                self.columns.remove(pair)
+                columns_changed = True
+                update_table |= b
+        
+        # column has been added
+        for col_name in self.series.user_columns:
+            if col_name not in dict(self.columns):
+                self.columns.append((col_name, True))
+                columns_changed = True
+                update_table = True
+        
+        if recreate:
+            if columns_changed:
+                self.series.setOption("object_columns", self.columns)
+                self.createMenus()
+            if update_table:
+                self.createTable()
 
     # RIGHT CLICK FUNCTIONS
-
-    def objectContextMenu(self, event=None):
-        """Executed when button is right-clicked: pulls up menu for user to modify objects."""
-        names = self.getSelectedObjects()  # also updates the available actions
-        if not names:
-            return
-
-        self.context_menu.exec(event.globalPos())   
     
     def editAttributes(self):
         """Edit the name of an object in the entire series."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
 
@@ -681,7 +716,7 @@ class ObjectTableWidget(QDockWidget):
     
     def editComment(self):
         """Edit the comment of the object."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -703,13 +738,13 @@ class ObjectTableWidget(QDockWidget):
         for obj_name in obj_names:
             self.series.setAttr(obj_name, "comment", new_comment)
             self.series.addLog(obj_name, None, "Edit object comment")
-        self.updateObjects(obj_names)
+        self.updateData(obj_names)
 
         self.mainwindow.seriesModified(True)
     
     def editAlignment(self):
         """Edit alignment for object(s)."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             notify("Please select one object to edit.")
             return
@@ -734,7 +769,7 @@ class ObjectTableWidget(QDockWidget):
         
     def editRadius(self):
         """Modify the radius of the trace on an entire object."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -773,7 +808,7 @@ class ObjectTableWidget(QDockWidget):
     
     def editShape(self):
         """Modify the shape of the traces on an entire object."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -789,7 +824,7 @@ class ObjectTableWidget(QDockWidget):
             Params:
                 hide (bool): True if the object should be hidden
         """
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -797,25 +832,25 @@ class ObjectTableWidget(QDockWidget):
 
     def addTo3D(self):
         """Generate a 3D view of an object"""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if obj_names:
             self.mainwindow.addTo3D(obj_names)
     
     def remove3D(self):
         """Remove object(s) from the scene."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if obj_names:
             self.mainwindow.removeFrom3D(obj_names)
 
     def exportAs3D(self, export_type):
         """Export 3D objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if obj_names:
             self.mainwindow.exportAs3D(obj_names, export_type)
 
     def addToGroup(self, log_event=True):
         """Add objects to a group."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -833,11 +868,10 @@ class ObjectTableWidget(QDockWidget):
                 self.series.addLog(name, None, f"Add to group '{group_name}'")
         
         self.manager.updateObjects(obj_names)
-
     
     def removeFromGroup(self, log_event=True):
         """Remove objects from a group."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -858,7 +892,7 @@ class ObjectTableWidget(QDockWidget):
     
     def removeFromAllGroups(self, log_event=True):
         """Remove a set of traces from all groups."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -873,7 +907,7 @@ class ObjectTableWidget(QDockWidget):
     
     def removeAllTags(self):
         """Remove all tags from all traces on selected objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
                 
@@ -881,7 +915,7 @@ class ObjectTableWidget(QDockWidget):
     
     def viewHistory(self):
         """View the history for a set of objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         
@@ -889,68 +923,145 @@ class ObjectTableWidget(QDockWidget):
     
     def createZtrace(self, cross_sectioned=True):
         """Create a ztrace from selected objects."""
-        obj_names = self.getSelectedObjects()
+        obj_names = self.getSelected()
         if not obj_names:
             return
         self.manager.createZtrace(obj_names, cross_sectioned)
 
-    def deleteObjects(self):
+    def deleteObjects(self, obj_names=None):
         """Delete an object from the entire series."""
-        obj_names = self.getSelectedObjects()
+        if obj_names is None:
+            obj_names = self.getSelected()
         if not obj_names:
             return
         
-        # SPECIAL CASE: this can be accessed be a keyboard shortcut and bypass the initial check
+        self.manager.deleteObjects(obj_names)
+    
+    def backspace(self):
+        """Called when the user hits backspace."""
+        obj_names = self.getSelected()
+        if not obj_names:
+            return
+        
         if self.checkLocked(obj_names):
             return
         
-        self.manager.deleteObjects(obj_names)
-
-    # MENU-RELATED FUNCTIONS
-
-    def refresh(self):
-        """Refresh the object lists."""
-        self.manager.refresh()
+        self.deleteObjects()
     
-    def setColumns(self):
-        """Set the columns to display."""
+    def edit3D(self):
+        """Edit the 3D options for an object or set of objects."""
+        obj_names = self.getSelected()
+        if not obj_names:
+            return
+        
+        # check for object names and opacities
+        type_3D = self.series.getAttr(obj_names[0], "3D_mode")
+        opacity = self.series.getAttr(obj_names[0], "3D_opacity")
+        for name in obj_names[1:]:
+            new_type = self.series.getAttr(name, "3D_mode")
+            new_opacity = self.series.getAttr(name, "3D_opacity")
+            if type_3D != new_type:
+                type_3D = None
+            if opacity != new_opacity:
+                opacity = None
+        
         structure = [
-            [("check", *tuple(self.columns.items()))]
+            ["3D Type:", ("combo", ["surface", "spheres", "contours"], type_3D)],
+            ["Opacity (0-1):", ("float", opacity, (0,1))]
         ]
-        response, confirmed = QuickDialog.get(self, structure, "Table Columns")
+        response, confirmed = QuickDialog.get(self, structure, "3D Object Settings")
         if not confirmed:
             return
-        self.columns = dict(response[0])
-        self.series.setOption("object_columns", self.columns)
         
-        self.manager.updateTable(self)
+        new_type, new_opacity = response
+
+        self.manager.edit3D(obj_names, new_type, new_opacity)
+
+        self.mainwindow.seriesModified(True)
     
-    def export(self):
-        """Export the object list as a csv file."""
-        # get the location from the user
-        file_path = FileDialog.get(
-            "save",
-            self,
-            "Save Object List",
-            file_name="objects.csv",
-            filter="Comma Separated Values (*.csv)"
-        )
-        if not file_path: return
-        # unload the table into the csv file
-        csv_file = open(file_path, "w")
-        # headers first
-        items = []
-        for c in range(self.table.columnCount()):
-            items.append(self.table.horizontalHeaderItem(c).text())
-        csv_file.write(",".join(items) + "\n")
-        # object data
-        for r in range(self.table.rowCount()):
-            items = []
-            for c in range(self.table.columnCount()):
-                items.append(self.table.item(r, c).text())
-            csv_file.write(",".join(items) + "\n")
-        # close file
-        csv_file.close()        
+    def bulkCurate(self, curation_status : str):
+        """Set the curation status for multiple selected objects.
+        
+            Params:
+                curation_status (str): "", "Needs curation" or "Curated"
+        """
+        names = self.getSelected()
+        if not names:
+            return
+        
+        # prompt assign to
+        if curation_status == "Needs curation":
+            assign_to, confirmed = QInputDialog.getText(
+                self,
+                "Assign to",
+                "Assign curation to username:\n(press enter to leave blank)"
+            )
+            if not confirmed:
+                return
+        else:
+            assign_to = ""
+        
+        self.series_states.addState()
+        
+        self.series.setCuration(names, curation_status, assign_to)
+        self.manager.updateObjects(names)
+        self.mainwindow.seriesModified(True)
+    
+    def lockObjects(self, lock=True):
+        """Locked the selected objects."""
+        names = self.getSelected()
+
+        self.series_states.addState()
+
+        for name in names:
+            self.series.setAttr(name, "locked", lock)
+
+        self.manager.updateObjects(names)
+        self.mainwindow.field.deselectAllTraces()
+
+        self.mainwindow.seriesModified(True)
+    
+    def setPalette(self):
+        """Set the selected object name as the name of the selected palette trace."""
+        name = self.getSelected(single=True)
+        if not name:
+            return
+        
+        self.mainwindow.setPaletteButtonFromObj(name)
+    
+    def splitObject(self):
+        """Split an object into one object per trace."""
+        name = self.getSelected(single=True)
+        if not name:
+            return
+        
+        self.manager.splitObject(name)
+    
+    def setUserCol(self, col_name : str, opt : str, log_event=True):
+        """Set the categorical user column for an object.
+        
+            Params:
+                col_name (str): the name of the user-defined column
+                opt (str): the option to set for the object(s)
+        """
+        names = self.getSelected()
+        if not names:
+            return
+        
+        self.series_states.addState()
+
+        for name in names:
+            self.series.setUserColAttr(name, col_name, opt)
+        
+        if log_event:
+            for name in names:
+                self.series.addLog(name, None, f"Set user column {col_name} as {opt}")
+        
+        self.updateData(names)
+
+        self.mainwindow.seriesModified(True)
+
+    # MENU-RELATED FUNCTIONS     
     
     def setREFilter(self):
         """Set a new regex filter for the list."""
@@ -1021,74 +1132,19 @@ class ObjectTableWidget(QDockWidget):
     
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
-        obj_name = self.getSelectedObject()
-        if obj_name is None:
+        name = self.getSelected(single=True)
+        if not name:
             return
-        self.manager.findObject(obj_name, first=True)
+
+        self.manager.findObject(name, first=True)
     
     def findLast(self):
         """Focus the field on the last occurence of an object in the series."""
-        obj_name = self.getSelectedObject()
-        if obj_name is None:
+        name = self.getSelected(single=True)
+        if not name:
             return
-        self.manager.findObject(obj_name, first=False)
-    
-    def edit3D(self):
-        """Edit the 3D options for an object or set of objects."""
-        obj_names = self.getSelectedObjects()
-        if not obj_names:
-            return
-        
-        # check for object names and opacities
-        type_3D = self.series.getAttr(obj_names[0], "3D_mode")
-        opacity = self.series.getAttr(obj_names[0], "3D_opacity")
-        for name in obj_names[1:]:
-            new_type = self.series.getAttr(name, "3D_mode")
-            new_opacity = self.series.getAttr(name, "3D_opacity")
-            if type_3D != new_type:
-                type_3D = None
-            if opacity != new_opacity:
-                opacity = None
-        
-        structure = [
-            ["3D Type:", ("combo", ["surface", "spheres", "contours"], type_3D)],
-            ["Opacity (0-1):", ("float", opacity, (0,1))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "3D Object Settings")
-        if not confirmed:
-            return
-        
-        new_type, new_opacity = response
 
-        self.manager.edit3D(obj_names, new_type, new_opacity)
-    
-    def bulkCurate(self, curation_status : str):
-        """Set the curation status for multiple selected objects.
-        
-            Params:
-                curation_status (str): "", "Needs curation" or "Curated"
-        """
-        names = self.getSelectedObjects()
-        if not names:
-            return
-        
-        # prompt assign to
-        if curation_status == "Needs curation":
-            assign_to, confirmed = QInputDialog.getText(
-                self,
-                "Assign to",
-                "Assign curation to username:\n(press enter to leave blank)"
-            )
-            if not confirmed:
-                return
-        else:
-            assign_to = ""
-        
-        self.series_states.addState()
-        
-        self.series.setCuration(names, curation_status, assign_to)
-        self.manager.updateObjects(names)
-        self.mainwindow.seriesModified(True)
+        self.manager.findObject(name, first=False)
     
     def renameGroup(self):
         """Rename an object group."""
@@ -1111,6 +1167,8 @@ class ObjectTableWidget(QDockWidget):
         objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
         self.series.object_groups.renameGroup(group, new_group)
         self.manager.updateObjects(objs_to_update)
+
+        self.mainwindow.seriesModified(True)
     
     def deleteGroup(self):
         """Delete an object group."""
@@ -1128,37 +1186,141 @@ class ObjectTableWidget(QDockWidget):
             objs_to_update = self.series.object_groups.getGroupObjects(group).copy()
             self.series.object_groups.removeGroup(group)
             self.manager.updateObjects(objs_to_update)
+        
+        self.mainwindow.seriesModified(True)
     
-    def lockObjects(self, lock=True):
-        """Locked the selected objects."""
-        names = self.getSelectedObjects()
+    def addUserCol(self):
+        """Add a user-defined column."""
+        structure = [
+            ["Column name:"],
+            [(True, "text", "")],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", [])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
+            return
+    
+        name = response[0]
+        opts = response[1]
 
+        if name in self.columns:
+            notify("This column already exists.")
+            return
+        
         self.series_states.addState()
 
-        for name in names:
-            self.series.setAttr(name, "locked", lock)
+        self.series.addUserCol(name, opts)
+        self.updateObjCols()
 
-        self.manager.updateObjects(names)
-        self.mainwindow.field.deselectAllTraces()
+        self.manager.updateTable(self)
+        self.mainwindow.seriesModified(True)
     
-    def setPalette(self):
-        """Set the selected object name as the name of the selected palette trace."""
-        name = self.getSelectedObject()
-        if not name:
+    def removeUserCol(self):
+        """Remove a user-defined column."""
+        user_col_names = list(self.series.user_columns.keys())
+        structure = [
+            ["Remove column:"],
+            [(True, "combo", user_col_names)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Remove Column")
+        if not confirmed:
             return
         
-        self.mainwindow.setPaletteButtonFromObj(name)
+        self.series_states.addState()
+        
+        self.series.removeUserCol(response[0])
+        self.updateObjCols()
+
+        self.manager.updateTable(self)
+        self.mainwindow.seriesModified(True)
     
-    def splitObject(self):
-        """Split an object into one object per trace."""
-        name = self.getSelectedObject()
-        if not name:
+    def editUserCol(self, col_name : str):
+        """Edit a user-defined column.
+        
+            Params:
+                col_name (str): the name of the user-defined column to edit
+        """
+        structure = [
+            ["Column name:"],
+            [(True, "text", col_name)],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", self.series.user_columns[col_name])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
             return
         
-        self.manager.splitObject(name)
+        name = response[0]
+        opts = response[1]
+
+        if name != col_name and name in self.series.user_columns:
+            notify("This group already exists.")
+            return
+        
+        self.series_states.addState()
+        
+        self.series.editUserCol(col_name, name, opts)
+        self.updateObjCols()
+
+        self.manager.updateTable(self)
+        self.mainwindow.seriesModified(True)
     
-    def closeEvent(self, event):
-        """Remove self from manager table list."""
-        self.manager.tables.remove(self)
-        super().closeEvent(event)
+    def toggleUserColFilter(self, col_name : str, opt_name : str):
+        """Add/remove a user column filter.
+        
+            Params:
+                col_name (str): the name of the user column
+                opt_name (str): the name of the option to filter for
+        """
+        # check if the filter already exists
+        if col_name in self.user_col_filters and opt_name in self.user_col_filters[col_name]:
+            # remove the option from the list
+            self.user_col_filters[col_name].remove(opt_name)
+            # remove the dict option if it is empty
+            if not self.user_col_filters[col_name]:
+                del(self.user_col_filters[col_name])
+        else:
+            # add the filter
+            if col_name not in self.user_col_filters:
+                self.user_col_filters[col_name] = []
+            self.user_col_filters[col_name].append(opt_name)
+        
+        # call through manager to update self (action is updated here)
+        self.manager.updateTable(self)
+    
+    def clearUserColFilters(self):
+        """Clear the user column filters."""
+        self.user_col_filters = {}
+        self.manager.updateTable(self)
+    
+    def exportUserColText(self):
+        """Export user columns to a text file."""
+        out_fp = FileDialog.get(
+            "save",
+            self,
+            "File User Columns Text File",
+            "*.txt"
+        )
+        if not out_fp:
+            return
+        
+        self.series.exportUserColsText(out_fp)
+    
+    def importUserColText(self):
+        """Import user columns from a text file."""
+        fp = FileDialog.get(
+            "file",
+            self,
+            "Save User Columns Text File",
+            "*.txt"
+        )
+        if not fp:
+            return
+        
+        self.series.importUserColsText(fp)
+        self.updateObjCols()
+
 

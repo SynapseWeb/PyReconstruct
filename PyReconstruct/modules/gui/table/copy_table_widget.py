@@ -1,10 +1,13 @@
 
-from PySide6.QtWidgets import QTableWidget, QApplication
+from PySide6.QtWidgets import QTableWidget, QApplication, QHeaderView, QStyleFactory
 from PySide6.QtCore import Qt
 
 from .str_helper import lessThan
 
 class CopyTableWidget(QTableWidget):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def keyPressEvent(self, event):
         ret = super().keyPressEvent(event)
@@ -51,3 +54,29 @@ class CopyTableWidget(QTableWidget):
         Extended in container classes.
         """
         return
+    
+    def resizeColumnToContents(self, c : int):
+        super().resizeColumnToContents(c)
+
+        try:
+            series = getattr(self.parent().parent(), "series")
+        except AttributeError:
+            return
+        
+        if series.getOption("theme") == "qdark":
+            w = self.columnWidth(c)
+            self.setColumnWidth(c, w + 8)
+    
+    def resizeColumnsToContents(self):
+        super().resizeColumnsToContents()
+
+        try:
+            series = getattr(self.parent().parent(), "series")
+        except AttributeError:
+            return
+        
+        if series.getOption("theme") == "qdark":
+            for c in range(self.columnCount()):
+                w = self.columnWidth(c)
+                self.setColumnWidth(c, w + 8)
+    

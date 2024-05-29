@@ -8,11 +8,12 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialogButtonBox,
     QPushButton,
-    QScrollArea
+    QScrollArea,
+    QApplication
 )
 from PySide6.QtGui import (
     QPainter,
-    QColor
+    QPalette
 )
 from .quick_dialog import QuickDialog
 
@@ -200,8 +201,7 @@ class AllOptionsDialog(QDialog):
             [" "],
             ["3D smoothing:"],
             [("radio",
-                ("Laplacian (smoothest, for visualizations only)", opt == "laplacian"),
-                ("Humphrey", opt == "humphrey"),
+                ("Humphrey (recommended)", opt == "humphrey"),
                 ("Mutable Diffusion Laplcian", opt == "mut_dif_laplacian"),
                 ("Taubin", opt == "taubin"),
                 ("None (least smooth)", opt == "none"))],
@@ -210,12 +210,10 @@ class AllOptionsDialog(QDialog):
         def setOption(response):
             self.series.setOption("3D_xy_res", response[0])
             if response[1][0][1]:
-                smoothing_alg = "laplacian"
-            elif response[1][1][1]:
                 smoothing_alg = "humphrey"
-            elif response[1][2][1]:
+            elif response[1][1][1]:
                 smoothing_alg = "mut_dif_laplacian"
-            elif response[1][3][1]:
+            elif response[1][2][1]:
                 smoothing_alg = "taubin"
             else:
                 smoothing_alg = "none"
@@ -299,10 +297,10 @@ class AllOptionsDialog(QDialog):
         # columns
         for table_type in ("object", "trace", "flag"):
             structure = [
-                [("check", *tuple(self.series.getOption(table_type + "_columns", use_defaults).items()))]
+                [("check", *tuple(self.series.getOption(table_type + "_columns", use_defaults)))]
             ]
             def setOption(response):
-                self.series.setOption(table_type + "_columns", dict(response[0]))
+                self.series.setOption(table_type + "_columns", response[0])
             self.addOptionWidget(table_type + "_columns", structure, setOption)
         
         # backup
@@ -402,5 +400,5 @@ class OptionWidget(QuickDialog):
         super().paintEvent(event)
         # draw the border manually
         painter = QPainter(self)
-        painter.setPen(QColor(0, 0, 0))  # Set the color of the border
+        painter.setPen(QApplication.palette().color(QPalette.WindowText))  # Set the color of the border
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Adjust the rectangle to draw inside the border

@@ -40,7 +40,7 @@ class FlagTableManager():
         """
         # refresh any removed traces
         for table in self.tables:
-            table.updateSection(section)
+            table.updateData(section)
 
     # MENU FUNCTIONS
 

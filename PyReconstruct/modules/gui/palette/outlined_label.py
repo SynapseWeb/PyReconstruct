@@ -12,6 +12,7 @@ class OutlinedLabel(QLabel):
         self.mode = True
         self.setBrush(Qt.white)
         self.setPen(Qt.black)
+        self.setStyleSheet("QLabel { background-color: transparent; }")
     
     def setTextColor(self, color):
         self.setBrush(QColor(*color))

@@ -49,8 +49,10 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     
     # create the shorcut or checkbox
     if type(kbd) is str:
-        if kbd == "checkbox":
+        if "checkbox" in kbd:
             action.setCheckable(True)
+            if "True" in kbd:
+                action.setChecked(True)
         else:
             action.setShortcut(kbd)
     else:  # assume series was passed in
@@ -124,16 +126,26 @@ def notify(message):
         QMessageBox.Ok
     )
 
-def notifyConfirm(message):
+def notifyConfirm(message, yn=False):
     """Notify the user and give option to OK or cancel."""
-    response = QMessageBox.warning(
-        mainwindow,
-        " ",
-        message,
-        QMessageBox.Ok,
-        QMessageBox.Cancel
-    )
-    return response == QMessageBox.Ok
+    if yn:
+        response = QMessageBox.question(
+            mainwindow,
+            " ",
+            message,
+            QMessageBox.Yes,
+            QMessageBox.No
+        )
+        return response == QMessageBox.Yes
+    else:
+        response = QMessageBox.warning(
+            mainwindow,
+            " ",
+            message,
+            QMessageBox.Ok,
+            QMessageBox.Cancel
+        )
+        return response == QMessageBox.Ok
 
 def noUndoWarning():
     """Inform the user of an action that can't be undone."""

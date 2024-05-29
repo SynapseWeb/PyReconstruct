@@ -55,38 +55,6 @@ default_settings = {
     "sampling_frame_grid": True,
     "flag_name": "",
     "flag_color": [255, 0, 0],
-    
-    # table columns
-    "object_columns": {
-        "Range": True,
-        "Count": False,
-        "Flat area": False,
-        "Volume": False,
-        "Radius": False,
-        "Groups": True,
-        "Trace tags": False,
-        "Locked": True,
-        "Last user": True,
-        "Curate": False,
-        "Alignment": False,
-        "Comment": True
-    },
-    "trace_columns": {
-        "Index": False,
-        "Tags": True,
-        "Hidden": True,
-        "Closed": True,
-        "Length": True,
-        "Area": True,
-        "Radius": True,
-    },
-    "flag_columns": {
-        "Section": True,
-        "Color": True,
-        "Flag": True,
-        "Resolved": False,
-        "Last Comment": True
-    },
 
     # shortcuts 
     "alloptions_act": "Shift+O",
@@ -146,7 +114,10 @@ default_settings = {
     "useflag_act": "F",
 
     # series-related
-    "series_code_pattern": "[0-9A-Za-z]+"
+    "series_code_pattern": "[0-9A-Za-z]+",
+
+    # theme
+    "theme": "default",
 }
 
 default_series_settings = {

@@ -32,10 +32,17 @@ def generateVolumes(series : Series, obj_names : list):
         # ASSUME SOMEWHAT UNIFORM THICKNESS
         thicknesses.append(section.thickness)
         mags.append(section.mag)
-        tform = section.tform
 
         for obj_name in obj_names:
             if obj_name in section.contours:
+                # get the transform sepcific to the object
+                alignment = series.getAttr(obj_name, "alignment")
+                if not alignment:
+                    tform = section.tform
+                elif alignment == "no-alignment":
+                    tform = None
+                else:
+                    tform = section.tforms[alignment]
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
                     obj_data[obj_name].addTrace(trace, snum, tform)

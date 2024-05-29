@@ -1,17 +1,14 @@
 import os
 
 from PySide6.QtWidgets import (
-    QMainWindow, 
-    QDockWidget, 
     QTableWidgetItem, 
-    QAbstractItemView, 
     QWidget, 
     QInputDialog, 
     QMenu, 
 )
 from PySide6.QtCore import Qt
 
-from .copy_table_widget import CopyTableWidget
+from .data_table import DataTable
 
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
@@ -22,7 +19,7 @@ from PyReconstruct.modules.gui.utils import (
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.datatypes import Series
 
-class SectionTableWidget(QDockWidget):
+class SectionTableWidget(DataTable):
 
     def __init__(self, series : Series, mainwindow : QWidget, manager):
         """Create the trace table dock widget.
@@ -32,28 +29,9 @@ class SectionTableWidget(QDockWidget):
                 mainwindow (QWidget): the main window the dock is connected to
                 manager: the trace table manager
         """
-        # initialize the widget
-        super().__init__(mainwindow)
-        self.mainwindow = mainwindow
-
-        self.series = series
-
-        # set desired format for widget
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # ccan be docked to right or left side
-        self.setWindowTitle("Section List")
-
-        # create the main window widget
-        self.main_widget = QMainWindow()
-        self.setWidget(self.main_widget)
-        
-        # create the table and the menu
-        self.table = None
-        self.process_check_event = True
+        super().__init__("section", series, mainwindow, manager)
+        self.static_columns = ["Section"]
         self.createTable()
-        self.createMenus()
-
-        # save manager object
-        self.manager = manager
 
         self.show()
     
@@ -66,6 +44,8 @@ class SectionTableWidget(QDockWidget):
                 "text": "List",
                 "opts":
                 [
+                    ("refresh_act", "Refresh", "", self.refresh),
+                    ("columns_act", "Set columns...", "", self.setColumns),
                     ("export_act", "Export...", "", self.export),
                 ]
             },
@@ -81,6 +61,7 @@ class SectionTableWidget(QDockWidget):
         ]
         # create the menubar object
         self.menubar = self.main_widget.menuBar()
+        self.menubar.clear()
         self.menubar.setNativeMenuBar(False) # attach menu to the window
         # fill in the menu bar object
         populateMenuBar(self, self.menubar, menubar_list)
@@ -120,91 +101,93 @@ class SectionTableWidget(QDockWidget):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
     
-    def format(self):
-        """Format the rows and columns of the table."""
-        self.table.resizeRowsToContents()
-        self.table.resizeColumnsToContents()
+    def getFiltered(self):
+        return sorted(list(self.series.sections.keys()))
     
-    def setRow(self, r : int, snum : int):
-        """Set the data for a row.
+    def getItems(self, snum : int, item_type : str):
+        """Get the QTableWidgetItem(s) for an attribute of a section.
         
             Params:
-                r (int): the row index
-                snum (int): the section number
+                snum (int): the section nubmer to retrieve the data for
+                item_type (str): the specific data to be retrieved
         """
-        self.process_check_event = False
         section_data = self.series.data["sections"][snum]
+        items = []
 
-        self.table.setItem(r, 0, QTableWidgetItem(
-            str(snum) + (" (calgrid)" if section_data["calgrid"] else "")
-        ))
-        self.table.setItem(r, 1, QTableWidgetItem(
-            str(round(section_data["thickness"], 5))
-        ))
-
-        # checkbox for locked/unlocked
-        item = QTableWidgetItem("")
-        item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
-        item.setCheckState(Qt.CheckState.Checked if section_data["locked"] else Qt.CheckState.Unchecked)
-        self.table.setItem(r, 2, item)
-
-        brightness, contrast = section_data["bc_profiles"][self.series.bc_profile]
-        self.table.setItem(r, 3, QTableWidgetItem(
-            str(brightness)
-        ))
-        self.table.setItem(r, 4, QTableWidgetItem(
-            str(contrast)
-        ))
-        self.table.setItem(r, 5, QTableWidgetItem(
-            str(section_data["src"])
-        ))
-        self.process_check_event = True
+        if item_type == "Section":
+            s = str(snum)
+            if section_data["calgrid"]: s += " (calgrid)"
+            items.append(QTableWidgetItem(s))
+        elif item_type == "Thickness":
+            items.append(QTableWidgetItem(
+                str(round(section_data["thickness"], 5))
+            ))
+        elif item_type == "Locked":
+            item = QTableWidgetItem("")
+            item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+            item.setCheckState(Qt.CheckState.Checked if section_data["locked"] else Qt.CheckState.Unchecked)
+            items.append(item)
+        elif item_type == "Brightness":
+            brightness, contrast = section_data["bc_profiles"][self.series.bc_profile]
+            items.append(QTableWidgetItem(
+                str(brightness)
+            ))
+        elif item_type == "Contrast":
+            brightness, contrast = section_data["bc_profiles"][self.series.bc_profile]
+            items.append(QTableWidgetItem(
+                str(contrast)
+            ))
+        elif item_type == "Image Source":
+            items.append(QTableWidgetItem(
+                str(section_data["src"])
+            ))
+        return items
     
-    def createTable(self):
-        """Create the table widget."""
-        # close an existing table and save scroll position
-        if self.table is not None:
-            vscroll = self.table.verticalScrollBar()
-            scroll_pos = vscroll.value()
-            self.table.close()
-        else:
-            scroll_pos = 0
+    # def createTable(self):
+    #     """Create the table widget."""
+    #     # close an existing table and save scroll position
+    #     if self.table is not None:
+    #         vscroll = self.table.verticalScrollBar()
+    #         scroll_pos = vscroll.value()
+    #         self.table.close()
+    #     else:
+    #         scroll_pos = 0
         
-        # establish table headers
-        self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
+    #     # establish table headers
+    #     self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
 
-        self.table = CopyTableWidget(len(self.series.sections), len(self.horizontal_headers))
+    #     self.table = CopyTableWidget(len(self.series.sections), len(self.horizontal_headers))
 
-        # connect table functions
-        self.table.contextMenuEvent = self.sectionContextMenu
-        self.table.mouseDoubleClickEvent = self.findSection
-        self.table.backspace = self.deleteSections
+    #     # connect table functions
+    #     self.table.contextMenuEvent = self.sectionContextMenu
+    #     self.table.mouseDoubleClickEvent = self.findSection
+    #     self.table.backspace = self.deleteSections
 
-        # format table
-        self.table.setShowGrid(False)  # no grid
-        self.table.setAlternatingRowColors(True)  # alternate row colors
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
-        self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
-        self.table.verticalHeader().hide()  # no veritcal header
+    #     # format table
+    #     self.table.setShowGrid(False)  # no grid
+    #     self.table.setAlternatingRowColors(True)  # alternate row colors
+    #     self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
+    #     self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
+    #     self.table.verticalHeader().hide()  # no veritcal header
         
-        # fill in section data
-        r = 0
-        for snum in sorted(self.series.sections.keys()):
-            self.setRow(r, snum)
-            r += 1
+    #     # fill in section data
+    #     r = 0
+    #     for snum in sorted(self.series.sections.keys()):
+    #         self.setRow(r, snum)
+    #         r += 1
 
-        self.format()
+    #     self.format()
 
-        # set the saved scroll value
-        self.table.verticalScrollBar().setValue(scroll_pos)
+    #     # set the saved scroll value
+    #     self.table.verticalScrollBar().setValue(scroll_pos)
 
-        # set table as central widget
-        self.main_widget.setCentralWidget(self.table)
+    #     # set table as central widget
+    #     self.main_widget.setCentralWidget(self.table)
 
-        # connect checkbox functions
-        self.table.itemChanged.connect(self.checkLock)
+    #     # connect checkbox functions
+    #     self.table.itemChanged.connect(self.checkLock)
     
-    def updateSection(self, snum : int):
+    def updateData(self, snum : int):
         """Update the tables for a single section.
         
             Params:
@@ -215,19 +198,15 @@ class SectionTableWidget(QDockWidget):
             t = self.table.item(r, 0).text()
             t = t.split()[0]
             if int(t) == snum:
-                self.setRow(r, snum)
+                print(r, snum)
+                self.setRow(snum, r)
     
-    def getSelectedSection(self):
-        """Get the section that is selected by the user."""
-        selected_indeces = self.table.selectedIndexes()
-        if len(selected_indeces) != 1:
-            return
-        text = self.table.item(selected_indeces[0].row(), 0).text()
-        n = int(text.split()[0])  # check for calgrid text
-        return n
-    
-    def getSelectedSections(self):
-        """Get the trace items that iare selected by the user."""
+    def getSelected(self, single=False):
+        """Get the sections that are selected by the user.
+        
+            Params:
+                single (bool): True if only one section should be selected
+        """
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
             return
@@ -236,22 +215,28 @@ class SectionTableWidget(QDockWidget):
             text = self.table.item(i.row(), 0).text()
             n = int(text.split()[0])
             n_list.append(n)
-        return n_list
+        
+        if single:
+            if len(n_list) != 1:
+                notify("Please select only one section for this option.")
+                return
+            else:
+                return n_list[0]
+        else:
+            return n_list
     
-    def resizeEvent(self, event):
-        """Resize the table when window is resized."""
-        super().resizeEvent(event)
-        w = event.size().width()
-        h = event.size().height()
-        self.table.resize(w, h-20)
-    
-    def checkLock(self, item : QTableWidgetItem):
+    def itemChanged(self, item : QTableWidgetItem):
         """User checked a lock checkbox."""
         if not self.process_check_event:
             return
         snum = int(self.table.item(item.row(), 0).text())
         lock = item.checkState() == Qt.CheckState.Checked
         self.lockSections(lock, section_numbers=[snum])
+    
+    def mouseDoubleClickEvent(self, event=None):
+        """Find the section when double-clicked."""
+        super().mouseDoubleClickEvent(event)
+        self.findSection()
 
     # RIGHT CLICK FUNCTIONS
 
@@ -263,14 +248,14 @@ class SectionTableWidget(QDockWidget):
                 section_numbers (list): the list of sections to modify
         """
         if section_numbers is None:
-            section_numbers = self.getSelectedSections()
+            section_numbers = self.getSelected()
         if not section_numbers:
             return
         self.manager.lockSections(section_numbers, lock)
     
     def setBC(self, inc=False):
         """Set the brightness/contrast for a set of sections."""
-        section_numbers = self.getSelectedSections()
+        section_numbers = self.getSelected()
         if not section_numbers:
             return
         
@@ -293,7 +278,7 @@ class SectionTableWidget(QDockWidget):
     
     def matchBC(self):
         """Match the brightness/contrast of the selected sections with the current section."""
-        section_numbers = self.getSelectedSections()
+        section_numbers = self.getSelected()
         if not section_numbers:
             return
         
@@ -306,7 +291,7 @@ class SectionTableWidget(QDockWidget):
     
     def optimizeBC(self):
         """Optimize the brightness/contrast of the selected sections."""
-        section_numbers = self.getSelectedSections()
+        section_numbers = self.getSelected()
         if not section_numbers:
             return
         
@@ -319,7 +304,7 @@ class SectionTableWidget(QDockWidget):
     
     def editThickness(self):
         """Modify the section thickness for a set of sections."""
-        section_numbers = self.getSelectedSections()
+        section_numbers = self.getSelected()
         if not section_numbers:
             return
         
@@ -359,7 +344,7 @@ class SectionTableWidget(QDockWidget):
     
     def editSrc(self):
         """Modify the image source for a single section."""
-        snum = self.getSelectedSection()
+        snum = self.getSelected(single=True)
         if snum is None:
             return
 
@@ -384,7 +369,7 @@ class SectionTableWidget(QDockWidget):
     
     def deleteSections(self):
         """Delete the sections selected by the user."""
-        section_numbers = self.getSelectedSections()
+        section_numbers = self.getSelected()
         if not section_numbers:
             return
         
@@ -398,9 +383,13 @@ class SectionTableWidget(QDockWidget):
         
         self.manager.deleteSections(section_numbers)
     
-    def findSection(self, event):
+    def backspace(self):
+        """Delete the sections."""
+        self.deleteSections()
+    
+    def findSection(self, event=None):
         """Find the section selected by the user."""
-        snum = self.getSelectedSection()
+        snum = self.getSelected(single=True)
         if snum is None:
             return
         
@@ -413,33 +402,6 @@ class SectionTableWidget(QDockWidget):
         self.context_menu.exec(event.globalPos())
 
     # MENU-RELATED FUNCTIONS
-    
-    def export(self):
-        """Export the trace list as a csv file."""
-        # get the location from the user
-        file_path = FileDialog.get(
-            "save",
-            self,
-            "Save Section List",
-            file_name="sections.csv",
-            filter="Comma Separated Values (*.csv)"
-        )
-        if not file_path: return
-        # unload the table into the csv file
-        csv_file = open(file_path, "w")
-        # headers first
-        items = []
-        for c in range(self.table.columnCount()):
-            items.append(self.table.horizontalHeaderItem(c).text())
-        csv_file.write(",".join(items) + "\n")
-        # trace data
-        for r in range(self.table.rowCount()):
-            items = []
-            for c in range(self.table.columnCount()):
-                items.append(self.table.item(r, c).text())
-            csv_file.write(",".join(items) + "\n")
-        # close file
-        csv_file.close()
     
     def modifyAllSrc(self):
         """Modify the image source for all sections."""
@@ -492,9 +454,9 @@ class SectionTableWidget(QDockWidget):
     def insertSection(self, before=True):
         """Insert a section into the series."""
         if before:
-            index = min(self.getSelectedSections())
+            index = min(self.getSelected())
         else:
-            index = max(self.getSelectedSections()) + 1
+            index = max(self.getSelected()) + 1
         structure = [
             ["Image:", ("file", "", "*.jpg *.jpeg *.png *.tif *.tiff *.bmp")],
             ["Section number:", ("int", index)],
@@ -509,8 +471,3 @@ class SectionTableWidget(QDockWidget):
         src = os.path.basename(src)
 
         self.manager.insertSection(index, src, mag, thickness)
-
-    def closeEvent(self, event):
-        """Remove self from manager table list."""
-        self.manager.tables.remove(self)
-        super().closeEvent(event)

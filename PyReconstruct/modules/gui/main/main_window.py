@@ -152,6 +152,9 @@ class MainWindow(QMainWindow):
         # set the main window as the parent of the progress bar
         setMainWindow(self)
 
+        # set the theme
+        self.setTheme(self.series.getOption("theme"))
+
         self.show()
 
         # prompt the user for a username
@@ -283,7 +286,7 @@ class MainWindow(QMainWindow):
                         "text": "3D",
                         "opts":
                         [
-                            ("smoothing_act", "Change smoothing type...", "", self.edit3DSmoothing),
+                            ("load3Dscene_act", "Load 3D scene...", "", self.load3DScene),
                         ]
                     },
                     {
@@ -416,6 +419,8 @@ class MainWindow(QMainWindow):
                 "text": "View",
                 "opts":
                 [
+                    ("changetheme_act", "Change theme", "", self.setTheme),
+                    None,
                     ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
                     None,
                     ("homeview_act", "Set view to image", "Home", self.field.home),
@@ -438,7 +443,7 @@ class MainWindow(QMainWindow):
                     ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     ("lefthanded_act", "Left handed", "checkbox", self.field.setLeftHanded),
                     None,
-                    ("togglecuration_act", "Toggle curation in object lists", self.series, self.toggleCuration)
+                    ("togglecuration_act", "Toggle curation in object lists", self.series, self.toggleCuration),
                 ]
             },
             {
@@ -2513,62 +2518,6 @@ class MainWindow(QMainWindow):
         self.field.zarr_layer.mergeLabels()
         self.field.generateView()
     
-    # def mergeObjects(self, new_name=None):
-    #     """Merge full objects across the series.
-        
-    #         Params:
-    #             new_name (str): the new name for the merged objects
-    #     """            
-    #     names = set()
-    #     for trace in self.field.section.selected_traces:
-    #         names.add(trace.name)
-    #     names = list(names)
-        
-    #     if not new_name:
-    #         new_name, confirmed = QInputDialog.getText(
-    #             self,
-    #             "Object Name",
-    #             "Enter the desired name for the merged object:",
-    #             text=names[0]
-    #         )
-    #         if not confirmed or not new_name:
-    #             return
-        
-    #     self.series.mergeObjects(names, new_name)
-    #     self.field.reload()
-    
-    def edit3DSmoothing(self, smoothing_alg : str = ""):
-        """Modify the algorithm used for 3D smoothing.
-        
-            Params:
-                smoothing_alg (str): the name of the smoothing algorithm to use
-        """
-        if not smoothing_alg:
-            opt = self.series.getOption("3D_smoothing")
-            structure = [
-                [("radio",
-                  ("Laplacian (most smooth, for visualizations only)", opt == "laplacian"),
-                  ("Humphrey (less smooth)", opt == "humphrey"),
-                  ("None (blocky)", opt == "none"))]
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "3D Smoothing")
-            if not confirmed:
-                return
-            
-            if response[0][0][1]:
-                smoothing_alg = "laplacian"
-            elif response[0][1][1]:
-                smoothing_alg = "humphrey"
-            elif response[0][2][1]:
-                smoothing_alg = "none"
-        
-        if smoothing_alg not in ["laplacian", "humphrey", "none"]:
-            return
-
-        self.series.setOption("3D_smoothing", smoothing_alg)
-        self.saveAllData()
-        self.seriesModified()
-    
     def hideSeriesTraces(self, hidden=True):
         """Hide or unhide all traces in the entire series.
         
@@ -2938,6 +2887,62 @@ class MainWindow(QMainWindow):
         trace.color = obj_trace.color
         trace.fill_mode = obj_trace.fill_mode
         self.mouse_palette.modifyPaletteButton(i, trace)
+    
+    def load3DScene(self):
+        """Load a 3D scene."""
+        load_fp = FileDialog.get(
+            "file",
+            self,
+            "Load 3D Scene",
+            "JSON file (*.json)"
+        )
+        if not load_fp:
+            return
+        
+        if not self.viewer or self.viewer.is_closed:
+            self.viewer = CustomPlotter(self, load_fp=load_fp)
+        else:
+            self.viewer.loadScene(load_fp)
+        
+        self.viewer.setFocus()
+    
+    def setTheme(self, new_theme=None):
+        """Change the theme."""
+        if new_theme is None:
+            theme = self.series.getOption("theme")
+            structure = [
+                ["Theme:"],
+                [("radio", ("Default", theme=="default"), ("Dark", theme=="qdark"))]
+            ]
+            response, confirmed = QuickDialog.get(
+                self, structure, "Theme"
+            )
+            if not confirmed:
+                return
+            
+            if response[0][0][1]:
+                new_theme = "default"
+            elif response[0][1][1]:
+                new_theme = "qdark"
+            else:
+                return
+        
+        app = QApplication.instance()
+        if new_theme == "default":
+            self.series.setOption("theme", "default")
+            app.setStyleSheet("")
+            app.setPalette(app.style().standardPalette())
+        elif new_theme == "qdark":
+            try:
+                import qdarkstyle
+            except:
+                notify("Unable to import dark theme.")
+                return
+            self.series.setOption("theme", "qdark")
+            app.setStyleSheet(
+                qdarkstyle.load_stylesheet_pyside6() + 
+                qdark_addon
+            )
         
     def restart(self):
         self.restart_mainwindow = True
@@ -2961,3 +2966,9 @@ class MainWindow(QMainWindow):
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()
+
+qdark_addon = """
+QPushButton {border: 1px solid transparent}
+QComboBox {padding-right: 30px}
+"""
+# QTableWidget:item:alternate {background-color: #222C36;}  # removed because it overrides the background color of qtablewidgetitems

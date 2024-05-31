@@ -49,7 +49,8 @@ from PyReconstruct.modules.gui.utils import (
     unsavedNotify,
     setMainWindow,
     noUndoWarning,
-    checkMag
+    checkMag,
+    getSetUserColsMenu
 )
 from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, TraceTableWidget
 from PyReconstruct.modules.backend.func import (
@@ -490,8 +491,10 @@ class MainWindow(QMainWindow):
     
     def createContextMenus(self):
         """Create the right-click menus used in the field."""
+        # create the user columns options
         field_menu_list = [
             ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
+            ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",
@@ -504,7 +507,7 @@ class MainWindow(QMainWindow):
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
                 ]
             },
-            None,
+            getSetUserColsMenu(self.series, self.field.setUserCol),
             {
                 "attr_name": "lockmenu",
                 "text": "Lock/Unlock",
@@ -524,7 +527,6 @@ class MainWindow(QMainWindow):
                     ("curated_act", "Curated", "", lambda : self.field.setCuration("Curated"))
                 ]
             },
-            None,
             {
                 "attr_name": "viewmenu",
                 "text": "View",

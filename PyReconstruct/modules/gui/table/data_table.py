@@ -293,6 +293,6 @@ class DataTable(QDockWidget):
     
     def closeEvent(self, event):
         """Remove self from manager table list."""
-        self.manager.tables.remove(self)
+        self.manager.tables[self.name].remove(self)
         super().closeEvent(event)
 

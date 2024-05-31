@@ -15,7 +15,8 @@ from .utils import (
     drawOutlinedText,
     getProgbar,
     notifyLocked,
-    checkMag
+    checkMag,
+    getSetUserColsMenu,
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox

@@ -478,10 +478,11 @@ class FieldWidget(QWidget, FieldView):
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
                             if self.series.getOption("left_handed"): mouse_x += 10
                             c = closest.color
+                            has_comment = bool(self.series.getAttr(name, "comment"))
                             drawOutlinedText(
                                 field_painter,
                                 mouse_x, mouse_y,
-                                name,
+                                name + ("*" if has_comment else ""),
                                 c,
                                 None,
                                 ct_size,
@@ -1865,6 +1866,47 @@ class FieldWidget(QWidget, FieldView):
         """End ongoing events that are connected to the mouse."""
         if self.is_line_tracing:
             self.lineRelease(override=True)
+    
+    def setObjComment(self):
+        """Set the object comment."""
+        names = set(t.name for t in self.section.selected_traces)
+        if not names:
+            return
+        elif len(names) == 1:
+            comment = self.series.getAttr(list(names)[0], "comment")
+        else:
+            comment = ""
+        
+        new_comment, confirmed = QInputDialog.getText(
+            self,
+            "Object Comment",
+            "Comment:",
+            text=comment
+        )
+        if not confirmed:
+            return
+        
+        self.series_states.addState()
+        
+        for name in names:
+            self.series.setAttr(name, "comment", new_comment)
+        
+        self.table_manager.updateObjects(names)
+    
+    def setUserCol(self, col_name : str, opt : str):
+        """Set the user column option for an object.
+        
+            Params:
+                col_name (str): the name of the column
+                opt (str): the name of the category
+        """
+        self.series_states.addState()
+
+        names = set(t.name for t in self.section.selected_traces)
+        for name in names:
+            self.series.setUserColAttr(name, col_name, opt)
+        
+        self.table_manager.updateObjects(names)
 
 def formatAsParagraph(text : str, per_line=50, max_lines=20):
     """Format text as a paragraph.

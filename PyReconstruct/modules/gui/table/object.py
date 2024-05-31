@@ -23,6 +23,7 @@ from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
     notify,
+    getSetUserColsMenu,
 )
 from PyReconstruct.modules.gui.dialog import (
     ObjectGroupDialog,
@@ -174,30 +175,6 @@ class ObjectTableWidget(DataTable):
         # fill in the menu bar object
         populateMenuBar(self, self.menubar, menubar_list)
 
-        # create the submenu for adding to categorical column
-        def getCall(col_name, opt):
-            return (lambda : self.setUserCol(col_name=col_name, opt=opt))
-        custom_categories = []
-        menu_i = 0  # keep track of numbers for unique attribute
-        opts_i = 0
-        for col_name, opts in self.series.user_columns.items():
-            d = {
-                "attr_name": f"user_col_{menu_i}_menu",
-                "text": col_name,
-                "opts":
-                [
-                    (f"user_col_{opts_i}_act", "(blank)", "", getCall(col_name, ""))
-                ]
-            }
-            menu_i += 1
-            opts_i += 1
-            for opt in opts:
-                d["opts"].append(
-                    (f"user_col_{opts_i}_act", opt, "", getCall(col_name, opt))
-                )
-                opts_i += 1
-            custom_categories.append(d)
-
         # create the right-click menu
         context_menu_list = [
             ("editattribtues_act", "Edit attributes of traces...", "", self.editAttributes),
@@ -238,11 +215,7 @@ class ObjectTableWidget(DataTable):
                     ("unlockobj_act1", "Unlock", "", lambda : self.lockObjects(False))
                 ]
             },
-            {
-                "attr_name": "customcatmenu",
-                "text": "Custom categories",
-                "opts": custom_categories
-            },
+            getSetUserColsMenu(self.series, self.setUserCol),
             {
                 "attr_name": "curatemenu",
                 "text": "Set curation",
@@ -670,10 +643,12 @@ class ObjectTableWidget(DataTable):
                 columns_changed = True
                 update_table = True
         
+        self.series.setOption("object_columns", self.columns)
+        
         if recreate:
             if columns_changed:
-                self.series.setOption("object_columns", self.columns)
                 self.createMenus()
+                self.mainwindow.createContextMenus()
             if update_table:
                 self.createTable()
 

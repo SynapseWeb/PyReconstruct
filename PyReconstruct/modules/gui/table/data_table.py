@@ -147,7 +147,8 @@ class DataTable(QDockWidget):
     def createTable(self):
         """Create the table widget.
         
-        This function is primarily involved in creating the GUI. It does not handle a significant amount of logic."""
+        This function is primarily involved in creating the GUI. It does not handle a significant amount of logic.
+        """
         # close an existing table and save scroll position
         if self.table is not None:
             vscroll = self.table.verticalScrollBar()

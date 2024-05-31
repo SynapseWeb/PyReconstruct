@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import QTableWidget, QApplication, QHeaderView, QStyleFactory
 from PySide6.QtCore import Qt
 
-from .str_helper import lessThan
+from PyReconstruct.modules.gui.utils import lessThan
 
 class CopyTableWidget(QTableWidget):
 

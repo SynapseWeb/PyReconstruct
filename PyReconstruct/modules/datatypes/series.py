@@ -926,7 +926,6 @@ class Series():
                 if obj_name in section.contours:
                     contour = section.contours[obj_name]
                     for trace in contour:
-                        if not color: color = trace.color
                         # get the midpoint
                         p = (*trace.getMidpoint(), snum)
                         points.append(p)
@@ -936,34 +935,84 @@ class Series():
             ztrace_color,
             points
         )
+        self.modified_ztraces.add(ztrace_name)
 
         if log_event:
             self.addLog(ztrace_name, None, "Create ztrace")
 
         self.modified = True
     
-    def editZtraceAttributes(self, ztrace : Ztrace, name : str, color : tuple, log_event=True):
+    def editZtraceAttributes(self, name : str, new_name : str, new_color : tuple, log_event=True):
         """Edit the name and color of a ztrace.
         
             Params:
-                ztrace (Ztrace): the ztrace object to modify
-                name (str): the new name
-                color (tuple): the new color
+                name (str): the original ztrace name
+                new_name (str): the new name
+                new_color (tuple): the new color
                 log_event (bool): True if event should be logged
         """
-        if name:
-            del(self.ztraces[ztrace.name])
-            self.modified_ztraces.add(ztrace.name)
-            ztrace.name = name
-            self.ztraces[name] = ztrace
-        if color:
-            ztrace.color = color
+        # modify the ztrace data
+        ztrace = self.ztraces[name]
+        if new_name:
+            ztrace.name = new_name
+            if new_name != name:  # if renamed
+                del(self.ztraces[name])
+                self.ztraces[new_name] = ztrace
+                # update group data
+                groups = self.ztrace_groups.getObjectGroups(name)
+                for g in groups:
+                    self.ztrace_groups.add(g, new_name)
+                self.ztrace_groups.removeObject(name)
+        if new_color:
+            ztrace.color = new_color
         
         self.modified = True
-        self.modified_ztraces.add(ztrace.name)
-
+        self.modified_ztraces.add(name)
+        self.modified_ztraces.add(new_name)
+        
         if log_event:
-            self.addLog(ztrace.name, None, "Modify ztrace")
+            if new_name != name:
+                self.addLog(name, None, f"Rename ztrace to {new_name}")
+                self.addLog(new_name, None, f"Create ztrace from {name}")
+            else:
+                self.addLog(name, None, "Modify ztrace")
+    
+    def smoothZtraces(self, names : list, smooth : int, newztrace : bool, log_event=True):
+        """Smooth a set of ztraces.
+        
+            Params:
+                names (list): the names of the ztraces to smooth
+                smooth (int): the smoothing factor
+                newztrace (bool): False if ztrace should be overwritten
+        """
+        # smooth the ztraces
+        for name in names:
+            # create a new ztrace if requested
+            if newztrace:
+                ztrace = self.ztraces[name].copy()
+                new_name = f"{ztrace.name}_smooth{smooth}"
+                ztrace.name = new_name
+                self.ztraces[new_name] = ztrace
+            else:
+                ztrace = self.ztraces[name]
+            ztrace.smooth(self, smooth)
+            self.modified_ztraces.add(ztrace.name)
+        
+            if log_event:
+                self.addLog(name, None, "Smooth ztrace")
+
+    def deleteZtraces(self, names : list, log_event=True):
+        """Delete a list of ztraces:
+            Params:
+                names (list): the names of the ztraces
+        """
+        for name in names:
+            del(self.ztraces[name])
+            self.modified_ztraces.add(name)
+            self.ztrace_groups.removeObject(name)
+
+            if log_event:
+                self.addLog(name, None, "Delete ztrace")
         
     def rename(self, new_name : str):
         """Rename the series.
@@ -1057,18 +1106,28 @@ class Series():
                 if name and obj_name != name:
                     self.addLog(obj_name, None, f"Rename object to {name}")
                     self.addLog(name, None, f"Create trace(s) from {obj_name}")
-                    # move object attrs
-                    self.renameObjAttrs(obj_name, name)
                 else:
                     self.addLog(obj_name, None, "Modify object")
         
         # modify the object on every section
+        attrs_migrated = False
         for snum, section in self.enumerateSections(
             message="Modifying object(s)...",
             series_states=series_states
         ):
+            # move object attrs
+            # note on why this has to be done once inside the loop:
+            # the loop is what initiats the series_state data collection, and the renaming must happen after the series state collection
+            # however, it must also happen before the object is fully deleted
+            if not attrs_migrated:
+                for obj_name in obj_names:
+                    if obj_name != name:
+                        self.renameObjAttrs(obj_name, name)
+                attrs_migrated = True
+            
             if snum not in sections:  # skip sections that are not included
                 continue
+
             traces = []
             for obj_name in obj_names:
                 if obj_name in section.contours:
@@ -1842,20 +1901,37 @@ class Series():
                 old_name (str): the original name of the object
                 new_name (str): the new name for the object
         """
-        if new_name in self.data["objects"]:
-            return  # do not overwrite if object exists
+        # if new_name in self.data["objects"]:
+        #     return  # do not overwrite if object exists
         
         # object groups
         groups = self.object_groups.getObjectGroups(old_name)
         for group in groups:
             self.object_groups.add(group, new_name)
         
-        # obj_attrs
+        # import the object attributes
         if old_name in self.obj_attrs:
+            if new_name not in self.obj_attrs:
+                self.obj_attrs[new_name] = {}
+
+            # find non-existing attributes and import them in
+            old_attrs = self.obj_attrs[old_name]
+            new_attrs = self.obj_attrs[new_name]
+            for attr, value in old_attrs.items():
+                if attr not in new_attrs:
+                    new_attrs[attr] = value
+            
+            # find non-existing user columns and import them in
+            if "user_columns" in old_attrs:
+                if "user_columns" not in new_attrs:
+                    new_attrs["user_columns"] = {}
+                old_cols = old_attrs["user_columns"]
+                new_cols = new_attrs["user_columns"]
+                for col_name, opt in old_cols.items():
+                    if col_name not in new_cols:
+                        new_cols[col_name] = opt
+
             self.obj_attrs[new_name] = self.obj_attrs[old_name].copy()
-        
-        # delete old_name
-        self.removeObjAttrs(old_name)
     
     def getAlignments(self) -> list:
         """Return a list of alignment names."""
@@ -2273,6 +2349,37 @@ class Series():
                 if pt[2] not in section_numbers:
                     pts.append(pt)
             ztrace.points = pts
+    
+    def splitObject(self, name : str, series_states=None, log_event=True):
+        """Split an object into one object per trace.
+        
+            Params:
+                name (str): the name of the object to split
+        """
+        n = 1
+        digits = len(str(self.data.getCount(name)))
+        new_names = set()
+
+        for snum, section in self.enumerateSections(
+            message="Splitting object...",
+            series_states=series_states
+        ):
+            if name in section.contours:
+                traces = section.contours[name].getTraces()
+                for trace in traces:
+                    section.removeTrace(trace, log_event=False)
+                    trace = trace.copy()
+                    trace.name = f"{trace.name}_{n:0{digits}d}"
+                    new_names.add(trace.name)  # keep track of all the new object names
+                    section.addTrace(trace, log_event=False)
+                    n += 1
+                section.save()
+        
+        if log_event:
+            self.addLog(name, None, "Split into individual objects per trace")
+        
+        return new_names
+
     
 class SeriesIterator():
 

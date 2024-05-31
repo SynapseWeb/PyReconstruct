@@ -199,6 +199,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("restart_act", "Reload", self.series, self.restart),
                     ("quit_act", "Quit", self.series, self.close),
+                    ("test_act", "Test", "", self.test),
                 ]
             },
 
@@ -348,11 +349,11 @@ class MainWindow(QMainWindow):
                 "text": "Lists",
                 "opts":
                 [
-                    ("objectlist_act", "Object list", self.series, self.openObjectList),
-                    ("tracelist_act", "Trace list", self.series, self.openTraceList),
-                    ("sectionlist_act", "Section list", self.series, self.openSectionList),
-                    ("ztracelist_act", "Z-trace list", self.series, self.openZtraceList),
-                    ("flaglist_act", "Flag list", self.series, self.openFlagList),
+                    ("objectlist_act", "Object list", self.series, lambda : self.field.openList(list_type="object")),
+                    ("tracelist_act", "Trace list", self.series, lambda : self.field.openList(list_type="trace")),
+                    ("sectionlist_act", "Section list", self.series, lambda : self.field.openList(list_type="section")),
+                    ("ztracelist_act", "Z-trace list", self.series, lambda : self.field.openList(list_type="ztrace")),
+                    ("flaglist_act", "Flag list", self.series, lambda : self.field.openList(list_type="flag")),
                     ("history_act", "Series history", "", self.viewSeriesHistory)
                 ]
             },
@@ -1229,7 +1230,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
 
         notify("Transforms imported successfully.")
 
@@ -1288,7 +1289,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
 
         notify("Transforms imported successfully.")
     
@@ -1352,7 +1353,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
         
         notify("Traces imported successfully.")
     
@@ -1393,7 +1394,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
         
         notify("Ztraces imported successfully.")
     
@@ -1511,7 +1512,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
 
         self.seriesModified()
 
@@ -1559,7 +1560,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
 
         notify("Brightness/contrast settings imported successfully.")
     
@@ -1588,7 +1589,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
 
         # refresh the data and lists
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
 
         o_series.close()
 
@@ -1908,35 +1909,11 @@ class MainWindow(QMainWindow):
         """View the history for the entire series."""
         HistoryTableWidget(self.series.getFullHistory(), self)
     
-    def openObjectList(self):
-        """Open the object list widget."""
-        self.saveAllData()
-        self.field.openObjectList()
-    
-    def openZtraceList(self):
-        """Open the ztrace list widget."""
-        self.saveAllData()
-        self.field.openZtraceList()
-    
-    def openFlagList(self):
-        """Open the flag widget."""
-        self.saveAllData()
-        self.field.openFlagList()
-    
     def toggleZtraces(self):
         """Toggle whether ztraces are shown."""
         self.field.deselectAllTraces()
         self.series.setOption("show_ztraces", not self.series.getOption("show_ztraces"))
         self.field.generateView(generate_image=False)
-    
-    def openTraceList(self):
-        """Open the trace list widget."""
-        self.field.openTraceList()
-    
-    def openSectionList(self):
-        """Open the section list widget."""
-        self.saveAllData()
-        self.field.openSectionList()
     
     def setToObject(self, obj_name : str, section_num : int):
         """Focus the field on an object from a specified section.
@@ -2640,7 +2617,7 @@ class MainWindow(QMainWindow):
         def act3D():
             self.field.series_states.undoState(redo)
             self.field.reload()
-            self.field.refreshTables()
+            self.field.table_manager.recreateTables()
 
         # both 3D and 2D possible and they are linked
         if can_3D and can_2D and linked:
@@ -2709,7 +2686,7 @@ class MainWindow(QMainWindow):
         """Update the series curation from the history."""
         self.field.series_states.addState()
         self.series.updateCurationFromHistory()
-        self.field.refreshTables()
+        self.field.table_manager.recreateTables()
         self.seriesModified()
     
     def allOptions(self):
@@ -2966,6 +2943,9 @@ class MainWindow(QMainWindow):
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()
+    
+    def test(self):
+        self.field.reload()
 
 qdark_addon = """
 QPushButton {border: 1px solid transparent}

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 )
 
 from .data_table import DataTable
-from .str_helper import sortList
+from PyReconstruct.modules.gui.utils import sortList
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
@@ -259,7 +259,17 @@ class ZtraceTableWidget(DataTable):
         vscroll = self.table.verticalScrollBar()
         scroll_pos = vscroll.value()
 
-        self.manager.editAttributes(name, new_name, new_color)
+        # save the series state
+        self.series_states.addState()
+
+        # modify the ztrace data
+        self.series.editZtraceAttributes(name, new_name, new_color)
+        
+        self.manager.updateZtraces()
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
@@ -282,7 +292,15 @@ class ZtraceTableWidget(DataTable):
         smooth = response[0]
         newztrace = response[1][0][1]
         
-        self.manager.smooth(names, smooth, newztrace)
+        # save the series state
+        self.series_states.addState()
+        
+        self.series.smoothZtraces(names, smooth, newztrace)
+        self.manager.updateZtraces()
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def addTo3D(self, event=None):
         """Generate a 3D view of an object"""
@@ -317,7 +335,7 @@ class ZtraceTableWidget(DataTable):
                 self.series.addLog(name, None, f"Add to group '{group_name}'")
             self.series.modified_ztraces.add(name)
         
-        self.manager.update(clear_tracking=True)
+        self.manager.updateZtraces()
     
     def removeFromGroup(self, log_event=True):
         """Remove objects from a group."""
@@ -340,7 +358,7 @@ class ZtraceTableWidget(DataTable):
                 self.series.addLog(name, None, f"Remove from group '{group_name}'")
             self.series.modified_ztraces.add(name)
         
-        self.manager.update(clear_tracking=True)
+        self.manager.updateZtraces()
     
     def removeFromAllGroups(self, log_event=True):
         """Remove a set of traces from all groups."""
@@ -357,7 +375,7 @@ class ZtraceTableWidget(DataTable):
                 self.series.addLog(name, None, f"Remove from all object groups")
             self.series.modified_ztraces.add(name)
             
-        self.manager.update(clear_tracking=True)
+        self.manager.updateZtraces()
     
     def editAlignment(self):
         """Edit alignment for ztrace(s)."""
@@ -390,7 +408,15 @@ class ZtraceTableWidget(DataTable):
         if not names:
             return
         
-        self.manager.delete(names)
+        # save the series state
+        self.series_states.addState()
+        
+        self.series.deleteZtraces(names)
+        self.manager.updateZtraces()
+
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def backspace(self):
         """Called when backspace is pressed."""
@@ -413,7 +439,7 @@ class ZtraceTableWidget(DataTable):
         self.re_filters = set([s.replace("#", "[0-9]") for s in self.re_filters])
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setGroupFilter(self):
         """Set a new group filter for the list."""
@@ -429,4 +455,4 @@ class ZtraceTableWidget(DataTable):
         self.group_filters = set(response[0])
         
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)

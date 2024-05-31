@@ -16,7 +16,7 @@ from PySide6.QtCore import Qt
 
 from .data_table import DataTable
 from .history import HistoryTableWidget
-from .str_helper import sortList
+from PyReconstruct.modules.gui.utils import sortList
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
@@ -709,7 +709,32 @@ class ObjectTableWidget(DataTable):
         vscroll = self.table.verticalScrollBar()
         scroll_pos = vscroll.value()
 
-        self.manager.editAttributes(obj_names, attr_trace, sections)
+        self.mainwindow.saveAllData()
+        
+        # modify the object on every section
+        t = attr_trace
+        name, color, tags, mode = (
+            t.name, t.color, t.tags, t.fill_mode
+        )
+        self.series.editObjectAttributes(
+            obj_names,
+            name,
+            color,
+            tags,
+            mode,
+            sections,
+            series_states=self.series_states
+        )
+
+        all_names = set(obj_names)
+        if name: all_names.add(name)
+
+        # update the table data
+        self.manager.updateObjects(all_names)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
@@ -804,7 +829,21 @@ class ObjectTableWidget(DataTable):
                 if response != QMessageBox.Yes:
                     return
         
-        self.manager.editRadius(obj_names, new_rad)
+        self.mainwindow.saveAllData()
+        
+        # iterate through all sections
+        self.series.editObjectRadius(
+            obj_names,
+            new_rad,
+            self.series_states
+        )
+        
+        # update the table data
+        self.manager.updateObjects(obj_names)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def editShape(self):
         """Modify the shape of the traces on an entire object."""
@@ -816,7 +855,21 @@ class ObjectTableWidget(DataTable):
         if not confirmed:
             return
         
-        self.manager.editShape(obj_names, new_shape)
+        self.mainwindow.saveAllData()
+        
+        # iterate through all sections
+        self.series.editObjectShape(
+            obj_names,
+            new_shape,
+            self.series_states
+        )
+        
+        # update the table data
+        self.manager.updateObjects(obj_names)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def hideObj(self, hide=True):
         """Edit whether or not an object is hidden in the entire series.
@@ -828,7 +881,15 @@ class ObjectTableWidget(DataTable):
         if not obj_names:
             return
         
-        self.manager.hideObjects(obj_names, hide)
+        self.mainwindow.saveAllData()
+
+        # iterate through sections and hide the traces
+        self.series.hideObjects(obj_names, hide, self.series_states)
+        self.manager.updateObjects(obj_names)
+            
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
 
     def addTo3D(self):
         """Generate a 3D view of an object"""
@@ -911,7 +972,16 @@ class ObjectTableWidget(DataTable):
         if not obj_names:
             return
                 
-        self.manager.removeAllTraceTags(obj_names)
+        self.mainwindow.saveAllData()
+
+        # iterate through all the sections
+        self.series.removeAllTraceTags(obj_names, self.series_states)
+
+        self.manager.updateObjects(obj_names)
+
+        # update the view
+        self.mainwindow.field.reload()        
+        self.mainwindow.seriesModified(True)
     
     def viewHistory(self):
         """View the history for a set of objects."""
@@ -926,7 +996,16 @@ class ObjectTableWidget(DataTable):
         obj_names = self.getSelected()
         if not obj_names:
             return
-        self.manager.createZtrace(obj_names, cross_sectioned)
+        
+        self.mainwindow.saveAllData()
+        self.series_states.addState()
+
+        for name in obj_names:
+            self.series.createZtrace(name, cross_sectioned)
+        
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.field.reload()
+        self.mainwindow.field.table_manager.updateZtraces()
 
     def deleteObjects(self, obj_names=None):
         """Delete an object from the entire series."""
@@ -935,7 +1014,17 @@ class ObjectTableWidget(DataTable):
         if not obj_names:
             return
         
-        self.manager.deleteObjects(obj_names)
+        self.mainwindow.saveAllData()
+
+        # delete the object on every section
+        self.series.deleteObjects(obj_names, self.series_states)
+
+        # update the dictionary data and tables
+        self.manager.updateObjects(obj_names)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def backspace(self):
         """Called when the user hits backspace."""
@@ -975,8 +1064,16 @@ class ObjectTableWidget(DataTable):
         
         new_type, new_opacity = response
 
-        self.manager.edit3D(obj_names, new_type, new_opacity)
+        self.mainwindow.saveAllData()
+        self.series_states.addState()
 
+        # set the series settings
+        for name in obj_names:
+            if new_type:
+                self.series.setAttr(name, "3D_mode", new_type)
+            if new_opacity is not None:
+                self.series.setAttr(name, "3D_opacity", new_opacity)
+                    
         self.mainwindow.seriesModified(True)
     
     def bulkCurate(self, curation_status : str):
@@ -1035,7 +1132,17 @@ class ObjectTableWidget(DataTable):
         if not name:
             return
         
-        self.manager.splitObject(name)
+        self.mainwindow.saveAllData()
+        self.series_states.addState()
+
+        series_states = self.mainwindow.field.series_states
+        new_names = self.series.splitObject(name, series_states)
+        new_names.add(name)
+
+        self.manager.updateObjects(new_names)
+        
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.field.reload()
     
     def setUserCol(self, col_name : str, opt : str, log_event=True):
         """Set the categorical user column for an object.
@@ -1077,7 +1184,7 @@ class ObjectTableWidget(DataTable):
         self.re_filters = set([s.replace("#", "[0-9]") for s in self.re_filters])
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setGroupFilter(self):
         """Set a new group filter for the list."""
@@ -1091,7 +1198,7 @@ class ObjectTableWidget(DataTable):
         
         self.group_filters = set(response[0])
         
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setTagFilter(self):
         """Set a new tag filter for the list."""
@@ -1107,7 +1214,7 @@ class ObjectTableWidget(DataTable):
         self.tag_filters = set(response[0])
         
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setCRFilter(self):
         """Set the filter for curation."""
@@ -1128,7 +1235,7 @@ class ObjectTableWidget(DataTable):
         self.cr_user_filters = set(response[1])
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
@@ -1136,7 +1243,9 @@ class ObjectTableWidget(DataTable):
         if not name:
             return
 
-        self.manager.findObject(name, first=True)
+        self.mainwindow.saveAllData()
+        snum = self.series.data.getStart(name)
+        self.mainwindow.setToObject(name, snum)
     
     def findLast(self):
         """Focus the field on the last occurence of an object in the series."""
@@ -1144,7 +1253,9 @@ class ObjectTableWidget(DataTable):
         if not name:
             return
 
-        self.manager.findObject(name, first=False)
+        self.mainwindow.saveAllData()
+        snum = self.series.data.getEnd(name)
+        self.mainwindow.setToObject(name, snum)
     
     def renameGroup(self):
         """Rename an object group."""
@@ -1214,7 +1325,7 @@ class ObjectTableWidget(DataTable):
         self.series.addUserCol(name, opts)
         self.updateObjCols()
 
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
         self.mainwindow.seriesModified(True)
     
     def removeUserCol(self):
@@ -1233,7 +1344,7 @@ class ObjectTableWidget(DataTable):
         self.series.removeUserCol(response[0])
         self.updateObjCols()
 
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
         self.mainwindow.seriesModified(True)
     
     def editUserCol(self, col_name : str):
@@ -1265,7 +1376,7 @@ class ObjectTableWidget(DataTable):
         self.series.editUserCol(col_name, name, opts)
         self.updateObjCols()
 
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
         self.mainwindow.seriesModified(True)
     
     def toggleUserColFilter(self, col_name : str, opt_name : str):
@@ -1289,12 +1400,12 @@ class ObjectTableWidget(DataTable):
             self.user_col_filters[col_name].append(opt_name)
         
         # call through manager to update self (action is updated here)
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def clearUserColFilters(self):
         """Clear the user column filters."""
         self.user_col_filters = {}
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def exportUserColText(self):
         """Export user columns to a text file."""

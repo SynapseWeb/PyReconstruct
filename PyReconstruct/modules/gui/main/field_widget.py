@@ -30,11 +30,7 @@ from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
 from PyReconstruct.modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
 from PyReconstruct.modules.backend.view import FieldView
 from PyReconstruct.modules.backend.table import (
-    ObjectTableManager,
-    SectionTableManager,
-    TraceTableManager,
-    ZtraceTableManager,
-    FlagTableManager
+    TableManager
 )
 from PyReconstruct.modules.gui.dialog import TraceDialog, QuickDialog, FlagDialog
 from PyReconstruct.modules.gui.utils import notify, drawOutlinedText, notifyLocked
@@ -67,13 +63,6 @@ class FieldWidget(QWidget, FieldView):
         self.pixmap_dim = parent_rect.width(), parent_rect.height()-20
         self.setGeometry(0, 0, *self.pixmap_dim)
 
-        # table defaults
-        self.obj_table_manager = None
-        self.ztrace_table_manager = None
-        self.trace_table_manager = None
-        self.section_table_manager = None
-        self.flag_table_manager = None
-
         # misc defaults
         self.current_trace = []
         self.max_click_time = 0.15
@@ -92,7 +81,8 @@ class FieldWidget(QWidget, FieldView):
             pencil_pm.transformed(QTransform(-1, 0, 0, 1, 0, 0)),
             hotX=pencil_pm.width()-5, hotY=5
         )
-        
+        self.table_manager = None
+
         # set up the flag display
         self.flag_display = None
         self.displayed_flag = None
@@ -116,23 +106,20 @@ class FieldWidget(QWidget, FieldView):
             Params:
                 series (Series): the new series to load
         """
-        
-        # close the tables
-        if self.obj_table_manager is not None:
-            self.obj_table_manager.close()
-            self.obj_table_manager = None
-        if self.ztrace_table_manager is not None:
-            self.ztrace_table_manager.close()
-            self.ztrace_table_manager = None
-        if self.trace_table_manager is not None:
-            self.trace_table_manager.close()
-            self.trace_table_manager = None
-        if self.section_table_manager is not None:
-            self.section_table_manager.close()
-            self.section_table_manager = None
+        # close the manager if applicable
+        if self.table_manager:
+            self.table_manager.closeAll()
         
         self.series = series
         self.createFieldView(series)
+
+        # create a new manager
+        self.table_manager = TableManager(
+            self.series,
+            self.section,
+            self.series_states,
+            self.mainwindow,
+        )
 
         # default mouse mode: pointer
         self.mouse_mode = FieldWidget.POINTER
@@ -232,58 +219,13 @@ class FieldWidget(QWidget, FieldView):
         if update:
             self.update()
     
-    def openObjectList(self):
-        """Open an object list."""
-        # create the manager if not already
-        if self.obj_table_manager is None:
-            self.obj_table_manager = ObjectTableManager(self.series, self.mainwindow)
-        # create a new table
-        self.obj_table_manager.newTable()
-    
-    def openZtraceList(self):
-        """Open a ztrace list."""
-        # create manager if not already
-        if self.ztrace_table_manager is None:
-            self.ztrace_table_manager = ZtraceTableManager(
-                self.series,
-                self.mainwindow
-            )
-        # create a new table
-        self.ztrace_table_manager.newTable()
-    
-    def openFlagList(self):
-        """Open a flag list."""
-        # create manager if not already
-        if self.flag_table_manager is None:
-            self.flag_table_manager = FlagTableManager(
-                self.series,
-                self.mainwindow
-            )
-        # create a new table
-        self.flag_table_manager.newTable()
-    
-    def openTraceList(self):
-        """Open a trace list."""
-        # create the manager if not already
-        if self.trace_table_manager is None:
-            self.trace_table_manager = TraceTableManager(
-                self.series,
-                self.section,
-                self.mainwindow
-            )
-        # create a new table
-        self.trace_table_manager.newTable()
-    
-    def openSectionList(self):
-        """Open a section list."""
-        # create the manager is not already
-        if self.section_table_manager is None:
-            self.section_table_manager = SectionTableManager(
-                self.series,
-                self.mainwindow
-            )
-        # create a new table
-        self.section_table_manager.newTable()
+    def openList(self, list_type : str):
+        """Open a list.
+        
+            Params:
+                list_type (str): object, trace, section, ztrace, or flag
+        """
+        self.table_manager.newTable(list_type, self.section)
     
     def unlockSection(self):
         """Unlock the current section."""
@@ -816,7 +758,7 @@ class FieldWidget(QWidget, FieldView):
         
         new_name, new_color = response
         self.series.editZtraceAttributes(
-            ztrace,
+            ztrace.name,
             new_name,
             new_color
         )
@@ -881,8 +823,8 @@ class FieldWidget(QWidget, FieldView):
 
         unlocked = notifyLocked(names, self.series, self.series_states)
         
-        if unlocked and self.obj_table_manager:
-            self.obj_table_manager.updateObjects(names)
+        if unlocked:
+            self.table_manager.updateObjects(names)
 
         return unlocked
 
@@ -1918,22 +1860,6 @@ class FieldWidget(QWidget, FieldView):
             self.series.deleteAllTraces(trace.name, series_states=self.series_states)
         
         self.reload()
-    
-    def refreshTables(self, refresh_data=False):
-        """Refresh the series data and the corresponding data in the tables."""
-        self.mainwindow.saveAllData()
-        if refresh_data:
-            self.series.data.refresh()
-        if self.obj_table_manager:
-            self.obj_table_manager.updateTables()
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.updateTables()
-        if self.section_table_manager:
-            self.section_table_manager.updateTables()
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection(self.section)
-        if self.flag_table_manager:
-            self.flag_table_manager.updateTables()
 
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""

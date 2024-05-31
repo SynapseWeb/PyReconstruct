@@ -104,7 +104,7 @@ class FlagTableWidget(DataTable):
             ("copy_act", "Copy", "", self.table.copy),
             None,
             ("delete_act", "Delete", "", self.deleteFlags),
-            ("deletematchname_act", "Delete flags with this name", "", lambda : self.deleteFlags(True))
+            ("deletematchname_act", "Delete all flags with this name", "", self.deleteFlagName)
         ]
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
@@ -271,28 +271,44 @@ class FlagTableWidget(DataTable):
     
     def editFlag(self):
         """Edit a flag."""
-        flags = self.getSelected()
-        if not flags:
+        flag = self.getSelected(single=True)
+        if not flag:
             return
-        elif len(flags) != 1:
-            notify("Please edit one flag at a time.")
-            return
-        flag = flags[0]
         
         response, confirmed = FlagDialog(self.mainwindow, flag).exec()
         if not confirmed:
             return
         
-        nf = flag.copy()
-        nf.name, nf.color, nf.comments, new_comment, resolved = response
-        if new_comment: nf.addComment(self.series.user, new_comment)
-        nf.resolve(self.series.user, resolved)
+        new_flag = flag.copy()
+        new_flag.name, new_flag.color, new_flag.comments, new_comment, resolved = response
+        if new_comment: new_flag.addComment(self.series.user, new_comment)
+        new_flag.resolve(self.series.user, resolved)
 
         # keep track of scroll bar position
         vscroll = self.table.verticalScrollBar()
         scroll_pos = vscroll.value()
 
-        self.manager.editFlag(flag, nf)
+        # edit the flag
+        self.mainwindow.saveAllData()
+        self.series_states.addState()
+
+        section = self.series.loadSection(flag.snum)
+        for i, f in enumerate(section.flags):
+            if flag.equals(f):
+                section.flags[i] = new_flag
+                section.flags_modified = True
+                break
+        section.save()
+        
+        # manually create a section and series state
+        self.series_states[section].addState(section, self.series)
+        self.series_states.addSectionUndo(section.n)
+
+        self.manager.updateFlags(section)
+
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
         
         # reset scroll bar position
         vscroll.setValue(scroll_pos)
@@ -307,13 +323,92 @@ class FlagTableWidget(DataTable):
         if not flags:
             return
         
-        self.manager.markResolved(flags, resolved)
-
-    def deleteFlags(self, match_name=False):
-        """Delete an object or objects on every section."""
         self.mainwindow.saveAllData()
-        selected_flags = self.getSelected()
-        self.manager.deleteFlags(selected_flags, match_name)
+
+        # organize flags into dictionary
+        flags_dict = {}
+        for flag in flags:
+            snum = flag.snum
+            if snum not in flags_dict:
+                flags_dict[snum] = []
+            flags_dict[snum].append(flag)
+
+        # iterate through sections and resolve
+        for snum, section in self.series.enumerateSections(
+            message="Modifying flag(s)...",
+            series_states=self.series_states
+        ):
+            if snum in flags_dict:
+                for modify_flag in flags_dict[snum]:
+                    for section_flag in section.flags:
+                        if section_flag.equals(modify_flag):
+                            section_flag.resolve(self.series.user, resolved)
+                            section.flags_modified = True
+                            break
+                section.save()
+                # update the tables
+                self.manager.updateFlags(section)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+
+    def deleteFlags(self):
+        """Delete a flag or flags."""
+        self.mainwindow.saveAllData()
+        flags = self.getSelected()
+
+        # organize flags into dictionary
+        flags_dict = {}
+        for flag in flags:
+            snum = flag.snum
+            if snum not in flags_dict:
+                flags_dict[snum] = []
+            flags_dict[snum].append(flag)
+
+        # iterate through sections and delete
+        for snum, section in self.series.enumerateSections(
+            message="Deleting flag(s)...",
+            series_states=self.series_states
+        ):
+            if snum in flags_dict:
+                for delete_flag in flags_dict[snum]:
+                    for section_flag in section.flags.copy():
+                        if section_flag.equals(delete_flag):
+                            section.removeFlag(section_flag)
+                            break
+                section.save()
+                # update the tables
+                self.manager.updateFlags(section)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+    
+    def deleteFlagName(self):
+        """Delete all flags with a certain name."""
+        self.mainwindow.saveAllData()
+        flags = self.getSelected()
+        if not flags:
+            return
+        names = set(f.name for f in flags)
+
+        # iterate through sections and delete
+        for snum, section in self.series.enumerateSections(
+            message="Deleting flag(s)...",
+            series_states=self.series_states
+        ):
+            for section_flag in section.flags.copy():
+                if section_flag.name in names:
+                    section.removeFlag(section_flag)
+                section.save()
+                # update the tables
+                self.manager.updateFlags(section)
+        
+        # update the view
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+
     
     def backspace(self):
         """Called when backspace is pressed."""
@@ -341,7 +436,7 @@ class FlagTableWidget(DataTable):
         self.re_filters = set([s.replace("#", "[0-9]") for s in self.re_filters])
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setColorFilter(self, use_selected=True):
         """Set the color filter for the list."""
@@ -382,7 +477,7 @@ class FlagTableWidget(DataTable):
         self.comment_filter = new_filter
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def removeColorFilter(self):
         """Remove the color filter."""

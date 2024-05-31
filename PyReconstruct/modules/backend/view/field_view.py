@@ -51,12 +51,8 @@ class FieldView():
         self.b_section = None
         self.b_section_layer = None
 
-        # placeholders for the table manager
-        self.obj_table_manager = None
-        self.ztrace_table_manager = None
-        self.trace_table_manager = None
-        self.section_table_manager = None
-        self.flag_table_manager = None
+        # placeholder for the table manager
+        self.table_manager = None
 
         # hide/show defaults
         self.hide_trace_layer = False
@@ -76,6 +72,7 @@ class FieldView():
         # reload the actual sections
         self.section = self.series.loadSection(self.series.current_section)
         self.section_layer.section = self.section
+        self.table_manager.changeSection(self.section)
         if self.b_section:
             self.b_section = self.series.loadSection(self.b_section.n)
             self.b_section_layer.section = self.b_section
@@ -117,31 +114,7 @@ class FieldView():
             all_traces=False
         )
 
-        # update the object table
-        if self.obj_table_manager:
-            self.obj_table_manager.updateSection(
-                self.section
-            )
-        
-        # update the trace table
-        if self.trace_table_manager:
-            self.trace_table_manager.update()
-        
-        # update the ztrace table
-        if self.ztrace_table_manager:
-            self.ztrace_table_manager.update()
-        
-        # update the section table
-        if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section.n)
-
-        # update the flag table
-        if self.flag_table_manager:
-            self.flag_table_manager.updateSection(self.section)
-        
-        if clear_tracking:
-            self.section.clearTracking()
-            self.series.modified_ztraces = set()
+        self.table_manager.updateAll(clear_tracking)
     
     def clearStates(self):
         """Create/clear the states for each section."""
@@ -195,7 +168,7 @@ class FieldView():
         """
         self.series_states.undoState(redo)
         self.reload()
-        self.refreshTables()
+        self.table_manager.recreateTables()
     
     def setPropagationMode(self, propagate : bool):
         """Set the propagation mode.
@@ -287,8 +260,7 @@ class FieldView():
             states.initialize(self.section, self.series)
         
         # reload trace list
-        if self.trace_table_manager:
-            self.trace_table_manager.loadSection(self.section)
+        self.table_manager.changeSection(self.section)
         
         # propagate transform if requested
         if (self.propagate_tform and
@@ -646,7 +618,7 @@ class FieldView():
         self.reload()
 
         # refresh data and tables
-        self.refreshTables(refresh_data)
+        self.table_manager.recreateTables(refresh_data)
     
     def changeBCProfile(self, new_profile):
         """Change the brightness/contrast profile for the series.
@@ -658,8 +630,7 @@ class FieldView():
 
         # update palette and tables
         self.mainwindow.mouse_palette.updateBC()
-        if self.section_table_manager:
-            self.section_table_manager.updateSections(self.series.sections.keys())
+        self.table_manager.updateSections(self.series.sections.keys())
 
         self.generateView()
     
@@ -876,7 +847,7 @@ class FieldView():
         
         # reload the field
         self.reload()
-        self.refreshTables(refresh_data=True)
+        self.table_manager.recreateTables(refresh_data=True)
 
     def generateView(self, pixmap_dim : tuple, generate_image=True, generate_traces=True, blend=False):
         """Generate the view seen by the user in the main window.
@@ -989,8 +960,7 @@ class FieldView():
 
         for name in names:
             self.series.setAttr(name, "locked", True)
-        if self.obj_table_manager:
-            self.obj_table_manager.updateObjects(names)
+        self.table_manager.updateObjects(names)
         self.deselectAllTraces()
     
     def unlockObject(self, name=None):
@@ -1005,8 +975,7 @@ class FieldView():
         self.series_states.addState()
 
         self.series.setAttr(name, "locked", False)
-        if self.obj_table_manager:
-            self.obj_table_manager.updateObjects([name])
+        self.table_manager.updateObjects([name])
     
     # CONNECT SECTIONVIEW FUNCTIONS TO FIELDVIEW CLASS
 
@@ -1122,16 +1091,14 @@ class FieldView():
     def changeBrightness(self, change):
         self.section_layer.changeBrightness(change)
         self.series.data.updateSection(self.section)
-        if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section.n)
+        self.table_manager.updateSections([self.section.n]) # update the brightness on the table
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     
     def changeContrast(self, change):
         self.section_layer.changeContrast(change)
         self.series.data.updateSection(self.section)
-        if self.section_table_manager:
-            self.section_table_manager.updateSection(self.section.n)
+        self.table_manager.updateSections([self.section.n])
         self.mainwindow.seriesModified(True)
         self.generateView(generate_traces=False)
     

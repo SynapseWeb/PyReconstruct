@@ -143,50 +143,6 @@ class SectionTableWidget(DataTable):
             ))
         return items
     
-    # def createTable(self):
-    #     """Create the table widget."""
-    #     # close an existing table and save scroll position
-    #     if self.table is not None:
-    #         vscroll = self.table.verticalScrollBar()
-    #         scroll_pos = vscroll.value()
-    #         self.table.close()
-    #     else:
-    #         scroll_pos = 0
-        
-    #     # establish table headers
-    #     self.horizontal_headers = ["Section", "Thickness", "Locked", "Brightness", "Contrast", "Image Source"]
-
-    #     self.table = CopyTableWidget(len(self.series.sections), len(self.horizontal_headers))
-
-    #     # connect table functions
-    #     self.table.contextMenuEvent = self.sectionContextMenu
-    #     self.table.mouseDoubleClickEvent = self.findSection
-    #     self.table.backspace = self.deleteSections
-
-    #     # format table
-    #     self.table.setShowGrid(False)  # no grid
-    #     self.table.setAlternatingRowColors(True)  # alternate row colors
-    #     self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # cannot be edited
-    #     self.table.setHorizontalHeaderLabels(self.horizontal_headers)  # titles
-    #     self.table.verticalHeader().hide()  # no veritcal header
-        
-    #     # fill in section data
-    #     r = 0
-    #     for snum in sorted(self.series.sections.keys()):
-    #         self.setRow(r, snum)
-    #         r += 1
-
-    #     self.format()
-
-    #     # set the saved scroll value
-    #     self.table.verticalScrollBar().setValue(scroll_pos)
-
-    #     # set table as central widget
-    #     self.main_widget.setCentralWidget(self.table)
-
-    #     # connect checkbox functions
-    #     self.table.itemChanged.connect(self.checkLock)
-    
     def updateData(self, snum : int):
         """Update the tables for a single section.
         
@@ -198,7 +154,6 @@ class SectionTableWidget(DataTable):
             t = self.table.item(r, 0).text()
             t = t.split()[0]
             if int(t) == snum:
-                print(r, snum)
                 self.setRow(snum, r)
     
     def getSelected(self, single=False):
@@ -240,7 +195,7 @@ class SectionTableWidget(DataTable):
 
     # RIGHT CLICK FUNCTIONS
 
-    def lockSections(self, lock=True, section_numbers=None):
+    def lockSections(self, lock=True, section_numbers=None, log_event=True):
         """Lock or unlock a set of sections.
         
             Params:
@@ -251,30 +206,72 @@ class SectionTableWidget(DataTable):
             section_numbers = self.getSelected()
         if not section_numbers:
             return
-        self.manager.lockSections(section_numbers, lock)
+        
+        self.mainwindow.saveAllData()
+
+        for snum in section_numbers:
+            section = self.series.loadSection(snum)
+            section.align_locked = lock
+            section.save()
+            if log_event:
+                self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
+        
+        self.manager.updateSections(section_numbers)
+        
+        # update the field
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
-    def setBC(self, inc=False):
+    def setBC(self, section_numbers=None, b=None, c=None, inc=False, log_event=True):
         """Set the brightness/contrast for a set of sections."""
-        section_numbers = self.getSelected()
-        if not section_numbers:
-            return
+        if section_numbers is None:
+            section_numbers = self.getSelected()
+            if not section_numbers:
+                return
         
         for snum in section_numbers:
             if self.series.data["sections"][snum]["locked"]:
                 notify("Unlock section(s) before modifying.")
                 return
         
-        desc = "increment" if inc else "(-100 - 100)"
+        if b is None or c is None:
+            desc = "increment" if inc else "(-100 - 100)"
 
-        structure = [
-            [f"Brightness {desc}:", ("int", None, tuple(range(-100, 101)))],
-            [f"Contrast {desc}:", ("int", None, tuple(range(-100, 100)))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Brightness/Contrast")
-        if not confirmed:
-            return
+            structure = [
+                [f"Brightness {desc}:", ("int", None, tuple(range(-100, 101)))],
+                [f"Contrast {desc}:", ("int", None, tuple(range(-100, 100)))]
+            ]
+            response, confirmed = QuickDialog.get(self, structure, "Brightness/Contrast")
+            if not confirmed:
+                return
+            
+            b, c = tuple(response)
 
-        self.manager.setBC(section_numbers, *response, inc=inc)
+        self.mainwindow.saveAllData()
+
+        for snum in section_numbers:
+            section = self.series.loadSection(snum)
+            if b is not None:
+                if inc:
+                    section.brightness += b
+                else:
+                    section.brightness = b
+                section.brightness = max(-100, min(100, section.brightness))
+            if c is not None:
+                if inc:
+                    section.contrast += c
+                else:
+                    section.contrast = c
+                section.contrast = max(-100, min(100, section.contrast))
+            section.save()
+            if log_event:
+                self.series.addLog(None, snum, "Modify brightness/contrast")
+        
+        self.manager.updateSections(section_numbers)
+        
+        # update the field
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
     
     def matchBC(self):
         """Match the brightness/contrast of the selected sections with the current section."""
@@ -287,7 +284,9 @@ class SectionTableWidget(DataTable):
                 notify("Unlock section(s) before modifying.")
                 return
         
-        self.manager.matchBC(section_numbers)
+        b = self.mainwindow.field.section.brightness
+        c = self.mainwindow.field.section.contrast
+        self.setBC(section_numbers, b, c)
     
     def optimizeBC(self):
         """Optimize the brightness/contrast of the selected sections."""
@@ -302,7 +301,7 @@ class SectionTableWidget(DataTable):
         
         self.mainwindow.optimizeBC(section_numbers)
     
-    def editThickness(self):
+    def editThickness(self, log_event=True):
         """Modify the section thickness for a set of sections."""
         section_numbers = self.getSelected()
         if not section_numbers:
@@ -336,13 +335,35 @@ class SectionTableWidget(DataTable):
             return
 
         try:
-            new_st = float(new_st)
+            thickness = float(new_st)
         except ValueError:
             return
         
-        self.manager.editThickness(section_numbers, new_st)
-    
-    def editSrc(self):
+        self.mainwindow.saveAllData()
+
+        # keep track of which objects to update
+        modified_contours = set()
+
+        # iterate through selected sections
+        for snum in section_numbers:
+            section = self.series.loadSection(snum)
+            section.thickness = thickness
+            # flag all traces as modified because the thickness of the section has been changed
+            section.modified_contours = set(section.contours.keys())
+            modified_contours.union(section.modified_contours)
+            section.save()
+            self.manager.updateObjects(section.modified_contours)
+            if log_event:
+                self.series.addLog(None, snum, f"Change section thickness to {thickness}")
+                
+        self.manager.updateSections(section_numbers)
+        self.manager.updateObjects(modified_contours)
+        self.manager.updateZtraces(set(self.series.ztraces.keys()))  # update all of the ztrace distances
+
+        self.mainwindow.field.reload()
+        self.mainwindow.seriesModified(True)
+            
+    def editSrc(self, log_event=True):
         """Modify the image source for a single section."""
         snum = self.getSelected(single=True)
         if snum is None:
@@ -365,7 +386,20 @@ class SectionTableWidget(DataTable):
         if not confirmed:
             return
         
-        self.manager.editSrc(snum, new_src)
+        self.mainwindow.saveAllData()
+
+        section = self.series.loadSection(snum)
+        section.src = new_src
+        section.save()
+        
+        if log_event:
+            self.series.addLog(None, snum, f"Change section image source to {new_src}")
+
+        self.mainwindow.field.reload()
+        self.mainwindow.field.reloadImage()
+
+        self.manager.updateSections([snum])
+        self.mainwindow.seriesModified(True)
     
     def deleteSections(self):
         """Delete the sections selected by the user."""
@@ -381,7 +415,21 @@ class SectionTableWidget(DataTable):
         if not noUndoWarning():
             return
         
-        self.manager.deleteSections(section_numbers)
+        self.mainwindow.saveAllData()
+        
+        self.series.deleteSections(section_numbers)
+
+        # clear the states
+        self.mainwindow.field.clearStates()
+        
+        # switch to first section if current section is deleted
+        if self.series.current_section in section_numbers:
+            self.mainwindow.changeSection(sorted(list(self.series.sections.keys()))[0], save=False)
+        
+        # refresh the data in all tables
+        self.manager.recreateTables(refresh_data=True)
+
+        self.mainwindow.seriesModified(True)
     
     def backspace(self):
         """Delete the sections."""
@@ -393,7 +441,7 @@ class SectionTableWidget(DataTable):
         if snum is None:
             return
         
-        self.manager.findSection(snum)
+        self.mainwindow.changeSection(snum)
     
     def sectionContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify traces."""
@@ -403,7 +451,7 @@ class SectionTableWidget(DataTable):
 
     # MENU-RELATED FUNCTIONS
     
-    def modifyAllSrc(self):
+    def modifyAllSrc(self, log_event=True):
         """Modify the image source for all sections."""
         # check to ensure all sections are unlocked
         for snum in self.series.sections:
@@ -436,7 +484,24 @@ class SectionTableWidget(DataTable):
             elif c > 1:
                 notify("Please use only one '#' symbol to represent the section number.")
         
-        self.manager.editSrc(None, new_src)
+        # edit all sections 
+        s = new_src.split("#")
+        if len(s) != 2:
+            return
+        max_digits = len(str(max(self.series.sections.keys())))
+        for snum, section in self.series.enumerateSections(message="Modifying section image sources..."):
+            section_src = s[0] + str(snum).zfill(max_digits) + s[1]
+            section.src = section_src
+            section.save()
+    
+        if log_event:
+            self.series.addLog(None, snum, f"Change section image source to {new_src}")
+
+        self.mainwindow.field.reload()
+        self.mainwindow.field.reloadImage()
+
+        self.manager.updateSections(list(self.series.sections.keys()))
+        self.mainwindow.seriesModified(True)
     
     def reorderSections(self):
         """Reorder the sections so that they are in order."""
@@ -449,7 +514,19 @@ class SectionTableWidget(DataTable):
         if not noUndoWarning():
             return
         
-        self.manager.reorderSections()
+        self.mainwindow.saveAllData()
+
+        d = dict(tuple((snum, i) for i, snum in enumerate(self.series.sections.keys())))
+        self.series.reorderSections(d)
+        self.series.addLog(None, None, "Reorder sections")
+        
+        # refresh all table data
+        self.manager.recreateTables(refresh_data=True)
+        
+        # clear the states
+        self.mainwindow.field.clearStates()
+        self.manager.refresh()
+        self.mainwindow.field.reload()
     
     def insertSection(self, before=True):
         """Insert a section into the series."""
@@ -470,4 +547,20 @@ class SectionTableWidget(DataTable):
         src, index, mag, thickness = response
         src = os.path.basename(src)
 
-        self.manager.insertSection(index, src, mag, thickness)
+        self.mainwindow.saveAllData()
+        
+        self.series.insertSection(
+            index,
+            src,
+            mag,
+            thickness
+        )
+        self.series.addLog(None, index, "Insert section")
+
+        # refresh the data for all tables
+        self.manager.recreateTables(refresh_data=True)
+        
+        # clear the field section states
+        self.mainwindow.field.clearStates()
+        self.manager.refresh()
+        self.mainwindow.field.reload()

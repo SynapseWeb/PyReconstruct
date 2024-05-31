@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from .data_table import DataTable
-from .str_helper import sortList
+from PyReconstruct.modules.gui.utils import sortList
 
 from PyReconstruct.modules.datatypes import (
     Series,
@@ -345,6 +345,20 @@ class TraceTableWidget(DataTable):
             return selected_traces[0]
         else:
             return selected_traces
+    
+    def getTraces(self, items : list) -> list:
+        """Get the trace objects for a list of table items.
+        
+            Params:
+                items (list): the list of trace table items (name, index)
+            Returns:
+                traces (list): the list of actual trace objects
+        """
+        traces = []
+        for name, index in items:
+            traces.append(self.section.contours[name][index])
+        
+        return traces
 
     # RIGHT CLICK FUNCTIONS
 
@@ -354,7 +368,7 @@ class TraceTableWidget(DataTable):
         if items is None:
             return
         
-        traces = self.manager.getTraces(items)
+        traces = self.getTraces(items)
         
         new_attrs, confirmed = TraceDialog(
             self,
@@ -363,14 +377,17 @@ class TraceTableWidget(DataTable):
         if not confirmed:
             return
         
-        self.manager.editTraces(
-            traces,
-            new_attrs.name,
-            new_attrs.color,
-            new_attrs.tags,
+        self.mainwindow.field.section.editTraceAttributes(
+            traces, 
+            new_attrs.name, 
+            new_attrs.color, 
+            new_attrs.tags, 
             new_attrs.fill_mode
         )
-        self.manager.update()
+        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
+
+        self.manager.updateObjects()
     
     def hideTraces(self, hide=True, items=None):
         """Hide a set of traces.
@@ -384,8 +401,11 @@ class TraceTableWidget(DataTable):
         if not items:
             return
         
-        traces = self.manager.getTraces(items)
-        self.manager.hideTraces(traces, hide)
+        traces = self.getTraces(items)
+
+        self.mainwindow.field.section.hideTraces(traces, hide)
+        self.mainwindow.field.generateView()
+        self.mainwindow.field.saveState()
     
     def closeTraces(self, closed=True, items=None):
         """Close a set of traces.
@@ -399,8 +419,11 @@ class TraceTableWidget(DataTable):
         if not items:
             return
         
-        traces = self.manager.getTraces(items)
-        self.manager.closeTraces(traces, closed)
+        traces = self.getTraces(items)
+        
+        self.mainwindow.field.section.closeTraces(traces, closed)
+        self.mainwindow.field.generateView()
+        self.mainwindow.field.saveState()
     
     def editRadius(self):
         """Edit the radius for a set of traces."""
@@ -408,7 +431,7 @@ class TraceTableWidget(DataTable):
         if items is None:
             return
         
-        traces = self.manager.getTraces(items)
+        traces = self.getTraces(items)
 
         existing_radius = round(traces[0].getRadius(), 7)
 
@@ -430,8 +453,11 @@ class TraceTableWidget(DataTable):
         except ValueError:
             return
         
-        self.manager.editRadius(traces, new_rad)
-        self.manager.update()
+        self.mainwindow.field.section.editTraceRadius(traces, new_rad)
+        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
+
+        self.manager.updateObjects()
     
     def editShape(self):
         """Modify the shape of the traces on an entire object."""
@@ -439,21 +465,25 @@ class TraceTableWidget(DataTable):
         if items is None:
             return
         
-        traces = self.manager.getTraces(items)
+        traces = self.getTraces(items)
         
         new_shape, confirmed = ShapesDialog(self).exec()
         if not confirmed:
             return
         
-        self.manager.editShape(traces, new_shape)
-        self.manager.update()
+        self.mainwindow.field.section.editTraceShape(traces, new_shape)
+        self.mainwindow.field.generateView(generate_image=False)
+        self.mainwindow.field.saveState()
+
+        self.manager.updateObjects()
           
     def findTrace(self):
         """Select a trace on the section."""
         item = self.getSelected(include_locked=True, single=True)
         if item is None:
             return
-        self.manager.findTrace(item)
+        name, index = item
+        self.mainwindow.field.findTrace(name, index)
 
     def mouseDoubleClickEvent(self, event=None):
         """Called when mouse is double-clicked."""
@@ -466,10 +496,11 @@ class TraceTableWidget(DataTable):
         if not items:
             return
         
-        traces = self.manager.getTraces(items)
+        traces = self.getTraces(items)
 
-        self.manager.deleteTraces(traces) 
-        self.manager.update()
+        self.mainwindow.field.deleteTraces(traces)
+        
+        self.manager.updateObjects()
     
     def backspace(self):
         """Called when backspace is pressed."""
@@ -513,7 +544,7 @@ class TraceTableWidget(DataTable):
         self.re_filters = set([s.replace("#", "[0-9]") for s in self.re_filters])
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setGroupFilter(self):
         """Set a new group filter for the list."""
@@ -529,7 +560,7 @@ class TraceTableWidget(DataTable):
         self.group_filters = set(response[0])
         
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setTagFilter(self):
         """Set a new tag filter for the list."""
@@ -545,7 +576,7 @@ class TraceTableWidget(DataTable):
         self.tag_filters = set(response[0])
         
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def setHideFilter(self):
         """Set the hidden trace filter for the list."""
@@ -566,4 +597,4 @@ class TraceTableWidget(DataTable):
         else: self.hide_filter = "unhidden"
 
         # call through manager to update self
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)

@@ -2047,7 +2047,7 @@ class MainWindow(QMainWindow):
         
         if alignment_name:
             self.field.changeAlignment(alignment_name)
-        elif modified:
+        else:
             self.field.changeAlignment(self.series.alignment)
     
     def changeBCProfiles(self):

@@ -487,9 +487,7 @@ class FlagTableWidget(DataTable):
     def mouseDoubleClickEvent(self, event=None):
         """Focus the field on a flag in the series."""
         super().mouseDoubleClickEvent(event)
-        print("f")
         flag = self.getSelected(single=True)
         if flag is None:
             return
-        print("FLAG")
         self.mainwindow.setToFlag(flag)

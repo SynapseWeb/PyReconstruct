@@ -154,7 +154,6 @@ class SectionTableWidget(DataTable):
             t = self.table.item(r, 0).text()
             t = t.split()[0]
             if int(t) == snum:
-                print(r, snum)
                 self.setRow(snum, r)
     
     def getSelected(self, single=False):

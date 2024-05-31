@@ -801,7 +801,7 @@ class Series():
                 log_event (bool): True if event should be logged
         """
         # change the current alignment if necessary
-        if alignment_dict[self.alignment] is None:
+        if self.alignment != "no-alignment" and alignment_dict[self.alignment] is None:
             self.alignment = "no-alignment"
 
         for snum, section in self.enumerateSections(
@@ -812,12 +812,10 @@ class Series():
             old_tforms = section.tforms.copy()
             new_tforms = {}
             for new_a, old_a in alignment_dict.items():
-                if old_a is None:
-                    continue
-                elif old_a not in old_tforms:
-                    continue
-                elif old_a == "no-alignment":
+                if old_a == "no-alignment":
                     new_tforms[new_a] = Transform([1, 0, 0, 0, 1, 0])
+                elif old_a is None or old_a not in old_tforms:
+                    continue
                 else:
                     new_tforms[new_a] = old_tforms[old_a]
             section.tforms = new_tforms

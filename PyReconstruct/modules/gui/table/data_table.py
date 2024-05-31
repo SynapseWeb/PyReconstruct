@@ -145,7 +145,9 @@ class DataTable(QDockWidget):
         """
 
     def createTable(self):
-        """Create the table widget."""
+        """Create the table widget.
+        
+        This function is primarily involved in creating the GUI. It does not handle a significant amount of logic."""
         # close an existing table and save scroll position
         if self.table is not None:
             vscroll = self.table.verticalScrollBar()
@@ -203,7 +205,6 @@ class DataTable(QDockWidget):
         """Update the title of the widget."""
         self.setWindowTitle(f"{self.name.capitalize()} List")
         
-    
     def resizeEvent(self, event):
         """Resize the table when window is resized."""
         super().resizeEvent(event)
@@ -214,11 +215,12 @@ class DataTable(QDockWidget):
     def getSelected(self, single=False):
         """Get the selected data item(s).
         
-        Should be overwritten in child classes.
+        Must be overwritten in child classes.
 
             Params:
                 single (bool): True if only accept single selection
         """
+        pass
     
     def contextMenuEvent(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user."""
@@ -238,6 +240,7 @@ class DataTable(QDockWidget):
             Params:
                 item (QTableWidgetItem): the item that was checked
         """
+        pass
 
     def refresh(self):
         """Refresh the object lists."""
@@ -285,6 +288,7 @@ class DataTable(QDockWidget):
         
         Should be overwritten in child classes.
         """
+        pass
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

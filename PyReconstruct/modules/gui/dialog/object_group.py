@@ -5,12 +5,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout, 
     QLabel, 
     QVBoxLayout, 
-    QComboBox, 
     QPushButton, 
     QInputDialog
 )
 
 from PyReconstruct.modules.datatypes import ObjGroupDict
+
+from PyReconstruct.modules.gui.utils import CompleterBox, notify
 
 
 class ObjectGroupDialog(QDialog):
@@ -29,7 +30,7 @@ class ObjectGroupDialog(QDialog):
 
         group_row = QHBoxLayout()
         group_text = QLabel(self, text="Group:")
-        self.group_input = QComboBox(self)
+        self.group_input = CompleterBox(self)
         self.group_input.setMinimumWidth(100)
         self.group_input.addItem("")
         self.group_input.addItems(sorted(objgroupdict.getGroupList()))
@@ -62,12 +63,22 @@ class ObjectGroupDialog(QDialog):
         self.group_input.addItem(new_group_name)
         self.group_input.setCurrentText(new_group_name)
         self.group_input.resize(self.group_input.sizeHint())
-        
+    
+    def accept(self):
+        t = self.group_input.currentText()
+        if not t or self.group_input.findText(t) == -1:
+            notify("Please enter a valid group.")
+            return
+        super().accept()
+
     def exec(self):
         """Run the dialog."""
         confirmed = super().exec()
         text = self.group_input.currentText()
         if confirmed and text:
-            return self.group_input.currentText(), True
+            if self.group_input.findText(text) != -1:
+                return self.group_input.currentText(), True
+            else:
+                return "", False
         else:
             return "", False

@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QLabel, 
     QLineEdit,
     QTextEdit,
-    QComboBox,
     QVBoxLayout,
     QHBoxLayout,
     QCheckBox,
@@ -23,7 +22,7 @@ from PySide6.QtCore import Qt
 from .helper import resizeLineEdit, BrowseWidget, MultiLineEdit
 from .color_button import ColorButton
 from .shape_button import ShapeButton
-from PyReconstruct.modules.gui.utils import notify
+from PyReconstruct.modules.gui.utils import notify, CompleterBox
 
 class InputField():
 
@@ -95,6 +94,9 @@ class InputField():
             t = self.widget.currentText()
             if t == "" and self.required:
                 notify("Please select a field from the dropdown menu.")
+                return None, False
+            elif self.widget.findText(t) == -1:
+                notify("Please enter a valid field from the dropdown menu.")
                 return None, False
             else:
                 return t, True
@@ -258,7 +260,7 @@ class QuickDialog(QDialog):
                             selected = params[1]
                         else:
                             selected = None
-                        w = QComboBox(self)
+                        w = CompleterBox(self)
                         if not required or selected is None:
                             w.addItem("")
                         w.addItems(list(options))

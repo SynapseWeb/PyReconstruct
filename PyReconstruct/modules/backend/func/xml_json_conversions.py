@@ -1,10 +1,11 @@
 import os
 import json
+import sys
 
 from PyReconstruct.modules.calc import reducePoints
 
 from PyReconstruct.modules.constants import blank_section, blank_series_no_contours
-from PyReconstruct.modules.gui.utils import getProgbar
+from PyReconstruct.modules.gui.utils import getProgbar, notify
 from PyReconstruct.modules.constants import createHiddenDir
 from PyReconstruct.modules.datatypes import (
     Series,
@@ -170,9 +171,16 @@ def getReconcropperData(json_fp):
     return alignment_dict
 
 def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
+
     # grab the section file
-    xml_section = process_section_file(section_fp)
-    fname = os.path.basename(section_fp)
+    try:
+        
+        xml_section = process_section_file(section_fp)
+        fname = os.path.basename(section_fp)
+
+    except Exception as e:
+
+        notify(f"A problem has been encountered while importing:\n\n{section_fp}\n\nError:\n\n{e}")
 
     # get an empty section dict
     section_dict = Section.getEmptyDict()

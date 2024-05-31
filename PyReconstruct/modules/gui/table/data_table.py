@@ -255,7 +255,7 @@ class DataTable(QDockWidget):
         self.columns = response
         self.series.setOption(f"{self.name}_columns", self.columns.copy())
         
-        self.manager.updateTable(self)
+        self.manager.recreateTable(self)
     
     def export(self):
         """Export the object list as a csv file."""

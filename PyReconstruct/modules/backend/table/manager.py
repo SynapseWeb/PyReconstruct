@@ -135,7 +135,7 @@ class TableManager():
         cr_on = all([table.columns["Curate"] for table in self.tables])
         for table in self.tables["object"]:
             table.columns["Curate"] = not cr_on
-            self.updateTable(table)
+            self.recreateTable(table)
     
     def recreateTable(self, table):
         """Updates a table with the current data.

@@ -2304,9 +2304,9 @@ class MainWindow(QMainWindow):
 
         print("Zarr directory updated with labels!")
 
-        if retrain: self.field.reload()
-        if retrain and self.field.obj_table_manager:
-            self.field.obj_table_manager.refresh()
+        if retrain:
+            self.field.reload()
+            self.field.table_manager.refresh()
 
         print("Starting training....")
 
@@ -2483,9 +2483,7 @@ class MainWindow(QMainWindow):
         )
         self.field.reload()
         self.removeZarrLayer()
-
-        if self.field.obj_table_manager:
-            self.field.obj_table_manager.refresh()
+        self.field.table_manager.refresh()
 
         notify("Labels imported successfully.")
     
@@ -2595,8 +2593,7 @@ class MainWindow(QMainWindow):
     
     def toggleCuration(self):
         """Quick shortcut to toggle curation on/off for the tables."""
-        if self.field.obj_table_manager:
-            self.field.obj_table_manager.toggleCuration()
+        self.field.table_manager.toggleCuration()
     
     def backspace(self):
         """Called when backspace is pressed."""
@@ -2731,9 +2728,7 @@ class MainWindow(QMainWindow):
             None if full_image else self.series.window.copy()
         )
         self.field.reload()
-        
-        if self.field.section_table_manager:
-            self.field.section_table_manager.updateSections(sections)
+        self.field.table_manager.updateSections(sections)
     
     def resetShortcuts(self, shortcuts_dict : dict = None):
         """Reset the shortcuts for the window.

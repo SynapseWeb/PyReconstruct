@@ -401,14 +401,21 @@ class TraceLayer():
             Params:
                 knife_trace (list): the knife trace in pixmap points
         """
-        trace = self.section.selected_traces[0]
-        closed = trace.closed
-        trace_to_cut = self.traceToPix(trace)
+        traces = self.section.selected_traces.copy()
+
+        # assume they are all the same, they will suffer the consequences if not
+        example_trace = traces[0]
+        # combine the tags though
+        for trace in traces[1:]:
+            for tag in trace.tags:
+                example_trace.tags.add(tag)
+
+        traces_to_cut = [self.traceToPix(t) for t in traces]
         cut_traces = cutTraces(
-            trace_to_cut, 
+            traces_to_cut, 
             knife_trace, 
             self.series.getOption("knife_del_threshold"), 
-            closed=closed
+            closed=example_trace.closed
         )  # merge the pixel traces
         # delete the old traces
         self.section.deleteTraces()
@@ -416,13 +423,13 @@ class TraceLayer():
         for piece in cut_traces:
             self.newTrace(
                 piece,
-                trace,
-                closed=closed,
+                example_trace,
+                closed=example_trace.closed,
                 reduce_points=False,
                 log_event=False
             )
         if log_event:
-            self.series.addLog(trace.name, self.section.n, "Modify trace(s)")
+            self.series.addLog(example_trace.name, self.section.n, "Modify trace(s)")
     
     def eraseArea(self, pix_x : int, pix_y : int):
         """Erase an area of the field.

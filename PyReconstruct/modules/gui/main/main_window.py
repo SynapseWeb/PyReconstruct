@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("restart_act", "Reload", self.series, self.restart),
                     ("quit_act", "Quit", self.series, self.close),
-                    ("test_act", "Test", "", self.test),
+                    ##("test_act", "Test", "", self.test),
                 ]
             },
 

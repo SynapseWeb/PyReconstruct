@@ -1001,12 +1001,19 @@ class FieldView():
         # disable if trace layer is hidden
         if self.hide_trace_layer:
             return
-        elif len(self.section.selected_traces) == 0:
+        if len(self.section.selected_traces) == 0:
             notify("Please select the trace you wish to cut.")
             return
-        elif len(self.section.selected_traces) > 1:
-            notify("Please select only one trace to cut at a time.")
+        if len(set(t.name for t in self.section.selected_traces)) > 1:
+            notify("Please select only one object to cut at a time.")
             return
+        
+        closed = self.section.selected_traces[0].closed
+        for t in self.section.selected_traces[1:]:
+            if t.closed != closed:
+                notify("Please select traces that are all exclusively open or closed.")
+                return
+        
         self.section_layer.cutTrace(scalpel_trace)
         self.generateView(generate_image=False)
         self.saveState()

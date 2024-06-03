@@ -260,7 +260,7 @@ def mergeTraces(trace_list : list) -> list:
         new_traces[i] = reducePoints(new_traces[i])
     return new_traces
 
-def cutTraces(trace, cut_trace : list, del_threshold : float, closed=True) -> list:
+def cutTraces(trace_list, cut_trace : list, del_threshold : float, closed=True) -> list:
     """Cut a set of traces.
     
         Params:
@@ -270,16 +270,18 @@ def cutTraces(trace, cut_trace : list, del_threshold : float, closed=True) -> li
             (list) the newly cut traces
     """
     if closed:
-        threshold = area(trace) * (del_threshold / 100)
-        grid = Grid([trace], cut_trace)
+        threshold = sum(area(t) for t in trace_list) * (del_threshold / 100)
+        grid = Grid(trace_list, cut_trace)
         interiors = grid.getInteriors()
         new_traces = []
         for i in range(len(interiors)):
             if area(interiors[i]) >= threshold: # exclude traces that are smaller than 1% of the original trace area
                 new_traces.append(reducePoints(interiors[i]))
     else:
-        threshold = lineDistance(trace, closed=False) * (del_threshold / 100)
-        new_traces = cutOpenTrace(trace, cut_trace)
+        new_traces = []
+        for trace in trace_list:
+            threshold = lineDistance(trace, closed=False) * (del_threshold / 100)
+            new_traces += cutOpenTrace(trace, cut_trace)
         for t in new_traces.copy():
             if lineDistance(t, closed=False) < threshold:
                 new_traces.remove(t)

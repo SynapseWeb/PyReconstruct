@@ -17,6 +17,7 @@ from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
 from .objects import Objects
 from .default_settings import default_settings, default_series_settings
+from .host_tree import HostTree
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
@@ -94,6 +95,7 @@ class Series():
 
         # default settings
         self.modified_ztraces = set()
+        self.modified_objects = set()
         self.leave_open = False
 
         # possible zarr overlay
@@ -126,6 +128,9 @@ class Series():
 
         # user-defined columns
         self.user_columns = series_data["user_columns"]
+
+        # host tree
+        self.host_tree = HostTree(series_data["host_tree"])
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -551,6 +556,7 @@ class Series():
         d["editors"] = list(self.editors)
         d["code"] = self.code
         d["user_columns"] = self.user_columns
+        d["host_tree"] = self.host_tree.getDict()
 
         return d
     
@@ -587,6 +593,8 @@ class Series():
                 "Flat area": False,
                 "Volume": False,
                 "Radius": False,
+                "Host": True,
+                "Superhosts": False,
                 "Groups": True,
                 "Trace tags": False,
                 "Locked": True,
@@ -639,6 +647,7 @@ class Series():
         series_data["editors"] = []
         series_data["code"] = ""
         series_data["user_columns"] = {}
+        series_data["host_tree"] = {}
 
         return series_data
     
@@ -1890,6 +1899,9 @@ class Series():
         # obj_attrs
         del(self.obj_attrs[name])
 
+        # object host
+        self.host_tree.removeObject(name)
+
     def renameObjAttrs(self, old_name, new_name):
         """Change the attibutes for an object that was renamed.
 
@@ -1930,6 +1942,9 @@ class Series():
                         new_cols[col_name] = opt
 
             self.obj_attrs[new_name] = self.obj_attrs[old_name].copy()
+        
+        # rename obj hosts
+        self.host_tree.renameObject(old_name, new_name)
     
     def getAlignments(self) -> list:
         """Return a list of alignment names."""
@@ -2378,8 +2393,54 @@ class Series():
         
         return new_names
 
+    def setObjHosts(self, obj_names : list, host_names : list):
+        """Set the host for object(s).
+        
+            Params:
+                obj_names (list): the names of the objects with hosts to set
+                host_name (list): the name of the host to set
+        """
+        # ensure that hosts exist
+        for n in host_names:
+            if n not in self.data["objects"]:
+                raise Exception("Host object does not exist.")
+        
+        # check to ensure that objects are not hosts of each other
+        for hn in host_names:
+            if bool(set(obj_names) & set(self.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
+                raise Exception("Objects cannot be hosts of each other.")
+
+        for obj_name in obj_names:
+            self.host_tree.clearHosts(obj_name)
+            self.host_tree.add(obj_name, host_names.copy())
+    
+    def getObjHosts(self, obj_name : str, traverse=False, only_secondary=False):
+        """Get the host(s) for an object.
+        
+            Params:
+                obj_name (str): the name of the object to retreive the hosts for
+                traverse (bool): True if all hosts should be returned
+                only_secondary (bool): True if only secondary hosts should be included in the traverse
+        """
+        return self.host_tree.getHosts(obj_name, traverse, only_secondary)
+    
+    def clearObjHosts(self, obj_names : list):
+        """Clear the host for object(s).
+        
+            Params:
+                obj_names (list): the names of the objects whose hosts should be cleared
+        """
+        for obj_name in obj_names:
+            self.host_tree.clearHosts(obj_name)
+    
+    def clearTracking(self):
+        """Clear the tracking of modified ztraces and modified objects."""
+        self.modified_ztraces = set()
+        self.modified_objects = set()
+
     
 class SeriesIterator():
+
 
     def __init__(self, series : Series, show_progress : bool, message : str, series_states, breakable=True):
         """Create the series iterator object.

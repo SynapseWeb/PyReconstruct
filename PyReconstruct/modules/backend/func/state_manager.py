@@ -373,6 +373,8 @@ class SeriesState():
 
         user_columns = deepcopy(series.user_columns)
         object_columns = deepcopy(series.getOption("object_columns"))
+
+        host_tree = series.host_tree.copy()
         
         return {
             "obj_attrs" : obj_attrs,
@@ -382,7 +384,8 @@ class SeriesState():
             "alignment" : alignment,
             "ztraces" : ztraces,
             "user_columns": user_columns,
-            "object_columns": object_columns
+            "object_columns": object_columns,
+            "host_tree": host_tree
         }
     
     def resetSeriesAttributes(self, series : Series):

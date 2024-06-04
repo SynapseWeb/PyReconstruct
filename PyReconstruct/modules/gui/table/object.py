@@ -54,6 +54,8 @@ class ObjectTableWidget(DataTable):
         }
         self.cr_user_filters = set()
         self.user_col_filters = {}
+        self.host_filters = set()
+        self.direct_hosts_only = False
 
         super().__init__("object", series, mainwindow, manager)
         self.static_columns = ["Name"]
@@ -122,6 +124,7 @@ class ObjectTableWidget(DataTable):
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                     ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
                     ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter),
+                    ("hostfilter_act", "Host filter...", "", self.setHostFilter),
                     {
                         "attr_name": "usercolfiltersmenu",
                         "text": "Categorical column filters",
@@ -185,6 +188,9 @@ class ObjectTableWidget(DataTable):
                 "opts":
                 [
                     ("editcomment_act", "Comment...", "", self.editComment),
+                    None,
+                    ("sethosts_act", "Set host(s)...", "", self.setHosts),
+                    ("clearhosts_act", "Clear host(s)...", "", self.clearHosts),
                     None,
                     ("addgroup_act", "Add to group...", "", self.addToGroup),
                     ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
@@ -348,6 +354,11 @@ class ObjectTableWidget(DataTable):
             items.append(QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
         elif item_type == "Radius":
             items.append(QTableWidgetItem(str(round(self.series.data.getAvgRadius(name), 5))))
+        elif item_type == "Host":
+            items.append(QTableWidgetItem(", ".join(self.series.getObjHosts(name))))
+        elif item_type == "Superhosts":
+            hosts = self.series.getObjHosts(name, True, True)
+            items.append(QTableWidgetItem(", ".join(hosts)))
         elif item_type == "Groups":
             groups = self.series.object_groups.getObjectGroups(name)
             groups_str = ", ".join(groups)
@@ -464,6 +475,17 @@ class ObjectTableWidget(DataTable):
             if bool(re.fullmatch(re_filter, name)):
                 passes_filters = True
         if not passes_filters:
+            return False
+
+        # check hosts
+        found_host = False if bool(self.host_filters) else True
+        if name in self.host_filters:
+            found_host = True
+        else:
+            for host in self.host_filters:
+                if host in self.series.getObjHosts(name, not self.direct_hosts_only):
+                    found_host = True
+        if not found_host:
             return False
         
         return True
@@ -705,7 +727,13 @@ class ObjectTableWidget(DataTable):
         if name: all_names.add(name)
 
         # update the table data
-        self.manager.updateObjects(all_names)
+        if not name:
+            self.manager.updateObjects(all_names)
+        else:
+            # ensure that hosts are updated as well
+            self.manager.updateObjects(
+                self.series.host_tree.getObjToUpdate(all_names)
+            )
         
         # update the view
         self.mainwindow.field.reload()
@@ -991,11 +1019,14 @@ class ObjectTableWidget(DataTable):
         
         self.mainwindow.saveAllData()
 
+        # get the objects that will require updating once deleted (include hosted objects)
+        modified_objs = self.series.host_tree.getObjToUpdate(obj_names)
+
         # delete the object on every section
         self.series.deleteObjects(obj_names, self.series_states)
 
         # update the dictionary data and tables
-        self.manager.updateObjects(obj_names)
+        self.manager.updateObjects(modified_objs)
         
         # update the view
         self.mainwindow.field.reload()
@@ -1408,5 +1439,66 @@ class ObjectTableWidget(DataTable):
         
         self.series.importUserColsText(fp)
         self.updateObjCols()
+    
+    def setHosts(self):
+        """Set the host(s) for the selected object(s)."""
+        names = self.getSelected()
+        if not names:
+            return
+        
+        if len(names) == 1:
+            current_hosts = self.series.getObjHosts(names[0])
+        else:
+            current_hosts = []
+        
+        structure = [
+            ["Host Name:"],
+            [(True, "multicombo", list(self.series.data["objects"].keys()), current_hosts)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Object Host")
+        if not confirmed:
+            return
+        host_names = list(set(response[0]))
+        
+        # check to ensure that objects are not hosts of each other
+        for hn in host_names:
+            if bool(set(names) & set(self.series.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
+                notify("Objects cannot be hosts of each other.")
+                return
+        
+        self.series_states.addState()
+        self.series.setObjHosts(names, host_names)
 
+        self.manager.updateObjects(
+            self.series.host_tree.getObjToUpdate(names)
+        )
+    
+    def clearHosts(self):
+        """Clear the host(s) for the selected object(s)."""
+        names = self.getSelected()
+        if not names:
+            return
+        
+        self.series_states.addState()
+        self.series.clearObjHosts(names)
+        
+        self.manager.updateObjects(
+            self.series.host_tree.getObjToUpdate(names)
+        )
+    
+    def setHostFilter(self):
+        """Set the host filter."""
+        structure = [
+            ["Filter by objects with the following host(s):"],
+            [("multicombo", list(self.series.data["objects"].keys()), self.host_filters)],
+            [("check", ("limit to only direct hosts", self.direct_hosts_only))],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Object Host")
+        if not confirmed:
+            return
+        
+        self.host_filters = set(response[0])
+        self.direct_hosts_only = response[1][0][1]
+
+        self.manager.recreateTable(self)
 

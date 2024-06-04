@@ -495,6 +495,7 @@ class MainWindow(QMainWindow):
         field_menu_list = [
             ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
             ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
+            ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",

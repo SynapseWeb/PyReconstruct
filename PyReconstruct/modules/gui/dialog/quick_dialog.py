@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from .helper import resizeLineEdit, BrowseWidget, MultiLineEdit
+from .helper import resizeLineEdit, BrowseWidget, MultiInput
 from .color_button import ColorButton
 from .shape_button import ShapeButton
 from PyReconstruct.modules.gui.utils import notify, CompleterBox
@@ -40,11 +40,17 @@ class InputField():
                 return None, False
             else:
                 return t, True
-        elif self.type == "multitext":
+        elif self.type in ("multitext", "multicombo"):
             l = self.widget.getEntries()
             if not l and self.required:
                 notify("Please enter a response.")
                 return None, False
+            elif self.type == "multicombo":
+                for item in l:
+                    if item not in self.widget.combo_items:
+                        notify("Please enter a valid response from the drop-down menu.")
+                        return None, False
+                return l, True
             else:
                 return l, True
         elif self.type == "int":
@@ -225,7 +231,7 @@ class QuickDialog(QDialog):
                     elif widget_type == "multitext":
                         # Params structure: list
                         entries = params[0]
-                        w = MultiLineEdit(self, entries)
+                        w = MultiInput(self, entries)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "int" or widget_type == "float": 
                         # Params structure: int, optional: list[int]
@@ -266,6 +272,15 @@ class QuickDialog(QDialog):
                         w.addItems(list(options))
                         if selected:
                             w.setCurrentText(selected)
+                        inputs.append(InputField(widget_type, w, required=required))
+                    elif widget_type == "multicombo":
+                        # Params structure: list of options, entries
+                        opts = params[0]
+                        if len(params) > 1:
+                            entries = params[1]
+                        else:
+                            entries = []
+                        w = MultiInput(self, entries, True, opts)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "check" or widget_type == "radio":
                         # Params structure list[(str, bool)]

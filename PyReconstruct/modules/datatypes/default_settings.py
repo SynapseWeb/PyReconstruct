@@ -102,6 +102,7 @@ default_settings = {
     "flaglist_act": "Ctrl+Shift+F",
     "changealignment_act": "Ctrl+Shift+A",
     "modifytracepalette_act": "Ctrl+Shift+P",
+    "sethosts_act": "Shift+H",
 
     # palette-specific shortcuts
     "usepointer_act": "P",

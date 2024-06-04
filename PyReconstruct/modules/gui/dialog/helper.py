@@ -17,6 +17,8 @@ from PySide6.QtGui import (
 
 from .file_dialog import FileDialog
 
+from PyReconstruct.modules.gui.utils import CompleterBox
+
 def resizeLineEdit(le : QLineEdit, text : str):
     """Resize a line edit to fit a specific string.
     
@@ -65,27 +67,30 @@ class BrowseWidget(QWidget):
         """Get the displayed text."""
         return self.le.text()
 
-class MultiLineEdit(QWidget):
+class MultiInput(QWidget):
 
-    def __init__(self, parent : QWidget, entries : list = None):
+    def __init__(self, parent : QWidget, entries : list = None, combo=False, combo_items : list = []):
         """Create the multi line edit widget."""
         super().__init__(parent)
         self.container = parent
+        self.is_combo = combo
+        self.combo_items = combo_items
 
         vbl = QVBoxLayout()
         self.input_layout = QVBoxLayout()
 
-        # create the line edit widget
-        if entries:
-            self.les = []
-            for entry in entries:
-                le = QLineEdit(self, text=entry)
-                self.input_layout.addWidget(le)
-                self.les.append(le)
-        else:
-            le = QLineEdit(self)
-            self.input_layout.addWidget(le)
-            self.les = [le]
+        if not entries:
+            entries = [""]
+        
+        self.inputs = []
+        for entry in entries:
+            if self.is_combo:
+                w = CompleterBox(self, self.combo_items)
+                w.setCurrentText(entry)
+            else:
+                w = QLineEdit(self, text=entry)
+            self.input_layout.addWidget(w)
+            self.inputs.append(w)
         vbl.addLayout(self.input_layout)
 
         # create the add/remove buttons
@@ -103,22 +108,25 @@ class MultiLineEdit(QWidget):
     
     def add(self):
         """Add a line edit row to the field."""
-        le = QLineEdit(self)
-        self.input_layout.addWidget(le)
-        self.les.append(le)
+        if self.is_combo:
+            w = CompleterBox(self, self.combo_items)
+        else:
+            w = QLineEdit(self)
+        self.input_layout.addWidget(w)
+        self.inputs.append(w)
     
     def remove(self):
         """Remove a line edit row from the field."""
-        if self.les:
-            self.les.pop().deleteLater()
+        if self.inputs:
+            self.inputs.pop().deleteLater()
             self.container.adjustSize()
     
     def getEntries(self):
         """Get the strings input by the user."""
         l = []
-        for le in self.les:
-            t = le.text()
-            if t: l.append(le.text())
+        for w in self.inputs:
+            t = w.currentText() if self.is_combo else w.text()
+            if t: l.append(t)
         return l
 
 class BorderedWidget(QWidget):

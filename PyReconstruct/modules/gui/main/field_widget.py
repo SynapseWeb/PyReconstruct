@@ -28,7 +28,7 @@ from PySide6.QtGui import (
 
 from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
 from PyReconstruct.modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
-from PyReconstruct.modules.backend.view import FieldView
+from PyReconstruct.modules.backend.view import FieldView, snapTrace
 from PyReconstruct.modules.backend.table import (
     TableManager
 )
@@ -1907,6 +1907,45 @@ class FieldWidget(QWidget, FieldView):
             self.series.setUserColAttr(name, col_name, opt)
         
         self.table_manager.updateObjects(names)
+    
+    def setHosts(self):
+        """Set the host of the selected object(s)."""
+        names = set(t.name for t in self.section.selected_traces)
+        if not names:
+            return
+        elif len(names) == 1:
+            current_hosts = self.series.getObjHosts(tuple(names)[0])
+        else:
+            current_hosts = []
+        
+        structure = [
+            ["Host Name:"],
+            [("multicombo", list(self.series.data["objects"].keys()), current_hosts)]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Object Host")
+        if not confirmed:
+            return
+        host_names = set(response[0])
+        
+        # check to ensure that objects are not hosts of each other
+        for hn in host_names:
+            if bool(set(names) & set(self.series.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
+                notify("Objects cannot be hosts of each other.")
+                return
+        
+        self.series_states.addState()
+        self.series.setObjHosts(names, host_names)
+
+        self.table_manager.updateObjects(
+            self.series.host_tree.getObjToUpdate(names)
+        )
+    
+    def snapTraces(self):
+        """Snap the selected traces."""
+        for trace in self.section.selected_traces:
+            trace.points = snapTrace(self.series, self.section, trace)
+        self.generateView(generate_image=False)
+        
 
 def formatAsParagraph(text : str, per_line=50, max_lines=20):
     """Format text as a paragraph.

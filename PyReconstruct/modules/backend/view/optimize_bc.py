@@ -60,7 +60,7 @@ def adjustPixelsToStats(image, desired_mean, desired_std):
     
     return brightness, contrast
 
-def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, window=None):
+def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, window=None, lowest_res=True):
     """Optimize the brightness and contrast of the image for a single section.
     
         Params:
@@ -80,9 +80,13 @@ def optimizeSectionBC(section : Section, desired_mean=128, desired_std=60, windo
             if os.path.isfile(fp):
                 image = cv2.imread(fp, cv2.IMREAD_GRAYSCALE)
             else:  # get the smallest image if using a zarr
+                if lowest_res:
+                    scale_zg = f"scale_{max(section.zarr_scales)}"
+                else:
+                    scale_zg = f"scale_{min(section.zarr_scales)}"
                 fp = os.path.join(
                     section.series.src_dir,
-                    f"scale_{max(section.zarr_scales)}",
+                    scale_zg,
                     section.src
                 )
                 image = zarr.open(fp, "r")[:]

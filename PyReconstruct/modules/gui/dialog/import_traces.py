@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from .helper import BrowseWidget, MultiLineEdit, BorderedWidget, RadioButtonGroup, resizeLineEdit
+from .helper import BrowseWidget, MultiInput, BorderedWidget, RadioButtonGroup, resizeLineEdit
 from PyReconstruct.modules.gui.utils import notify
 
 
@@ -111,7 +111,7 @@ class ImportTracesDialog(QDialog):
 
         # object regex filters
         top_vlayout2.addWidget(QLabel(self, text="Object regex filters:"))
-        self.regex_filters = MultiLineEdit(self)
+        self.regex_filters = MultiInput(self)
         top_vlayout2.addWidget(self.regex_filters)
 
         # arrange layouts for the top of the dialog

@@ -103,7 +103,7 @@ class TableManager():
             table.updateData(ztrace_names)
         
         if clear_tracking:
-            self.series.modified_ztraces = set()
+            self.series.clearTracking()
     
     def updateFlags(self, section : Section = None, clear_tracking=True):
         """Update ONLY THE FLAG LIST for a specific section."""

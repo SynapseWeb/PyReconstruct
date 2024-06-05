@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 from .color_button import ColorButton
 from .shape_button import ShapeButton
 from .helper import resizeLineEdit
-from .quick_dialog import MultiLineEdit
+from .quick_dialog import MultiInput
 
 from PyReconstruct.modules.datatypes import Trace
 from PyReconstruct.modules.gui.utils import notify
@@ -110,7 +110,7 @@ class TraceDialog(QDialog):
             shape_row.addStretch()
 
         tags_text = QLabel(self, text="Tags:")
-        self.tags_input = MultiLineEdit(self, tags)
+        self.tags_input = MultiInput(self, tags)
 
         self.selected_input = QCheckBox("Fill when selected")
         if fill_condition in ("selected", "always"):

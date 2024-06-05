@@ -495,6 +495,7 @@ class MainWindow(QMainWindow):
         field_menu_list = [
             ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
             ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
+            ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",
@@ -2134,6 +2135,8 @@ class MainWindow(QMainWindow):
         if response <= 0:
             notify("Magnification cannot be less than or equal to zero.")
         
+        self.saveAllData()
+        
         self.field.setMag(response)
     
     def modifyPointer(self, event=None):
@@ -2940,9 +2943,6 @@ class MainWindow(QMainWindow):
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()
-    
-    def test(self):
-        self.field.reload()
 
 qdark_addon = """
 QPushButton {border: 1px solid transparent}

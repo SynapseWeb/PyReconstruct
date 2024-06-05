@@ -17,6 +17,9 @@ from .quantification import (
     colorize,
     ellipseFromPair
 )
+from .feret import (
+    feret
+)
 from .grid import (
     mergeTraces,
     cutTraces,

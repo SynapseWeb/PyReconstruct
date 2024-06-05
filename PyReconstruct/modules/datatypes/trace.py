@@ -3,7 +3,7 @@ import numpy as np
 
 from .transform import Transform
 
-from PyReconstruct.modules.calc import centroid, distance
+from PyReconstruct.modules.calc import centroid, distance, feret
 from PyReconstruct.modules.constants import blank_palette_contour
 
 from PyReconstruct.modules.datatypes_legacy import (
@@ -349,7 +349,29 @@ class Trace():
         cx, cy = centroid(points)
         r = max([distance(cx, cy, x, y) for x, y in points])
         return r
+
+    def getFeret(self, tform : Transform = None) -> float:
+        """Get min and max Feret diameters.
         
+            Params:
+                tform (Transform): the transform to apply to the points
+            Returns:
+                (float): the radius of the trace
+        """
+
+        if not self.closed:  # no feret diameter for open traces
+            
+            return (0,0)
+
+        else:
+        
+            points = self.points.copy()
+        
+            if tform:
+                points = tform.map(points)
+            
+            return feret(points)
+
     def centerAtOrigin(self):
         """Centers the trace at the origin (ignores transformations)."""
         cx, cy = centroid(self.points)
@@ -578,8 +600,3 @@ def getLegacyRadius(trace : Trace):
         return 8
     
     return legacy_radii[trace_type]
-        
-
-
-        
-

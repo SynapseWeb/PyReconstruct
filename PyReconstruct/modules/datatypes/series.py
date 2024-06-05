@@ -580,7 +580,9 @@ class Series():
         # ADDED SINCE JAN 25TH
 
         series_data["options"] = {
-            # table columns
+            # table columns (default display)
+            # note: static columns are always displayed and are not included here.
+            # See gui/table/trace.py for static cols
             "object_columns": list({
                 "Range": True,
                 "Count": False,
@@ -603,6 +605,7 @@ class Series():
                 "Length": True,
                 "Area": True,
                 "Radius": True,
+                "Feret": False
             }.items()),
             "flag_columns": list({
                 "Section": True,

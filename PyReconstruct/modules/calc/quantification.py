@@ -1,8 +1,10 @@
-# 2022-07-07 for Julian
-# Note that function centroid makes use of function area
+"""Mathematical formulae."""
+
+
 import math
 import cv2
 import numpy as np
+
 
 def area(pts : list) -> float:
     """Find the area of a closed contour.
@@ -67,7 +69,7 @@ def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     return dist
 
 def distance3D(x1 : float, y1 : float, z1 : float, x2 : float, y2 : float, z2 : float) -> float:
-    """Calculate Euclidean distance between two points in 2D space.
+    """Calculate Euclidean distance between two points in 3D space.
     
         Params:
             x1 (float): x-value of first point
@@ -159,8 +161,8 @@ def ccwpoly(pts):
 def ccw(A,B,C):
     return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
-# Return true if line segments AB and CD intersect
-def linesIntersect(A,B,C,D):
+def linesIntersect(A, B, C, D):
+    """Return true if line segments AB and CD intersect."""
     return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
 def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):

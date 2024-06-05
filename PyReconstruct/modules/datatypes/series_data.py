@@ -1,3 +1,5 @@
+"""Collect data to pass to table manager."""
+
 from PyReconstruct.modules.calc import lineDistance, area
 
 from .section import Section
@@ -26,6 +28,7 @@ class TraceData():
             self.area = area(tformed_points)
             if self.negative: self.area *= -1
         self.radius = trace.getRadius(tform)
+        self.feret = trace.getFeret(tform)
     
     def getTags(self):
         return self.tags
@@ -38,6 +41,9 @@ class TraceData():
     
     def getRadius(self):
         return self.radius
+
+    def getFeret(self):
+        return self.feret
 
     def __lt__(self, other):
         return self.index < other.index

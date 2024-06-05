@@ -140,7 +140,8 @@ def seriesToZarr(
     # get alignment of series
     alignment = {}
     for snum in range(*srange):
-        alignment[str(snum)] = series.data["sections"][snum]["tforms"][series.alignment].getList()
+        current_tranform = series.data["sections"][snum]["tforms"][series.alignment].getList()
+        alignment[str(snum)] = current_tranform
 
     # save attributes
     data_zg["raw"].attrs["offset"] = offset

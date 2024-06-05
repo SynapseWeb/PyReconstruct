@@ -144,7 +144,7 @@ class SeriesData():
                 "flags": [f.copy() for f in section.flags],
                 "tforms": section.tforms.copy()
             }
-            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 1, 0, 0])
+            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
             self.data["sections"][section.n] = d
         else:
             d = self.data["sections"][section.n]
@@ -155,7 +155,7 @@ class SeriesData():
             d["mag"] = section.mag
             d["flags"] = [f.copy() for f in section.flags]
             d["tforms"] = section.tforms.copy()
-            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 1, 0, 0])
+            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
         
         if update_traces:
             # check if there are specific traces to be updated

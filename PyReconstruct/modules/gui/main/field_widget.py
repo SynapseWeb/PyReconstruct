@@ -28,7 +28,7 @@ from PySide6.QtGui import (
 
 from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
 from PyReconstruct.modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
-from PyReconstruct.modules.backend.view import FieldView
+from PyReconstruct.modules.backend.view import FieldView, snapTrace
 from PyReconstruct.modules.backend.table import (
     TableManager
 )
@@ -1939,6 +1939,12 @@ class FieldWidget(QWidget, FieldView):
         self.table_manager.updateObjects(
             self.series.host_tree.getObjToUpdate(names)
         )
+    
+    def snapTraces(self):
+        """Snap the selected traces."""
+        for trace in self.section.selected_traces:
+            trace.points = snapTrace(self.series, self.section, trace)
+        self.generateView(generate_image=False)
         
 
 def formatAsParagraph(text : str, per_line=50, max_lines=20):

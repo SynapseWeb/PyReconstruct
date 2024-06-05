@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
                     None,
                     ("restart_act", "Reload", self.series, self.restart),
                     ("quit_act", "Quit", self.series, self.close),
-                    ("test_act", "Test", "", self.test),
+                    ("test_act", "Test", "Shift+S", self.test),
                 ]
             },
 
@@ -2135,6 +2135,8 @@ class MainWindow(QMainWindow):
         if response <= 0:
             notify("Magnification cannot be less than or equal to zero.")
         
+        self.saveAllData()
+        
         self.field.setMag(response)
     
     def modifyPointer(self, event=None):
@@ -2943,7 +2945,7 @@ class MainWindow(QMainWindow):
         event.accept()
     
     def test(self):
-        self.field.reload()
+        self.field.snapTraces()
 
 qdark_addon = """
 QPushButton {border: 1px solid transparent}

@@ -1,28 +1,47 @@
-from .objects_3D import Surface, Spheres, Contours
+from .objects_3D import Surface, Spheres, Contours, Ztrace3D
 
 from PyReconstruct.modules.datatypes import Series
 
-def generateVolumes(series : Series, obj_names : list):
+def generateVolumes(series : Series, objs : dict, ztraces : dict):
     """Generate the volume items for a set of objects.
     
         Params:
-            series (Series): the series containing the object data
-            obj_names (list): the list of objects to reconstruct
+            series (Series): the series containing the object data OR the serires jser filepath
+            objs (list): the list of objects to construct (dict containing name, color, alpha, tform)
+            ztrace_names (list): the list of ztraces to construct (dict containing name, color, alpha, tform)
             alpha (float): the transparency for the 3D scene
         Returns:
             (list): the 3D item objects
             (tuple): xmin, xmax, ymin, ymax, zmin, zmax
     """
+    # option to use fp instead of series
+    if type(series) is str:
+        series = Series.openJser(series)
+
+    # check the obj names
+    for d in objs.copy():
+        if d["name"] not in series.data["objects"]:
+            objs.remove(d)
+    # check the ztrace names
+    for d in ztraces.copy():
+        if d["name"] not in series.ztraces:
+            ztraces.remove(d)
+    
     # create the 3D objects
     obj_data = {}
-    for obj_name in obj_names:
-        mode = series.getAttr(obj_name, "3D_mode")
+    for d in objs:
+        name = d["name"]
+        mode = series.getAttr(name, "3D_mode")
+        color = d["color"] if "color" in d else None
+        alpha = d["alpha"] if "alpha" in d else None
+        tform = d["tform"] if "tform" in d else None
+        args = (name, series, color, alpha, tform)
         if mode == "surface":
-            obj_data[obj_name] = Surface(obj_name, series)
+            obj_data[name] = Surface(*args)
         elif mode == "spheres":
-            obj_data[obj_name] = Spheres(obj_name, series)
+            obj_data[name] = Spheres(*args)
         elif mode == "contours":
-            obj_data[obj_name] = Contours(obj_name, series)
+            obj_data[name] = Contours(*args)
 
     # iterate through all sections and gather points (and colors)
     mags = []
@@ -33,7 +52,7 @@ def generateVolumes(series : Series, obj_names : list):
         thicknesses.append(section.thickness)
         mags.append(section.mag)
 
-        for obj_name in obj_names:
+        for obj_name in obj_data.keys():
             if obj_name in section.contours:
                 # get the transform sepcific to the object
                 alignment = series.getAttr(obj_name, "alignment")
@@ -46,6 +65,17 @@ def generateVolumes(series : Series, obj_names : list):
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
                     obj_data[obj_name].addTrace(trace, snum, tform)
+    
+    # create ztraces
+    ztrace_data = {}
+    for d in ztraces:
+        name = d["name"]
+        color = d["color"] if "color" in d else None
+        alpha = d["alpha"] if "alpha" in d else None
+        tform = d["tform"] if "tform" in d else None
+        args = (name, series, color, alpha, tform)
+        ztrace_data[name] = Ztrace3D(*args)
+
 
     # iterate through all objects and create 3D meshes
     mesh_data_list = []
@@ -61,6 +91,11 @@ def generateVolumes(series : Series, obj_names : list):
         elif type(obj_3D) is Contours:
             mesh_data_list.append(obj_3D.generate3D())
     
+    for ztrace_name, ztrace_3D in ztrace_data.items():
+        mesh_data = ztrace_3D.generate3D()
+        extremes = addToExtremes(extremes, ztrace_3D.extremes)
+        mesh_data_list.append(mesh_data)
+    
     # convert snum extremes to z extremes
     t = series.avg_thickness
     extremes[4] *= t
@@ -70,7 +105,7 @@ def generateVolumes(series : Series, obj_names : list):
     # return global bounding box to set view
     return (
         mesh_data_list,
-        tuple(extremes)
+        series
     )
 
 def addToExtremes(extremes, new_extremes):

@@ -28,10 +28,8 @@ class MoveableButton(QPushButton):
         self.left_clicked = False
         self.right_clicked = False
         self.rc_act = None
-        self.setStyleSheet(
-            "QPushButton:checked {border: 1px solid yellow;}"
-        )
-    
+        self.active_highlight = (255, 255, 0)
+        
     def mousePressEvent(self, event):
         """Called when button is pressed."""
         self.click_time = time.time()
@@ -70,6 +68,19 @@ class MoveableButton(QPushButton):
         self.rc_act = QAction(self)
         self.rc_act.triggered.connect(fn)
 
+    def highlightButton(self):
+        """Highlight button if active (i.e., checked)."""
+        if self.isChecked():
+            painter = QPainter(self)
+            painter.setPen(QPen(QColor(*self.active_highlight), 2))
+            painter.setOpacity(1)
+            w, h = self.width(), self.height()
+            painter.drawRect(QRect(0, 0, w, h))
+        
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        self.highlightButton()
+        
 
 class ModeButton(MoveableButton):
 

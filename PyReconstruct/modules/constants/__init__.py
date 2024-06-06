@@ -1,3 +1,7 @@
+from .traces import (
+    default_traces
+)
+
 from .blank_legacy_files import (
     blank_palette_contour,
     blank_section,

@@ -390,7 +390,7 @@ class SeriesData():
             Params:
                 out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
         """
-        out_str = "Name,Section,Index,Tags,Length,Area,Radius\n"
+        out_str = "Name,Section,Index,Tags,Length,Area,Radius,Feret-Min,Feret-Max\n"
 
         # iterate through all traces
         for name in sorted(list(self.data["objects"].keys())):
@@ -402,9 +402,9 @@ class SeriesData():
                     trace_line = (
                         f"{name},{snum},{i},{' '.join(t.getTags())}," +
                         f"{round(t.getLength(), 7)},{round(t.getArea(), 7)}," +
-                        f"{round(t.getRadius(), 7)}\n"
+                        f"{round(t.getRadius(), 7)},{round(t.getFeret()[1], 7)},{round(t.getFeret()[0], 7)}"
                     )
-                    out_str += trace_line
+                    out_str += trace_line + "\n"
         
         # export the csv file
         if out_fp:

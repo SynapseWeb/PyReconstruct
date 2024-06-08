@@ -535,8 +535,6 @@ class ObjectTableWidget(DataTable):
     
     def mouseDoubleClickEvent(self, event):
         """Called when user double-clicks."""
-        super().mouseDoubleClickEvent(event)
-
         modifiers = QApplication.keyboardModifiers()
         if modifiers == Qt.ShiftModifier:
             self.addTo3D()

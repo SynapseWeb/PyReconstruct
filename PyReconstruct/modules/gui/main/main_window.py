@@ -2550,7 +2550,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified(True)
 
-    def addTo3D(self, obj_names, ztraces=False):
+    def addTo3D(self, names, ztraces=False):
         """Generate the 3D view for a list of objects.
         
             Params:
@@ -2559,12 +2559,12 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         
         if not self.viewer or self.viewer.is_closed:
-            self.viewer = CustomPlotter(self, obj_names, ztraces)
+            self.viewer = CustomPlotter(self, names, ztraces)
         else:                
             if ztraces:
-                self.viewer.addZtraces(obj_names)
+                self.viewer.addToScene([], names)
             else:
-                self.viewer.addObjects(obj_names)
+                self.viewer.addToScene(names, [])
         self.viewer.activateWindow()
         
     def removeFrom3D(self, obj_names, ztraces=False):

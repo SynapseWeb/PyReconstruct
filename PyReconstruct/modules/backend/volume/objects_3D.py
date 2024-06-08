@@ -70,7 +70,7 @@ class Surface(Object3D):
     def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
         """Add a trace to the surface data."""
         if self.default_color is None:
-            self.default_color = tuple([c/255 for c in trace.color])
+            self.default_color = trace.color
         
         if snum not in self.traces:
             self.traces[snum] = {}
@@ -202,7 +202,7 @@ class Spheres(Object3D):
     
     def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
         """Add a trace to the spheres data."""
-        self.colors.append(tuple([c/255 for c in trace.color]))
+        self.colors.append(trace.color)
 
         x, y = centroid(trace.points)
         if tform:
@@ -268,7 +268,7 @@ class Contours(Object3D):
     def addTrace(self, trace : Trace, snum : int, tform : Transform = None):
         """Add a trace to the surface data."""
         if self.default_color is None:
-            self.default_color = tuple([c/255 for c in trace.color])
+            self.default_color = trace.color
         
         if snum not in self.traces:
             self.traces[snum] = []
@@ -351,7 +351,7 @@ class Ztrace3D(Object3D):
             pts.append((x, y, z))
         
         d = ztrace.getDistance(self.series)
-        color = [c/255 for c in ztrace.color]
+        color = ztrace.color
 
         verts, faces = createTube(pts, d/1000)
 

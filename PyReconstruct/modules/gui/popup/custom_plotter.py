@@ -40,6 +40,8 @@ class VPlotter(vedo.Plotter):
 
         self.help_widget = None
         self.flash_on = False
+
+        self.saveState = self.qt_parent.saveState  # connect save state function
         
     def getSectionFromZ(self, z):
         """Get the section number from a z coordinate."""
@@ -183,10 +185,10 @@ class VPlotter(vedo.Plotter):
 
             if "Shift" in split_key:
                 fn = self.rotateSelected
-                step = 10
+                step = self.series.getOption("rotate_step_3D")
             else:
                 fn = self.translateSelected
-                step = 0.1
+                step = self.series.getOption("translate_step_3D")
             
             xyz = (0, 0, 0)
 
@@ -232,8 +234,8 @@ class VPlotter(vedo.Plotter):
         # if key == "Shift+H":
         #     self.selectHostGroup()
         
-        if set(("Ctrl", "Shift", "H")) == set(key.split("+")):
-            self.organizeHostGroups()
+        # if set(("Ctrl", "Shift", "H")) == set(key.split("+")):
+        #     self.organizeHostGroups()
 
         if not overwrite:
             super()._keypress(iren, event)
@@ -246,6 +248,8 @@ class VPlotter(vedo.Plotter):
             Params:
                 show (bool): True if scale cube should be displayed
         """
+        self.saveState()
+
         if show is None:
             show = not bool(self.objs.getType("scale_cube"))
         if show:
@@ -253,11 +257,7 @@ class VPlotter(vedo.Plotter):
             self.add(sc_obj.msh)
         else:
             for sc_obj in self.objs.getType("scale_cube"):
-                self.objs.remove(sc_obj)
-                self.remove(sc_obj.msh)
-                if sc_obj in self.selected:
-                    self.selected.remove(sc_obj)
-                    self.updateSelected()
+                self.removeSceneObj(sc_obj)
         # update the menubar display
         self.qt_parent.togglesc_act.setChecked(show)
     
@@ -289,6 +289,7 @@ class VPlotter(vedo.Plotter):
             response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
             if not confirmed:
                 return
+            self.saveState()
             
             side_len, color, alpha, lw = tuple(response)
             for sc_obj in self.selected:
@@ -298,7 +299,7 @@ class VPlotter(vedo.Plotter):
                 if color:
                     sc_obj.setColor(color)
                 if alpha:
-                    sc_obj.setAlpha(alpha)
+                    sc_obj.setAlpha(alpha, self.series)
                 if lw:
                     sc_obj.msh.lw(lw)
 
@@ -308,8 +309,9 @@ class VPlotter(vedo.Plotter):
             if len(self.selected) == 1:
                 obj = self.selected[0]
                 color = obj.color
+                alpha = obj.alpha
             else:
-                color = None
+                color, alpha = None, None
             
             structure = [
                 ["Color:", ("color", color)],
@@ -318,12 +320,13 @@ class VPlotter(vedo.Plotter):
             response, confirmed = QuickDialog.get(None, structure, "Scale Cube")
             if not confirmed:
                 return
+            self.saveState()
             
             color = response[0]
             alpha = response[1]
             for obj in self.selected:
                 if color: obj.setColor(color)
-                if alpha: obj.setAlpha(alpha)
+                if alpha: obj.setAlpha(alpha, self.series)
         
         self.updateSelected()
         self.render()
@@ -334,11 +337,15 @@ class VPlotter(vedo.Plotter):
         Params:
             i (float): the value to increment the transparency
         """
+        if not self.selected:
+            return
+        
+        self.saveState()
+
         for scene_obj in self.selected:
             new_alpha = scene_obj.alpha + i
-            scene_obj.setAlpha(new_alpha)
-            if scene_obj.type == "object" and scene_obj.series_fp == self.series.jser_fp:
-                self.series.setAttr(scene_obj.name, "3D_opacity", new_alpha)
+            scene_obj.setAlpha(new_alpha, self.series)
+        
         self.render()
 
         
@@ -350,6 +357,11 @@ class VPlotter(vedo.Plotter):
                 dy (float): the y translate
                 dz (float): the z translate
         """
+        if not self.selected:
+            return
+        
+        self.saveState()
+
         for scene_obj in self.selected:
             scene_obj.translate(dx, dy, dz)
     
@@ -364,6 +376,8 @@ class VPlotter(vedo.Plotter):
         if not self.selected:
             return
         
+        self.saveState()
+        
         # get the total cetner
         centers = [np.array(obj.center) for obj in self.selected]
         avg_center = tuple(sum(centers) / len(centers))
@@ -371,8 +385,15 @@ class VPlotter(vedo.Plotter):
         # rotate the objs
         for scene_obj in self.selected:
             scene_obj.rotate(rx, ry, rz, avg_center)
+    
+    def removeSceneObj(self, scene_obj):
+        """Remove a scene object from the scene."""
+        self.remove(scene_obj.msh)
+        self.objs.remove(scene_obj)
+        if scene_obj in self.selected:
+            self.selected.remove(scene_obj)
             
-    def removeFromScene(self, obj_names : list, ztrace_names : list, series_fp=None):
+    def removeFromScene(self, obj_names : list, ztrace_names : list, series_fp=None, save_state=True):
         """Remove objects and ztraces from the scene.
         
             Params:
@@ -389,11 +410,14 @@ class VPlotter(vedo.Plotter):
         for name in ztrace_names:
             scene_obj = self.objs.search(name, "ztrace", series_fp)
             if scene_obj: scene_objs.append(scene_obj)
+        
+        if not scene_obj:
+            return
+        
+        if save_state: self.saveState()
+
         for scene_obj in scene_objs:
-            self.remove(scene_obj.msh)
-            self.objs.remove(scene_obj)
-            if scene_obj in self.selected:
-                self.selected.remove(scene_obj)
+            self.removeSceneObj(scene_obj)
         
         self.updateSelected()
         self.render()
@@ -411,7 +435,7 @@ class VPlotter(vedo.Plotter):
             self.add(vm)
         self.render()
     
-    def addToScene(self, objs : list, ztraces : list, remove_first=True, series=None):
+    def addToScene(self, objs : list, ztraces : list, remove_first=True, series=None, save_state=True):
         """Add objects to the scene.
         
             Params:
@@ -419,10 +443,14 @@ class VPlotter(vedo.Plotter):
                 ztraces (list): list of dictionaries containing ztrace name, color, alpha, and tform (only names can also be provided)
                 remove_first (bool): True if objects should be removed from scene first
                 series (Series or str): the series or the filepath for the series containing the objects
+                save_state (bool): True if undo state should be saved
         """
         if not (objs or ztraces):
             return
         
+        if save_state:
+            self.saveState()
+                
         # check if only names were provided and standardize the format
         if objs and type(objs[0]) is str:
             obj_names = objs
@@ -447,7 +475,7 @@ class VPlotter(vedo.Plotter):
 
         # remove existing objects from scene
         if remove_first:
-            self.removeFromScene(obj_names, ztrace_names, series_fp)
+            self.removeFromScene(obj_names, ztrace_names, series_fp, save_state=False)
         
         # check for objects/ztraces that don't exist in the current series
         if series == self.series:  # operating from opened series
@@ -497,10 +525,7 @@ class VPlotter(vedo.Plotter):
     def clear(self):
         """Clear the scene."""
         for scene_obj in list(self.objs.values()):
-            self.objs.remove(scene_obj)
-            self.remove(scene_obj.msh)
-            self.selected = []
-            self.updateSelected()
+            self.removeSceneObj(scene_obj)
     
     def selectHostGroup(self):
         """Select the full host group for every selected object."""
@@ -525,6 +550,8 @@ class VPlotter(vedo.Plotter):
                 axis (int): the index of the axis to organize on
                 spacing (float): the spacing to add between scene object groups
         """
+        self.saveState()
+
         if group_by_host:
             # organize the objects into their host groups
             groups = []
@@ -573,16 +600,6 @@ class VPlotter(vedo.Plotter):
             sc_obj.msh.pos(0, 0, 0)
         
         self.show()
-
-    def organizeHostGroups(self, spacing=0):
-        """michael you better be wildly impressed by this"""
-        # organize the objects into their host groups
-        host_groups = []
-        for scene_obj in self.objs.getType("object"):
-            if not any([scene_obj in hg for hg in host_groups]):  # if obj group has not been found yet
-                host_groups.append(self.objs.getHostGroup(scene_obj))
-        
-        self.spaceGroups(host_groups, spacing)
     
     def getFieldCoords(self, msh : vedo.Mesh, pt : tuple):
         """Get the coordinates for a point on a mesh."""
@@ -605,6 +622,10 @@ class VPlotter(vedo.Plotter):
     
     def removeSelected(self):
         """Remove the selected objects from the scene."""
+        if not self.selected:
+            return
+        self.saveState()
+
         # check for scale_cube
         for scene_obj in self.selected.copy():
             if scene_obj.type == "scale_cube":
@@ -612,13 +633,12 @@ class VPlotter(vedo.Plotter):
                 break
         # remove regular objects and ztraces
         for scene_obj in self.selected.copy():
-            self.objs.remove(scene_obj)
-            self.remove(scene_obj.msh)
-            self.selected.remove(scene_obj)
-        self.updateSelected()
+            self.removeSceneObj(scene_obj)
     
     def clearTforms(self):
         """Clear the transforms for all of the objects."""
+        self.saveState()
+
         for obj in self.objs.values():
             obj.clearTform()
 
@@ -645,6 +665,9 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.help_widget = None
         self.mouse_x = 0
         self.mouse_y = 0
+
+        self.undo_states = []
+        self.redo_states = []
 
         # Create vedo renderer
         self.plt = VPlotter(self, qt_widget=self)
@@ -677,6 +700,9 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 [
                     ("edit_act", "Edit attributes...", "Ctrl+E", self.plt.modifySelected),
                     None,
+                    ("undo_act", "Undo", "Ctrl+Z", self.undo),
+                    ("redo_act", "Redo", "Ctrl+Y", lambda : self.undo(True)),
+                    None,
                     ("incalpha_act", "Increase opacity", "]", lambda : self.plt.incAlpha(0.1)),
                     ("decalpha_act", "Decrease opacity", "[", lambda : self.plt.incAlpha(-0.1)),
                     None,
@@ -699,6 +725,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                             ("selecthost_act", "Select object's host group", "Shift+H", self.plt.selectHostGroup)
                         ]
                     },
+                    ("settrinc_act", "Set translate/rotate step", "", self.setStep),
                     ("focusobjs_act", "Focus on objects", "Home", self.plt.show),
                     ("organize_act", "Organize scene", "Ctrl+Shift+H", self.organizeScene),
                 ]
@@ -724,28 +751,20 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.menubar_widget.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar_widget, menubar_list)
 
+        self.addToScene = self.plt.addToScene
+
         # gerenate objects and display
         if load_fp:
             self.loadScene(load_fp)
         elif names:
             if ztraces:
-                self.addZtraces(names, remove_first=False)
+                self.addToScene([], names, remove_first=False, save_state=False)
             else:
-                self.addObjects(names, remove_first=False)
+                self.addToScene(names, [], remove_first=False, save_state=False)
         
         self.plt.show(*self.plt.actors, resetcam=(False if load_fp else None))
         self.show()
         self.container.show()
-    
-    # CONVENIENCE FUNCTIONS (connect to add/remove scene functions)
-    def addObjects(self, obj_names, remove_first=True):
-        self.plt.addToScene(obj_names, [], remove_first)
-    def removeObjects(self, obj_names):
-        self.plt.removeFromScene(obj_names, [])
-    def addZtraces(self, ztrace_names, remove_first=True):
-        self.plt.addToScene([], ztrace_names, remove_first)
-    def removeZtraces(self, ztrace_names):
-        self.plt.removeFromScene([], ztrace_names)
     
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
@@ -763,19 +782,22 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     
     def clearScene(self):
         """Clear the scene."""
+        self.undo_states = []
+        self.redo_states = []
         self.plt.clear()
 
-    def saveScene(self):
+    def saveScene(self, return_dict=False):
         """Save the 3D scene to be opened later."""
-        save_fp = FileDialog.get(
-            "save",
-            self,
-            "Save 3D Scene",
-            "JSON File (*.json)",
-            "scene.json"
-        )
-        if not save_fp:
-            return
+        if not return_dict:
+            save_fp = FileDialog.get(
+                "save",
+                self,
+                "Save 3D Scene",
+                "JSON File (*.json)",
+                "scene.json"
+            )
+            if not save_fp:
+                return
 
         # get the object information
         d = {"scene_objects": self.plt.objs.getExportDict()}
@@ -787,8 +809,11 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         d["camera"]["view_up"] = self.plt.camera.GetViewUp()
         d["camera"]["distance"] = self.plt.camera.GetDistance()
 
-        with open(save_fp, "w") as f:
-            json.dump(d, f)
+        if return_dict:
+            return d
+        else:
+            with open(save_fp, "w") as f:
+                json.dump(d, f)
     
     def loadScene(self, load_fp : str = None, add_only=False):
         """Load a scene.
@@ -901,6 +926,101 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         self.plt.organizeScene(group_by_host, axis, spacing)
     
+    def saveState(self):
+        """Save an undo state."""
+        self.undo_states.append(self.saveScene(return_dict=True))
+        self.redo_states = []
+    
+    def loadState(self, save_state : dict):
+        """Load a previous scene state.
+        
+            Params:
+                save_state (dict): the state to load--exactly what is exported by saveScene
+        """
+        # keep track of the ids that have been found in the file
+        checked_ids = set()
+
+        # check the objects and the ztraces
+        series_objs_to_add = {}
+        for series_fp, oz_dict in save_state["series_fps"].items():
+            series_objs_to_add[series_fp] = to_add = {"objects" : [], "ztraces": []}
+            for data_type, scene_obj_list in oz_dict.items():
+                for scene_obj_dict in scene_obj_list:
+                    obj_id = scene_obj_dict["id"]
+                    checked_ids.add(obj_id)
+                    #  keep track of object if not in scene
+                    if obj_id not in self.plt.objs.keys():
+                        name = scene_obj_dict["name"]
+                        to_add[data_type].append(name)
+                    # directly modify object otherwise
+                    # possible things that have changed: color, alpha, and tform
+                    else:
+                        scene_obj = self.plt.objs[obj_id]
+                        scene_obj.setAttrs(scene_obj_dict, self.series)
+        
+        # check the scale cubes
+        for sc_dict in save_state["scale_cubes"]:
+            sc_id = sc_dict["id"]
+            checked_ids.add(sc_id)
+            # create scale cube if not in scene
+            if sc_id not in self.plt.objs.keys():
+                self.plt.toggleScaleCube(True, sc_dict)
+            # directly modify otherwise
+            else:
+                sc_obj = self.plt.objs[sc_id]
+                sc_obj.setAttrs(sc_dict, self.series)
+        
+        # remove objects that were not found in the save state
+        for obj_id in set(self.plt.objs.keys()):
+            if obj_id not in checked_ids:
+                scene_obj = self.plt.objs[obj_id]
+                self.plt.removeSceneObj(scene_obj)
+        
+        # add removed objects back into scene
+        for series_fp, to_add in series_objs_to_add.items():
+            series = self.series if series_fp == self.series.jser_fp else series_fp
+            self.plt.addToScene(
+                to_add["objects"],
+                to_add["ztraces"],
+                series=series,
+                save_state=False
+            )
+    
+    def undo(self, redo=False):
+        """Undo or redo a state.
+        
+            Params:
+                redo (bool): True if redo instead of undo.
+        """
+        if redo and not self.redo_states:
+            return
+        if not redo and not self.undo_states:
+            return
+        
+        current_state = self.saveScene(return_dict=True)
+        if redo:
+            state = self.redo_states.pop()
+            self.undo_states.append(current_state)
+        else:
+            state = self.undo_states.pop()
+            self.redo_states.append(current_state)
+        
+        self.loadState(state["scene_objects"])
+        self.plt.render()
+    
+    def setStep(self):
+        """Set the translate/rotate increments."""
+        structure = [
+            ["Translate step (in microns):", (True, "float", self.series.getOption("translate_step_3D"))],
+            ["Rotate step (in degrees):", (True, "float", self.series.getOption("rotate_step_3D"))],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "3D Step")
+        if not confirmed:
+            return
+        
+        self.series.setOption("translate_step_3D", response[0])
+        self.series.setOption("rotate_step_3D", response[1])
+    
     def closeEvent(self, event):
         self.plt.close()
         self.is_closed = True
@@ -939,10 +1059,12 @@ class SceneObject():
         self.msh.color(new_color)
         self.color = new_color
     
-    def setAlpha(self, new_alpha : float):
+    def setAlpha(self, new_alpha : float, series : Series = None):
         """Set the transparency of the object."""
         self.msh.alpha(new_alpha)
         self.alpha = new_alpha
+        if self.type == "object" and series and self.series_fp == series.jser_fp:
+            series.setAttr(self.name, "3D_opacity", new_alpha)
     
     @property
     def center(self):
@@ -982,6 +1104,9 @@ class SceneObject():
                 tform (list): the transform
                 concatenate (bool): True if transform should be multiplied with current transform
         """
+        if not tform or (not concatenate and tform == self.tform):
+            return
+        
         self.msh.apply_transform(tform, concatenate=concatenate)
         self.msh.transform = None  # long story, I'm pretty sure this is a bug with the module
     
@@ -994,6 +1119,7 @@ class SceneObject():
     def getExportDict(self):
         """Get the export dictionary describing the object."""
         return {
+            "id": self.id,  # this is only used for states; IDs get rewritten when loading a scene
             "name": self.name,
             # "series_fp": self.series_fp,
             # "type": self.type,
@@ -1001,6 +1127,18 @@ class SceneObject():
             "alpha": self.alpha,
             "tform": self.tform,
         }
+    
+    def setAttrs(self, attrs_dict : dict, series : Series = None):
+        """Convenience function to set the color, alpha, and tform from a dict.
+        
+            Params:
+                attrs_dict (dict): dict containing color, alpha, and tform keys
+                series (Series): the current working series (NOT the series containing the object)
+        """
+        if "color" in attrs_dict: self.setColor(attrs_dict["color"])
+        if "alpha" in attrs_dict: self.setAlpha(attrs_dict["alpha"], series)
+        if "tform" in attrs_dict: self.applyTform(attrs_dict["tform"])
+
     
     @property
     def bounds(self):

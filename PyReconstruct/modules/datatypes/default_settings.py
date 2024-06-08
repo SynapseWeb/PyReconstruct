@@ -119,6 +119,10 @@ default_settings = {
 
     # theme
     "theme": "default",
+
+    # 3D
+    "translate_step_3D": 0.1,
+    "rotate_step_3D": 10,
 }
 
 default_series_settings = {

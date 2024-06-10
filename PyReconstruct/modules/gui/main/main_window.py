@@ -52,7 +52,7 @@ from PyReconstruct.modules.gui.utils import (
     checkMag,
     getSetUserColsMenu
 )
-from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, TraceTableWidget
+from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, ObjectTableWidget
 from PyReconstruct.modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -2920,6 +2920,14 @@ class MainWindow(QMainWindow):
                 qdarkstyle.load_stylesheet_pyside6() + 
                 qdark_addon
             )
+    
+    def setHost(self):
+        """Set the host of the selected object(s) in the field or on the table."""
+        w = self.focusWidget()
+        if isinstance(w, ObjectTableWidget):
+            w.setHosts()
+        else:
+            self.field.setHosts()
         
     def restart(self):
         self.restart_mainwindow = True

@@ -1,11 +1,14 @@
 import os
 import re
+import cv2
 import random
 import vedo
 import json
 import numpy as np
 
 from PySide6.QtWidgets import QMainWindow
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
@@ -152,38 +155,26 @@ class VPlotter(vedo.Plotter):
 
         self.updateSelected()
 
-    def _keypress(self, iren, event):
-        """Called when a key is pressed."""
-        key = iren.GetKeySym()
-
-        if "_L" in key or "_R" in key:
-            return
+    def customShortcut(self, event : QKeyEvent):
+        """Called by the qt_parent CustomPlotter when a key is pressed.
         
-        key = key.capitalize()
+            Params:
+                event (QKeyEvent): the key press event
+        """
+        kc = event.keyCombination()
+        shift = (Qt.ShiftModifier in kc.keyboardModifiers())
+        ctrl = (Qt.ControlModifier in kc.keyboardModifiers())
+        k = event.key()
 
-        if iren.GetShiftKey():
-            key = "Shift+" + key
+        dirs = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down)
+        axes = (Qt.Key_X, Qt.Key_Y, Qt.Key_Z)
 
-        if iren.GetControlKey():
-            key = "Ctrl+" + key
-
-        if iren.GetAltKey():
-            key = "Alt+" + key
-        
-        overwrite = False
-
-        if key in ("Left", "Right", "Up", "Down", "Ctrl+Up", "Ctrl+Down",
-                   "Shift+S", "Shift+E", "Shift+F"):
-            overwrite = True
-
-        if key == "C":
+        if k == Qt.Key_C:
             self.toggleScaleCube(not bool(self.objs.getType("scale_cube")))
 
         # direction key pressed
-        elif any((direction in key) for direction in ("Left", "Right", "Up", "Down")):
-            split_key = key.split("+")
-
-            if "Shift" in split_key:
+        elif k in dirs:
+            if shift:
                 fn = self.rotateSelected
                 step = self.series.getOption("rotate_step_3D")
             else:
@@ -192,55 +183,28 @@ class VPlotter(vedo.Plotter):
             
             xyz = (0, 0, 0)
 
-            if "Left" in key and "Ctrl" not in key:
+            if k == dirs[0] and not ctrl:  # left
                 xyz = (-step, 0, 0)
-            elif "Right" in key and "Ctrl" not in key:
+            elif k == dirs[1] and not ctrl:  # right
                 xyz = (step, 0, 0)
-            elif "Up" in key:
-                if "Ctrl" in key:
+            elif k == dirs[2]:  # up
+                if ctrl:
                     xyz = (0, 0, step)
                 else:
                     xyz = (0, step, 0)
-            elif "Down" in key:
-                if "Ctrl" in key:
+            elif k == dirs[3]:  # down
+                if ctrl:
                     xyz = (0, 0, -step)
                 else:
                     xyz = (0, -step, 0)
             
             fn(*xyz)
         
-        # # custom opacity changer
-        # elif key == "Bracketleft" or key == "Bracketright":
-        #     self.incAlpha(0.05 * (-1 if key == "Bracketleft" else 1))
-        
-        # # select/deselect all
-        # elif key == "Ctrl+D":
-        #     self.selected = []
-        #     self.updateSelected()
-        # elif key == "Ctrl+A":
-        #     self.selected = list(self.objs.values())
-        #     self.updateSelected()
-        
         # remove selected object from scene
-        if key in ("Backspace", "Delete"):
+        elif k in (Qt.Key_Backspace, Qt.Key_Delete):
             self.removeSelected()
-        
-        # # help menu
-        # if key == "Shift+Question":
-        #     overwrite = True
-        #     self.showHelp()
-        
-        # # select all in host group
-        # if key == "Shift+H":
-        #     self.selectHostGroup()
-        
-        # if set(("Ctrl", "Shift", "H")) == set(key.split("+")):
-        #     self.organizeHostGroups()
 
-        if not overwrite:
-            super()._keypress(iren, event)
-        else:
-            self.render()
+        self.render()
     
     def toggleScaleCube(self, show : bool = None, attrs=None):
         """Toggle the scale cube display in the scene.
@@ -344,7 +308,9 @@ class VPlotter(vedo.Plotter):
 
         for scene_obj in self.selected:
             new_alpha = scene_obj.alpha + i
-            scene_obj.setAlpha(new_alpha, self.series)
+            new_alpha = min(1, max(0, new_alpha))
+            if new_alpha != scene_obj.alpha:
+                scene_obj.setAlpha(new_alpha, self.series)
         
         self.render()
 
@@ -641,7 +607,47 @@ class VPlotter(vedo.Plotter):
 
         for obj in self.objs.values():
             obj.clearTform()
+    
+    def setViewAxis(self, axis):
+        """Set the view to be along a specified axis.
+        
+            Params:
+                axis (int): the axis (0, 1, 2 for x, y, z)
+        """
+        # set the new camera position
+        foc = self.camera.GetFocalPoint()
+        pos = self.camera.GetPosition()
+        d = distance(foc, pos)
+        new_pos_1 = list(foc)
+        new_pos_1[axis] += d
+        new_pos_2 = list(foc)
+        new_pos_2[axis] -= d
+        if distance(new_pos_1, pos) < distance(new_pos_2, pos):
+            new_pos = new_pos_1
+        else:
+            new_pos = new_pos_2
+        self.camera.SetPosition(*tuple(new_pos))
 
+        # set which direction is up
+        vu = self.camera.GetViewUp()
+        abs_vu = [abs(n) for n in vu]
+        vu_axis = abs_vu.index(max(abs_vu))
+        if vu_axis == axis:
+            vu_axis = (0, 1, 2)[axis - 1]
+        vu_neg = vu[vu_axis] < 0
+        new_vu = [0, 0, 0]
+        new_vu[vu_axis] = -1 if vu_neg else 1
+        self.camera.SetViewUp(*tuple(new_vu))
+
+        self.render()
+    
+    def setFocalPointToSelected(self):
+        """Set the focal point as the center of the selected items."""
+        # get the total cetner
+        centers = [np.array(obj.center) for obj in self.selected]
+        avg_center = tuple(sum(centers) / len(centers))
+        self.camera.SetFocalPoint(avg_center)
+        self.render()
 
 class Container(QMainWindow):
 
@@ -679,7 +685,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 "text": "File",
                 "opts":
                 [
-                    ("savescene_act", "Save scene...", "", self.saveScene),
+                    ("savescene_act", "Save scene...", "Ctrl+S", self.saveScene),
                     ("loadscene_act", "Load scene...", "", self.loadScene),
                     None,
                     {
@@ -722,12 +728,32 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                             ("selectall_act", "Select all", "Ctrl+A", self.plt.selectAll),
                             ("deselect_act", "Deselect all", "Ctrl+D", lambda : self.plt.selectAll(False)),
                             None,
-                            ("selecthost_act", "Select object's host group", "Shift+H", self.plt.selectHostGroup)
+                            ("selecthost_act", "Select object's host group", "Ctrl+G", self.plt.selectHostGroup)
                         ]
                     },
-                    ("settrinc_act", "Set translate/rotate step", "", self.setStep),
-                    ("focusobjs_act", "Focus on objects", "Home", self.plt.show),
-                    ("organize_act", "Organize scene", "Ctrl+Shift+H", self.organizeScene),
+                    {
+                        "attr_name": "viewmenu",
+                        "text": "View",
+                        "opts":
+                        [
+                            ("focusall_act", "Focus on all", "Home", self.plt.show),
+                            ("focusselected_act", "Center on selected", "F", self.plt.setFocalPointToSelected),
+                            {
+                                "attr_name": "viewaxismenu",
+                                "text": "Set view to axis",
+                                "opts":
+                                [
+                                    ("viewx_act", "x-axis", "X", lambda : self.plt.setViewAxis(0)),
+                                    ("viewy_act", "y-axis", "Y", lambda : self.plt.setViewAxis(1)),
+                                    ("viewz_act", "z-axis", "Z", lambda : self.plt.setViewAxis(2)),
+                                ]
+                            }
+                        ]
+                    },
+                    ("settrinc_act", "Set translate/rotate step...", "", self.setStep),
+                    ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
+                    None,
+                    ("screenshot_act", "Save screenshot...", "", self.screenshot),
                 ]
             },
             {
@@ -766,9 +792,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.show()
         self.container.show()
     
-    def keyPressEvent(self, event):
-        super().keyPressEvent(event)
-        self.plt._keypress(self, event)
+    def keyPressEvent(self, event : QKeyEvent):
+        """Filter the keypresses to only use the allowed keys.
+        
+        Shortcuts created through the menu are unaffected.
+        """
+        k = event.key()
+        if k in (Qt.Key_Equal, Qt.Key_Minus):
+            super().keyPressEvent(event)
+            self.plt._keypress(self, event)
+        else:
+            self.plt.customShortcut(event)
     
     def toggleScaleCube(self):
         """Toggle the scale cube."""
@@ -1020,6 +1054,20 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         
         self.series.setOption("translate_step_3D", response[0])
         self.series.setOption("rotate_step_3D", response[1])
+    
+    def screenshot(self):
+        """Save a screenshot of the scene."""
+        filename = FileDialog.get(
+            "save",
+            self,
+            "Save Screenshot",
+            "*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
+        )
+        if not filename:
+            return
+        
+        pic = self.plt.topicture()
+        pic.write(filename)
     
     def closeEvent(self, event):
         self.plt.close()
@@ -1323,3 +1371,44 @@ sc_help_message = """To move the scale cube, you must first select it by left-cl
 Move the scale cube in XY using the arrow keys (Up/Down/Left/Right).
 
 Move the scale cube in Z using Ctrl+Up/Down."""
+
+def distance(pt1 : tuple, pt2 : tuple):
+    """Calculate the distance between two points."""
+    s = 0
+    for n1, n2 in zip(pt1, pt2):
+        s += (n2 - n1)**2
+    return s ** (1/2)
+
+def avgPt(pts : list):
+    """Get the average of a set of points."""
+    sums = [0] * len(pts[0])
+    for pt in pts:
+        for i, n in enumerate(pt):
+            sums[i] += n
+    avg = [0] * len(sums)
+    for i, n in enumerate(sums):
+        avg[i] = n / len(pts)
+    return avg
+
+def getShift(mat):
+    return (mat[0, 3], mat[1, 3], mat[2, 3])
+
+def getZYXRot(mat):
+    R = mat[:3, :3]
+
+    # Check if the matrix is a valid rotation matrix
+    if not np.allclose(np.dot(mat, R.T), np.eye(3)) or not np.isclose(np.linalg.det(R), 1.0):
+        raise ValueError("Input matrix is not a valid rotation matrix")
+
+    # Extract the elements from the rotation matrix
+    r11, r12, r13 = R[0, 0], R[0, 1], R[0, 2]
+    r21, r22, r23 = R[1, 0], R[1, 1], R[1, 2]
+    r31, r32, r33 = R[2, 0], R[2, 1], R[2, 2]
+
+    # Compute the Euler angles
+    theta_y = np.arcsin(-r31)
+    theta_x = np.arctan2(r32, r33)
+    theta_z = np.arctan2(r21, r11)
+
+    return theta_x, theta_y, theta_z
+

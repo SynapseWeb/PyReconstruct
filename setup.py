@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
 
-VERSION = '1.9.2'
+VERSION = '1.9.3-alpha'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'julian.falco@utexas.edu'
@@ -16,14 +16,15 @@ LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
       'PySide6==6.5.2',
-      'opencv-python',
+      'opencv-python==4.7.0.68',
       'numpy',
       'scikit-image',
       'trimesh==3.18.1',
       'vedo',
       'zarr',
       'lxml',
-      'gitpython'
+      'gitpython',
+      'qdarkstyle'
 ]
 
 

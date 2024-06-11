@@ -121,3 +121,23 @@ class HostTree():
 
     def copy(self):
         return HostTree(self.getDict())
+
+    def getHostGroup(self, obj_name : str, obj_pool=None):
+        """Get the full list of obj names in a host group with the given obj.
+        
+            Params:
+                obj_name (str): an object in the host group.
+        """
+        host_group = [obj_name]
+        stack = [obj_name]
+        while stack:
+            n = stack.pop()
+            travelers = self.getTravelers(n)
+            hosts = self.getHosts(n)
+            for n in (travelers + hosts):
+                if n not in host_group and (not obj_pool or n in obj_pool):
+                    host_group.append(n)
+                    stack.append(n)
+        return host_group
+
+

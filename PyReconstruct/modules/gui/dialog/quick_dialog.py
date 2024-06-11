@@ -46,10 +46,11 @@ class InputField():
                 notify("Please enter a response.")
                 return None, False
             elif self.type == "multicombo":
-                for item in l:
-                    if item not in self.widget.combo_items:
-                        notify("Please enter a valid response from the drop-down menu.")
-                        return None, False
+                if self.widget.restrict_to_opts:
+                    for item in l:
+                        if item not in self.widget.combo_items:
+                            notify("Please enter a valid response from the drop-down menu.")
+                            return None, False
                 return l, True
             else:
                 return l, True
@@ -173,6 +174,7 @@ class QuickDialog(QDialog):
             buttonbox = QDialogButtonBox(QBtn)
             buttonbox.accepted.connect(self.accept)
             buttonbox.rejected.connect(self.reject)
+            vlayout.addSpacing(10)
             vlayout.addWidget(buttonbox)
         else:
             lbl = QLabel(self, text=title)
@@ -274,13 +276,11 @@ class QuickDialog(QDialog):
                             w.setCurrentText(selected)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "multicombo":
-                        # Params structure: list of options, entries
+                        # Params structure: list of options, entries, bool restrict to list opts
                         opts = params[0]
-                        if len(params) > 1:
-                            entries = params[1]
-                        else:
-                            entries = []
-                        w = MultiInput(self, entries, True, opts)
+                        entries = params[1] if len(params) > 1 else []
+                        restrict_opts = params[2] if len(params) > 2 else True 
+                        w = MultiInput(self, entries, True, opts, restrict_opts)
                         inputs.append(InputField(widget_type, w, required=required))
                     elif widget_type == "check" or widget_type == "radio":
                         # Params structure list[(str, bool)]

@@ -103,9 +103,9 @@ default_settings = {
     "flaglist_act": "Ctrl+Shift+F",
     "changealignment_act": "Ctrl+Shift+A",
     "modifytracepalette_act": "Ctrl+Shift+P",
-    "sethosts_act": "Shift+H",
     "incpaletteup_act": "Ctrl+=",
     "incpalettedown_act": "Ctrl+-",
+    "sethosts_act": "Ctrl+Shift+H",
 
     # palette-specific shortcuts
     "usepointer_act": "P",
@@ -122,6 +122,10 @@ default_settings = {
 
     # theme
     "theme": "default",
+
+    # 3D
+    "translate_step_3D": 0.1,
+    "rotate_step_3D": 10,
 }
 
 default_series_settings = {

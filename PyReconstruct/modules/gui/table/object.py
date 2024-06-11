@@ -535,8 +535,6 @@ class ObjectTableWidget(DataTable):
     
     def mouseDoubleClickEvent(self, event):
         """Called when user double-clicks."""
-        super().mouseDoubleClickEvent(event)
-
         modifiers = QApplication.keyboardModifiers()
         if modifiers == Qt.ShiftModifier:
             self.addTo3D()
@@ -1462,6 +1460,9 @@ class ObjectTableWidget(DataTable):
         
         # check to ensure that objects are not hosts of each other
         for hn in host_names:
+            if hn in names:
+                notify("An object cannot be a host of itself.")
+                return
             if bool(set(names) & set(self.series.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
                 notify("Objects cannot be hosts of each other.")
                 return

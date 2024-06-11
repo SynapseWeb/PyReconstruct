@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QComboBox, QCompleter
+from PySide6.QtCore import Qt
 
 from .str_helper import sortList
 
@@ -11,7 +12,9 @@ class CompleterBox(QComboBox):
         self.addItems(sorted_list)
         self.setEditable(True)
         self.setInsertPolicy(QComboBox.NoInsert)
-        self.completer().setCompletionMode(QCompleter.PopupCompletion)
+        completer = self.completer()
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        completer.setCaseSensitivity(Qt.CaseSensitive)
         self.check_text = not allow_new
         self.current_text = self.currentText()
         self.currentTextChanged.connect(self.checkText)

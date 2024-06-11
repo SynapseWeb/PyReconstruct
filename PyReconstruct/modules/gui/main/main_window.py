@@ -52,7 +52,7 @@ from PyReconstruct.modules.gui.utils import (
     checkMag,
     getSetUserColsMenu
 )
-from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, TraceTableWidget
+from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, ObjectTableWidget
 from PyReconstruct.modules.backend.func import (
     xmlToJSON,
     jsonToXML,
@@ -2566,7 +2566,7 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified(True)
 
-    def addTo3D(self, obj_names, ztraces=False):
+    def addTo3D(self, names, ztraces=False):
         """Generate the 3D view for a list of objects.
         
             Params:
@@ -2575,12 +2575,12 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         
         if not self.viewer or self.viewer.is_closed:
-            self.viewer = CustomPlotter(self, obj_names, ztraces)
+            self.viewer = CustomPlotter(self, names, ztraces)
         else:                
             if ztraces:
-                self.viewer.addZtraces(obj_names)
+                self.viewer.addToScene([], names)
             else:
-                self.viewer.addObjects(obj_names)
+                self.viewer.addToScene(names, [])
         self.viewer.activateWindow()
         
     def removeFrom3D(self, obj_names, ztraces=False):
@@ -2936,6 +2936,14 @@ class MainWindow(QMainWindow):
                 qdarkstyle.load_stylesheet_pyside6() + 
                 qdark_addon
             )
+    
+    def setHost(self):
+        """Set the host of the selected object(s) in the field or on the table."""
+        w = self.focusWidget()
+        if isinstance(w, ObjectTableWidget):
+            w.setHosts()
+        else:
+            self.field.setHosts()
         
     def restart(self):
         self.restart_mainwindow = True

@@ -69,12 +69,15 @@ class BrowseWidget(QWidget):
 
 class MultiInput(QWidget):
 
-    def __init__(self, parent : QWidget, entries : list = None, combo=False, combo_items : list = []):
+    def __init__(self, parent : QWidget, entries : list = None, combo=False, combo_items : list = [], restrict_to_opts=True):
         """Create the multi line edit widget."""
         super().__init__(parent)
         self.container = parent
         self.is_combo = combo
+
+        # attributes only applicable to combobox
         self.combo_items = combo_items
+        self.restrict_to_opts = restrict_to_opts
 
         vbl = QVBoxLayout()
         self.input_layout = QVBoxLayout()
@@ -85,7 +88,7 @@ class MultiInput(QWidget):
         self.inputs = []
         for entry in entries:
             if self.is_combo:
-                w = CompleterBox(self, self.combo_items)
+                w = CompleterBox(self, self.combo_items, allow_new=(not restrict_to_opts))
                 w.setCurrentText(entry)
             else:
                 w = QLineEdit(self, text=entry)

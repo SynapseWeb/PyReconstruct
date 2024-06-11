@@ -432,17 +432,33 @@ class MainWindow(QMainWindow):
                     ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
                     None,
                     {
-                        "attr_name": "togglepalettemenu",
-                        "text": "Toggle palette",
+                        "attr_name": "palettemenu",
+                        "text": "Palette",
                         "opts":
                         [
-                            ("togglepalette_act", "Trace palette", "checkbox", self.mouse_palette.togglePalette),
-                            ("toggleinc_act",  "Section increment buttons", "checkbox", self.mouse_palette.toggleIncrement),
-                            ("togglebc_act", "Brightness/contrast sliders", "checkbox", self.mouse_palette.toggleBC),
+                            {
+                                "attr_name": "togglepalettemenu",
+                                "text": "Toggle palette",
+                                "opts":
+                                [
+                                    ("togglepalette_act", "Trace palette", "checkbox", self.mouse_palette.togglePalette),
+                                    ("toggleinc_act",  "Section increment buttons", "checkbox", self.mouse_palette.toggleIncrement),
+                                    ("togglebc_act", "Brightness/contrast sliders", "checkbox", self.mouse_palette.toggleBC),
 
+                                ]
+                            },
+                            {
+                                "attr_name": "incpalettemenu",
+                                "text": "Increment palette buttons",
+                                "opts":
+                                [
+                                    ("incpaletteup_act", "Up", self.series, lambda : self.mouse_palette.incrementPalette(True)),
+                                    ("incpalettedown_act", "Down", self.series, lambda : self.mouse_palette.incrementPalette(False)),
+                                ]
+                            },
+                            ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                         ]
                     },
-                    ("resetpalette_act", "Reset palette position", "", self.mouse_palette.resetPos),
                     ("lefthanded_act", "Left handed", "checkbox", self.field.setLeftHanded),
                     None,
                     ("togglecuration_act", "Toggle curation in object lists", self.series, self.toggleCuration),

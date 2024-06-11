@@ -55,6 +55,7 @@ default_settings = {
     "sampling_frame_grid": True,
     "flag_name": "",
     "flag_color": [255, 0, 0],
+    "palette_inc_all": True,
 
     # shortcuts 
     "alloptions_act": "Shift+O",
@@ -103,6 +104,8 @@ default_settings = {
     "changealignment_act": "Ctrl+Shift+A",
     "modifytracepalette_act": "Ctrl+Shift+P",
     "sethosts_act": "Shift+H",
+    "incpaletteup_act": "Ctrl+=",
+    "incpalettedown_act": "Ctrl+-",
 
     # palette-specific shortcuts
     "usepointer_act": "P",

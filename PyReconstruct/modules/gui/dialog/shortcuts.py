@@ -202,6 +202,8 @@ help_shortcuts = [
     ("#, Shift+#", "Select a trace on the palette"),
     ("Ctrl+#, Ctrl+Shift+#", "Edit attributes for a single trace on the palette"),
     ("modifytracepalette_act", "Switch/modify palettes"),
+    ("incpaletteup_act", "Increment palette {#} up"),
+    ("incpalettedown_act", "Increment palette {#} down"),
     None,
     "Arrow Keys",
     ("Left/Right/Up/Down", "Translate selected traces or image if no trace selected"),

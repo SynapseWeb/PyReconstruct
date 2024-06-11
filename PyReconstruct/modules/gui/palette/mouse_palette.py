@@ -42,14 +42,21 @@ The first trace created in the field is named "thing_01", the next "thing_02", a
 <br><br>
 <b>Curly brackets { }</b>
 <br><br>
-Any number bounded by curly brackets is only incremented when you press the "+" or "-"
-buttons next to the palette. The brackets are not included in the trace name. Note that all traces in the
-palette that include this pattern are incremented.
+Numbers inside curly brackets are incremented when you press the "+" or "-"
+buttons. The brackets are not included in the trace name.
 <br><br>
-Example: "thing_{01}" and "thing_{01}_feature" (two separate buttons)
+When the "⚭" button is selected, all traces with numbers inside curly brackets will be incremented.
 <br><br>
-Buttons correspond to "thing_01" and "thing_01_feature". When the user presses the "+" button, these buttons will
-now correspond to "thing_02" and "thing_02_feature"."""
+When the "⚬" button is selected, only the active trace will be incremented.
+<br><br>
+<b>Example:</b> "thing_{01}" and "thing_{01}_feature"
+<br><br>
+With "thing_{01}" active, when the user presses "+":
+<br><br>
+if "⚭" selected: these buttons will now correspond to "thing_02" and "thing_02_feature".
+<br><br>
+if "⚬" selected: the buttons will now correspond to "thing_02" and "thing_01_feature".
+"""
 
 class MousePalette():
 

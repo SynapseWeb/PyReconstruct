@@ -75,10 +75,10 @@ class HostTree():
         if not traverse:
             return hosts
         else:
-            l = [] if only_secondary else hosts.copy()
+            s = set() if only_secondary else set(hosts.copy())
             for h in hosts:
-                l += self.getHosts(h, traverse)
-            return l
+                s = s.union(set(self.getHosts(h, traverse)))
+            return list(s)
     
     def getTravelers(self, obj_name : str, traverse=False, only_secondary=False):
         """Get the objects that are hosted by the requested object
@@ -94,10 +94,10 @@ class HostTree():
         if not traverse:
             return travelers
         else:
-            l = [] if only_secondary else travelers.copy()
+            s = set() if only_secondary else set(travelers.copy())
             for t in travelers:
-                l += self.getTravelers(t, traverse)
-            return l
+                s = s.union(set(self.getTravelers(t, traverse)))
+            return list(s)
     
     def getObjToUpdate(self, obj_names : list):
         """Get object names that require table updating in the GUI if the given obj(s) are modified."""

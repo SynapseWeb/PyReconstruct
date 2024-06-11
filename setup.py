@@ -20,7 +20,7 @@ INSTALL_REQUIRES = [
       'numpy',
       'scikit-image',
       'trimesh==3.18.1',
-      'vedo',
+      'vedo==2023.4.7',
       'zarr',
       'lxml',
       'gitpython',

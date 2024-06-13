@@ -1194,7 +1194,7 @@ class ObjectTableWidget(DataTable):
         """Set a new group filter for the list."""
         structure = [
             ["Enter the group filter(s) below"],
-            [("multitext", self.group_filters)]
+            [("multicombo", self.series.object_groups.getGroupList(), self.group_filters)]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Group Filters")
         if not confirmed:

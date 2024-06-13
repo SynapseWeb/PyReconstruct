@@ -32,7 +32,7 @@ class CompleterBox(QComboBox):
             self.check_text = True
     
     def focusOutEvent(self, event):
-        if self.check_text:
+        if self.check_text and self.findText(self.currentText()) == -1:
             t = self.completer().currentCompletion()
             if t:
                 self.setCurrentText(self.completer().currentCompletion())

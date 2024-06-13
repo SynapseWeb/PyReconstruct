@@ -280,6 +280,10 @@ def seriesJSONtoXML(series : Series, new_dir : str, thickness: float):
     xml_series = process_series_file(series_fp)
     for ztrace in series.ztraces.values():
         xml_series.zcontours.append(ztrace.getXMLObj(series))
+    
+    # set the section thickness
+    xml_series.defaultThickness = series.avg_thickness
+    
     write_series(
         xml_series,
         directory=os.path.dirname(series_fp),

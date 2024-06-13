@@ -4,7 +4,7 @@
 
 # PyReconstruct
 
-PyReconstruct is an actively maintained, extensible version of RECONSTRUCT written in Python in the lab of Kristen Harris at the University of Texas at Austin. The project is currently under heavy development, but we are happy to make the application publically available now.
+PyReconstruct is an actively maintained, extensible version of RECONSTRUCT written in Python in the lab of Kristen Harris at the University of Texas at Austin. This project is currently under heavy development, but we are happy to make the application publically available now.
 
 Please send us a message should you have questions:
 
@@ -31,8 +31,8 @@ If you use PyReconstruct in published work, please cite this repo:
 @software{Falco2024,
 author = {Falco, Julian and Chirillo, Michael},
 title = {PyReconstruct},
-version = {1.9.2},
-month = {may},
+version = {1.9.3},
+month = {june},
 year = {2024}
 url = {https://github.com/synapseweb/pyreconstruct},
 }

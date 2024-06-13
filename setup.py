@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
 
-VERSION = '1.9.3-alpha'
+VERSION = '1.9.3'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'julian.falco@utexas.edu'
 URL = 'https://github.com/SynapseWeb/PyReconstruct'
 LICENSE = 'GNU GLPv3'
-DESCRIPTION = 'RECONSTRUCT written in Python'
+DESCRIPTION = 'RECONSTRUCT in Python'
 
 LONG_DESCRIPTION = (ROOT / "readme.md").read_text()
 LONG_DESC_TYPE = "text/markdown"

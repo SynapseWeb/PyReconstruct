@@ -32,7 +32,6 @@ class ObjectGroupDialog(QDialog):
         group_text = QLabel(self, text="Group:")
         self.group_input = CompleterBox(self)
         self.group_input.setMinimumWidth(100)
-        self.group_input.addItem("")
         self.group_input.addItems(sorted(objgroupdict.getGroupList()))
         self.group_input.resize(self.group_input.sizeHint())
         group_row.addWidget(group_text)
@@ -61,7 +60,7 @@ class ObjectGroupDialog(QDialog):
         if not confirmed:
             return
         self.group_input.addItem(new_group_name)
-        self.group_input.setCurrentText(new_group_name)
+        self.group_input.setCurrentIndex(self.group_input.count() - 1)
         self.group_input.resize(self.group_input.sizeHint())
     
     def accept(self):

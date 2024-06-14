@@ -126,6 +126,9 @@ default_settings = {
     # 3D
     "translate_step_3D": 0.1,
     "rotate_step_3D": 10,
+
+    # recently opened series
+    "recently_opened_series": []
 }
 
 default_series_settings = {

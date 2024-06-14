@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -58,6 +60,10 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     else:  # assume series was passed in
         action.setShortcut(kbd.getOption(act_name))
 
+    # remove previous action
+    if act_name in dir(widget):
+        widget.removeAction(getattr(widget, act_name))
+    
     # attach to widget
     widget.addAction(action)
     setattr(widget, act_name, action)
@@ -385,6 +391,28 @@ def getAlignmentsMenu(series, setAlignment):
     return {
         "attr_name": "alignmentsmenu",
         "text": "Alignments",
+        "opts": opts_list
+    }
+
+def getOpenRecentMenu(series, openSeries):
+    # create the submenu for opening a recent series
+    def getCall(fp):
+        return (lambda : openSeries(jser_fp=fp))
+
+    opts_list = []
+    filepaths = series.getOption("recently_opened_series")
+    for fp in filepaths.copy():
+        if not os.path.isfile(fp):  # remove if not a file
+            filepaths.remove(fp)
+        elif fp != series.jser_fp:
+            opts_list.append(
+                (f"openrecent{len(opts_list)}_act", fp, "", getCall(fp))
+            )
+    series.setOption("recently_opened_series", filepaths)
+
+    return {
+        "attr_name": "openrecentmenu",
+        "text": "Open recent",
         "opts": opts_list
     }
 

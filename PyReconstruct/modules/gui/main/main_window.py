@@ -51,7 +51,8 @@ from PyReconstruct.modules.gui.utils import (
     noUndoWarning,
     checkMag,
     getSetUserColsMenu,
-    getAlignmentsMenu
+    getAlignmentsMenu,
+    getOpenRecentMenu,
 )
 from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, ObjectTableWidget
 from PyReconstruct.modules.backend.func import (
@@ -176,6 +177,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     ("open_act", "Open", self.series, self.openSeries),
+                    getOpenRecentMenu(self.series, self.openSeries),
                     None,  # None acts as menu divider
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
@@ -493,11 +495,12 @@ class MainWindow(QMainWindow):
         ]
 
         if self.menubar:
-            self.menubar.close()
+            self.menubar.clear()
+        else:
+            self.menubar = self.menuBar()
+            self.menubar.setNativeMenuBar(False)
 
         # Populate menu bar with menus and options
-        self.menubar = self.menuBar()
-        self.menubar.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar, menu)
     
     def createContextMenus(self):
@@ -1092,10 +1095,12 @@ class MainWindow(QMainWindow):
             self.notifyNewEditor()
         
         # create the menus
-        if not self.actions_initialized:
-            self.createMenuBar()
+        self.createMenuBar()
         self.createContextMenus()
         self.actions_initialized = True
+
+        # add the series to recently opened
+        self.addToRecentSeries()
         
     def newSeries(
         self,
@@ -2979,6 +2984,27 @@ class MainWindow(QMainWindow):
             w.setHosts()
         else:
             self.field.setHosts()
+    
+    def addToRecentSeries(self, series_fp : str = None):
+        """Add a series to the recently opened series list."""
+        if series_fp is None:
+            if self.series.isWelcomeSeries():
+                return
+            series_fp = self.series.jser_fp
+        
+        opened = self.series.getOption("recently_opened_series")
+
+        # remove redundant filepaths
+        while series_fp in opened:
+            opened.remove(series_fp)
+        
+        opened.insert(0, series_fp)
+
+        # limit to ten items
+        if len(opened) > 10:
+            opened.pop()
+                
+        self.series.setOption("recently_opened_series", opened)
         
     def restart(self):
         self.restart_mainwindow = True

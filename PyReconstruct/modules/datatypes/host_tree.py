@@ -1,3 +1,5 @@
+import re
+
 class HostTree():
 
     def __init__(self, host_dict : dict):
@@ -139,5 +141,28 @@ class HostTree():
                     host_group.append(n)
                     stack.append(n)
         return host_group
+    
+    def merge(self, other, regex_filters=None):
+        """Merge two host trees together.
+        
+            Params:
+                other (HostTree): the other host tree
+                regex_filters (list): the list of regex filters required to pass
+        """
+        for obj_name, d in other.objects.items():
+            if not passesFilters(obj_name, regex_filters):
+                continue
+            hosts = d["hosts"]
+            hosts = [h for h in d["hosts"] if passesFilters(h, regex_filters)]
+            self.add(obj_name, hosts)
+
+
+def passesFilters(s, re_filters):
+    if not re_filters:
+        return True
+    for rf in re_filters:
+        if bool(re.fullmatch(rf, s)):
+            return True
+    return False
 
 

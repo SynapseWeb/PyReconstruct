@@ -1272,6 +1272,9 @@ class Series():
         # import the group data
         self.object_groups.merge(other.object_groups, regex_filters)
 
+        # import the host data
+        self.host_tree.merge(other.host_tree, regex_filters)
+
         # import the object attributes
         for obj_name, obj_data in other.obj_attrs.items():
             # check regex filters

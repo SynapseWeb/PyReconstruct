@@ -50,7 +50,8 @@ from PyReconstruct.modules.gui.utils import (
     setMainWindow,
     noUndoWarning,
     checkMag,
-    getSetUserColsMenu
+    getSetUserColsMenu,
+    getAlignmentsMenu
 )
 from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, ObjectTableWidget
 from PyReconstruct.modules.backend.func import (
@@ -143,12 +144,6 @@ class MainWindow(QMainWindow):
             )
             welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
             self.openSeries(welcome_series)
-        
-        # create menu and shortcuts
-        self.createMenuBar()
-        self.createContextMenus()
-        self.createShortcuts()
-        self.actions_initialized = True
 
         # set the main window as the parent of the progress bar
         setMainWindow(self)
@@ -363,7 +358,7 @@ class MainWindow(QMainWindow):
                 "text": "Alignments",
                 "opts":
                 [
-                    ("changealignment_act", "Change alignment", self.series, self.changeAlignment),
+                    ("changealignment_act", "Modify alignments", self.series, self.modifyAlignments),
                     None,
                     {
                         "attr_name": "importmenu",
@@ -510,8 +505,15 @@ class MainWindow(QMainWindow):
         # create the user columns options
         field_menu_list = [
             ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
-            ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
-            ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
+            {
+                "attr_name": "objectattrsmenu",
+                "text": "Object attributes",
+                "opts":
+                [
+                    ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
+                    ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
+                ]
+            },
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",
@@ -559,6 +561,7 @@ class MainWindow(QMainWindow):
                     ("blend_act", "Toggle section blend", self.series, self.field.toggleBlend),
                 ]
             },
+            getAlignmentsMenu(self.series, self.changeAlignment),
             None,
             self.cut_act,
             self.copy_act,
@@ -587,16 +590,22 @@ class MainWindow(QMainWindow):
         # organize actions
         self.trace_actions = [
             self.edittrace_act,
+            self.objectattrsmenu,
+            self.objcomment_act,
+            self.sethosts_act,
             self.modifymenu,
             self.mergetraces_act,
             self.makepositive_act,
             self.makenegative_act,
+            self.lockmenu,
             self.lockobject_act,
+            self.unlockobject_act,
             self.curatemenu,
             self.blankcurate_act,
             self.needscuration_act,
             self.curated_act,
             self.hidetraces_act,
+            self.customcategoriesmenu,
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,
@@ -614,6 +623,9 @@ class MainWindow(QMainWindow):
         ]
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
+
+        # check the alignment in the alignment submenu
+        self.changeAlignment(self.series.alignment)
     
     def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
         """Check for actions that should be enabled or disabled
@@ -1078,6 +1090,12 @@ class MainWindow(QMainWindow):
         # notify new users of any warnings
         if not first_open:
             self.notifyNewEditor()
+        
+        # create the menus
+        if not self.actions_initialized:
+            self.createMenuBar()
+        self.createContextMenus()
+        self.actions_initialized = True
         
     def newSeries(
         self,
@@ -2039,8 +2057,8 @@ class MainWindow(QMainWindow):
             self.series.alignment
         )
     
-    def changeAlignment(self):
-        """Open dialog to modify and change alignments."""
+    def modifyAlignments(self):
+        """Open dialog to modify alignments."""
         self.saveAllData()
         
         alignments = list(self.field.section.tforms.keys())
@@ -2063,11 +2081,28 @@ class MainWindow(QMainWindow):
                     break
             if modified:
                 self.series.modifyAlignments(alignment_dict, self.field.series_states)
+                self.createContextMenus()
         
         if alignment_name:
-            self.field.changeAlignment(alignment_name)
+            self.changeAlignment(alignment_name, overwrite=True)
         else:
-            self.field.changeAlignment(self.series.alignment)
+            self.changeAlignment(self.series.alignment, overwrite=True)
+
+    def changeAlignment(self, new_alignment : str, overwrite=False):
+        """Change the current sereis alignment.
+        
+            Params:
+                alignment (str): the alignment to switch to
+                overwrite (bool): change the alignment even if the name is the same
+        """
+        attr = getattr(self, f"{new_alignment}_alignment_act")
+        attr.setChecked(True)
+
+        current_alignment = self.series.alignment
+        if overwrite or new_alignment != current_alignment:
+            attr = getattr(self, f"{current_alignment}_alignment_act")  # generated from createContextMenu
+            attr.setChecked(False)
+            self.field.changeAlignment(new_alignment)
     
     def changeBCProfiles(self):
         """Open dialog to modify and change brightness/contrast profiles."""

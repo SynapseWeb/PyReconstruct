@@ -776,7 +776,7 @@ class ObjectTableWidget(DataTable):
             return
         
         structure = [
-            ["Alignment:", ("combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
+            ["Alignment:", ("combo", list(self.mainwindow.field.section.tforms.keys()))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
         if not confirmed:

@@ -140,5 +140,8 @@ class Transform():
         l = self.getList()
         l[2], l[5] = 0, 0
         return Transform(l)
+    
+    def identity():
+        return Transform([1, 0, 0, 0, 1, 0])
 
 

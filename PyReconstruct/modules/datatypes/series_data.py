@@ -72,14 +72,11 @@ class ObjectData():
         alignment = series.getAttr(trace.name, "alignment")
         if alignment is None:
             alignment = series.alignment
-        elif alignment != "no-alignment" and alignment not in section.tforms:
+        elif alignment not in section.tforms:
             series.setAttr(trace.name, "alignment", None)
             alignment = series.alignment
 
-        if alignment == "no-alignment":
-            tform = Transform([1, 0, 0, 0, 1, 0])
-        else:
-            tform = section.tforms[alignment]
+        tform = section.tforms[alignment]
 
         i = len(self.traces[section.n])
         self.traces[section.n].append(
@@ -144,7 +141,6 @@ class SeriesData():
                 "flags": [f.copy() for f in section.flags],
                 "tforms": section.tforms.copy()
             }
-            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
             self.data["sections"][section.n] = d
         else:
             d = self.data["sections"][section.n]
@@ -155,7 +151,6 @@ class SeriesData():
             d["mag"] = section.mag
             d["flags"] = [f.copy() for f in section.flags]
             d["tforms"] = section.tforms.copy()
-            d["tforms"]["no-alignment"] = Transform([1, 0, 0, 0, 1, 0])
         
         if update_traces:
             # check if there are specific traces to be updated

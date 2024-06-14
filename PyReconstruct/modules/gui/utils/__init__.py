@@ -17,6 +17,7 @@ from .utils import (
     notifyLocked,
     checkMag,
     getSetUserColsMenu,
+    getAlignmentsMenu
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox

@@ -370,3 +370,21 @@ def getSetUserColsMenu(series, setUserCol):
         "text": "Custom categories",
         "opts": custom_categories
     }
+
+def getAlignmentsMenu(series, setAlignment):
+    # create the submenu for switching alignments
+    def getCall(alignment):
+        return (lambda : setAlignment(alignment))
+    
+    opts_list = []
+    for alignment in sorted(series.alignments):
+        opts_list.append(
+            (f"{alignment}_alignment_act", alignment, "checkbox", getCall(alignment))
+        )
+    
+    return {
+        "attr_name": "alignmentsmenu",
+        "text": "Alignments",
+        "opts": opts_list
+    }
+

@@ -8,7 +8,8 @@ from PySide6.QtWidgets import (
     QPushButton, 
     QInputDialog,
     QTableWidget,
-    QTableWidgetItem
+    QTableWidgetItem, 
+    QAbstractItemView,
 )
 
 from PyReconstruct.modules.gui.utils import notify
@@ -26,6 +27,7 @@ class AlignmentList(QTableWidget):
         self.setShowGrid(False)
         self.verticalHeader().hide()
         self.horizontalHeader().hide()
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.createTable()
             
@@ -36,9 +38,6 @@ class AlignmentList(QTableWidget):
             self.removeRow(0)
         # create the rows
         r = 0
-        self.insertRow(r)
-        r += 1
-        self.setItem(0, 0, QTableWidgetItem("no-alignment"))
         for i, a in enumerate(sorted(self.adict.keys())):
             if self.adict[a] is not None:
                 self.insertRow(r)
@@ -146,7 +145,7 @@ class AlignmentDialog(QDialog):
         new_alignment, confirmed = QInputDialog.getText(self, "New Alignment", "New alignment name:")
         if not confirmed:
             return
-        if (new_alignment in self.table.adict and self.table.adict[new_alignment] is not None) or new_alignment == "no-alignment":
+        if (new_alignment in self.table.adict and self.table.adict[new_alignment] is not None):
             notify("This alignment already exists")
             return
         self.table.addAlignment(new_alignment)

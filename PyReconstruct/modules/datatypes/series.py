@@ -812,9 +812,7 @@ class Series():
             old_tforms = section.tforms.copy()
             new_tforms = {}
             for new_a, old_a in alignment_dict.items():
-                if old_a == "no-alignment":
-                    new_tforms[new_a] = Transform([1, 0, 0, 0, 1, 0])
-                elif old_a is None or old_a not in old_tforms:
+                if old_a is None or old_a not in old_tforms:
                     continue
                 else:
                     new_tforms[new_a] = old_tforms[old_a]
@@ -841,10 +839,6 @@ class Series():
                 profiles_dict (dict): returned from the bc_profiles dialog
                 log_event (bool): True if event should be logged
         """
-        # change the current alignment if necessary
-        if profiles_dict[self.bc_profile] is None:
-            self.bc_profile = "no-alignment"
-
         for snum, section in self.enumerateSections(
             message="Modifying brightness/contrast profiles..."
         ):
@@ -2428,6 +2422,17 @@ class Series():
         """Clear the tracking of modified ztraces and modified objects."""
         self.modified_ztraces = set()
         self.modified_objects = set()
+    
+    @property
+    def alignments(self):
+        """Return the possible alignments for the series."""
+        section_data_list = list(self.data["sections"].values())
+        alignments = set(section_data_list[0]["tforms"].keys())
+        for section_data in section_data_list[1:]:
+            a = set(section_data["tforms"].keys())
+            if alignments != a:
+                raise Exception("Sections have differently named alignments.")
+        return alignments
 
     
 class SeriesIterator():

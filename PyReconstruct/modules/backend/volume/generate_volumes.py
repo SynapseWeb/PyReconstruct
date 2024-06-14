@@ -58,8 +58,6 @@ def generateVolumes(series : Series, objs : dict, ztraces : dict):
                 alignment = series.getAttr(obj_name, "alignment")
                 if not alignment:
                     tform = section.tform
-                elif alignment == "no-alignment":
-                    tform = None
                 else:
                     tform = section.tforms[alignment]
                 for trace in section.contours[obj_name]:

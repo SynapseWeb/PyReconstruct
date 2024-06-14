@@ -83,13 +83,13 @@ class FieldWidget(QWidget, FieldView):
         )
         self.table_manager = None
 
-        # set up the flag display
-        self.flag_display = None
-        self.displayed_flag = None
-        self.flag_display_timer = QTimer(self)
-        self.flag_display_timer.setSingleShot(True)
-        self.flag_display_timer.timeout.connect(
-            self.displayFlagComments
+        # set up the information display widget
+        self.hover_display = None
+        self.displayed_item = None
+        self.hover_display_timer = QTimer(self)
+        self.hover_display_timer.setSingleShot(True)
+        self.hover_display_timer.timeout.connect(
+            self.displayHoverInfo
         )
         # set up flag edit event
         self.edit_flag_event = QAction(self)
@@ -266,52 +266,76 @@ class FieldWidget(QWidget, FieldView):
             painter.drawLine(*points[i-1], *points[i])
         self.border_exists = True
     
-    def closeFlagComments(self):
-        """Close the flag comments display."""
-        if self.flag_display:
-            self.flag_display.close()
-            self.flag_display = None
-        self.displayed_flag = None
-        if self.flag_display_timer.isActive():
-            self.flag_display_timer.stop()
+    def closeHoverDisplay(self):
+        """Close the hover information display."""
+        if self.hover_display:
+            self.hover_display.close()
+            self.hover_display = None
+        self.displayed_item = None
+        if self.hover_display_timer.isActive():
+            self.hover_display_timer.stop()
     
-    def displayFlagComments(self):
-        """Display the comments an a flag that has been hovered over."""
-        # create text edit display
-        comments = []
-        for c in self.displayed_flag.comments:
-            t = c.text.replace("\n", "<br>")
-            comments.append(
-                f"<b>{c.user}</b> ({c.date}):<br>{t}"
-            )
-        text = "<hr>".join(comments)
-        self.flag_display = QTextEdit(self.mainwindow, text=text)
+    def displayHoverInfo(self):
+        """Display the information for an item that has been hovered over."""
+        text = ""
+        if type(self.displayed_item) is Flag:
+            # create text edit display for comments
+            comments = []
+            for c in self.displayed_item.comments:
+                t = c.text.replace("\n", "<br>")
+                comments.append(
+                    f"<b>{c.user}</b> ({c.date}):<br>{t}"
+                )
+            text = "<hr>".join(comments)
+        elif type(self.displayed_item) is Trace:
+            t = self.displayed_item
+            lines = []
+            # lines.append([f"<b>{t.name}</b>"])
+            def addLine(header, desc):
+                if desc: lines.append(f"<b>{header}</b> {desc}")
+            
+            addLine("Host:", ", ".join(self.series.getObjHosts(t.name)))
+            addLine("Comment:", self.series.getAttr(t.name, "comment"))
+            addLine("Object Alignment:", self.series.getAttr(t.name, "alignment"))
+            addLine("Object Groups:", ", ".join(self.series.object_groups.getObjectGroups(t.name)))
+            addLine("Trace Tags:", ", ".join(t.tags))
+            cat_cols = self.series.getAttr(t.name, "user_columns")
+            for col_name, opt in cat_cols.items():
+                addLine(f"{col_name}:", opt)
+
+            text = "<hr>".join(lines)
+        
+        if not text:
+            return
+        
+        # create the widget
+        self.hover_display = QTextEdit(self.mainwindow, text=text)
         # show
-        self.flag_display.show()
+        self.hover_display.show()
         # adjust the width and height
-        self.flag_display.resize(self.width() // 5, 1)
-        h = self.flag_display.document().size().toSize().height() + 3
+        self.hover_display.resize(self.width() // 5, 1)
+        h = self.hover_display.document().size().toSize().height() + 3
         if h == 3:
-            self.flag_display.setText("X")
-            h = self.flag_display.document().size().toSize().height()
-            self.flag_display.setText("")
+            self.hover_display.setText("X")
+            h = self.hover_display.document().size().toSize().height()
+            self.hover_display.setText("")
         elif h > self.height() - 6:
             h = self.height() - 6
-        self.flag_display.resize(self.width() // 5, h)
+        self.hover_display.resize(self.width() // 5, h)
         # move to proper location
         right_justified = self.mainwindow.mouse_palette.mode_x <= .5
         if right_justified:
-            self.flag_display.move(
-                self.x() + self.width() - self.flag_display.width() - 3,
-                self.y() + self.height() - self.flag_display.height() - 3
+            self.hover_display.move(
+                self.x() + self.width() - self.hover_display.width() - 3,
+                self.y() + self.height() - self.hover_display.height() - 3
             )
         else:
-            self.flag_display.move(
+            self.hover_display.move(
                 self.x() + 3,
-                self.y() + self.height() - self.flag_display.height() - 3
+                self.y() + self.height() - self.hover_display.height() - 3
             )
         # scroll all the way down
-        sb = self.flag_display.verticalScrollBar()
+        sb = self.hover_display.verticalScrollBar()
         sb.setValue(sb.maximum())
     
     def paintBorder(self, field_painter : QPainter):
@@ -419,7 +443,7 @@ class FieldWidget(QWidget, FieldView):
         st_size = 14
         closest = None
         closest_type = None
-        close_flag_display = True
+        close_hover_display = True  # assume the hover display will be closed
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
@@ -468,21 +492,24 @@ class FieldWidget(QWidget, FieldView):
                         # flag returned
                         elif closest_type == "flag":
                             name = closest.name
-                            close_flag_display = False
-                            if closest != self.displayed_flag:
-                                self.closeFlagComments()
-                                self.displayed_flag = closest
-                                self.flag_display_timer.start(1000)
-
+                        
                         if self.series.getOption("display_closest"):
+                            # set up the corner display for the attributes
+                            if closest_type in ("trace", "flag"):
+                                if closest != self.displayed_item:
+                                    self.closeHoverDisplay()
+                                    self.displayed_item = closest
+                                    self.hover_display_timer.start(1000)
+                                close_hover_display = False
+
+                            # display the name of the item by the mouse
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
                             if self.series.getOption("left_handed"): mouse_x += 10
                             c = closest.color
-                            has_comment = bool(self.series.getAttr(name, "comment"))
                             drawOutlinedText(
                                 field_painter,
                                 mouse_x, mouse_y,
-                                name + ("*" if has_comment else ""),
+                                name,
                                 c,
                                 None,
                                 ct_size,
@@ -607,8 +634,8 @@ class FieldWidget(QWidget, FieldView):
             y += st_size
         
         # close the flag display if needed
-        if close_flag_display:
-            self.closeFlagComments()
+        if close_hover_display:
+            self.closeHoverDisplay()
 
         # update the status bar
         if not self.is_panzooming:
@@ -1757,10 +1784,7 @@ class FieldWidget(QWidget, FieldView):
     
     def editFlag(self, event=None):
         """Edit a flag. (Triggered by action)"""
-        # close flag display
         flag = self.clicked_trace
-        self.closeFlagComments()
-        self.displayed_flag = flag
         response, confirmed = FlagDialog(self, flag).exec()
         if confirmed:
             flag.name, flag.color, flag.comments, new_comment, resolved = response
@@ -1768,7 +1792,6 @@ class FieldWidget(QWidget, FieldView):
             flag.resolve(self.series.user, resolved)
             self.generateView(generate_image=False)
             self.saveState()
-        self.displayed_flag = None
     
     def createTraceFlag(self, trace : Trace = None):
         """Create a flag associated with a trace."""

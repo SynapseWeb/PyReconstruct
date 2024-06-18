@@ -842,7 +842,7 @@ class Section():
                 keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 dt_str (str): the datetime string for tagging purposes
         """
-        all_contour_names = list(self.contours.keys()) + list(other.contours.keys())
+        all_contour_names = list(set(self.contours.keys()) | set(other.contours.keys()))
         mags_match = abs(other.mag - self.mag) <= 1e-8
 
         for cname in all_contour_names:

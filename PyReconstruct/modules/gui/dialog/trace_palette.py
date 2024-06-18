@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt
 from PyReconstruct.modules.datatypes import Series, Trace
 from PyReconstruct.modules.gui.utils import notify
 
-from .quick_dialog import QuickTabDialog
+from .quick_dialog import QuickTabDialog, getLayout
 
 class TracePaletteDialog(QuickTabDialog):
 
@@ -119,7 +119,7 @@ class TracePaletteDialog(QuickTabDialog):
             return
 
         structure = self.getStructure(Series.getDefaultPaletteTraces())
-        layout, inputs = self.getLayout(structure, grid=True)
+        layout, inputs = getLayout(self, structure, grid=True)
         self.inputs[new_text] = inputs
 
         w = QWidget(self)

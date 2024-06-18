@@ -2,15 +2,17 @@ import re
 
 class HostTree():
 
-    def __init__(self, host_dict : dict):
+    def __init__(self, host_dict : dict, series):
         """Create the HostTree from a dictionary of (obj_name, hosts)
         
             Params:
                 host_dict (dict): the dictionary of (obj_name, hosts)
+                series (Series): the series that contains the host tree
         """
         self.objects = {}
         for obj_name, hosts in host_dict.items():
             self.add(obj_name, hosts)
+        self.series = series
     
     def add(self, obj_name : str, hosts : list):
         """Add an entry to the host tree.
@@ -122,7 +124,7 @@ class HostTree():
         return d
 
     def copy(self):
-        return HostTree(self.getDict())
+        return HostTree(self.getDict(), self.series)
 
     def getHostGroup(self, obj_name : str, obj_pool=None):
         """Get the full list of obj names in a host group with the given obj.
@@ -150,8 +152,12 @@ class HostTree():
                 regex_filters (list): the list of regex filters required to pass
         """
         for obj_name, d in other.objects.items():
-            if not passesFilters(obj_name, regex_filters):
+            if (
+                obj_name not in self.series.data["objects"] or
+                not passesFilters(obj_name, regex_filters)
+            ):
                 continue
+
             hosts = d["hosts"]
             hosts = [h for h in d["hosts"] if passesFilters(h, regex_filters)]
             self.add(obj_name, hosts)

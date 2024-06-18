@@ -1276,6 +1276,15 @@ class Series():
         """
         self.object_groups.merge(other.object_groups, regex_filters)
     
+    def importZtraceGroups(self, other, regex_filters=[]):
+        """Import the ztrace groups from another series.
+        
+            Params:
+                other (Series): the other series
+                regex_filters (list): the regex filters for the ztraces to include
+        """
+        self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
+    
     def importHostTree(self, other, regex_filters=[]):
         """Import the host tree from another series.
         
@@ -1441,12 +1450,13 @@ class Series():
         
         self.save()
     
-    def importZtraces(self, other, regex_filters : list = [], series_states=None, log_event=True):
+    def importZtraces(self, other, regex_filters : list = [], import_attrs : bool = True, series_states=None, log_event=True):
         """Import all the ztraces from another series.
         
             Params:
                 other (Series): the series to import from
                 regex_filters (list): the filters for the objects to import
+                import_attrs (bool): True if ztrace attrs (groups) should be imported
                 series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
@@ -1497,7 +1507,8 @@ class Series():
                 self.ztraces[f"{o_zname}-imported-{n}"] = o_ztrace.copy()
         
         # import the group data
-        self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
+        if import_attrs:
+            self.importZtraceGroups(other, regex_filters)
         
         if log_event:
             # import the history

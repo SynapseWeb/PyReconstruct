@@ -95,7 +95,8 @@ class ImportSeriesDialog(QDialog):
         # ztrace
         structure = [
             ["Ztrace regex filters:"],
-            [("multicombo", list(other.ztraces.keys()), [], False)]
+            [("multicombo", list(other.ztraces.keys()), [], False)],
+            [("check", ("Import z-trace groups", True))]
         ]
         import_widgets.append(("z-traces", ImportWidget(self, structure)))
 
@@ -105,6 +106,18 @@ class ImportSeriesDialog(QDialog):
             ["From section", ("int", min(sections), sections), "to", ("int", max(sections), sections), " "]
         ]
         import_widgets.append(("flags", ImportWidget(self, structure)))
+
+        # object attributes
+        structure = [
+            [("check",
+              ("Import object groups", False),
+              ("Import object hosts", False),
+              ("Import user columns ", False),
+              ("Import z-trace groups", False),
+              ("Import misc object attributes\n(includes 3D settings, alignment, curation, etc.)", False),
+            )]
+        ]
+        import_widgets.append(("attributes", ImportWidget(self, structure)))
 
         # alignments
         import_widgets.append((

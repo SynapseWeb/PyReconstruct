@@ -1883,6 +1883,7 @@ class FieldWidget(QWidget, FieldView):
         else:
             self.series.deleteAllTraces(trace.name, series_states=self.series_states)
         
+        self.table_manager.updateObjects([trace.name])
         self.reload()
 
     def endPendingEvents(self):

@@ -1099,6 +1099,8 @@ class MainWindow(QMainWindow):
         # create the menus
         self.createMenuBar()
         self.createContextMenus()
+        if not self.actions_initialized:
+            self.createShortcuts()
         self.actions_initialized = True
 
         # add the series to recently opened

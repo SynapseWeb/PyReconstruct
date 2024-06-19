@@ -534,13 +534,24 @@ class FieldWidget(QWidget, FieldView):
                 mouse_x, mouse_y = self.mouse_x, self.mouse_y
                 if self.series.getOption("left_handed"): mouse_x += 10
                 # display the proposed host relationship by the mouse
-                t3 = closest.name if closest_type == "trace" else "..."
-                c3 = closest.color if closest_type == "trace" else (255, 255, 255)
-                t2 = " hosted by " + " "*len(t3)
-                c2 = (255, 255, 255)
-                t1 = self.hosted_trace.name + " "*len(t2)
-                c1 = self.hosted_trace.color
-                for text, color in ((t1, c1), (t2, c2), (t3, c3)):
+                t = [
+                    self.hosted_trace.name,
+                    " hosted by ",
+                    closest.name if closest_type == "trace" else "..."
+                ]
+                t_copy = t.copy()
+                for i, text in enumerate(t_copy):
+                    for j in range(len(t_copy)):
+                        if j < i:
+                            t[i] = " "*len(t_copy[j]) + t[i]
+                        elif j > i:
+                            t[i] += " "*len(t_copy[j])
+                c = [
+                    self.hosted_trace.color,
+                    (255, 255, 255),
+                    closest.color if closest_type == "trace" else (255, 255, 255)
+                ]
+                for text, color in zip(t, c):
                     drawOutlinedText(
                         field_painter,
                         mouse_x, mouse_y,

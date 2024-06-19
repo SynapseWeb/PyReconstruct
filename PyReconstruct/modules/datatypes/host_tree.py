@@ -161,6 +161,41 @@ class HostTree():
             hosts = d["hosts"]
             hosts = [h for h in d["hosts"] if passesFilters(h, regex_filters)]
             self.add(obj_name, hosts)
+    
+    def getASCII(self, obj_name : str, hosts=True, prefix=""):
+        """Get an ASCII representation of the hosts/travelers of an object.
+        
+            Params:
+                obj_name (str): the name of the object
+                hosts (bool): True if host tree, False if traveler tree
+                prefix (str): used in recursion
+        """
+        if prefix == "":
+            tree_str = obj_name + "\n"
+        else:
+            tree_str = ""
+        
+        objs = sorted(list(self.objects[obj_name][("hosts" if hosts else "travelers")]))
+        for i, obj in enumerate(objs):
+            # determine if extra statement should be added
+            extras = sorted(list(self.objects[obj][("travelers" if hosts else "hosts")]))
+            extras.remove(obj_name)
+            if extras:
+                s = "also hosts:" if hosts else "also hosted by:"
+                extra_str = f" ({s} {', '.join(extras[:3])}{('' if len(extras) <= 3 else '...')})"
+            else:
+                extra_str = ""
+            
+            if i == len(objs) - 1:
+                tree_str += prefix + "└── " + obj + extra_str + "\n"
+                new_prefix = prefix + "    "
+            else:
+                tree_str += prefix + "├── " + obj + extra_str + "\n"
+                new_prefix = prefix + "│   "
+            if obj in self.objects:
+                tree_str += self.getASCII(obj, hosts, new_prefix)
+        
+        return tree_str
 
 
 def passesFilters(s, re_filters):
@@ -171,4 +206,29 @@ def passesFilters(s, re_filters):
             return True
     return False
 
+import os
 
+def generate_directory_tree_string(path, prefix=""):
+    tree_string = ""
+    
+    # Check if the path is a directory
+    if os.path.isdir(path):
+        # Get list of files and directories
+        items = os.listdir(path)
+        items.sort()
+        for i, item in enumerate(items):
+            item_path = os.path.join(path, item)
+            # Determine the correct prefix for each item
+            if i == len(items) - 1:
+                tree_string += prefix + "└── " + item + "\n"
+                new_prefix = prefix + "    "
+            else:
+                tree_string += prefix + "├── " + item + "\n"
+                new_prefix = prefix + "│   "
+            # Recurse if the item is a directory
+            if os.path.isdir(item_path):
+                tree_string += generate_directory_tree_string(item_path, new_prefix)
+    else:
+        tree_string = f"{path} is not a directory\n"
+    
+    return tree_string

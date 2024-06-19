@@ -32,6 +32,9 @@ from PyReconstruct.modules.gui.dialog import (
     QuickDialog,
     FileDialog
 )
+from PyReconstruct.modules.gui.popup import (
+    TextWidget,
+)
 
 class ObjectTableWidget(DataTable):
 
@@ -191,6 +194,8 @@ class ObjectTableWidget(DataTable):
                     None,
                     ("sethosts_act", "Set host(s)...", "", self.setHosts),
                     ("clearhosts_act", "Clear host(s)...", "", self.clearHosts),
+                    ("displayinhabitants_act", "Display tree of inhabitants", "", lambda : self.displayHostTree(False)),
+                    ("displayhosts_act", "Display tree of hosts", "", self.displayHostTree),
                     None,
                     ("addgroup_act", "Add to group...", "", self.addToGroup),
                     ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
@@ -1171,6 +1176,24 @@ class ObjectTableWidget(DataTable):
         self.updateData(names)
 
         self.mainwindow.seriesModified(True)
+    
+    def displayHostTree(self, hosts=True):
+        """Display the hosts/travelers of an object in ASCII tree representation.
+        
+            Params:
+                hosts (bool): True if hosts, False if travelers
+        """
+        name = self.getSelected(single=True)
+        if not name:
+            return
+        
+        t = TextWidget(
+            self,
+            self.series.host_tree.getASCII(name, hosts),
+            "Host Tree" if hosts else "Inhabitant Tree",
+        )
+        t.output.setFont("Courier New")
+
 
     # MENU-RELATED FUNCTIONS     
     

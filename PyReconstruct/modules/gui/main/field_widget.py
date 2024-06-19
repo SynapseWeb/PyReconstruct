@@ -2019,6 +2019,62 @@ class FieldWidget(QWidget, FieldView):
             self.series.setUserColAttr(name, col_name, opt)
         
         self.table_manager.updateObjects(names)
+        self.mainwindow.seriesModified(True)
+    
+    def editUserCol(self, col_name : str):
+        """Edit a user-defined column.
+        
+            Params:
+                col_name (str): the name of the user-defined column to edit
+        """
+        structure = [
+            ["Column name:"],
+            [(True, "text", col_name)],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", self.series.user_columns[col_name])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
+            return
+        
+        name = response[0]
+        opts = response[1]
+
+        if name != col_name and name in self.series.user_columns:
+            notify("This group already exists.")
+            return
+        
+        self.series_states.addState()
+        self.series.editUserCol(col_name, name, opts)
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.createContextMenus()
+
+    def addUserCol(self):
+        """Add a user-defined column."""
+        structure = [
+            ["Column name:"],
+            [(True, "text", "")],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", [])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
+            return
+    
+        name = response[0]
+        opts = response[1]
+
+        if name in self.series.getOption("object_columns"):
+            notify("This column already exists.")
+            return
+        
+        self.series_states.addState()
+        self.series.addUserCol(name, opts)
+
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.createContextMenus()
     
     def setHosts(self):
         """Set the host of the selected object(s)."""

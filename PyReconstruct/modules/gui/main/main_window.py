@@ -50,7 +50,7 @@ from PyReconstruct.modules.gui.utils import (
     setMainWindow,
     noUndoWarning,
     checkMag,
-    getSetUserColsMenu,
+    getUserColsMenu,
     getAlignmentsMenu,
     getOpenRecentMenu,
 )
@@ -523,7 +523,7 @@ class MainWindow(QMainWindow):
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
                 ]
             },
-            getSetUserColsMenu(self.series, self.field.setUserCol),
+            getUserColsMenu(self.series, self.field.addUserCol, self.field.setUserCol, self.field.editUserCol),
             {
                 "attr_name": "lockmenu",
                 "text": "Lock/Unlock",
@@ -602,7 +602,6 @@ class MainWindow(QMainWindow):
             self.needscuration_act,
             self.curated_act,
             self.hidetraces_act,
-            self.customcategoriesmenu,
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,

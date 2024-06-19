@@ -16,7 +16,7 @@ from .utils import (
     getProgbar,
     notifyLocked,
     checkMag,
-    getSetUserColsMenu,
+    getUserColsMenu,
     getAlignmentsMenu,
     getOpenRecentMenu
 )

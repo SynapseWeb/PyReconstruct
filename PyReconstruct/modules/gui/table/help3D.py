@@ -97,6 +97,7 @@ help_3D = [
     None,
     ("C", "toggle scale cube"),
     ("Ctrl+Shift+H", "organize objects in the scene"),
+    ("Ctrl+Shift+R", "reload the selected items"),
     None,
     ("Ctrl+E", "edit attributes of selected objects"),
     ("[", "decrease opacity of selected object(s)"),

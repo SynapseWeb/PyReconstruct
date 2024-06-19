@@ -31,6 +31,18 @@ class HostTree():
         for host in hosts:
             self.objects[obj_name]["hosts"].add(host)
             self.objects[host]["travelers"].add(obj_name)
+        
+        # special case: if one of the hosts if hosted by another of the hosts, trim to lowest-level host
+        self.checkRedundantHosts()
+    
+    def checkRedundantHosts(self):
+        """Check if any objects are hosted by multiple objects that are already hosts of each other."""
+        for obj_name in self.objects:
+            superhosts = self.getHosts(obj_name, True, True)
+            for superhost in superhosts:
+                if superhost in self.getHosts(obj_name):
+                    self.objects[obj_name]["hosts"].remove(superhost)
+                    self.objects[superhost]["travelers"].remove(obj_name)
     
     def removeObject(self, obj_name : str):
         """Remove an object from the tree."""
@@ -110,7 +122,6 @@ class HostTree():
             modified_objs = modified_objs.union(
                 self.getTravelers(name, True)
             )
-        print(modified_objs)
         return modified_objs
     
     def getDict(self):

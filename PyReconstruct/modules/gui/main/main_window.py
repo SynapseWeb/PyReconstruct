@@ -785,7 +785,8 @@ class MainWindow(QMainWindow):
             ("useotrace_act", lambda : self.mouse_palette.activateModeButton("Open Trace")),
             ("usestamp_act", lambda : self.mouse_palette.activateModeButton("Stamp")),
             ("usegrid_act", lambda : self.mouse_palette.activateModeButton("Grid")),
-            ("useflag_act", lambda : self.mouse_palette.activateModeButton("Flag"))
+            ("useflag_act", lambda : self.mouse_palette.activateModeButton("Flag")),
+            ("usehost_act", lambda : self.mouse_palette.activateModeButton("Host")),
         ]
   
         for act_name, act in mode_shortcuts:

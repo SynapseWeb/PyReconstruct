@@ -12,7 +12,8 @@ from PySide6.QtCore import (
     Qt, 
     QPoint, 
     QEvent,
-    QTimer
+    QTimer,
+    QLine,
 )
 from PySide6.QtGui import (
     QPixmap, 
@@ -28,7 +29,7 @@ from PySide6.QtGui import (
 
 from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
 from PyReconstruct.modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
-from PyReconstruct.modules.backend.view import FieldView, snapTrace
+from PyReconstruct.modules.backend.view import FieldView, snapTrace, drawArrow
 from PyReconstruct.modules.backend.table import (
     TableManager
 )
@@ -38,7 +39,7 @@ from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG = range(9)
+    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG, HOST = range(10)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -82,6 +83,7 @@ class FieldWidget(QWidget, FieldView):
             hotX=pencil_pm.width()-5, hotY=5
         )
         self.table_manager = None
+        self.hosted_trace = None
 
         # set up the information display widget
         self.hover_display = None
@@ -371,6 +373,10 @@ class FieldWidget(QWidget, FieldView):
                 closed = True
                 pen = QPen(QColor(255, 255, 255), 1)
                 pen.setDashPattern([4, 4])
+            # if drawing host line
+            if self.mouse_mode == FieldWidget.HOST:
+                closed = False
+                pen = QPen(QColor(255, 255, 255), 2)
             # if drawing knife
             elif self.mouse_mode == FieldWidget.KNIFE:
                 closed = False
@@ -387,20 +393,25 @@ class FieldWidget(QWidget, FieldView):
             
             # draw current trace if exists
             if pen:
-                field_painter.setPen(pen)
-                if closed:
-                    start = 0
+                if self.mouse_mode == FieldWidget.HOST:
+                    if len(self.current_trace) > 1:
+                        line = QLine(*self.current_trace[0], *self.current_trace[1])
+                        drawArrow(field_painter, line, False, True)
                 else:
-                    start = 1
-                for i in range(start, len(self.current_trace)):
-                    field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-                # draw dashed lines that connect to mouse pointer
-                if self.is_line_tracing:
-                    pen.setDashPattern([2,5])
                     field_painter.setPen(pen)
-                    field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
                     if closed:
-                        field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
+                        start = 0
+                    else:
+                        start = 1
+                    for i in range(start, len(self.current_trace)):
+                        field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+                    # draw dashed lines that connect to mouse pointer
+                    if self.is_line_tracing:
+                        pen.setDashPattern([2,5])
+                        field_painter.setPen(pen)
+                        field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
+                        if closed:
+                            field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
             
         # unique method for drawing moving traces
         elif self.is_moving_trace:
@@ -457,7 +468,10 @@ class FieldWidget(QWidget, FieldView):
             else:
                 label_id = None
 
-            if self.mouse_mode == FieldWidget.POINTER:
+            if (
+                self.mouse_mode == FieldWidget.POINTER or
+                self.mouse_mode == FieldWidget.HOST and not self.hosted_trace
+            ):
                 # prioritize showing label name
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
@@ -515,6 +529,27 @@ class FieldWidget(QWidget, FieldView):
                                 ct_size,
                                 not self.series.getOption("left_handed")
                             )
+            elif self.mouse_mode == FieldWidget.HOST and self.hosted_trace:
+                # set up text position
+                mouse_x, mouse_y = self.mouse_x, self.mouse_y
+                if self.series.getOption("left_handed"): mouse_x += 10
+                # display the proposed host relationship by the mouse
+                t3 = closest.name if closest_type == "trace" else "..."
+                c3 = closest.color if closest_type == "trace" else (255, 255, 255)
+                t2 = " hosted by " + " "*len(t3)
+                c2 = (255, 255, 255)
+                t1 = self.hosted_trace.name + " "*len(t2)
+                c1 = self.hosted_trace.color
+                for text, color in ((t1, c1), (t2, c2), (t3, c3)):
+                    drawOutlinedText(
+                        field_painter,
+                        mouse_x, mouse_y,
+                        text,
+                        color,
+                        None,
+                        ct_size,
+                        not self.series.getOption("left_handed")
+                    )
             
             # get the names of the selected traces
             names = {}
@@ -805,7 +840,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_mode = mode
 
         # set the cursor icon
-        if mode == FieldWidget.POINTER:
+        if mode in (FieldWidget.POINTER, FieldWidget.HOST):
             cursor = QCursor(Qt.ArrowCursor)
         elif mode == FieldWidget.PANZOOM:
             cursor = QCursor(Qt.SizeAllCursor)
@@ -953,7 +988,8 @@ class FieldWidget(QWidget, FieldView):
         context_menu = (
             self.rclick and
             not (self.mouse_mode == FieldWidget.PANZOOM) and
-            not self.is_line_tracing
+            not self.is_line_tracing and
+            not self.hosted_trace
         )
         if context_menu:
             clicked_label = None
@@ -992,6 +1028,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampPress(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridPress(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -1055,6 +1093,8 @@ class FieldWidget(QWidget, FieldView):
             self.traceMove(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampMove(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostMove(event)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -1111,6 +1151,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampRelease(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridRelease(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -1780,6 +1822,52 @@ class FieldWidget(QWidget, FieldView):
                 comment
             )
 
+        self.update()
+    
+    def hostPress(self, event):
+        """Called when mouse is pressed in host mode."""
+        pass
+        
+    
+    def hostMove(self, event):
+        """Called when mouse is moved in host mode."""
+        if self.hosted_trace:
+            self.current_trace = self.current_trace[:1]
+            self.current_trace.append((self.mouse_x, self.mouse_y))
+
+    def hostRelease(self, event):
+        # cancel operation if user right-clicked
+        if self.rclick and self.hosted_trace:
+            self.hosted_trace = None
+            self.current_trace = []
+            self.update()
+            return
+        
+        closest, closest_type = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
+        if self.hosted_trace:
+            if closest_type == "trace":
+                host = closest.name
+                hosted = self.hosted_trace.name
+                if host == hosted:
+                    notify("An object cannot be a host of itself.")
+                elif hosted in self.series.getObjHosts(host, traverse=True):
+                    notify("Objects cannot be hosts of each other.")
+                else:
+                    self.series_states.addState()
+                    self.series.host_tree.add(
+                        hosted, 
+                        [host],
+                    )
+                    self.table_manager.updateObjects(self.series.host_tree.getObjToUpdate([hosted, host]))
+            self.hosted_trace = None
+            self.current_trace = []
+        else:
+            if closest_type == "trace":
+                self.hosted_trace = closest
+                self.current_trace = [(self.mouse_x, self.mouse_y)]
+            else:
+                self.hosted_trace = None
+                self.current_trace = []
         self.update()
     
     def editFlag(self, event=None):

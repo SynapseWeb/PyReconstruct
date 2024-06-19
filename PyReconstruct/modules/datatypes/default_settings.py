@@ -116,6 +116,7 @@ default_settings = {
     "usestamp_act": "S",
     "usegrid_act": "G",
     "useflag_act": "F",
+    "usehost_act": "Q",
 
     # series-related
     "series_code_pattern": "[0-9A-Za-z]+",

@@ -1,7 +1,5 @@
-from PySide6.QtWidgets import QDockWidget, QTableWidgetItem, QAbstractItemView, QLabel, QWidget
+from PySide6.QtWidgets import QDockWidget, QTableWidgetItem, QAbstractItemView, QTableWidget, QWidget
 from PySide6.QtCore import Qt
-
-from .copy_table_widget import CopyTableWidget
 
 class Help3DWidget(QDockWidget):
 
@@ -51,7 +49,7 @@ class Help3DWidget(QDockWidget):
         # establish table headers
         self.horizontal_headers = ["Key", "Description"]
 
-        self.table = CopyTableWidget(len(self.help_desc) + 1, len(self.horizontal_headers))
+        self.table = QTableWidget(len(self.help_desc) + 1, len(self.horizontal_headers))
         self.setWidget(self.table)
 
         # format table

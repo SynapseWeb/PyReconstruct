@@ -84,15 +84,16 @@ class MousePalette():
         self.mode_x = 0.99
         self.mode_y = 0.01
         self.mode_buttons = {}
-        self.createModeButton("Pointer", "p", 0, 0)
-        self.createModeButton("Pan/Zoom", "z", 1, 1)
-        self.createModeButton("Knife", "k", 2, 2)
-        self.createModeButton("Scissors", "x", 3, 3)
-        self.createModeButton("Closed Trace", "c", 4, 4)
-        self.createModeButton("Open Trace", "o", 5, 5)
-        self.createModeButton("Stamp", "s", 6, 6)
-        self.createModeButton("Grid", "g", 7, 7)
-        self.createModeButton("Flag", "f", 8, 8)
+        self.createModeButton("Pointer", 0)
+        self.createModeButton("Pan/Zoom", 1)
+        self.createModeButton("Knife", 2)
+        self.createModeButton("Scissors", 3)
+        self.createModeButton("Closed Trace", 4)
+        self.createModeButton("Open Trace", 5)
+        self.createModeButton("Stamp", 6)
+        self.createModeButton("Grid", 7)
+        self.createModeButton("Flag", 8)
+        self.createModeButton("Host", 9)
 
         # create palette buttons
         self.trace_x = 0.51
@@ -145,16 +146,15 @@ class MousePalette():
         y += (10 + self.mblen) * pos
         button.setGeometry(x, y, self.mblen, self.mblen)
     
-    def createModeButton(self, name : str, sc : str, pos : int, mouse_mode : int):
+    def createModeButton(self, name : str, pos : int):
         """Creates a new mouse mode button.
         
             Params:
                 name (str): the name of the button (and PNG file)
-                sc (str): the shortcut character for the button
                 pos (int): the position of the button
-                mouse_mode (int): the mode this button is connected to
         """
         b = ModeButton(self.mainwindow, self)
+        mouse_mode = pos
 
         # filter name to get filename
         stripped_name = name
@@ -172,7 +172,7 @@ class MousePalette():
         b.setIcon(QIcon(pixmap))
         b.setIconSize(QSize(self.mblen, self.mblen))
         # b.setText(name)
-        b.setToolTip(f"{name} ({sc})")
+        b.setToolTip(f"{name}")
 
         b.setCheckable(True)
         if pos == 0:  # make the first button selected by default
@@ -194,6 +194,11 @@ class MousePalette():
             self.setFlag()
         elif name == "Knife":
             b.setRightClickEvent(self.mainwindow.modifyKnife)
+        elif name == "Host":
+            f = b.font()
+            f.setPointSize(25)
+            b.setFont(f)
+            b.setText("⎋")
 
         b.show()
     
@@ -778,7 +783,7 @@ class MousePalette():
             self.mainwindow.field.generateView(generate_image=False)
         
         button = self.mode_buttons["Flag"][0]
-        button.setFont(QFont("Courier New", 20, QFont.Bold))
+        button.setFont(QFont("Courier New", 25, QFont.Bold))
         button.setText("⚑")
         s = f"({','.join(map(str, color))})"
         # button.setStyleSheet(f"color:rgb{s}")

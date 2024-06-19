@@ -12,10 +12,11 @@ from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
-from PyReconstruct.modules.gui.table import Help3DWidget
 from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.datatypes import Series
+
+from .help3D import Help3DWidget
 
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtk import vtkTransform

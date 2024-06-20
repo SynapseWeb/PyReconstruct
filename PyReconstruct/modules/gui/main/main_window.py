@@ -2447,6 +2447,7 @@ class MainWindow(QMainWindow):
         if confirmed:
             self.field.generateView()
             self.mouse_palette.reset()
+            self.setTheme(self.series.getOption("theme"))
     
     def optimizeBC(self, sections : list = None):
         """Optimize the brightness and contrast of the series.

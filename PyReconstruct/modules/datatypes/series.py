@@ -577,7 +577,8 @@ class Series():
             # table columns (default display)
             # note: static columns are always displayed and are not included here.
             # See gui/table/trace.py for static cols
-            "object_columns": list({
+            # MFO = modifiable from options
+            "object_columns": list({  # MFO
                 "Range": True,
                 "Count": False,
                 "Flat area": False,
@@ -593,7 +594,7 @@ class Series():
                 "Alignment": False,
                 "Comment": True
             }.items()),
-            "trace_columns": list({
+            "trace_columns": list({  # MFO
                 "Index": False,
                 "Tags": True,
                 "Hidden": True,
@@ -603,21 +604,21 @@ class Series():
                 "Radius": True,
                 "Feret": False
             }.items()),
-            "flag_columns": list({
+            "flag_columns": list({  # MFO
                 "Section": True,
                 "Color": True,
                 "Flag": True,
                 "Resolved": False,
                 "Last Comment": True
             }.items()),
-            "section_columns": list({
+            "section_columns": list({  # MFO
                 "Thickness": True,
                 "Locked": True,
                 "Brightness": True,
                 "Contrast": True,
                 "Image Source": True
             }.items()),
-            "ztrace_columns": list({
+            "ztrace_columns": list({  # MFO
                 "Start": True,
                 "End": True,
                 "Distance": True,
@@ -626,9 +627,9 @@ class Series():
             }.items()),
 
             # distances
-            "small_dist": 0.01,
-            "med_dist": 0.1,
-            "big_dist": 1,
+            "small_dist": 0.01,  # MFO
+            "med_dist": 0.1,  # MFO
+            "big_dist": 1,  # MFO
             "autoseg": {},
         }
 
@@ -2077,10 +2078,10 @@ class Series():
     
     @property
     def user(self):
-        return self.getOption("user")
+        return self.getOption("username")
     @user.setter
     def user(self, value):
-        self.setOption("user", value)
+        self.setOption("username", value)
     
     @property
     def avg_mag(self):

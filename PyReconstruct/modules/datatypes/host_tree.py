@@ -183,6 +183,8 @@ class HostTree():
         """
         if prefix == "":
             tree_str = obj_name + "\n"
+            if obj_name not in self.objects:
+                return tree_str
         else:
             tree_str = ""
         

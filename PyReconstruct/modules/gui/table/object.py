@@ -1188,7 +1188,7 @@ class ObjectTableWidget(DataTable):
             return
         
         t = TextWidget(
-            self,
+            self.mainwindow,
             self.series.host_tree.getASCII(name, hosts),
             "Host Tree" if hosts else "Inhabitant Tree",
         )

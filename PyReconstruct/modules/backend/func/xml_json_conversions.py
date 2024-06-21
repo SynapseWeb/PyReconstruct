@@ -203,7 +203,7 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
         section_dict["src"] = ""
         section_dict["mag"] = 0.00254
         xml_tform = XMLTransform(xcoef=[1, 0, 0, 0, 0, 0], ycoef=[0, 1, 0, 0, 0, 0])
-        tform = Transform([1, 0, 0, 0, 1, 0])
+        tform = Transform.identity()
 
     # get thickness
     section_dict["thickness"] = xml_section.thickness

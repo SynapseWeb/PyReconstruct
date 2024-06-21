@@ -12,10 +12,11 @@ from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
-from PyReconstruct.modules.gui.table import Help3DWidget
 from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.datatypes import Series
+
+from .help3D import Help3DWidget
 
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtk import vtkTransform
@@ -358,6 +359,7 @@ class VPlotter(vedo.Plotter):
         self.objs.remove(scene_obj)
         if scene_obj in self.selected:
             self.selected.remove(scene_obj)
+            self.updateSelected()
             
     def removeFromScene(self, obj_names : list, ztrace_names : list, series_fp=None, save_state=True):
         """Remove objects and ztraces from the scene.
@@ -365,6 +367,9 @@ class VPlotter(vedo.Plotter):
             Params:
                 obj_names (list): the names of the objects to remove
                 ztrace_names (list): the names of the ztraces to remove
+            Returns:
+                objs (list[dict]): the dictionary info for the objs just removed
+                ztraces (list[dict]): the dictionary info for the ztraces just removed
         """
         if series_fp is None:
             series_fp = self.series.jser_fp
@@ -377,16 +382,25 @@ class VPlotter(vedo.Plotter):
             scene_obj = self.objs.search(name, "ztrace", series_fp)
             if scene_obj: scene_objs.append(scene_obj)
         
-        if not scene_obj:
-            return
+        if not scene_objs:
+            return [], []
         
         if save_state: self.saveState()
 
+        objs, ztraces = [], []
         for scene_obj in scene_objs:
             self.removeSceneObj(scene_obj)
+            # keep track of the object/ztrace data
+            d = scene_obj.getExportDict()
+            if scene_obj.type == "object":
+                objs.append(d)
+            elif scene_obj.type == "ztrace":
+                ztraces.append(d)
         
         self.updateSelected()
         self.render()
+
+        return objs, ztraces
     
     def placeInScene(self, result):
         """Called by addToScene after thread is completed"""
@@ -441,7 +455,18 @@ class VPlotter(vedo.Plotter):
 
         # remove existing objects from scene
         if remove_first:
-            self.removeFromScene(obj_names, ztrace_names, series_fp, save_state=False)
+            obj_dicts, ztrace_dicts = self.removeFromScene(obj_names, ztrace_names, series_fp, save_state=False)
+            # if removing, replace attributes in dict lists with those of the just-removed items
+            objs += obj_dicts
+            ztraces += ztrace_dicts
+            # remove redundant objects in the list
+            for dlist in (objs, ztraces):
+                names = set()
+                for d in reversed(dlist.copy()):
+                    if d["name"] in names:
+                        dlist.remove(d)
+                    else:
+                        names.add(d["name"])
         
         # check for objects/ztraces that don't exist in the current series
         if series == self.series:  # operating from opened series
@@ -752,6 +777,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     },
                     ("settrinc_act", "Set translate/rotate step...", "", self.setStep),
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
+                    ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
                     None,
                     ("screenshot_act", "Save screenshot...", "", self.screenshot),
                 ]
@@ -965,12 +991,18 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.undo_states.append(self.saveScene(return_dict=True))
         self.redo_states = []
     
-    def loadState(self, save_state : dict):
+    def loadState(self, save_state : dict, reload=False):
         """Load a previous scene state.
         
             Params:
                 save_state (dict): the state to load--exactly what is exported by saveScene
+                reload (bool): True if objects should be replaced from their series (will only act on selected objects)
         """
+        # reload the selected objects if requested
+        if reload:
+            for obj in self.plt.selected.copy():
+                self.plt.removeSceneObj(obj)
+
         # keep track of the ids that have been found in the file
         checked_ids = set()
 
@@ -984,13 +1016,18 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     checked_ids.add(obj_id)
                     #  keep track of object if not in scene
                     if obj_id not in self.plt.objs.keys():
-                        name = scene_obj_dict["name"]
-                        to_add[data_type].append(name)
+                        to_add[data_type].append(scene_obj_dict.copy())
                     # directly modify object otherwise
                     # possible things that have changed: color, alpha, and tform
                     else:
                         scene_obj = self.plt.objs[obj_id]
                         scene_obj.setAttrs(scene_obj_dict, self.series)
+        
+        # remove objects that were not found in the save state
+        for obj_id in set(self.plt.objs.keys()):
+            if obj_id not in checked_ids:
+                scene_obj = self.plt.objs[obj_id]
+                self.plt.removeSceneObj(scene_obj)
         
         # check the scale cubes
         for sc_dict in save_state["scale_cubes"]:
@@ -1003,12 +1040,6 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             else:
                 sc_obj = self.plt.objs[sc_id]
                 sc_obj.setAttrs(sc_dict, self.series)
-        
-        # remove objects that were not found in the save state
-        for obj_id in set(self.plt.objs.keys()):
-            if obj_id not in checked_ids:
-                scene_obj = self.plt.objs[obj_id]
-                self.plt.removeSceneObj(scene_obj)
         
         # add removed objects back into scene
         for series_fp, to_add in series_objs_to_add.items():
@@ -1068,6 +1099,12 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         
         pic = self.plt.topicture()
         pic.write(filename)
+    
+    def reload(self):
+        """Reload all the objects in the scene."""
+        self.mainwindow.saveAllData()
+        scene_state = self.plt.objs.getExportDict()
+        self.loadState(scene_state, reload=True)
     
     def closeEvent(self, event):
         self.plt.close()
@@ -1411,4 +1448,3 @@ def getZYXRot(mat):
     theta_z = np.arctan2(r21, r11)
 
     return theta_x, theta_y, theta_z
-

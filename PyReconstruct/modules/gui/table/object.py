@@ -23,7 +23,7 @@ from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
     notify,
-    getSetUserColsMenu,
+    getUserColsMenu,
 )
 from PyReconstruct.modules.gui.dialog import (
     ObjectGroupDialog,
@@ -31,6 +31,9 @@ from PyReconstruct.modules.gui.dialog import (
     ShapesDialog,
     QuickDialog,
     FileDialog
+)
+from PyReconstruct.modules.gui.popup import (
+    TextWidget,
 )
 
 class ObjectTableWidget(DataTable):
@@ -191,6 +194,8 @@ class ObjectTableWidget(DataTable):
                     None,
                     ("sethosts_act", "Set host(s)...", "", self.setHosts),
                     ("clearhosts_act", "Clear host(s)...", "", self.clearHosts),
+                    ("displayinhabitants_act", "Display tree of inhabitants", "", lambda : self.displayHostTree(False)),
+                    ("displayhosts_act", "Display tree of hosts", "", self.displayHostTree),
                     None,
                     ("addgroup_act", "Add to group...", "", self.addToGroup),
                     ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
@@ -221,7 +226,7 @@ class ObjectTableWidget(DataTable):
                     ("unlockobj_act1", "Unlock", "", lambda : self.lockObjects(False))
                 ]
             },
-            getSetUserColsMenu(self.series, self.setUserCol),
+            getUserColsMenu(self.series, self.addUserCol, self.setUserCol, self.editUserCol),
             {
                 "attr_name": "curatemenu",
                 "text": "Set curation",
@@ -776,7 +781,7 @@ class ObjectTableWidget(DataTable):
             return
         
         structure = [
-            ["Alignment:", ("combo", ["no-alignment"] + list(self.mainwindow.field.section.tforms.keys()))]
+            ["Alignment:", ("combo", list(self.mainwindow.field.section.tforms.keys()))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
         if not confirmed:
@@ -1171,6 +1176,24 @@ class ObjectTableWidget(DataTable):
         self.updateData(names)
 
         self.mainwindow.seriesModified(True)
+    
+    def displayHostTree(self, hosts=True):
+        """Display the hosts/travelers of an object in ASCII tree representation.
+        
+            Params:
+                hosts (bool): True if hosts, False if travelers
+        """
+        name = self.getSelected(single=True)
+        if not name:
+            return
+        
+        t = TextWidget(
+            self.mainwindow,
+            self.series.host_tree.getASCII(name, hosts),
+            "Host Tree" if hosts else "Inhabitant Tree",
+        )
+        t.output.setFont("Courier New")
+
 
     # MENU-RELATED FUNCTIONS     
     
@@ -1306,30 +1329,11 @@ class ObjectTableWidget(DataTable):
     
     def addUserCol(self):
         """Add a user-defined column."""
-        structure = [
-            ["Column name:"],
-            [(True, "text", "")],
-            [" "],
-            ["Options:"],
-            [(True, "multitext", [])]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Add Column")
-        if not confirmed:
-            return
-    
-        name = response[0]
-        opts = response[1]
+        # run through the field
+        self.mainwindow.field.addUserCol()
 
-        if name in self.columns:
-            notify("This column already exists.")
-            return
-        
-        self.series_states.addState()
-
-        self.series.addUserCol(name, opts)
         self.updateObjCols()
-
-        self.manager.recreateTable(self)
+        self.manager.recreateTables()
         self.mainwindow.seriesModified(True)
     
     def removeUserCol(self):
@@ -1346,9 +1350,9 @@ class ObjectTableWidget(DataTable):
         self.series_states.addState()
         
         self.series.removeUserCol(response[0])
-        self.updateObjCols()
 
-        self.manager.recreateTable(self)
+        self.updateObjCols()
+        self.manager.recreateTables()
         self.mainwindow.seriesModified(True)
     
     def editUserCol(self, col_name : str):
@@ -1357,30 +1361,11 @@ class ObjectTableWidget(DataTable):
             Params:
                 col_name (str): the name of the user-defined column to edit
         """
-        structure = [
-            ["Column name:"],
-            [(True, "text", col_name)],
-            [" "],
-            ["Options:"],
-            [(True, "multitext", self.series.user_columns[col_name])]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Add Column")
-        if not confirmed:
-            return
-        
-        name = response[0]
-        opts = response[1]
+        # run through the field
+        self.mainwindow.field.editUserCol(col_name)
 
-        if name != col_name and name in self.series.user_columns:
-            notify("This group already exists.")
-            return
-        
-        self.series_states.addState()
-        
-        self.series.editUserCol(col_name, name, opts)
         self.updateObjCols()
-
-        self.manager.recreateTable(self)
+        self.manager.recreateTables()
         self.mainwindow.seriesModified(True)
     
     def toggleUserColFilter(self, col_name : str, opt_name : str):

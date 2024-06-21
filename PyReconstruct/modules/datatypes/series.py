@@ -73,8 +73,8 @@ class Series():
             self.ztraces[name] = Ztrace.fromDict(name, self.ztraces[name])
 
         self.alignment = series_data["alignment"]
-        self.object_groups = ObjGroupDict(series_data["object_groups"])
-        self.ztrace_groups = ObjGroupDict(series_data["ztrace_groups"])
+        self.object_groups = ObjGroupDict(self, "objects", series_data["object_groups"])
+        self.ztrace_groups = ObjGroupDict(self, "ztraces", series_data["ztrace_groups"])
 
         self.obj_attrs = series_data["obj_attrs"]
         self.ztrace_attrs = series_data["ztrace_attrs"]
@@ -118,7 +118,7 @@ class Series():
         self.user_columns = series_data["user_columns"]
 
         # host tree
-        self.host_tree = HostTree(series_data["host_tree"])
+        self.host_tree = HostTree(series_data["host_tree"], self)
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD
@@ -577,7 +577,8 @@ class Series():
             # table columns (default display)
             # note: static columns are always displayed and are not included here.
             # See gui/table/trace.py for static cols
-            "object_columns": list({
+            # MFO = modifiable from options
+            "object_columns": list({  # MFO
                 "Range": True,
                 "Count": False,
                 "Flat area": False,
@@ -593,7 +594,7 @@ class Series():
                 "Alignment": False,
                 "Comment": True
             }.items()),
-            "trace_columns": list({
+            "trace_columns": list({  # MFO
                 "Index": False,
                 "Tags": True,
                 "Hidden": True,
@@ -603,21 +604,21 @@ class Series():
                 "Radius": True,
                 "Feret": False
             }.items()),
-            "flag_columns": list({
+            "flag_columns": list({  # MFO
                 "Section": True,
                 "Color": True,
                 "Flag": True,
                 "Resolved": False,
                 "Last Comment": True
             }.items()),
-            "section_columns": list({
+            "section_columns": list({  # MFO
                 "Thickness": True,
                 "Locked": True,
                 "Brightness": True,
                 "Contrast": True,
                 "Image Source": True
             }.items()),
-            "ztrace_columns": list({
+            "ztrace_columns": list({  # MFO
                 "Start": True,
                 "End": True,
                 "Distance": True,
@@ -626,9 +627,9 @@ class Series():
             }.items()),
 
             # distances
-            "small_dist": 0.01,
-            "med_dist": 0.1,
-            "big_dist": 1,
+            "small_dist": 0.01,  # MFO
+            "med_dist": 0.1,  # MFO
+            "big_dist": 1,  # MFO
             "autoseg": {},
         }
 
@@ -812,9 +813,7 @@ class Series():
             old_tforms = section.tforms.copy()
             new_tforms = {}
             for new_a, old_a in alignment_dict.items():
-                if old_a == "no-alignment":
-                    new_tforms[new_a] = Transform([1, 0, 0, 0, 1, 0])
-                elif old_a is None or old_a not in old_tforms:
+                if old_a is None or old_a not in old_tforms:
                     continue
                 else:
                     new_tforms[new_a] = old_tforms[old_a]
@@ -841,10 +840,6 @@ class Series():
                 profiles_dict (dict): returned from the bc_profiles dialog
                 log_event (bool): True if event should be logged
         """
-        # change the current alignment if necessary
-        if profiles_dict[self.bc_profile] is None:
-            self.bc_profile = "no-alignment"
-
         for snum, section in self.enumerateSections(
             message="Modifying brightness/contrast profiles..."
         ):
@@ -1273,13 +1268,82 @@ class Series():
         if log_event:
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
-    def importObjAttrs(self, other, regex_filters=[]):
-        """Import object attributes (including object groups)."""
-        # import the group data
+    def importObjectGroups(self, other, regex_filters=[]):
+        """Import the object groups from another series.
+        
+            Params:
+                other (Series): the other series
+                regex_filters (list): the regex filters for the objects to include
+        """
         self.object_groups.merge(other.object_groups, regex_filters)
+    
+    def importZtraceGroups(self, other, regex_filters=[]):
+        """Import the ztrace groups from another series.
+        
+            Params:
+                other (Series): the other series
+                regex_filters (list): the regex filters for the ztraces to include
+        """
+        self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
+    
+    def importHostTree(self, other, regex_filters=[]):
+        """Import the host tree from another series.
+        
+            Params:
+                other (Series): the other series
+                regex_filters (list): the regex filters for the objects to include
+        """
+        self.host_tree.merge(other.host_tree, regex_filters)
+    
+    def importUserCols(self, other, regex_filters=[]):
+        """Import user columns."""
+        # import the user columns
+        merged_user_columns = updateDictLists(
+            self.user_columns,
+            other.user_columns
+        )
+        if self.user_columns != merged_user_columns:
+            self.user_columns = merged_user_columns
 
+        # import the user column object attributes
+        for obj_name, obj_data in other.obj_attrs.items():
+            if obj_name not in self.data["objects"]:
+                continue
+
+            # check regex filters
+            passes_filters = False if regex_filters else True
+            for rf in regex_filters:
+                if bool(re.fullmatch(rf, obj_name)):
+                    passes_filters = True
+            if not passes_filters:
+                continue
+
+            if "user_columns" in obj_data:
+                other_uc = obj_data["user_columns"]
+                if obj_name not in self.obj_attrs:
+                    self.obj_attrs[obj_name] = {}
+                if "user_columns" not in self.obj_attrs[obj_name]:
+                    self.obj_attrs[obj_name]["user_columns"] = {}
+                self_uc = self.obj_attrs[obj_name]["user_columns"]
+
+                for name, value in other_uc.items():
+                    if name not in self_uc:
+                        self_uc[name] = value
+                        # if the current series has a user_column setting already, do not override it
+                        # is there a better way to handle this?
+    
+    def importObjAttrs(self, other, regex_filters=[]):
+        """Import the object attributes from another series.
+        
+            Params:
+                other (Series): the other series
+                regex_filters (list): the regex filters for the objects to include
+        """
         # import the object attributes
         for obj_name, obj_data in other.obj_attrs.items():
+            if obj_name not in self.data["objects"]:
+                continue
+
             # check regex filters
             passes_filters = False if regex_filters else True
             for rf in regex_filters:
@@ -1305,41 +1369,6 @@ class Series():
                     if other_date >= self_date:
                         self.obj_attrs[obj_name]["curation"] = attr_value
     
-    def importUserCols(self, other, regex_filters=[]):
-        """Import user columns."""
-        # import the user columns
-        merged_user_columns = updateDictLists(
-            self.user_columns,
-            other.user_columns
-        )
-        # check if new user columns imported
-        if self.user_columns != merged_user_columns:
-            self.user_columns = merged_user_columns
-
-        # import the user column object attributes
-        for obj_name, obj_data in other.obj_attrs.items():
-            # check regex filters
-            passes_filters = False if regex_filters else True
-            for rf in regex_filters:
-                if bool(re.fullmatch(rf, obj_name)):
-                    passes_filters = True
-            if not passes_filters:
-                continue
-
-            if "user_columns" in obj_data:
-                other_uc = obj_data["user_columns"]
-                if obj_name not in self.obj_attrs:
-                    self.obj_attrs[obj_name] = {}
-                if "user_columns" not in self.obj_attrs[obj_name]:
-                    self.obj_attrs[obj_name]["user_columns"] = {}
-                self_uc = self.obj_attrs[obj_name]["user_columns"]
-
-                for name, value in other_uc.items():
-                    if name not in self_uc:
-                        self_uc[name] = value
-                        # if the current series has a user_column setting already, do not override it
-                        # is there a better way to handle this?
-    
     def importTraces(
             self, other, 
             srange : tuple = None, 
@@ -1347,6 +1376,7 @@ class Series():
             threshold : float = 0.95, 
             flag_conflicts : bool = True,
             check_history : bool = True,
+            import_obj_attrs : bool = True,
             keep_above : str = "self",
             keep_below : str = "",
             series_states=None,
@@ -1361,6 +1391,7 @@ class Series():
                 remove_old_overlaps (bool): True if old traces overlapping new traces should be removed
                 flag_conflicts (bool): True if conflicts should be flagged
                 check_history (bool): True if history should be checked
+                import_obj_attrs (bool): True if object attributes should all be imported
                 keep_above (str): the series that is favored for functional duplicates (above the overlap threshold; "self", "other", or "")
                 keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 series_states (dict): optional dict of undo states for GUI
@@ -1399,11 +1430,12 @@ class Series():
         # unsupress logging for object creation
         self.data.supress_logging = False
 
-        # import object attributes
-        self.importObjAttrs(other, regex_filters)
-
-        # import user column data
-        self.importUserCols(other, regex_filters)
+        # import ALL object attributes
+        if import_obj_attrs:
+            self.importObjectGroups(other, regex_filters)
+            self.importHostTree(other, regex_filters)
+            self.importObjAttrs(other, regex_filters)
+            self.importUserCols(other, regex_filters)
 
         # import the history
         if log_event:
@@ -1419,12 +1451,13 @@ class Series():
         
         self.save()
     
-    def importZtraces(self, other, regex_filters : list = [], series_states=None, log_event=True):
+    def importZtraces(self, other, regex_filters : list = [], import_attrs : bool = True, series_states=None, log_event=True):
         """Import all the ztraces from another series.
         
             Params:
                 other (Series): the series to import from
                 regex_filters (list): the filters for the objects to import
+                import_attrs (bool): True if ztrace attrs (groups) should be imported
                 series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
@@ -1475,7 +1508,8 @@ class Series():
                 self.ztraces[f"{o_zname}-imported-{n}"] = o_ztrace.copy()
         
         # import the group data
-        self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
+        if import_attrs:
+            self.importZtraceGroups(other, regex_filters)
         
         if log_event:
             # import the history
@@ -1494,95 +1528,83 @@ class Series():
         
         self.save()
     
-    def importTransforms(self, other, alignments : list, series_states=None, log_event=True):
+    def importTransforms(self, other, import_as : list, series_states=None, log_event=True):
         """Import transforms from another series.
         
             Params:
                 other (series): the series to import transforms from
-                alignments (list): the names of alignments to import
-                log_event (bool): True if the event should be logged
+                import_as (list): the list of (alignment to import, name for alignment in current series)
                 series_states (dict): optiona dict of undo states for GUI
+                log_event (bool): True if the event should be logged
         """
-        # ensure that the two series have the same sections
-        if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
-            return
-        
-        iterator = zip(
-            self.enumerateSections(message="Importing transforms...", series_states=series_states, breakable=False), 
-            other.enumerateSections(show_progress=False)
-        )
-        for (s_snum, s_section), (o_snum, o_section) in iterator:
-            mags_match = abs(o_section.mag - s_section.mag) <= 1e-8
-            for a in alignments:
-                if not mags_match:
-                    o_section.tforms[a].magScale(o_section.mag, s_section.mag)
-                s_section.tforms[a] = o_section.tforms[a].copy()
-                s_section.save()
+        for s_snum, s_section in self.enumerateSections(message="Importing alignments..."):
+            if s_snum in other.sections:
+                o_section = other.loadSection(s_snum)
+                mags_match = abs(o_section.mag - s_section.mag) <= 1e-8
+                for alignment, new_name in import_as:
+                    if not mags_match:
+                        o_section.tforms[alignment].magScale(o_section.mag, s_section.mag)
+                    s_section.tforms[new_name] = o_section.tforms[alignment].copy()
+            else:  # write blank if section not in other series
+                for alignment, new_name in import_as:
+                    s_section.tforms[new_name] = Transform.identity()
+            s_section.save()
 
         if log_event:
-            alignments_str = " ".join(alignments)
+            alignments_str = " ".join(a[0] for a in import_as)
             self.addLog(None, None, f"Import alignments {alignments_str} from another series")
 
         self.save()
     
-    def importBC(self, other, sections : list = None, log_event=True):
-        """Import the brightness/contrast settings from another series.
+    def importBC(self, other, import_as : list, log_event=True):
+        """Import brightness/contrast profiles from another series.
         
             Params:
-                other (Series): the other series to import from
-                sections (list): the section numbers to import b/c for (default: all)
-                log_event (bool): True if event should be logged
+                other (series): the series to import transforms from
+                import_as (list): the list of (profile to import, name for profile in current series)
+                log_event (bool): True if the event should be logged
         """
-        # # ensure that the two series have the same sections
-        # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
-        #     return
-        
-        if sections is None:
-            sections = self.sections.keys()
-        
-        for snum, section in self.enumerateSections(message="Importing brightness/contrast..."):
-            if snum not in sections or snum not in other.sections:  # skip if section is not requested or does not exist in other series
-                continue
-            o_section = other.loadSection(snum)
-            section.brightness = o_section.brightness
-            section.contrast = o_section.contrast
-            section.save()
-        
+        for s_snum, s_section in self.enumerateSections(message="Importing brightness/contrast profiles..."):
+            if s_snum in other.sections:
+                o_section = other.loadSection(s_snum)
+                for profile, new_name in import_as:
+                    s_section.bc_profiles[new_name] = o_section.bc_profiles[profile].copy()
+                    print(s_section.bc_profiles)
+            else:  # write blank b/c if section not in other series
+                for profile, new_name in import_as:
+                    s_section.bc_profiles[new_name] = (0, 0)
+            s_section.save()
+
         if log_event:
-            self.addLog(None, None, "Import brightness/contrast from another series")
-        
+            profiles_str = " ".join(p[0] for p in import_as)
+            self.addLog(None, None, f"Import brightness-contrast profiles {profiles_str} from another series")
+
         self.save()
     
-    def importPalettes(self, other, log_event=True):
+    def importPalettes(self, other, import_as, log_event=True):
         """Import the palettes from another series.
         
             Params:
                 other (Series): the series to import from
-                log_event (bool): True if event should be logged"""
-        for name, palette in other.palette_traces.items():
-            new_name = name
-            if name not in self.palette_traces:
-                self.palette_traces[name] = palette.copy()
-            else:
-                n = 1
-                new_name = f"{name}-{n}"
-                while new_name in self.palette_traces:
-                    n += 1
-                    new_name = f"{name}-{n}"
-                self.palette_traces[new_name] = palette.copy()
-            if name == other.palette_index[0]:
-                self.palette_index = [new_name, other.palette_index[1]]
+                import_as (list): the list of (palette to import, name for palette in current series)
+                log_event (bool): True if event should be logged
+        """
+        for palette, new_name in import_as:
+            trace_list = other.palette_traces[palette]
+            self.palette_traces[new_name] = trace_list.copy()
         
         if log_event:
-            self.addLog(None, None, "Import palettes from another series")
+            palettes_str = " ".join(p[0] for p in import_as)
+            self.addLog(None, None, f"Import palettes {palettes_str} from another series")
         
         self.save()
     
-    def importFlags(self, other, series_states=None, log_event=True):
+    def importFlags(self, other, srange, series_states=None, log_event=True):
         """Import flags from another series.
         
             Params:
                 other (Series): the series to import from
+                srange (tuple): the range of sections to import from
                 series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if event should be logged
         """
@@ -1592,6 +1614,9 @@ class Series():
         ):
             if snum not in other.sections:  # skip if section does not exist in other series
                 continue
+            if snum not in range(*srange):  # skip if not in requested section range
+                continue
+
             new_flag_pool = section.flags.copy()
             o_section = other.loadSection(snum)  # sending section
             mags_match = abs(o_section.mag - section.mag) <= 1e-8
@@ -2053,10 +2078,10 @@ class Series():
     
     @property
     def user(self):
-        return self.getOption("user")
+        return self.getOption("username")
     @user.setter
     def user(self, value):
-        self.setOption("user", value)
+        self.setOption("username", value)
     
     @property
     def avg_mag(self):
@@ -2428,6 +2453,28 @@ class Series():
         """Clear the tracking of modified ztraces and modified objects."""
         self.modified_ztraces = set()
         self.modified_objects = set()
+    
+    @property
+    def alignments(self):
+        """Return the possible alignments for the series."""
+        section_data_list = list(self.data["sections"].values())
+        alignments = set(section_data_list[0]["tforms"].keys())
+        for section_data in section_data_list[1:]:
+            a = set(section_data["tforms"].keys())
+            if alignments != a:
+                raise Exception("Sections have differently named alignments.")
+        return alignments
+    
+    @property
+    def bc_profiles(self):
+        """Return the possible brightness/contrast profiles for the series."""
+        section_data_list = list(self.data["sections"].values())
+        bc_profiles = set(section_data_list[0]["bc_profiles"].keys())
+        for section_data in section_data_list[1:]:
+            p = set(section_data["bc_profiles"].keys())
+            if bc_profiles != p:
+                raise Exception("Sections have differently named brightness/contrast profiles.")
+        return bc_profiles
 
     
 class SeriesIterator():

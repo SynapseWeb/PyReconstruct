@@ -54,14 +54,10 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             if not obj_alignment:
                 
                 tform = section.tform
-                
-            elif obj_alignment != "no-alignment":
-                
-                tform = section.tforms[obj_alignment]
-                
+            
             else:
-                
-                tform = None
+
+                tform = section.tforms[obj_alignment]
             
             for trace in section.contours[obj_name]:
 

@@ -47,7 +47,7 @@ class Section():
         self.mag = section_data["mag"]
         self.align_locked = section_data["align_locked"]
 
-        self.tforms = {}
+        self.tforms = TransformsDict()
         for a in section_data["tforms"]:
             self.tforms[a] = Transform(section_data["tforms"][a])
         
@@ -78,10 +78,7 @@ class Section():
     
     @property
     def tform(self):
-        if self.series.alignment != "no-alignment":
-            return self.tforms[self.series.alignment]
-        else:
-            return Transform([1, 0, 0, 0, 1, 0])
+        return self.tforms[self.series.alignment]
     @tform.setter
     def tform(self, new_tform):
         if self.series.alignment != "no-alignment":
@@ -235,7 +232,8 @@ class Section():
         # save tforms
         d["tforms"] = {}
         for a in self.tforms:
-            d["tforms"][a] = self.tforms[a].getList()
+            if a != "no-alignment":  # not needed to save the no-alignment option
+                d["tforms"][a] = self.tforms[a].getList()
 
         d["thickness"] = self.thickness
 
@@ -265,7 +263,7 @@ class Section():
         section_data["align_locked"] = True
         section_data["thickness"] = 0.05  # section thickness
         section_data["tforms"] = {}  
-        section_data["tforms"]["default"]= [1, 0, 0, 0, 1, 0] # identity matrix default
+        section_data["tforms"]["default"]= Transform.identity().getList() # identity matrix default
         section_data["contours"] = {}
         section_data["flags"] = []
         section_data["calgrid"] = False
@@ -844,7 +842,7 @@ class Section():
                 keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 dt_str (str): the datetime string for tagging purposes
         """
-        all_contour_names = list(self.contours.keys()) + list(other.contours.keys())
+        all_contour_names = list(set(self.contours.keys()) | set(other.contours.keys()))
         mags_match = abs(other.mag - self.mag) <= 1e-8
 
         for cname in all_contour_names:
@@ -939,3 +937,21 @@ class Section():
             return
         
         self.selected_traces.append(trace)
+
+
+class TransformsDict(dict):
+    def __init__(self):
+        super().__init__()
+        self["no-alignment"] = Transform.identity()
+    
+    def __setitem__(self, key, value) -> None:
+        if key == "no-alignment" and not value.equals(Transform.identity()):
+            raise Exception("Cannot change the transform of the no-alignment key.")
+        else:
+            return super().__setitem__(key, value)
+    
+    def __delitem__(self, key) -> None:
+        if key == "no-alignment":
+            raise Exception("Cannot delete the no-alignment transform.")
+        else:
+            return super().__delitem__(key)

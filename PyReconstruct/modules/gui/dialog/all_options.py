@@ -16,6 +16,7 @@ from PySide6.QtGui import (
     QPalette
 )
 from .quick_dialog import QuickDialog
+from .backup import BackupDialog
 
 from PyReconstruct.modules.datatypes import Series
 
@@ -72,8 +73,7 @@ class AllOptionsDialog(QDialog):
         return vlayout
 
     def placeWidgets(self):
-        """"""
-        # this is what goes into 
+        """Arrange all of the widgets."""
         tab_structure = {
             "Mouse Tools": [
                 ["pointer"],
@@ -83,6 +83,7 @@ class AllOptionsDialog(QDialog):
                 ["flag_defaults"]
             ],
             "View": [
+                ["theme"],
                 ["show_ztraces"],
                 ["show_flags"],
                 ["fill_opacity"],
@@ -91,15 +92,21 @@ class AllOptionsDialog(QDialog):
             ],
             "User/Series": [
                 ["user"],
-                # ["auto-versioning"],
-                ["step"],
+                ["series_code"],
+                ["2D_step"],
+                ["3D_step"],
                 ["left_handed"],
                 ["time"]
+            ],
+            "Backup": [
+                ["backup"],
             ],
             "Lists": [
                 ["object_columns"],
                 ["trace_columns"],
-                ["flag_columns"]
+                ["section_columns"],
+                ["ztrace_columns"],
+                ["flag_columns"],
             ]
         }
 
@@ -221,6 +228,21 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("smoothing_iterations", response[2])
         self.addOptionWidget("smoothing_3D", structure, setOption)
 
+        # theme
+        theme = self.series.getOption("theme")
+        structure = [
+            ["Theme:"],
+            [("radio", 
+              ("default", theme == "default"),
+              ("dark", theme == "qdark"),
+            )],
+        ]
+        def setOption(response):
+            if response[0][0][1]: theme = "default"
+            elif response[0][1][1]: theme = "qdark"
+            self.series.setOption("theme", theme)
+        self.addOptionWidget("theme", structure, setOption)
+
         # show_ztraces
         structure = [
             [("check", ("show ztraces in field", self.series.getOption("show_ztraces", use_defaults)))],
@@ -231,28 +253,23 @@ class AllOptionsDialog(QDialog):
 
         # show_flags
         show_flags = self.series.getOption("show_flags", use_defaults)
+        flag_size = self.series.getOption("flag_size", use_defaults)
         structure = [
             ["Display flags:"],
             [("radio",
               ("All flags", show_flags == "all"),
               ("Only unresolved flags", show_flags == "unresolved"),
               ("No flags", show_flags == "none")
-            )]
+            )],
+            ["Flag size:", ("int", flag_size)]
         ]
         def setOption(response):
             if response[0][0][1]: show_flags = "all"
-            elif response[0 ][2][1]: show_flags = "none"
+            elif response[0][2][1]: show_flags = "none"
             else: show_flags = "unresolved"
             self.series.setOption("show_flags", show_flags)
+            self.series.setOption("flag_size", response[1])
         self.addOptionWidget("show_flags", structure, setOption)
-
-        # flag_size
-        structure = [
-            ["Flag size:", ("int", self.series.getOption("flag_size", use_defaults))]
-        ]
-        def setOption(response):
-            self.series.setOption("flag_size", response[0])
-        self.addOptionWidget("flag_size", structure, setOption)
 
         # fill_opacity
         structure = [
@@ -278,6 +295,16 @@ class AllOptionsDialog(QDialog):
             self.series.user = response[0]
         self.addOptionWidget("user", structure, setOption)
 
+        # series_code
+        structure = [
+            ["Series code:", ("text", self.series.code)],
+            ["Default series code regex: ", ("text", self.series.getOption("series_code_pattern"))]
+        ]
+        def setOption(response):
+            self.series.code = response[0]
+            self.series.setOption("series_code_pattern", response[1])
+        self.addOptionWidget("series_code", structure, setOption)
+
         # left_handed
         structure = [
             [("check", ("left-handed", self.series.getOption("left_handed", use_defaults)))]
@@ -295,33 +322,42 @@ class AllOptionsDialog(QDialog):
         self.addOptionWidget("time", structure, setOption)
 
         # columns
-        for table_type in ("object", "trace", "flag"):
-            structure = [
-                [("check", *tuple(self.series.getOption(table_type + "_columns", use_defaults)))]
-            ]
-            def setOption(response):
-                self.series.setOption(table_type + "_columns", response[0])
-            self.addOptionWidget(table_type + "_columns", structure, setOption)
-        
-        # backup
-        # structure = [
-        #     [" "],
-        #     [("check", ("Use auto-versioning", self.series.getOption("autoversion")))],
-        #     [f"Auto-version directory for {self.series.code}:"],
-        #     [("dir", self.series.getOption("autoversion_dir", use_defaults))],
-        # ]
-        # def setOption(response):
-        #     if response[0][0][1] and response[1] and os.path.isdir(response[1]):
-        #             self.series.setOption("autoversion", True)
-        #             self.series.setOption("autoversion_dir", response[1])
-        #     else:
-        #         self.series.setOption("autoversion", False)
-        #         if not response[1] or not os.path.isdir(response[1]):
-        #             self.series.setOption("autoversion_dir", "")
+        structure = [
+            [("check", *tuple(self.series.getOption("object_columns", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("object_columns", response[0])
+        self.addOptionWidget("object_columns", structure, setOption)
 
-        # self.addOptionWidget("auto-versioning", structure, setOption)
+        structure = [
+            [("check", *tuple(self.series.getOption("trace_columns", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("trace_columns", response[0])
+        self.addOptionWidget("trace_columns", structure, setOption)
 
-        # step
+        structure = [
+            [("check", *tuple(self.series.getOption("section_columns", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("section_columns", response[0])
+        self.addOptionWidget("section_columns", structure, setOption)
+
+        structure = [
+            [("check", *tuple(self.series.getOption("ztrace_columns", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("ztrace_columns", response[0])
+        self.addOptionWidget("ztrace_columns", structure, setOption)
+
+        structure = [
+            [("check", *tuple(self.series.getOption("flag_columns", use_defaults)))]
+        ]
+        def setOption(response):
+            self.series.setOption("flag_columns", response[0])
+        self.addOptionWidget("flag_columns", structure, setOption)
+
+        # 2D step
         structure = [
             ["Course step:", ("float", self.series.getOption("big_dist", use_defaults))],
             ["Fine step:", ("float", self.series.getOption("med_dist", use_defaults))],
@@ -331,9 +367,23 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("big_dist", response[0])
             self.series.setOption("med_dist", response[1])
             self.series.setOption("small_dist", response[2])
-        self.addOptionWidget("step", structure, setOption)
+        self.addOptionWidget("2D_step", structure, setOption)
+
+        # 3D step
+        structure = [
+            ["Translate step:", ("float", self.series.getOption("translate_step_3D", use_defaults))],
+            ["Rotate step (degrees):", ("float", self.series.getOption("rotate_step_3D", use_defaults))],
+        ]
+        def setOption(response):
+            self.series.setOption("translate_step_3D", response[0])
+            self.series.setOption("rotate_step_3D", response[1])
+        self.addOptionWidget("3D_step", structure, setOption)
+
+        # backup
+        backup_widget = BackupDialog(self, self.series, include_confirm=False)
+        self.addOptionWidget("backup", backup_widget)
     
-    def addOptionWidget(self, name : str, structure : list, setOption, grid=False):
+    def addOptionWidget(self, name : str, structure : list, setOption=None, grid=False):
         """Add a widget to the all_widgets dictionary
         
             Params:
@@ -343,7 +393,10 @@ class AllOptionsDialog(QDialog):
                 grid (bool): True if widget structure should be a grid instead of rows
         """
         title = name.replace("_", " ").title()
-        self.all_widgets[name] = OptionWidget(self, title, structure, self.series, setOption, grid)
+        if isinstance(structure, QWidget):
+            self.all_widgets[name] = structure
+        else:
+            self.all_widgets[name] = OptionWidget(self, title, structure, self.series, setOption, grid)
     
     def accept(self):
         """Overwritten--called when OK is pressed"""
@@ -366,6 +419,11 @@ class AllOptionsDialog(QDialog):
         self.placeWidgets()
         # set the tab
         self.tabs.setCurrentIndex(current_tab)
+
+
+# all widgets used in the options MUST have a accept() and set() method
+# accept is used to check if the response are valid
+# set is used to actually set the series options. This happens only if accept returns True
 
 class OptionWidget(QuickDialog):
 

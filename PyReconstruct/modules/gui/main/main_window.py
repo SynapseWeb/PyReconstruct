@@ -37,8 +37,8 @@ from PyReconstruct.modules.gui.dialog import (
     BCProfilesDialog,
     BackupDialog,
     ShortcutsDialog,
-    ImportTracesDialog,
-    BackupCommentDialog
+    BackupCommentDialog,
+    ImportSeriesDialog,
 )
 from PyReconstruct.modules.gui.popup import TextWidget, CustomPlotter, AboutWidget
 from PyReconstruct.modules.gui.utils import (
@@ -50,7 +50,9 @@ from PyReconstruct.modules.gui.utils import (
     setMainWindow,
     noUndoWarning,
     checkMag,
-    getSetUserColsMenu
+    getUserColsMenu,
+    getAlignmentsMenu,
+    getOpenRecentMenu,
 )
 from PyReconstruct.modules.gui.table import HistoryTableWidget, CopyTableWidget, ObjectTableWidget
 from PyReconstruct.modules.backend.func import (
@@ -143,12 +145,6 @@ class MainWindow(QMainWindow):
             )
             welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
             self.openSeries(welcome_series)
-        
-        # create menu and shortcuts
-        self.createMenuBar()
-        self.createContextMenus()
-        self.createShortcuts()
-        self.actions_initialized = True
 
         # set the main window as the parent of the progress bar
         setMainWindow(self)
@@ -181,6 +177,7 @@ class MainWindow(QMainWindow):
                         ]
                     },
                     ("open_act", "Open", self.series, self.openSeries),
+                    getOpenRecentMenu(self.series, self.openSeries),
                     None,  # None acts as menu divider
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
@@ -245,12 +242,7 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            ("importtraces_act", "Traces...", "", self.importTraces),
-                            ("importzrtraces_act", "Z-traces...", "", self.importZtraces),
-                            ("importflags_act", "Flags...", "", self.importFlags),
-                            ("importjsertransforms0_act", "Alignment(s)...", "", self.importSeriesTransforms),
-                            ("importtracepalette_act", "Trace palette...", "", self.importTracePalette),
-                            ("importbc_act", "Brightness/contrast...", "", self.importBC),
+                            ("importfromseries_act", "From other series...", "", self.importFromSeries),
                             None,
                             ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
                         ]
@@ -363,14 +355,13 @@ class MainWindow(QMainWindow):
                 "text": "Alignments",
                 "opts":
                 [
-                    ("changealignment_act", "Change alignment", self.series, self.changeAlignment),
+                    ("changealignment_act", "Modify alignments", self.series, self.modifyAlignments),
                     None,
                     {
                         "attr_name": "importmenu",
                         "text": "Import alignments",
                         "opts":
                         [
-                            ("importjsertransforms1_act", "jser file", "", self.importSeriesTransforms),
                             ("importtransforms_act", ".txt file", "", self.importTransforms),
                             ("import_swift_transforms_act", "SWiFT project", "", self.importSwiftTransforms),
                         ]
@@ -498,11 +489,12 @@ class MainWindow(QMainWindow):
         ]
 
         if self.menubar:
-            self.menubar.close()
+            self.menubar.clear()
+        else:
+            self.menubar = self.menuBar()
+            self.menubar.setNativeMenuBar(False)
 
         # Populate menu bar with menus and options
-        self.menubar = self.menuBar()
-        self.menubar.setNativeMenuBar(False)
         populateMenuBar(self, self.menubar, menu)
     
     def createContextMenus(self):
@@ -510,8 +502,15 @@ class MainWindow(QMainWindow):
         # create the user columns options
         field_menu_list = [
             ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
-            ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
-            ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
+            {
+                "attr_name": "objectattrsmenu",
+                "text": "Object attributes",
+                "opts":
+                [
+                    ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
+                    ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
+                ]
+            },
             {
                 "attr_name": "modifymenu",
                 "text": "Modify",
@@ -524,7 +523,7 @@ class MainWindow(QMainWindow):
                     ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
                 ]
             },
-            getSetUserColsMenu(self.series, self.field.setUserCol),
+            getUserColsMenu(self.series, self.field.addUserCol, self.field.setUserCol, self.field.editUserCol),
             {
                 "attr_name": "lockmenu",
                 "text": "Lock/Unlock",
@@ -559,6 +558,7 @@ class MainWindow(QMainWindow):
                     ("blend_act", "Toggle section blend", self.series, self.field.toggleBlend),
                 ]
             },
+            getAlignmentsMenu(self.series, self.changeAlignment),
             None,
             self.cut_act,
             self.copy_act,
@@ -587,11 +587,16 @@ class MainWindow(QMainWindow):
         # organize actions
         self.trace_actions = [
             self.edittrace_act,
+            self.objectattrsmenu,
+            self.objcomment_act,
+            self.sethosts_act,
             self.modifymenu,
             self.mergetraces_act,
             self.makepositive_act,
             self.makenegative_act,
+            self.lockmenu,
             self.lockobject_act,
+            self.unlockobject_act,
             self.curatemenu,
             self.blankcurate_act,
             self.needscuration_act,
@@ -614,6 +619,9 @@ class MainWindow(QMainWindow):
         ]
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
+
+        # check the alignment in the alignment submenu
+        self.changeAlignment(self.series.alignment)
     
     def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
         """Check for actions that should be enabled or disabled
@@ -776,7 +784,8 @@ class MainWindow(QMainWindow):
             ("useotrace_act", lambda : self.mouse_palette.activateModeButton("Open Trace")),
             ("usestamp_act", lambda : self.mouse_palette.activateModeButton("Stamp")),
             ("usegrid_act", lambda : self.mouse_palette.activateModeButton("Grid")),
-            ("useflag_act", lambda : self.mouse_palette.activateModeButton("Flag"))
+            ("useflag_act", lambda : self.mouse_palette.activateModeButton("Flag")),
+            ("usehost_act", lambda : self.mouse_palette.activateModeButton("Host")),
         ]
   
         for act_name, act in mode_shortcuts:
@@ -1079,6 +1088,16 @@ class MainWindow(QMainWindow):
         if not first_open:
             self.notifyNewEditor()
         
+        # create the menus
+        self.createMenuBar()
+        self.createContextMenus()
+        if not self.actions_initialized:
+            self.createShortcuts()
+        self.actions_initialized = True
+
+        # add the series to recently opened
+        self.addToRecentSeries()
+        
     def newSeries(
         self,
         image_locations : list = None,
@@ -1311,308 +1330,6 @@ class MainWindow(QMainWindow):
         self.field.table_manager.recreateTables()
 
         notify("Transforms imported successfully.")
-    
-    def importTraces(self, jser_fp : str = None):
-        """Import traces from another jser series.
-        
-            Params:
-                jser_fp (str): the filepath with the series to import data from
-        """
-        if jser_fp is None:
-            response, confirmed = ImportTracesDialog(self, self.series).exec()
-            if not confirmed:
-                return
-            (
-                jser_fp,
-                srange,
-                regex_filters,
-                threshold,
-                flag_conflicts,
-                check_history,
-                keep_above,
-                keep_below
-            ) = response
-        
-        else:
-            slist = list(self.series.sections.keys())
-            srange = (min(slist), max(slist) + 1)
-            regex_filters = []
-            threshold = 0.95
-            flag_conflicts = True
-            check_history = True
-            keep_above = "self"
-            keep_below = ""
-
-        if not jser_fp: return  # exit function if user does not provide series
-
-        self.saveAllData()
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # check the manigifcations
-        if not checkMag(self.series, o_series):
-            return
-
-        # import the traces and close the other series
-        self.series.importTraces(
-            o_series, 
-            srange, 
-            regex_filters, 
-            threshold, 
-            flag_conflicts, 
-            check_history, 
-            keep_above,
-            keep_below, 
-            self.field.series_states
-        )
-        o_series.close()
-
-        # reload the field to update the traces
-        self.field.reload()
-
-        # refresh the data and lists
-        self.field.table_manager.recreateTables()
-        
-        notify("Traces imported successfully.")
-    
-    def importZtraces(self, jser_fp : str = None):
-        """Import ztraces from another jser series.
-        
-            Params:
-                jser_fp (str): the filepath with the series to import data from
-        """
-        regex_filters = []
-        if jser_fp is None:
-            structure = [
-                ["Series:", (True, "file", "", "*.jser")],
-                ["Ztrace regex filters (separate with a comma and space):"],
-                [("text", "")]
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "Import Ztraces")
-            if not confirmed:
-                return
-            jser_fp = response[0]
-            if response[1]:
-                regex_filters = response[1].split(", ")
-
-        self.saveAllData()
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # check the manigifcations
-        if not checkMag(self.series, o_series):
-            return
-
-        # import the ztraces and close the other series
-        self.series.importZtraces(o_series, regex_filters, series_states=self.field.series_states)
-        o_series.close()
-
-        # reload the field to update the ztraces
-        self.field.reload()
-
-        # refresh the data and lists
-        self.field.table_manager.recreateTables()
-        
-        notify("Ztraces imported successfully.")
-    
-    def importTracePalette(self, jser_fp : str = None):
-        """Import the trace palette from another series.
-        
-            Params:
-                jser_fp (str): the filepath with the series to import data from
-        """
-        if jser_fp is None:
-            jser_fp = FileDialog.get(
-                "file",
-                self,
-                "Select Series",
-                filter="*.jser"
-            )
-        if not jser_fp: return  # exit function if user does not provide series
-
-        self.saveAllData()
-
-        if not noUndoWarning():
-            return
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # import the trace palette
-        self.series.importPalettes(o_series)
-        self.saveAllData()
-
-        # reset the mouse palette
-        self.mouse_palette.reset()
-
-        o_series.close()
-
-        notify("Trace palette(s) imported successfully.\nOpen the palettes menu to view the new palettes.")
-    
-    def importSeriesTransforms(self, jser_fp : str = None):
-        """Import the transforms from another series.
-        
-            Params:
-                jser_fp (str): the filepath with the series to import data from
-        """
-        if jser_fp is None:
-            jser_fp = FileDialog.get(
-                "file",
-                self,
-                "Select Series",
-                filter="*.jser"
-            )
-            if not jser_fp: return  # exit function if user does not provide series
-
-        self.saveAllData()
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # check the manigifcations
-        if not checkMag(self.series, o_series):
-            return
-
-        # preliminary sections check
-        self_sections = sorted(list(self.series.sections.keys()))
-        other_sections = sorted(list(o_series.sections.keys()))
-        if self_sections != other_sections:
-            return
-        
-        # get a list of alignments from the other series
-        o_alignments = list(o_series.data["sections"][other_sections[0]]["tforms"].keys())
-        s_alignments = list(self.series.data["sections"][other_sections[0]]["tforms"].keys())
-
-        # prompt the user to choose an alignment
-        check_list = []
-        for a in o_alignments:
-            if a != "no-alignment":
-                check_list.append((a, False))
-        structure = [
-            [(
-                "check",
-                *tuple(check_list)
-            )]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Import Transforms")
-        if not confirmed:
-            o_series.close()
-            return
-        
-        chosen_alignments = [a for a, was_chosen in response[0] if was_chosen]
-        if not chosen_alignments:
-            o_series.close()
-            return
-
-        overlap_alignments = []
-        for a in chosen_alignments:
-            if a in s_alignments:
-                overlap_alignments.append(a)
-        
-        if overlap_alignments:
-            overlap_str = ", ".join(overlap_alignments)
-            reply = QMessageBox.question(
-                self,
-                "Import Alignments",
-                f"The alignment(s) {overlap_str} exist in your series.\nWould you like to overwrite them?",
-                QMessageBox.Yes,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.No:
-                notify("Import transforms canceled.")
-                o_series.close()
-                return
-        
-        self.series.importTransforms(o_series, chosen_alignments, self.field.series_states)
-        o_series.close()
-        
-        self.field.reload()
-
-        # refresh the data and lists
-        self.field.table_manager.recreateTables()
-
-        self.seriesModified()
-
-        notify("Transforms imported successfully.")
-    
-    def importBC(self, jser_fp : str = None):
-        """Import the brightness/contrast settings from another jser series.
-        
-            Params:
-                jser_fp (str): the filepath with the series to import data from
-        """
-        sections = list(self.series.sections.keys())
-        if jser_fp is None:
-            structure = [
-                ["Series:", (True, "file", "", "*.jser")],
-                [
-                    "From section",
-                    ("int", min(self.series.sections.keys())),
-                    "to",
-                    ("int", max(self.series.sections.keys()))
-                ]
-            ]
-            response, confirmed = QuickDialog.get(self, structure, "Import Brightness/Contrast")
-            if not confirmed:
-                return
-            
-            jser_fp = response[0]
-            sections = tuple(range(response[1], response[2]+1))
-        
-        if not jser_fp: return  # exit function if user does not provide series
-
-        if not noUndoWarning():
-            return
-
-        self.saveAllData()
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # import the traces and close the other series
-        self.series.importBC(o_series, sections)
-        o_series.close()
-
-        # reload the field to update the traces
-        self.field.reload()
-
-        # refresh the data and lists
-        self.field.table_manager.recreateTables()
-
-        notify("Brightness/contrast settings imported successfully.")
-    
-    def importFlags(self, jser_fp : str = None):
-        """Import flags from another series."""
-        if jser_fp is None:
-            jser_fp = FileDialog.get(
-                "file",
-                self,
-                "Select Series",
-                filter="*.jser"
-            )
-        if not jser_fp: return  # exit function if user does not provide series
-
-        self.saveAllData()
-
-        # open the other series
-        o_series = Series.openJser(jser_fp)
-
-        # check the manigifcations
-        if not checkMag(self.series, o_series):
-            return
-
-        # import the flags
-        self.series.importFlags(o_series)
-        self.field.reload()
-
-        # refresh the data and lists
-        self.field.table_manager.recreateTables()
-
-        o_series.close()
-
-        notify("Flags imported successfully.")
     
     def editImage(self, option : str, direction : str, log_event=True):
         """Edit the brightness or contrast of the image.
@@ -2039,8 +1756,8 @@ class MainWindow(QMainWindow):
             self.series.alignment
         )
     
-    def changeAlignment(self):
-        """Open dialog to modify and change alignments."""
+    def modifyAlignments(self):
+        """Open dialog to modify alignments."""
         self.saveAllData()
         
         alignments = list(self.field.section.tforms.keys())
@@ -2063,11 +1780,28 @@ class MainWindow(QMainWindow):
                     break
             if modified:
                 self.series.modifyAlignments(alignment_dict, self.field.series_states)
+                self.createContextMenus()
         
         if alignment_name:
-            self.field.changeAlignment(alignment_name)
+            self.changeAlignment(alignment_name, overwrite=True)
         else:
-            self.field.changeAlignment(self.series.alignment)
+            self.changeAlignment(self.series.alignment, overwrite=True)
+
+    def changeAlignment(self, new_alignment : str, overwrite=False):
+        """Change the current sereis alignment.
+        
+            Params:
+                alignment (str): the alignment to switch to
+                overwrite (bool): change the alignment even if the name is the same
+        """
+        attr = getattr(self, f"{new_alignment}_alignment_act")
+        attr.setChecked(True)
+
+        current_alignment = self.series.alignment
+        if overwrite or new_alignment != current_alignment:
+            attr = getattr(self, f"{current_alignment}_alignment_act")  # generated from createContextMenu
+            attr.setChecked(False)
+            self.field.changeAlignment(new_alignment)
     
     def changeBCProfiles(self):
         """Open dialog to modify and change brightness/contrast profiles."""
@@ -2713,6 +2447,7 @@ class MainWindow(QMainWindow):
         if confirmed:
             self.field.generateView()
             self.mouse_palette.reset()
+            self.setTheme(self.series.getOption("theme"))
     
     def optimizeBC(self, sections : list = None):
         """Optimize the brightness and contrast of the series.
@@ -2944,6 +2679,144 @@ class MainWindow(QMainWindow):
             w.setHosts()
         else:
             self.field.setHosts()
+    
+    def addToRecentSeries(self, series_fp : str = None):
+        """Add a series to the recently opened series list."""
+        if series_fp is None:
+            if self.series.isWelcomeSeries():
+                return
+            series_fp = self.series.jser_fp
+        
+        opened = self.series.getOption("recently_opened_series")
+
+        # remove redundant filepaths
+        while series_fp in opened:
+            opened.remove(series_fp)
+        
+        opened.insert(0, series_fp)
+
+        # limit to ten items
+        if len(opened) > 10:
+            opened.pop()
+                
+        self.series.setOption("recently_opened_series", opened)
+    
+    def importFromSeries(self):
+        """Import from another series."""
+        jser_fp = FileDialog.get(
+            "file",
+            self,
+            "Select Series",
+            filter="*.jser"
+        )
+        if not jser_fp: return  # exit function if user does not provide series
+
+        self.saveAllData()
+
+        # open the other series
+        o_series = Series.openJser(jser_fp)
+
+        # check the manigifcations
+        if not checkMag(self.series, o_series):
+            o_series.close()
+            return
+        
+        response, confirmed = ImportSeriesDialog(self, self.series, o_series).exec()
+        if not confirmed or not response:
+            o_series.close()
+            return
+        
+        if "traces" in response:
+            (
+                srange,
+                regex_filters,
+                threshold,
+                flag_conflicts,
+                check_history,
+                import_obj_attrs,
+                keep_above,
+                keep_below,
+            ) = tuple(response["traces"])
+
+            self.series.importTraces(
+                o_series, 
+                srange, 
+                regex_filters, 
+                threshold, 
+                flag_conflicts, 
+                check_history,
+                import_obj_attrs,
+                keep_above,
+                keep_below, 
+                self.field.series_states
+            )
+        
+        if "z-traces" in response:
+            regex_filters = response["z-traces"][0]
+            import_attrs = response["z-traces"][1][0][1]
+            self.series.importZtraces(
+                o_series, 
+                regex_filters,
+                import_attrs,
+                series_states=self.field.series_states
+            )
+            
+        if "flags" in response:
+            srange = (
+                response["flags"][0],
+                response["flags"][1] + 1
+            )
+            self.series.importFlags(
+                o_series, 
+                srange,
+                self.field.series_states
+            )
+        
+        if "attributes" in response:
+            bools = [b for n, b in response["attributes"][0]]
+            if bools[0]:
+                self.series.importObjectGroups(o_series)
+            if bools[1]:
+                self.series.importHostTree(o_series)
+            if bools[2]:
+                self.series.importUserCols(o_series)
+            if bools[3]:
+                self.series.importZtraceGroups(o_series)
+            if bools[4]:
+                self.series.importObjAttrs(o_series)
+        
+        if "alignments" in response:
+            import_as = response["alignments"]
+            self.series.importTransforms(
+                o_series,
+                import_as,
+                self.field.series_states
+            )
+            self.createContextMenus()
+
+        if "palettes" in response:
+            import_as = response["palettes"]
+            self.series.importPalettes(  # cannot be undone
+                o_series,
+                import_as
+            )
+
+        if "brightness/contrast profiles" in response:
+            print("wowze")
+            import_as = response["brightness/contrast profiles"]
+            self.series.importBC(  # cannot be undone
+                o_series,
+                import_as
+            )
+
+        # close other series
+        o_series.close()
+
+        # refresh the data and lists
+        self.field.reload()
+        self.field.table_manager.refresh()
+
+        notify("Import successful.")
         
     def restart(self):
         self.restart_mainwindow = True
@@ -2970,6 +2843,6 @@ class MainWindow(QMainWindow):
 
 qdark_addon = """
 QPushButton {border: 1px solid transparent}
-QComboBox {padding-right: 30px}
+QComboBox {padding-right: 40px}
 """
 # QTableWidget:item:alternate {background-color: #222C36;}  # removed because it overrides the background color of qtablewidgetitems

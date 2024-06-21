@@ -163,7 +163,7 @@ class QuickDialog(QDialog):
         """
         QDialog.__init__(self, parent)
 
-        vlayout, self.inputs = self.getLayout(structure, grid)
+        vlayout, self.inputs = getLayout(self, structure, grid)
 
         if include_confirm:
             self.setWindowTitle(title)
@@ -184,156 +184,6 @@ class QuickDialog(QDialog):
             vlayout.insertWidget(0, lbl, alignment=Qt.AlignHCenter)
 
         self.setLayout(vlayout)
-    
-    def getLayout(self, structure : list, grid : bool):
-        """Return the layout for a given structure."""
-        inputs = []
-
-        if grid:
-            grid_layout = QGridLayout()
-            r = 0
-            c = 0
-        vlayout = QVBoxLayout()
-        vlayout.setSpacing(1)
-
-        for row_structure in structure:
-            if not row_structure:  # vertical layout spacer
-                if grid:
-                    r += 1
-                else:
-                    vlayout.addSpacing(5)
-                continue
-            
-            if not grid:
-                row_layout = QHBoxLayout()
-                row_layout.setSpacing(4)
-            for item in row_structure:
-                if not item:  # Spacer
-                    if grid:
-                        c += 1
-                    else:
-                        row_layout.addStretch()
-                    continue
-                elif type(item) is str:  # Label
-                    w = QLabel(self, text=item)
-                else:
-                    # checking for leading bool to mark required status
-                    if type(item[0]) is bool:
-                        required = item[0]
-                        item = item[1:]
-                    else:
-                        required = False
-                    widget_type = item[0]
-                    params = item[1:]
-                    if widget_type == "text" or widget_type == "textbox":  # Text input
-                        # Params structure: str
-                        text = params[0]
-                        w = QLineEdit(text, self) if widget_type == "text" else QTextEdit(text.replace("\n", "<br/>"), self)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "multitext":
-                        # Params structure: list
-                        entries = params[0]
-                        w = MultiInput(self, entries)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "int" or widget_type == "float": 
-                        # Params structure: int, optional: list[int]
-                        n = params[0]
-                        if len(params) > 1:
-                            options = params[1]
-                        else:
-                            options = None
-                        if n is None:
-                            w = QLineEdit("", self)
-                        elif widget_type == "int":
-                            w = QLineEdit(str(n), self)
-                            resizeLineEdit(w, "000000")
-                        elif widget_type == "float":
-                            w = QLineEdit(str(round(n, 8)), self)
-                            resizeLineEdit(w, "0.000000000")
-                        inputs.append(InputField(widget_type, w, options, required=required))
-                    elif widget_type == "slider":
-                        # Params: int (opt)
-                        w = QSlider(Qt.Horizontal, self)
-                        w.setMinimum(0)
-                        w.setMaximum(100)
-                        if params:
-                            w.setValue(params[0])
-                        else:
-                            w.setValue(0)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "combo":
-                        # Params structure: list[str], optional: str
-                        options = params[0]
-                        if len(params) > 1:
-                            selected = params[1]
-                        else:
-                            selected = None
-                        w = CompleterBox(self)
-                        if not required or selected is None:
-                            w.addItem("")
-                        w.addItems(list(options))
-                        if selected:
-                            w.setCurrentText(selected)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "multicombo":
-                        # Params structure: list of options, entries, bool restrict to list opts
-                        opts = params[0]
-                        entries = params[1] if len(params) > 1 else []
-                        restrict_opts = params[2] if len(params) > 2 else True 
-                        w = MultiInput(self, entries, True, opts, restrict_opts)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "check" or widget_type == "radio":
-                        # Params structure list[(str, bool)]
-                        w = QWidget(self)
-                        vl = QVBoxLayout()
-                        vl.setSpacing(1)
-                        for text, checked in params:
-                            if widget_type == "check":
-                                bttn = QCheckBox(text, w)
-                            else:
-                                bttn = QRadioButton(text, w)
-                            bttn.setChecked(checked)
-                            vl.addWidget(bttn)
-                        w.setLayout(vl)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "file" or widget_type == "dir":
-                        # Params structure: str (default filepath), str (filter; only for file)
-                        fp = params[0]
-                        if widget_type == "file":
-                            filter = params[1]
-                        else:
-                            filter = None
-                        w = BrowseWidget(self, type=widget_type, default_fp=fp, filter=filter)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "color":
-                        # Params structure: tuple
-                        color = params[0]
-                        w = ColorButton(color, self)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    elif widget_type == "shape":
-                        # Params structure: list
-                        points = params[0]
-                        if not points:
-                            points = []
-                        w = ShapeButton(points, self)
-                        inputs.append(InputField(widget_type, w, required=required))
-                    
-                if grid:
-                    grid_layout.addWidget(w, r, c)
-                    c += 1
-                else:
-                    row_layout.addWidget(w)
-
-            if grid:
-                r += 1
-                c = 0
-            else:
-                vlayout.addLayout(row_layout)
-        
-        if grid:
-            vlayout.addLayout(grid_layout)
-        
-        return vlayout, inputs
 
     def accept(self):
         """Overwritten from parent class."""
@@ -390,7 +240,7 @@ class QuickTabDialog(QuickDialog):
         self.tab_widget = QTabWidget(self)
 
         for n, s in structures.items():
-            vlayout, inputs = self.getLayout(s, grid)
+            vlayout, inputs = getLayout(self, s, grid)
             self.inputs[n] = inputs
             w = QWidget(self)
             w.setLayout(vlayout)
@@ -439,4 +289,160 @@ class QuickTabDialog(QuickDialog):
                     self.responses[tab_name].append(r)
         
         QDialog.accept(self)
+
+
+def getLayout(parent, structure : list, grid : bool = False):
+    """Return the layout for a given structure.
+    
+        Params:
+            structure (list): the structure of the layout
+            grid (bool): True if structure should be made as a grid
+    """
+    inputs = []
+
+    if grid:
+        grid_layout = QGridLayout()
+        r = 0
+        c = 0
+    vlayout = QVBoxLayout()
+    vlayout.setSpacing(1)
+
+    for row_structure in structure:
+        if not row_structure:  # vertical layout spacer
+            if grid:
+                r += 1
+            else:
+                vlayout.addSpacing(5)
+            continue
+        
+        if not grid:
+            row_layout = QHBoxLayout()
+            row_layout.setSpacing(4)
+        for item in row_structure:
+            if not item:  # Spacer
+                if grid:
+                    c += 1
+                else:
+                    row_layout.addStretch()
+                continue
+            elif type(item) is str:  # Label
+                w = QLabel(parent, text=item)
+            else:
+                # checking for leading bool to mark required status
+                if type(item[0]) is bool:
+                    required = item[0]
+                    item = item[1:]
+                else:
+                    required = False
+                widget_type = item[0]
+                params = item[1:]
+                if widget_type == "text" or widget_type == "textbox":  # Text input
+                    # Params structure: str
+                    text = params[0]
+                    w = QLineEdit(text, parent) if widget_type == "text" else QTextEdit(text.replace("\n", "<br/>"), parent)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "multitext":
+                    # Params structure: list
+                    entries = params[0]
+                    w = MultiInput(parent, entries)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "int" or widget_type == "float": 
+                    # Params structure: int, optional: list[int]
+                    n = params[0]
+                    if len(params) > 1:
+                        options = params[1]
+                    else:
+                        options = None
+                    if n is None:
+                        w = QLineEdit("", parent)
+                    elif widget_type == "int":
+                        w = QLineEdit(str(n), parent)
+                        resizeLineEdit(w, "000000")
+                    elif widget_type == "float":
+                        w = QLineEdit(str(round(n, 8)), parent)
+                        resizeLineEdit(w, "0.000000000")
+                    inputs.append(InputField(widget_type, w, options, required=required))
+                elif widget_type == "slider":
+                    # Params: int (opt)
+                    w = QSlider(Qt.Horizontal, parent)
+                    w.setMinimum(0)
+                    w.setMaximum(100)
+                    if params:
+                        w.setValue(params[0])
+                    else:
+                        w.setValue(0)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "combo":
+                    # Params structure: list[str], optional: str
+                    options = params[0]
+                    if len(params) > 1:
+                        selected = params[1]
+                    else:
+                        selected = None
+                    w = CompleterBox(parent)
+                    if not required or selected is None:
+                        w.addItem("")
+                    w.addItems(list(options))
+                    if selected:
+                        w.setCurrentText(selected)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "multicombo":
+                    # Params structure: list of options, entries, bool restrict to list opts
+                    opts = params[0]
+                    entries = params[1] if len(params) > 1 else []
+                    restrict_opts = params[2] if len(params) > 2 else True 
+                    w = MultiInput(parent, entries, True, opts, restrict_opts)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "check" or widget_type == "radio":
+                    # Params structure list[(str, bool)]
+                    w = QWidget(parent)
+                    vl = QVBoxLayout()
+                    vl.setSpacing(1)
+                    for text, checked in params:
+                        if widget_type == "check":
+                            bttn = QCheckBox(text, w)
+                        else:
+                            bttn = QRadioButton(text, w)
+                        bttn.setChecked(checked)
+                        vl.addWidget(bttn)
+                    w.setLayout(vl)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "file" or widget_type == "dir":
+                    # Params structure: str (default filepath), str (filter; only for file)
+                    fp = params[0]
+                    if widget_type == "file":
+                        filter = params[1]
+                    else:
+                        filter = None
+                    w = BrowseWidget(parent, type=widget_type, default_fp=fp, filter=filter)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "color":
+                    # Params structure: tuple
+                    color = params[0]
+                    w = ColorButton(color, parent)
+                    inputs.append(InputField(widget_type, w, required=required))
+                elif widget_type == "shape":
+                    # Params structure: list
+                    points = params[0]
+                    if not points:
+                        points = []
+                    w = ShapeButton(points, parent)
+                    inputs.append(InputField(widget_type, w, required=required))
+                
+            if grid:
+                grid_layout.addWidget(w, r, c)
+                c += 1
+            else:
+                row_layout.addWidget(w)
+
+        if grid:
+            r += 1
+            c = 0
+        else:
+            vlayout.addLayout(row_layout)
+    
+    if grid:
+        vlayout.addLayout(grid_layout)
+    
+    return vlayout, inputs
 

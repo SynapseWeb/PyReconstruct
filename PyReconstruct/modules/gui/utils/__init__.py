@@ -16,7 +16,9 @@ from .utils import (
     getProgbar,
     notifyLocked,
     checkMag,
-    getSetUserColsMenu,
+    getUserColsMenu,
+    getAlignmentsMenu,
+    getOpenRecentMenu
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox

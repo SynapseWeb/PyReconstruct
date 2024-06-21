@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -58,6 +60,10 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     else:  # assume series was passed in
         action.setShortcut(kbd.getOption(act_name))
 
+    # remove previous action
+    if act_name in dir(widget):
+        widget.removeAction(getattr(widget, act_name))
+    
     # attach to widget
     widget.addAction(action)
     setattr(widget, act_name, action)
@@ -340,10 +346,12 @@ def checkMag(s_series, o_series):
         
     return True
 
-def getSetUserColsMenu(series, setUserCol):
+def getUserColsMenu(series, newUserCol, setUserCol, editUserCol):
     # create the submenu for adding to categorical column
-    def getCall(col_name, opt):
+    def getSetCall(col_name, opt):
         return (lambda : setUserCol(col_name=col_name, opt=opt))
+    def getEditCall(col_name):
+        return (lambda : editUserCol(col_name=col_name))
     custom_categories = []
     menu_i = 0  # keep track of numbers for unique attribute
     opts_i = 0
@@ -353,14 +361,15 @@ def getSetUserColsMenu(series, setUserCol):
             "text": col_name,
             "opts":
             [
-                (f"user_col_{opts_i}_act", "(blank)", "", getCall(col_name, ""))
+                (f"edit_user_col_{menu_i}_act", "Edit...", "", getEditCall(col_name)),
+                (f"user_col_{opts_i}_act", "(blank)", "", getSetCall(col_name, "")),
             ]
         }
         menu_i += 1
         opts_i += 1
         for opt in opts:
             d["opts"].append(
-                (f"user_col_{opts_i}_act", opt, "", getCall(col_name, opt))
+                (f"user_col_{opts_i}_act", opt, "", getSetCall(col_name, opt))
             )
             opts_i += 1
         custom_categories.append(d)
@@ -368,5 +377,45 @@ def getSetUserColsMenu(series, setUserCol):
     return {
         "attr_name": "customcategoriesmenu",
         "text": "Custom categories",
-        "opts": custom_categories
+        "opts": [("newusercol_act", "New...", "", newUserCol)] + custom_categories
     }
+
+def getAlignmentsMenu(series, setAlignment):
+    # create the submenu for switching alignments
+    def getCall(alignment):
+        return (lambda : setAlignment(alignment))
+    
+    opts_list = []
+    for alignment in sorted(series.alignments):
+        opts_list.append(
+            (f"{alignment}_alignment_act", alignment, "checkbox", getCall(alignment))
+        )
+    
+    return {
+        "attr_name": "alignmentsmenu",
+        "text": "Alignments",
+        "opts": opts_list
+    }
+
+def getOpenRecentMenu(series, openSeries):
+    # create the submenu for opening a recent series
+    def getCall(fp):
+        return (lambda : openSeries(jser_fp=fp))
+
+    opts_list = []
+    filepaths = series.getOption("recently_opened_series")
+    for fp in filepaths.copy():
+        if not os.path.isfile(fp):  # remove if not a file
+            filepaths.remove(fp)
+        elif fp != series.jser_fp:
+            opts_list.append(
+                (f"openrecent{len(opts_list)}_act", fp, "", getCall(fp))
+            )
+    series.setOption("recently_opened_series", filepaths)
+
+    return {
+        "attr_name": "openrecentmenu",
+        "text": "Open recent",
+        "opts": opts_list
+    }
+

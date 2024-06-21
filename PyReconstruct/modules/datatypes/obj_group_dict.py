@@ -2,14 +2,18 @@ import re
 
 class ObjGroupDict():
 
-    def __init__(self, groups : dict = None):
+    def __init__(self, series, contain_type : str, groups : dict = None):
         """Create a two-way dictionary.
         
         Params:
+            series (Series): the series that contains the object group
+            contain_type (str): "objects" or "ztraces"
             groups (dict): an existing group dictionary to build from
         """
         self.groups = {}
         self.objects = {}
+        self.series = series
+        self.contain_type = contain_type
 
         # scan the dictionary for empty groups
         for group, obj_list in groups.copy().items():
@@ -131,15 +135,24 @@ class ObjGroupDict():
     def merge(self, other, regex_filters=[]):
         """Merge other object group dict into self."""
         for obj in other.getObjectList():
-            passes_filters = False if regex_filters else True
-            for rf in regex_filters:
-                if bool(re.fullmatch(rf, obj)):
-                    passes_filters = True
-            if passes_filters:
+            if self.contain_type == "objects" and obj not in self.series.data["objects"]:
+                continue
+            elif self.contain_type == "ztraces" and obj not in self.series.ztraces:
+                continue
+            if passesFilters(obj, regex_filters):
                 for group in other.getObjectGroups(obj):
                     self.add(group, obj)
     
     def copy(self):
         """Return a copy of the two-way dict."""
-        return ObjGroupDict(self.groups.copy())
+        return ObjGroupDict(self.series, self.contain_type, self.groups.copy())
+
+
+def passesFilters(s, re_filters):
+    if not re_filters:
+        return True
+    for rf in re_filters:
+        if bool(re.fullmatch(rf, s)):
+            return True
+    return False
     

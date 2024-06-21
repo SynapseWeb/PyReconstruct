@@ -220,6 +220,7 @@ help_shortcuts = [
     ("usestamp_act", "Use the stamp tool"),
     ("usegrid_act", "Use the grid tool"),
     ("useflag_act", "Use the flag tool"),
+    ("usehost_act", "Use the host tool"),
     None,
     "3D Scene:",
     ("? (Shift+/)", "Pull up shortcuts for 3D scene"),

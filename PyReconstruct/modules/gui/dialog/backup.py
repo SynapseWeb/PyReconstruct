@@ -20,8 +20,13 @@ from PyReconstruct.modules.gui.utils import notify
 
 class BackupDialog(QDialog):
 
-    def __init__(self, parent, series : Series):
-        """Create a dialog for backing up."""
+    def __init__(self, parent, series : Series, include_confirm=True):
+        """Create a dialog for backing up.
+        
+            Params:
+                series (Series): the series obj
+                include_confirm (bool): True if dialog should include OK and Cancel buttons
+        """
         super().__init__(parent)
         self.setWindowTitle("Backup Settings")
         self.series = series
@@ -123,11 +128,12 @@ class BackupDialog(QDialog):
         bw2.addTitle("Backup Naming")
         vlayout.addWidget(bw2)
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        buttonbox = QDialogButtonBox(QBtn)
-        buttonbox.accepted.connect(self.accept)
-        buttonbox.rejected.connect(self.reject)
-        vlayout.addWidget(buttonbox)
+        if include_confirm:
+            QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            buttonbox = QDialogButtonBox(QBtn)
+            buttonbox.accepted.connect(self.accept)
+            buttonbox.rejected.connect(self.reject)
+            vlayout.addWidget(buttonbox)
 
         self.setLayout(vlayout)
         self.updateWidgets()
@@ -150,32 +156,39 @@ class BackupDialog(QDialog):
         bdir = self.dir_widget.text()
         if not os.path.isdir(bdir):
             notify("Please enter a valid directory.")
-            return
-
-        # set the series options
-        self.series.setOption("autobackup", self.auto_cb.isChecked())
-        self.series.setOption("backup_dir", bdir)
-        for name, (cb, w) in self.widgets.items():
-            self.series.setOption(
-                f"backup_{name}",
-                cb.isChecked()
-            )
-            if name in ("date", "time", "prefix", "suffix"):
-                self.series.setOption(
-                    f"backup_{name}_str", 
-                    w.text()
-                )
-        self.series.setOption(
-            "backup_delimiter",
-            self.delimiter_le.text()
-        )
-
+            return False
         super().accept()
+        return True
+    
+    def set(self):
+        """Set the series options with the requested backup data"""
+        if self.accept():
+            # set the series options
+            self.series.setOption("autobackup", self.auto_cb.isChecked())
+            self.series.setOption("backup_dir", self.dir_widget.text())
+            for name, (cb, w) in self.widgets.items():
+                self.series.setOption(
+                    f"backup_{name}",
+                    cb.isChecked()
+                )
+                if name in ("date", "time", "prefix", "suffix"):
+                    self.series.setOption(
+                        f"backup_{name}_str", 
+                        w.text()
+                    )
+            self.series.setOption(
+                "backup_delimiter",
+                self.delimiter_le.text()
+            )
     
     def exec(self):
         "Run the dialog."
         confirmed = super().exec()
-        return bool(confirmed)
+        if confirmed:
+            self.set()
+            return True
+        else:
+            return False
 
 date_tip = """Date codes:
 %y = two-digit year (ex. 24)

@@ -12,7 +12,8 @@ from PySide6.QtCore import (
     Qt, 
     QPoint, 
     QEvent,
-    QTimer
+    QTimer,
+    QLine,
 )
 from PySide6.QtGui import (
     QPixmap, 
@@ -28,7 +29,7 @@ from PySide6.QtGui import (
 
 from PyReconstruct.modules.datatypes import Series, Trace, Ztrace, Flag
 from PyReconstruct.modules.calc import pixmapPointToField, distance, colorize, ellipseFromPair, lineDistance
-from PyReconstruct.modules.backend.view import FieldView, snapTrace
+from PyReconstruct.modules.backend.view import FieldView, snapTrace, drawArrow
 from PyReconstruct.modules.backend.table import (
     TableManager
 )
@@ -38,7 +39,7 @@ from PyReconstruct.modules.constants import locations as loc
 
 class FieldWidget(QWidget, FieldView):
     # mouse modes
-    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG = range(9)
+    POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG, HOST = range(10)
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
         """Create the field widget.
@@ -82,14 +83,15 @@ class FieldWidget(QWidget, FieldView):
             hotX=pencil_pm.width()-5, hotY=5
         )
         self.table_manager = None
+        self.hosted_trace = None
 
-        # set up the flag display
-        self.flag_display = None
-        self.displayed_flag = None
-        self.flag_display_timer = QTimer(self)
-        self.flag_display_timer.setSingleShot(True)
-        self.flag_display_timer.timeout.connect(
-            self.displayFlagComments
+        # set up the information display widget
+        self.hover_display = None
+        self.displayed_item = None
+        self.hover_display_timer = QTimer(self)
+        self.hover_display_timer.setSingleShot(True)
+        self.hover_display_timer.timeout.connect(
+            self.displayHoverInfo
         )
         # set up flag edit event
         self.edit_flag_event = QAction(self)
@@ -266,52 +268,76 @@ class FieldWidget(QWidget, FieldView):
             painter.drawLine(*points[i-1], *points[i])
         self.border_exists = True
     
-    def closeFlagComments(self):
-        """Close the flag comments display."""
-        if self.flag_display:
-            self.flag_display.close()
-            self.flag_display = None
-        self.displayed_flag = None
-        if self.flag_display_timer.isActive():
-            self.flag_display_timer.stop()
+    def closeHoverDisplay(self):
+        """Close the hover information display."""
+        if self.hover_display:
+            self.hover_display.close()
+            self.hover_display = None
+        self.displayed_item = None
+        if self.hover_display_timer.isActive():
+            self.hover_display_timer.stop()
     
-    def displayFlagComments(self):
-        """Display the comments an a flag that has been hovered over."""
-        # create text edit display
-        comments = []
-        for c in self.displayed_flag.comments:
-            t = c.text.replace("\n", "<br>")
-            comments.append(
-                f"<b>{c.user}</b> ({c.date}):<br>{t}"
-            )
-        text = "<hr>".join(comments)
-        self.flag_display = QTextEdit(self.mainwindow, text=text)
+    def displayHoverInfo(self):
+        """Display the information for an item that has been hovered over."""
+        text = ""
+        if type(self.displayed_item) is Flag:
+            # create text edit display for comments
+            comments = []
+            for c in self.displayed_item.comments:
+                t = c.text.replace("\n", "<br>")
+                comments.append(
+                    f"<b>{c.user}</b> ({c.date}):<br>{t}"
+                )
+            text = "<hr>".join(comments)
+        elif type(self.displayed_item) is Trace:
+            t = self.displayed_item
+            lines = []
+            # lines.append([f"<b>{t.name}</b>"])
+            def addLine(header, desc):
+                if desc: lines.append(f"<b>{header}</b> {desc}")
+            
+            addLine("Host:", ", ".join(self.series.getObjHosts(t.name)))
+            addLine("Comment:", self.series.getAttr(t.name, "comment"))
+            addLine("Object Alignment:", self.series.getAttr(t.name, "alignment"))
+            addLine("Object Groups:", ", ".join(self.series.object_groups.getObjectGroups(t.name)))
+            addLine("Trace Tags:", ", ".join(t.tags))
+            cat_cols = self.series.getAttr(t.name, "user_columns")
+            for col_name, opt in cat_cols.items():
+                addLine(f"{col_name}:", opt)
+
+            text = "<hr>".join(lines)
+        
+        if not text:
+            return
+        
+        # create the widget
+        self.hover_display = QTextEdit(self.mainwindow, text=text)
         # show
-        self.flag_display.show()
+        self.hover_display.show()
         # adjust the width and height
-        self.flag_display.resize(self.width() // 5, 1)
-        h = self.flag_display.document().size().toSize().height() + 3
+        self.hover_display.resize(self.width() // 5, 1)
+        h = self.hover_display.document().size().toSize().height() + 3
         if h == 3:
-            self.flag_display.setText("X")
-            h = self.flag_display.document().size().toSize().height()
-            self.flag_display.setText("")
+            self.hover_display.setText("X")
+            h = self.hover_display.document().size().toSize().height()
+            self.hover_display.setText("")
         elif h > self.height() - 6:
             h = self.height() - 6
-        self.flag_display.resize(self.width() // 5, h)
+        self.hover_display.resize(self.width() // 5, h)
         # move to proper location
         right_justified = self.mainwindow.mouse_palette.mode_x <= .5
         if right_justified:
-            self.flag_display.move(
-                self.x() + self.width() - self.flag_display.width() - 3,
-                self.y() + self.height() - self.flag_display.height() - 3
+            self.hover_display.move(
+                self.x() + self.width() - self.hover_display.width() - 3,
+                self.y() + self.height() - self.hover_display.height() - 3
             )
         else:
-            self.flag_display.move(
+            self.hover_display.move(
                 self.x() + 3,
-                self.y() + self.height() - self.flag_display.height() - 3
+                self.y() + self.height() - self.hover_display.height() - 3
             )
         # scroll all the way down
-        sb = self.flag_display.verticalScrollBar()
+        sb = self.hover_display.verticalScrollBar()
         sb.setValue(sb.maximum())
     
     def paintBorder(self, field_painter : QPainter):
@@ -347,6 +373,10 @@ class FieldWidget(QWidget, FieldView):
                 closed = True
                 pen = QPen(QColor(255, 255, 255), 1)
                 pen.setDashPattern([4, 4])
+            # if drawing host line
+            if self.mouse_mode == FieldWidget.HOST:
+                closed = False
+                pen = QPen(QColor(255, 255, 255), 2)
             # if drawing knife
             elif self.mouse_mode == FieldWidget.KNIFE:
                 closed = False
@@ -363,20 +393,25 @@ class FieldWidget(QWidget, FieldView):
             
             # draw current trace if exists
             if pen:
-                field_painter.setPen(pen)
-                if closed:
-                    start = 0
+                if self.mouse_mode == FieldWidget.HOST:
+                    if len(self.current_trace) > 1:
+                        line = QLine(*self.current_trace[0], *self.current_trace[1])
+                        drawArrow(field_painter, line, False, True)
                 else:
-                    start = 1
-                for i in range(start, len(self.current_trace)):
-                    field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
-                # draw dashed lines that connect to mouse pointer
-                if self.is_line_tracing:
-                    pen.setDashPattern([2,5])
                     field_painter.setPen(pen)
-                    field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
                     if closed:
-                        field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
+                        start = 0
+                    else:
+                        start = 1
+                    for i in range(start, len(self.current_trace)):
+                        field_painter.drawLine(*self.current_trace[i-1], *self.current_trace[i])
+                    # draw dashed lines that connect to mouse pointer
+                    if self.is_line_tracing:
+                        pen.setDashPattern([2,5])
+                        field_painter.setPen(pen)
+                        field_painter.drawLine(*self.current_trace[-1], self.mouse_x, self.mouse_y)
+                        if closed:
+                            field_painter.drawLine(*self.current_trace[0], self.mouse_x, self.mouse_y)
             
         # unique method for drawing moving traces
         elif self.is_moving_trace:
@@ -419,7 +454,7 @@ class FieldWidget(QWidget, FieldView):
         st_size = 14
         closest = None
         closest_type = None
-        close_flag_display = True
+        close_hover_display = True  # assume the hover display will be closed
         if (
             not (self.lclick or self.rclick or self.mclick) and
             not self.is_gesturing
@@ -433,7 +468,10 @@ class FieldWidget(QWidget, FieldView):
             else:
                 label_id = None
 
-            if self.mouse_mode == FieldWidget.POINTER:
+            if (
+                self.mouse_mode == FieldWidget.POINTER or
+                self.mouse_mode == FieldWidget.HOST and not self.hosted_trace
+            ):
                 # prioritize showing label name
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
@@ -468,26 +506,61 @@ class FieldWidget(QWidget, FieldView):
                         # flag returned
                         elif closest_type == "flag":
                             name = closest.name
-                            close_flag_display = False
-                            if closest != self.displayed_flag:
-                                self.closeFlagComments()
-                                self.displayed_flag = closest
-                                self.flag_display_timer.start(1000)
-
+                        
                         if self.series.getOption("display_closest"):
+                            # set up the corner display for the attributes
+                            if closest_type in ("trace", "flag"):
+                                if closest != self.displayed_item:
+                                    self.closeHoverDisplay()
+                                    self.displayed_item = closest
+                                    self.hover_display_timer.start(1000)
+                                close_hover_display = False
+
+                            # display the name of the item by the mouse
                             mouse_x, mouse_y = self.mouse_x, self.mouse_y
                             if self.series.getOption("left_handed"): mouse_x += 10
                             c = closest.color
-                            has_comment = bool(self.series.getAttr(name, "comment"))
                             drawOutlinedText(
                                 field_painter,
                                 mouse_x, mouse_y,
-                                name + ("*" if has_comment else ""),
+                                name,
                                 c,
                                 None,
                                 ct_size,
                                 not self.series.getOption("left_handed")
                             )
+            elif self.mouse_mode == FieldWidget.HOST and self.hosted_trace:
+                # set up text position
+                mouse_x, mouse_y = self.mouse_x, self.mouse_y
+                if self.series.getOption("left_handed"): mouse_x += 10
+                # display the proposed host relationship by the mouse
+                t = [
+                    self.hosted_trace.name,
+                    " hosted by ",
+                    closest.name if closest_type == "trace" else "..."
+                ]
+                t_copy = t.copy()
+                for i, text in enumerate(t_copy):
+                    for j in range(len(t_copy)):
+                        if j < i:
+                            t[i] = " "*len(t_copy[j]) + t[i]
+                        elif j > i:
+                            t[i] += " "*len(t_copy[j])
+                c = [
+                    self.hosted_trace.color,
+                    (255, 255, 255),
+                    closest.color if closest_type == "trace" else (255, 255, 255)
+                ]
+                for text, color in zip(t, c):
+                    drawOutlinedText(
+                        field_painter,
+                        mouse_x, mouse_y,
+                        text,
+                        color,
+                        None,
+                        ct_size,
+                        not self.series.getOption("left_handed")
+                    )
             
             # get the names of the selected traces
             names = {}
@@ -607,8 +680,8 @@ class FieldWidget(QWidget, FieldView):
             y += st_size
         
         # close the flag display if needed
-        if close_flag_display:
-            self.closeFlagComments()
+        if close_hover_display:
+            self.closeHoverDisplay()
 
         # update the status bar
         if not self.is_panzooming:
@@ -778,7 +851,7 @@ class FieldWidget(QWidget, FieldView):
         self.mouse_mode = mode
 
         # set the cursor icon
-        if mode == FieldWidget.POINTER:
+        if mode in (FieldWidget.POINTER, FieldWidget.HOST):
             cursor = QCursor(Qt.ArrowCursor)
         elif mode == FieldWidget.PANZOOM:
             cursor = QCursor(Qt.SizeAllCursor)
@@ -926,7 +999,8 @@ class FieldWidget(QWidget, FieldView):
         context_menu = (
             self.rclick and
             not (self.mouse_mode == FieldWidget.PANZOOM) and
-            not self.is_line_tracing
+            not self.is_line_tracing and
+            not self.hosted_trace
         )
         if context_menu:
             clicked_label = None
@@ -965,6 +1039,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampPress(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridPress(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostPress(event)
 
     def mouseMoveEvent(self, event):
         """Called when mouse is moved.
@@ -1028,6 +1104,8 @@ class FieldWidget(QWidget, FieldView):
             self.traceMove(event)
         elif self.mouse_mode == FieldWidget.STAMP:
             self.stampMove(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostMove(event)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -1084,6 +1162,8 @@ class FieldWidget(QWidget, FieldView):
             self.stampRelease(event)
         elif self.mouse_mode == FieldWidget.GRID:
             self.gridRelease(event)
+        elif self.mouse_mode == FieldWidget.HOST:
+            self.hostRelease(event)
         
         self.lclick = False
         self.rclick = False
@@ -1755,12 +1835,55 @@ class FieldWidget(QWidget, FieldView):
 
         self.update()
     
+    def hostPress(self, event):
+        """Called when mouse is pressed in host mode."""
+        pass
+        
+    
+    def hostMove(self, event):
+        """Called when mouse is moved in host mode."""
+        if self.hosted_trace:
+            self.current_trace = self.current_trace[:1]
+            self.current_trace.append((self.mouse_x, self.mouse_y))
+
+    def hostRelease(self, event):
+        # cancel operation if user right-clicked
+        if self.rclick and self.hosted_trace:
+            self.hosted_trace = None
+            self.current_trace = []
+            self.update()
+            return
+        
+        closest, closest_type = self.section_layer.getTrace(self.mouse_x, self.mouse_y)
+        if self.hosted_trace:
+            if closest_type == "trace":
+                host = closest.name
+                hosted = self.hosted_trace.name
+                if host == hosted:
+                    notify("An object cannot be a host of itself.")
+                elif hosted in self.series.getObjHosts(host, traverse=True):
+                    notify("Objects cannot be hosts of each other.")
+                else:
+                    self.series_states.addState()
+                    self.series.host_tree.add(
+                        hosted, 
+                        [host],
+                    )
+                    self.table_manager.updateObjects(self.series.host_tree.getObjToUpdate([hosted, host]))
+            self.hosted_trace = None
+            self.current_trace = []
+        else:
+            if closest_type == "trace":
+                self.hosted_trace = closest
+                self.current_trace = [(self.mouse_x, self.mouse_y)]
+            else:
+                self.hosted_trace = None
+                self.current_trace = []
+        self.update()
+    
     def editFlag(self, event=None):
         """Edit a flag. (Triggered by action)"""
-        # close flag display
         flag = self.clicked_trace
-        self.closeFlagComments()
-        self.displayed_flag = flag
         response, confirmed = FlagDialog(self, flag).exec()
         if confirmed:
             flag.name, flag.color, flag.comments, new_comment, resolved = response
@@ -1768,7 +1891,6 @@ class FieldWidget(QWidget, FieldView):
             flag.resolve(self.series.user, resolved)
             self.generateView(generate_image=False)
             self.saveState()
-        self.displayed_flag = None
     
     def createTraceFlag(self, trace : Trace = None):
         """Create a flag associated with a trace."""
@@ -1860,6 +1982,7 @@ class FieldWidget(QWidget, FieldView):
         else:
             self.series.deleteAllTraces(trace.name, series_states=self.series_states)
         
+        self.table_manager.updateObjects([trace.name])
         self.reload()
 
     def endPendingEvents(self):
@@ -1907,6 +2030,62 @@ class FieldWidget(QWidget, FieldView):
             self.series.setUserColAttr(name, col_name, opt)
         
         self.table_manager.updateObjects(names)
+        self.mainwindow.seriesModified(True)
+    
+    def editUserCol(self, col_name : str):
+        """Edit a user-defined column.
+        
+            Params:
+                col_name (str): the name of the user-defined column to edit
+        """
+        structure = [
+            ["Column name:"],
+            [(True, "text", col_name)],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", self.series.user_columns[col_name])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
+            return
+        
+        name = response[0]
+        opts = response[1]
+
+        if name != col_name and name in self.series.user_columns:
+            notify("This group already exists.")
+            return
+        
+        self.series_states.addState()
+        self.series.editUserCol(col_name, name, opts)
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.createContextMenus()
+
+    def addUserCol(self):
+        """Add a user-defined column."""
+        structure = [
+            ["Column name:"],
+            [(True, "text", "")],
+            [" "],
+            ["Options:"],
+            [(True, "multitext", [])]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Add Column")
+        if not confirmed:
+            return
+    
+        name = response[0]
+        opts = response[1]
+
+        if name in self.series.getOption("object_columns"):
+            notify("This column already exists.")
+            return
+        
+        self.series_states.addState()
+        self.series.addUserCol(name, opts)
+
+        self.mainwindow.seriesModified(True)
+        self.mainwindow.createContextMenus()
     
     def setHosts(self):
         """Set the host of the selected object(s)."""

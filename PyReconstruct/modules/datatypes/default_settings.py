@@ -1,8 +1,10 @@
 import os
 
+# MFO = modifiable from options dialog
+
 default_settings = {
     # user
-    "user": os.getlogin(),
+    "username": os.getlogin(),  # MFO
 
     # backup
     # "backup_dir": "",
@@ -32,29 +34,29 @@ default_settings = {
     "backup_suffix_str": "",
 
     # misc preferences
-    "left_handed": False,
-    "utc": False,
+    "left_handed": False,  # MFO
+    "utc": False,  # MFO
 
     # view
-    "3D_xy_res": 0,  # 0-100
-    "3D_smoothing": "humphrey",
-    "smoothing_iterations": 10,
-    "show_ztraces": True,
-    "fill_opacity": 0.2,
-    "find_zoom": 95.0,
-    "show_flags": "unresolved",
-    "display_closest": True,
-    "flag_size": 14,
+    "3D_xy_res": 0,  # 0-100  # MFO
+    "3D_smoothing": "humphrey",  # MFO
+    "smoothing_iterations": 10,  # MFO
+    "show_ztraces": True,  # MFO
+    "fill_opacity": 0.2,  # MFO
+    "find_zoom": 95.0,  # MFO
+    "show_flags": "unresolved",  # MFO
+    "display_closest": True,  # MFO
+    "flag_size": 14,  # MFO
 
     # mouse tools
-    "pointer": ["lasso", "exc"],
-    "auto_merge": False,
-    "trace_mode": "combo",  # combo, poly, scribble
-    "knife_del_threshold": 1.0,
-    "grid": [1, 1, 1, 1, 1, 1],
-    "sampling_frame_grid": True,
-    "flag_name": "",
-    "flag_color": [255, 0, 0],
+    "pointer": ["lasso", "exc"],  # MFO
+    "auto_merge": False,  # MFO
+    "trace_mode": "combo",  # combo, poly, scribble  # MFO
+    "knife_del_threshold": 1.0,  # MFO
+    "grid": [1, 1, 1, 1, 1, 1],  # MFO
+    "sampling_frame_grid": True,  # MFO
+    "flag_name": "",  # MFO
+    "flag_color": [255, 0, 0],  # MFO
     "palette_inc_all": True,
 
     # shortcuts 
@@ -116,16 +118,20 @@ default_settings = {
     "usestamp_act": "S",
     "usegrid_act": "G",
     "useflag_act": "F",
+    "usehost_act": "Q",
 
     # series-related
-    "series_code_pattern": "[0-9A-Za-z]+",
+    "series_code_pattern": "[0-9A-Za-z]+",  # MFO
 
     # theme
-    "theme": "default",
+    "theme": "default",  # MFO
 
     # 3D
-    "translate_step_3D": 0.1,
-    "rotate_step_3D": 10,
+    "translate_step_3D": 0.1,  # MFO
+    "rotate_step_3D": 10,  # MFO
+
+    # recently opened series
+    "recently_opened_series": []
 }
 
 default_series_settings = {

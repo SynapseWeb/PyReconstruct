@@ -38,7 +38,7 @@ from PyReconstruct.modules.gui.popup import (
 
 class ObjectTableWidget(DataTable):
 
-    def __init__(self, series : Series, mainwindow : QWidget, manager):
+    def __init__(self, series : Series, mainwindow : QWidget, manager, hidden=False):
         """Create the object table dock widget.
         
             Params:
@@ -64,7 +64,10 @@ class ObjectTableWidget(DataTable):
         self.static_columns = ["Name"]
         self.createTable()
 
-        self.show()
+        if hidden:
+            self.hide()
+        else:
+            self.show()
     
     def createMenus(self):
         """Create the menu for the object table widget."""
@@ -160,7 +163,7 @@ class ObjectTableWidget(DataTable):
                 [
                     ("columns_act", "Set columns...", "", self.setColumns),
                     None,
-                    ("addcolumn_act", "Create categorical column...", "", self.addUserCol),
+                    ("addcolumn_act", "Create categorical column...", "", self.mainwindow.field.addUserCol),
                     ("removecolumn_act", "Delete categorical column...", "", self.removeUserCol),
                     None,
                     {
@@ -182,121 +185,26 @@ class ObjectTableWidget(DataTable):
         populateMenuBar(self, self.menubar, menubar_list)
 
         # create the right-click menu
-        context_menu_list = [
-            ("editattribtues_act", "Edit attributes of traces...", "", self.editAttributes),
-            None,
-            {
-                "attr_name" : "objattrsmenu",
-                "text": "Object attributes",
-                "opts":
-                [
-                    ("editcomment_act", "Comment...", "", self.editComment),
-                    None,
-                    ("sethosts_act", "Set host(s)...", "", self.setHosts),
-                    ("clearhosts_act", "Clear host(s)...", "", self.clearHosts),
-                    ("displayinhabitants_act", "Display tree of inhabitants", "", lambda : self.displayHostTree(False)),
-                    ("displayhosts_act", "Display tree of hosts", "", self.displayHostTree),
-                    None,
-                    ("addgroup_act", "Add to group...", "", self.addToGroup),
-                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
-                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups),
-                    None,
-                    ("setalignment_act", "Change object alignment...", "", self.editAlignment),
-                    None,
-                    ("lockobj_act", "Lock", "", self.lockObjects),
-                    ("unlockobj_act", "Unlock", "", lambda : self.lockObjects(False))
-                ]
-            },
-            {
-                "attr_name": "operationsmenu",
-                "text": "Operations",
-                "opts":
-                [
-                    ("editradius_act", "Edit radius...", "", self.editRadius),
-                    ("editshape_act", "Edit shape...", "", self.editShape),
-                    None,
-                    ("splitobj_act", "Split traces into individual objects", "", self.splitObject),
-                    None,
-                    ("hideobj_act", "Hide", "", self.hideObj),
-                    ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
-                    None,
-                    ("removealltags_act", "Remove all tags", "", self.removeAllTags),
-                    None,
-                    ("lockobj_act1", "Lock", "", self.lockObjects),
-                    ("unlockobj_act1", "Unlock", "", lambda : self.lockObjects(False))
-                ]
-            },
-            getUserColsMenu(self.series, self.addUserCol, self.setUserCol, self.editUserCol),
-            {
-                "attr_name": "curatemenu",
-                "text": "Set curation",
-                "opts":
-                [
-                    ("blankcurate_act", "Blank", "", lambda : self.bulkCurate("")),
-                    ("needscuration_act", "Needs curation", "", lambda : self.bulkCurate("Needs curation")),
-                    ("curated_act", "Curated", "", lambda : self.bulkCurate("Curated"))
-                ]
-            },
-            {
-                "attr_name": "menu_3D",
-                "text": "3D",
-                "opts":
-                [
-                    ("addto3D_act", "Add to scene", "", self.addTo3D),
-                    ("remove3D_act", "Remove from scene", "", self.remove3D),
-                    {
-                        "attr_name": "Export",
-                        "text": "Export",
-                        "opts":
-                        [
-                            ("export3D_act", "Wavefront (.obj)", "", lambda : self.exportAs3D("obj")),
-                            ("export3D_act", "Object File Format (.off)", "", lambda : self.exportAs3D("off")),
-                            ("export3D_act", "Stanford PLY (.ply)", "", lambda : self.exportAs3D("ply")),
-                            ("export3D_act", "Stl (.stl)", "", lambda : self.exportAs3D("stl")),
-                            ("export3D_act", "Collada (.dae) - requires collada", "", lambda : self.exportAs3D("dae")),
-                        ]
-                        
-                    },
-                    None,
-                    ("edit3D_act", "Edit 3D settings...", "", self.edit3D)
-                ]
-            },
-            {
-                "attr_name": "ztrace_menu",
-                "text": "Create ztrace",
-                "opts":
-                [
-                    ("csztrace_act", "On contour midpoints", "", self.createZtrace),
-                    ("atztrace_act", "From trace sequence", "", lambda : self.createZtrace(cross_sectioned=False)),
-                ]
-            },
-            None,
-            ("history_act", "View history", "", self.viewHistory),
-            None,
-            ("setpalette_act", "Copy attributes to palette", "", self.setPalette),
-            ("copy_act", "Copy", "", self.table.copy),
-            None,
-            ("delete_act", "Delete", "", self.deleteObjects)
-        ]
+        context_menu_list = self.mainwindow.field.getObjMenu()
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
 
-        self.locked_actions = [
-            "editattribtues_act",
-            "editcomment_act",
-            "addgroup_act",
-            "removegroup_act",
-            "removeallgroups_act",
-            "setalignment_act",
-            "editradius_act",
-            "editshape_act",
-            "splitobj_act",
-            "hideobj_act",
-            "unhideobj_act",
-            "removealltags_act",
-            "curatemenu",
-            "delete_act",
-        ]
+        # self.locked_actions = [
+        #     "editattribtues_act",
+        #     "editcomment_act",
+        #     "addgroup_act",
+        #     "removegroup_act",
+        #     "removeallgroups_act",
+        #     "setalignment_act",
+        #     "editradius_act",
+        #     "editshape_act",
+        #     "splitobj_act",
+        #     "hideobj_act",
+        #     "unhideobj_act",
+        #     "removealltags_act",
+        #     "curatemenu",
+        #     "delete_act",
+        # ]
     
     def updateTitle(self):
         """Update the title of the table."""
@@ -546,24 +454,24 @@ class ObjectTableWidget(DataTable):
         else:
             self.findFirst()
     
-    def checkLocked(self, obj_names : list, lock_actions=True):
-        """Check for locked objects within a list of obj names.
+    # def checkLocked(self, obj_names : list, lock_actions=True):
+    #     """Check for locked objects within a list of obj names.
         
-            Params:
-                obj_list (list): the names to check
-                lock_actions (bool): True if actions should be locked if locked object detected
-        """
-        locked = False
-        for name in obj_names:
-            if self.series.getAttr(name, "locked"):
-                locked = True
-                break
+    #         Params:
+    #             obj_list (list): the names to check
+    #             lock_actions (bool): True if actions should be locked if locked object detected
+    #     """
+    #     locked = False
+    #     for name in obj_names:
+    #         if self.series.getAttr(name, "locked"):
+    #             locked = True
+    #             break
         
-        if lock_actions:
-            for act_name in self.locked_actions:
-                getattr(self, act_name).setEnabled(not locked)
+    #     if lock_actions:
+    #         for act_name in self.locked_actions:
+    #             getattr(self, act_name).setEnabled(not locked)
         
-        return locked
+    #     return locked
     
     def getSelected(self, single=False):
         """Get the name of the objects highlighted by the user.
@@ -579,7 +487,7 @@ class ObjectTableWidget(DataTable):
             n = self.table.item(r, 0).text()
             obj_names.append(n)
 
-        self.checkLocked(obj_names)
+        # self.checkLocked(obj_names)
         
         if single:
             if len(obj_names) != 1:
@@ -649,7 +557,6 @@ class ObjectTableWidget(DataTable):
             Params:
                 recreate (bool): True if menus and table should be recreated in the event of a column change
         """
-        columns_changed = False
         update_table = False
         default_columns = self.series.getOption("object_columns", get_default=True)
 
@@ -658,542 +565,25 @@ class ObjectTableWidget(DataTable):
             col_name, b = pair
             if col_name not in dict(default_columns) and col_name not in self.series.user_columns:
                 self.columns.remove(pair)
-                columns_changed = True
                 update_table |= b
         
         # column has been added
         for col_name in self.series.user_columns:
             if col_name not in dict(self.columns):
                 self.columns.append((col_name, True))
-                columns_changed = True
                 update_table = True
         
         self.series.setOption("object_columns", self.columns)
         
         if recreate:
-            if columns_changed:
-                self.createMenus()
-                self.mainwindow.createContextMenus()
+            self.createMenus()
+            self.mainwindow.createContextMenus()
             if update_table:
                 self.createTable()
-
-    # RIGHT CLICK FUNCTIONS
-    
-    def editAttributes(self):
-        """Edit the name of an object in the entire series."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-
-        # ask the user for the new object name
-        if len(obj_names) == 1:
-            displayed_name = obj_names[0]
-            tags = self.series.data.getTags(obj_names[0])
-        else:
-            displayed_name = None
-            tags=None
-        
-        response, confirmed = TraceDialog(
-            self, 
-            name=displayed_name, 
-            tags=tags, 
-            is_obj_list=True
-        ).exec()
-
-        if not confirmed:
-            return
-        
-        attr_trace, sections = response
-        
-        # keep track of scroll bar position
-        vscroll = self.table.verticalScrollBar()
-        scroll_pos = vscroll.value()
-
-        self.mainwindow.saveAllData()
-        
-        # modify the object on every section
-        t = attr_trace
-        name, color, tags, mode = (
-            t.name, t.color, t.tags, t.fill_mode
-        )
-        self.series.editObjectAttributes(
-            obj_names,
-            name,
-            color,
-            tags,
-            mode,
-            sections,
-            series_states=self.series_states
-        )
-
-        all_names = set(obj_names)
-        if name: all_names.add(name)
-
-        # update the table data
-        if not name:
-            self.manager.updateObjects(all_names)
-        else:
-            # ensure that hosts are updated as well
-            self.manager.updateObjects(
-                self.series.host_tree.getObjToUpdate(all_names)
-            )
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-        
-        # reset scroll bar position
-        vscroll.setValue(scroll_pos)
-    
-    def editComment(self):
-        """Edit the comment of the object."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        if len(obj_names) == 1:
-            comment = self.series.getAttr(obj_names[0], "comment")
-        else:
-            comment = ""
-        new_comment, confirmed = QInputDialog.getText(
-            self,
-            "Object Comment",
-            "Comment:",
-            text=comment
-        )
-        if not confirmed:
-            return
-        
-        self.series_states.addState()
-        
-        for obj_name in obj_names:
-            self.series.setAttr(obj_name, "comment", new_comment)
-            self.series.addLog(obj_name, None, "Edit object comment")
-        self.updateData(obj_names)
-
-        self.mainwindow.seriesModified(True)
-    
-    def editAlignment(self):
-        """Edit alignment for object(s)."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            notify("Please select one object to edit.")
-            return
-        
-        structure = [
-            ["Alignment:", ("combo", list(self.mainwindow.field.section.tforms.keys()))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
-        if not confirmed:
-            return
-        
-        self.series_states.addState()
-        
-        alignment = response[0]
-        if not alignment: alignment = None
-        for obj_name in obj_names:
-            self.series.setAttr(obj_name, "alignment", alignment)
-            self.series.addLog(obj_name, None, "Edit default alignment")
-        
-        self.refresh()
-        self.mainwindow.seriesModified(True)
-        
-    def editRadius(self):
-        """Modify the radius of the trace on an entire object."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        new_rad, confirmed = QInputDialog.getText(
-            self, 
-            "Object Trace Radius",
-            "Enter the new radius:",
-        )
-        if not confirmed:
-            return
-
-        try:
-            new_rad = float(new_rad)
-        except ValueError:
-            return
-        
-        if new_rad <= 0:
-            return
-        
-        for name in obj_names:
-            a = self.series.getAttr(name, "alignment")
-            if a and a != self.series.alignment:
-                response = QMessageBox.question(
-                    self,
-                    "Alignment Conflict",
-                    "The field alignment does not match the object alignment.\nWould you like to continue?",
-                    buttons=(
-                        QMessageBox.Yes |
-                        QMessageBox.No 
-                    )
-                )
-                if response != QMessageBox.Yes:
-                    return
-        
-        self.mainwindow.saveAllData()
-        
-        # iterate through all sections
-        self.series.editObjectRadius(
-            obj_names,
-            new_rad,
-            self.series_states
-        )
-        
-        # update the table data
-        self.manager.updateObjects(obj_names)
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-    
-    def editShape(self):
-        """Modify the shape of the traces on an entire object."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        new_shape, confirmed = ShapesDialog(self).exec()
-        if not confirmed:
-            return
-        
-        self.mainwindow.saveAllData()
-        
-        # iterate through all sections
-        self.series.editObjectShape(
-            obj_names,
-            new_shape,
-            self.series_states
-        )
-        
-        # update the table data
-        self.manager.updateObjects(obj_names)
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-    
-    def hideObj(self, hide=True):
-        """Edit whether or not an object is hidden in the entire series.
-        
-            Params:
-                hide (bool): True if the object should be hidden
-        """
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        self.mainwindow.saveAllData()
-
-        # iterate through sections and hide the traces
-        self.series.hideObjects(obj_names, hide, self.series_states)
-        self.manager.updateObjects(obj_names)
-            
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-
-    def addTo3D(self):
-        """Generate a 3D view of an object"""
-        obj_names = self.getSelected()
-        if obj_names:
-            self.mainwindow.addTo3D(obj_names)
-    
-    def remove3D(self):
-        """Remove object(s) from the scene."""
-        obj_names = self.getSelected()
-        if obj_names:
-            self.mainwindow.removeFrom3D(obj_names)
-
-    def exportAs3D(self, export_type):
-        """Export 3D objects."""
-        obj_names = self.getSelected()
-        if obj_names:
-            self.mainwindow.exportAs3D(obj_names, export_type)
-
-    def addToGroup(self, log_event=True):
-        """Add objects to a group."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups).exec()
-
-        if not confirmed:
-            return
-        
-        self.series_states.addState()
-        
-        for name in obj_names:
-            self.series.object_groups.add(group=group_name, obj=name)
-            if log_event:
-                self.series.addLog(name, None, f"Add to group '{group_name}'")
-        
-        self.manager.updateObjects(obj_names)
-    
-    def removeFromGroup(self, log_event=True):
-        """Remove objects from a group."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups, new_group=False).exec()
-
-        if not confirmed:
-            return
-        
-        self.series_states.addState()
-        
-        for name in obj_names:
-            self.series.object_groups.remove(group=group_name, obj=name)
-            if log_event:
-                self.series.addLog(name, None, f"Remove from group '{group_name}'")
-        
-        self.manager.updateObjects(obj_names)
-    
-    def removeFromAllGroups(self, log_event=True):
-        """Remove a set of traces from all groups."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        self.series_states.addState()
-        
-        for name in obj_names:
-            self.series.object_groups.removeObject(name)
-            if log_event:
-                self.series.addLog(name, None, f"Remove from all object groups")
-            
-        self.manager.updateObjects(obj_names)
-    
-    def removeAllTags(self):
-        """Remove all tags from all traces on selected objects."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-                
-        self.mainwindow.saveAllData()
-
-        # iterate through all the sections
-        self.series.removeAllTraceTags(obj_names, self.series_states)
-
-        self.manager.updateObjects(obj_names)
-
-        # update the view
-        self.mainwindow.field.reload()        
-        self.mainwindow.seriesModified(True)
-    
-    def viewHistory(self):
-        """View the history for a set of objects."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        HistoryTableWidget(self.series.getFullHistory(), self.mainwindow, obj_names)
-    
-    def createZtrace(self, cross_sectioned=True):
-        """Create a ztrace from selected objects."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        self.mainwindow.saveAllData()
-        self.series_states.addState()
-
-        for name in obj_names:
-            self.series.createZtrace(name, cross_sectioned)
-        
-        self.mainwindow.seriesModified(True)
-        self.mainwindow.field.reload()
-        self.mainwindow.field.table_manager.updateZtraces()
-
-    def deleteObjects(self, obj_names=None):
-        """Delete an object from the entire series."""
-        if obj_names is None:
-            obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        self.mainwindow.saveAllData()
-
-        # get the objects that will require updating once deleted (include hosted objects)
-        modified_objs = self.series.host_tree.getObjToUpdate(obj_names)
-
-        # delete the object on every section
-        self.series.deleteObjects(obj_names, self.series_states)
-
-        # update the dictionary data and tables
-        self.manager.updateObjects(modified_objs)
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
     
     def backspace(self):
-        """Called when the user hits backspace."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        if self.checkLocked(obj_names):
-            return
-        
-        self.deleteObjects()
-    
-    def edit3D(self):
-        """Edit the 3D options for an object or set of objects."""
-        obj_names = self.getSelected()
-        if not obj_names:
-            return
-        
-        # check for object names and opacities
-        type_3D = self.series.getAttr(obj_names[0], "3D_mode")
-        opacity = self.series.getAttr(obj_names[0], "3D_opacity")
-        for name in obj_names[1:]:
-            new_type = self.series.getAttr(name, "3D_mode")
-            new_opacity = self.series.getAttr(name, "3D_opacity")
-            if type_3D != new_type:
-                type_3D = None
-            if opacity != new_opacity:
-                opacity = None
-        
-        structure = [
-            ["3D Type:", ("combo", ["surface", "spheres", "contours"], type_3D)],
-            ["Opacity (0-1):", ("float", opacity, (0,1))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "3D Object Settings")
-        if not confirmed:
-            return
-        
-        new_type, new_opacity = response
-
-        self.mainwindow.saveAllData()
-        self.series_states.addState()
-
-        # set the series settings
-        for name in obj_names:
-            if new_type:
-                self.series.setAttr(name, "3D_mode", new_type)
-            if new_opacity is not None:
-                self.series.setAttr(name, "3D_opacity", new_opacity)
-                    
-        self.mainwindow.seriesModified(True)
-    
-    def bulkCurate(self, curation_status : str):
-        """Set the curation status for multiple selected objects.
-        
-            Params:
-                curation_status (str): "", "Needs curation" or "Curated"
-        """
-        names = self.getSelected()
-        if not names:
-            return
-        
-        # prompt assign to
-        if curation_status == "Needs curation":
-            assign_to, confirmed = QInputDialog.getText(
-                self,
-                "Assign to",
-                "Assign curation to username:\n(press enter to leave blank)"
-            )
-            if not confirmed:
-                return
-        else:
-            assign_to = ""
-        
-        self.series_states.addState()
-        
-        self.series.setCuration(names, curation_status, assign_to)
-        self.manager.updateObjects(names)
-        self.mainwindow.seriesModified(True)
-    
-    def lockObjects(self, lock=True):
-        """Locked the selected objects."""
-        names = self.getSelected()
-
-        self.series_states.addState()
-
-        for name in names:
-            self.series.setAttr(name, "locked", lock)
-
-        self.manager.updateObjects(names)
-        self.mainwindow.field.deselectAllTraces()
-
-        self.mainwindow.seriesModified(True)
-    
-    def setPalette(self):
-        """Set the selected object name as the name of the selected palette trace."""
-        name = self.getSelected(single=True)
-        if not name:
-            return
-        
-        self.mainwindow.setPaletteButtonFromObj(name)
-    
-    def splitObject(self):
-        """Split an object into one object per trace."""
-        name = self.getSelected(single=True)
-        if not name:
-            return
-        
-        self.mainwindow.saveAllData()
-        self.series_states.addState()
-
-        series_states = self.mainwindow.field.series_states
-        new_names = self.series.splitObject(name, series_states)
-        new_names.add(name)
-
-        self.manager.updateObjects(new_names)
-        
-        self.mainwindow.seriesModified(True)
-        self.mainwindow.field.reload()
-    
-    def setUserCol(self, col_name : str, opt : str, log_event=True):
-        """Set the categorical user column for an object.
-        
-            Params:
-                col_name (str): the name of the user-defined column
-                opt (str): the option to set for the object(s)
-        """
-        names = self.getSelected()
-        if not names:
-            return
-        
-        self.series_states.addState()
-
-        for name in names:
-            self.series.setUserColAttr(name, col_name, opt)
-        
-        if log_event:
-            for name in names:
-                self.series.addLog(name, None, f"Set user column {col_name} as {opt}")
-        
-        self.updateData(names)
-
-        self.mainwindow.seriesModified(True)
-    
-    def displayHostTree(self, hosts=True):
-        """Display the hosts/travelers of an object in ASCII tree representation.
-        
-            Params:
-                hosts (bool): True if hosts, False if travelers
-        """
-        name = self.getSelected(single=True)
-        if not name:
-            return
-        
-        t = TextWidget(
-            self.mainwindow,
-            self.series.host_tree.getASCII(name, hosts),
-            "Host Tree" if hosts else "Inhabitant Tree",
-        )
-        t.output.setFont("Courier New")
-
+        """Called when backspace is pressed."""
+        self.mainwindow.field.deleteObjects()
 
     # MENU-RELATED FUNCTIONS     
     
@@ -1327,15 +717,6 @@ class ObjectTableWidget(DataTable):
         
         self.mainwindow.seriesModified(True)
     
-    def addUserCol(self):
-        """Add a user-defined column."""
-        # run through the field
-        self.mainwindow.field.addUserCol()
-
-        self.updateObjCols()
-        self.manager.recreateTables()
-        self.mainwindow.seriesModified(True)
-    
     def removeUserCol(self):
         """Remove a user-defined column."""
         user_col_names = list(self.series.user_columns.keys())
@@ -1351,21 +732,7 @@ class ObjectTableWidget(DataTable):
         
         self.series.removeUserCol(response[0])
 
-        self.updateObjCols()
-        self.manager.recreateTables()
-        self.mainwindow.seriesModified(True)
-    
-    def editUserCol(self, col_name : str):
-        """Edit a user-defined column.
-        
-            Params:
-                col_name (str): the name of the user-defined column to edit
-        """
-        # run through the field
-        self.mainwindow.field.editUserCol(col_name)
-
-        self.updateObjCols()
-        self.manager.recreateTables()
+        self.manager.updateObjCols()
         self.mainwindow.seriesModified(True)
     
     def toggleUserColFilter(self, col_name : str, opt_name : str):
@@ -1422,55 +789,6 @@ class ObjectTableWidget(DataTable):
         
         self.series.importUserColsText(fp)
         self.updateObjCols()
-    
-    def setHosts(self):
-        """Set the host(s) for the selected object(s)."""
-        names = self.getSelected()
-        if not names:
-            return
-        
-        if len(names) == 1:
-            current_hosts = self.series.getObjHosts(names[0])
-        else:
-            current_hosts = []
-        
-        structure = [
-            ["Host Name:"],
-            [(True, "multicombo", list(self.series.data["objects"].keys()), current_hosts)]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Object Host")
-        if not confirmed:
-            return
-        host_names = list(set(response[0]))
-        
-        # check to ensure that objects are not hosts of each other
-        for hn in host_names:
-            if hn in names:
-                notify("An object cannot be a host of itself.")
-                return
-            if bool(set(names) & set(self.series.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
-                notify("Objects cannot be hosts of each other.")
-                return
-        
-        self.series_states.addState()
-        self.series.setObjHosts(names, host_names)
-
-        self.manager.updateObjects(
-            self.series.host_tree.getObjToUpdate(names)
-        )
-    
-    def clearHosts(self):
-        """Clear the host(s) for the selected object(s)."""
-        names = self.getSelected()
-        if not names:
-            return
-        
-        self.series_states.addState()
-        self.series.clearObjHosts(names)
-        
-        self.manager.updateObjects(
-            self.series.host_tree.getObjToUpdate(names)
-        )
     
     def setHostFilter(self):
         """Set the host filter."""

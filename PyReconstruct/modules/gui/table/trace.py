@@ -46,6 +46,8 @@ class TraceTableWidget(DataTable):
         self.group_filters = set()
         self.hide_filter = "all"
 
+        self.temp_selected = None  # indicates items that were checked--this overrides selected items in the table ONCE
+
         super().__init__("trace", series, mainwindow, manager)
         self.static_columns = ["Name"]
         self.rows = []
@@ -243,27 +245,7 @@ class TraceTableWidget(DataTable):
         populateMenuBar(self, self.menubar, menubar_list)
 
         # create the right-click menu
-        context_menu_list = [
-            ("edit_act", "Edit...", "", self.editTraces),
-            {
-                "attr_name": "stampmenu",
-                "text": "Stamp attributes",
-                "opts":
-                [
-                    ("changeradius_act", "Edit radius...", "", self.editRadius),
-                    ("changeshape_act", "Edit shape...", "", self.editShape)
-                ]
-            },
-            None,
-            ("hide_act", "Hide", "", self.hideTraces),
-            ("unhide_act", "Unhide", "", lambda : self.hideTraces(hide=False)),
-            None,
-            ("find_act", "Find", "", self.findTrace),
-            None,
-            ("copy_act", "Copy", "", self.table.copy),
-            None,
-            ("delete_act", "Delete", "", self.deleteTraces)
-        ]
+        context_menu_list = self.mainwindow.field.getTraceMenu(is_in_field=False)
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
 
@@ -324,16 +306,23 @@ class TraceTableWidget(DataTable):
             if not unlocked:
                 return
 
-        items = [(name, index)]
         if self.horizontal_headers[c] == "Hidden":
-            self.hideTraces(value, items)
+            self.temp_selected = [(name, index)]
+            self.mainwindow.field.hideTraces(hide=value)
         elif self.horizontal_headers[c] == "Closed":
-            self.closeTraces(value, items)
+            self.temp_selected = [(name, index)]
+            self.mainwindow.field.closeTraces(closed=value)
 
         self.process_check_event = True
     
     def getSelected(self, include_locked=False, single=False):
-        """Get the trace items that iare selected by the user."""
+        """Get the trace items that are selected by the user."""
+        # check if user checked an item recently
+        if self.temp_selected:
+            selected_items = self.temp_selected.copy()
+            self.temp_selected = None
+            return selected_items
+        
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
             return
@@ -375,123 +364,6 @@ class TraceTableWidget(DataTable):
             traces.append(self.section.contours[name][index])
         
         return traces
-
-    # RIGHT CLICK FUNCTIONS
-
-    def editTraces(self):
-        """Edit a set of traces."""
-        items = self.getSelected()
-        if items is None:
-            return
-        
-        traces = self.getTraces(items)
-        
-        new_attrs, confirmed = TraceDialog(
-            self,
-            traces
-        ).exec()
-        if not confirmed:
-            return
-        
-        self.mainwindow.field.section.editTraceAttributes(
-            traces, 
-            new_attrs.name, 
-            new_attrs.color, 
-            new_attrs.tags, 
-            new_attrs.fill_mode
-        )
-        self.mainwindow.field.generateView(generate_image=False)
-        self.mainwindow.field.saveState()
-
-        self.manager.updateObjects()
-    
-    def hideTraces(self, hide=True, items=None):
-        """Hide a set of traces.
-        
-            Params:
-                hide (bool): True if the traces should be hidden
-                items (list): the specific items indicating the traces to modify
-        """
-        if items is None:
-            items = self.getSelected()
-        if not items:
-            return
-        
-        traces = self.getTraces(items)
-
-        self.mainwindow.field.section.hideTraces(traces, hide)
-        self.mainwindow.field.generateView()
-        self.mainwindow.field.saveState()
-    
-    def closeTraces(self, closed=True, items=None):
-        """Close a set of traces.
-        
-            Params:
-                closed (bool): True if the traces should be closed
-                items (list): the specific items indicating the traces to modify
-        """
-        if items is None:
-            items = self.getSelected()
-        if not items:
-            return
-        
-        traces = self.getTraces(items)
-        
-        self.mainwindow.field.section.closeTraces(traces, closed)
-        self.mainwindow.field.generateView()
-        self.mainwindow.field.saveState()
-    
-    def editRadius(self):
-        """Edit the radius for a set of traces."""
-        items = self.getSelected()
-        if items is None:
-            return
-        
-        traces = self.getTraces(items)
-
-        existing_radius = round(traces[0].getRadius(), 7)
-
-        for trace in traces[1:]:
-            if abs(existing_radius - trace.getRadius()) > 1e-6:
-                existing_radius = ""
-                break
-        
-        new_rad, confirmed = QInputDialog.getText(
-            self,
-            "New Trace Radius",
-            "Enter the new trace radius:",
-            text=str(existing_radius)
-        )
-        if not confirmed:
-            return
-        try:
-            new_rad = float(new_rad)
-        except ValueError:
-            return
-        
-        self.mainwindow.field.section.editTraceRadius(traces, new_rad)
-        self.mainwindow.field.generateView(generate_image=False)
-        self.mainwindow.field.saveState()
-
-        self.manager.updateObjects()
-    
-    def editShape(self):
-        """Modify the shape of the traces on an entire object."""
-        items = self.getSelected()
-        if items is None:
-            return
-        
-        traces = self.getTraces(items)
-        
-        new_shape, confirmed = ShapesDialog(self).exec()
-        if not confirmed:
-            return
-        
-        self.mainwindow.field.section.editTraceShape(traces, new_shape)
-        self.mainwindow.field.generateView(generate_image=False)
-        self.mainwindow.field.saveState()
-
-        self.manager.updateObjects()
           
     def findTrace(self):
         """Select a trace on the section."""
@@ -506,21 +378,9 @@ class TraceTableWidget(DataTable):
         super().mouseDoubleClickEvent(event)
         self.findTrace()
     
-    def deleteTraces(self):
-        """Delete a set of traces."""
-        items = self.getSelected()
-        if not items:
-            return
-        
-        traces = self.getTraces(items)
-
-        self.mainwindow.field.deleteTraces(traces)
-        
-        self.manager.updateObjects()
-    
     def backspace(self):
         """Called when backspace is pressed."""
-        self.deleteTraces()
+        self.mainwindow.field.deleteTraces()
     
     def traceContextMenu(self, event=None):
         """Executed when button is right-clicked: pulls up menu for user to modify traces."""

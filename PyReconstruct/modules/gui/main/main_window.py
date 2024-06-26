@@ -501,54 +501,27 @@ class MainWindow(QMainWindow):
         """Create the right-click menus used in the field."""
         # create the user columns options
         field_menu_list = [
-            ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
             {
-                "attr_name": "objectattrsmenu",
-                "text": "Object attributes",
-                "opts":
-                [
-                    ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
-                    ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
-                ]
+                "attr_name": "tracemenu",
+                "text": "Trace",
+                "opts": self.field.getTraceMenu()
             },
             {
-                "attr_name": "modifymenu",
-                "text": "Modify",
-                "opts":
-                [
-                    ("mergetraces_act", "Merge traces", self.series, self.field.mergeSelectedTraces),
-                    ("mergeobjects_act", "Merge attributes...", self.series, lambda : self.field.mergeSelectedTraces(merge_attrs=True)),
-                    None,
-                    ("makenegative_act", "Make negative", "", self.field.makeNegative),
-                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                ]
-            },
-            getUserColsMenu(self.series, self.field.addUserCol, self.field.setUserCol, self.field.editUserCol),
-            {
-                "attr_name": "lockmenu",
-                "text": "Lock/Unlock",
-                "opts":
-                [
-                    ("lockobject_act", "Lock object", "", self.field.lockObjects),
-                    ("unlockobject_act", "Unlock object", "", self.field.unlockObject),
-                ]
+                "attr_name": "objectmenu",
+                "text": "Object",
+                "opts": self.field.getObjMenu()
             },
             {
-                "attr_name": "curatemenu",
-                "text": "Set curation",
-                "opts":
-                [
-                    ("blankcurate_act", "Blank", "", lambda : self.field.setCuration("")),
-                    ("needscuration_act", "Needs curation", "", lambda : self.field.setCuration("Needs curation")),
-                    ("curated_act", "Curated", "", lambda : self.field.setCuration("Curated"))
-                ]
+                "attr_name": "ztracemenu",
+                "text": "Ztrace",
+                "opts": self.field.getZtraceMenu()
             },
+            None,
             {
                 "attr_name": "viewmenu",
                 "text": "View",
                 "opts":
                 [
-                    ("hidetraces_act", "Hide traces", self.series, self.field.hideTraces),
                     ("unhideall_act", "Unhide all traces", self.series, self.field.unhideAllTraces),
                     None,
                     ("hideall_act", "Toggle hide all", self.series, self.field.toggleHideAllTraces),
@@ -568,17 +541,6 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", self.series, self.field.selectAllTraces),
             ("deselect_act", "Deselect traces", self.series, self.field.deselectAllTraces),
             None,
-            ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
-            None,
-            {
-                "attr_name": "deleteallmenu",
-                "text": "Delete all",
-                "opts":
-                [
-                    ("deletealltraces_act", "traces with same name", "", self.field.deleteAll),
-                    ("deletealltracestags_act", "traces with same name and tags", "", lambda : self.field.deleteAll(True))
-                ]
-            },
             ("delete_act", "Delete", "Del", self.backspace),
         ]
         self.field_menu = QMenu(self)
@@ -586,30 +548,14 @@ class MainWindow(QMainWindow):
 
         # organize actions
         self.trace_actions = [
-            self.edittrace_act,
-            self.objectattrsmenu,
-            self.objcomment_act,
-            self.sethosts_act,
-            self.modifymenu,
-            self.mergetraces_act,
-            self.makepositive_act,
-            self.makenegative_act,
-            self.lockmenu,
-            self.lockobject_act,
-            self.unlockobject_act,
-            self.curatemenu,
-            self.blankcurate_act,
-            self.needscuration_act,
-            self.curated_act,
-            self.hidetraces_act,
+            self.tracemenu,
+            self.objectmenu,
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,
-            self.createflag_act,
-            self.deleteallmenu
         ]
         self.ztrace_actions = [
-            self.edittrace_act
+            self.ztracemenu
         ]
 
         # create the label menu
@@ -663,15 +609,6 @@ class MainWindow(QMainWindow):
                 a.setEnabled(False)
             for a in self.ztrace_actions:
                 a.setEnabled(False)
-            
-        # check for objects (to allow merging)
-        names = set()
-        for trace in self.field.section.selected_traces:
-            names.add(trace.name)
-        if len(names) > 1:
-            self.mergeobjects_act.setEnabled(True)
-        else:
-            self.mergeobjects_act.setEnabled(False)
 
         # check labels
         if clicked_label:
@@ -682,12 +619,6 @@ class MainWindow(QMainWindow):
             else:
                 self.importlabels_act.setEnabled(False)
                 self.mergelabels_act.setEnabled(False)
-        
-        # check if locked trace was right-clicked
-        if clicked_trace and self.series.getAttr(clicked_trace.name, "locked"):
-            self.unlockobject_act.setEnabled(True)
-        else:
-            self.unlockobject_act.setEnabled(False)
         
         # MENUBAR
 
@@ -2802,7 +2733,6 @@ class MainWindow(QMainWindow):
             )
 
         if "brightness/contrast profiles" in response:
-            print("wowze")
             import_as = response["brightness/contrast profiles"]
             self.series.importBC(  # cannot be undone
                 o_series,

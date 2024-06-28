@@ -401,8 +401,8 @@ class AllOptionsDialog(QDialog):
     def accept(self):
         """Overwritten--called when OK is pressed"""
         widgets = self.all_widgets.values()
-        for w in widgets:
-            if not w.accept():
+        for n, w in self.all_widgets.items():
+            if not w.accept(close=False):
                 return False
         for w in widgets:
             w.set()
@@ -449,7 +449,7 @@ class OptionWidget(QuickDialog):
         super().__init__(parent, structure, title, grid, include_confirm=False)
         self.series = series
         self.setOption = setOption
-    
+        
     def set(self):
         """Set the series option for the widget"""
         self.setOption(self.responses)

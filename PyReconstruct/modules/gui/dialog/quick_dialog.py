@@ -185,8 +185,12 @@ class QuickDialog(QDialog):
 
         self.setLayout(vlayout)
 
-    def accept(self):
-        """Overwritten from parent class."""
+    def accept(self, close=True):
+        """Overwritten from parent class.
+        
+            Params:
+                close (bool): True if widget should be closed when successful
+        """
         self.responses = []
         for input in self.inputs:
             r, is_valid = input.getResponse()
@@ -196,7 +200,8 @@ class QuickDialog(QDialog):
                 self.responses.append(r)
         self.responses = tuple(self.responses)
         
-        QDialog.accept(self)
+        if close: QDialog.accept(self)
+        
         return True
     
     def exec(self):

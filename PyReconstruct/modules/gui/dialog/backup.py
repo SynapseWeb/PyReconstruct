@@ -151,13 +151,17 @@ class BackupDialog(QDialog):
                 l.append(text.replace(" ", dl))
         self.save_name_lbl.setText(dl.join(l) + ".jser")
     
-    def accept(self):
-        """Overwritten from parent class."""
-        bdir = self.dir_widget.text()
-        if not os.path.isdir(bdir):
-            notify("Please enter a valid directory.")
-            return False
-        super().accept()
+    def accept(self, close=True):
+        """Overwritten from parent class.
+        
+            Params:
+                close (bool): True if close when successful
+        """
+        # bdir = self.dir_widget.text()
+        # if not os.path.isdir(bdir):
+        #     notify("Please enter a valid directory.")
+        #     return False
+        if close: super().accept()
         return True
     
     def set(self):

@@ -507,8 +507,11 @@ class Section():
                 log_event (bool): true if the event should be logged
         """
         for trace in traces:
+            a = self.series.getAttr(trace.name, "alignment")
+            if not a: a = self.series.alignment
+            tform = self.tforms[a]
             self.removeTrace(trace, log_event=False)
-            trace.resize(new_rad, self.tform)
+            trace.resize(new_rad, tform)
             self.addTrace(trace, log_event=False)
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify radius")

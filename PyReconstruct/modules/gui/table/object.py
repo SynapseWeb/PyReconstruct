@@ -820,20 +820,21 @@ class ObjectTableWidget(DataTable):
         if new_rad <= 0:
             return
         
-        for name in obj_names:
-            a = self.series.getAttr(name, "alignment")
-            if a and a != self.series.alignment:
-                response = QMessageBox.question(
-                    self,
-                    "Alignment Conflict",
-                    "The field alignment does not match the object alignment.\nWould you like to continue?",
-                    buttons=(
-                        QMessageBox.Yes |
-                        QMessageBox.No 
-                    )
-                )
-                if response != QMessageBox.Yes:
-                    return
+        # for name in obj_names:
+        #     a = self.series.getAttr(name, "alignment")
+        #     if a and a != self.series.alignment:
+        #         response = QMessageBox.question(
+        #             self,
+        #             "Alignment Conflict",
+        #             "The field alignment does not match the object alignment.\nWould you like to continue?",
+        #             buttons=(
+        #                 QMessageBox.Yes |
+        #                 QMessageBox.No 
+        #             )
+        #         )
+        #         if response != QMessageBox.Yes:
+        #             return
+        #         break
         
         self.mainwindow.saveAllData()
         

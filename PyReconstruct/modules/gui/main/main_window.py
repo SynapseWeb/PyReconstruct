@@ -676,7 +676,16 @@ class MainWindow(QMainWindow):
             ("Shift+Down", lambda : self.translate("down", "big")),
 
             ("Ctrl+Shift+Left", self.field.rotateTform),
-            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False))
+            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False)),
+
+            ("F1", lambda : self.field.scaleTform(sx=1.005)),
+            ("Shift+F1", lambda : self.field.scaleTform(sx=0.995)),
+            ("F2", lambda : self.field.scaleTform(sy=1.005)),
+            ("Shift+F2", lambda : self.field.scaleTform(sy=0.995)),
+            ("F3", lambda : self.field.shearTform(sx=0.005)),
+            ("Shift+F3", lambda : self.field.shearTform(sx=-0.005)),
+            ("F4", lambda : self.field.shearTform(sy=0.005)),
+            ("Shift+F4", lambda : self.field.shearTform(sy=-0.005)),
         ]
 
         for kbd, act in shortcuts:

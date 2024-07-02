@@ -359,6 +359,32 @@ class FieldWidgetData(FieldWidgetObject):
         )
         self.changeTform(new_tform)
     
+    def scaleTform(self, sx : float = 1, sy : float = 1):
+        """Scale a section transform.
+        
+            Params:
+                sx (float): scaling factor in x
+                sy (float): scaling factor in y
+        """
+        m = self.section.tform.getList()
+        m[0] *= sx
+        m[4] *= sy
+        new_tform = Transform(m)
+        self.changeTform(new_tform)
+    
+    def shearTform(self, sx : float = 0, sy : float = 0):
+        """Shear a section transform.
+        
+            Params:
+                sx (float): shear delta in x
+                sy (float): shear delta in y
+        """
+        m = self.section.tform.getList()
+        m[1] += sx
+        m[3] += sy
+        new_tform = Transform(m)
+        self.changeTform(new_tform)
+    
     def translate(self, dx : float, dy : float):
         """Translate the transform OR the selected traces.
         

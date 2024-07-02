@@ -172,15 +172,15 @@ def getReconcropperData(json_fp):
 
 def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
 
-    # grab the section file
-    try:
+    # # grab the section file
+    # try:
         
-        xml_section = process_section_file(section_fp)
-        fname = os.path.basename(section_fp)
+    xml_section = process_section_file(section_fp)
+    fname = os.path.basename(section_fp)
 
-    except Exception as e:
+    # except Exception as e:
 
-        notify(f"A problem has been encountered while importing:\n\n{section_fp}\n\nError:\n\n{e}")
+    #     notify(f"A problem has been encountered while importing:\n\n{section_fp}\n\nError:\n\n{e}")
 
     # get an empty section dict
     section_dict = Section.getEmptyDict()
@@ -225,16 +225,17 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
             xml_contour,
             xml_tform,
         )
-        # reduce the points on the trace
-        trace.points = reducePoints(
-            trace.points,
-            closed=trace.closed,
-            mag=2/section_dict["mag"]
-        )
-        if xml_contour.name in contours:
-            contours[xml_contour.name].append(trace.getList(include_name=False))
-        else:
-            contours[xml_contour.name] = [trace.getList(include_name=False)]
+        if len(trace.points) > 1:
+            # reduce the points on the trace
+            trace.points = reducePoints(
+                trace.points,
+                closed=trace.closed,
+                mag=2/section_dict["mag"]
+            )
+            if trace.name in contours:
+                contours[trace.name].append(trace.getList(include_name=False))
+            else:
+                contours[trace.name] = [trace.getList(include_name=False)]
     
     # save the section
     with open(os.path.join(hidden_dir, fname), "w") as f:

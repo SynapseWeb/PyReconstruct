@@ -204,6 +204,7 @@ class Section():
         
         # iterate through the contours and remove whitespace
         for cname in tuple(section_data["contours"].keys()):
+            print(f"'{cname}'")
             
             cname_trimmed = cname.strip()
             updated_cname = "_".join(cname_trimmed.split()).replace(",", "_")

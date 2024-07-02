@@ -159,10 +159,13 @@ def _get_points_int(points):
 
 
 def _get_points_float(points):
-    return zip(
-        [float(x.replace(",", "")) for x in points.split()][0::2],
-        [float(x.replace(",", "")) for x in points.split()][1::2]
-    )
+    if points:
+        return zip(
+            [float(x.replace(",", "")) for x in points.split()][0::2],
+            [float(x.replace(",", "")) for x in points.split()][1::2]
+        )
+    else:
+        return []
 
 
 def extract_series_contour_attributes(node):

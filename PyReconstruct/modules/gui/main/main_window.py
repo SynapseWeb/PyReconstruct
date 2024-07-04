@@ -932,7 +932,7 @@ class MainWindow(QMainWindow):
             Params:
                 series_obj (Series): the series object (optional)
         """
-        # user has opened an existing series
+        # user has another series open
         if self.series:
             first_open = False
             response = self.saveToJser(notify=True)
@@ -983,7 +983,7 @@ class MainWindow(QMainWindow):
 
                 # if a series file has been found
                 if new_series_fp:
-                    # ask the user if they want to open the unsaved series
+                    # ask the user if they want to open a previously unsaved series
                     open_unsaved = unsavedNotify()
                     if open_unsaved:
                         new_series = Series(new_series_fp, sections)
@@ -1010,20 +1010,25 @@ class MainWindow(QMainWindow):
                     else:
                         return
             
-            # clear the current series
+            # clear the series
             if self.series and not self.series.isWelcomeSeries():
                 self.series.close()
 
             self.series = new_series
 
-        # series has already been provided by other function
+        # else series already provided
         else:
+            # clear current series
+            if self.series and not self.series.isWelcomeSeries():
+                self.series.close()
+                
+            # set new series
             self.series = series_obj
         
         # set the title of the main window
         self.seriesModified(self.series.modified)
 
-        # set the explorer filepath
+        # set explorer filepath
         if not self.series.isWelcomeSeries() and self.series.jser_fp:
             settings = QSettings("KHLab", "PyReconstruct")
             settings.setValue("last_folder", os.path.dirname(self.series.jser_fp))
@@ -1066,7 +1071,7 @@ class MainWindow(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 "Zarr Scaling",
-                "Zarr file not scaled.\nWould you like to update the zarr with scales?",
+                "Zarr not scaled.\nWould you like to scale now?",
                 QMessageBox.Yes,
                 QMessageBox.No
             )
@@ -1181,7 +1186,7 @@ class MainWindow(QMainWindow):
                 series_fp (str): the filepath for the XML series
         """
 
-        # get xml series filepath from the user
+        # get xml series from user
         if not series_fp:
             series_fp = FileDialog.get(
                 "file",
@@ -1189,20 +1194,18 @@ class MainWindow(QMainWindow):
                 "Select XML Series",
                 filter="*.ser"
             )
-            if not series_fp: return  # exit function if user does not provide series
+            if not series_fp: return  # exit function if no series provided
 
-        # save and clear the existing backend series
-        self.saveToJser(notify=True, close=True)
-        
         # convert the series
         series = xmlToJSON(os.path.dirname(series_fp))
+
         if not series:
             return
 
-        # open the series
+        # open new series
         self.openSeries(series)
 
-        # prompt the user the save the series
+        # prompt user to save series
         self.saveAsToJser()
     
     def exportToXML(self, export_fp : str = None):
@@ -1506,7 +1509,7 @@ class MainWindow(QMainWindow):
         super().keyReleaseEvent(event)
     
     def saveAllData(self):
-        """Write current series and section data into backend JSON files."""
+        """Write current series and section data into hidden JSON files."""
         if self.series.isWelcomeSeries():
             return
         # # save the trace palette
@@ -1545,20 +1548,21 @@ class MainWindow(QMainWindow):
             self.series.setOption("autobackup", False)
     
     def saveToJser(self, notify=False, close=False):
-        """Save all data to JSER file.
+        """Save data to JSER file.
         
         Params:
-            save_data (bool): True if series and section files in backend should be save
-            close (bool): Deletes backend series if True
+            notify (bool): If true, display notification.
+            close (bool): If true, delete hidden series files.
         """
-        # save the series data
+
+        # store series data in hidden files
         self.saveAllData()
 
-        # if welcome series -> close without saving
+        # if welcome series, close without saving
         if self.series.isWelcomeSeries():
             return
         
-        # notify the user and check if series was modified
+        # notify user and series modified
         if notify and self.series.modified:
             save = saveNotify()
             if save == "no":
@@ -1568,27 +1572,27 @@ class MainWindow(QMainWindow):
             elif save == "cancel":
                 return "cancel"
         
-        # check if the user is closing and the series was not modified
+        # user closing and series not modified
         if close and not self.series.modified:
             self.series.close()
             return
 
-        # run save as if there is no jser filepath
+        # save-as if no jser filepath
         if not self.series.jser_fp:
             self.saveAsToJser(close=close)
         else:  
             self.backup(check_auto=True)
             self.series.saveJser(close=close)
         
-        # set the series to unmodified
+        # mark series as unmodified
         self.seriesModified(False)
     
     def saveAsToJser(self, close=False):
-        """Prompt the user to find a save location."""
-        # save the series data
+        """Prompt user to determine save location."""
+        # store series data in hidden files
         self.saveAllData()
 
-        # check for wlecome series
+        # if welcome series, close without saving
         if self.series.isWelcomeSeries():
             return
 
@@ -1602,32 +1606,33 @@ class MainWindow(QMainWindow):
         )
         if not new_jser_fp: return
         
-        # move the working hidden folder to the new jser directory
+        # move hidden folder to new jser directory
         self.series.move(
             new_jser_fp,
             self.field.section,
             self.field.b_section
         )
-        # clear the section states
+        
+        # clear section states
         self.field.series_states.clear()
         self.field.series_states[self.field.section]
         if self.field.b_section:
             self.field.series_states[self.field.b_section]
         
-        # save the file
+        # save file
         self.backup(check_auto=True)
         self.series.saveJser(close=close)
 
-        # set the series to unmodified
+        # mark series as unmodified
         self.seriesModified(False)
     
     def setBackup(self):
-        """Set up the autobackup directory and settings."""
+        """Set up backup directory and settings."""
         confirmed = BackupDialog(self, self.series).exec()
         self.seriesModified()
     
     def manualBackup(self):
-        """Back up the series to a specified location."""
+        """Back up series to a specified location."""
         self.saveAllData()
 
         response, confirmed = BackupCommentDialog(self, self.series).exec()

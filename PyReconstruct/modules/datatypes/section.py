@@ -202,10 +202,10 @@ class Section():
             if len(flag) == 6:
                 flag.insert(0, Flag.generateID())
         
-        # iterate through the contours and remove whitespace
+        # iterate through contours and remove whitespace
         for cname in tuple(section_data["contours"].keys()):
-            print(f"'{cname}'")
             
+            ## print(f"'{cname}'")
             cname_trimmed = cname.strip()
             updated_cname = "_".join(cname_trimmed.split()).replace(",", "_")
             

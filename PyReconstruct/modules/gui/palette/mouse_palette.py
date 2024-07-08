@@ -559,22 +559,16 @@ class MousePalette():
         b = round((b/100) ** 2 * 100) * (-1 if b < 0 else 1)
         if b == self.mainwindow.field.section.brightness:
             return
-        self.mainwindow.field.section_layer.setBrightness(b)
-        self.mainwindow.field.updateData()
+        self.mainwindow.field.setBrightness(b)
         self.updateBC()
-        self.mainwindow.field.generateView(generate_traces=False)
-        self.mainwindow.seriesModified(True)
     
     def setContrast(self, c : int):
         """Set the contrast for the current section."""
         c = round((c/100) ** 2 * 100) * (-1 if c < 0 else 1)
         if c == self.mainwindow.field.section.contrast:
             return
-        self.mainwindow.field.section_layer.setContrast(c)
-        self.mainwindow.field.updateData()
+        self.mainwindow.field.setContrast(c)
         self.updateBC()
-        self.mainwindow.field.generateView(generate_traces=False)
-        self.mainwindow.seriesModified(True)
     
     def getButtonCoords(self, group):
         """Get the coordinates for a button group.

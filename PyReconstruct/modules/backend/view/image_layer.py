@@ -85,15 +85,6 @@ class ImageLayer():
                 self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
                 self.image_found = True
     
-    def setSrcDir(self, src_dir : str):
-        """Set the immediate source directory and reload image.
-        
-            Params:
-                src_dir (str): the new directory for the images
-        """
-        self.series.src_dir = src_dir
-        self.loadImage()
-    
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : Transform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
         
@@ -130,43 +121,6 @@ class ImageLayer():
         br = (br_x, br_y)
 
         return bl, tl, tr, br
-    
-    def setBrightness(self, b : int, log_event=True):
-        """Set the brightness of the section."""
-        self.section.brightness = b
-        if self.section.brightness > 100:
-            self.section.brightness = 100
-        elif self.section.brightness < -100:
-            self.section.brightness = -100
-        
-        if log_event:
-            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
-    
-    def setContrast(self, c : int, log_event=True):
-        """Set the contrast of the section."""
-        self.section.contrast = c
-        if self.section.contrast > 100:
-            self.section.contrast = 100
-        elif self.section.contrast < -100:
-            self.section.contrast = -100
-        
-        if log_event:
-            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
-    
-    def changeBrightness(self, change : int, log_event=True):
-        """Change the brightness of the section.
-        
-            Params:
-                change (int): the degree to which brightness is changed
-        """
-        self.setBrightness(self.section.brightness + change, log_event)
-    
-    def changeContrast(self, change : int, log_event=True):
-        """Change the contrast of the section.
-        
-            Params:
-                change (float): the degree to which contrast is changed"""
-        self.setContrast(self.section.contrast + change, log_event)
     
     def _drawBrightness(self, image_layer):
         """Draw the brightness on the image field.
@@ -224,7 +178,7 @@ class ImageLayer():
                 image_layer (QPixmap): the image laye
         """
         # set attrs
-        self.window = window
+        self.series.window = window
         self.pixmap_dim = pixmap_dim
 
         # return blank if image was not found
@@ -236,7 +190,7 @@ class ImageLayer():
         # setup
         tform = self.section.tform
         mag = self.section.mag
-        wx, wy, ww, wh = tuple(self.window)
+        wx, wy, ww, wh = tuple(self.series.window)
         pmw, pmh = tuple(self.pixmap_dim)
         iw, ih = self.bw, self.bh
         s = self.scaling = pmw / (ww / mag)
@@ -350,7 +304,7 @@ class ImageLayer():
         for x, y in self.base_corners:
             x, y = (x * mag, y * mag)
             x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            x, y = fieldPointToPixmap(x, y, self.series.window, self.pixmap_dim, self.section.mag)
             self.bc_poly.append(QPoint(x, y))
         self._drawBrightness(image_layer)
         self._drawContrast(image_layer)

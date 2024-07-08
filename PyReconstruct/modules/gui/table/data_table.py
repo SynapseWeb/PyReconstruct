@@ -33,7 +33,7 @@ class DataTable(QDockWidget):
         self.series = series
         self.mainwindow = mainwindow
         # get the series states
-        self.series_states = mainwindow.field.series_states
+        self.series_states = manager.series_states
 
         # set desired format for widget
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)  # can be docked to right or left side
@@ -167,7 +167,7 @@ class DataTable(QDockWidget):
         filtered_data = self.getFiltered()
 
         # create the table object
-        self.table = CopyTableWidget(len(filtered_data), len(self.horizontal_headers), self.main_widget)
+        self.table = CopyTableWidget(self, len(filtered_data), len(self.horizontal_headers), self.main_widget)
 
         # connect table functions
         self.table.mouseDoubleClickEvent = self.mouseDoubleClickEvent

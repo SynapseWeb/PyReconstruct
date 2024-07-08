@@ -162,6 +162,11 @@ class TableManager():
             for t in l:
                 self.recreateTable(t)
     
+    def updateObjCols(self):
+        """Update the columns in the object lists."""
+        for table in self.tables["object"]:
+            table.updateObjCols()
+    
     def refresh(self):
         """Reload all of the section data.
         

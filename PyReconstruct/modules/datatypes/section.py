@@ -31,7 +31,7 @@ class Section():
             self.series.sections[n]
         )
 
-        self.selected_traces = []
+        self.selected_traces : list[Trace] = []
         self.selected_ztraces = []
         self.selected_flags = []
 
@@ -639,7 +639,7 @@ class Section():
         
         (Only meant for GUI use.)
         """
-        self.selected_traces = []
+        self.selected_traces : list[Trace] = []
         self.selected_ztraces = []
         self.selected_flags = []
     
@@ -648,6 +648,7 @@ class Section():
         
         (Only meant for GUI use.)
         """
+        self.deselectAllTraces()
         for trace in self.tracesAsList():
             self.addSelectedTrace(trace)
     
@@ -664,7 +665,7 @@ class Section():
         modified = False
 
         if not traces:
-            traces = self.selected_traces
+            traces = self.selected_traces.copy()
 
         for trace in traces:
             modified = True
@@ -673,7 +674,7 @@ class Section():
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify trace(s)")
         
-        self.selected_traces = []
+        self.selected_traces : list[Trace] = []
 
         return modified
 
@@ -721,22 +722,30 @@ class Section():
         
         return modified
     
-    def makeNegative(self, negative=True, log_event=True):
+    def makeNegative(self, traces : list = None, negative=True, log_event=True):
         """Make a set of traces negative.
 
         (Only meant for GUI use.)
         
             Params:
+                traces (list): the traces to make negative
                 negative (bool): the negative status of the traces to modify
                 log_event (bool): true if the event should be logged
         """
-        traces = self.selected_traces
+        if traces is None:
+            traces = self.selected_traces.copy()
+        modified = False
+
         for trace in traces:
             self.removeTrace(trace, log_event=False)
             trace.negative = negative
             self.addTrace(trace, log_event=False)
             if log_event:
                 self.series.addLog(trace.name, self.n, "Modify trace(s)")
+            modified = True
+        
+        return modified
+        
     
     def deleteTraces(self, traces : list = None, flags : list = None, log_event=True):
         """Delete selected traces.

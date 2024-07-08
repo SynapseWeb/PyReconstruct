@@ -87,7 +87,7 @@ class ZarrLayer():
         field_x, field_y = pixmapPointToField(
             pix_x, pix_y,
             self.pixmap_dim,
-            self.window,
+            self.series.window,
             self.section.mag
         )
 
@@ -165,7 +165,7 @@ class ZarrLayer():
         
         # save and unpack window and pixmap values
         self.pixmap_dim = pixmap_dim
-        self.window = window
+        self.series.window = window
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         window_x, window_y, window_w, window_h = tuple(window) 
 

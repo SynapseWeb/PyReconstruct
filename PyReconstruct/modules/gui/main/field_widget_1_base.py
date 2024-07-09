@@ -30,7 +30,7 @@ class FieldWidgetBase:
     Handling reloading the view (when section data is changed).
     """
     
-    def __init__(self, series : Series, mainwindow : QMainWindow):
+    def initAttrs(self, series : Series, mainwindow : QMainWindow):
         self.mainwindow = mainwindow
         self.series = series
 

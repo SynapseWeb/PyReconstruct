@@ -1,5 +1,5 @@
 import os
-import sys
+import math
 import zarr
 import subprocess
 import numpy as np
@@ -291,14 +291,24 @@ class ImageLayer():
         )
 
         # step 10: rip the pixmap from the transformed image
-        image_layer = im_tformed.copy(
+        im_ripped = im_tformed.copy(
             (im_tformed.width() - pmw) / 2,
             (im_tformed.height() - pmh) / 2,
             pmw,
             pmh
         )
-
-        # step 11: draw brightness and contrast
+        
+        # step 11: add blank space to account for rounding errors
+        if (im_ripped.width(), im_ripped.height()) != pixmap_dim:
+            image_layer = QPixmap(*pixmap_dim)
+            image_layer.fill(Qt.black)
+            painter = QPainter(image_layer)
+            painter.drawPixmap(0, 0, im_ripped)
+            painter.end()
+        else:
+            image_layer = im_ripped
+        
+        # step 12: draw brightness and contrast
         # create the brightness/contrast polygon (draws as a polygon over the image)
         self.bc_poly = QPolygon()
         for x, y in self.base_corners:
@@ -327,6 +337,7 @@ class ImageLayer():
             get_crop_only
         ).toImage()
         qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
+
 
         # convert the pixmap to a numpy array
         width = qimage.width()

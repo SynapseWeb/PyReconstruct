@@ -1569,7 +1569,6 @@ class Series():
                 o_section = other.loadSection(s_snum)
                 for profile, new_name in import_as:
                     s_section.bc_profiles[new_name] = o_section.bc_profiles[profile].copy()
-                    print(s_section.bc_profiles)
             else:  # write blank b/c if section not in other series
                 for profile, new_name in import_as:
                     s_section.bc_profiles[new_name] = (0, 0)

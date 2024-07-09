@@ -2,8 +2,8 @@ import os
 import time
 
 from PySide6.QtWidgets import (
-    QWidget, 
     QMainWindow, 
+    QWidget,
     QGestureEvent,
 )
 from PySide6.QtCore import (
@@ -50,7 +50,7 @@ class FieldWidget(QWidget, FieldWidgetView):
                 mainwindow (MainWindow): the main window that contains this widget
         """
         super().__init__(mainwindow)
-        FieldWidgetView.__init__(self, series, mainwindow)
+        self.initAttrs(series, mainwindow)
 
         self.setMouseTracking(True)
 

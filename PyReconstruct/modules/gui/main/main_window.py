@@ -192,6 +192,15 @@ class MainWindow(QMainWindow):
                             # ("autobackup_act", "Toggle auto-backup", "checkbox", self.toggleAutoBackup),
                         ]
                     },
+                    {
+                        "attr_name": "exportmenu",
+                        "text": "Export",
+                        "opts":
+                        [
+                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
+                            ("exportngzarr_act", "as neuroglancer zarr...", "", self.exportToZarr)
+                        ]
+                    },
                     None,
                     ("username_act", "Change username...", "", self.changeUsername),
                     None,
@@ -237,25 +246,7 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("alloptions_act", "Options...", self.series, self.allOptions),
-                    {
-                        "attr_name": "importmenu",
-                        "text": "Import",
-                        "opts":
-                        [
-                            ("importfromseries_act", "From other series...", "", self.importFromSeries),
-                            None,
-                            ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
-                        ]
-                    },
-                    {
-                        "attr_name": "exportmenu",
-                        "text": "Export",
-                        "opts":
-                        [
-                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
-                            ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
-                        ]
-                    },
+                    ("importfromseries_act", "Import from series...", "", self.importFromSeries),
                     {
                         "attr_name": "imagesmenu",
                         "text": "Images",
@@ -289,7 +280,10 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("modifytracepalette_act", "All palettes...", self.series, self.mouse_palette.modifyAllPaletteButtons),
-                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
+                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette),
+                            None,
+                            ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
+                            ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
                         ]
                     },
                     {
@@ -803,11 +797,11 @@ class MainWindow(QMainWindow):
             if not zarr_fp: return
 
         python_bin = sys.executable
-        zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
+        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
         if create_new:
-            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
+            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir, zarr_fp]
         else:
-            convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
+            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir]
 
         if os.name == 'nt':
 
@@ -1929,7 +1923,60 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
     def exportToZarr(self):
-        """Create a neuroglancer-compatible zarr for autosegmentation."""
+        """Create a neuroglancer-compatible zarr."""
+        structure = [
+            ["Number of sections:", ("int", len(self.series.sections.keys()))],
+            ["Magnification:", ("float", self.field.section.mag)],
+            ["Output:", ("dir", None)],
+            ["Padding:", ("float", None)],
+            ["Groups:", ("multicombo", self.series.object_groups.getGroupList(), None)],
+            [("check", ("use max tissue", True))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Create Neuroglancer Zarr")
+        if not confirmed:
+            return
+        
+        sections = response[0]
+        mag = response[1]
+        output = response[2]
+        padding = response[3]
+        groups = " ".join(response[4])
+        if groups:
+            max_tissue = response[5][0][1]
+        else:
+            max_tissue = True
+        
+        args = {
+            "--sections": sections,
+            "--mag": mag,
+            "--output": output,
+            "--padding": padding,
+            "--groups": groups,
+            "--max_tissue": max_tissue,
+        }
+
+        python_bin = sys.executable
+        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
+
+        convert_cmd = [python_bin, zarr_converter, "create_ng_zarr", self.series.jser_fp]
+
+        for argname, arg in args.items():
+            if arg:
+                if type(arg) is bool:
+                    convert_cmd.append(argname)
+                else:
+                    convert_cmd += [argname] + str(arg).split()
+        
+        print(convert_cmd)
+
+        if os.name == 'nt':
+
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            
+        else:
+
+            convert_cmd = " ".join(convert_cmd)
+            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
 
         pass  # TODO: Update for new zarring method
     
@@ -1959,208 +2006,210 @@ class MainWindow(QMainWindow):
 
         # print(f"Zarr directory done and located here: {data_fp}")
     
-    def train(self, retrain=False):
-        """Train an autosegmentation model."""
-        self.saveAllData()
-        self.removeZarrLayer()
+    # AUTOSEG FUNCTIONS TEMPORARILY REMOVED
 
-        model_paths = {"a":{"b":"a/b/m.py"}}
+    # def train(self, retrain=False):
+    #     """Train an autosegmentation model."""
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
 
-        opts = self.series.options["autoseg"]
+    #     model_paths = {"a":{"b":"a/b/m.py"}}
 
-        response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
-        if not confirmed: return
+    #     opts = self.series.options["autoseg"]
+
+    #     response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
+    #     if not confirmed: return
         
-        (data_fp, iterations, save_every, group, model_path, cdir, \
-         pre_cache, min_masked, downsample) = response
+    #     (data_fp, iterations, save_every, group, model_path, cdir, \
+    #      pre_cache, min_masked, downsample) = response
 
-        training_opts = {
-            'zarr_current': data_fp,
-            'iters': iterations,
-            'save_every': save_every,
-            'group': group,
-            'model_path': model_path,
-            'checkpts_dir': cdir,
-            'pre_cache': pre_cache,
-            'min_masked': min_masked,
-            'downsample_bool': downsample
-        }
+    #     training_opts = {
+    #         'zarr_current': data_fp,
+    #         'iters': iterations,
+    #         'save_every': save_every,
+    #         'group': group,
+    #         'model_path': model_path,
+    #         'checkpts_dir': cdir,
+    #         'pre_cache': pre_cache,
+    #         'min_masked': min_masked,
+    #         'downsample_bool': downsample
+    #     }
 
-        for k, v in training_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
+    #     for k, v in training_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
 
-        print("Exporting labels to zarr directory...")
+    #     print("Exporting labels to zarr directory...")
         
-        if retrain:
-            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
-            seriesToLabels(self.series, data_fp)
+    #     if retrain:
+    #         group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+    #         seriesToLabels(self.series, data_fp)
             
-        else:
-            group_name = f"labels_{group}"
-            seriesToLabels(self.series, data_fp, group)
+    #     else:
+    #         group_name = f"labels_{group}"
+    #         seriesToLabels(self.series, data_fp, group)
 
-        print("Zarr directory updated with labels!")
+    #     print("Zarr directory updated with labels!")
 
-        if retrain:
-            self.field.reload()
-            self.field.table_manager.refresh()
+    #     if retrain:
+    #         self.field.reload()
+    #         self.field.table_manager.refresh()
 
-        print("Starting training....")
+    #     print("Starting training....")
 
-        print("Importing training modules...")
+    #     print("Importing training modules...")
 
-        from autoseg import train, make_mask, model_paths
+    #     from autoseg import train, make_mask, model_paths
 
-        make_mask(data_fp, group_name)
+    #     make_mask(data_fp, group_name)
         
-        sources = [{
-            "raw" : (data_fp, "raw"),
-            "labels" : (data_fp, group_name),
-            "unlabelled" : (data_fp, "unlabelled")
-        }]
+    #     sources = [{
+    #         "raw" : (data_fp, "raw"),
+    #         "labels" : (data_fp, group_name),
+    #         "unlabelled" : (data_fp, "unlabelled")
+    #     }]
 
-        train(
-            iterations=iterations,
-            save_every=save_every,
-            sources=sources,
-            model_path=model_path,
-            pre_cache=pre_cache,
-            min_masked=min_masked,
-            downsample=downsample,
-            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
-        )
+    #     train(
+    #         iterations=iterations,
+    #         save_every=save_every,
+    #         sources=sources,
+    #         model_path=model_path,
+    #         pre_cache=pre_cache,
+    #         min_masked=min_masked,
+    #         downsample=downsample,
+    #         checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
+    #     )
 
-        print("Done training!")
+    #     print("Done training!")
     
-    def markKeep(self):
-        """Add the selected trace to the most recent "keep" segmentation group."""
-        keep_tag = f"{self.series.getRecentSegGroup()}_keep"
-        for trace in self.field.section.selected_traces:
-            trace.addTag(keep_tag)
-        # deselect traces and hide
-        self.field.hideTraces()
-        self.field.deselectAllTraces()
+    # def markKeep(self):
+    #     """Add the selected trace to the most recent "keep" segmentation group."""
+    #     keep_tag = f"{self.series.getRecentSegGroup()}_keep"
+    #     for trace in self.field.section.selected_traces:
+    #         trace.addTag(keep_tag)
+    #     # deselect traces and hide
+    #     self.field.hideTraces()
+    #     self.field.deselectAllTraces()
 
-    def predict(self, data_fp : str = None):
-        """Run predictons.
+    # def predict(self, data_fp : str = None):
+    #     """Run predictons.
         
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-        self.saveAllData()
-        self.removeZarrLayer()
+    #         Params:
+    #             data_fp (str): the filepath for the zarr
+    #     """
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
 
-        print("Importing models...")
+    #     print("Importing models...")
         
-        from autoseg import predict, model_paths
-        # model_paths = {"a":{"b":"a/b/m.py"}}
+    #     from autoseg import predict, model_paths
+    #     # model_paths = {"a":{"b":"a/b/m.py"}}
 
-        opts = self.series.options["autoseg"]
+    #     opts = self.series.options["autoseg"]
 
-        response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
+    #     response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
 
-        if not dialog_confirmed: return
+    #     if not dialog_confirmed: return
 
-        data_fp, model_path, cp_path, write_opts, increase, downsample, full_out_roi = response
+    #     data_fp, model_path, cp_path, write_opts, increase, downsample, full_out_roi = response
 
-        predict_opts = {
-            'zarr_current': data_fp,
-            'model_path': model_path,
-            'checkpts_dir': os.path.dirname(cp_path),
-            'write': write_opts,
-            'increase': increase,
-            'downsample_bool': downsample,
-            'full_out_roi': full_out_roi
-        }
+    #     predict_opts = {
+    #         'zarr_current': data_fp,
+    #         'model_path': model_path,
+    #         'checkpts_dir': os.path.dirname(cp_path),
+    #         'write': write_opts,
+    #         'increase': increase,
+    #         'downsample_bool': downsample,
+    #         'full_out_roi': full_out_roi
+    #     }
 
-        for k, v in predict_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
+    #     for k, v in predict_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
                 
-        print("Running predictions...")
+    #     print("Running predictions...")
 
-        zarr_datasets = predict(
-            sources=[(data_fp, "raw")],
-            out_file=data_fp,
-            checkpoint_path=cp_path,
-            model_path=model_path,
-            write=write_opts,
-            increase=increase,
-            downsample=downsample,
-            full_out_roi=full_out_roi
-        )
+    #     zarr_datasets = predict(
+    #         sources=[(data_fp, "raw")],
+    #         out_file=data_fp,
+    #         checkpoint_path=cp_path,
+    #         model_path=model_path,
+    #         write=write_opts,
+    #         increase=increase,
+    #         downsample=downsample,
+    #         full_out_roi=full_out_roi
+    #     )
 
-        # display the affinities
-        self.setZarrLayer(data_fp)
-        for zg in os.listdir(data_fp):
-            if zg.startswith("pred_affs"):
-                self.setLayerGroup(zg)
-                break
+    #     # display the affinities
+    #     self.setZarrLayer(data_fp)
+    #     for zg in os.listdir(data_fp):
+    #         if zg.startswith("pred_affs"):
+    #             self.setLayerGroup(zg)
+    #             break
 
-        print("Predictions done.")
+    #     print("Predictions done.")
         
-    def segment(self, data_fp : str = None):
-        """Run an autosegmentation.
+    # def segment(self, data_fp : str = None):
+    #     """Run an autosegmentation.
         
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-        self.saveAllData()
-        self.removeZarrLayer()
+    #         Params:
+    #             data_fp (str): the filepath for the zarr
+    #     """
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
 
-        print("Importing modules...")
+    #     print("Importing modules...")
         
-        from autoseg import hierarchical
+    #     from autoseg import hierarchical
 
-        opts = self.series.options["autoseg"]
+    #     opts = self.series.options["autoseg"]
 
-        response, dialog_confirmed = SegmentDialog(self, opts).exec()
+    #     response, dialog_confirmed = SegmentDialog(self, opts).exec()
 
-        if not dialog_confirmed: return
+    #     if not dialog_confirmed: return
 
-        data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
+    #     data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
 
-        segment_opts = {
-            "zarr_current": data_fp,
-            "thresholds": thresholds,
-            "downsample_int": downsample,
-            "norm_preds": norm_preds,
-            "min_seed": min_seed,
-            "merge_fun": merge_fun
-        }
+    #     segment_opts = {
+    #         "zarr_current": data_fp,
+    #         "thresholds": thresholds,
+    #         "downsample_int": downsample,
+    #         "norm_preds": norm_preds,
+    #         "min_seed": min_seed,
+    #         "merge_fun": merge_fun
+    #     }
 
-        for k, v in segment_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
+    #     for k, v in segment_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
 
-        print("Running hierarchical...")
+    #     print("Running hierarchical...")
 
-        dataset = None
-        for d in os.listdir(data_fp):
-            if "affs" in d:
-                dataset = d
-                break
+    #     dataset = None
+    #     for d in os.listdir(data_fp):
+    #         if "affs" in d:
+    #             dataset = d
+    #             break
 
-        print("Segmentation started...")
+    #     print("Segmentation started...")
             
-        hierarchical.run(
-            data_fp,
-            dataset,
-            thresholds=list(sorted(thresholds)),
-            normalize_preds=norm_preds,
-            min_seed_distance=min_seed,
-            merge_function=merge_fun
-        )
+    #     hierarchical.run(
+    #         data_fp,
+    #         dataset,
+    #         thresholds=list(sorted(thresholds)),
+    #         normalize_preds=norm_preds,
+    #         min_seed_distance=min_seed,
+    #         merge_function=merge_fun
+    #     )
 
-        print("Segmentation done.")
+    #     print("Segmentation done.")
 
-        # display the segmetnation
-        self.setZarrLayer(data_fp)
-        for zg in os.listdir(data_fp):
-            if zg.startswith("seg"):
-                self.setLayerGroup(zg)
-                break
+    #     # display the segmetnation
+    #     self.setZarrLayer(data_fp)
+    #     for zg in os.listdir(data_fp):
+    #         if zg.startswith("seg"):
+    #             self.setLayerGroup(zg)
+    #             break
     
     def importLabels(self, all=False):
         """Import labels from a zarr."""

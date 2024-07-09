@@ -249,7 +249,8 @@ additional_attrs = {
 
 print("Initializing pyqt...")
 
-app = QApplication(sys.argv)
+if not QApplication.instance():
+    app = QApplication(sys.argv)
 
 print("Creating zarr...")
 

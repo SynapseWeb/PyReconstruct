@@ -28,7 +28,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(w)
 
     def message(self, s):
-        print(s)
         self.text.appendPlainText(s)
 
     def start_process(self, cmd, args):

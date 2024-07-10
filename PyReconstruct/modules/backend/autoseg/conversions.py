@@ -132,8 +132,8 @@ def seriesToZarr(
 
     # get values for saving zarr files (from last known section)
     section_thickness = series.loadSection(srange[0]).thickness
-    z_res = round(section_thickness * 1000)
-    xy_res = round(mag * 1000)
+    z_res = int(section_thickness * 1000)
+    xy_res = int(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
     offset = [0, 0, 0]
 

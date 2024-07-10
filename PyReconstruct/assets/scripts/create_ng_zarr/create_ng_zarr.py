@@ -28,6 +28,10 @@ from PyReconstruct.modules.backend.autoseg import (
 )
 
 
+def print_flush(s: str):
+    """Correct I/O buffering."""
+    print(s, flush=True)
+
 parser = argparse.ArgumentParser(
     prog="ng-create-zarr",
     description=__doc__,
@@ -157,10 +161,10 @@ def get_sha1sum(filepath):
 
 groups = flatten_list(args.groups) if args.groups else None
 
-print("Opening series...")
+print_flush("Opening series...")
 series = Series.openJser(jser_fp)
 
-print("Gathering args...")
+print_flush("Gathering args...")
 sections = sorted(list(series.sections.keys()))
 
 ## Sample a section to get image magnification and dimensions
@@ -218,14 +222,14 @@ elif groups:  # request zarr around group(s)
 
     if padding:
         padding *= img_mag  # convert padding from px to μm
-    print(f"padding: {padding}")
+    print_flush(f"padding: {padding}")
     window, srange = groupsToVolume(series, groups, padding)
 
     secs = srange[1] - srange[0]
     start, end_exclude = srange
 
-    print(f"window: {window}")
-    print(f"srange: {srange}")
+    print_flush(f"window: {window}")
+    print_flush(f"srange: {srange}")
 
 else:  # default to zarr around image center
 
@@ -247,12 +251,13 @@ additional_attrs = {
 
 ##print(f"window: {window}")
 
-print("Initializing pyqt...")
+print_flush("Initializing pyqt...")
 
 if not QApplication.instance():
+    print_flush("Creating QApplication instance...")
     app = QApplication(sys.argv)
 
-print("Creating zarr...")
+print_flush("Creating zarr...")
 
 zarr_fp = seriesToZarr(
     series,
@@ -266,7 +271,7 @@ zarr_fp = seriesToZarr(
 # Add labels to zarr if PyReconstruct groups provided
 if groups:
     for group in groups:
-        print(f"Converting group {group} to labels...")
+        print_flush(f"Converting group {group} to labels...")
         seriesToLabels(series, zarr_fp, group)
 
 series.close()

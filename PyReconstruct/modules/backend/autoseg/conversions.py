@@ -84,7 +84,7 @@ def createZarrName(window):
 
 def seriesToZarr(
         series : Series,
-        srange : tuple,
+        sections : list,
         mag : float,
         window : list,
         data_fp: str = None,
@@ -95,7 +95,7 @@ def seriesToZarr(
     
         Params:
             series (Series): the series to convert
-            srange (tuple): the range of sections (exclusive)
+            sections (list): the sections to include (exclusive; ASSUME sorted already)
             mag (float): the microns per pixel for the zarr file
             window (list): the window (x, y, height, width) for the resulting zarr
             data_fp (str): filename of output zarr
@@ -108,7 +108,7 @@ def seriesToZarr(
 
     # calculate field attributes
     shape = (
-        srange[1] - srange[0],  # z
+        len(sections),  # z
         round(window[3]/mag),   # height
         round(window[2]/mag)    # width
     )
@@ -131,7 +131,7 @@ def seriesToZarr(
     data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
 
     # get values for saving zarr files (from last known section)
-    section_thickness = series.loadSection(srange[0]).thickness
+    section_thickness = series.loadSection(sections[0]).thickness
     z_res = int(section_thickness * 1000)
     xy_res = int(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
@@ -139,7 +139,7 @@ def seriesToZarr(
 
     # get alignment of series
     alignment = {}
-    for snum in range(*srange):
+    for snum in sections:
         current_tranform = series.data["sections"][snum]["tforms"][series.alignment].getList()
         alignment[str(snum)] = current_tranform
 
@@ -149,7 +149,7 @@ def seriesToZarr(
 
     # save additional attributes for loading back into jser
     data_zg["raw"].attrs["window"] = window
-    data_zg["raw"].attrs["srange"] = srange
+    data_zg["raw"].attrs["sections"] = sections
     data_zg["raw"].attrs["true_mag"] = mag
     data_zg["raw"].attrs["alignment"] = alignment
 
@@ -160,13 +160,13 @@ def seriesToZarr(
     
     # create threadpool and interate through series
     threadpool = ThreadPoolProgBar()
-    for snum in range(*srange):
+    for i, snum in enumerate(sections):
         threadpool.createWorker(
             exportSection,
             data_zg,
             snum,
             series,
-            srange,
+            i,
             window,
             pixmap_dim
         )
@@ -188,7 +188,7 @@ def seriesToLabels(series : Series,
     data_zg = zarr.open(data_fp)
 
     raw = data_zg["raw"]
-    srange = raw.attrs["srange"]
+    sections = raw.attrs["sections"]
     window = raw.attrs["window"]
     mag = raw.attrs["true_mag"]
     alignment = raw.attrs["alignment"]
@@ -197,7 +197,7 @@ def seriesToLabels(series : Series,
 
     # calculate field attributes
     shape = (
-        srange[1] - srange[0],
+        len(sections),
         round(window[3]/mag),
         round(window[2]/mag)
     )
@@ -220,7 +220,7 @@ def seriesToLabels(series : Series,
 
     # create threadpool
     threadpool = ThreadPoolProgBar()
-    for snum in range(*srange):
+    for i, snum in enumerate(sections):
         threadpool.createWorker(
             exportTraces,
             data_zg,
@@ -228,7 +228,7 @@ def seriesToLabels(series : Series,
             series,
             group_or_tag,
             is_group,
-            srange,
+            i,
             window,
             pixmap_dim,
             del_group,
@@ -253,12 +253,12 @@ def labelsToObjects(series : Series, data_fp : str, group : str, labels : list =
             the threadpool
     """
     data_zg = zarr.open(data_fp)
-    srange = data_zg["raw"].attrs["srange"]
+    sections = data_zg["raw"].attrs["sections"]
 
     # create threadpool and iterate through sections
     setDT()
     threadpool = ThreadPoolProgBar()
-    for snum in range(*srange):
+    for snum in sections:
         threadpool.createWorker(
             importSection,
             data_zg,
@@ -289,21 +289,20 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
-def exportSection(data_zg, snum : int, series : Series, srange : tuple, window : list, pixmap_dim : tuple):
+def exportSection(data_zg, snum : int, series : Series, z : int, window : list, pixmap_dim : tuple):
     """Export the raw data for a single section.
     
         Params:
             data_zg: the zarr group
             snum (int): the section number
             series (Series): the series
-            srange (tuple): the range of sections
+            z (int): the z-level of the section in the zarr
             window (list): the frame for the raw export
             pixmap_dim (tuple): the w and h in pixels for the arr output
     """
     # print(f"Section {snum} exporting started")
     section = series.loadSection(snum)
     slayer = SectionLayer(section, series)
-    z = snum - srange[0]
 
     arr = slayer.generateImageArray(
         pixmap_dim, 
@@ -317,7 +316,7 @@ def exportTraces(data_zg,
                  series : Series,
                  group_or_tag : str,
                  is_group : bool,
-                 srange : tuple,
+                 z : int,
                  window : list,
                  pixmap_dim : tuple,
                  del_group : str = None,
@@ -330,13 +329,12 @@ def exportTraces(data_zg,
             series (Series): the series
             group_or_tag (str): the group or tag to include as labels
             is_group (bool): True if the previous entry is a group, False if tag
-            srange (tuple): the range of sections
+            z (int): the z position of the section in the zarr
             window (list): the frame for the raw export
             pixmap_dim (tuple): the w and h in pixels for the arr output
             del_group (str): the group to delete
             tform_list (list): the transform to apply to the traces
     """
-    z = snum - srange[0]
     section = series.loadSection(snum)
     slayer = SectionLayer(section, series, load_image_layer=False)
     if tform_list:
@@ -396,13 +394,13 @@ def importSection(data_zg, group, snum, series, ids=None):
     raw = data_zg["raw"]
     raw_resolution = raw.attrs["resolution"]
     window = raw.attrs["window"]
-    srange = raw.attrs["srange"]
+    sections = raw.attrs["sections"]
     mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
     alignment = raw.attrs["alignment"]
     tform = Transform(alignment[str(snum)])
 
     # check if section was segmented
-    z = snum - srange[0] - round(offset[0] / resolution[0])
+    z = sections.index(snum)
     if not 0 <= z < labels.shape[0]:
         print(f"Section {snum} importing finished")
         return

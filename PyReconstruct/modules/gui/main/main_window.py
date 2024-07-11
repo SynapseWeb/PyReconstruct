@@ -1924,30 +1924,31 @@ class MainWindow(QMainWindow):
 
     def exportToZarr(self):
         """Create a neuroglancer-compatible zarr."""
+        all_sections = sorted(list(self.series.sections.keys()))
         structure = [
-            ["Number of sections:", ("int", len(self.series.sections.keys()))],
-            ["Magnification:", ("float", self.field.section.mag)],
-            ["Output:", ("dir", None)],
+            ["From section", ("int", all_sections[1]), "to section", ("int", all_sections[-1]), " "],
+            ["Output magnification:", ("float", self.field.section.mag), " "],
+            ["Save in folder:", ("dir", None)],
             ["Padding:", ("float", None)],
-            ["Groups:", ("multicombo", self.series.object_groups.getGroupList(), None)],
+            ["Groups:"],
+            [("multicombo", self.series.object_groups.getGroupList(), None)],
             [("check", ("use max tissue", True))]
         ]
-        response, confirmed = QuickDialog.get(self, structure, "Create Neuroglancer Zarr")
+        response, confirmed = QuickDialog.get(self, structure, "Create Neuroglancer Zarr", spacing=10)
         if not confirmed:
             return
         
-        sections = response[0]
-        mag = response[1]
-        output = response[2]
-        padding = response[3]
-        groups = " ".join(response[4])
-        if groups:
-            max_tissue = response[5][0][1]
-        else:
-            max_tissue = True
+        start = response[0]
+        end = response[1]
+        mag = response[2]
+        output = response[3]
+        padding = response[4]
+        groups = " ".join(response[5])
+        max_tissue = response[6][0][1]
         
         args = {
-            "--sections": sections,
+            "--start_section": start,
+            "--end_section": end,
             "--mag": mag,
             "--output": output,
             "--padding": padding,
@@ -1961,14 +1962,12 @@ class MainWindow(QMainWindow):
         convert_cmd = [python_bin, zarr_converter, "create_ng_zarr", self.series.jser_fp]
 
         for argname, arg in args.items():
-            if arg:
+            if arg or arg == 0:
                 if type(arg) is bool:
                     convert_cmd.append(argname)
                 else:
                     convert_cmd += [argname] + str(arg).split()
         
-        print(convert_cmd)
-
         if os.name == 'nt':
 
             subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
@@ -1977,34 +1976,6 @@ class MainWindow(QMainWindow):
 
             convert_cmd = " ".join(convert_cmd)
             subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
-
-        pass  # TODO: Update for new zarring method
-    
-        # self.saveAllData()
-        # self.removeZarrLayer()
-
-        # inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
-
-        # if not dialog_confirmed: return
-
-        # border_obj, srange, mag = inputs
-
-        # # convert border obj to window
-        # window = borderToWindow(border_obj, srange, self.series)
-
-        # print("Making zarr directory...")
-        
-        # # export to zarr
-        # data_fp = seriesToZarr(
-        #     self.series,
-        #     srange,
-        #     mag,
-        #     window
-        # )
-
-        # self.series.options["autoseg"]["zarr_current"] = data_fp
-
-        # print(f"Zarr directory done and located here: {data_fp}")
     
     # AUTOSEG FUNCTIONS TEMPORARILY REMOVED
 
@@ -2211,36 +2182,36 @@ class MainWindow(QMainWindow):
     #             self.setLayerGroup(zg)
     #             break
     
-    def importLabels(self, all=False):
-        """Import labels from a zarr."""
-        if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
-            return
+    # def importLabels(self, all=False):
+    #     """Import labels from a zarr."""
+    #     if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
+    #         return
         
-        # get necessary data
-        data_fp = self.series.zarr_overlay_fp
-        group_name = self.series.zarr_overlay_group
+    #     # get necessary data
+    #     data_fp = self.series.zarr_overlay_fp
+    #     group_name = self.series.zarr_overlay_group
 
-        labels = None if all else self.field.zarr_layer.selected_ids
+    #     labels = None if all else self.field.zarr_layer.selected_ids
         
-        labelsToObjects(
-            self.series,
-            data_fp,
-            group_name,
-            labels
-        )
-        self.field.reload()
-        self.removeZarrLayer()
-        self.field.table_manager.refresh()
+    #     labelsToObjects(
+    #         self.series,
+    #         data_fp,
+    #         group_name,
+    #         labels
+    #     )
+    #     self.field.reload()
+    #     self.removeZarrLayer()
+    #     self.field.table_manager.refresh()
 
-        notify("Labels imported successfully.")
+    #     notify("Labels imported successfully.")
     
-    def mergeLabels(self):
-        """Merge selected labels in a zarr."""
-        if not self.field.zarr_layer:
-            return
+    # def mergeLabels(self):
+    #     """Merge selected labels in a zarr."""
+    #     if not self.field.zarr_layer:
+    #         return
         
-        self.field.zarr_layer.mergeLabels()
-        self.field.generateView()
+    #     self.field.zarr_layer.mergeLabels()
+    #     self.field.generateView()
     
     def hideSeriesTraces(self, hidden=True):
         """Hide or unhide all traces in the entire series.

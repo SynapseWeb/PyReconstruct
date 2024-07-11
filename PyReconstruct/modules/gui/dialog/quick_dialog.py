@@ -152,7 +152,7 @@ class InputField():
 
 class QuickDialog(QDialog):
 
-    def __init__(self, parent, structure : list, title : str, grid=False, include_confirm=True, cancelable=True):
+    def __init__(self, parent, structure : list, title : str, grid=False, include_confirm=True, cancelable=True, spacing=1):
         """Create a quick dialog from a given structure.
         
             Params:
@@ -160,10 +160,11 @@ class QuickDialog(QDialog):
                 structure (list): the structure of the dialog
                 title (str): the title of the dialog
                 grid (bool): True if structure should be grid-style
+                spacing (int): the spacing between the widgets
         """
         QDialog.__init__(self, parent)
 
-        vlayout, self.inputs = getLayout(self, structure, grid)
+        vlayout, self.inputs = getLayout(self, structure, grid, spacing)
 
         if include_confirm:
             self.setWindowTitle(title)
@@ -212,7 +213,7 @@ class QuickDialog(QDialog):
         else:
             return None, False
     
-    def get(parent : QWidget, structure : list, title="Dialog", grid=False, cancelable=True):
+    def get(parent : QWidget, structure : list, title="Dialog", grid=False, cancelable=True, spacing=1):
         """Create a quick dialog and return the inputs.
         
             Params:
@@ -221,8 +222,9 @@ class QuickDialog(QDialog):
                 title (str): the title of the dialog
                 grid (bool): True if grid layout
                 cancelable (bool): True if cancel button is present on dialog
+                spacing (int): the spacing between the widgets
         """
-        return QuickDialog(parent, structure, title, grid, cancelable=cancelable).exec()
+        return QuickDialog(parent, structure, title, grid, cancelable=cancelable, spacing=spacing).exec()
 
 
 class QuickTabDialog(QuickDialog):
@@ -296,12 +298,13 @@ class QuickTabDialog(QuickDialog):
         QDialog.accept(self)
 
 
-def getLayout(parent, structure : list, grid : bool = False):
+def getLayout(parent, structure : list, grid : bool = False, spacing=1):
     """Return the layout for a given structure.
     
         Params:
             structure (list): the structure of the layout
             grid (bool): True if structure should be made as a grid
+            spacing (int): the spacing between the widgets
     """
     inputs = []
 
@@ -310,7 +313,7 @@ def getLayout(parent, structure : list, grid : bool = False):
         r = 0
         c = 0
     vlayout = QVBoxLayout()
-    vlayout.setSpacing(1)
+    vlayout.setSpacing(spacing)
 
     for row_structure in structure:
         if not row_structure:  # vertical layout spacer

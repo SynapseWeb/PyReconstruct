@@ -18,10 +18,10 @@ objects in the group and if specified sections are not available.
 """
 
 import sys
+import traceback
 from pathlib import Path
 
 
-from colorama.initialise import reset_all
 import cv2
 import zarr
 import numpy as np
@@ -32,6 +32,20 @@ from colorama import just_fix_windows_console as windows_color_fix
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.backend.view import SectionLayer
 from PyReconstruct.modules.datatypes import Transform
+
+
+class ImageNotFoundError(Exception):
+
+    def __init__(self, img):
+        self.message = f"  {Fore.RED}ERROR{Style.RESET_ALL}: {img} does not exist."
+
+    def __str__(self):
+        return self.message
+
+
+def issue_group_warning(group):
+
+    print(f"  {Fore.YELLOW}WARNING{Style.RESET_ALL}: No objects in group \"{group}\" on this section.")
 
 
 def validate_jser(filepath):
@@ -57,18 +71,26 @@ def get_section_data(series, section_index):
 
 
 def get_width_height_px(series, section_index):
-    """Return the height and width on a section image."""
+    """Return the height and width of a section image."""
 
     section = get_section_data(series, section_index)
 
     if series.src_dir.endswith("zarr"):
 
         img_scale_1 = Path(series.src_dir) / "scale_1" / section.src
+
+        if not img_scale_1 or not img_scale_1.exists():
+            raise ImageNotFoundError(img_scale_1)
+        
         h, w = zarr.open(img_scale_1).shape
 
     else:
 
         img_fp = Path(series.src_dir) / section.src
+
+        if not img_fp or not img_fp.exists():
+            raise ImageNotFoundError(img_fp)
+        
         h, w, _ = cv2.imread(str(img_fp)).shape
 
     return w, h
@@ -82,11 +104,19 @@ def get_img_as_array(series, section_index):
     if series.src_dir.endswith("zarr"):
 
         img_scale_1 = Path(series.src_dir) / "scale_1" / section.src
+
+        if not img_scale_1 or not img_scale_1.exists():
+            raise ImageNotFoundError(str(img_scale_1))
+        
         img_arr = np.array(zarr.open(img_scale_1))
 
     else:
 
         img_fp = Path(series.src_dir) / section.src
+
+        if not img_fp or not img_fp.exists():
+            raise ImageNotFoundError(str(img_fp))
+        
         img_arr = np.array(cv2.imread(str(img_fp)))
 
     return img_arr
@@ -104,12 +134,14 @@ def get_trace_data(series, section_index, group):
 
     return traces
 
+
 def get_labels_as_arr(series, section_index, group):
 
     section = get_section_data(series, section_index)
     traces = get_trace_data(series, section_index, group)
-    if len(traces) < 1:
-        print(f"  {Fore.RED}WARNING{Style.RESET_ALL}: No objects in group \"{group}\" present on this section.")
+
+    if len(traces) < 1: issue_group_warning(group)  # issue warning if necessary
+    
     slayer = SectionLayer(section, series, load_image_layer=False)
 
     w, h = get_width_height_px(series, section_index)
@@ -125,6 +157,65 @@ def get_labels_as_arr(series, section_index, group):
     )
 
 
+def print_masked_sections(masked_sections, no_group_objs, group):
+    """Mark blank sections with asterisk."""
+
+    print(f"{Fore.GREEN}MASKED SECTIONS{Style.RESET_ALL}:\n")
+
+    masked_as_string = list(map(str, masked_sections))
+
+    def mark_with_asterisk(elem):
+        if int(elem) in no_group_objs:
+            return elem + "*"
+        else:
+            return elem
+    
+    if no_group_objs:
+        masked_as_string = list(map(mark_with_asterisk, masked_as_string))
+
+    output_str = ", ".join(masked_as_string)
+    print(f"{output_str}\n")
+
+    if no_group_objs:
+
+        print(f"* = no objs in group \"{group}\" on this section\n")
+
+
+def print_recap(series, group, tmp_dir, masked, no_group_objs, img_err_sections, other_errs, not_avail):
+
+    notes_string = " MASKING NOTES "
+    print(f"\n{notes_string:=^100}\n")
+
+    print(f"Images for series \"{series.name}\" masked by group \"{group}\" exported to: \n\n{tmp_dir.resolve()}\n")
+
+    print_masked_sections(masked, no_group_objs, group)
+
+    if img_err_sections or other_errs:
+        
+        print(f"{Fore.RED}ERRORS{Style.RESET_ALL}: \n")
+
+        if img_err_sections:
+            
+            print(f"The following sections have missing images: \n")
+            print(f"{img_err_sections}\n")
+
+        if other_errs:
+            
+            print(f"The following sections produced errors (see errors above):\n")
+            print(f"{other_errs}\n")
+
+    if not_avail or no_group_objs:
+
+        print(f"{Fore.YELLOW}WARNINGS{Style.RESET_ALL}: \n")
+
+        if not_avail:
+        
+            print(f"The following sections do not exist and were not masked: \n\n{not_avail}\n")
+
+    end_string = " END OUTPUT "
+    print(f"{end_string:=^100}\n")
+    
+
 if __name__ == "__main__":
 
     help_requested = any([elem in sys.argv for elem in ["--help", "-h"]])
@@ -136,6 +227,9 @@ if __name__ == "__main__":
     elif len(sys.argv) < 3:
         print("Please provide all arguments: series-mask <jser> <group> [optional sections to include]")
         sys.exit(1)
+
+    start_string = " START MASKING "
+    print(f"\n{start_string:=^100}\n")
 
     windows_color_fix()
 
@@ -164,7 +258,6 @@ if __name__ == "__main__":
         
         restrict = False
     
-    
     print("Opening series...")
     series = Series.openJser(jser)
 
@@ -172,6 +265,9 @@ if __name__ == "__main__":
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     masked_sections = []
+    no_group_objs = []
+    img_err_sections = []
+    other_errs = []
 
     for i in range(len(series.sections)):
 
@@ -183,28 +279,56 @@ if __name__ == "__main__":
 
         print(f"\nWorking on section {section_n}...\n")
 
-        print("  Making image array...")
-        arr_image = get_img_as_array(series, i)
+        try:
 
-        print("  Making labels array...")
-        arr_labels = get_labels_as_arr(series, i, group=group)
+            print("  Making image array...")
+            arr_image = get_img_as_array(series, i)
 
-        print("  Masking image array...")
+            print("  Making labels array...")
+            arr_labels = get_labels_as_arr(series, i, group=group)
+            
+            if np.count_nonzero(arr_labels) == 0:
+                no_group_objs.append(section_n)
 
-        masked = cv2.bitwise_and(arr_image, arr_image, mask=arr_labels.astype(np.uint8))
+            print("  Masking image array...")
 
-        tmp_fp = tmp_dir / f"{series.name}-{section_n}-masked.tiff"
+            masked = cv2.bitwise_and(
+                arr_image,
+                arr_image,
+                mask=arr_labels.astype(np.uint8)
+            )
 
-        cv2.imwrite(str(tmp_fp), masked)
+            tmp_fp = tmp_dir / f"{series.name}-{section_n}-masked.tiff"
 
-        print(f"  Section {section_n} masked and written to {tmp_fp.name}")
+            cv2.imwrite(str(tmp_fp), masked)
 
-        masked_sections.append(section_n)
+            print(f"  Section {section_n} masked and written to {tmp_fp.name}")
 
-    not_avail = [elem for elem in restrict if elem not in masked_sections]
+            masked_sections.append(section_n)
 
-    print(f"\n{Fore.GREEN}DONE{Style.RESET_ALL}.\n\nImages for series \"{series.name}\" masked by group \"{group}\" exported to: \n\n{tmp_dir.resolve()}\n")
+        except ImageNotFoundError as e:
 
-    if not_avail:
-        print(f"{Fore.RED}WARNING{Style.RESET_ALL}: \n\nThe following sections were not available for masking: {not_avail}\n")
-    
+            print(e)
+            img_err_sections.append(section_n)
+
+        except Exception as e:
+
+            print(f"  {Fore.RED}ERROR{Style.RESET_ALL}: {type(e).__name__}\n")
+            for line in traceback.format_exc().splitlines():
+                print("  " + line)
+            other_errs.append(section_n)
+
+    print("\nMasking done.")
+
+    secs_completed = masked_sections + img_err_sections + other_errs
+            
+    if restrict:
+        
+        not_avail = [elem for elem in restrict if elem not in secs_completed]
+        
+    else:
+
+        all_secs = list(range(len(series.sections)))
+        not_avail = [elem for elem in all_secs if elem not in secs_completed]
+
+    print_recap(series, group, tmp_dir, masked_sections, no_group_objs, img_err_sections, other_errs, not_avail)

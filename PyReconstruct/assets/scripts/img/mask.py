@@ -97,7 +97,7 @@ def get_width_height_px(series, section_index):
 
 
 def get_img_as_array(series, section_index):
-    """Return the height and width on a section image."""
+    """Return the height and width of a section image."""
 
     section = get_section_data(series, section_index)
 
@@ -105,7 +105,7 @@ def get_img_as_array(series, section_index):
 
         img_scale_1 = Path(series.src_dir) / "scale_1" / section.src
 
-        if not img_scale_1 or not img_scale_1.exists():
+        if not img_scale_1 or not img_scale_1.exists() or not section.src:
             raise ImageNotFoundError(str(img_scale_1))
         
         img_arr = np.array(zarr.open(img_scale_1))
@@ -114,7 +114,7 @@ def get_img_as_array(series, section_index):
 
         img_fp = Path(series.src_dir) / section.src
 
-        if not img_fp or not img_fp.exists():
+        if not img_fp or not img_fp.exists() or not section.src:
             raise ImageNotFoundError(str(img_fp))
         
         img_arr = np.array(cv2.imread(str(img_fp)))
@@ -162,19 +162,30 @@ def print_masked_sections(masked_sections, no_group_objs, group):
 
     print(f"{Fore.GREEN}MASKED SECTIONS{Style.RESET_ALL}:\n")
 
-    masked_as_string = list(map(str, masked_sections))
-
-    def mark_with_asterisk(elem):
-        if int(elem) in no_group_objs:
-            return elem + "*"
-        else:
-            return elem
+    if masked_sections:
     
-    if no_group_objs:
-        masked_as_string = list(map(mark_with_asterisk, masked_as_string))
+        masked_as_string = list(
+            map(str, masked_sections)
+        )
 
-    output_str = ", ".join(masked_as_string)
-    print(f"{output_str}\n")
+        def mark_with_asterisk(elem):
+            if int(elem) in no_group_objs:
+                return elem + "*"
+            else:
+                return elem
+    
+        if no_group_objs:
+            
+            masked_as_string = list(
+                map(mark_with_asterisk, masked_as_string)
+            )
+
+        output_str = ", ".join(masked_as_string)
+        print(f"{output_str}\n")
+
+    else:
+
+        print("No sections masked.\n")
 
     if no_group_objs:
 
@@ -186,7 +197,11 @@ def print_recap(series, group, tmp_dir, masked, no_group_objs, img_err_sections,
     notes_string = " MASKING NOTES "
     print(f"\n{notes_string:=^100}\n")
 
-    print(f"Images for series \"{series.name}\" masked by group \"{group}\" exported to: \n\n{tmp_dir.resolve()}\n")
+    print(
+        f"Images for series \"{series.name}\" "
+        f"masked by group \"{group}\" "
+        f"and exported to: \n\n{tmp_dir.resolve()}\n"
+    )
 
     print_masked_sections(masked, no_group_objs, group)
 
@@ -196,13 +211,17 @@ def print_recap(series, group, tmp_dir, masked, no_group_objs, img_err_sections,
 
         if img_err_sections:
             
-            print(f"The following sections have missing images: \n")
-            print(f"{img_err_sections}\n")
+            print(
+                f"Images for the following sections do not exist \n\n"
+                f"{img_err_sections}\n"
+            )
 
         if other_errs:
             
-            print(f"The following sections produced errors (see errors above):\n")
-            print(f"{other_errs}\n")
+            print(
+                f"The following sections produced errors (see errors above):\n\n"
+                f"{other_errs}\n"
+            )
 
     if not_avail or no_group_objs:
 
@@ -210,7 +229,10 @@ def print_recap(series, group, tmp_dir, masked, no_group_objs, img_err_sections,
 
         if not_avail:
         
-            print(f"The following sections do not exist and were not masked: \n\n{not_avail}\n")
+            print(
+                f"The following sections do not exist "
+                f"and were not masked: \n\n{not_avail}\n"
+            )
 
     end_string = " END OUTPUT "
     print(f"{end_string:=^100}\n")
@@ -221,11 +243,17 @@ if __name__ == "__main__":
     help_requested = any([elem in sys.argv for elem in ["--help", "-h"]])
     
     if len(sys.argv) == 1 or help_requested:
+
         print(__doc__)
         sys.exit()
 
     elif len(sys.argv) < 3:
-        print("Please provide all arguments: series-mask <jser> <group> [optional sections to include]")
+        
+        print(
+            "Please provide all arguments: "
+            "series-mask <jser> <group> [optional sections to include]"
+        )
+        
         sys.exit(1)
 
     start_string = " START MASKING "
@@ -252,6 +280,7 @@ if __name__ == "__main__":
             restrict = list(map(int, secs))
             
         else:
+            
             restrict = [int(restrict)]
         
     except IndexError:
@@ -314,8 +343,10 @@ if __name__ == "__main__":
         except Exception as e:
 
             print(f"  {Fore.RED}ERROR{Style.RESET_ALL}: {type(e).__name__}\n")
+            
             for line in traceback.format_exc().splitlines():
                 print("  " + line)
+
             other_errs.append(section_n)
 
     print("\nMasking done.")
@@ -331,4 +362,13 @@ if __name__ == "__main__":
         all_secs = list(range(len(series.sections)))
         not_avail = [elem for elem in all_secs if elem not in secs_completed]
 
-    print_recap(series, group, tmp_dir, masked_sections, no_group_objs, img_err_sections, other_errs, not_avail)
+    print_recap(
+        series,
+        group,
+        tmp_dir,
+        masked_sections,
+        no_group_objs,
+        img_err_sections,
+        other_errs,
+        not_avail
+    )

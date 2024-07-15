@@ -4,6 +4,7 @@ import json
 import shutil
 from datetime import datetime
 from copy import deepcopy
+import traceback
 
 from PySide6.QtCore import QSettings
 
@@ -119,6 +120,17 @@ class Series():
 
         # host tree
         self.host_tree = HostTree(series_data["host_tree"], self)
+
+    def __enter__(self):
+        
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        
+        if exc_type is not None:
+            traceback.print_exception(exc_type, exc_value, traceback)
+            
+        self.close()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
     # STATIC METHOD

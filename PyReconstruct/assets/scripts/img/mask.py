@@ -29,18 +29,11 @@ from colorama import Fore, Style
 from colorama import just_fix_windows_console as windows_color_fix
 
 
-from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.backend.view import SectionLayer
-from PyReconstruct.modules.datatypes import Transform
-
-
 class ImageNotFoundError(Exception):
 
     def __init__(self, img):
-        self.message = f"  {Fore.RED}ERROR{Style.RESET_ALL}: {img} does not exist."
-
-    def __str__(self):
-        return self.message
+        msg = f"  {Fore.RED}ERROR{Style.RESET_ALL}: {img} does not exist."
+        super().__init__(msg)
 
 
 def issue_group_warning(group):
@@ -259,6 +252,10 @@ if __name__ == "__main__":
     start_string = " START MASKING "
     print(f"\n{start_string:=^100}\n")
 
+    from PyReconstruct.modules.datatypes import Series
+    from PyReconstruct.modules.backend.view import SectionLayer
+    from PyReconstruct.modules.datatypes import Transform
+
     windows_color_fix()
 
     jser = validate_jser(sys.argv[1])
@@ -372,3 +369,5 @@ if __name__ == "__main__":
         other_errs,
         not_avail
     )
+
+    series.close()

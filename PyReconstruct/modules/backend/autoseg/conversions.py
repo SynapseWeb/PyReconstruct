@@ -1,4 +1,5 @@
 import os
+import math
 import shutil
 import numpy as np
 import cv2
@@ -253,6 +254,9 @@ def labelsToObjects(series : Series, data_fp : str, group : str, labels : list =
             the threadpool
     """
     data_zg = zarr.open(data_fp)
+    if group not in data_zg:
+        return
+    
     sections = data_zg["raw"].attrs["sections"]
 
     # create threadpool and iterate through sections
@@ -392,7 +396,9 @@ def importSection(data_zg, group, snum, series, ids=None):
     resolution = labels.attrs["resolution"]
 
     raw = data_zg["raw"]
+    raw_offset = raw.attrs["offset"]
     raw_resolution = raw.attrs["resolution"]
+
     window = raw.attrs["window"]
     sections = raw.attrs["sections"]
     mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
@@ -407,35 +413,14 @@ def importSection(data_zg, group, snum, series, ids=None):
     # load the section and data
     section = series.loadSection(snum)
     arr = labels[z]
-
-    # exclude areas that already have good traces
-
-    # get groups/tags that are good
-    gts = []
-    for zg in data_zg:
-        if zg.startswith("labels_"):
-            gts.append(zg[len("labels_"):])
-        
-    # gather traces with these groups or tags
-    traces = []
-    for trace in section.tracesAsList():
-        for tag in trace.tags:
-            if tag in gts:
-                traces.append(trace)
-                continue
-        for g in gts:
-            if trace.name in series.object_groups.getGroupObjects(g):
-                traces.append(trace)
-            
-    # block out areas on the labels array with traces
-    slayer = SectionLayer(section, series, load_image_layer=False)
+    
     pixmap_dim = (arr.shape[1], arr.shape[0])
 
     # modify the window to adjust for offset and resolution
     zarr_window = window.copy()
 
-    field_offset_x = offset[2] / resolution[2] * mag
-    field_offset_y = offset[1] / resolution[1] * mag
+    field_offset_x = (offset[2] / resolution[2] - raw_offset[2] / raw_resolution[2]) * mag
+    field_offset_y = (offset[1] / resolution[1] - raw_offset[2] / raw_resolution[2]) * mag
     field_width = pixmap_dim[0] * mag
     field_height = pixmap_dim[1] * mag
 
@@ -444,13 +429,33 @@ def importSection(data_zg, group, snum, series, ids=None):
     zarr_window[2] = field_width
     zarr_window[3] = field_height
 
-    exclude_arr = slayer.generateLabelsArray(
-        pixmap_dim,
-        zarr_window,
-        traces,
-        tform
-    )
-    arr[exclude_arr != 0] = 0
+    # # exclude areas that already have good traces (TEMPORARILY REMOVED)
+
+    # # get groups/tags that are good
+    # gts = []
+    # for zg in data_zg:
+    #     if zg.startswith("labels_"):
+    #         gts.append(zg[len("labels_"):])
+        
+    # # gather traces with these groups or tags
+    # traces = []
+    # for trace in section.tracesAsList():
+    #     for tag in trace.tags:
+    #         if tag in gts:
+    #             traces.append(trace)
+    #             continue
+    #     for g in gts:
+    #         if trace.name in series.object_groups.getGroupObjects(g):
+    #             traces.append(trace)
+
+    # slayer = SectionLayer(section, series, load_image_layer=False)
+    # exclude_arr = slayer.generateLabelsArray(
+    #     pixmap_dim,
+    #     zarr_window,
+    #     traces,
+    #     tform
+    # )
+    # arr[exclude_arr != 0] = 0
 
     # iterate through label ids
     if ids is None:
@@ -482,3 +487,92 @@ def importSection(data_zg, group, snum, series, ids=None):
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 
     section.save()
+
+def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
+    """Create a new series from a neuroglancer zarr.
+    
+        Params:
+            zarr_fp (str): the filepath to the full neuroglancer zarr file
+            label_groups (str): the list of label groups to include as contours
+            name (str): the name of the new series
+    """
+    ng_zarr = zarr.open(zarr_fp, "r+")
+
+    # assume raw exists
+    raw = ng_zarr["raw"]
+
+    # save the original attributes
+    original_attr_items = []
+    for k in ("window", "sections", "alignment"):  # these three are modified in the process of making the new series
+        original_attr_items.append((k, raw.attrs[k]))
+
+    # set magnification
+    if "true_mag" in raw.attrs:
+        true_mag = raw.attrs["true_mag"]
+    else:
+        true_mag = raw["resolution"][-1]
+        raw.attrs["true_mag"] = true_mag
+
+    # set window
+    z, y, x = raw.shape
+    window = [0, 0, x * true_mag, y * true_mag]
+    raw.attrs["window"] = window
+
+    # set the sections
+    sections = list(range(z))
+    digits = len(str(sections[-1]))
+    raw.attrs["sections"] = sections
+
+    # set the alignment
+    alignment = {}
+    for snum in sections:
+        alignment[str(snum)] = Transform.identity().getList()
+    raw.attrs["alignment"] = alignment
+
+    # get the thickness
+    thickness = raw.attrs["resolution"][0] / 1000  # assume nm to micron conversion
+
+    # create the zarr containing the images
+    # aka split out each section into a new inidividual group
+    images_dir = os.path.join(os.path.dirname(zarr_fp), f"{name}_images.zarr")
+    images_zarr = zarr.open(images_dir, "w-")
+    images_zarr.create_group("scale_1")
+    images = images_zarr["scale_1"]
+    image_locations = []
+    for i, snum in enumerate(sections):
+        src = f"section{snum:0{digits}d}"
+        images.create_dataset(src, data=raw[i])
+        image_locations.append(
+            os.path.join(images_dir, "scale_1", src)
+        )
+    
+    # create the new series
+    series = Series.new(
+        image_locations,
+        name,
+        true_mag,
+        thickness
+    )
+
+    # import the label data into the series
+    for label_group in label_groups:
+        if label_group in ng_zarr:
+            labelsToObjects(
+                series,
+                zarr_fp,
+                label_group,
+            )
+    
+    # reset the original attributes for the raw
+    for key, value in original_attr_items:
+        raw.attrs[key] = value
+
+    
+    # return the series
+    return series
+
+    
+
+
+
+

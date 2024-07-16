@@ -64,7 +64,7 @@ from PyReconstruct.modules.backend.func import (
 from PyReconstruct.modules.backend.view import (
     optimizeSeriesBC
 )
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
+from PyReconstruct.modules.backend.autoseg import zarrToNewSeries, labelsToObjects
 from PyReconstruct.modules.backend.volume import export3DObjects
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import (
@@ -172,8 +172,9 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("newfromimages_act", "From images...", self.series, self.newSeries),
-                            ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True)),
-                            ("newfromxml_act", "From legacy .ser...", "", self.newFromXML)
+                            ("newfromzarr_act", "From image zarr data...", "", lambda : self.newSeries(from_zarr=True)),
+                            ("newfromxml_act", "From legacy .ser...", "", self.newFromXML),
+                            ("newfromngzarr_act", "From neuroglancer zarr...", "", self.newFromNgZarr),
                         ]
                     },
                     ("open_act", "Open", self.series, self.openSeries),
@@ -246,7 +247,15 @@ class MainWindow(QMainWindow):
                 "opts":
                 [
                     ("alloptions_act", "Options...", self.series, self.allOptions),
-                    ("importfromseries_act", "Import from series...", "", self.importFromSeries),
+                    {
+                        "attr_name": "importmenu",
+                        "text": "Import",
+                        "opts":
+                        [
+                            ("importfromseries_act", "from series...", "", self.importFromSeries),
+                            ("importfromzarrlabels_act", "from neuroglancer zarr labels...", "", self.importFromZarrLabels),
+                        ]
+                    },
                     {
                         "attr_name": "imagesmenu",
                         "text": "Images",
@@ -554,8 +563,8 @@ class MainWindow(QMainWindow):
 
         # create the label menu
         label_menu_list = [
-            ("importlabels_act", "Import label(s)", "", self.importLabels),
-            ("mergelabels_act", "Merge labels", "", self.mergeLabels)
+            # ("importlabels_act", "Import label(s)", "", self.importLabels),
+            # ("mergelabels_act", "Merge labels", "", self.mergeLabels)
         ]
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
@@ -1132,6 +1141,44 @@ class MainWindow(QMainWindow):
 
         # convert the series
         series = xmlToJSON(os.path.dirname(series_fp))
+
+        if not series:
+            return
+
+        # open new series
+        self.openSeries(series)
+
+        # prompt user to save series
+        self.saveAsToJser()
+    
+    def newFromNgZarr(self):
+        """Create a new series from a neuroglancer zarr."""
+        zarr_fp = FileDialog.get(
+            "dir",
+            self,
+            "Select Zarr File"
+        )
+        if not zarr_fp:
+            return
+                
+        if not zarr_fp.endswith("zarr"):
+            notify("Selected file is not a valid zarr.")
+        
+        groups = [f for f in os.listdir(zarr_fp) if not f.startswith(".") and not f=="raw"]
+
+        structure = [
+            ["New series name:", (True, "text", ""), " "],
+            ["Labels to import:"],
+            [("multicombo", groups, [])],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "New from NG Zarr")
+        if not confirmed:
+            return
+        
+        name = response[0]
+        label_groups = [g for g in response[1] if g in groups]
+
+        series = zarrToNewSeries(zarr_fp, label_groups, name)
 
         if not series:
             return
@@ -1928,7 +1975,7 @@ class MainWindow(QMainWindow):
         structure = [
             ["From section", ("int", all_sections[1]), "to section", ("int", all_sections[-1]), " "],
             ["Output magnification:", ("float", self.field.section.mag), " "],
-            ["Save in folder:", ("dir", None)],
+            # ["Save in folder:", ("dir", None)],
             ["Padding:", ("float", None)],
             ["Groups:"],
             [("multicombo", self.series.object_groups.getGroupList(), None)],
@@ -1941,16 +1988,15 @@ class MainWindow(QMainWindow):
         start = response[0]
         end = response[1]
         mag = response[2]
-        output = response[3]
-        padding = response[4]
-        groups = " ".join(response[5])
-        max_tissue = response[6][0][1]
+        padding = response[3]
+        groups = " ".join(response[4])
+        max_tissue = response[5][0][1]
         
         args = {
             "--start_section": start,
             "--end_section": end,
             "--mag": mag,
-            "--output": output,
+            # "--output": output,
             "--padding": padding,
             "--groups": groups,
             "--max_tissue": max_tissue,
@@ -2781,6 +2827,40 @@ class MainWindow(QMainWindow):
         self.field.table_manager.refresh()
 
         notify("Import successful.")
+    
+    def importFromZarrLabels(self):
+        """Import label data from a neuroglancer zarr."""
+        zarr_fp = FileDialog.get(
+            "dir",
+            self,
+            "Select Zarr File"
+        )
+        if not zarr_fp:
+            return
+                
+        if not zarr_fp.endswith("zarr"):
+            notify("Selected file is not a valid zarr.")
+        
+        groups = [f for f in os.listdir(zarr_fp) if not f.startswith(".") and not f=="raw"]
+
+        structure = [
+            ["Label group names:"],
+            [(True, "multicombo", groups, [])],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Import Labels")
+        if not confirmed:
+            return
+        
+        groups = response[0]
+        
+        for group in groups:
+            if group in os.listdir(zarr_fp):
+                labelsToObjects(
+                    self.series,
+                    zarr_fp,
+                    group,
+                )
+                self.field.reload()
         
     def restart(self):
         self.restart_mainwindow = True

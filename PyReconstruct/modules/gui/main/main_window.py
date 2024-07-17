@@ -298,7 +298,7 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
-                            ("setmag_act", "Manually set series manigifcation...", "", self.setSeriesMag),
+                            ("setmag_act", "Manually set magnification...", "", self.setSeriesMag),
                         ]
                     },
                     {
@@ -306,8 +306,8 @@ class MainWindow(QMainWindow):
                         "text": "Series Code",
                         "opts":
                         [
-                            ("setseriescode_act", "Set the series code", "", self.setSeriesCode),
-                            ("seriescodepattern_act", "Modify the series code regex pattern", "", self.editSeriesCodePattern),
+                            ("setseriescode_act", "Set series code", "", self.setSeriesCode),
+                            ("seriescodepattern_act", "Modify regex pattern", "", self.editSeriesCodePattern),
                         ]
                     },
                     None,

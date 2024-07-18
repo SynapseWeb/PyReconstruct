@@ -42,7 +42,7 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_traces (bool): whether or not to regenerate the traces
         """
         # save attributes
-        self.window = window
+        self.series.window = window
         self.pixmap_dim = pixmap_dim
         
         # set the series screen mag and scaling
@@ -75,15 +75,4 @@ class SectionLayer(ImageLayer, TraceLayer):
         painter.end()
 
         return view
-    
-    def changeTform(self, new_tform : Transform, log_event=True):
-        """Set the transform for the image.
-        
-            Params:
-                new_tform (Transform): the new transform to set for the section
-        """
-        self.section.tform = new_tform
-
-        if log_event:
-            self.series.addLog(None, self.section.n, "Modify transform")
 

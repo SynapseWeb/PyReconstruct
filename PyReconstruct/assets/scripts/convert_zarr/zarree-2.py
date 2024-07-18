@@ -23,17 +23,8 @@ else:
     print("Please provide arguments", flush=True)
     exit()
 
-if create_new:
-    zg = zarr.group(zarr_fp, overwrite=True)
-    zg.create_group("scale_1")
-    message = "Converting to zarr now..."
-else:
-    zg = zarr.open(zarr_fp)
-    message = "Updating zarr scales now..."
-
-print(message)
-
-def create2D(filename):
+def create2D(args):
+    zg, filename = args
     
     print(f"Working on {filename}...", flush=True)
     
@@ -77,24 +68,51 @@ def create2D(filename):
 
 if __name__ == "__main__":
 
-    t_all_start = time.perf_counter()
+    if create_new:
+        zg = zarr.group(zarr_fp, overwrite=True)
+        zg.create_group("scale_1")
+        message = "Converting to zarr now..."
+    else:
+        zg = zarr.open(zarr_fp)
+        message = "Updating zarr scales now..."
 
-    with Pool() as p:
+    print(message)
 
-        if create_new:
-            
-            results = p.imap_unordered(create2D, os.listdir(img_dir))
-            
-        else:
-            
-            results = p.imap_unordered(create2D, list(zg["scale_1"]))
+    processes = os.cpu_count()
 
-        for filename, duration in results:
+    while True:
 
-            print(f"Time for conversion {filename}: {round(duration, 2)} s")
+        try:
+            print(f"\n\nTRYING WITH PROCESSES: {processes}\n\n")
 
-    t_all_end = time.perf_counter()
+            t_all_start = time.perf_counter()
 
-    duration = round(t_all_end - t_all_start, 2)
+            with Pool(processes) as p:
 
-    print(f"All tasks completed: {duration} s")
+                if create_new:
+
+                    images = os.listdir(img_dir)
+                                        
+                else:
+
+                    images = list(zg["scale_1"])
+
+                args = zip([zg] * len(images), images)
+                    
+                results = p.imap_unordered(create2D, args)
+
+                for filename, duration in results:
+
+                    print(f"Time for conversion {filename}: {round(duration, 2)} s")
+
+            t_all_end = time.perf_counter()
+
+            duration = round(t_all_end - t_all_start, 2)
+
+            print(f"All tasks completed: {duration} s")
+
+            break
+        
+        except:
+
+            processes -= 1

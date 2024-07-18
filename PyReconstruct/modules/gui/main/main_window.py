@@ -64,7 +64,7 @@ from PyReconstruct.modules.backend.func import (
 from PyReconstruct.modules.backend.view import (
     optimizeSeriesBC
 )
-from PyReconstruct.modules.backend.autoseg import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
+from PyReconstruct.modules.backend.autoseg import zarrToNewSeries, labelsToObjects
 from PyReconstruct.modules.backend.volume import export3DObjects
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import (
@@ -172,8 +172,9 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("newfromimages_act", "From images...", self.series, self.newSeries),
-                            ("newfromzarr_act", "From zarr...", "", lambda : self.newSeries(from_zarr=True)),
-                            ("newfromxml_act", "From legacy .ser...", "", self.newFromXML)
+                            ("newfromzarr_act", "From image zarr data...", "", lambda : self.newSeries(from_zarr=True)),
+                            ("newfromxml_act", "From legacy .ser...", "", self.newFromXML),
+                            ("newfromngzarr_act", "From neuroglancer zarr...", "", self.newFromNgZarr),
                         ]
                     },
                     ("open_act", "Open", self.series, self.openSeries),
@@ -190,6 +191,15 @@ class MainWindow(QMainWindow):
                             ("manualbackup_act", "Backup with comment...", self.series, self.manualBackup),
                             # None,
                             # ("autobackup_act", "Toggle auto-backup", "checkbox", self.toggleAutoBackup),
+                        ]
+                    },
+                    {
+                        "attr_name": "exportmenu",
+                        "text": "Export",
+                        "opts":
+                        [
+                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
+                            ("exportngzarr_act", "as neuroglancer zarr...", "", self.exportToZarr)
                         ]
                     },
                     None,
@@ -242,18 +252,8 @@ class MainWindow(QMainWindow):
                         "text": "Import",
                         "opts":
                         [
-                            ("importfromseries_act", "From other series...", "", self.importFromSeries),
-                            None,
-                            ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
-                        ]
-                    },
-                    {
-                        "attr_name": "exportmenu",
-                        "text": "Export",
-                        "opts":
-                        [
-                            ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
-                            ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
+                            ("importfromseries_act", "from series...", "", self.importFromSeries),
+                            ("importfromzarrlabels_act", "from neuroglancer zarr labels...", "", self.importFromZarrLabels),
                         ]
                     },
                     {
@@ -289,7 +289,10 @@ class MainWindow(QMainWindow):
                         "opts":
                         [
                             ("modifytracepalette_act", "All palettes...", self.series, self.mouse_palette.modifyAllPaletteButtons),
-                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette)
+                            ("resetpalette_act", "Reset current palette", "", self.resetTracePalette),
+                            None,
+                            ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
+                            ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
                         ]
                     },
                     {
@@ -501,54 +504,27 @@ class MainWindow(QMainWindow):
         """Create the right-click menus used in the field."""
         # create the user columns options
         field_menu_list = [
-            ("edittrace_act", "Edit attributes...", self.series, self.field.traceDialog),
             {
-                "attr_name": "objectattrsmenu",
-                "text": "Object attributes",
-                "opts":
-                [
-                    ("objcomment_act", "View/Edit object comment...", "", self.field.setObjComment),
-                    ("sethosts_act", "Set host(s)...", self.series, self.field.setHosts),
-                ]
+                "attr_name": "tracemenu",
+                "text": "Trace",
+                "opts": self.field.getTraceMenu()
             },
             {
-                "attr_name": "modifymenu",
-                "text": "Modify",
-                "opts":
-                [
-                    ("mergetraces_act", "Merge traces", self.series, self.field.mergeSelectedTraces),
-                    ("mergeobjects_act", "Merge attributes...", self.series, lambda : self.field.mergeSelectedTraces(merge_attrs=True)),
-                    None,
-                    ("makenegative_act", "Make negative", "", self.field.makeNegative),
-                    ("makepositive_act", "Make positive", "", lambda : self.field.makeNegative(False)),
-                ]
-            },
-            getUserColsMenu(self.series, self.field.addUserCol, self.field.setUserCol, self.field.editUserCol),
-            {
-                "attr_name": "lockmenu",
-                "text": "Lock/Unlock",
-                "opts":
-                [
-                    ("lockobject_act", "Lock object", "", self.field.lockObjects),
-                    ("unlockobject_act", "Unlock object", "", self.field.unlockObject),
-                ]
+                "attr_name": "objectmenu",
+                "text": "Object",
+                "opts": self.field.getObjMenu()
             },
             {
-                "attr_name": "curatemenu",
-                "text": "Set curation",
-                "opts":
-                [
-                    ("blankcurate_act", "Blank", "", lambda : self.field.setCuration("")),
-                    ("needscuration_act", "Needs curation", "", lambda : self.field.setCuration("Needs curation")),
-                    ("curated_act", "Curated", "", lambda : self.field.setCuration("Curated"))
-                ]
+                "attr_name": "ztracemenu",
+                "text": "Ztrace",
+                "opts": self.field.getZtraceMenu()
             },
+            None,
             {
                 "attr_name": "viewmenu",
                 "text": "View",
                 "opts":
                 [
-                    ("hidetraces_act", "Hide traces", self.series, self.field.hideTraces),
                     ("unhideall_act", "Unhide all traces", self.series, self.field.unhideAllTraces),
                     None,
                     ("hideall_act", "Toggle hide all", self.series, self.field.toggleHideAllTraces),
@@ -568,17 +544,6 @@ class MainWindow(QMainWindow):
             ("selectall_act", "Select all traces", self.series, self.field.selectAllTraces),
             ("deselect_act", "Deselect traces", self.series, self.field.deselectAllTraces),
             None,
-            ("createflag_act", "Create flag...", "", self.field.createTraceFlag),
-            None,
-            {
-                "attr_name": "deleteallmenu",
-                "text": "Delete all",
-                "opts":
-                [
-                    ("deletealltraces_act", "traces with same name", "", self.field.deleteAll),
-                    ("deletealltracestags_act", "traces with same name and tags", "", lambda : self.field.deleteAll(True))
-                ]
-            },
             ("delete_act", "Delete", "Del", self.backspace),
         ]
         self.field_menu = QMenu(self)
@@ -586,36 +551,20 @@ class MainWindow(QMainWindow):
 
         # organize actions
         self.trace_actions = [
-            self.edittrace_act,
-            self.objectattrsmenu,
-            self.objcomment_act,
-            self.sethosts_act,
-            self.modifymenu,
-            self.mergetraces_act,
-            self.makepositive_act,
-            self.makenegative_act,
-            self.lockmenu,
-            self.lockobject_act,
-            self.unlockobject_act,
-            self.curatemenu,
-            self.blankcurate_act,
-            self.needscuration_act,
-            self.curated_act,
-            self.hidetraces_act,
+            self.tracemenu,
+            self.objectmenu,
             self.cut_act,
             self.copy_act,
             self.pasteattributes_act,
-            self.createflag_act,
-            self.deleteallmenu
         ]
         self.ztrace_actions = [
-            self.edittrace_act
+            self.ztracemenu
         ]
 
         # create the label menu
         label_menu_list = [
-            ("importlabels_act", "Import label(s)", "", self.importLabels),
-            ("mergelabels_act", "Merge labels", "", self.mergeLabels)
+            # ("importlabels_act", "Import label(s)", "", self.importLabels),
+            # ("mergelabels_act", "Merge labels", "", self.mergeLabels)
         ]
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
@@ -663,15 +612,6 @@ class MainWindow(QMainWindow):
                 a.setEnabled(False)
             for a in self.ztrace_actions:
                 a.setEnabled(False)
-            
-        # check for objects (to allow merging)
-        names = set()
-        for trace in self.field.section.selected_traces:
-            names.add(trace.name)
-        if len(names) > 1:
-            self.mergeobjects_act.setEnabled(True)
-        else:
-            self.mergeobjects_act.setEnabled(False)
 
         # check labels
         if clicked_label:
@@ -682,12 +622,6 @@ class MainWindow(QMainWindow):
             else:
                 self.importlabels_act.setEnabled(False)
                 self.mergelabels_act.setEnabled(False)
-        
-        # check if locked trace was right-clicked
-        if clicked_trace and self.series.getAttr(clicked_trace.name, "locked"):
-            self.unlockobject_act.setEnabled(True)
-        else:
-            self.unlockobject_act.setEnabled(False)
         
         # MENUBAR
 
@@ -745,7 +679,16 @@ class MainWindow(QMainWindow):
             ("Shift+Down", lambda : self.translate("down", "big")),
 
             ("Ctrl+Shift+Left", self.field.rotateTform),
-            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False))
+            ("Ctrl+Shift+Right", lambda : self.field.rotateTform(cc=False)),
+
+            ("F1", lambda : self.field.scaleTform(sx=1.005)),
+            ("Shift+F1", lambda : self.field.scaleTform(sx=0.995)),
+            ("F2", lambda : self.field.scaleTform(sy=1.005)),
+            ("Shift+F2", lambda : self.field.scaleTform(sy=0.995)),
+            ("F3", lambda : self.field.shearTform(sx=0.005)),
+            ("Shift+F3", lambda : self.field.shearTform(sx=-0.005)),
+            ("F4", lambda : self.field.shearTform(sy=0.005)),
+            ("Shift+F4", lambda : self.field.shearTform(sy=-0.005)),
         ]
 
         for kbd, act in shortcuts:
@@ -863,11 +806,11 @@ class MainWindow(QMainWindow):
             if not zarr_fp: return
 
         python_bin = sys.executable
-        zarr_converter = os.path.join(assets_dir, "scripts", "convert_zarr", "start_process.py")
+        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
         if create_new:
-            convert_cmd = [python_bin, zarr_converter, self.series.src_dir, zarr_fp]
+            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir, zarr_fp]
         else:
-            convert_cmd = [python_bin, zarr_converter, self.series.src_dir]
+            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir]
 
         if os.name == 'nt':
 
@@ -1198,6 +1141,44 @@ class MainWindow(QMainWindow):
 
         # convert the series
         series = xmlToJSON(os.path.dirname(series_fp))
+
+        if not series:
+            return
+
+        # open new series
+        self.openSeries(series)
+
+        # prompt user to save series
+        self.saveAsToJser()
+    
+    def newFromNgZarr(self):
+        """Create a new series from a neuroglancer zarr."""
+        zarr_fp = FileDialog.get(
+            "dir",
+            self,
+            "Select Zarr File"
+        )
+        if not zarr_fp:
+            return
+                
+        if not zarr_fp.endswith("zarr"):
+            notify("Selected file is not a valid zarr.")
+        
+        groups = [f for f in os.listdir(zarr_fp) if not f.startswith(".") and not f=="raw"]
+
+        structure = [
+            ["New series name:", (True, "text", ""), " "],
+            ["Labels to import:"],
+            [("multicombo", groups, [])],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "New from NG Zarr")
+        if not confirmed:
+            return
+        
+        name = response[0]
+        label_groups = [g for g in response[1] if g in groups]
+
+        series = zarrToNewSeries(zarr_fp, label_groups, name)
 
         if not series:
             return
@@ -1989,269 +1970,294 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
     def exportToZarr(self):
-        """Create a neuroglancer-compatible zarr for autosegmentation."""
-
-        pass  # TODO: Update for new zarring method
-    
-        # self.saveAllData()
-        # self.removeZarrLayer()
-
-        # inputs, dialog_confirmed = CreateZarrDialog(self, self.series).exec()
-
-        # if not dialog_confirmed: return
-
-        # border_obj, srange, mag = inputs
-
-        # # convert border obj to window
-        # window = borderToWindow(border_obj, srange, self.series)
-
-        # print("Making zarr directory...")
+        """Create a neuroglancer-compatible zarr."""
+        all_sections = sorted(list(self.series.sections.keys()))
+        structure = [
+            ["From section", ("int", all_sections[1]), "to section", ("int", all_sections[-1]), " "],
+            ["Output magnification:", ("float", self.field.section.mag), " "],
+            # ["Save in folder:", ("dir", None)],
+            ["Padding:", ("float", None)],
+            ["Groups:"],
+            [("multicombo", self.series.object_groups.getGroupList(), None)],
+            [("check", ("use max tissue", True))]
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Create Neuroglancer Zarr", spacing=10)
+        if not confirmed:
+            return
         
-        # # export to zarr
-        # data_fp = seriesToZarr(
-        #     self.series,
-        #     srange,
-        #     mag,
-        #     window
-        # )
-
-        # self.series.options["autoseg"]["zarr_current"] = data_fp
-
-        # print(f"Zarr directory done and located here: {data_fp}")
-    
-    def train(self, retrain=False):
-        """Train an autosegmentation model."""
-        self.saveAllData()
-        self.removeZarrLayer()
-
-        model_paths = {"a":{"b":"a/b/m.py"}}
-
-        opts = self.series.options["autoseg"]
-
-        response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
-        if not confirmed: return
+        start = response[0]
+        end = response[1]
+        mag = response[2]
+        padding = response[3]
+        groups = " ".join(response[4])
+        max_tissue = response[5][0][1]
         
-        (data_fp, iterations, save_every, group, model_path, cdir, \
-         pre_cache, min_masked, downsample) = response
-
-        training_opts = {
-            'zarr_current': data_fp,
-            'iters': iterations,
-            'save_every': save_every,
-            'group': group,
-            'model_path': model_path,
-            'checkpts_dir': cdir,
-            'pre_cache': pre_cache,
-            'min_masked': min_masked,
-            'downsample_bool': downsample
+        args = {
+            "--start_section": start,
+            "--end_section": end,
+            "--mag": mag,
+            # "--output": output,
+            "--padding": padding,
+            "--groups": groups,
+            "--max_tissue": max_tissue,
         }
 
-        for k, v in training_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
+        python_bin = sys.executable
+        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
 
-        print("Exporting labels to zarr directory...")
+        convert_cmd = [python_bin, zarr_converter, "create_ng_zarr", self.series.jser_fp]
+
+        for argname, arg in args.items():
+            if arg or arg == 0:
+                if type(arg) is bool:
+                    convert_cmd.append(argname)
+                else:
+                    convert_cmd += [argname] + str(arg).split()
         
-        if retrain:
-            group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
-            seriesToLabels(self.series, data_fp)
+        if os.name == 'nt':
+
+            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
             
         else:
-            group_name = f"labels_{group}"
-            seriesToLabels(self.series, data_fp, group)
 
-        print("Zarr directory updated with labels!")
-
-        if retrain:
-            self.field.reload()
-            self.field.table_manager.refresh()
-
-        print("Starting training....")
-
-        print("Importing training modules...")
-
-        from autoseg import train, make_mask, model_paths
-
-        make_mask(data_fp, group_name)
-        
-        sources = [{
-            "raw" : (data_fp, "raw"),
-            "labels" : (data_fp, group_name),
-            "unlabelled" : (data_fp, "unlabelled")
-        }]
-
-        train(
-            iterations=iterations,
-            save_every=save_every,
-            sources=sources,
-            model_path=model_path,
-            pre_cache=pre_cache,
-            min_masked=min_masked,
-            downsample=downsample,
-            checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
-        )
-
-        print("Done training!")
+            convert_cmd = " ".join(convert_cmd)
+            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
     
-    def markKeep(self):
-        """Add the selected trace to the most recent "keep" segmentation group."""
-        keep_tag = f"{self.series.getRecentSegGroup()}_keep"
-        for trace in self.field.section.selected_traces:
-            trace.addTag(keep_tag)
-        # deselect traces and hide
-        self.field.hideTraces()
-        self.field.deselectAllTraces()
+    # AUTOSEG FUNCTIONS TEMPORARILY REMOVED
 
-    def predict(self, data_fp : str = None):
-        """Run predictons.
+    # def train(self, retrain=False):
+    #     """Train an autosegmentation model."""
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
+
+    #     model_paths = {"a":{"b":"a/b/m.py"}}
+
+    #     opts = self.series.options["autoseg"]
+
+    #     response, confirmed = TrainDialog(self, self.series, model_paths, opts, retrain).exec()
+    #     if not confirmed: return
         
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-        self.saveAllData()
-        self.removeZarrLayer()
+    #     (data_fp, iterations, save_every, group, model_path, cdir, \
+    #      pre_cache, min_masked, downsample) = response
 
-        print("Importing models...")
+    #     training_opts = {
+    #         'zarr_current': data_fp,
+    #         'iters': iterations,
+    #         'save_every': save_every,
+    #         'group': group,
+    #         'model_path': model_path,
+    #         'checkpts_dir': cdir,
+    #         'pre_cache': pre_cache,
+    #         'min_masked': min_masked,
+    #         'downsample_bool': downsample
+    #     }
+
+    #     for k, v in training_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
+
+    #     print("Exporting labels to zarr directory...")
         
-        from autoseg import predict, model_paths
-        # model_paths = {"a":{"b":"a/b/m.py"}}
-
-        opts = self.series.options["autoseg"]
-
-        response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
-
-        if not dialog_confirmed: return
-
-        data_fp, model_path, cp_path, write_opts, increase, downsample, full_out_roi = response
-
-        predict_opts = {
-            'zarr_current': data_fp,
-            'model_path': model_path,
-            'checkpts_dir': os.path.dirname(cp_path),
-            'write': write_opts,
-            'increase': increase,
-            'downsample_bool': downsample,
-            'full_out_roi': full_out_roi
-        }
-
-        for k, v in predict_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
-                
-        print("Running predictions...")
-
-        zarr_datasets = predict(
-            sources=[(data_fp, "raw")],
-            out_file=data_fp,
-            checkpoint_path=cp_path,
-            model_path=model_path,
-            write=write_opts,
-            increase=increase,
-            downsample=downsample,
-            full_out_roi=full_out_roi
-        )
-
-        # display the affinities
-        self.setZarrLayer(data_fp)
-        for zg in os.listdir(data_fp):
-            if zg.startswith("pred_affs"):
-                self.setLayerGroup(zg)
-                break
-
-        print("Predictions done.")
-        
-    def segment(self, data_fp : str = None):
-        """Run an autosegmentation.
-        
-            Params:
-                data_fp (str): the filepath for the zarr
-        """
-        self.saveAllData()
-        self.removeZarrLayer()
-
-        print("Importing modules...")
-        
-        from autoseg import hierarchical
-
-        opts = self.series.options["autoseg"]
-
-        response, dialog_confirmed = SegmentDialog(self, opts).exec()
-
-        if not dialog_confirmed: return
-
-        data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
-
-        segment_opts = {
-            "zarr_current": data_fp,
-            "thresholds": thresholds,
-            "downsample_int": downsample,
-            "norm_preds": norm_preds,
-            "min_seed": min_seed,
-            "merge_fun": merge_fun
-        }
-
-        for k, v in segment_opts.items():
-            opts[k] = v
-        self.seriesModified(True)
-
-        print("Running hierarchical...")
-
-        dataset = None
-        for d in os.listdir(data_fp):
-            if "affs" in d:
-                dataset = d
-                break
-
-        print("Segmentation started...")
+    #     if retrain:
+    #         group_name = f"labels_{self.series.getRecentSegGroup()}_keep"
+    #         seriesToLabels(self.series, data_fp)
             
-        hierarchical.run(
-            data_fp,
-            dataset,
-            thresholds=list(sorted(thresholds)),
-            normalize_preds=norm_preds,
-            min_seed_distance=min_seed,
-            merge_function=merge_fun
-        )
+    #     else:
+    #         group_name = f"labels_{group}"
+    #         seriesToLabels(self.series, data_fp, group)
 
-        print("Segmentation done.")
+    #     print("Zarr directory updated with labels!")
 
-        # display the segmetnation
-        self.setZarrLayer(data_fp)
-        for zg in os.listdir(data_fp):
-            if zg.startswith("seg"):
-                self.setLayerGroup(zg)
-                break
+    #     if retrain:
+    #         self.field.reload()
+    #         self.field.table_manager.refresh()
+
+    #     print("Starting training....")
+
+    #     print("Importing training modules...")
+
+    #     from autoseg import train, make_mask, model_paths
+
+    #     make_mask(data_fp, group_name)
+        
+    #     sources = [{
+    #         "raw" : (data_fp, "raw"),
+    #         "labels" : (data_fp, group_name),
+    #         "unlabelled" : (data_fp, "unlabelled")
+    #     }]
+
+    #     train(
+    #         iterations=iterations,
+    #         save_every=save_every,
+    #         sources=sources,
+    #         model_path=model_path,
+    #         pre_cache=pre_cache,
+    #         min_masked=min_masked,
+    #         downsample=downsample,
+    #         checkpoint_basename=os.path.join(cdir, "model")  # where existing checkpoints
+    #     )
+
+    #     print("Done training!")
     
-    def importLabels(self, all=False):
-        """Import labels from a zarr."""
-        if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
-            return
-        
-        # get necessary data
-        data_fp = self.series.zarr_overlay_fp
-        group_name = self.series.zarr_overlay_group
+    # def markKeep(self):
+    #     """Add the selected trace to the most recent "keep" segmentation group."""
+    #     keep_tag = f"{self.series.getRecentSegGroup()}_keep"
+    #     for trace in self.field.section.selected_traces:
+    #         trace.addTag(keep_tag)
+    #     # deselect traces and hide
+    #     self.field.hideTraces()
+    #     self.field.deselectAllTraces()
 
-        labels = None if all else self.field.zarr_layer.selected_ids
+    # def predict(self, data_fp : str = None):
+    #     """Run predictons.
         
-        labelsToObjects(
-            self.series,
-            data_fp,
-            group_name,
-            labels
-        )
-        self.field.reload()
-        self.removeZarrLayer()
-        self.field.table_manager.refresh()
+    #         Params:
+    #             data_fp (str): the filepath for the zarr
+    #     """
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
 
-        notify("Labels imported successfully.")
+    #     print("Importing models...")
+        
+    #     from autoseg import predict, model_paths
+    #     # model_paths = {"a":{"b":"a/b/m.py"}}
+
+    #     opts = self.series.options["autoseg"]
+
+    #     response, dialog_confirmed = PredictDialog(self, model_paths, opts).exec()
+
+    #     if not dialog_confirmed: return
+
+    #     data_fp, model_path, cp_path, write_opts, increase, downsample, full_out_roi = response
+
+    #     predict_opts = {
+    #         'zarr_current': data_fp,
+    #         'model_path': model_path,
+    #         'checkpts_dir': os.path.dirname(cp_path),
+    #         'write': write_opts,
+    #         'increase': increase,
+    #         'downsample_bool': downsample,
+    #         'full_out_roi': full_out_roi
+    #     }
+
+    #     for k, v in predict_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
+                
+    #     print("Running predictions...")
+
+    #     zarr_datasets = predict(
+    #         sources=[(data_fp, "raw")],
+    #         out_file=data_fp,
+    #         checkpoint_path=cp_path,
+    #         model_path=model_path,
+    #         write=write_opts,
+    #         increase=increase,
+    #         downsample=downsample,
+    #         full_out_roi=full_out_roi
+    #     )
+
+    #     # display the affinities
+    #     self.setZarrLayer(data_fp)
+    #     for zg in os.listdir(data_fp):
+    #         if zg.startswith("pred_affs"):
+    #             self.setLayerGroup(zg)
+    #             break
+
+    #     print("Predictions done.")
+        
+    # def segment(self, data_fp : str = None):
+    #     """Run an autosegmentation.
+        
+    #         Params:
+    #             data_fp (str): the filepath for the zarr
+    #     """
+    #     self.saveAllData()
+    #     self.removeZarrLayer()
+
+    #     print("Importing modules...")
+        
+    #     from autoseg import hierarchical
+
+    #     opts = self.series.options["autoseg"]
+
+    #     response, dialog_confirmed = SegmentDialog(self, opts).exec()
+
+    #     if not dialog_confirmed: return
+
+    #     data_fp, thresholds, downsample, norm_preds, min_seed, merge_fun = response
+
+    #     segment_opts = {
+    #         "zarr_current": data_fp,
+    #         "thresholds": thresholds,
+    #         "downsample_int": downsample,
+    #         "norm_preds": norm_preds,
+    #         "min_seed": min_seed,
+    #         "merge_fun": merge_fun
+    #     }
+
+    #     for k, v in segment_opts.items():
+    #         opts[k] = v
+    #     self.seriesModified(True)
+
+    #     print("Running hierarchical...")
+
+    #     dataset = None
+    #     for d in os.listdir(data_fp):
+    #         if "affs" in d:
+    #             dataset = d
+    #             break
+
+    #     print("Segmentation started...")
+            
+    #     hierarchical.run(
+    #         data_fp,
+    #         dataset,
+    #         thresholds=list(sorted(thresholds)),
+    #         normalize_preds=norm_preds,
+    #         min_seed_distance=min_seed,
+    #         merge_function=merge_fun
+    #     )
+
+    #     print("Segmentation done.")
+
+    #     # display the segmetnation
+    #     self.setZarrLayer(data_fp)
+    #     for zg in os.listdir(data_fp):
+    #         if zg.startswith("seg"):
+    #             self.setLayerGroup(zg)
+    #             break
     
-    def mergeLabels(self):
-        """Merge selected labels in a zarr."""
-        if not self.field.zarr_layer:
-            return
+    # def importLabels(self, all=False):
+    #     """Import labels from a zarr."""
+    #     if not self.field.zarr_layer or not self.field.zarr_layer.is_labels:
+    #         return
         
-        self.field.zarr_layer.mergeLabels()
-        self.field.generateView()
+    #     # get necessary data
+    #     data_fp = self.series.zarr_overlay_fp
+    #     group_name = self.series.zarr_overlay_group
+
+    #     labels = None if all else self.field.zarr_layer.selected_ids
+        
+    #     labelsToObjects(
+    #         self.series,
+    #         data_fp,
+    #         group_name,
+    #         labels
+    #     )
+    #     self.field.reload()
+    #     self.removeZarrLayer()
+    #     self.field.table_manager.refresh()
+
+    #     notify("Labels imported successfully.")
+    
+    # def mergeLabels(self):
+    #     """Merge selected labels in a zarr."""
+    #     if not self.field.zarr_layer:
+    #         return
+        
+    #     self.field.zarr_layer.mergeLabels()
+    #     self.field.generateView()
     
     def hideSeriesTraces(self, hidden=True):
         """Hide or unhide all traces in the entire series.
@@ -2807,7 +2813,6 @@ class MainWindow(QMainWindow):
             )
 
         if "brightness/contrast profiles" in response:
-            print("wowze")
             import_as = response["brightness/contrast profiles"]
             self.series.importBC(  # cannot be undone
                 o_series,
@@ -2822,6 +2827,40 @@ class MainWindow(QMainWindow):
         self.field.table_manager.refresh()
 
         notify("Import successful.")
+    
+    def importFromZarrLabels(self):
+        """Import label data from a neuroglancer zarr."""
+        zarr_fp = FileDialog.get(
+            "dir",
+            self,
+            "Select Zarr File"
+        )
+        if not zarr_fp:
+            return
+                
+        if not zarr_fp.endswith("zarr"):
+            notify("Selected file is not a valid zarr.")
+        
+        groups = [f for f in os.listdir(zarr_fp) if not f.startswith(".") and not f=="raw"]
+
+        structure = [
+            ["Label group names:"],
+            [(True, "multicombo", groups, [])],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Import Labels")
+        if not confirmed:
+            return
+        
+        groups = response[0]
+        
+        for group in groups:
+            if group in os.listdir(zarr_fp):
+                labelsToObjects(
+                    self.series,
+                    zarr_fp,
+                    group,
+                )
+                self.field.reload()
         
     def restart(self):
         self.restart_mainwindow = True

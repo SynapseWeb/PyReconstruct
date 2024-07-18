@@ -54,7 +54,7 @@ class HistoryTableWidget(QDockWidget):
         # establish table headers
         self.horizontal_headers = ["Date", "Time", "User", "Object", "Sections", "Event"]
 
-        self.table = CopyTableWidget(len(log_set.all_logs), len(self.horizontal_headers))
+        self.table = CopyTableWidget(self, len(log_set.all_logs), len(self.horizontal_headers))
         self.setWidget(self.table)
 
         # format table

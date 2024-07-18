@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         
         data = self.p.readAllStandardError()
         stderr = bytes(data).decode("utf8")
-        # self.message(stderr)
+        self.message(stderr)
 
     def handle_stdout(self):
         
@@ -83,8 +83,12 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
 
     zarr_cmd = sys.executable
-    zarr_converter = os.path.join(os.path.dirname(__file__), "zarree-2.py")
-    zarr_args = [zarr_converter] + sys.argv[1:]
+    if sys.argv[1] == "convert_zarr":
+        zarr_converter = os.path.join(os.path.dirname(__file__), "convert_zarr", "zarree-2.py")
+    elif sys.argv[1] == "create_ng_zarr":
+        zarr_converter = os.path.join(os.path.dirname(__file__), "create_ng_zarr", "create_ng_zarr.py")
+    
+    zarr_args = [zarr_converter] + sys.argv[2:]
     
     app = QApplication(sys.argv)
     window = MainWindow()

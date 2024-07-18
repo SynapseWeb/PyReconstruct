@@ -115,35 +115,7 @@ class ZtraceTableWidget(DataTable):
         populateMenuBar(self, self.menubar, menubar_list)
 
         # create the right-click menu
-        context_menu_list = [
-            ("editname_act", "Edit attributes...", "", self.editAttributes),
-            ("smooth_act", "Smooth", "", self.smooth),
-            None,
-            {
-                "attr_name": "menu_3D",
-                "text": "3D",
-                "opts":
-                [
-                    ("addto3D_act", "Add to scene", "", self.addTo3D),
-                    ("remove3D_act", "Remove from scene", "", self.remove3D)
-                ]
-            },
-            {
-                "attr_name" : "group_menu",
-                "text": "Group",
-                "opts":
-                [
-                    ("addgroup_act", "Add to group...", "", self.addToGroup),
-                    ("removegroup_act", "Remove from group...", "", self.removeFromGroup),
-                    ("removeallgroups_act", "Remove from all groups", "", self.removeFromAllGroups)
-                ]
-            },
-            ("setalignment_act", "Change ztrace alignment...", "", self.editAlignment),
-            None,
-            ("copy_act", "Copy", "", self.table.copy),
-            None,
-            ("delete_act", "Delete", "", self.delete)
-        ]
+        context_menu_list = self.mainwindow.field.getZtraceMenu()
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
             
@@ -208,7 +180,7 @@ class ZtraceTableWidget(DataTable):
         self.mainwindow.checkActions()
     
     def getSelected(self, single=False):
-        """Get the trace items that iare selected by the user."""
+        """Get the ztrace names that iare selected by the user."""
         selected_indeces = self.table.selectedIndexes()
         if len(selected_indeces) < 1:
             return
@@ -224,203 +196,10 @@ class ZtraceTableWidget(DataTable):
                 return selected[0]
         else:
             return selected
-
-    # RIGHT CLICK FUNCTIONS
-
-    def editAttributes(self):
-        """Edit the name of a ztrace."""
-        names = self.getSelected()
-        if names is None:
-            return
-        if len(names) > 1:
-            notify("Please modify one ztrace at a time.")
-            return
-        name = names[0]
-
-        if name not in self.series.ztraces:
-            return
-        ztrace = self.series.ztraces[name]
-
-        structure = [
-            ["Name:", ("text", name)],
-            ["Color:", ("color", ztrace.color)]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Set Attributes")
-        if not confirmed:
-            return
-
-        new_name, new_color = response
-
-        if new_name != name and new_name in self.series.ztraces:
-            notify("This ztrace already exists.")
-            return
-        
-        # keep track of scroll bar position
-        vscroll = self.table.verticalScrollBar()
-        scroll_pos = vscroll.value()
-
-        # save the series state
-        self.series_states.addState()
-
-        # modify the ztrace data
-        self.series.editZtraceAttributes(name, new_name, new_color)
-        
-        self.manager.updateZtraces()
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-        
-        # reset scroll bar position
-        vscroll.setValue(scroll_pos)
-    
-    def smooth(self):
-        """Smooth a set of ztraces."""
-        names = self.getSelected()
-        if not names:
-            return
-
-        structure = [
-            ["Smoothing factor:", ("int", 10)],
-            [("check", ("Create new ztrace", True))]
-        ]
-        
-        response, confirmed = QuickDialog.get(self, structure, "Smooth Ztrace")
-        if not confirmed:
-            return
-        
-        smooth = response[0]
-        newztrace = response[1][0][1]
-        
-        # save the series state
-        self.series_states.addState()
-        
-        self.series.smoothZtraces(names, smooth, newztrace)
-        self.manager.updateZtraces()
-        
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
-    
-    def addTo3D(self, event=None):
-        """Generate a 3D view of an object"""
-        ztrace_names = self.getSelected()
-        if ztrace_names:
-            self.mainwindow.addTo3D(ztrace_names, ztraces=True)
-    
-    def remove3D(self):
-        """Remove object(s) from the scene."""
-        ztrace_names = self.getSelected()
-        if ztrace_names:
-            self.mainwindow.removeFrom3D(ztrace_names, ztraces=True)
-    
-    def addToGroup(self, log_event=True):
-        """Add objects to a group."""
-        ztrace_names = self.getSelected()
-        if not ztrace_names:
-            return
-        
-        # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.ztrace_groups).exec()
-
-        if not confirmed:
-            return
-        
-        # save the series state
-        self.series_states.addState()
-        
-        for name in ztrace_names:
-            self.series.ztrace_groups.add(group=group_name, obj=name)
-            if log_event:
-                self.series.addLog(name, None, f"Add to group '{group_name}'")
-            self.series.modified_ztraces.add(name)
-        
-        self.manager.updateZtraces()
-    
-    def removeFromGroup(self, log_event=True):
-        """Remove objects from a group."""
-        ztrace_names = self.getSelected()
-        if not ztrace_names:
-            return
-        
-        # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.ztrace_groups, new_group=False).exec()
-
-        if not confirmed:
-            return
-        
-        # save the series state
-        self.series_states.addState()
-        
-        for name in ztrace_names:
-            self.series.ztrace_groups.remove(group=group_name, obj=name)
-            if log_event:
-                self.series.addLog(name, None, f"Remove from group '{group_name}'")
-            self.series.modified_ztraces.add(name)
-        
-        self.manager.updateZtraces()
-    
-    def removeFromAllGroups(self, log_event=True):
-        """Remove a set of traces from all groups."""
-        ztrace_names = self.getSelected()
-        if not ztrace_names:
-            return
-        
-        # save the series state
-        self.series_states.addState()
-        
-        for name in ztrace_names:
-            self.series.ztrace_groups.removeObject(name)
-            if log_event:
-                self.series.addLog(name, None, f"Remove from all object groups")
-            self.series.modified_ztraces.add(name)
-            
-        self.manager.updateZtraces()
-    
-    def editAlignment(self):
-        """Edit alignment for ztrace(s)."""
-        names = self.getSelected()
-        if not names:
-            notify("Please select at least one ztrace.")
-            return
-        
-        structure = [
-            ["Alignment:", ("combo", list(self.mainwindow.field.section.tforms.keys()))]
-        ]
-        response, confirmed = QuickDialog.get(self, structure, "Object Alignment")
-        if not confirmed:
-            return
-        
-        # save the series state
-        self.series_states.addState()
-        
-        alignment = response[0]
-        if not alignment: alignment = None
-        for name in names:
-            self.series.setAttr(name, "alignment", alignment, ztrace=True)
-            self.series.addLog(name, None, "Edit default alignment")
-        
-        self.refresh()
-    
-    def delete(self):
-        """Delete a set of ztraces."""
-        names = self.getSelected()
-        if not names:
-            return
-        
-        # save the series state
-        self.series_states.addState()
-        
-        self.series.deleteZtraces(names)
-        self.manager.updateZtraces()
-
-        # update the view
-        self.mainwindow.field.reload()
-        self.mainwindow.seriesModified(True)
     
     def backspace(self):
         """Called when backspace is pressed."""
-        self.delete()
+        self.mainwindow.field.deleteZtrace()
 
     # MENU-RELATED FUNCTIONS   
     

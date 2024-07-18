@@ -6,8 +6,9 @@ from PyReconstruct.modules.gui.utils import lessThan
 
 class CopyTableWidget(QTableWidget):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, container, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.container = container
 
     def keyPressEvent(self, event):
         ret = super().keyPressEvent(event)

@@ -1,1 +1,1 @@
-from .conversions import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume
+from .conversions import seriesToZarr, seriesToLabels, labelsToObjects, groupsToVolume, zarrToNewSeries

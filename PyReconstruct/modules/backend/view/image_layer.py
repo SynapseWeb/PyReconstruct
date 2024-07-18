@@ -1,5 +1,5 @@
 import os
-import sys
+import math
 import zarr
 import subprocess
 import numpy as np
@@ -85,15 +85,6 @@ class ImageLayer():
                 self.base_corners = [(0, 0), (0, self.bh), (self.bw, self.bh), (self.bw, 0)]
                 self.image_found = True
     
-    def setSrcDir(self, src_dir : str):
-        """Set the immediate source directory and reload image.
-        
-            Params:
-                src_dir (str): the new directory for the images
-        """
-        self.series.src_dir = src_dir
-        self.loadImage()
-    
     def _calcTformCorners(self, base_pixmap : QPixmap, tform : Transform) -> tuple:
         """Calculate the vector for each corner of a transformed image.
         
@@ -130,43 +121,6 @@ class ImageLayer():
         br = (br_x, br_y)
 
         return bl, tl, tr, br
-    
-    def setBrightness(self, b : int, log_event=True):
-        """Set the brightness of the section."""
-        self.section.brightness = b
-        if self.section.brightness > 100:
-            self.section.brightness = 100
-        elif self.section.brightness < -100:
-            self.section.brightness = -100
-        
-        if log_event:
-            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
-    
-    def setContrast(self, c : int, log_event=True):
-        """Set the contrast of the section."""
-        self.section.contrast = c
-        if self.section.contrast > 100:
-            self.section.contrast = 100
-        elif self.section.contrast < -100:
-            self.section.contrast = -100
-        
-        if log_event:
-            self.series.addLog(None, self.series.current_section, "Modify brightness/contrast")
-    
-    def changeBrightness(self, change : int, log_event=True):
-        """Change the brightness of the section.
-        
-            Params:
-                change (int): the degree to which brightness is changed
-        """
-        self.setBrightness(self.section.brightness + change, log_event)
-    
-    def changeContrast(self, change : int, log_event=True):
-        """Change the contrast of the section.
-        
-            Params:
-                change (float): the degree to which contrast is changed"""
-        self.setContrast(self.section.contrast + change, log_event)
     
     def _drawBrightness(self, image_layer):
         """Draw the brightness on the image field.
@@ -224,7 +178,7 @@ class ImageLayer():
                 image_layer (QPixmap): the image laye
         """
         # set attrs
-        self.window = window
+        self.series.window = window
         self.pixmap_dim = pixmap_dim
 
         # return blank if image was not found
@@ -236,7 +190,7 @@ class ImageLayer():
         # setup
         tform = self.section.tform
         mag = self.section.mag
-        wx, wy, ww, wh = tuple(self.window)
+        wx, wy, ww, wh = tuple(self.series.window)
         pmw, pmh = tuple(self.pixmap_dim)
         iw, ih = self.bw, self.bh
         s = self.scaling = pmw / (ww / mag)
@@ -337,20 +291,30 @@ class ImageLayer():
         )
 
         # step 10: rip the pixmap from the transformed image
-        image_layer = im_tformed.copy(
+        im_ripped = im_tformed.copy(
             (im_tformed.width() - pmw) / 2,
             (im_tformed.height() - pmh) / 2,
             pmw,
             pmh
         )
-
-        # step 11: draw brightness and contrast
+        
+        # step 11: add blank space to account for rounding errors
+        if (im_ripped.width(), im_ripped.height()) != pixmap_dim:
+            image_layer = QPixmap(*pixmap_dim)
+            image_layer.fill(Qt.black)
+            painter = QPainter(image_layer)
+            painter.drawPixmap(0, 0, im_ripped)
+            painter.end()
+        else:
+            image_layer = im_ripped
+        
+        # step 12: draw brightness and contrast
         # create the brightness/contrast polygon (draws as a polygon over the image)
         self.bc_poly = QPolygon()
         for x, y in self.base_corners:
             x, y = (x * mag, y * mag)
             x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.window, self.pixmap_dim, self.section.mag)
+            x, y = fieldPointToPixmap(x, y, self.series.window, self.pixmap_dim, self.section.mag)
             self.bc_poly.append(QPoint(x, y))
         self._drawBrightness(image_layer)
         self._drawContrast(image_layer)
@@ -373,6 +337,7 @@ class ImageLayer():
             get_crop_only
         ).toImage()
         qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
+
 
         # convert the pixmap to a numpy array
         width = qimage.width()

@@ -6,13 +6,17 @@ from PySide6.QtWidgets import (
     QLabel,
     QWidget
 )
+
 from PySide6.QtCore import Qt
+
 
 class AboutWidget(QDockWidget):
 
     def __init__(self, parent, series):
         """Create a text widget."""
+        
         super().__init__(parent)
+        
         self.setFloating(True)
         self.setAllowedAreas(Qt.NoDockWidgetArea)
         self.setWindowTitle("About Series")
@@ -36,6 +40,7 @@ class AboutWidget(QDockWidget):
     
     def add(self, t1 : str, t2 : str):
         """Add a key value pair to display in the widget."""
+
         l1 = QLabel(self, text=t1)
         f = l1.font()
         f.setBold(True)

@@ -32,8 +32,9 @@ class FileDialog(QFileDialog):
         if new_dir:
             settings = QSettings("KHLab", "PyReconstruct")
             settings.setValue("last_folder", new_dir)
-    
-    def get(file_mode, parent=None, caption="", filter=None, file_name=""):
+
+    @staticmethod
+    def get(file_mode: str, parent=None, caption="", filter=None, file_name=""):
         
         fd = FileDialog(parent)
         

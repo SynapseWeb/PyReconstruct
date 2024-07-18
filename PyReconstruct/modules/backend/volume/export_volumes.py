@@ -1,14 +1,12 @@
 """Export 3D objects."""
 
-import os
 from pathlib import Path
-
-from cv2 import transform
 
 from .objects_3D import Surface, Spheres, Contours
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
+
 
 def export3DObjects(series: Series, obj_names : list, output_dir : str, export_type = str):
     """Export 3D objects.
@@ -66,10 +64,11 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     # iterate through all objects and export 3D meshes
 
+    output_directory = Path(output_dir)
+
     for obj_name, obj_3D in obj_data.items():
 
-        output_dir = Path(output_dir)
-        output_file = output_dir / f"{obj_name}.{export_type}"
+        output_file = output_directory / f"{obj_name}.{export_type}"
 
         if type(obj_3D) is Surface or type(obj_3D) is Spheres:
 
@@ -78,4 +77,4 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
                 export_type,
             )
 
-    notify(f"Object(s) exported to directory:\n\n{output_dir.absolute()}\n")
+    notify(f"Object(s) exported to directory:\n\n{output_directory.absolute()}\n")

@@ -114,6 +114,12 @@ class MainWindow(QMainWindow):
         h = screen_rect.height() - 160
         self.setGeometry(x, y, w, h)
 
+        self.screen_info = {
+            "width": screen_rect.width(),
+            "height": screen_rect.height(),
+            "dpi": round(screen.physicalDotsPerInch())
+        }
+
         # misc defaults
         self.series = None
         self.series_data = None
@@ -156,6 +162,9 @@ class MainWindow(QMainWindow):
 
         # prompt the user for a username
         self.changeUsername()
+
+    def test(self):
+        print("test")
 
     def createMenuBar(self):
         """Create the menu for the main window."""

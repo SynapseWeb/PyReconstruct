@@ -1,6 +1,5 @@
 import os
 import re
-import cv2
 import random
 import vedo
 import json
@@ -20,6 +19,7 @@ from .help3D import Help3DWidget
 
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtk import vtkTransform
+
 
 class VPlotter(vedo.Plotter):
 
@@ -590,7 +590,7 @@ class VPlotter(vedo.Plotter):
         for sc_obj in self.objs.getType("scale_cube"):
             sc_obj.msh.pos(0, 0, 0)
         
-        self.show()
+        self.show()  # NOTE: Maybe here for rendering????
     
     def getFieldCoords(self, msh : vedo.Mesh, pt : tuple):
         """Get the coordinates for a point on a mesh."""
@@ -691,6 +691,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         self.mainwindow = mainwindow
         self.series = self.mainwindow.series
+        self.screen_info = mainwindow.screen_info  # info about primary screen
 
         self.is_closed = False
         self.help_widget = None
@@ -1088,17 +1089,23 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     
     def screenshot(self):
         """Save a screenshot of the scene."""
+        
         filename = FileDialog.get(
             "save",
             self,
             "Save Screenshot",
             "*.jpg *.jpeg *.png *.tif *.tiff *.bmp"
         )
+        
         if not filename:
             return
+
+        dpi = self.series.getOption("screenshot_res")
+        scale_dpi = dpi / self.screen_info["dpi"]
+
+        self.plt.screenshot(filename, scale=scale_dpi)
         
-        pic = self.plt.topicture()
-        pic.write(filename)
+        print(f"Scene export at dpi of {dpi} to: {filename}")
     
     def reload(self):
         """Reload all the objects in the scene."""

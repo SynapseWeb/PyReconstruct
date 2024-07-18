@@ -1,15 +1,14 @@
 import numpy as np
-import vedo
 
 from skimage.draw import polygon
 import trimesh
-from vtkmodules.vtkFiltersGeneral import vtkCountVertices
 
 from PyReconstruct.modules.calc import centroid
 from PyReconstruct.modules.datatypes import Trace, Transform, Series
 
+
 def exportMesh(tm, output_file, export_type):
-    """Export a trimesh to a file."""
+    """Export trimesh obj to a file."""
     with open(output_file, "w") as fp:
             
         if export_type == "obj":
@@ -37,6 +36,7 @@ def exportMesh(tm, output_file, export_type):
             with open(output_file, "wb") as fp:
                 fp.write(trimesh.exchange.dae.export_collada(tm))
                     
+
 class Object3D():
 
     def __init__(self, name, series : Series, color=None, alpha=None, tform=None):

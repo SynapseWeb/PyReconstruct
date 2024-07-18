@@ -1,13 +1,19 @@
+from typing import Union
+
 from .objects_3D import Surface, Spheres, Contours, Ztrace3D
 
 from PyReconstruct.modules.datatypes import Series
 
-def generateVolumes(series : Series, objs : dict, ztraces : dict):
+
+Series_like_obj = Union[Series, str]  # can be type statement in >=3.12
+
+
+def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
     """Generate the volume items for a set of objects.
     
         Params:
-            series (Series): the series containing the object data OR the serires jser filepath
-            objs (list): the list of objects to construct (dict containing name, color, alpha, tform)
+            series_like (Series or str): The series of fp to a series containing object data
+            objs (dict): a dict of objects to construct (dict containing name, color, alpha, tform)
             ztrace_names (list): the list of ztraces to construct (dict containing name, color, alpha, tform)
             alpha (float): the transparency for the 3D scene
         Returns:
@@ -15,8 +21,10 @@ def generateVolumes(series : Series, objs : dict, ztraces : dict):
             (tuple): xmin, xmax, ymin, ymax, zmin, zmax
     """
     # option to use fp instead of series
-    if type(series) is str:
-        series = Series.openJser(series)
+    if isinstance(series_like, str):
+        series = Series.openJser(series_like)
+    else:
+        series = series_like
 
     # check the obj names
     for d in objs.copy():
@@ -89,7 +97,7 @@ def generateVolumes(series : Series, objs : dict, ztraces : dict):
         elif type(obj_3D) is Contours:
             mesh_data_list.append(obj_3D.generate3D())
     
-    for ztrace_name, ztrace_3D in ztrace_data.items():
+    for _, ztrace_3D in ztrace_data.items():
         mesh_data = ztrace_3D.generate3D()
         extremes = addToExtremes(extremes, ztrace_3D.extremes)
         mesh_data_list.append(mesh_data)

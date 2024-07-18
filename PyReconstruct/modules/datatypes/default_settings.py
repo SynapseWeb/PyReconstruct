@@ -41,6 +41,7 @@ default_settings = {
     "3D_xy_res": 0,  # 0-100  # MFO
     "3D_smoothing": "humphrey",  # MFO
     "smoothing_iterations": 10,  # MFO
+    "screenshot_res": 300,
     "show_ztraces": True,  # MFO
     "fill_opacity": 0.2,  # MFO
     "find_zoom": 95.0,  # MFO

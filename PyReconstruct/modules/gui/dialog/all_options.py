@@ -27,7 +27,7 @@ class AllOptionsDialog(QDialog):
         
             Params:
                 parent (QWidget): the parent widget
-                series (Series): the series with optionsto view/modify
+                series (Series): the series with options to view/modify
         """
         super().__init__(parent)
         self.series = series
@@ -179,29 +179,39 @@ class AllOptionsDialog(QDialog):
 
         self.addOptionWidget("grid", structure, setOption, grid=True)
 
-        # flag_defaults
+        ## Flag opts
+        
         structure = [
             ["Default name:", ("text", self.series.getOption("flag_name", use_defaults)), None],
             ["Default color:", ("color", self.series.getOption("flag_color", use_defaults)), None],
         ]
+        
         def setOption(response):
+            
             self.series.setOption("flag_name", response[0])
             self.series.setOption("flag_color", response[1])
+
         self.addOptionWidget("flag_defaults", structure, setOption)
 
-        # knife
+        ## Knife options
+        
         structure = [
             ["When using the knife, objects smaller than this percent"],
             ["of the original trace area will be automatically deleted."],
             None,
             ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold", use_defaults), (0, 100)), None]
         ]
+        
         def setOption(response):
+            
             self.series.setOption("knife_del_threshold", response[0])
+            
         self.addOptionWidget("knife", structure, setOption)
 
-        # 3D
+        ## 3D options
+        
         opt = self.series.getOption("3D_smoothing", use_defaults)
+        
         structure = [
             ["XY Resolution:"],
             ["less detail (fast)", ("slider", self.series.getOption("3D_xy_res")), "more detail (slow)"],
@@ -212,24 +222,29 @@ class AllOptionsDialog(QDialog):
                 ("Mutable Diffusion Laplcian", opt == "mut_dif_laplacian"),
                 ("Taubin", opt == "taubin"),
                 ("None (least smooth)", opt == "none"))],
-            ["Smoothing iterations:", ("int", self.series.getOption("smoothing_iterations"))]
+            ["Smoothing iterations:", ("int", self.series.getOption("smoothing_iterations"))],
+            ["Screenshot resolution (dpi):", ("int", self.series.getOption("screenshot_res"))]
         ]
+
         def setOption(response):
+            
             self.series.setOption("3D_xy_res", response[0])
-            if response[1][0][1]:
-                smoothing_alg = "humphrey"
-            elif response[1][1][1]:
-                smoothing_alg = "mut_dif_laplacian"
-            elif response[1][2][1]:
-                smoothing_alg = "taubin"
-            else:
-                smoothing_alg = "none"
+            
+            if response[1][0][1]: smoothing_alg = "humphrey"
+            elif response[1][1][1]: smoothing_alg = "mut_dif_laplacian"
+            elif response[1][2][1]: smoothing_alg = "taubin"
+            else: smoothing_alg = "none"
+                
             self.series.setOption("3D_smoothing", smoothing_alg)
             self.series.setOption("smoothing_iterations", response[2])
+            self.series.setOption("screenshot_res", response[3])
+            
         self.addOptionWidget("smoothing_3D", structure, setOption)
 
-        # theme
+        ## Theme opts
+        
         theme = self.series.getOption("theme")
+        
         structure = [
             ["Theme:"],
             [("radio", 
@@ -237,10 +252,13 @@ class AllOptionsDialog(QDialog):
               ("dark", theme == "qdark"),
             )],
         ]
+        
         def setOption(response):
+            
             if response[0][0][1]: theme = "default"
             elif response[0][1][1]: theme = "qdark"
             self.series.setOption("theme", theme)
+            
         self.addOptionWidget("theme", structure, setOption)
 
         # show_ztraces

@@ -2,9 +2,16 @@ import os
 
 # MFO = modifiable from options dialog
 
+def get_username() -> str:
+    try:
+        user = os.getlogin()
+    except FileNotFoundError:
+        user = os.environ.get("USER")
+    return user
+
 default_settings = {
     # user
-    "username": os.getlogin(),  # MFO
+    "username": get_username(),  # MFO
 
     # backup
     # "backup_dir": "",

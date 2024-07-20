@@ -1783,7 +1783,7 @@ class MainWindow(QMainWindow):
             self.changeAlignment(self.series.alignment, overwrite=True)
 
     def changeAlignment(self, new_alignment : str, overwrite=False):
-        """Change the current sereis alignment.
+        """Change the current series alignment.
         
             Params:
                 alignment (str): the alignment to switch to

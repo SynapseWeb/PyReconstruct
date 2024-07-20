@@ -804,9 +804,10 @@ class Series():
     #     return results
 
     def modifyAlignments(self, alignment_dict : dict, series_states=None, log_event=True):
-        """Modify the alignments (input from dialog).
+        """Modify the series's alignment.
 
-        Not suggested for use outside of GUI.
+        Accepts input from dialog. Note: Do not use this method outside of
+        the user interface.
         
             Params:
                 alignment_dict (dict): returned from the alignment dialog
@@ -844,15 +845,16 @@ class Series():
                     self.addLog(None, None, f"Rename alignment {old_a} to {new_a}")
     
     def modifyBCProfiles(self, profiles_dict : dict, log_event=True):
-        """Modify the alignments (input from dialog).
+        """Modify the series's brightness/contrast profiles.
 
-        Not suggested for use outside of GUI.
+        Accepts input from dialog. Note: Do not use this method outside of
+        the user interface.
         
             Params:
                 profiles_dict (dict): returned from the bc_profiles dialog
                 log_event (bool): True if event should be logged
         """
-        for snum, section in self.enumerateSections(
+        for _, section in self.enumerateSections(
             message="Modifying brightness/contrast profiles..."
         ):
             old_profiles = section.bc_profiles.copy()
@@ -879,9 +881,9 @@ class Series():
                     self.addLog(None, None, f"Rename brightness/contrast profile {old_p} to {new_p}")
     
     def getZValues(self):
-        """Return the z-coorindate for each section.
+        """Return z-coordinates for each section.
 
-        (Mainly for 3D use.)
+        Notes: This method is primarily for 3D use.
         
             Returns:
                 (dict): section number : z-value

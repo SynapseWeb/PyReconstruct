@@ -393,7 +393,7 @@ def getAlignmentsMenu(series, setAlignment):
     
     return {
         "attr_name": "alignmentsmenu",
-        "text": "Alignments",
+        "text": "Series alignment",
         "opts": opts_list
     }
 

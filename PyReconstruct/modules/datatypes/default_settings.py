@@ -3,6 +3,7 @@ import os
 # MFO = modifiable from options dialog
 
 def get_username() -> str:
+    """Return username."""
     try:
         user = os.getlogin()
     except FileNotFoundError:

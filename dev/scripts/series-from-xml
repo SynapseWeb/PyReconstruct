@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+"""Convert XML series to jser."""
+
+import sys
+from pathlib import Path
+
+usage = "Convert legacy Reconstruct XML series to PyReconstruct jser file through command line.\nusage: series-from-xml <dir containing xml series> [<output jser filepath>]"
+
+args = sys.argv
+
+if len(args) < 2 or args[1] == "--help":
+
+    print(usage)
+    sys.exit()
+
+_, xml, *jser = sys.argv
+    
+xml = Path(xml)
+
+if not xml.exists() or not xml.is_dir():
+
+    print("Please provide a valid directory containing legacy xml tracefiles.")
+    sys.exit(1)
+
+if not jser:
+    
+    jser = xml.with_suffix(".jser")
+
+else:
+
+    jser = Path(jser[0]).with_suffix(".jser")  # guarantee .jser as ext
+
+from PyReconstruct.modules.backend.func import xmlToJSON
+    
+jser_series = xmlToJSON(str(xml))
+jser_series.saveJser(str(jser), close=True)
+
+print(f"\nSeries output to: {jser.absolute()}")

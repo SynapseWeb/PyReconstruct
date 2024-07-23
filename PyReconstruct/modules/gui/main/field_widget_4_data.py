@@ -518,33 +518,3 @@ class FieldWidgetData(FieldWidgetObject):
 
         self.generateView()
         self.saveState()
-    
-    def lockObjects(self, names=None):
-        """Lock a set of objects.
-        
-            Params:
-                names (set): the set of names to lock
-        """
-        if names is None:
-            names = set([t.name for t in self.section.selected_traces])
-        
-        self.series_states.addState()
-
-        for name in names:
-            self.series.setAttr(name, "locked", True)
-        self.table_manager.updateObjects(names)
-        self.deselectAllTraces()
-    
-    def unlockObject(self, name=None):
-        """Unlock a single object.
-        
-            Params:
-                name (str): the name of the object to unlock
-        """
-        if name is None:
-            name = self.clicked_trace.name
-        
-        self.series_states.addState()
-
-        self.series.setAttr(name, "locked", False)
-        self.table_manager.updateObjects([name])

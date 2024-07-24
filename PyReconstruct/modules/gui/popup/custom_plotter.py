@@ -4,6 +4,7 @@ import random
 import vedo
 import json
 import numpy as np
+from typing import List, Union
 
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QKeyEvent
@@ -18,7 +19,6 @@ from PyReconstruct.modules.datatypes import Series
 from .help3D import Help3DWidget
 
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-from vtk import vtkTransform
 
 
 class VPlotter(vedo.Plotter):
@@ -361,7 +361,7 @@ class VPlotter(vedo.Plotter):
             self.selected.remove(scene_obj)
             self.updateSelected()
             
-    def removeFromScene(self, obj_names : list, ztrace_names : list, series_fp=None, save_state=True):
+    def removeFromScene(self, obj_names: Union[List, None], ztrace_names: Union[List, None], series_fp=None, save_state=True):
         """Remove objects and ztraces from the scene.
         
             Params:
@@ -375,14 +375,23 @@ class VPlotter(vedo.Plotter):
             series_fp = self.series.jser_fp
         
         scene_objs = []
-        for name in obj_names:
-            scene_obj = self.objs.search(name, "object", series_fp)
-            if scene_obj: scene_objs.append(scene_obj)
-        for name in ztrace_names:
-            scene_obj = self.objs.search(name, "ztrace", series_fp)
-            if scene_obj: scene_objs.append(scene_obj)
+
+        if obj_names:
+        
+            for name in obj_names:
+            
+                scene_obj = self.objs.search(name, "object", series_fp)
+                if scene_obj: scene_objs.append(scene_obj)
+
+        if ztrace_names:
+
+            for name in ztrace_names:
+            
+                scene_obj = self.objs.search(name, "ztrace", series_fp)
+                if scene_obj: scene_objs.append(scene_obj)
         
         if not scene_objs:
+
             return [], []
         
         if save_state: self.saveState()
@@ -590,7 +599,7 @@ class VPlotter(vedo.Plotter):
         for sc_obj in self.objs.getType("scale_cube"):
             sc_obj.msh.pos(0, 0, 0)
         
-        self.show()  # NOTE: Maybe here for rendering????
+        self.show()
     
     def getFieldCoords(self, msh : vedo.Mesh, pt : tuple):
         """Get the coordinates for a point on a mesh."""
@@ -805,6 +814,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         populateMenuBar(self, self.menubar_widget, menubar_list)
 
         self.addToScene = self.plt.addToScene
+        self.removeObjects = self.plt.removeFromScene
 
         # gerenate objects and display
         if load_fp:

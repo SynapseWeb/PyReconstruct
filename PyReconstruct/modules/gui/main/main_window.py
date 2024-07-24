@@ -6,6 +6,7 @@ import webbrowser
 from datetime import datetime
 import json
 import subprocess
+from typing import List, Union
 
 from PySide6.QtWidgets import (
     QMainWindow, 
@@ -1698,7 +1699,7 @@ class MainWindow(QMainWindow):
                 [str(round(n, 5)) for n in self.field.section.tform.getList()]
             )
             new_tform_list, confirmed = QInputDialog.getText(
-                self, "New Transform", "Enter the desired section transform:", text=current_tform)
+                self, "New Transform", "Edit section transform:", text=current_tform)
             if not confirmed:
                 return
             try:
@@ -2329,28 +2330,37 @@ class MainWindow(QMainWindow):
         self.saveAllData()
         
         if not self.viewer or self.viewer.is_closed:
+            
             self.viewer = CustomPlotter(self, names, ztraces)
-        else:                
+            
+        else:
+            
             if ztraces:
                 self.viewer.addToScene([], names)
             else:
                 self.viewer.addToScene(names, [])
+        
         self.viewer.activateWindow()
         
-    def removeFrom3D(self, obj_names, ztraces=False):
+    def removeFrom3D(self, obj_names: list, ztraces: Union[List, None]=None):
         """Remove objects from 3D viewer.
         
             Params:
                 obj_names (list): a list of object names
         """
         self.saveAllData()
+        
         if not self.viewer or self.viewer.is_closed:
             return
         
         if ztraces:
-            self.viewer.removeZtraces(obj_names)
+            
+            self.viewer.removeObjects(None, ztraces)
+            
         else:
-            self.viewer.removeObjects(obj_names)
+            
+            self.viewer.removeObjects(obj_names, None)
+
         self.viewer.activateWindow()
 
     def exportAs3D(self, obj_names, export_type, ztraces=False):

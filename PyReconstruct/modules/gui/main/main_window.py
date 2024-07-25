@@ -1689,9 +1689,14 @@ class MainWindow(QMainWindow):
         self.setToObject(obj_name, self.series.data.getStart(obj_name))
     
     def changeTform(self, new_tform_list : list = None):
-        """Open a dialog to change the transform of a section."""
-        # check for section locked status
+        """Open dialog to edit section transform."""
+        ## Check section lock status
         if self.field.section.align_locked:
+            return
+
+        ## Ensure not in no-alignment
+        if self.series.alignment == "no-alignment":
+            notify("Cannot edit section transform \nin alignment \"no-alignment\"")
             return
         
         if new_tform_list is None:
@@ -1708,6 +1713,7 @@ class MainWindow(QMainWindow):
                     return
             except ValueError:
                 return
+
         self.field.changeTform(Transform(new_tform_list))
     
     def translate(self, direction : str, amount : str):

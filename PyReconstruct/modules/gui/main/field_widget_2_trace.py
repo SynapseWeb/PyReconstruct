@@ -414,7 +414,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         if len(trace_points) < 2:  # do not create a new trace if there is only one point
             return False
         
-        # only reduce points if requested
+        # simplify if requested
         if reduce_points:
             if closed:
                 trace_points = getExterior(trace_points)  # get exterior if closed (will reduce points)
@@ -688,15 +688,15 @@ class FieldWidgetTrace(FieldWidgetBase):
     
     @field_interaction
     def paste(self):
+        
         if not self.clipboard:
             return False
         
-        # paste the traces (and apply transform)
+        # paste traces
         for trace in self.clipboard:
-            tform = self.section.tform
-            new_points = [tform.map(*p, inverted=True) for p in trace.points]
+            
             self.newTrace(
-                new_points,
+                trace.points,
                 trace,
                 points_as_pix=False,
                 closed=trace.closed,

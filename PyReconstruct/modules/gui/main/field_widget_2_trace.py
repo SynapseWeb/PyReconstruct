@@ -875,31 +875,25 @@ class FieldWidgetTrace(FieldWidgetBase):
     
     @trace_function
     @field_interaction
-    def mergeTraces(self, traces : list, merge_attrs_only=False):
-        """Merge the traces provided (selected traces if not provided).
+    def mergeTraces(self, traces: list, merge_attrs_only=False, restrict: list=[]):
+        """Merge traces.
         
             Params:
-                traces (list): the traces to merge
-                merge_attrs_only (bool): True if only the attributes of the traces should be merged (not the trace shapes themselves)
-                log_event (bool): True if action should be logged
+                traces (list): selected traces
+                merge_attrs_only (bool): True if only trace attributes should be merged
+                restrict (list): restrict merging to a list of traces
         """
         if len(traces) < 2:
             notify("Please select two or more traces to merge.")
             return False
 
-        first_trace = traces[0]
-
-        ## HACK: The trace_function decorator passes all selected
-        ## traces into this method and might also set the
-        ## merg_attrs_only arg to those traces. We likely need to
-        ## figure out a way around this. I have implemented a hack
-        ## below (making sure merge_attrs_only is True and not truthy)
-        ## in order to allow for auto-merging.
+        to_merge = restrict if restrict else traces
+        first_trace = to_merge[0]
 
         # set attributes to be the first object selected
         if merge_attrs_only is True:
             self.section.editTraceAttributes(
-                traces,
+                to_merge,
                 name=first_trace.name,
                 color=first_trace.color,
                 tags=first_trace.tags,
@@ -911,7 +905,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         else:
             pix_traces = []
             name = first_trace.name
-            for trace in traces:
+            for trace in to_merge:
                 if trace.name != name:
                     notify("Please merge traces with the same name.")
                     return False
@@ -925,7 +919,7 @@ class FieldWidgetTrace(FieldWidgetBase):
             merged_traces = mergeTraces(pix_traces)  # merge the pixel traces
             
             # delete the old traces
-            self.section.deleteTraces(traces, log_event=False)
+            self.section.deleteTraces(to_merge, log_event=False)
 
             # create new merged trace
             for trace in merged_traces:

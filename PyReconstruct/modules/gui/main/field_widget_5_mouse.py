@@ -122,7 +122,7 @@ class FieldWidgetMouse(FieldWidgetData):
             if t.name == self.tracing_trace.name and t.closed:
                 traces_to_merge.append(t)
         if len(traces_to_merge) > 1:
-            self.mergeTraces(traces_to_merge)
+            self.mergeTraces(restrict=traces_to_merge)
 
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.

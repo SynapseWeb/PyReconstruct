@@ -889,8 +889,15 @@ class FieldWidgetTrace(FieldWidgetBase):
 
         first_trace = traces[0]
 
+        ## HACK: The trace_function decorator passes all selected
+        ## traces into this method and might also set the
+        ## merg_attrs_only arg to those traces. We likely need to
+        ## figure out a way around this. I have implemented a hack
+        ## below (making sure merge_attrs_only is True and not truthy)
+        ## in order to allow for auto-merging.
+
         # set attributes to be the first object selected
-        if merge_attrs_only:
+        if merge_attrs_only is True:
             self.section.editTraceAttributes(
                 traces,
                 name=first_trace.name,

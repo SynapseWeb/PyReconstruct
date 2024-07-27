@@ -1689,14 +1689,23 @@ class MainWindow(QMainWindow):
         self.setToObject(obj_name, self.series.data.getStart(obj_name))
     
     def changeTform(self, new_tform_list : list = None):
-        """Open dialog to edit section transform."""
-        ## Check section lock status
-        if self.field.section.align_locked:
-            return
+        """Open dialog to edit section transform."""        
 
         ## Ensure not in no-alignment
         if self.series.alignment == "no-alignment":
-            notify("Cannot edit section transform \nin alignment \"no-alignment\"")
+            notify(
+                "Cannot edit section transform in alignment:\n\n\"no-alignment\"\n\n"
+                "Change to another alignment by opening the alignment panel (ctrl + shift + A)."
+            )
+            return
+
+        ## Check section lock status
+        if self.field.section.align_locked:
+            notify(
+                "Unlock the section to adjust its transformation.\n\n"
+                "(You can do this in the section list or "
+                "you can unlock the current section with ctrl + shift + U)"
+            )
             return
         
         if new_tform_list is None:

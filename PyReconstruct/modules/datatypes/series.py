@@ -33,6 +33,7 @@ from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 
 
 class Series():
+    
     qsettings_defaults = default_settings.copy()
     qsettings_series_defaults = default_series_settings.copy()
 
@@ -133,7 +134,7 @@ class Series():
         self.close()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
-    # STATIC METHOD
+    @staticmethod
     def openJser(fp : str):
         """Process the file containing all section and series information.
         
@@ -407,7 +408,7 @@ class Series():
                 os.remove(os.path.join(self.hidden_dir, f))
             os.rmdir(self.hidden_dir)
     
-    # STATIC METHOD
+    @staticmethod
     def updateJSON(series_data : dict):
         """Add missing attributes to the series JSON.
 
@@ -560,7 +561,7 @@ class Series():
 
         return d
     
-    # STATIC METHOD
+    @staticmethod
     def getEmptyDict() -> dict:
         """Get an empty dictionary for a series object.
         
@@ -655,7 +656,7 @@ class Series():
 
         return series_data
     
-    # STATIC METHOD
+    @staticmethod
     def new(image_locations : list, series_name : str, mag : float, thickness : float):
         """Create a new blank series.
         
@@ -1662,7 +1663,7 @@ class Series():
         if log_event:
             self.addLog(None, None, "Import flags from another series")
 
-    # STATIC METHOD
+    @staticmethod
     def getDefaultPaletteTraces() -> list:
         """Return the default palette trace list.
         

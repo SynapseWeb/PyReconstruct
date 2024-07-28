@@ -5,11 +5,13 @@ from .transform import Transform
 
 from PyReconstruct.modules.calc import centroid, distance, feret
 from PyReconstruct.modules.constants import blank_palette_contour
+from PyReconstruct.modules.calc import point_list_2_pix
 
 from PyReconstruct.modules.datatypes_legacy import (
     Contour as XMLContour,
     Transform as XMLTransform
 )
+
 
 class Trace():
 
@@ -61,6 +63,12 @@ class Trace():
         """
         self.points.append(point)
     
+    def asPixels(self, mag: float, img_height: int):
+        """Return points as a list of (x, y) pixels."""
+
+        points_as_pixs = point_list_2_pix(self.points, mag, img_height)
+        return points_as_pixs
+
     def isSameTrace(self, other) -> bool:
         """Check if traces have the same name, color, and points.
         
@@ -218,7 +226,7 @@ class Trace():
             
             return xml_contour
     
-    # STATIC METHOD
+    @staticmethod
     def fromList(l : list, name : str = None):
         """Create a trace object from a dictionary.
         
@@ -252,7 +260,7 @@ class Trace():
 
         return new_trace
     
-    # STATIC METHOD
+    @staticmethod
     def fromXMLObj(xml_trace : XMLContour, xml_image_tform : XMLTransform = None):
         """Create a trace from an xml contour object.
         
@@ -559,6 +567,7 @@ def convertMode(arg):
             if arg[1] == "unselected":
                 mode *= -1
         return mode
+
 
 def getLegacyRadius(trace : Trace):
     """Get the legacy radius for a palette trace."""

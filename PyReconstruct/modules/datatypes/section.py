@@ -8,11 +8,13 @@ from .flag import Flag
 from .transform import Transform
 from .log import LogSetPair
 
+from PyReconstruct.modules.gui.utils import notify
+
 from PyReconstruct.modules.calc import (
     getDistanceFromTrace,
+    getImgDims,
     distance
 )
-from PyReconstruct.modules.constants import assets_dir
 
 
 class Section():
@@ -128,7 +130,7 @@ class Section():
                 )
             ]
 
-    # STATIC METHOD
+    @staticmethod
     def updateJSON(section_data, n):
         """Add missing attributes to section JSON.
 
@@ -252,7 +254,7 @@ class Section():
 
         return d
     
-    # STATIC METHOD
+    @staticmethod
     def getEmptyDict() -> dict:
         """Returns a dict representing an empty section."""
         section_data = {}
@@ -271,7 +273,7 @@ class Section():
 
         return section_data
     
-    # STATIC METHOD
+    @staticmethod
     def new(series_name : str, snum : int, image_location : str, mag : float, thickness : float, wdir : str):
         """Create a new blank section file.
         
@@ -746,7 +748,6 @@ class Section():
         
         return modified
         
-    
     def deleteTraces(self, traces : list = None, flags : list = None, log_event=True):
         """Delete selected traces.
         
@@ -951,20 +952,70 @@ class Section():
         
         self.selected_traces.append(trace)
 
+    def exportSVGTraces(self, svg_fp):
+        """Export untransformed traces as an svg."""
+
+        try:
+            
+            import svgwrite
+            
+        except ImportError:
+            
+            notify(
+                "Please import 'svgwrite' into your environment with:\n\n"
+                "pip install svgwrite"
+            )
+
+            return
+        
+        h, w = getImgDims(self.src_fp)
+
+        dwg = svgwrite.Drawing(
+            svg_fp,
+            profile="tiny",
+            size=(w, h)
+        )
+
+        for _, con_data in self.contours.items():
+
+            for trace in con_data.getTraces():
+
+                points = trace.asPixels(self.mag, h)
+                stroke_color = svgwrite.rgb(*trace.color)
+
+                path_data = "M " + " L ".join(f"{x},{y}" for x, y in points)
+
+                if trace.closed: path_data = path_data + " Z"
+
+                path_obj = dwg.path(
+                    d=path_data,
+                    id=trace.name,
+                    stroke=stroke_color,
+                    stroke_width=4,
+                    fill="none"
+                )
+
+                dwg.add(path_obj)
+
+        dwg.save()
+
+        return svg_fp
+        
 
 class TransformsDict(dict):
+    
     def __init__(self):
         super().__init__()
         self["no-alignment"] = Transform.identity()
     
     def __setitem__(self, key, value) -> None:
         if key == "no-alignment" and not value.equals(Transform.identity()):
-            raise Exception("Cannot change the transform of the no-alignment key.")
+            raise Exception("Cannot change transform for 'no-alignment'.")
         else:
             return super().__setitem__(key, value)
     
     def __delitem__(self, key) -> None:
         if key == "no-alignment":
-            raise Exception("Cannot delete the no-alignment transform.")
+            raise Exception("Cannot delete transform for 'no-alignment'.")
         else:
             return super().__delitem__(key)

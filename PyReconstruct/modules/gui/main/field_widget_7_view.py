@@ -80,7 +80,7 @@ class FieldWidgetView(FieldWidgetPaint):
         if not confirmed:
             return
         self.findContour(contour_name)
-    
+
     def updateStatusBar(self, trace : Trace = None):
         """Update status bar with useful information.
         

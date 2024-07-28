@@ -1,3 +1,5 @@
+"""The PyReconstruct main window."""
+
 from .main_imports import *
 
 
@@ -6,25 +8,30 @@ class MainWindow(QMainWindow):
     def __init__(self, filename):
         """Constructs the skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
+        
         self.setWindowTitle("PyReconstruct")
 
-        # catch all exceptions and display error message
+        ## Catch all exceptions and display error
         def customExcepthook(exctype, value, traceback):
-            """
-            Global exception hook to display a notification window.
-            """
-            sys.__excepthook__(exctype, value, traceback)  # Call the default exception hook
-            message = f"An error occurred:\n\n{str(value)}\n\n(See console for more info.)\n\nIf you think this is a bug or need help, please issue a bug report at:\n\nhttps://github.com/synapseweb/pyreconstruct/issues"
+            """Global exception hook: Show notification."""
+            sys.__excepthook__(exctype, value, traceback)  # call default exception hook
+            
+            message = (
+                f"An error occurred:\n\n{str(value)}\n\n(See console for more info.)\n\n"
+                "If you think this is a bug or need help, please issue a bug report at:\n\n"
+                "https://github.com/synapseweb/pyreconstruct/issues"
+            )
+
             QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
 
-        # Set the exception hook
+        ## Set exception hook
         sys.excepthook = customExcepthook
 
-        # set the window icon
+        ## Set window icon
         pix = QPixmap(os.path.join(img_dir, "PyReconstruct.ico"))
         self.setWindowIcon(pix)
 
-        # set the main window to be slightly less than the size of the monitor
+        ## Set main window slightly less than monitor size
         screen = QApplication.primaryScreen()
         screen_rect = screen.size()
         x = 50
@@ -34,30 +41,30 @@ class MainWindow(QMainWindow):
         self.setGeometry(x, y, w, h)
 
         self.screen_info = {
-            "width": screen_rect.width(),
-            "height": screen_rect.height(),
-            "dpi": round(screen.physicalDotsPerInch())
+            "width"  : screen_rect.width(),
+            "height" : screen_rect.height(),
+            "dpi"    : round(screen.physicalDotsPerInch())
         }
 
-        # misc defaults
+        ## Misc defaults
         self.series = None
         self.series_data = None
-        self.field = None  # placeholder for field
+        self.field = None
         self.menubar = None
-        self.mouse_palette = None  # placeholder for palettes
+        self.mouse_palette = None
         self.zarr_palette = None
         self.viewer = None
         self.shortcuts_widget = None
-        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
         self.is_zooming = False
         self.restart_mainwindow = False
         self.check_actions_enabled = False
         self.actions_initialized = False
+        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
 
-        # create status bar at bottom of window
+        ## Create status bar at bottom of window
         self.statusbar = self.statusBar()
 
-        # open the series requested from command line
+        ## Open series requested from command line
         if filename and os.path.isfile(filename):
             self.openSeries(jser_fp=filename)
         else:
@@ -68,7 +75,7 @@ class MainWindow(QMainWindow):
                 ),
                 {0: "welcome.0"}
             )
-            welcome_series.src_dir = os.path.dirname(welcome_series_dir)  # set the images directory for the welcome series
+            welcome_series.src_dir = os.path.dirname(welcome_series_dir)
             self.openSeries(welcome_series)
 
         # set the main window as the parent of the progress bar
@@ -82,8 +89,9 @@ class MainWindow(QMainWindow):
         # prompt the user for a username
         self.changeUsername()
 
-    def test(self):
+    def test(self) -> None:
         print("test")
+        return None
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -266,6 +274,7 @@ class MainWindow(QMainWindow):
                     ("flicker_act", "Flicker section", self.series, self.flickerSections),
                     None,
                     ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
+                    ("exportsvg_act", "Export traces as svg...", "", self.exportTracesSVG)
                 ]
             },
             {
@@ -1330,7 +1339,10 @@ class MainWindow(QMainWindow):
         """
         if section_num is None:
             section_num, confirmed = QInputDialog.getText(
-                self, "Go To Section", "Enter the desired section number:", text=str(self.series.current_section))
+                self,
+                "Go To Section",
+                "Enter a section number:",
+                text=str(self.series.current_section))
             if not confirmed:
                 return
             try:
@@ -1354,15 +1366,35 @@ class MainWindow(QMainWindow):
         """Switch between the current and b sections."""
         if self.field.b_section:
             self.changeSection(self.field.b_section.n, save=False)
-    
+
+    def exportTracesSVG(self):
+        """Export untransformed traces as an svg."""
+
+        self.saveToJser()
+
+        s = self.series.current_section
+
+        fp = FileDialog.get(
+            "save",
+            self,
+            "Save traces as svg",
+            filter="*.svg",
+            file_name=f"{self.series.name}_{s}_traces.svg"
+        )
+        if not fp: return
+        
+        svg = self.series.loadSection(s).exportSVGTraces(fp)
+        
+        notify(f"Traces exported to file:\n\n{svg}")
+
     def incrementSection(self, down=False):
         """Increment the section number by one.
         
             Params:
                 down (bool): the direction to move
         """
-        section_numbers = sorted(list(self.series.sections.keys()))  # get list of all section numbers
-        section_number_i = section_numbers.index(self.series.current_section)  # get index of current section number in list
+        section_numbers = sorted(list(self.series.sections.keys()))  # get list of section numbers
+        section_number_i = section_numbers.index(self.series.current_section)  # get current section index
         if down:
             if section_number_i > 0:
                 self.changeSection(section_numbers[section_number_i - 1])  

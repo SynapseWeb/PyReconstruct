@@ -26,3 +26,8 @@ from .grid import (
     reducePoints,
     getExterior
 )
+
+from .image import (
+    getImgDims,
+    point_list_2_pix
+)

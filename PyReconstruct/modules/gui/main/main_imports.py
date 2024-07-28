@@ -67,6 +67,7 @@ from PyReconstruct.modules.backend.view import (
 )
 from PyReconstruct.modules.backend.autoseg import zarrToNewSeries, labelsToObjects
 from PyReconstruct.modules.backend.volume import export3DObjects
+from PyReconstruct.modules.backend.imports import module_available
 from PyReconstruct.modules.datatypes import Series, Transform, Flag
 from PyReconstruct.modules.constants import (
     welcome_series_dir,

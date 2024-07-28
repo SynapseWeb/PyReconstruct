@@ -955,18 +955,7 @@ class Section():
     def exportSVGTraces(self, svg_fp):
         """Export untransformed traces as an svg."""
 
-        try:
-            
-            import svgwrite
-            
-        except ImportError:
-            
-            notify(
-                "Please import 'svgwrite' into your environment with:\n\n"
-                "pip install svgwrite"
-            )
-
-            return
+        import svgwrite
         
         h, w = getImgDims(self.src_fp)
 

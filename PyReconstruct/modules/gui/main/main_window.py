@@ -1370,6 +1370,9 @@ class MainWindow(QMainWindow):
     def exportTracesSVG(self):
         """Export untransformed traces as an svg."""
 
+        if not module_available("svgwrite", notify=True):
+            return
+
         self.saveToJser()
 
         s = self.series.current_section

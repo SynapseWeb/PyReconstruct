@@ -90,6 +90,8 @@ class MainWindow(QMainWindow):
         self.changeUsername()
 
     def test(self) -> None:
+        """Run test here."""
+
         print("test")
         return None
 

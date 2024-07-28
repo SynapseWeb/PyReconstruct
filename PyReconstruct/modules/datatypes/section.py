@@ -12,9 +12,10 @@ from PyReconstruct.modules.gui.utils import notify
 
 from PyReconstruct.modules.calc import (
     getDistanceFromTrace,
-    getImgDims,
     distance
 )
+
+from PyReconstruct.modules.backend.exports import export_svg
 
 
 class Section():
@@ -955,40 +956,7 @@ class Section():
     def exportSVGTraces(self, svg_fp):
         """Export untransformed traces as an svg."""
 
-        import svgwrite
-        
-        h, w = getImgDims(self.src_fp)
-
-        dwg = svgwrite.Drawing(
-            svg_fp,
-            profile="tiny",
-            size=(w, h)
-        )
-
-        for _, con_data in self.contours.items():
-
-            for trace in con_data.getTraces():
-
-                points = trace.asPixels(self.mag, h)
-                stroke_color = svgwrite.rgb(*trace.color)
-
-                path_data = "M " + " L ".join(f"{x},{y}" for x, y in points)
-
-                if trace.closed: path_data = path_data + " Z"
-
-                path_obj = dwg.path(
-                    d=path_data,
-                    id=trace.name,
-                    stroke=stroke_color,
-                    stroke_width=4,
-                    fill="none"
-                )
-
-                dwg.add(path_obj)
-
-        dwg.save()
-
-        return svg_fp
+        return export_svg(self, svg_fp)
         
 
 class TransformsDict(dict):

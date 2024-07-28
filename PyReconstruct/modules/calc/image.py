@@ -20,7 +20,7 @@ def getImgDims(img_fp: Union[str, Path]) -> Tuple[height, width]:
                 
     else:
 
-        img = cv2.imread(fp, cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(str(img_fp), cv2.IMREAD_GRAYSCALE)
         return img.shape
 
 

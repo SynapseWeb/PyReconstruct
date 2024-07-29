@@ -73,7 +73,11 @@ class ObjectTableWidget(DataTable):
         """Create the menu for the object table widget."""
         # get the actions to edit the user columns
         def getCall(col_name):
-            return (lambda : self.editUserCol(col_name=col_name))
+            return (
+                lambda : self.mainwindow.field.editUserCol(
+                    col_name=col_name
+                )
+            )
         edit_user_cols = []
         n = 0
         for col_name in self.series.user_columns:

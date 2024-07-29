@@ -958,10 +958,10 @@ class Section():
 
         return export_svg(self, svg_fp)
 
-    def exportAsPNG(self, png_fp):
+    def exportAsPNG(self, png_fp, scale: float=1.0):
         """Export untransformed section as png."""
 
-        return export_png(self, png_fp)
+        return export_png(self, png_fp, scale)
         
 
 class TransformsDict(dict):

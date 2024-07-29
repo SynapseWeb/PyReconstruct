@@ -1418,8 +1418,17 @@ class MainWindow(QMainWindow):
             file_name=f"{self.series.name}_{s}.png"
         )
         if not fp: return
+
+        scale, confirmed = QInputDialog.getText(
+            self,
+            "Resolution",
+            "Scale image (Full resolution = 1.0):",
+            text='1.0'
+        )
+        if not confirmed:
+            return False
         
-        png = self.series.loadSection(s).exportAsPNG(fp)
+        png = self.series.loadSection(s).exportAsPNG(fp, float(scale))
         
         notify(f"Traces exported to file:\n\n{png}")
 

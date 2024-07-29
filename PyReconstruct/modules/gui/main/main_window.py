@@ -92,8 +92,8 @@ class MainWindow(QMainWindow):
     def test(self) -> None:
         """Run test here."""
 
-        print("test")
-        return None
+        from PyReconstruct.modules.backend.imports import module_available
+        module_available(["orjson", "cairosvg"])
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -276,7 +276,15 @@ class MainWindow(QMainWindow):
                     ("flicker_act", "Flicker section", self.series, self.flickerSections),
                     None,
                     ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
-                    ("exportsvg_act", "Export as svg...", "", self.exportTracesSVG)
+                    {
+                        "attr_name": "exportsecmenu",
+                        "text": "Export section",
+                        "opts":
+                        [
+                            ("exportsvg_act", "As svg...", "", self.exportSectionSVG),
+                            ("exportpng_act", "As png...", "", self.exportSectionPNG)
+                        ]
+                    }
                 ]
             },
             {
@@ -1369,10 +1377,10 @@ class MainWindow(QMainWindow):
         if self.field.b_section:
             self.changeSection(self.field.b_section.n, save=False)
 
-    def exportTracesSVG(self):
-        """Export untransformed traces as an svg."""
+    def exportSectionSVG(self):
+        """Export untransformed traces as svg."""
 
-        if not module_available("svgwrite", notify=True):
+        if not modules_available("svgwrite", notify=True):
             return
 
         self.saveToJser()
@@ -1382,15 +1390,38 @@ class MainWindow(QMainWindow):
         fp = FileDialog.get(
             "save",
             self,
-            "Save traces as svg",
+            "Save section as svg",
             filter="*.svg",
-            file_name=f"{self.series.name}_{s}_traces.svg"
+            file_name=f"{self.series.name}_{s}.svg"
         )
         if not fp: return
         
-        svg = self.series.loadSection(s).exportSVGTraces(fp)
+        svg = self.series.loadSection(s).exportAsSVG(fp)
         
         notify(f"Traces exported to file:\n\n{svg}")
+
+    def exportSectionPNG(self):
+        """Export untransformed traces as png."""
+
+        if not modules_available(["svgwrite", "cairosvg"], notify=True):
+            return
+
+        self.saveToJser()
+
+        s = self.series.current_section
+
+        fp = FileDialog.get(
+            "save",
+            self,
+            "Save section as png",
+            filter="*.png",
+            file_name=f"{self.series.name}_{s}.png"
+        )
+        if not fp: return
+        
+        png = self.series.loadSection(s).exportAsPNG(fp)
+        
+        notify(f"Traces exported to file:\n\n{png}")
 
     def incrementSection(self, down=False):
         """Increment the section number by one.

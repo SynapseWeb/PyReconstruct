@@ -96,3 +96,16 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
 
     return svg_fp
 
+
+def export_png(section_data, png_fp, dpi=300):
+    """Export untransformed section with traces as a png."""
+
+    tmp_svg = "/tmp/temporary.svg"
+    export_svg(section_data, tmp_svg)
+
+    from cairosvg import svg2png
+    svg2png(url=tmp_svg, write_to=png_fp, dpi=dpi)
+
+    ## Rmove tmp here
+    
+    return png_fp

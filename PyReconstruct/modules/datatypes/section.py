@@ -15,7 +15,7 @@ from PyReconstruct.modules.calc import (
     distance
 )
 
-from PyReconstruct.modules.backend.exports import export_svg
+from PyReconstruct.modules.backend.exports import export_svg, export_png
 
 
 class Section():
@@ -953,10 +953,15 @@ class Section():
         
         self.selected_traces.append(trace)
 
-    def exportSVGTraces(self, svg_fp):
-        """Export untransformed traces as an svg."""
+    def exportAsSVG(self, svg_fp):
+        """Export untransformed section as png."""
 
         return export_svg(self, svg_fp)
+
+    def exportAsPNG(self, png_fp):
+        """Export untransformed section as png."""
+
+        return export_png(self, png_fp)
         
 
 class TransformsDict(dict):

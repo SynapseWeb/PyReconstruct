@@ -1,10 +1,11 @@
 import subprocess
 from pathlib import Path
+from typing import List, Union
 
 from PyReconstruct.modules.gui.utils import notifyConfirm, notify as note
 
 
-def module_path(module) -> Path:
+def module_path(module: str) -> Path:
     """Return path to a module."""
 
     mod = __import__(module)
@@ -12,34 +13,51 @@ def module_path(module) -> Path:
     return Path(mod.__file__).parent
     
 
-def module_available(module, notify=True) -> bool:
+def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool:
     """Check if module available."""
 
-    try:
+    if not isinstance(modules, list):
+        modules = [modules]
+    
+    unavailable = []
 
-        __import__(module)
+    ## Test if modules unavailable
+    for module in modules:
 
-    except ModuleNotFoundError:
+        try:
 
-        if notify:
+            __import__(module)
+
+        except ModuleNotFoundError:
+
+            unavailable.append(module)
+
+    if not unavailable:  # all modules available
+
+        return True
+
+    if notify:
+
+        unavail_str = ", ".join(unavailable)
             
-            response = notifyConfirm(
-                f"This feature requires the python package '{module}' to work. "
-                "Would you like to install it into your current environment?"
-            )
+        response = notifyConfirm(
+            f"This feature requires additional python packages to work ({unavail_str}). "
+            "Would you like to install them into your current environment?"
+        )
 
-            if response == True:
+        if response == True:
 
-                pip_outcome = install_module(module)
-                
-                return pip_outcome
+            pip_outcomes = map(install_module, unavailable)
+            return all(list(pip_outcomes))
             
-        return False
+        else:
+
+            return False
 
     return True
 
 
-def install_module(module) -> bool:
+def install_module(module: str) -> bool:
     """Interactively install a pip module."""
 
     output = subprocess.run(
@@ -57,6 +75,8 @@ def install_module(module) -> bool:
         return True
 
     else:
+
+        print(output.stderr)
 
         note(
             "Something went wrong. "

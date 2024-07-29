@@ -276,7 +276,7 @@ class MainWindow(QMainWindow):
                     ("flicker_act", "Flicker section", self.series, self.flickerSections),
                     None,
                     ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
-                    ("exportsvg_act", "Export traces as svg...", "", self.exportTracesSVG)
+                    ("exportsvg_act", "Export as svg...", "", self.exportTracesSVG)
                 ]
             },
             {

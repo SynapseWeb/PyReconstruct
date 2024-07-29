@@ -14,11 +14,11 @@ def randomize_images(project_dir):
 
     decode_file = project_dir / "decode.txt"
 
-    image_n = len(
-        list(project_dir.rglob("*.tif"))
-    )
+    # image_n = len(
+    #     list(project_dir.rglob("*.tif"))
+    # )
 
-    image_iter = list(range(image_n))
+    # image_iter = list(range(image_n))
 
     for series in project_dir.iterdir():
 
@@ -28,12 +28,13 @@ def randomize_images(project_dir):
 
         for image in series.iterdir():
 
-            ## Randomly pop off elem from image_iter
-            random_n = random.choice(image_iter)
-            image_iter.remove(random_n)
+            # ## Randomly pop off elem from image_iter
+            # random_n = random.choice(image_iter)
+            # image_iter.remove(random_n)
 
             ## Generate random name
-            new_name = f"{random_n:0>4}-{str(uuid.uuid4())}.tif"
+            # new_name = f"{random_n:0>4}-{str(uuid.uuid4())}.tif"
+            new_name = f"{str(uuid.uuid4())}.tif"
 
             ## Write decoding info
             with decode_file.open("a") as text:

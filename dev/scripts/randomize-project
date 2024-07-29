@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# -*- mode: python -*-
+
+import sys
+import uuid
+import random
+from pathlib import Path
+
+from PyReconstruct.modules.datatypes import Series
+
+
+def randomize_images(project_dir):
+    """Randomize and collect images."""
+
+    decode_file = project_dir / "decode.txt"
+
+    image_n = len(
+        list(project_dir.rglob("*.tif"))
+    )
+
+    image_iter = list(range(image_n))
+
+    for series in project_dir.iterdir():
+
+        if series.name == ("images" or "decode.txt"):
+
+            continue
+
+        for image in series.iterdir():
+
+            ## Randomly pop off elem from image_iter
+            random_n = random.choice(image_iter)
+            image_iter.remove(random_n)
+
+            ## Generate random name
+            new_name = f"{random_n:0>4}-{str(uuid.uuid4())}.tif"
+
+            ## Write decoding info
+            with decode_file.open("a") as text:
+                text.write(
+                    f"{image.relative_to(project_dir)} -> {new_name}\n"
+                )
+
+            ## Rename and move image
+            image.rename(project_dir / f"images/{new_name}")
+
+        ## Remove empty directories
+        series.rmdir()
+
+
+def sort_images(image_dir):
+    """Sort images by name."""
+
+    patterns = ["*.png", "*.tif", "*.tiff", "*.jpg", "*.jpeg", "*.bmp"]
+    images = [file for pattern in patterns for file in image_dir.glob(pattern)]
+    
+    images_sorted = [
+        str(elem)
+        for elem
+        in sorted(
+            images, key=lambda p: p.name
+        )
+    ]
+    
+    return images_sorted
+
+
+def create_new(img_dir):
+    """Create a new series."""
+
+    images_list = sort_images(img_dir)
+    m = 0.00254
+    t = 0.05
+
+    with Series.new(images_list, "coded", m, t) as series:
+
+        fp = img_dir / "../coded.jser"
+        series.saveJser(str(fp))
+
+    return fp.resolve()
+
+
+def main(project_dir):
+    """Main."""
+
+    new_img_dir = project_dir / "images"
+    new_img_dir.mkdir()
+    
+    randomize_images(project_dir)
+
+    filepath = create_new(new_img_dir)
+
+    print(f"Jser ready in {filepath}")
+
+
+if __name__ == '__main__':
+
+    args = sys.argv
+
+    if not len(args) == 2:
+        print("Provide a single directory as an argument.")
+        sys.exit(1)
+        
+    project_dir = Path(args[1])
+
+    main(project_dir)

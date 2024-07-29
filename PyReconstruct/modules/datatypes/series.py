@@ -278,7 +278,7 @@ class Series():
         
             Params:
                 save_fp (str): the optional override filepath to save the jser file
-                close (bool): True if sereis should be closed after saving
+                close (bool): True if series should be closed after saving
         """
         self.save()
 
@@ -677,8 +677,10 @@ class Series():
                 src_dir = wdir
             hidden_dir = createHiddenDir(wdir, series_name)
         except PermissionError:
-            print("Series cannot be created adjacent to images due to permissions; \
-                   creating in home folder instead.")
+            print(
+                "Series cannot be created adjacent to images due "
+                "to permissions; creating in home folder instead."
+            )
             if os.name == "nt":
                 wdir = os.environ.get("HOMEPATH")
             else:

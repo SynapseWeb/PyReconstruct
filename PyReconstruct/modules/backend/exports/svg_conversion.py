@@ -4,15 +4,16 @@ from typing import Union
 from io import BytesIO
 
 import zarr
-import svgwrite
-from svgwrite.extensions import Inkscape
 from PIL import Image
 
 from PyReconstruct.modules.calc import getImgDims
 
 
 def export_svg(section_data, svg_fp) -> Union[str, Path]:
-    """Export untransformed traces as an svg."""
+    """Export untransformed section with traces as an svg."""
+
+    import svgwrite
+    from svgwrite.extensions import Inkscape
 
     img_fp = section_data.src_fp
     h, w = getImgDims(section_data.src_fp)

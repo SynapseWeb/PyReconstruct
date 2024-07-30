@@ -1,7 +1,8 @@
-import base64
 from pathlib import Path
 from typing import Union
+from tempfile import mkstemp
 from io import BytesIO
+import base64
 
 import zarr
 from PIL import Image
@@ -99,7 +100,7 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
 def export_png(section_data, png_fp, scale: float=1.0):
     """Export untransformed section with traces as a png."""
 
-    tmp_svg = "/tmp/temporary.svg"
+    _, tmp_svg = mkstemp(suffix=".svg")
     export_svg(section_data, tmp_svg)
 
     from cairosvg import svg2png
@@ -110,6 +111,6 @@ def export_png(section_data, png_fp, scale: float=1.0):
         scale=scale
     )
 
-    ## Rmove tmp here
+    Path(tmp_svg).unlink()
     
     return png_fp

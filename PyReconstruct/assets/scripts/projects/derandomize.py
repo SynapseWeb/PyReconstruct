@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     args = sys.argv
 
-    if not len(args) == 2:
+    if not len(args) == 2 or not args[1].endswith(".jser"):
         print("Provide a single coded jser as an argument.")
         sys.exit(1)
         

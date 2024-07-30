@@ -23,7 +23,7 @@ def randomize_images(project_dir):
         for image in series.iterdir():
 
             ## Generate coded name
-            new_name = f"{str(uuid.uuid4())}.tif"
+            new_name = f"{str(uuid.uuid4())}.{image.suffix[1:]}"
 
             ## Write decoding info
             with decode_file.open("a") as text:

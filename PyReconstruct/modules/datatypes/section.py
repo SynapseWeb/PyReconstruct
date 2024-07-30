@@ -954,7 +954,7 @@ class Section():
         self.selected_traces.append(trace)
 
     def exportAsSVG(self, svg_fp):
-        """Export untransformed section as png."""
+        """Export untransformed section as svg."""
 
         return export_svg(self, svg_fp)
 

@@ -46,7 +46,6 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
 
     # Create data URI
     image_data_uri = f"data:image/png;base64,{image_base64}"
-
             
     inkscape = Inkscape(dwg)
     image_layer = inkscape.layer(label="image", locked=False)

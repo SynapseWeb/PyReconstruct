@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+img_dir=$1
+
+if [ -z $1 ]
+then
+  echo "Fix tif field tag issue. (Requires ImageMagick.)"
+  echo "Usage: fix-tags <img dir>"
+  exit 1
+fi
+
+if ! which magick > /dev/null 2>&1
+then
+  echo "Please make sure you have ImageMagick installed."
+  exit 1
+fi
+
+for img in $img_dir/*
+do
+  echo "converting $img..."
+  magick $img $img
+done

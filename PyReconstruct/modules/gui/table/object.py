@@ -454,7 +454,7 @@ class ObjectTableWidget(DataTable):
         """Called when user double-clicks."""
         modifiers = QApplication.keyboardModifiers()
         if modifiers == Qt.ShiftModifier:
-            self.addTo3D()
+            self.mainwindow.field.addTo3D()
         else:
             self.findFirst()
     

@@ -121,6 +121,15 @@ class MainWindow(QMainWindow):
                     ("save_act", "Save", self.series, self.saveToJser),
                     ("saveas_act", "Save as...", "", self.saveAsToJser),
                     {
+                        "attr_name": "projectsmenu",
+                        "text": "Projects",
+                        "opts":
+                        [
+                            ("random_act", "Randomize images...", "", self.randomizeProject),
+                            ("derandom_act", "De-randomize project...", "", self.derandomizeProject)
+                        ]
+                    },
+                    {
                         "attr_name": "backupmenu",
                         "text": "Backup",
                         "opts":
@@ -1431,6 +1440,113 @@ class MainWindow(QMainWindow):
         png = self.series.loadSection(s).exportAsPNG(fp, float(scale))
         
         notify(f"Traces exported to file:\n\n{png}")
+
+    def randomizeProject(self):
+
+        response = notifyConfirm(
+            (
+                "This feature randomizes images from multiple series, codes the images, "
+                "and produces a single jser. You must provide a project directory that "
+                "contains one to many subdirectories, each containing images for a "
+                "series.<br><br>Something like this:"
+                "<p style='font-family: monospace;'>&nbsp;&nbsp;project_dir<br>"
+                "&nbsp;&nbsp;├── series_1<br>"
+                "&nbsp;&nbsp;│   ├── 1.tif<br>"
+                "&nbsp;&nbsp;│   └── 2.tif<br>"
+                "&nbsp;&nbsp;└── series_2<br>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;    ├── 1.tif<br>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;    └── 2.tif</p>"
+                "Would you like to continue to select a project directory?"
+            )
+        )
+        if response == False:
+            return
+
+        project_dir = FileDialog.get(
+            "dir",
+            self,
+            "Select a project directory",
+        )
+        if not project_dir: return
+
+        response = notifyConfirm(
+            (
+                "You are about to randomize images for the following project:\n\n"
+                f"{project_dir}\n\n"
+                "Are you sure you want to proceed?"
+            )
+        )
+        if response == False:
+            return
+
+        jser_coded = randomize_project(project_dir)
+        
+        notify(
+            "Project randomized and ready in:\n\n"
+            f"{jser_coded}\n\n"
+            "Note: A file with decoding information (decode.txt) is available in "
+            "the project dir. Do not lose that file -- you will need it later to "
+            "de-randomize your images."
+        )
+
+    def derandomizeProject(self):
+
+        response = notifyConfirm(
+            "You are about to de-randomize and decode a project. "
+            "Are you sure you want to continue to select a coded jser?"
+        )
+
+        if response == False:
+            return
+
+        coded_jser = FileDialog.get(
+            "file",
+            self,
+            "Select coded jser",
+            filter="*.jser"
+        )
+
+        if not coded_jser:
+            return
+
+        if self.series.jser_fp == coded_jser:
+
+            notify(
+                "You have this series open right now. Please save and close it "
+                "before proceeding."
+            )
+
+            return
+
+        decode_info = Path(coded_jser).parent / "decode.txt"
+
+        if not decode_info.exists():
+            
+            notify(
+                f"No decoding information available at:\n\n{decode_info}"
+                "\n\nPlease make sure this file exists in the proper format. "
+                "(This file was created when the project was randomized.)"
+            )
+
+            return
+
+        response = notifyConfirm(
+            (
+                "You are about to de-randomize and decode the following project:\n\n"
+                f"{coded_jser}\n\n"
+                "Are you sure you want to proceed?"
+            )
+        )
+
+        if response == False:
+            return
+
+        project_dir = derandomize_project(coded_jser)
+
+        notify(
+            "Project decoded and ready in:\n\n"
+            f"{project_dir}"
+        )
 
     def incrementSection(self, down=False):
         """Increment the section number by one.

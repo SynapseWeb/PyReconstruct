@@ -947,7 +947,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         
         structure = [
             ["Name:", (True, "text", name)],
-            ["Color:", ("color", trace.color), ""],
+            ["Color:", ("color", color), ""],
             ["Comment:"],
             [("textbox", "")]
         ]
@@ -956,14 +956,12 @@ class FieldWidgetTrace(FieldWidgetBase):
             return False
         
         # get the average centroid of all the selected traces
-        cens = (t.getCentroid() for t in traces)
+        cens = [t.getCentroid() for t in traces]
         cen_x = sum(x for x, y in cens) / len(cens)
         cen_y = sum(y for x, y in cens) / len(cens)
         
         # create the flag
-        name = response[0]
-        color = response[1]
-        comment = response[2]
+        name, color, comment = response
         f = Flag(name, cen_x, cen_y, self.section.n, color)
         if comment:
             f.addComment(self.series.user, comment)

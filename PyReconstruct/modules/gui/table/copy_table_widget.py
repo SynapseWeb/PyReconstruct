@@ -4,6 +4,19 @@ from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.utils import lessThan
 
+
+def getCopyTableContainer(mainwindow):
+    """Return the container for a CopyTableWidget
+
+    Useful if focusWidget() fails to return CopyTableWidget.
+    """
+
+    docked_tables = mainwindow.findChildren(QTableWidget)
+    docked = [d for d in docked_tables if isinstance(d, CopyTableWidget)]
+
+    return docked[-1]
+    
+
 class CopyTableWidget(QTableWidget):
 
     def __init__(self, container, *args, **kwargs):

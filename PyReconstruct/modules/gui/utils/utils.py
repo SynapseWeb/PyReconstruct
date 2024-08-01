@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (
     QMenu,
     QProgressDialog,
     QMessageBox,
-    QLabel
+    QLabel,
+    QTableWidget
 )
 from PySide6.QtGui import (
     QAction,

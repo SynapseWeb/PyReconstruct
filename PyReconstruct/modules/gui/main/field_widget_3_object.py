@@ -19,11 +19,13 @@ from PyReconstruct.modules.gui.utils import (
     notify
 )
 from PyReconstruct.modules.gui.table import (
-    CopyTableWidget,
     HistoryTableWidget,
+    getCopyTableContainer
 )
 
+
 from .field_widget_2_trace import FieldWidgetTrace
+
 
 class FieldWidgetObject(FieldWidgetTrace):
     """
@@ -41,7 +43,7 @@ class FieldWidgetObject(FieldWidgetTrace):
     #  - updating the host tree of an object
     #  - updating any other related objects that are not selected
     #  - refreshing the entire table
-    def object_function(update_objects : bool, reload_field : bool):
+    def object_function(update_objects: bool, reload_field: bool):
         """Wrapper for functions on objects that are accessible through both the field and the object list.
         
         Handles determining the object names to pass to its functions and saving the mainwindow data.
@@ -50,29 +52,47 @@ class FieldWidgetObject(FieldWidgetTrace):
         """
         def decorator(fn):
             def wrapper(self, *args, **kwargs):
-                # get the selected names
+
+                ## Get selected names
                 vscroll = None  # scroll bar if object list
                 w = self.mainwindow.focusWidget()
-                if isinstance(w, FieldWidgetObject):
-                    selected_names = list(set(t.name for t in self.section.selected_traces))
-                elif isinstance(w, CopyTableWidget):
-                    selected_names = w.container.getSelected()
-                    # also keep track of the scroll bar position
-                    # keep track of scroll bar position
-                    vscroll = w.verticalScrollBar()
-                    scroll_pos = vscroll.value()
-                else:
-                    return
+
+                ## NOTE: focuseWidget() might fail to return proper widget when
+                ## lists are undocked. To get around this issue,
+                ## getCopytablecontainer() will return currently opened
+                ## CopyTableWidgets.
                 
-                # check that conditions are met
+                if isinstance(w, FieldWidgetObject):
+                    selected_names = list(
+                        set(t.name for t in self.section.selected_traces)
+                    )
+                    
+                else:  # this should else to CopyTableWidget but might fail when undocked
+                    
+                    try:
+                        
+                        selected_names = w.container.getSelected()
+                        
+                    except AttributeError:  # if focusWidget() fails
+                        
+                        w = getCopyTableContainer(self.mainwindow)
+                        selected_names = w.container.getSelected()
+                        
+                    vscroll = w.verticalScrollBar()  # track scroll bar position
+                    scroll_pos = vscroll.value()
+                    
+                ## If no selected objects
                 if not selected_names:
                     return
                 
-                # check for locked objects
+                ## Check for locked objects
                 if update_objects:
                     for n in selected_names:
                         if self.series.getAttr(n, "locked"):
-                            notify("Cannot modify locked objects.\nPlease unlock before modifying.")
+                            notify(
+                                "Cannot modify locked objects.\n"
+                                "Please unlock before modifying."
+                            )
                             return
                 
                 # save the data in the field

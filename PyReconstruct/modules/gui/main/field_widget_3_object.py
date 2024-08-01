@@ -1,4 +1,4 @@
-from .context_menu_list import get_context_menu_list
+from .context_menu_list import get_context_menu_list_obj
 
 from PySide6.QtWidgets import (
     QInputDialog,
@@ -36,7 +36,7 @@ class FieldWidgetObject(FieldWidgetTrace):
 
     def getObjMenu(self):
         """Get the context menu list for modifying objects."""
-        return get_context_menu_list(self)
+        return get_context_menu_list_obj(self)
 
     # repeated code that individual functions might need to handle:
     #  - any series_states handling

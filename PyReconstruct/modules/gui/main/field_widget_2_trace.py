@@ -1,3 +1,5 @@
+from .context_menu_list import get_context_menu_list_trace
+
 from PySide6.QtWidgets import QInputDialog
 
 from PyReconstruct.modules.datatypes import Trace, Flag
@@ -727,41 +729,7 @@ class FieldWidgetTrace(FieldWidgetBase):
 
     def getTraceMenu(self, is_in_field=True):
         """Return the trace context menu list structure."""
-        # only allow shortcuts to be connected through the field
-        sc = self.series if is_in_field else ""
-
-        context_menu = [
-            ("edittrace_act", "Edit attributes...", sc, self.traceDialog),
-            None,
-            ("mergetraces_act", "Merge traces", sc, self.mergeTraces),
-            ("mergeobjects_act", "Merge attributes", sc, lambda : self.mergeTraces(merge_attrs=True)),
-            None,
-            ("makenegative_act", "Make negative", "", self.makeNegative),
-            ("makepositive_act", "Make positive", "", lambda : self.makeNegative(False)),
-            None,
-            ("hidetraces_act", "Hide", sc, self.hideTraces),
-        ]
-        if not is_in_field:
-            context_menu += [
-                ("unhidetraces_act", "Unhide", "", lambda : self.hideTraces(hide=False))
-            ]
-        context_menu += [
-            None,
-            ("opentraces_act", "Set open", "", lambda : self.closeTraces(closed=False)),
-            ("closedtraces_act", "Set closed", "", self.closeTraces),
-            None,
-            ("edittraceshape_act", "Edit shape...", "", self.editTraceShape),
-            ("edittraceradius_act", "Edit radius...", "", self.editTraceRadius),
-            None,
-            ("createtraceflag_act", "Create flag...", "", self.createTraceFlag),
-        ]
-        if not is_in_field:
-            context_menu += [
-                None,
-                ("deletetrace_act", "Delete", "", self.deleteTraces)  # accessible elswhere in the field context menu
-            ]
-        
-        return context_menu
+        return get_context_menu_list_trace(self, is_in_field)
 
     def trace_function(fn):
         """Property given to all trace actions that are accessible through a context menu.

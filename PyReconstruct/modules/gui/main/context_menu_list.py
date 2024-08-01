@@ -1,6 +1,6 @@
 from PyReconstruct.modules.gui.utils import getUserColsMenu
 
-def get_context_menu_list(self):
+def get_context_menu_list_obj(self):
 
     return [
         ("editobjattribtues_act", "Edit attributes of traces...", "", self.editAttributes),
@@ -97,3 +97,48 @@ def get_context_menu_list(self):
         None,
         ("deleteobj_act", "Delete", "", self.deleteObjects)
     ]
+
+
+def get_context_menu_list_trace(self, is_in_field=True):
+
+    # only allow shortcuts to be connected through the field
+    
+    sc = self.series if is_in_field else ""
+    
+    context_menu = [
+        ("edittrace_act", "Edit attributes...", sc, self.traceDialog),
+        None,
+        ("mergetraces_act", "Merge traces", sc, self.mergeTraces),
+        ("mergeobjects_act", "Merge attributes", sc, lambda : self.mergeTraces(merge_attrs=True)),
+        None,
+        ("makenegative_act", "Make negative", "", self.makeNegative),
+        ("makepositive_act", "Make positive", "", lambda : self.makeNegative(False)),
+        None,
+        ("hidetraces_act", "Hide", sc, self.hideTraces),
+    ]
+    
+    if not is_in_field:
+        
+        context_menu += [
+            ("unhidetraces_act", "Unhide", "", lambda : self.hideTraces(hide=False))
+        ]
+
+        context_menu += [
+            None,
+            ("opentraces_act", "Set open", "", lambda : self.closeTraces(closed=False)),
+            ("closedtraces_act", "Set closed", "", self.closeTraces),
+            None,
+            ("edittraceshape_act", "Edit shape...", "", self.editTraceShape),
+            ("edittraceradius_act", "Edit radius...", "", self.editTraceRadius),
+            None,
+            ("createtraceflag_act", "Create flag...", "", self.createTraceFlag),
+        ]
+        
+        if not is_in_field:
+            
+            context_menu += [
+                None,
+                ("deletetrace_act", "Delete", "", self.deleteTraces)  # accessible elswhere in the field context menu
+            ]
+        
+    return context_menu

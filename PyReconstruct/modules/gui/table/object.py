@@ -193,23 +193,6 @@ class ObjectTableWidget(DataTable):
         self.context_menu = QMenu(self)
         populateMenu(self, self.context_menu, context_menu_list)
 
-        # self.locked_actions = [
-        #     "editattribtues_act",
-        #     "editcomment_act",
-        #     "addgroup_act",
-        #     "removegroup_act",
-        #     "removeallgroups_act",
-        #     "setalignment_act",
-        #     "editradius_act",
-        #     "editshape_act",
-        #     "splitobj_act",
-        #     "hideobj_act",
-        #     "unhideobj_act",
-        #     "removealltags_act",
-        #     "curatemenu",
-        #     "delete_act",
-        # ]
-    
     def updateTitle(self):
         """Update the title of the table."""
         is_regex = tuple(self.re_filters) != (".*",)
@@ -589,7 +572,7 @@ class ObjectTableWidget(DataTable):
         """Called when backspace is pressed."""
         self.mainwindow.field.deleteObjects()
 
-    # MENU-RELATED FUNCTIONS     
+    ## Menu-related functions ##################################################
     
     def setREFilter(self):
         """Set a new regex filter for the list."""

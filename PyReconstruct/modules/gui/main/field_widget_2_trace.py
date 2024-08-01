@@ -19,7 +19,7 @@ from PyReconstruct.modules.calc import (
     reducePoints, 
     cutTraces,
 )
-from PyReconstruct.modules.gui.table import CopyTableWidget
+from PyReconstruct.modules.gui.table import CopyTableWidget, getCopyTableContainer
 
 from .field_widget_1_base import FieldWidgetBase
 
@@ -725,7 +725,7 @@ class FieldWidgetTrace(FieldWidgetBase):
 
         return True
     
-    # INTERACTIONS ACCESSIBLE THROUGH FIELD AND TRACE LIST
+    ## Interactions accessible through field and trace list ####################
 
     def getTraceMenu(self, is_in_field=True):
         """Return the trace context menu list structure."""
@@ -737,26 +737,41 @@ class FieldWidgetTrace(FieldWidgetBase):
         Handles passing the correct traces into the functions.
         """
         def wrapper(self, *args, **kwargs):
-            # get the selected names
+            
+            ## Get the selected names
             vscroll = None  # scroll bar if object list
             w = self.mainwindow.focusWidget()
-            if isinstance(w, FieldWidgetTrace):
-                selected_traces = self.section.selected_traces.copy()
-            elif isinstance(w, CopyTableWidget):
-                selected_items = w.container.getSelected()
-                selected_traces = w.container.getTraces(selected_items)
-                # also keep track of the scroll bar position
-                # keep track of scroll bar position
-                vscroll = w.verticalScrollBar()
-                scroll_pos = vscroll.value()
-            else:
-                return
+
+            ## NOTE: focuseWidget() might fail to return proper widget when
+            ## lists are undocked. To get around this issue,
+            ## getCopytablecontainer() will return currently opened
+            ## CopyTableWidgets.
             
-            # check that conditions are met
+            if isinstance(w, FieldWidgetTrace):
+
+                selected_traces = self.section.selected_traces.copy()
+                
+            else:
+
+                try:  # will fail if focusing on undocked widget
+                    
+                    selected_items = w.container.getSelected()
+
+                except AttributeError:  # fall-back if focusWidget() fails
+
+                    w = getCopyTableContainer(self.mainwindow)
+                    selected_items = w.container.getSelected()
+
+                selected_traces = w.container.getTraces(selected_items)
+                
+                vscroll = w.verticalScrollBar()  # track scroll bar pos
+                scroll_pos = vscroll.value()
+                
+            ## If no objs selected
             if not selected_traces:
                 return
             
-            # check for locked objects
+            ## Check for locked objects
             for n in set(t.name for t in selected_traces):
                 if self.series.getAttr(n, "locked"):
                     notify("Cannot modify locked objects.\nPlease unlock before modifying.")

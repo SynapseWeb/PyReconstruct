@@ -20,7 +20,7 @@ from PyReconstruct.modules.gui.utils import (
 )
 from PyReconstruct.modules.gui.table import (
     HistoryTableWidget,
-    getCopyTableContainer
+    getCopyTableWidget
 )
 
 
@@ -59,27 +59,29 @@ class FieldWidgetObject(FieldWidgetTrace):
 
                 ## NOTE: focuseWidget() might fail to return proper widget when
                 ## lists are undocked. To get around this issue,
-                ## getCopytablecontainer() will return currently opened
-                ## CopyTableWidgets.
+                ## getCopyTableWidget() will return appropriate focus.
                 
                 if isinstance(w, FieldWidgetObject):
                     selected_names = list(
                         set(t.name for t in self.section.selected_traces)
                     )
                     
-                else:  # this should else to CopyTableWidget but might fail when undocked
+                else:  # might fail when undocked
                     
                     try:
                         
                         selected_names = w.container.getSelected()
                         
                     except AttributeError:  # if focusWidget() fails
-                        
-                        w = getCopyTableContainer(self.mainwindow)
+
+                        focus_id = self.mainwindow.field.focus_table_id
+                        w = getCopyTableWidget(self.mainwindow, focus_id)
                         selected_names = w.container.getSelected()
+
+                    finally:
                         
-                    vscroll = w.verticalScrollBar()  # track scroll bar position
-                    scroll_pos = vscroll.value()
+                        vscroll = w.verticalScrollBar()  # track scroll bar position
+                        scroll_pos = vscroll.value()
                     
                 ## If no selected objects
                 if not selected_names:

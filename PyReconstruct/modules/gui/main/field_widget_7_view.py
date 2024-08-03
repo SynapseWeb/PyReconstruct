@@ -204,10 +204,12 @@ class FieldWidgetView(FieldWidgetPaint):
         if self.is_line_tracing and len(self.current_trace) > 1:
             self.current_trace.pop()
             self.update()
+            
         elif len(self.current_trace) == 1:
             self.is_line_tracing = False
             self.deactivateMouseBoundaryTimer()
             self.update()
+            
         else:
             self.deleteTraces()
     

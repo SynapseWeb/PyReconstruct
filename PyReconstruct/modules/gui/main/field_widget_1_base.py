@@ -41,6 +41,7 @@ class FieldWidgetBase:
         self.section_layer : SectionLayer = None
 
         self.table_manager : TableManager = None
+        self.focus_table_id : int = None
 
         self.propagate_tform : bool = False
 

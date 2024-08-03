@@ -1,3 +1,5 @@
+from typing import List, Union
+
 from .context_menu_list import get_context_menu_list_trace
 
 from PySide6.QtWidgets import QInputDialog
@@ -19,7 +21,7 @@ from PyReconstruct.modules.calc import (
     reducePoints, 
     cutTraces,
 )
-from PyReconstruct.modules.gui.table import CopyTableWidget, getCopyTableContainer
+from PyReconstruct.modules.gui.table import CopyTableWidget, getCopyTableWidget
 
 from .field_widget_1_base import FieldWidgetBase
 
@@ -376,24 +378,30 @@ class FieldWidgetTrace(FieldWidgetBase):
             return
         self.section.selectAllTraces()
         self.generateView(generate_image=False)
-    
-    # INTERACTIONS ONLY ACCESSIBLE THROUGH THE FIELD
+
+    ############################################################################
+    ## Interactions only accessible through the field ##########################
+    ############################################################################
 
     def field_interaction(fn):
         """Decorator for most basic field interactions.
         
-        Check if the trace layer is hidden.
-        If the action is performed, save the state and generate the view.
+        Check if the trace layer is hidden. If action performed, save the state
+        and generate the view.
         
-        The function this is decorating MUST return a modified bool (True if section modified, False if not)
+        The function this is decorating MUST return a modified bool: True if
+        section modified, False if not.
+
         """
         def wrapper(self, *args, **kwargs):
+            
             if self.hide_trace_layer:
                 return False
             
             modified = fn(self, *args, **kwargs)
 
             if modified:
+                
                 self.saveState()
                 self.generateView()
             
@@ -724,8 +732,10 @@ class FieldWidgetTrace(FieldWidgetBase):
         )
 
         return True
-    
+
+    ############################################################################
     ## Interactions accessible through field and trace list ####################
+    ############################################################################
 
     def getTraceMenu(self, is_in_field=True):
         """Return the trace context menu list structure."""
@@ -744,25 +754,27 @@ class FieldWidgetTrace(FieldWidgetBase):
 
             ## NOTE: focuseWidget() might fail to return proper widget when
             ## lists are undocked. To get around this issue,
-            ## getCopytablecontainer() will return currently opened
-            ## CopyTableWidgets.
+            ## getCopyTableWidget() will return appropriate focus.
             
             if isinstance(w, FieldWidgetTrace):
 
                 selected_traces = self.section.selected_traces.copy()
                 
-            else:
+            else:  # looking for CopyTablewidget
 
-                try:  # will fail if focusing on undocked widget
+                try:  # will fail if attempted to focus on undocked widget
                     
                     selected_items = w.container.getSelected()
 
                 except AttributeError:  # fall-back if focusWidget() fails
 
-                    w = getCopyTableContainer(self.mainwindow)
+                    focus_id = self.mainwindow.field.focus_table_id
+                    w = getCopyTableWidget(self.mainwindow, focus_id)
                     selected_items = w.container.getSelected()
 
-                selected_traces = w.container.getTraces(selected_items)
+                finally: 
+
+                    selected_traces = w.container.getTraces(selected_items)
                 
                 vscroll = w.verticalScrollBar()  # track scroll bar pos
                 scroll_pos = vscroll.value()
@@ -774,7 +786,10 @@ class FieldWidgetTrace(FieldWidgetBase):
             ## Check for locked objects
             for n in set(t.name for t in selected_traces):
                 if self.series.getAttr(n, "locked"):
-                    notify("Cannot modify locked objects.\nPlease unlock before modifying.")
+                    notify(
+                        "Cannot modify locked objects.\n"
+                        "Please unlock before modifying."
+                    )
                     return
             
             # save the data in the field
@@ -827,13 +842,17 @@ class FieldWidgetTrace(FieldWidgetBase):
 
     @trace_function
     @field_interaction
-    def deleteTraces(self, traces : list):
+    def deleteTraces(
+            self,
+            traces: Union[List, None]=None,
+            flags: Union[List, None]=None
+    ) -> bool:
         """Delete the requested traces (selected traces by default)
         
             Params:
                 traces (list): list of traces to delete
         """
-        return self.section.deleteTraces(traces)
+        return self.section.deleteTraces(traces, flags)
     
     @trace_function
     @field_interaction

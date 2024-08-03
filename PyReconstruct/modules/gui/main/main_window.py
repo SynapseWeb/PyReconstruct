@@ -17,8 +17,10 @@ class MainWindow(QMainWindow):
             sys.__excepthook__(exctype, value, traceback)  # call default exception hook
             
             message = (
-                f"An error occurred:\n\n{str(value)}\n\n(See console for more info.)\n\n"
-                "If you think this is a bug or need help, please issue a bug report at:\n\n"
+                f"An error occurred:\n\n{str(value)}\n\n"
+                "(See console for more info.)\n\n"
+                "If you think this is a bug or need help, "
+                "please issue a bug report at:\n\n"
                 "https://github.com/synapseweb/pyreconstruct/issues"
             )
 

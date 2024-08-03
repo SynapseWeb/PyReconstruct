@@ -227,6 +227,8 @@ class DataTable(QDockWidget):
         """Executed when button is right-clicked: pulls up menu for user."""
         super().contextMenuEvent(event)
 
+        self.mainwindow.field.focus_table_id = self.table.id
+
         items = self.getSelected()
         if not items:
             return

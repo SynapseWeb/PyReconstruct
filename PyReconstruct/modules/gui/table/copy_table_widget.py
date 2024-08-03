@@ -1,27 +1,19 @@
+from typing import Union
 
-from PySide6.QtWidgets import QTableWidget, QApplication, QHeaderView, QStyleFactory
+from PySide6.QtWidgets import QTableWidget, QApplication, QMainWindow
 from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.utils import lessThan
-
-
-def getCopyTableContainer(mainwindow):
-    """Return the container for a CopyTableWidget
-
-    Useful if focusWidget() fails to return CopyTableWidget.
-    """
-
-    docked_tables = mainwindow.findChildren(QTableWidget)
-    docked = [d for d in docked_tables if isinstance(d, CopyTableWidget)]
-
-    return docked[-1]
+from PyReconstruct.modules.backend.func import make_unique_id
     
 
 class CopyTableWidget(QTableWidget):
 
     def __init__(self, container, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.container = container
+        self.id = make_unique_id()
 
     def keyPressEvent(self, event):
         ret = super().keyPressEvent(event)
@@ -65,6 +57,7 @@ class CopyTableWidget(QTableWidget):
 
     def backspace(self):
         """Called when backspace is pressed.
+
         Extended in container classes.
         """
         return
@@ -94,3 +87,27 @@ class CopyTableWidget(QTableWidget):
                 w = self.columnWidth(c)
                 self.setColumnWidth(c, w + 8)
     
+
+def getCopyTableWidget(mainwindow: QMainWindow,  id: Union[None, int]=None) -> CopyTableWidget:
+    """Return the container for a CopyTableWidget
+
+    Useful if focusWidget() fails to return CopyTableWidget.
+    """
+
+    docked_tables = mainwindow.findChildren(QTableWidget)
+
+    docked = [
+        d for d in docked_tables if isinstance(d, CopyTableWidget)
+    ]
+
+    if not id:
+        
+        return docked[-1]
+    
+    else:
+
+        for d in docked:
+            
+            if d.id == id:
+
+                return d

@@ -37,7 +37,7 @@ from PyReconstruct.modules.gui.popup import (
 )
 
 class ObjectTableWidget(DataTable):
-
+    
     def __init__(self, series : Series, mainwindow : QWidget, manager, hidden=False):
         """Create the object table dock widget.
         
@@ -572,7 +572,9 @@ class ObjectTableWidget(DataTable):
         """Called when backspace is pressed."""
         self.mainwindow.field.deleteObjects()
 
+    ############################################################################
     ## Menu-related functions ##################################################
+    ############################################################################
     
     def setREFilter(self):
         """Set a new regex filter for the list."""

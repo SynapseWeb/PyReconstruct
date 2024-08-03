@@ -1,6 +1,7 @@
 import os
 import re
 import json
+from typing import List, Union
 
 from .contour import Contour
 from .trace import Trace
@@ -749,8 +750,8 @@ class Section():
         
         return modified
         
-    def deleteTraces(self, traces : list = None, flags : list = None, log_event=True):
-        """Delete selected traces.
+    def deleteTraces(self, traces : Union[List, None] = None, flags : Union[List, None] = None, log_event=True):
+        """Delete selected traces and flags.
         
             Params:
                 traces (list): a list of traces to delete (default is selected traces)

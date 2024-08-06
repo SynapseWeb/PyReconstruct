@@ -1,7 +1,8 @@
 import os
-import math
 import shutil
 import numpy as np
+from pathlib import Path
+
 import cv2
 import zarr
 
@@ -392,12 +393,19 @@ def importSection(data_zg, group, snum, series, ids=None):
     """
     # get relevant information from zarr
     labels = data_zg[group]
-    offset = labels.attrs["offset"]
     resolution = labels.attrs["resolution"]
+    try:
+        offset = labels.attrs["offset"]
+    except KeyError:
+        offset = [0, 0, 0]
+
 
     raw = data_zg["raw"]
-    raw_offset = raw.attrs["offset"]
     raw_resolution = raw.attrs["resolution"]
+    try:
+        raw_offset = raw.attrs["offset"]
+    except KeyError:
+        raw_offset = [0, 0, 0]
 
     window = raw.attrs["window"]
     sections = raw.attrs["sections"]
@@ -498,53 +506,74 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
     """
     ng_zarr = zarr.open(zarr_fp, "r+")
 
-    # assume raw exists
+    ## Assume "raw" exists
     raw = ng_zarr["raw"]
 
-    # save the original attributes
+    ## Save the original attributes
     original_attr_items = []
-    for k in ("window", "sections", "alignment"):  # these three are modified in the process of making the new series
-        original_attr_items.append((k, raw.attrs[k]))
 
-    # set magnification
+    ## These modified while making new series
+    for k in ("window", "sections", "alignment"):
+        try:
+            original_attr_items.append((k, raw.attrs[k]))
+        except KeyError:
+            pass
+
+    ## Set magnification
     if "true_mag" in raw.attrs:
+        
         true_mag = raw.attrs["true_mag"]
-    else:
-        true_mag = raw["resolution"][-1]
+        
+    elif "resolution" in raw.attrs:
+        
+        true_mag = raw.attrs["resolution"][-1]
         raw.attrs["true_mag"] = true_mag
 
-    # set window
+    else:  # no resolution provided
+
+        true_mag = 4  # default to lat res of 4x4
+        raw.attrs["true_mag"] = true_mag
+
+    ## Set window
     z, y, x = raw.shape
     window = [0, 0, x * true_mag, y * true_mag]
     raw.attrs["window"] = window
 
-    # set the sections
+    ## Set the sections
     sections = list(range(z))
     digits = len(str(sections[-1]))
     raw.attrs["sections"] = sections
 
-    # set the alignment
+    ## Set alignment
     alignment = {}
     for snum in sections:
         alignment[str(snum)] = Transform.identity().getList()
     raw.attrs["alignment"] = alignment
 
-    # get the thickness
-    thickness = raw.attrs["resolution"][0] / 1000  # assume nm to micron conversion
+    ## Get thickness
+    thickness = raw.attrs["resolution"][0] / 1000  # nm -> μm
 
-    # create the zarr containing the images
-    # aka split out each section into a new inidividual group
-    images_dir = os.path.join(os.path.dirname(zarr_fp), f"{name}_images.zarr")
+    ## Create zarr containing the images
+    ## (i.e., split out each section into a new individual group)
+
+    images_dir = Path(zarr_fp).with_name(f"{name}_images.zarr")
+    print(images_dir)
+
     images_zarr = zarr.open(images_dir, "w-")
     images_zarr.create_group("scale_1")
     images = images_zarr["scale_1"]
     image_locations = []
+
     for i, snum in enumerate(sections):
+
         src = f"section{snum:0{digits}d}"
+        print(f"Woring on {src}...")
+
         images.create_dataset(src, data=raw[i])
-        image_locations.append(
-            os.path.join(images_dir, "scale_1", src)
-        )
+
+        img_loc = os.path.join(images_dir, "scale_1", src)
+        print(img_loc)
+        image_locations.append(img_loc)
     
     # create the new series
     series = Series.new(

@@ -7,167 +7,36 @@ import os
 from pathlib import Path
 from datetime import datetime, timezone
 import zarr
-import json
-import argparse
-import tomllib
 import cv2
-import hashlib
 
 from PySide6.QtWidgets import QApplication
 
-# Imports are a nightmare (set repo root here if necessary)
-project_dir = Path(__file__).parents[4]
-if str(project_dir) not in sys.path:
-    sys.path.append(str(project_dir))
-    
 from PyReconstruct.modules.datatypes import Series
+
 from PyReconstruct.modules.backend.autoseg import (
     seriesToZarr,
     seriesToLabels,
     groupsToVolume,
 )
 
-
-def print_flush(s: str):
-    """Correct I/O buffering."""
-    print(s, flush=True)
-
-parser = argparse.ArgumentParser(
-    prog="ng-create-zarr",
-    description=__doc__,
-    epilog="example call: ng-create-zarr my_series.jser --groups dendrites spines",
+from PyReconstruct.assets.scripts.create_ng_zarr.parser import (
+    get_args,
+    parse_args
 )
 
-# poitional args
-parser.add_argument("jser", type=str, nargs="?", help="Filepath of a valid jser file.")
-
-# optional args
-
-parser.add_argument(
-    "--config",
-    "-c",
-    type=str,
-    help="filepath to a toml config file"
+from PyReconstruct.assets.scripts.create_ng_zarr.utils import (
+    print_flush,
+    flatten_list,
+    get_sha1sum,
+    print_summary
 )
 
-## parser.add_argument("--height", "-y", type=float, default=2.0, help='height in μm (default %(default)s μm)')
 
-## parser.add_argument("--width", "-x", type=float, default=2.0, help='width in μm (default %(default)s μm)')
-
-parser.add_argument(
-    "--start_section",
-    "-s",
-    type=int,
-    default=None,
-    help="the first section to include (default second section in series to avoid calgrid)",
-)
-
-parser.add_argument(
-    "--end_section",
-    "-e",
-    type=int,
-    default=None,
-    help="the last section to include (default last section in series)",
-)
-
-parser.add_argument(
-    "--mag",
-    "-m",
-    type=float,
-    default=0.002,
-    help="output zarr mag in μm/vox (default %(default)s μm/vox)",
-)
-
-parser.add_argument(
-    "--output",
-    "-o",
-    type=str,
-    default=None,
-    help="Optional output path",
-)
-
-parser.add_argument(
-    "--padding",
-    "-p",
-    type=int,
-    default=50,
-    help="padding (px) to include around an object (default %(default)s px)",
-)
-
-parser.add_argument(
-    "--groups",
-    "-g",
-    type=str,
-    action="append",
-    nargs="*",
-    default=None,
-    help="PyReconstruct object groups to include as labels (default %(default)s μm/vox)",
-)
-
-parser.add_argument(
-    "--max_tissue",
-    action="store_true",
-    help="Inclue all possible tissue and black space",
-)
-
-args = parser.parse_args()
-
-# Change defaults according to optional toml config file
-if args.config:
-    with open(args.config, "rb") as fp:
-        try:
-            parser.set_defaults(**tomllib.load(fp))
-        except tomllib.TOMLDecodeError:
-            parser.error("Malformed toml config file.")
-    if args.groups:
-        parser.set_defaults(
-            groups=None
-        )  # override toml acting as defaults if --groups called
-    args = parser.parse_args()
-
-# Make sure jser filepath provided and exists
-if not args.jser or not os.path.exists(args.jser):
-    parser.error("Please provide filepath to a valid jser.")
-
-jser_fp = args.jser
-output_zarr = args.output
-start = int(args.start_section)
-end = int(args.end_section)
-mag = float(args.mag)
-padding = int(args.padding)
-max_tissue = bool(args.max_tissue)
-# h_out    = float(args.height)
-# w_out    = float(args.width)
-
-
-def flatten_list(nested_list):
-    """Recursively flatten lists to handle groups."""
-
-    if not (bool(nested_list)):  # if empty list
-        return nested_list
-
-    if isinstance(nested_list[0], list):
-
-        return flatten_list(*nested_list[:1]) + flatten_list(nested_list[1:])
-
-    return nested_list[:1] + flatten_list(nested_list[1:])
-
-
-def get_sha1sum(filepath):
-    """Get sha1sum of jser file."""
-    
-    with open(filepath, 'r') as source:
-        obj = json.load(source)
-
-    ## Make src_dir empty str as this key can differ betweeen users
-    obj["series"]["src_dir"] = ""
-
-    ## Sort keys and encode
-    obj = json.dumps(obj, sort_keys=True).encode("utf-8")
-
-    return hashlib.sha1(obj).hexdigest()
+args = get_args()
+jser_fp, output_zarr, start, end, mag, padding, max_tissue = parse_args(args)
 
 print_flush("Opening series...")
+
 series = Series.openJser(jser_fp)
 
 print_flush("Gathering args...")
@@ -175,8 +44,10 @@ print_flush("Gathering args...")
 groups = flatten_list(args.groups) if args.groups else None
 
 all_sections = sorted(list(series.sections.keys()))
+
 if start is None: start = all_sections[1]  # steer clear of cal grid
-if end is None: start = all_sections[-1]
+if end is None: end = all_sections[-1]
+
 srange = (start, end + 1)
 
 sections = []
@@ -184,14 +55,14 @@ for n in sorted(list(series.sections.keys())):
     if start <= n <= end:
         sections.append(n)
 
-
-## Sample a section to get image magnification and dimensions
-## Assume all sections have the same dimensions for now
+## Sample a section and get img mag and dim
+## Assume all sections same dim for now
 
 section = series.loadSection(sections[0])
 img_mag = section.mag
 
-if series.src_dir.endswith("zarr"):  ## TODO: Need to validate zarrs more appropriately
+## TODO: Validate Zarr container more appropriately
+if series.src_dir.endswith("zarr"):
 
     img_scale_1 = os.path.join(series.src_dir, "scale_1", section.src)
     h, w = zarr.open(img_scale_1).shape
@@ -202,10 +73,11 @@ else:
     h, w, _ = cv2.imread(img_fp).shape
 
 convert_microns = lambda x: x * img_mag
+
 img_corners = [(0, 0), (w, 0), (h, w), (0, h)]
 img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
 
-# determine if getting all the tissue or only a crop of the field
+## Determine if req for all tissue or crop
 get_all = (bool(max_tissue) or not bool(groups))
 
 ## Procedures
@@ -243,29 +115,16 @@ else:  # request zarr around group(s)
 print_flush(f"window: {window}")
 print_flush(f"srange: {srange}")
 
-# else:  # default to zarr around image center
-
-#     center_x, center_y = w // 2, h // 2
-#     ## TODO: Need to apply section transform to get true center.
-
-#     window = [
-#         (center_x * img_mag) - (w_out / 2),  # x
-#         (center_y * img_mag) - (h_out / 2),  # y
-#         w_out,  # w
-#         h_out,  # h
-#     ]
-
 additional_attrs = {
         "filepath": str(Path(jser_fp).absolute()),
         "sha1sum": get_sha1sum(jser_fp),
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M:%S")
     }
 
-##print(f"window: {window}")
-
 print_flush("Initializing pyqt...")
 
 if not QApplication.instance():
+
     print_flush("Creating QApplication instance...")
     app = QApplication(sys.argv)
 
@@ -280,7 +139,7 @@ zarr_fp = seriesToZarr(
     other_attrs=additional_attrs
 )
 
-# Add labels to zarr if PyReconstruct groups provided
+# Add labels to zarr if object groups provided
 if groups:
     for group in groups:
         print_flush(f"Converting group {group} to labels...")
@@ -288,9 +147,4 @@ if groups:
 
 series.close()
 
-print(f"\nSeries \"{series.name}\" exported as zarr")
-print("")
-print(f"Window:          {[round(elem, 2) for elem in window]}")
-print(f"Sections:        {start}-{end}")
-print(f"Zarr mag:        {mag}")
-print(f"Zarr location:   {zarr_fp}\n")
+print_summary(series, window, start, end, mag, zarr_fp)

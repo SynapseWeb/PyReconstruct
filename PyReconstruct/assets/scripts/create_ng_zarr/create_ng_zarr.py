@@ -108,12 +108,9 @@ if get_all:  # request all available (include possible black space)
 else:  # request zarr around group(s)
 
     if padding:
-        padding *= img_mag  # convert padding from px to μm
-    print_flush(f"padding: {padding}")
+        padding *= img_mag  # convert padding from to μm
+        
     window, _ = groupsToVolume(series, groups, padding)
-
-print_flush(f"window: {window}")
-print_flush(f"srange: {srange}")
 
 additional_attrs = {
         "filepath": str(Path(jser_fp).absolute()),

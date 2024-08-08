@@ -5,6 +5,7 @@ from pathlib import Path
 
 import cv2
 import zarr
+from scipy.ndimage import find_objects
 
 from datetime import datetime
 dt = None
@@ -84,15 +85,14 @@ def createZarrName(window):
     return f'data_{"-".join(window_str)}.zarr'
 
 
-def seriesToZarr(
-        series : Series,
-        sections : list,
-        mag : float,
-        window : list,
-        data_fp: str = None,
-        output_dir: str = None,
-        other_attrs: dict = None,
-):
+def seriesToZarr(series : Series,
+                 sections : list,
+                 mag : float,
+                 window : list,
+                 data_fp: str = None,
+                 output_dir: str = None,
+                 other_attrs: dict = None,
+                 chunk_size: tuple = (8, 256, 256)):
     """Convert a series (images) into a neuroglancer-compatible zarr.
     
         Params:
@@ -108,7 +108,7 @@ def seriesToZarr(
             the filepath for the zarr, the threadpool
     """
 
-    # calculate field attributes
+    ## Calculate field attributes
     shape = (
         len(sections),  # z
         round(window[3]/mag),   # height
@@ -117,7 +117,7 @@ def seriesToZarr(
 
     pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
 
-    # create zarr files
+    ## Create zarr
     
     if not data_fp:  # if no data_fp provided, place with jser
         
@@ -130,16 +130,21 @@ def seriesToZarr(
     if os.path.isdir(data_fp): shutil.rmtree(data_fp)  # delete existing zarr
         
     data_zg = zarr.open(data_fp, "a")
-    data_zg.create_dataset("raw", shape=shape, chunks=(1, 256, 256), dtype=np.uint8)
+    data_zg.create_dataset(
+        "raw",
+        shape=shape,
+        chunks=chunk_size,
+        dtype=np.uint8
+    )
 
-    # get values for saving zarr files (from last known section)
+    ## Get values for saving zarr files (from last known section)
     section_thickness = series.loadSection(sections[0]).thickness
     z_res = int(section_thickness * 1000)
     xy_res = int(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
     offset = [0, 0, 0]
 
-    # get alignment of series
+    ## Get series alignment
     alignment = {}
     for snum in sections:
         current_tranform = series.data["sections"][snum]["tforms"][series.alignment].getList()
@@ -178,7 +183,8 @@ def seriesToZarr(
     
 def seriesToLabels(series : Series,
                    data_fp : str,
-                   group : str = None):
+                   group : str = None,
+                   chunk_size: tuple = (8, 256, 256)):
     """Export contours as labels to an existing zarr.
     
         Params:
@@ -190,6 +196,7 @@ def seriesToLabels(series : Series,
     data_zg = zarr.open(data_fp)
 
     raw = data_zg["raw"]
+    
     sections = raw.attrs["sections"]
     window = raw.attrs["window"]
     mag = raw.attrs["true_mag"]
@@ -206,19 +213,30 @@ def seriesToLabels(series : Series,
     pixmap_dim = shape[2], shape[1]  # the w and h of the 2D array
 
     if group:
+        
         is_group = True
         del_group = None
         group_or_tag = group
+        
     # if retrain, use tag and search for group to delete
     else:
+        
         is_group = False
         del_group = series.getRecentSegGroup()
         group_or_tag = f"{del_group}_keep"
 
+    dataset_name = f"labels_{group_or_tag}_unbounded"
+
     # create labels datasets
-    data_zg.create_dataset(f"labels_{group_or_tag}", shape=shape, chunks=(1, 256, 256), dtype=np.uint64)
-    data_zg[f"labels_{group_or_tag}"].attrs["offset"] = offset
-    data_zg[f"labels_{group_or_tag}"].attrs["resolution"] = resolution
+    data_zg.create_dataset(
+        dataset_name,
+        shape=shape,
+        chunks=chunk_size,
+        dtype=np.uint64
+    )
+    
+    data_zg[dataset_name].attrs["offset"] = offset
+    data_zg[dataset_name].attrs["resolution"] = resolution
 
     # create threadpool
     threadpool = ThreadPoolProgBar()
@@ -237,6 +255,21 @@ def seriesToLabels(series : Series,
             alignment[str(snum)]
         )
     threadpool.startAll("Converting contours to zarr...")
+
+    ## Offset by bounding box
+    arr = data_zg[dataset_name][:]
+    slices = find_objects(arr > 0)[0]
+    new_offset = [
+        offset[i] + (slices[i].start * resolution[i]) for i in range(3)
+    ]
+    
+    new_dataset = dataset_name[:-10]
+    data_zg[new_dataset] = arr[slices]
+    
+    data_zg[new_dataset].attrs["offset"] = new_offset
+    data_zg[new_dataset].attrs["resolution"] = resolution
+
+    del data_zg[dataset_name]
 
     # remove group-object associations
     if del_group:
@@ -362,7 +395,7 @@ def exportTraces(data_zg,
                     if tag in trace.tags:
                         traces.append(trace)
     
-    data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
+    data_zg[f"labels_{group_or_tag}_unbounded"][z] = slayer.generateLabelsArray(
             pixmap_dim,
             window,
             traces,

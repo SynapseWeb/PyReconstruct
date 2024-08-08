@@ -109,8 +109,6 @@ def get_args ():
 
 def parse_args(args):
 
-    print(args)
-
     jser_fp = args.jser
     output_zarr = args.output
     start = args.start_section

@@ -122,3 +122,5 @@ from PyReconstruct.assets.scripts.projects import (
     randomize_project,
     derandomize_project
 )
+
+from .menubar import return_menubar

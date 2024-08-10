@@ -9,9 +9,15 @@ def module_path(module: str) -> Path:
     """Return path to a module."""
 
     mod = __import__(module)
+    mod_init = mod.__file__
     
-    return Path(mod.__file__).parent
-    
+    if not mod_init:
+        
+        _, submod = module.split(".")
+        mod_init = getattr(mod, submod).__file__
+
+    return Path(mod_init).parent
+        
 
 def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool:
     """Check if module available."""
@@ -48,6 +54,7 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
         if response == True:
 
             pip_outcomes = map(install_module, unavailable)
+            print(f"{list(pip_outcomes) = }")
             return all(list(pip_outcomes))
             
         else:
@@ -60,6 +67,8 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
 def install_module(module: str) -> bool:
     """Interactively install a pip module."""
 
+    print(f"Installing module {module}")
+
     output = subprocess.run(
         f"pip install {module}",
         capture_output=True,
@@ -67,10 +76,13 @@ def install_module(module: str) -> bool:
         shell=True
     )
 
+    print(f"{output = }")
+
     if output.returncode == 0:
 
         note(
-            f"{module} successfully installed to:\n\n{module_path(module)}")
+            f"{module} successfully installed to:\n\n{module_path(module)}"
+        )
 
         return True
 

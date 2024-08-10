@@ -72,9 +72,10 @@ else:
     img_fp = os.path.join(series.src_dir, section.src)
     h, w, _ = cv2.imread(img_fp).shape
 
-convert_microns = lambda x: x * img_mag
 
-img_corners = [(0, 0), (w, 0), (h, w), (0, h)]
+img_corners = [(0, 0), (w, 0), (w, h), (0, h)]
+
+convert_microns = lambda x: x * img_mag
 img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
 
 ## Determine if req for all tissue or crop
@@ -95,14 +96,15 @@ if get_all:  # request all available (include possible black space)
 
         x_mins.append(min(x_vals))
         y_mins.append(min(y_vals))
+        
         x_maxs.append(max(x_vals))
         y_maxs.append(max(y_vals))
 
     window = [
         min(x_mins),
         min(y_mins),
-        max(y_maxs) - min(y_mins),
         max(x_maxs) - min(x_mins),
+        max(y_maxs) - min(y_mins),
     ]
 
 else:  # request zarr around group(s)

@@ -67,7 +67,7 @@ def returnRepoInfo():
 
         pass
 
-    ## If above fail to return, cannot determining repo details and return "unknown"
+    ## If all above fails, return "unknown" and call it a day
         
     return {"branch": "unknown", "commit": "unknown"}
 

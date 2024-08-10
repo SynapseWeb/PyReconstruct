@@ -393,13 +393,13 @@ class MainWindow(QMainWindow):
                 self.srcToZarr(create_new=False)
     
     def srcToZarr(self, create_new=True):
-        """Convert the series images to zarr."""
+        """Convert the series images to scaled zarr."""
         if not self.field.section_layer.image_found:
             notify("Images not found.")
             return
         
         if self.field.section_layer.is_zarr_file and create_new:
-            notify("Images are already in zarr format.")
+            notify("Images are already scaled.")
             return
         elif not self.field.section_layer.is_zarr_file and not create_new:
             notify("Images are not in zarr format.\nPlease convert to zarr first.")
@@ -409,7 +409,7 @@ class MainWindow(QMainWindow):
             zarr_fp = FileDialog.get(
                 "save",
                 self,
-                "Convert Images to Zarr",
+                "Convert Images to scaled zarr",
                 file_name=f"{self.series.name}_images.zarr",
                 filter="Zarr Directory (*.zarr)"
             )
@@ -1761,6 +1761,7 @@ class MainWindow(QMainWindow):
 
     def exportToZarr(self):
         """Create a neuroglancer-compatible zarr."""
+
         all_sections = sorted(list(self.series.sections.keys()))
         structure = [
             ["From section", ("int", all_sections[1]), "to section", ("int", all_sections[-1]), " "],

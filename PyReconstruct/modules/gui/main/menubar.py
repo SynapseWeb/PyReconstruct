@@ -131,8 +131,8 @@ def return_series_menu(self):
                 "opts":
                 [
                     ("change_src_act", "Find/change image directory", "", self.changeSrcDir),
-                    ("zarrimage_act", "Convert to zarr", "", self.srcToZarr),
-                    ("scalezarr_act", "Update zarr scales", "", lambda : self.srcToZarr(create_new=False)),
+                    ("zarrimage_act", "Convert to scaled images", "", self.srcToZarr),
+                    ("scalezarr_act", "Update image scales", "", lambda : self.srcToZarr(create_new=False)),
                 ]
             },
             {

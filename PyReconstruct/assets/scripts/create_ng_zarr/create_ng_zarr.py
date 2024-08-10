@@ -140,9 +140,21 @@ zarr_fp = seriesToZarr(
 
 # Add labels to zarr if object groups provided
 if groups:
+
+    padding *= img_mag
+    window_groups = groupsToVolume(series, groups, padding)
+
     for group in groups:
+
         print_flush(f"Converting group {group} to labels...")
-        seriesToLabels(series, zarr_fp, group)
+        seriesToLabels(
+            series,
+            zarr_fp,
+            group,
+            window=window_groups,
+            img_mag=img_mag,
+            raw_window=window
+        )
 
 series.close()
 

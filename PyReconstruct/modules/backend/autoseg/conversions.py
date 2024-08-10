@@ -2,24 +2,86 @@ import os
 import shutil
 import numpy as np
 from pathlib import Path
+from typing import Union, List
 
 import cv2
+from numpy._typing import _128Bit
 import zarr
 from scipy.ndimage import find_objects
 
 from datetime import datetime
-dt = None
 
 from PyReconstruct.modules.datatypes import Series, Transform, Trace
 from PyReconstruct.modules.backend.view import SectionLayer
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.calc import colorize, reducePoints
 
+
+dt = None
+
+
 def setDT():
     """Set date and time."""
     global dt
-    t = datetime.now()
-    dt = f"{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}"
+    now = datetime.now()
+    dt = now.strftime("%Y%m%d_%H%M%")
+
+
+def get_offset(window, resolution, img_mag, relative_to):
+    """Calculate offset from window."""
+
+    lat, ax = window
+
+    print(f"{lat = }")
+
+    print(f"Relative to: {relative_to}")
+
+    print(f"image mag {img_mag}")
+
+    ul_all = (
+        relative_to[0],
+        relative_to[1] + relative_to[3]
+    )
+
+    print(f"{ul_all = }")
+
+    ul_roi_group= (
+        lat[0],
+        lat[1] + lat[3]
+    )
+
+    print(f"{ul_roi_group = }")
+
+    ## do the things...
+
+    scale_x = resolution[2] / 1000 / img_mag
+    scale_y = resolution[1] / 1000 / img_mag
+
+    print(f"scale x {scale_x}")
+    
+    x_diff_real = ul_roi_group[0] - ul_all[0]
+    y_diff_real = ul_roi_group[1] - ul_all[1]
+
+    print(f"real x {x_diff_real}")
+
+    x_diff_scaled = x_diff_real * scale_x
+    y_diff_scaled = y_diff_real * scale_y
+
+    print(f"x diff scaled {x_diff_scaled}")
+
+    x = round(x_diff_scaled * 1000)
+    y = round(y_diff_scaled * 1000)
+
+    print(x, y)
+
+    z = ( ax[0] - 1 ) * resolution[0]
+
+    offset = [z, -y, x]
+
+    print(f"Guess at offset: {offset}")
+
+    return offset
+
 
 def groupsToVolume(series: Series, groups: list=None, padding: float=None):
     """Convert objects in groups into a volume based on max and min x/y/section values.
@@ -42,8 +104,6 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
         for group in groups:
             group_objects += series.object_groups.getGroupObjects(group)
 
-    print(f'group_objs: {group_objects}')
-    
     for snum, section in series.enumerateSections():
         
         tform = section.tform
@@ -68,6 +128,7 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
     sec_range = [min(sec_range), max(sec_range) + 1]
 
     if padding:
+        
         x -= padding
         y -= padding
         w += (padding * 2)
@@ -92,14 +153,14 @@ def seriesToZarr(series : Series,
                  data_fp: str = None,
                  output_dir: str = None,
                  other_attrs: dict = None,
-                 chunk_size: tuple = (8, 256, 256)):
-    """Convert a series (images) into a neuroglancer-compatible zarr.
+                 chunk_size: tuple = (1, 256, 256)):
+    """Convert a series of images into a neuroglancer-compatible zarr.
     
         Params:
             series (Series): the series to convert
             sections (list): the sections to include (exclusive; ASSUME sorted already)
             mag (float): the microns per pixel for the zarr file
-            window (list): the window (x, y, height, width) for the resulting zarr
+            window (list): the window (x, y, width, height) for the resulting zarr
             data_fp (str): filename of output zarr
             output_dir (str): directory to store zarr
             other_attrs (dict): other infoformation to store in .zattrs
@@ -181,10 +242,14 @@ def seriesToZarr(series : Series,
 
     return data_fp
     
-def seriesToLabels(series : Series,
-                   data_fp : str,
-                   group : str = None,
-                   chunk_size: tuple = (8, 256, 256)):
+
+def seriesToLabels(series: Series,
+                   data_fp: str,
+                   group: Union[str, None] = None,
+                   window: Union[List, None] = None,
+                   img_mag: float = 0.00254,
+                   chunk_size: tuple = (1, 256, 256),
+                   raw_window=Union[List, None]):
     """Export contours as labels to an existing zarr.
     
         Params:
@@ -192,23 +257,40 @@ def seriesToLabels(series : Series,
             data_fp (str): the filepath for the zarr
             group (str): the group to export as labels (None if retraining)
     """
+
     # extract data from raw
     data_zg = zarr.open(data_fp)
-
     raw = data_zg["raw"]
-    
-    sections = raw.attrs["sections"]
-    window = raw.attrs["window"]
+
+    shape = raw.shape
+    sections = list(range(*window[1]))
     mag = raw.attrs["true_mag"]
     alignment = raw.attrs["alignment"]
-    offset = raw.attrs["offset"]
     resolution = raw.attrs["resolution"]
+
+    print(sections)
+
+    if window:
+
+        offset = get_offset(
+            window,
+            resolution,
+            img_mag,
+            relative_to=raw_window
+        )
+        
+        window = window[0]
+
+    else:
+
+        window = raw.attrs["window"]
+        offset = raw.attrs["offset"]
 
     # calculate field attributes
     shape = (
         len(sections),
-        round(window[3]/mag),
-        round(window[2]/mag)
+        round(window[3] / mag),
+        round(window[2] / mag)
     )
     pixmap_dim = shape[2], shape[1]  # the w and h of the 2D array
 
@@ -225,7 +307,7 @@ def seriesToLabels(series : Series,
         del_group = series.getRecentSegGroup()
         group_or_tag = f"{del_group}_keep"
 
-    dataset_name = f"labels_{group_or_tag}_unbounded"
+    dataset_name = f"labels_{group_or_tag}"
 
     # create labels datasets
     data_zg.create_dataset(
@@ -236,10 +318,14 @@ def seriesToLabels(series : Series,
     )
     
     data_zg[dataset_name].attrs["offset"] = offset
+
+    print(f"Applied offset: {offset}")
+    
     data_zg[dataset_name].attrs["resolution"] = resolution
 
     # create threadpool
     threadpool = ThreadPoolProgBar()
+
     for i, snum in enumerate(sections):
         threadpool.createWorker(
             exportTraces,
@@ -254,24 +340,9 @@ def seriesToLabels(series : Series,
             del_group,
             alignment[str(snum)]
         )
+
     threadpool.startAll("Converting contours to zarr...")
 
-    ## Offset by bounding box
-    arr = data_zg[dataset_name][:]
-    slices = find_objects(arr > 0)[0]
-    new_offset = [
-        offset[i] + (slices[i].start * resolution[i]) for i in range(3)
-    ]
-    
-    new_dataset = dataset_name[:-10]
-    data_zg[new_dataset] = arr[slices]
-    
-    data_zg[new_dataset].attrs["offset"] = new_offset
-    data_zg[new_dataset].attrs["resolution"] = resolution
-
-    del data_zg[dataset_name]
-
-    # remove group-object associations
     if del_group:
         series.object_groups.removeGroup(del_group)
 
@@ -307,6 +378,7 @@ def labelsToObjects(series : Series, data_fp : str, group : str, labels : list =
         )
     threadpool.startAll("Converting labels to contours...")
 
+
 def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
     """Get the exteriors from a mask.
     
@@ -327,7 +399,13 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
         exteriors.append(e)
     return exteriors
 
-def exportSection(data_zg, snum : int, series : Series, z : int, window : list, pixmap_dim : tuple):
+
+def exportSection(data_zg,
+                  snum : int,
+                  series : Series,
+                  z : int,
+                  window : list,
+                  pixmap_dim : tuple):
     """Export the raw data for a single section.
     
         Params:
@@ -348,6 +426,7 @@ def exportSection(data_zg, snum : int, series : Series, z : int, window : list, 
     )
     data_zg["raw"][z] = arr
     # print(f"Section {snum} exporting finished")
+
 
 def exportTraces(data_zg,
                  snum : int,
@@ -395,7 +474,7 @@ def exportTraces(data_zg,
                     if tag in trace.tags:
                         traces.append(trace)
     
-    data_zg[f"labels_{group_or_tag}_unbounded"][z] = slayer.generateLabelsArray(
+    data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
             pixmap_dim,
             window,
             traces,
@@ -413,6 +492,7 @@ def exportTraces(data_zg,
                 trace.setHidden(True)
                 section.addTrace(trace)
             section.save()
+
 
 def importSection(data_zg, group, snum, series, ids=None):
     """Import label data for a single section.
@@ -528,6 +608,7 @@ def importSection(data_zg, group, snum, series, ids=None):
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 
     section.save()
+
 
 def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
     """Create a new series from a neuroglancer zarr.

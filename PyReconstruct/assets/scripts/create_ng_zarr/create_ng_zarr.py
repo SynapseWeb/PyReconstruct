@@ -17,6 +17,7 @@ from PyReconstruct.modules.backend.autoseg import (
     seriesToZarr,
     seriesToLabels,
     groupsToVolume,
+    rechunk
 )
 
 from PyReconstruct.assets.scripts.create_ng_zarr.parser import (
@@ -157,5 +158,15 @@ if groups:
         )
 
 series.close()
+
+print_flush("Rechunking datasets...")
+
+try:
+
+    rechunk(zarr_fp)
+
+except ValueError:
+
+    print_flush("Rechunking not possible.")
 
 print_summary(series, window, start, end, mag, zarr_fp)

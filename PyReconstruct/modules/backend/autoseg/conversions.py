@@ -2,14 +2,11 @@ import os
 import shutil
 import numpy as np
 from pathlib import Path
-from typing import Union, List
+from datetime import datetime
+from typing import Union, List, Tuple
 
 import cv2
-from numpy._typing import _128Bit
 import zarr
-from scipy.ndimage import find_objects
-
-from datetime import datetime
 
 from PyReconstruct.modules.datatypes import Series, Transform, Trace
 from PyReconstruct.modules.backend.view import SectionLayer
@@ -32,55 +29,87 @@ def get_offset(window, resolution, img_mag, relative_to):
 
     lat, ax = window
 
-    print(f"{lat = }")
-
-    print(f"Relative to: {relative_to}")
-
-    print(f"image mag {img_mag}")
-
     ul_all = (
         relative_to[0],
         relative_to[1] + relative_to[3]
     )
-
-    print(f"{ul_all = }")
 
     ul_roi_group= (
         lat[0],
         lat[1] + lat[3]
     )
 
-    print(f"{ul_roi_group = }")
-
     ## do the things...
 
     scale_x = resolution[2] / 1000 / img_mag
     scale_y = resolution[1] / 1000 / img_mag
 
-    print(f"scale x {scale_x}")
-    
     x_diff_real = ul_roi_group[0] - ul_all[0]
     y_diff_real = ul_roi_group[1] - ul_all[1]
-
-    print(f"real x {x_diff_real}")
 
     x_diff_scaled = x_diff_real * scale_x
     y_diff_scaled = y_diff_real * scale_y
 
-    print(f"x diff scaled {x_diff_scaled}")
-
     x = round(x_diff_scaled * 1000)
     y = round(y_diff_scaled * 1000)
-
-    print(x, y)
 
     z = ( ax[0] - 1 ) * resolution[0]
 
     offset = [z, -y, x]
 
-    print(f"Guess at offset: {offset}")
-
     return offset
+
+
+def rechunk(
+        zarr_fp: Union[str, Path],
+        target_chunks: Tuple[int, int, int] = (8, 256, 256)
+):
+    """Rechunk all available datasets."""
+
+    from rechunker import rechunk
+
+    if not isinstance(zarr_fp, Path):
+        zarr_fp = Path(zarr_fp)
+
+    rechunked = []
+    
+    z = zarr.open(str(zarr_fp), "r")
+
+    for arr_name, src_arr in z.items():
+
+        if not isinstance(src_arr, zarr.Array):
+            continue
+        
+        original     = zarr_fp / arr_name
+        intermediate = zarr_fp / f"{arr_name}_tmp"
+        target       = zarr_fp / f"{arr_name}_rechunked"
+
+        if target.exists():
+        
+            shutil.rmtree(str(target))
+
+        target_store = zarr.DirectoryStore(
+            str(target)
+        )
+
+        rechunk_plan = rechunk(
+            src_arr,
+            target_chunks=target_chunks,
+            max_mem='1GB',  # adjust as needed
+            target_store=target_store,
+            temp_store=str(intermediate)
+        )
+        
+        rechunk_plan.execute()
+
+        rechunked.append((original, target))
+
+    for original, new in rechunked:
+
+        shutil.rmtree(str(original))
+        new.rename(original)
+
+    return True
 
 
 def groupsToVolume(series: Series, groups: list=None, padding: float=None):
@@ -268,8 +297,6 @@ def seriesToLabels(series: Series,
     alignment = raw.attrs["alignment"]
     resolution = raw.attrs["resolution"]
 
-    print(sections)
-
     if window:
 
         offset = get_offset(
@@ -318,9 +345,6 @@ def seriesToLabels(series: Series,
     )
     
     data_zg[dataset_name].attrs["offset"] = offset
-
-    print(f"Applied offset: {offset}")
-    
     data_zg[dataset_name].attrs["resolution"] = resolution
 
     # create threadpool

@@ -1,4 +1,5 @@
 import os
+import re
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -126,33 +127,57 @@ def setMainWindow(mw):
 
 def notify(message):
     """Notify the user."""
-    QMessageBox.information(
-        mainwindow,
-        "Notify",
-        message,
-        QMessageBox.Ok
-    )
+    if QApplication.instance():
+        
+        QMessageBox.information(
+            mainwindow,
+            "Notify",
+            message,
+            QMessageBox.Ok
+        )
+
+    else:
+
+        print(message)
+        input("Press any key to continue...")
 
 def notifyConfirm(message, yn=False):
     """Notify the user and give option to OK or cancel."""
+
+    qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
+
     if yn:
-        response = QMessageBox.question(
-            mainwindow,
-            " ",
-            message,
-            QMessageBox.Yes,
-            QMessageBox.No
-        )
-        return response == QMessageBox.Yes
+
+        if QApplication.instance() and not qt_offscreen:
+            
+            response = QMessageBox.question(
+                mainwindow,
+                " ",
+                message,
+                QMessageBox.Yes,
+                QMessageBox.No
+            )
+            
+            return response == QMessageBox.Yes
+
+        else:
+
+            print(message)
+            return ask_yes_no()
+        
     else:
-        response = QMessageBox.warning(
-            mainwindow,
-            " ",
-            message,
-            QMessageBox.Ok,
-            QMessageBox.Cancel
-        )
-        return response == QMessageBox.Ok
+
+        if QApplication.instance() and not qt_offscreen:
+        
+            response = QMessageBox.warning(
+                mainwindow,
+                " ",
+                message,
+                QMessageBox.Ok,
+                QMessageBox.Cancel
+            )
+            
+            return response == QMessageBox.Ok
 
 def noUndoWarning():
     """Inform the user of an action that can't be undone."""
@@ -420,3 +445,35 @@ def getOpenRecentMenu(series, openSeries):
         "opts": opts_list
     }
 
+
+def ask_yes_no(prompt="Please enter y/[n]: "):
+    
+    valid_responses = {
+        'yes' : True,
+        'y'   : True,
+        'no'  : False,
+        'n'   : False
+    }
+
+    pattern = r'\[(.*?)\]'
+    default = re.findall(pattern, prompt)
+    
+    if default:
+        
+        default = default[0]
+        
+    while True:
+        
+        response = input(prompt).strip().lower()
+        
+        if not response and default is not None:
+            
+            return valid_responses[default.lower()]
+        
+        elif response in valid_responses:
+            
+            return valid_responses[response]
+        
+        else:
+            
+            print("Please enter 'y' or 'n'.")

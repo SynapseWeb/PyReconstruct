@@ -11,6 +11,8 @@ import cv2
 
 from PySide6.QtWidgets import QApplication
 
+from PyReconstruct.modules.backend.imports import modules_available
+
 from PyReconstruct.modules.datatypes import Series
 
 from PyReconstruct.modules.backend.autoseg import (
@@ -33,7 +35,23 @@ from PyReconstruct.assets.scripts.create_ng_zarr.utils import (
 )
 
 
+qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
+
+if qt_offscreen and not modules_available("rechunker", notify=False):
+
+    print(
+        "Please pip install 'rechunker' "
+        "before converting series to zarr."
+    )
+    
+    sys.exit()
+
+conversion_time = datetime.now(timezone.utc)
+
+print(f"Starting conversion...")
+
 args = get_args()
+
 jser_fp, output_zarr, start, end, mag, padding, max_tissue = parse_args(args)
 
 print_flush("Opening series...")
@@ -79,12 +97,13 @@ img_corners = [(0, 0), (w, 0), (w, h), (0, h)]
 convert_microns = lambda x: x * img_mag
 img_corners = [list(map(convert_microns, elem)) for elem in img_corners]
 
-## Determine if req for all tissue or crop
+## Determine if req all tissue or crop
+
 get_all = (bool(max_tissue) or not bool(groups))
 
 ## Procedures
 
-if get_all:  # request all available (include possible black space)
+if get_all:  # request all available tissue
 
     x_mins, y_mins, x_maxs, y_maxs = ([], [], [], [])
 
@@ -102,23 +121,21 @@ if get_all:  # request all available (include possible black space)
         y_maxs.append(max(y_vals))
 
     window = [
-        min(x_mins),
-        min(y_mins),
-        max(x_maxs) - min(x_mins),
-        max(y_maxs) - min(y_mins),
+        min(x_mins),                # x
+        min(y_mins),                # y 
+        max(x_maxs) - min(x_mins),  # w
+        max(y_maxs) - min(y_mins),  # h
     ]
 
-else:  # request zarr around group(s)
+else:  # request only around group(s)
 
-    if padding:
-        padding *= img_mag  # convert padding from to μm
-        
+    if padding: padding *= img_mag  # convert to μm
     window, _ = groupsToVolume(series, groups, padding)
 
 additional_attrs = {
         "filepath": str(Path(jser_fp).absolute()),
         "sha1sum": get_sha1sum(jser_fp),
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M:%S")
+        "date": conversion_time.strftime("%Y-%m-%d, %H:%M:%S")
     }
 
 print_flush("Initializing pyqt...")
@@ -139,7 +156,7 @@ zarr_fp = seriesToZarr(
     other_attrs=additional_attrs
 )
 
-# Add labels to zarr if object groups provided
+## Add labels to zarr if groups provided
 if groups:
 
     padding *= img_mag
@@ -159,14 +176,20 @@ if groups:
 
 series.close()
 
-print_flush("Rechunking datasets...")
+## Rechunk if possible
 
-try:
+if modules_available("rechunker"):
 
-    rechunk(zarr_fp)
+    print_flush("Rechunking datasets...")
 
-except ValueError:
+    try:
 
-    print_flush("Rechunking not possible.")
+        rechunk(zarr_fp)
+
+    except ValueError:
+
+        print_flush("Rechunking not possible.")
+
+## Print summary
 
 print_summary(series, window, start, end, mag, zarr_fp)

@@ -48,20 +48,20 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
             
         response = notifyConfirm(
             f"This feature requires additional python packages to work ({unavail_str}). "
-            "Would you like to install them into your current environment?"
+            "Would you like to install them into your current environment?",
+            yn=True
         )
 
         if response == True:
 
             pip_outcomes = map(install_module, unavailable)
-            print(f"{list(pip_outcomes) = }")
             return all(list(pip_outcomes))
             
         else:
 
             return False
 
-    return True
+    return False
 
 
 def install_module(module: str) -> bool:
@@ -76,7 +76,7 @@ def install_module(module: str) -> bool:
         shell=True
     )
 
-    print(f"{output = }")
+    print(f"return code {output.returncode}")
 
     if output.returncode == 0:
 
@@ -87,8 +87,6 @@ def install_module(module: str) -> bool:
         return True
 
     else:
-
-        print(output.stderr)
 
         note(
             "Something went wrong. "

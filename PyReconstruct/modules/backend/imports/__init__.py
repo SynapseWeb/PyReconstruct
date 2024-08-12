@@ -67,8 +67,6 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
 def install_module(module: str) -> bool:
     """Interactively install a pip module."""
 
-    print(f"Installing module {module}")
-
     output = subprocess.run(
         f"pip install {module}",
         capture_output=True,

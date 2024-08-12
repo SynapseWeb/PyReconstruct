@@ -93,9 +93,8 @@ class MainWindow(QMainWindow):
 
     def test(self) -> None:
         """Run test here."""
+        notify("test message!")
 
-        from PyReconstruct.modules.backend.imports import module_available
-        module_available(["orjson", "cairosvg"])
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -1760,43 +1759,80 @@ class MainWindow(QMainWindow):
         self.field.generateView()
 
     def exportToZarr(self):
-        """Create a neuroglancer-compatible zarr."""
+        """Export series as a neuroglancer-compatible zarr."""
+
+        if not modules_available("rechunker"):
+
+            notify(
+                "Rechunker module is not available, but "
+                "conversion will continue with chunk size (1, 256, 256)."
+            )
 
         all_sections = sorted(list(self.series.sections.keys()))
+
+        ## Get options from user
+        
         structure = [
-            ["From section", ("int", all_sections[1]), "to section", ("int", all_sections[-1]), " "],
-            ["Output magnification:", ("float", self.field.section.mag), " "],
-            # ["Save in folder:", ("dir", None)],
-            ["Padding:", ("float", None)],
+            ["From section", ("int", all_sections[1]),
+             "to section", ("int", all_sections[-1]), " "],
+            ["Group padding (px):", ("int", 50)],
             ["Groups:"],
             [("multicombo", self.series.object_groups.getGroupList(), None)],
-            [("check", ("use max tissue", True))]
+            [("check", ("Export all tissue", True))]
         ]
+        
         response, confirmed = QuickDialog.get(self, structure, "Create Neuroglancer Zarr", spacing=10)
-        if not confirmed:
-            return
+
+        if not confirmed: return
         
-        start = response[0]
-        end = response[1]
-        mag = response[2]
-        padding = response[3]
-        groups = " ".join(response[4])
-        max_tissue = response[5][0][1]
+        start, end, padding = response[0:3]
+        groups = " ".join(response[3])
+        max_tissue = response[4][0][1]
+
+        ## Ask for save location
+
+        ser_name = self.series.name
+
+        output = FileDialog.get(
+            "save",
+            self,
+            "Save as zarr",
+            filter="*.zarr",
+            file_name=f"{ser_name}-ng-export.zarr"
+        )
         
-        args = {
-            "--start_section": start,
-            "--end_section": end,
-            "--mag": mag,
-            # "--output": output,
-            "--padding": padding,
-            "--groups": groups,
-            "--max_tissue": max_tissue,
-        }
+        if not output: return
+
+        if max_tissue:
+
+            args = {
+                
+                "--groups"        : groups,
+                "--max_tissue"    : max_tissue,
+                "--output"        : output
+                
+            }
+            
+        else:
+
+            args = {
+                
+                "--start_section" : start,
+                "--end_section"   : end,
+                "--output"        : output,
+                "--groups"        : groups,
+                
+            }
 
         python_bin = sys.executable
-        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
-
-        convert_cmd = [python_bin, zarr_converter, "create_ng_zarr", self.series.jser_fp]
+        zarr_converter = Path(assets_dir) / "scripts/start_process.py"
+        
+        convert_cmd = [
+            python_bin,
+            str(zarr_converter),
+            "create_ng_zarr",
+            self.series.jser_fp
+        ]
 
         for argname, arg in args.items():
             if arg or arg == 0:
@@ -1804,7 +1840,7 @@ class MainWindow(QMainWindow):
                     convert_cmd.append(argname)
                 else:
                     convert_cmd += [argname] + str(arg).split()
-        
+
         if os.name == 'nt':
 
             subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)

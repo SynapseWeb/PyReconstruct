@@ -11,6 +11,8 @@ import cv2
 
 from PySide6.QtWidgets import QApplication
 
+from PyReconstruct.modules.gui.utils import notify as note
+
 from PyReconstruct.modules.backend.imports import modules_available
 
 from PyReconstruct.modules.datatypes import Series
@@ -39,14 +41,10 @@ qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
 
 if qt_offscreen and not modules_available("rechunker", notify=False):
 
-    print(
-        "Please pip install 'rechunker' "
-        "before converting series to zarr."
-    )
-    
+    print("Please pip install 'rechunker' before converting series to zarr.")
     sys.exit()
 
-conversion_time = datetime.now(timezone.utc)
+t_convert = datetime.now(timezone.utc)
 
 print(f"Starting conversion...")
 
@@ -133,9 +131,12 @@ else:  # request only around group(s)
     window, _ = groupsToVolume(series, groups, padding)
 
 additional_attrs = {
-        "filepath": str(Path(jser_fp).absolute()),
-        "sha1sum": get_sha1sum(jser_fp),
-        "date": conversion_time.strftime("%Y-%m-%d, %H:%M:%S")
+    
+        "filepath" : str(Path(jser_fp).absolute()),
+        "sha1sum"  : get_sha1sum(jser_fp),
+        "date"     : t_convert.strftime("%Y-%m-%d"),
+        "time"     : t_convert.strftime("%H:%M:%S")
+        
     }
 
 print_flush("Initializing pyqt...")

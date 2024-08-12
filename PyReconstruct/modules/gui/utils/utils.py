@@ -22,7 +22,10 @@ from PySide6.QtGui import (
 )
 from PySide6.QtCore import Qt
 
+
 mainwindow = None
+qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
+
 
 def newMenu(widget : QWidget, container, menu_dict : dict):
     """Create a menu.
@@ -127,7 +130,8 @@ def setMainWindow(mw):
 
 def notify(message):
     """Notify the user."""
-    if QApplication.instance():
+
+    if QApplication.instance() and not qt_offscreen:
         
         QMessageBox.information(
             mainwindow,
@@ -143,8 +147,6 @@ def notify(message):
 
 def notifyConfirm(message, yn=False):
     """Notify the user and give option to OK or cancel."""
-
-    qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
 
     if yn:
 

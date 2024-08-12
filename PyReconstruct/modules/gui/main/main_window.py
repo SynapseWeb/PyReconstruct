@@ -1829,9 +1829,9 @@ class MainWindow(QMainWindow):
         
         convert_cmd = [
             python_bin,
-            str(zarr_converter),
+            str(zarr_converter.absolute()),
             "create_ng_zarr",
-            self.series.jser_fp
+            f"\"{self.series.jser_fp}\""
         ]
 
         for argname, arg in args.items():
@@ -1839,11 +1839,24 @@ class MainWindow(QMainWindow):
                 if type(arg) is bool:
                     convert_cmd.append(argname)
                 else:
-                    convert_cmd += [argname] + str(arg).split()
+                    
+                    if argname == "--output":
+
+                        convert_cmd += [
+                            "--output",
+                            f"\"{arg}\""
+                        ]
+                        
+                    else:
+
+                        convert_cmd += [argname] + str(arg).split()
 
         if os.name == 'nt':
 
-            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.Popen(
+                convert_cmd,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
             
         else:
 

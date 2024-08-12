@@ -1,3 +1,11 @@
+"""
+
+Threading source:
+
+https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
+
+"""
+
 import sys
 import traceback
 
@@ -14,7 +22,6 @@ from PySide6.QtCore import (
     Qt
 )
 
-# THREADING SOURCE: https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
 
 class WorkerSignals(QObject):
     '''

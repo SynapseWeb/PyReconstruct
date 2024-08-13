@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
 
-VERSION = '1.10.0'
+VERSION = '1.11.0'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'julian.falco@utexas.edu'

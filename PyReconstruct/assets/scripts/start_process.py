@@ -1,5 +1,7 @@
 import sys
 import os
+from pathlib import Path
+
 from PySide6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QVBoxLayout, QWidget, QLabel
 from PySide6.QtCore import QProcess
 
@@ -58,9 +60,9 @@ class MainWindow(QMainWindow):
     def handle_state(self, state):
         
         states = {
-            QProcess.NotRunning: 'Not running',
-            QProcess.Starting: 'Starting',
-            QProcess.Running: 'Running',
+            QProcess.NotRunning : 'Not running',
+            QProcess.Starting   : 'Starting',
+            QProcess.Running    : 'Running',
         }
         state_name = states[state]
         #self.message(f"State changed: {state_name}")
@@ -70,28 +72,38 @@ class MainWindow(QMainWindow):
         self.message("Zarr processing finished.")
 
         if sys.platform == "linux":
+
             self.message("Changing file permissions...")
+
             zarr = sys.argv[2]
+
             os.system(f"find {zarr} -type d -exec chmod g+rwx {{}} +")
             os.system(f"find {zarr} -type f -exec chmod g+rw {{}} +")
         
         self.message("You can close this window.")
         self.heading.setText("Zarr processing done. You can safely close this window now.")
+        
         self.p = None
 
 
 if __name__ == "__main__":
 
-    zarr_cmd = sys.executable
+    args = sys.argv
+    python_bin = sys.executable
+    dir_scripts = Path(__file__).parent
+    
     if sys.argv[1] == "convert_zarr":
-        zarr_converter = os.path.join(os.path.dirname(__file__), "convert_zarr", "zarree-2.py")
-    elif sys.argv[1] == "create_ng_zarr":
-        zarr_converter = os.path.join(os.path.dirname(__file__), "create_ng_zarr", "create_ng_zarr.py")
+
+        zarr_converter = str(dir_scripts / "convert_zarr/zarree-2.py")
+        
+    elif args[1] == "create_ng_zarr":
+
+        zarr_converter = str(dir_scripts / "create_ng_zarr/create_ng_zarr.py")
     
-    zarr_args = [zarr_converter] + sys.argv[2:]
+    zarr_args = [zarr_converter] + args[2:]
     
-    app = QApplication(sys.argv)
+    app = QApplication(args)
     window = MainWindow()
     window.show()
-    window.start_process(zarr_cmd, zarr_args)
+    window.start_process(python_bin, zarr_args)
     app.exec()

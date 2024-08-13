@@ -50,10 +50,15 @@ class ObjectTableWidget(DataTable):
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
+        self.orientation_filters = {
+            "closed"         : True,
+            "open"           : True,
+            "mixed"          : True
+        }
         self.cr_status_filter = {
-            "Blank": True,
-            "Needs curation": True,
-            "Curated": True
+            "Blank"          : True,
+            "Needs curation" : True,
+            "Curated"        : True
         }
         self.cr_user_filters = set()
         self.user_col_filters = {}
@@ -134,6 +139,7 @@ class ObjectTableWidget(DataTable):
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                     ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
                     ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter),
+                    ("orientationfilter_act", "Orientation filter...", "", self.setOrientationFilter),
                     ("hostfilter_act", "Host filter...", "", self.setHostFilter),
                     {
                         "attr_name": "usercolfiltersmenu",
@@ -377,7 +383,7 @@ class ObjectTableWidget(DataTable):
             Params:
                 name (str): the name of the object
         """
-        # check user columns
+        ## Check user columns
         if self.user_col_filters:
             passes_filters = False
             for n, value in self.series.getAttr(name, "user_columns").items():
@@ -387,16 +393,15 @@ class ObjectTableWidget(DataTable):
             if not passes_filters:
                 return False
 
-        # check groups
-        filters_len = len(self.group_filters)
-        if filters_len != 0:
+        ## Check groups
+        if len(self.group_filters) != 0:  # if group filter requested
             object_groups = self.series.object_groups.getObjectGroups(name)
             groups_len = len(object_groups)
             union_len = len(object_groups.union(self.group_filters))
             if union_len == groups_len + filters_len:  # intersection does not exist
                 return False
         
-        # check tags
+        ## Check tags
         filters_len = len(self.tag_filters)
         if filters_len != 0:
             object_tags = self.series.data.getTags(name)
@@ -405,8 +410,9 @@ class ObjectTableWidget(DataTable):
             if union_len == object_len + filters_len:  # intersection does not exist
                 return False
         
-        # check curation status and user
+        ## Check curation status and user
         if dict(self.columns)["Curate"]:
+            
             obj_curation = self.series.getAttr(name, "curation")
             if obj_curation:
                 cr_status, user, date = tuple(obj_curation)
@@ -420,8 +426,20 @@ class ObjectTableWidget(DataTable):
                     return False
                 if self.cr_user_filters:
                     return False
-        
-        # check regex
+
+        ## Check orientation
+        if dict(self.columns)["Orientation"]:
+            
+            req_orientations = [
+                ori for ori, req
+                in self.orientation_filters.items()
+                if req == True
+            ]
+            
+            if self.series.data.getOrientation(name) not in req_orientations:
+                return False
+            
+        ## Check regex
         passes_filters = False if self.re_filters else True
         for re_filter in self.re_filters:
             if bool(re.fullmatch(re_filter, name)):
@@ -678,23 +696,52 @@ class ObjectTableWidget(DataTable):
         """Set the filter for curation."""
         structure = [
             ["Curation status:"],
-            [(
-                "check",
-                *((s,c) for s, c in self.cr_status_filter.items())
-            )],
+            [
+                (
+                    "check",
+                    *((s,c) for s, c in self.cr_status_filter.items())
+                )
+            ],
             ["Users:"],
             [("multitext", self.cr_user_filters)]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Curation Filters")
         if not confirmed:
             return
+
+        print(f"{response = }")
+        print(f"{self.cr_status_filter}")
         
         self.cr_status_filter = dict(response[0])
         self.cr_user_filters = set(response[1])
 
         # call through manager to update self
         self.manager.recreateTable(self)
-    
+
+    def setOrientationFilter(self):
+        """Filter by object orientation."""
+        structure = [
+            ["Object orientation:"],
+            [
+                (
+                    "check",
+                    *((s,c) for s, c in self.orientation_filters.items())
+                )
+            ]
+        ]
+        
+        response, confirmed = QuickDialog.get(
+            self, structure, "Orientation Filters"
+        )
+
+        if not confirmed:
+            return
+
+        self.orientation_filters = dict(response[0])
+
+        ## Call through manager to update self
+        self.manager.recreateTable(self)
+
     def findFirst(self, event=None):
         """Focus the field on the first occurence of an object in the series."""
         name = self.getSelected(single=True)

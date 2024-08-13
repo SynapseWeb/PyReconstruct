@@ -1,10 +1,12 @@
 """Collect data to pass to table manager."""
+from typing import Union
 
 from PyReconstruct.modules.calc import lineDistance, area
 
 from .section import Section
 from .transform import Transform
 from .trace import Trace
+
 
 class TraceData():
 
@@ -69,16 +71,22 @@ class ObjectData():
         """
         if section.n not in self.traces:
             self.traces[section.n] = []
+            
         alignment = series.getAttr(trace.name, "alignment")
+        
         if alignment is None:
+            
             alignment = series.alignment
+            
         elif alignment not in section.tforms:
+            
             series.setAttr(trace.name, "alignment", None)
             alignment = series.alignment
 
         tform = section.tforms[alignment]
 
         i = len(self.traces[section.n])
+        
         self.traces[section.n].append(
             TraceData(trace, i, tform)
         )
@@ -91,6 +99,7 @@ class ObjectData():
         """
         if snum in self.traces:
             del(self.traces[snum])
+
 
 class SeriesData():
 
@@ -108,16 +117,19 @@ class SeriesData():
         self.supress_logging = False
     
     def __getitem__(self, index):
-        """Allow the user to directly index the data dictionary."""
+        """Allow direct indexing of data dictionary."""
         return self.data[index]
     
     def refresh(self):
         """Completely refresh the series data."""
+
         self.data = {
             "sections": {},
             "objects": {},
         }
+
         for snum, section in self.series.enumerateSections():
+
             self.updateSection(section, update_traces=True, log_events=False)
     
     def updateSection(self, section : Section, update_traces=False, all_traces=True, log_events=True):
@@ -131,6 +143,7 @@ class SeriesData():
         """
         # create/update the data for a section
         if section.n not in self.data["sections"]:
+            
             d = {
                 "thickness": section.thickness,
                 "calgrid": section.calgrid,
@@ -141,8 +154,11 @@ class SeriesData():
                 "flags": [f.copy() for f in section.flags],
                 "tforms": section.tforms.copy()
             }
+            
             self.data["sections"][section.n] = d
+            
         else:
+            
             d = self.data["sections"][section.n]
             d["thickness"] = section.thickness
             d["locked"] = section.align_locked
@@ -153,27 +169,32 @@ class SeriesData():
             d["tforms"] = section.tforms.copy()
         
         if update_traces:
-            # check if there are specific traces to be updated
+            
+            ## Check if there are specific traces to be updated
             trace_names = section.getAllModifiedNames()
+
             if section.tformsModified(scaling_only=True) or (all_traces and not trace_names):
                 trace_names = section.contours.keys()
 
-            # keep track of objects that are newly created/destroyed
+            ## Keep track of objects that are newly created/destroyed
             added_objects = set()
             removed_objects = set()
-            # clear existing trace data on this section
+
+            ## Clear existing trace data on this section
             for name in trace_names:
-                # check if object is newly created
+                
+                ## Check if object is new
                 if name in self.data["objects"]:
                     self.data["objects"][name].clearSection(section.n)
-                # add new trace data
+                    
+                ## Add new trace data
                 if name in section.contours:
                     for trace in section.contours[name]:
                         is_new_object = self.addTrace(trace, section)
                         if is_new_object:
                             added_objects.add(name)
             
-            # check for removed objects
+            ## Check for removed objects
             for name in trace_names:
                 if name in self.data["objects"]:
                     obj_data = self.data["objects"][name]
@@ -181,14 +202,19 @@ class SeriesData():
                         del(self.data["objects"][name])
                         removed_objects.add(name)
             
-            # log the newly created/destroyed objects
+            ## Log newly created/destroyed objects
             if log_events and not self.supress_logging:
+                
                 for obj_name in added_objects:
+                    
                     self.series.addLog(obj_name, None, "Create object")
-                    self.series.setAttr(obj_name, "alignment", self.series.alignment)  # set the fixed alignment of the object to creation
+                    ## Set the fixed alignment of the object to creation
+                    self.series.setAttr(obj_name, "alignment", self.series.alignment)
+                    
                 for obj_name in removed_objects:
+                    
                     self.series.addLog(obj_name, None, "Delete object")
-                    # remove object from object attributes dicts
+                    ## Remove object from object attributes dicts
                     self.series.removeObjAttrs(obj_name)
     
     def addTrace(self, trace : Trace, section : Section):
@@ -200,18 +226,22 @@ class SeriesData():
             Returns:
                 (bool): True if a new object was just created
         """
-        # create the section data if not existing already
+        ## Create section data if not present
         if section.n not in self.data["sections"]:
+            
             self.updateSection(section, update_traces=True)
-            # ASSUME TRACE IS ALREADY ON THE SECTION
-            return
+            return ## Assume trace already on section
         
-        # create object if not already
+        ## Create object if not present
         object_data = self.data["objects"]
+
         if trace.name not in object_data:
+
             new_object = True
             object_data[trace.name] = ObjectData()
+
         else:
+
             new_object = False
         
         object_data[trace.name].addTrace(trace, section, self.series)
@@ -283,14 +313,47 @@ class SeriesData():
                 obj_name (str): the name of the object to retrieve data for
         """
         obj_data = self.data["objects"].get(obj_name)
+
         if obj_data is None:
             return None
         
         v = 0
+        
         for snum, trace_list in obj_data.traces.items():
+            
             for trace_data in trace_list:
                 v += trace_data.getArea() * self.data["sections"][snum]["thickness"]
+                
         return v
+
+    def getOrientation(self, obj_name: str) -> Union[str, None]:
+        """Get the orientation of the object.
+
+            Params:
+                obj_name (str): the name of the object to retrieve data for
+        """
+        obj_data = self.data["objects"].get(obj_name)
+
+        if obj_data is None:
+            return None
+
+        closed = []
+        
+        for _, trace_list in obj_data.traces.items():
+
+            for trace_data in trace_list:
+                closed.append(trace_data.closed)
+
+        if sum(closed) == 0:
+            orientation = "open"
+            
+        elif sum(closed) == len(closed):
+            orientation = "closed"
+            
+        else:
+            orientation = "mixed"
+
+        return orientation
     
     def getTags(self, obj_name : str) -> set:
         """Get the tags associated with an object.
@@ -422,6 +485,4 @@ class SeriesData():
             thicknesses.append(sdata["thickness"])
         return sum(thicknesses) / len(thicknesses)
 
-
-
-
+    

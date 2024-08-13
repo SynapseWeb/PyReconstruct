@@ -400,8 +400,12 @@ class MainWindow(QMainWindow):
         if self.field.section_layer.is_zarr_file and create_new:
             notify("Images are already scaled.")
             return
+        
         elif not self.field.section_layer.is_zarr_file and not create_new:
-            notify("Images are not in zarr format.\nPlease convert to zarr first.")
+            notify(
+                "Images are not in zarr format.\n"
+                "Please convert to zarr first."
+            )
             return
         
         if create_new:
@@ -415,15 +419,25 @@ class MainWindow(QMainWindow):
             if not zarr_fp: return
 
         python_bin = sys.executable
-        zarr_converter = os.path.join(assets_dir, "scripts", "start_process.py")
+        zarr_converter = Path(assets_dir) / "scripts/start_process.py"
+        
         if create_new:
-            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir, zarr_fp]
+            
+            convert_cmd = [
+                python_bin, str(zarr_converter.absolute()), "convert_zarr", self.series.src_dir, zarr_fp
+            ]
+            
         else:
-            convert_cmd = [python_bin, zarr_converter, "convert_zarr", self.series.src_dir]
+            
+            convert_cmd = [
+                python_bin, str(zarr_converter.absolute()), "convert_zarr", self.series.src_dir
+            ]
 
         if os.name == 'nt':
 
-            subprocess.Popen(convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.Popen(
+                convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW
+            )
             
         else:
 

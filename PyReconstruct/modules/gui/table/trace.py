@@ -66,32 +66,50 @@ class TraceTableWidget(DataTable):
         items = []
 
         if item_type == "Name":
+            
             items.append(QTableWidgetItem(name))
+            
         elif item_type == "Index":
+            
             items.append(QTableWidgetItem(str(trace_data.index)))
+            
         elif item_type == "Tags":
+            
             items.append(QTableWidgetItem(", ".join(trace_data.getTags())))
+            
         elif item_type == "Hidden":
+            
             item = QTableWidgetItem("")
+            
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if trace_data.hidden else Qt.CheckState.Unchecked)
             items.append(item)
+            
         elif item_type == "Closed":
+            
             item = QTableWidgetItem("")
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if trace_data.closed else Qt.CheckState.Unchecked)
             items.append(item)
+            
         elif item_type == "Length":
+            
             items.append(QTableWidgetItem(str(round(trace_data.getLength(), 5))))
+            
         elif item_type == "Area":
+            
             items.append(QTableWidgetItem(str(round(trace_data.getArea(), 5))))
+            
         elif item_type == "Radius":
+            
             items.append(QTableWidgetItem(str(round(trace_data.getRadius(), 5))))
+            
         elif item_type == "Feret":
+            
             feret_min, feret_max = trace_data.getFeret()
             items.extend((QTableWidgetItem(str(round(feret_max, 5))),
                           QTableWidgetItem(str(round(feret_min, 5)))))
-        
+
         return items
     
     def passesFilters(self, name_trace_data : tuple):

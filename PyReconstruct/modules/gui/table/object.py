@@ -242,40 +242,65 @@ class ObjectTableWidget(DataTable):
         """
         items = []
         if item_type == "Name":
+            
             items.append(QTableWidgetItem(name))
+            
         elif item_type == "Range":
+            
             items.append(QTableWidgetItem(str(self.series.data.getStart(name))))
             items.append(QTableWidgetItem(str(self.series.data.getEnd(name))))
+            
         elif item_type == "Count":
+            
             items.append(QTableWidgetItem(str(self.series.data.getCount(name))))
+            
         elif item_type == "Flat area":
+            
             items.append(QTableWidgetItem(str(round(self.series.data.getFlatArea(name), 5))))
+            
         elif item_type == "Volume":
+            
             items.append(QTableWidgetItem(str(round(self.series.data.getVolume(name), 5))))
+            
         elif item_type == "Radius":
+            
             items.append(QTableWidgetItem(str(round(self.series.data.getAvgRadius(name), 5))))
+            
         elif item_type == "Host":
+            
             items.append(QTableWidgetItem(", ".join(self.series.getObjHosts(name))))
+            
         elif item_type == "Superhosts":
+            
             hosts = self.series.getObjHosts(name, True, True)
             items.append(QTableWidgetItem(", ".join(hosts)))
+            
         elif item_type == "Groups":
+            
             groups = self.series.object_groups.getObjectGroups(name)
             groups_str = ", ".join(groups)
             items.append(QTableWidgetItem(groups_str))
+            
         elif item_type == "Trace tags":
+            
             tags = self.series.data.getTags(name)
             tags_str = ", ".join(tags)
             items.append(QTableWidgetItem(tags_str))
+            
         elif item_type == "Locked":
+            
             item = QTableWidgetItem("")
             item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
             item.setCheckState(Qt.CheckState.Checked if self.series.getAttr(name, "locked") else Qt.CheckState.Unchecked)
             items.append(item)
+            
         elif item_type == "Last user":
+            
             last_user = self.series.getAttr(name, "last_user")
             items.append(QTableWidgetItem(last_user))
+            
         elif item_type == "Curate":
+            
             check_item = QTableWidgetItem("")
             status_item = QTableWidgetItem("")
             user_item = QTableWidgetItem("")
@@ -284,35 +309,62 @@ class ObjectTableWidget(DataTable):
             check_item.setFlags(Qt.ItemFlag.ItemIsUserTristate | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
 
             obj_curation = self.series.getAttr(name, "curation")
+            
             if not obj_curation:
+                
                 check_item.setCheckState(Qt.CheckState.Unchecked)
                 cr_color = None
+                
             else:
+                
                 curated, user, date = obj_curation
                 text_lightness = QApplication.palette().color(QPalette.WindowText).lightness()
+
                 if curated:
+                    
                     check_item.setCheckState(Qt.CheckState.Checked)
                     status_item.setText("Curated")
                     cr_color = Qt.blue if text_lightness > 128 else Qt.cyan
+
                 else:
+                    
                     check_item.setCheckState(Qt.CheckState.PartiallyChecked)
                     status_item.setText(f"Needs curation")
                     cr_color = QColor(100, 100, 0) if text_lightness > 128 else Qt.yellow
+                    
                 user_item.setText(user)
                 date_item.setText(date)
+                
             for item in cr_items:
+                
                 if cr_color:
+                    
                     item.setData(Qt.BackgroundRole, cr_color)
                     item.setBackground(cr_color)
+                    
                 items.append(item)
+                
         elif item_type == "Alignment":
+            
             alignment = self.series.getAttr(name, "alignment")
             if alignment is None: alignment = ""
             items.append(QTableWidgetItem(alignment))
+            
         elif item_type == "Comment":
+            
             comment = self.series.getAttr(name, "comment")
             items.append(QTableWidgetItem(comment))
+
+        elif item_type == "Orientation":
+
+            items.append(
+                QTableWidgetItem(
+                    self.series.data.getOrientation(name)
+                )
+            )
+            
         elif item_type in self.series.user_columns:
+            
             value = self.series.getUserColAttr(name, item_type)
             if value is None: value = ""
             items.append(QTableWidgetItem(value))

@@ -588,62 +588,78 @@ class Series():
 
         series_data["options"] = {
             # table columns (default display)
-            # note: static columns are always displayed and are not included here.
+            # note: "static" columns are *always* displayed and are not included here.
             # See gui/table/trace.py for static cols
             # MFO = modifiable from options
             "object_columns": list({  # MFO
-                "Range": True,
-                "Count": False,
-                "Flat area": False,
-                "Volume": False,
-                "Radius": False,
-                "Host": True,
-                "Superhosts": False,
-                "Groups": True,
-                "Trace tags": False,
-                "Locked": True,
-                "Last user": True,
-                "Curate": False,
-                "Alignment": False,
-                "Comment": True
+                
+                "Range"        : True,
+                "Count"        : False,
+                "Flat area"    : False,
+                "Volume"       : False,
+                "Radius"       : False,
+                "Host"         : True,
+                "Superhosts"   : False,
+                "Groups"       : True,
+                "Trace tags"   : False,
+                "Locked"       : True,
+                "Last user"    : True,
+                "Curate"       : False,
+                "Alignment"    : False,
+                "Comment"      : True,
+                "Orientation"  : False
+                
             }.items()),
+            
             "trace_columns": list({  # MFO
-                "Index": False,
-                "Tags": True,
-                "Hidden": True,
-                "Closed": True,
-                "Length": True,
-                "Area": True,
-                "Radius": True,
-                "Feret": False
+                
+                "Index"        : False,
+                "Tags"         : True,
+                "Hidden"       : True,
+                "Closed"       : True,
+                "Length"       : True,
+                "Area"         : True,
+                "Radius"       : True,
+                "Feret"        : False,
+                
             }.items()),
+            
             "flag_columns": list({  # MFO
-                "Section": True,
-                "Color": True,
-                "Flag": True,
-                "Resolved": False,
-                "Last Comment": True
+                
+                "Section"      : True,
+                "Color"        : True,
+                "Flag"         : True,
+                "Resolved"     : False,
+                "Last Comment" : True
+                
             }.items()),
+            
             "section_columns": list({  # MFO
-                "Thickness": True,
-                "Locked": True,
-                "Brightness": True,
-                "Contrast": True,
-                "Image Source": True
+                
+                "Thickness"    : True,
+                "Locked"       : True,
+                "Brightness"   : True,
+                "Contrast"     : True,
+                "Image Source" : True
+                
             }.items()),
+            
             "ztrace_columns": list({  # MFO
-                "Start": True,
-                "End": True,
-                "Distance": True,
-                "Groups": True,
-                "Alignment": True
+                
+                "Start"        : True,
+                "End"          : True,
+                "Distance"     : True,
+                "Groups"       : True,
+                "Alignment"    : True
+                
             }.items()),
 
             # distances
-            "small_dist": 0.01,  # MFO
-            "med_dist": 0.1,  # MFO
-            "big_dist": 1,  # MFO
-            "autoseg": {},
+            "small_dist"       : 0.01,  # MFO
+            "med_dist"         : 0.1,  # MFO
+            "big_dist"         : 1,  # MFO
+            "autoseg"          : {},
+            
         }
 
         series_data["obj_attrs"] = {}
@@ -2014,27 +2030,35 @@ class Series():
                 option_name (str): the name of the option
                 get_default (bool): True if only default should be returned
         """
-        # check for internal series option first
+        ## Check for internal series option first
         if option_name in self.options:
+            
             if get_default:
                 opt = Series.getEmptyDict()["options"][option_name]
             else:
                 opt = self.options[option_name]
+                
             return opt
         
-        # get the proper settings and defaults
+        ## Get sane settings and defaults
         if option_name in Series.qsettings_series_defaults:
+            
             if self.isWelcomeSeries():  # return defaults if accessing series setting
                 return Series.qsettings_series_defaults[option_name]
+            
             settings = QSettings("KHLab", f"PyReconstruct-{self.code}")
             defaults = Series.qsettings_series_defaults
+            
         elif option_name in Series.qsettings_defaults:
+            
             settings = QSettings("KHLab", "PyReconstruct")
             defaults = Series.qsettings_defaults
+            
         else:
+            
             return None
         
-        # get the option
+        ## Get the option
         if get_default:
             return defaults[option_name]
         elif settings.contains(option_name):
@@ -2049,14 +2073,14 @@ class Series():
             option = defaults[option_name]
             self.setOption(option_name, option)
         
-        # CHECKS FOR UPDATES
+        ## CHECKS FOR UPDATES
 
-        # check for disallowing the laplacian smoothing algorithm
+        ## Check for disallowing laplacian smoothing
         if option_name == "3D_smoothing" and option == "laplacian":
             option = "humphrey"
             self.setOption(option_name, option)
 
-        # check for tables
+        ## Check for tables
         if "_columns" in option_name:
             if type(option) is not list:
                 raise Exception("boo")

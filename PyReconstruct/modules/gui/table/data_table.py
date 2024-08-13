@@ -252,8 +252,10 @@ class DataTable(QDockWidget):
     def setColumns(self):
         """Set the columns to display."""
         response, confirmed = TableColumnsDialog(self, self.columns).exec()
+
         if not confirmed:
             return
+
         self.columns = response
         self.series.setOption(f"{self.name}_columns", self.columns.copy())
         

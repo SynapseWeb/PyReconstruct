@@ -1,11 +1,14 @@
 import os
 import sys
-os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
-os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = "18500000000"  # Go big or go home?
+import time
+from multiprocessing import Pool
+
 import cv2
 import zarr
-from multiprocessing import Pool
-import time
+
+
+os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = "18500000000"  # Go big or go home?
 
 if len(sys.argv) == 3:
     

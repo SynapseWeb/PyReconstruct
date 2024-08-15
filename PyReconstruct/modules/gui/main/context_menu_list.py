@@ -1,4 +1,55 @@
-from PyReconstruct.modules.gui.utils import getUserColsMenu
+"""Context menus."""
+
+
+from PyReconstruct.modules.gui.utils import getUserColsMenu, getAlignmentsMenu
+
+
+def get_field_menu_list(self):
+
+    return [
+        {
+            "attr_name": "tracemenu",
+            "text": "Trace",
+            "opts": self.field.getTraceMenu()
+        },
+        {
+            "attr_name": "objectmenu",
+            "text": "Object",
+            "opts": self.field.getObjMenu()
+        },
+        {
+            "attr_name": "ztracemenu",
+            "text": "Ztrace",
+            "opts": self.field.getZtraceMenu()
+        },
+        None,
+        {
+            "attr_name": "viewmenu",
+            "text": "View",
+            "opts":
+            [
+                ("unhideall_act", "Unhide all traces", self.series, self.field.unhideAllTraces),
+                None,
+                ("hideall_act", "Toggle hide all", self.series, self.field.toggleHideAllTraces),
+                ("showall_act", "Toggle show all", self.series, self.field.toggleShowAllTraces),
+                None,
+                ("hideimage_act", "Toggle hide image", self.series, self.field.toggleHideImage),
+                ("blend_act", "Toggle section blend", self.series, self.field.toggleBlend),
+            ]
+        },
+        getAlignmentsMenu(self.series, self.changeAlignment),
+        None,
+        self.cut_act,
+        self.copy_act,
+        self.paste_act,
+        self.pasteattributes_act,
+        None,
+        ("selectall_act", "Select all traces", self.series, self.field.selectAllTraces),
+        ("deselect_act", "Deselect traces", self.series, self.field.deselectAllTraces),
+        None,
+        ("delete_act", "Delete", "Del", self.backspace),
+    ]
+
 
 def get_context_menu_list_obj(self):
 

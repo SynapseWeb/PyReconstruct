@@ -311,7 +311,7 @@ def return_autoseg_menu(self):
 def return_view_menu(self):
     """Return view menu."""
     
-    return {
+    view_menu = {
         "attr_name": "viewmenu",
         "text": "View",
         "opts":
@@ -359,6 +359,20 @@ def return_view_menu(self):
             ("togglecuration_act", "Toggle curation in object lists", self.series, self.toggleCuration),
         ]
     }
+
+    if(self.series.object_groups.groups):
+        view_menu["opts"].append(
+            {
+                "attr_name": "groupvizmeny",
+                "text": "Groups",
+                "opts": [
+                    ("viewgroups_act", "Groups", "", lambda: print(self.series))
+                ]
+            }
+        )
+        
+
+    return view_menu
 
 
 def return_help_menu(self):

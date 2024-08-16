@@ -2580,6 +2580,7 @@ class SeriesIterator():
                 self.progbar.setValue(self.sni / len(self.section_numbers) * 100)
             raise StopIteration
 
+
 def updateDictLists(d1 : dict, d2 : dict):
     """In the cases where two dictionaries have values as lists, combine the two lists for each value."""
     d = deepcopy(d1)

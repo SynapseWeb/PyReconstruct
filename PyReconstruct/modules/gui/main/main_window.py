@@ -87,17 +87,17 @@ class MainWindow(QMainWindow):
             self.menubar = self.menuBar()
             self.menubar.setNativeMenuBar(False)
 
-        # Populate menu bar with menus and options
+        ## Populate menu bar with menus and options
         populateMenuBar(self, self.menubar, menu)
     
     def createContextMenus(self):
-        """Create the right-click menus used in the field."""
-        # create the user columns options
+        """Create right-click menus used in the field."""
+        ## Create user columns options
         field_menu_list = get_field_menu_list(self)
         self.field_menu = QMenu(self)
         populateMenu(self, self.field_menu, field_menu_list)
 
-        # organize actions
+        ## Organize actions
         self.trace_actions = [
             self.tracemenu,
             self.objectmenu,
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
             self.ztracemenu
         ]
 
-        # create the label menu
+        ## Create label menu
         label_menu_list = [
             # ("importlabels_act", "Import label(s)", "", self.importLabels),
             # ("mergelabels_act", "Merge labels", "", self.mergeLabels)
@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         self.label_menu = QMenu(self)
         populateMenu(self, self.label_menu, label_menu_list)
 
-        # check the alignment in the alignment submenu
+        ## Check alignment in alignment submenu
         self.changeAlignment(self.series.alignment)
     
     def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):

@@ -313,8 +313,12 @@ class FieldWidgetObject(FieldWidgetTrace):
     @object_function(update_objects=True, reload_field=False)
     def addToGroup(self, obj_names : list, log_event=True):
         """Add objects to a group."""
+
+        obj_groups = self.series.object_groups
+        groups = obj_groups.getGroupList()
+        
         # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups).exec()
+        group_name, confirmed = ObjectGroupDialog(self, obj_groups).exec()
 
         if not confirmed:
             return False
@@ -322,9 +326,16 @@ class FieldWidgetObject(FieldWidgetTrace):
         self.series_states.addState()
         
         for name in obj_names:
-            self.series.object_groups.add(group=group_name, obj=name)
+            
+            obj_groups.add(group=group_name, obj=name)
+            
             if log_event:
-                self.series.addLog(name, None, f"Add to group '{group_name}'")
+                self.series.addLog(
+                    name, None, f"Add to group '{group_name}'"
+                )
+
+        if set(groups) != set(obj_groups.getGroupList()):
+            self.mainwindow.createMenuBar()
 
         return True
     
@@ -332,17 +343,30 @@ class FieldWidgetObject(FieldWidgetTrace):
     def removeFromGroup(self, obj_names : list, log_event=True):
         """Remove objects from a group."""
         # ask the user for the group
-        group_name, confirmed = ObjectGroupDialog(self, self.series.object_groups, new_group=False).exec()
+
+        obj_groups = self.series.object_groups
+        groups = obj_groups.getGroupList()
+        
+        group_name, confirmed = ObjectGroupDialog(
+            self, obj_groups, new_group=False
+        ).exec()
 
         if not confirmed:
             return False
         
         self.series_states.addState()
-        
+
         for name in obj_names:
-            self.series.object_groups.remove(group=group_name, obj=name)
+            
+            obj_groups.remove(group=group_name, obj=name)
+            
             if log_event:
-                self.series.addLog(name, None, f"Remove from group '{group_name}'")
+                self.series.addLog(
+                    name, None, f"Remove from group '{group_name}'"
+                )
+
+        if set(groups) != set(obj_groups.getGroupList()):
+            self.mainwindow.createMenuBar()
 
         return True
 
@@ -350,11 +374,21 @@ class FieldWidgetObject(FieldWidgetTrace):
     def removeFromAllGroups(self, obj_names : list, log_event=True):
         """Remove a set of traces from all groups."""
         self.series_states.addState()
+
+        obj_groups = self.series.object_groups
+        groups = obj_groups.getGroupList()
         
         for name in obj_names:
-            self.series.object_groups.removeObject(name)
+            
+            obj_groups.removeObject(name)
+            
             if log_event:
-                self.series.addLog(name, None, f"Remove from all object groups")
+                self.series.addLog(
+                    name, None, f"Remove from all object groups"
+                )
+
+        if set(groups) != set(obj_groups.getGroupList()):
+            self.mainwindow.createMenuBar()
 
         return True
 

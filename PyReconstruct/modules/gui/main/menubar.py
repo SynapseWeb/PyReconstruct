@@ -1,4 +1,4 @@
-from PyReconstruct.modules.gui.utils import getOpenRecentMenu
+from PyReconstruct.modules.gui.utils import getOpenRecentMenu, getGroupsMenu
 
 from PyReconstruct.modules.constants import (
     kh_web,
@@ -362,13 +362,7 @@ def return_view_menu(self):
 
     if(self.series.object_groups.groups):
         view_menu["opts"].append(
-            {
-                "attr_name": "groupvizmeny",
-                "text": "Groups",
-                "opts": [
-                    ("viewgroups_act", "Groups", "", lambda: print(self.series))
-                ]
-            }
+            getGroupsMenu(self.series)
         )
         
 

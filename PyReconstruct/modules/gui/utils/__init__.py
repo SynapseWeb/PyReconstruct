@@ -20,7 +20,8 @@ from .utils import (
     getUserColsMenu,
     getAlignmentsMenu,
     getOpenRecentMenu,
-    get_welcome_setup
+    get_welcome_setup,
+    getGroupsMenu
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox

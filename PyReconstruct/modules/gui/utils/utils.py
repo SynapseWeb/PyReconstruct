@@ -441,8 +441,20 @@ def getUserColsMenu(series, newUserCol, setUserCol, editUserCol):
         "opts": [("newusercol_act", "New...", "", newUserCol)] + custom_categories
     }
 
+
+def get_menu_dict(attr_name: str, title: str, options: list):
+    """Get a menu dictionary."""
+
+    return {
+        "attr_name": attr_name,
+        "text": title,
+        "opts": options
+    }
+
+
 def getAlignmentsMenu(series, setAlignment):
-    # create the submenu for switching alignments
+    """Create submenu for switching alignments."""
+
     def getCall(alignment):
         return (lambda : setAlignment(alignment))
     
@@ -452,11 +464,24 @@ def getAlignmentsMenu(series, setAlignment):
             (f"{alignment}_alignment_act", alignment, "checkbox", getCall(alignment))
         )
     
-    return {
-        "attr_name": "alignmentsmenu",
-        "text": "Series alignment",
-        "opts": opts_list
-    }
+    return get_menu_dict("alignmentsmenu", "Series alignment", opts_list)
+
+def getGroupsMenu(series):
+    """Create submenu for group visibility."""
+    
+    def getCall(group):
+        return (lambda : print(group))
+    
+    opts_list = []
+
+    obj_groups = series.object_groups.getGroupList()
+    for group in sorted(obj_groups):
+        opts_list.append(
+            (f"{group}_viz_act", group, "checkbox", getCall(group))
+        )
+    
+    return get_menu_dict("groupsvizmenu", "Groups", opts_list)
+
 
 def getOpenRecentMenu(series, openSeries):
     # create the submenu for opening a recent series

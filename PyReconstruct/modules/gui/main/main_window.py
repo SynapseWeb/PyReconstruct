@@ -121,45 +121,51 @@ class MainWindow(QMainWindow):
         self.changeAlignment(self.series.alignment)
     
     def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
-        """Check for actions that should be enabled or disabled
+        """Define enabled and disabled actions based on field context.
         
             Params:
                 context_menu (bool): True if context menu is being generated
                 clicked_trace (Trace): the trace that was clicked on IF the cotext menu is being generated
         """
-        # skip if actions not initialized yet
+        ## Skip if actions not initialized
         if not self.actions_initialized:
             return
+
+        field_section = self.field.section
+        selected_traces = field_section.selected_traces
+        selected_ztraces = field_section.selected_ztraces
         
-        # if both traces and ztraces are highlighted or nothing is highlighted, only allow general field options
-        if not (bool(self.field.section.selected_traces) ^ 
-                bool(self.field.section.selected_ztraces)
+        ## Allow only general field options if
+        ##   1. both traces and z traces highlighted or
+        ##   2. nothing highlighted
+        
+        if not (bool(selected_traces) ^ bool(selected_ztraces)):
+            
+            for a in self.trace_actions: a.setEnabled(False)
+            for a in self.ztrace_actions: a.setEnabled(False)
+                
+        ## If selected trace in highlighted traces
+        
+        elif ((not context_menu and selected_traces) or
+              (context_menu and clicked_trace in selected_traces)
         ):
-            for a in self.trace_actions:
-                a.setEnabled(False)
-            for a in self.ztrace_actions:
-                a.setEnabled(False)
-        # if selected trace in highlighted traces
-        elif ((not context_menu and self.field.section.selected_traces) or
-              (context_menu and clicked_trace in self.field.section.selected_traces)
+            
+            for a in self.ztrace_actions: a.setEnabled(False)
+            for a in self.trace_actions: a.setEnabled(True)
+                
+        ## If selected ztrace in highlighted ztraces
+        
+        elif ((not context_menu and field_section.selected_ztraces) or
+              (context_menu and clicked_trace in field_section.selected_ztraces)
         ):
-            for a in self.ztrace_actions:
-                a.setEnabled(False)
-            for a in self.trace_actions:
-                a.setEnabled(True)
-        # if selected ztrace in highlighted ztraces
-        elif ((not context_menu and self.field.section.selected_ztraces) or
-              (context_menu and clicked_trace in self.field.section.selected_ztraces)
-        ):
-            for a in self.trace_actions:
-                a.setEnabled(False)
-            for a in self.ztrace_actions:
-                a.setEnabled(True)
+            
+            for a in self.trace_actions: a.setEnabled(False)
+            for a in self.ztrace_actions: a.setEnabled(True)
+            
         else:
-            for a in self.trace_actions:
-                a.setEnabled(False)
-            for a in self.ztrace_actions:
-                a.setEnabled(False)
+            
+            for a in self.trace_actions: a.setEnabled(False)
+            for a in self.ztrace_actions: a.setEnabled(False)
 
         # check labels
         if clicked_label:

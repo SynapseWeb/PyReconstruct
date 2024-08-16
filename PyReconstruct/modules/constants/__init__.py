@@ -14,6 +14,7 @@ from .locations import (
     src_dir,
     assets_dir,
     img_dir,
+    icon_path,
     welcome_series_dir,
 )
 

@@ -34,6 +34,7 @@ from .field_widget_5_mouse import (
 )
 from .field_widget_6_paint import FieldWidgetPaint
 
+
 class FieldWidgetView(FieldWidgetPaint):
     """
     VIEW FUNCTIONS

@@ -20,6 +20,7 @@ from PyReconstruct.modules.backend.view import SectionLayer, ZarrLayer
 from PyReconstruct.modules.backend.func import SeriesStates
 from PyReconstruct.modules.backend.table import TableManager
 
+
 class FieldWidgetBase:
     """
     Initialize the defaults and their types.

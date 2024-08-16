@@ -56,24 +56,34 @@ class ObjectGroupDialog(QDialog):
     
     def newGroup(self):
         """Add a new group to the list."""
-        new_group_name, confirmed = QInputDialog.getText(self, "New Object Group", "New group name:")
+
+        new_group_name, confirmed = QInputDialog.getText(
+            self, "New Object Group", "New group name:"
+        )
+
         if not confirmed:
             return
+
         self.group_input.addItem(new_group_name)
         self.group_input.setCurrentIndex(self.group_input.count() - 1)
         self.group_input.resize(self.group_input.sizeHint())
     
     def accept(self):
+        
         t = self.group_input.currentText()
+
         if not t or self.group_input.findText(t) == -1:
             notify("Please enter a valid group.")
             return
+
         super().accept()
 
     def exec(self):
         """Run the dialog."""
+
         confirmed = super().exec()
         text = self.group_input.currentText()
+
         if confirmed and text:
             if self.group_input.findText(text) != -1:
                 return self.group_input.currentText(), True

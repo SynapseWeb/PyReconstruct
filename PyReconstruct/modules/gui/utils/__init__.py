@@ -1,4 +1,5 @@
 from .utils import (
+    get_screen_info,
     newMenu,
     newAction,
     newQAction,
@@ -18,7 +19,9 @@ from .utils import (
     checkMag,
     getUserColsMenu,
     getAlignmentsMenu,
-    getOpenRecentMenu
+    getOpenRecentMenu,
+    get_welcome_setup
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox
+from .errors import customExcepthook

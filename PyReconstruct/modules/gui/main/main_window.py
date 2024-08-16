@@ -6,103 +6,84 @@ from .main_imports import *
 class MainWindow(QMainWindow):
 
     def __init__(self, filename):
-        """Constructs the skeleton for an empty main window."""
+        """Constructs a skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
-        
+
+        ## Catch all exceptions and display errors
+        sys.excepthook = customExcepthook  # defined in gui/utils
+
         self.setWindowTitle("PyReconstruct")
+        self.setWindowIcon(QPixmap(icon_path))
 
-        ## Catch all exceptions and display error
-        def customExcepthook(exctype, value, traceback):
-            """Global exception hook: Show notification."""
-            sys.__excepthook__(exctype, value, traceback)  # call default exception hook
-            
-            message = (
-                f"An error occurred:\n\n{str(value)}\n\n"
-                "(See console for more info.)\n\n"
-                "If you think this is a bug or need help, "
-                "please issue a bug report at:\n\n"
-                "https://github.com/synapseweb/pyreconstruct/issues"
-            )
-
-            QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
-
-        ## Set exception hook
-        sys.excepthook = customExcepthook
-
-        ## Set window icon
-        pix = QPixmap(os.path.join(img_dir, "PyReconstruct.ico"))
-        self.setWindowIcon(pix)
-
-        ## Set main window slightly less than monitor size
+        ## Set main window to slightly less than monitor
         screen = QApplication.primaryScreen()
-        screen_rect = screen.size()
-        x = 50
-        y = 80
-        w = screen_rect.width() - 100
-        h = screen_rect.height() - 160
-        self.setGeometry(x, y, w, h)
+        screen_info = get_screen_info(screen)
 
-        self.screen_info = {
-            "width"  : screen_rect.width(),
-            "height" : screen_rect.height(),
-            "dpi"    : round(screen.physicalDotsPerInch())
-        }
+        self.setGeometry(
+            50,                          # x
+            80,                          # y 
+            screen_info["width"] - 100,  # width
+            screen_info["height"] - 160  # height
+        )
 
-        ## Misc defaults
-        self.series = None
-        self.series_data = None
-        self.field = None
-        self.menubar = None
-        self.mouse_palette = None
-        self.zarr_palette = None
-        self.viewer = None
-        self.shortcuts_widget = None
-        self.is_zooming = False
-        self.restart_mainwindow = False
-        self.check_actions_enabled = False
-        self.actions_initialized = False
-        self.setMouseTracking(True) # set constant mouse tracking for various mouse modes
+        self.series                 =  None
+        self.series_data            =  None
+        self.field                  =  None
+        self.menubar                =  None
+        self.mouse_palette          =  None
+        self.zarr_palette           =  None
+        self.viewer                 =  None
+        self.shortcuts_widget       =  None
+        self.is_zooming             =  False
+        self.restart_mainwindow     =  False
+        self.check_actions_enabled  =  False
+        self.actions_initialized    =  False
 
-        ## Create status bar at bottom of window
+        ## Set constant tracking for mouse modes
+        self.setMouseTracking(True)
+
+        ## Create status bar bottom of main window
         self.statusbar = self.statusBar()
 
-        ## Open series requested from command line
-        if filename and os.path.isfile(filename):
+        ## Open series if requested thru CLI
+        if filename and Path(filename).exists():
+            
             self.openSeries(jser_fp=filename)
-        else:
-            welcome_series = Series(
-                os.path.join(
-                    welcome_series_dir,
-                    "welcome.ser"
-                ),
-                {0: "welcome.0"}
-            )
-            welcome_series.src_dir = os.path.dirname(welcome_series_dir)
-            self.openSeries(welcome_series)
 
-        # set the main window as the parent of the progress bar
+        ## Otherwise open welcome series
+        else:
+
+            w_ser, w_secs, w_src = get_welcome_setup()
+            welcome_series = Series(w_ser, w_secs)
+            welcome_series.src_dir = w_src
+            
+            self.openSeries(series_obj=welcome_series)
+
+        ## Set main window as parent of progress bar
         setMainWindow(self)
 
-        # set the theme
+        ## Set theme
         self.setTheme(self.series.getOption("theme"))
 
         self.show()
 
-        # prompt the user for a username
+        ## Prompt for username
         self.changeUsername()
 
     def test(self) -> None:
         """Run test here."""
         notify("test message!")
 
-
     def createMenuBar(self):
         """Create the menu for the main window."""
         menu = return_menubar(self)
 
         if self.menubar:
+            
             self.menubar.clear()
+            
         else:
+            
             self.menubar = self.menuBar()
             self.menubar.setNativeMenuBar(False)
 

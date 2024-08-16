@@ -66,6 +66,9 @@ from PyReconstruct.modules.gui.utils import (
     getUserColsMenu,
     getAlignmentsMenu,
     getOpenRecentMenu,
+    customExcepthook,
+    get_screen_info,
+    get_welcome_setup
 )
 from PyReconstruct.modules.gui.table import (
     HistoryTableWidget,
@@ -107,6 +110,7 @@ from PyReconstruct.modules.constants import (
     welcome_series_dir,
     assets_dir,
     img_dir,
+    icon_path,
     kh_web,
     kh_wiki,
     kh_atlas,

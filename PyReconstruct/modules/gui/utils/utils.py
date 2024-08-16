@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,13 +19,45 @@ from PySide6.QtGui import (
     QPen,
     QBrush,
     QColor,
-    QFont
+    QFont,
+    QScreen
 )
 from PySide6.QtCore import Qt
+
+from PyReconstruct.modules.constants import welcome_series_dir
 
 
 mainwindow = None
 qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
+
+
+def get_screen_info(screen: QScreen) -> dict:
+    """Return screen information."""
+
+    screen_rect = screen.size()
+
+    screen_info = {
+        "width"  : screen_rect.width(),
+        "height" : screen_rect.height(),
+        "dpi"    : round(screen.physicalDotsPerInch())
+    }
+
+    return screen_info
+
+
+def get_welcome_setup() -> tuple:
+    """Return welcome series setup."""
+
+    welcome_dir = Path(welcome_series_dir)
+    welcome_ser = welcome_dir  / "welcome.ser"
+
+    welcome_setup = (
+        str(welcome_ser),        # .ser
+        {0: "welcome.0"},        # secs
+        str(welcome_dir.parent)  # src
+    )
+
+    return welcome_setup
 
 
 def newMenu(widget : QWidget, container, menu_dict : dict):

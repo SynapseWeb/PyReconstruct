@@ -333,7 +333,7 @@ def return_view_menu(self):
                 [
                     {
                         "attr_name": "togglepalettemenu",
-                        "text": "Toggle palette",
+                        "text": "Visibility",
                         "opts":
                         [
                             ("togglepalette_act", "Trace palette", "checkbox", self.mouse_palette.togglePalette),

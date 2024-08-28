@@ -567,16 +567,26 @@ class MousePalette():
 
     def getBounds(self):
         """Get the bounds for the buttons."""
-        fx1 = self.mainwindow.field.x()
-        fx2 = fx1 + self.mainwindow.field.width()
-        fy1 = self.mainwindow.field.y()
-        fy2 = fy1 + self.mainwindow.field.height()
+
+        field    = self.mainwindow.field
+        
+        fx1      = field.x()
+        fx2      = fx1 + field.width()
+        fy1      = field.y()
+        fy2      = fy1 + field.height()
+
+        mblen    = self.mblen
+        buttons  = self.mode_buttons
+        pblen    = self.pblen
+        ibw      = self.ibw
+        ibh      = self.ibh
+        bcsize   = self.bcsize
 
         return {
-            "mode": (fx1, fx2 - self.mblen, fy1, fy2 - (self.mblen + 10) * len(self.mode_buttons) + 10),
-            "trace": (fx1 + self.pblen*5, fx2 - self.pblen*6 - 3, fy1 + self.pblen, fy2 - self.pblen),
-            "inc": (fx1, fx2 - self.ibw, fy1, fy2 - self.ibh*2 - 15),
-            "bc": (fx1, fx2 - 6*self.bcsize - 5, fy1, fy2 - 2*self.bcsize - 20)
+            "mode": (fx1, fx2 - mblen, fy1, fy2 - (mblen + 10) * len(buttons) + 10),
+            "trace": (fx1 + pblen*5, fx2 - pblen*6 - 3, fy1 + pblen, fy2 - pblen),
+            "inc": (fx1, fx2 - ibw, fy1, fy2 - ibh*2 - 15),
+            "bc": (fx1, fx2 - 6*bcsize - 5, fy1, fy2 - 2*bcsize - 20)
         }
 
     def togglePalette(self):

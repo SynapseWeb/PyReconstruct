@@ -1,3 +1,6 @@
+"""The field widget."""
+
+
 import os
 import time
 
@@ -36,6 +39,7 @@ from .field_widget_5_mouse import (
     HOST
 )
 from .field_widget_7_view import FieldWidgetView
+
 
 class FieldWidget(QWidget, FieldWidgetView):
     """

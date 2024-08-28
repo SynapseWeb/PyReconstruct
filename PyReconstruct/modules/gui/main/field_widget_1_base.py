@@ -32,74 +32,75 @@ class FieldWidgetBase:
     """
     
     def initAttrs(self, series : Series, mainwindow : QMainWindow):
-        self.mainwindow = mainwindow
-        self.series = series
-
-        self.section : Section = None
-        self.b_section : Section = None
         
-        self.pixmap_dim : tuple = None
-        self.section_layer : SectionLayer = None
+        self.mainwindow                     = mainwindow
+        self.series                         = series
 
-        self.table_manager : TableManager = None
-        self.focus_table_id : int = None
+        self.section : Section              = None
+        self.b_section : Section            = None
+        
+        self.pixmap_dim : tuple             = None
+        self.section_layer : SectionLayer   = None
 
-        self.propagate_tform : bool = False
+        self.table_manager : TableManager   = None
+        self.focus_table_id : int           = None
 
-        self.hide_trace_layer : bool = False
-        self.show_all_traces : bool = False
-        self.hide_image : bool = False
-        self.blend_sections : bool = False
+        self.propagate_tform : bool         = False
 
-        self.current_trace : list = []
-        self.moving_traces : list = None
-        self.moving_points : list = None
-        self.moving_flags : list = None
+        self.hide_trace_layer : bool        = False
+        self.show_all_traces : bool         = False
+        self.hide_image : bool              = False
+        self.blend_sections : bool          = False
 
-        self.mouse_mode : int = 0
+        self.current_trace : list           = []
+        self.moving_traces : list           = None
+        self.moving_points : list           = None
+        self.moving_flags : list            = None
 
-        self.is_selecting_traces : bool = False
-        self.is_drawing_rad : bool = False
-        self.is_line_tracing : bool = False
-        self.is_moving_trace : bool = False
-        self.is_panzooming : bool = False
-        self.is_gesturing : bool = False
-        self.is_scissoring : bool = False
+        self.mouse_mode : int               = 0
 
-        self.closed_trace_shape = "trace"
+        self.is_selecting_traces : bool     = False
+        self.is_drawing_rad : bool          = False
+        self.is_line_tracing : bool         = False
+        self.is_moving_trace : bool         = False
+        self.is_panzooming : bool           = False
+        self.is_gesturing : bool            = False
+        self.is_scissoring : bool           = False
 
-        self.tracing_trace : Trace = None
-        self.hosted_trace : Trace = None
+        self.closed_trace_shape             = "trace"
 
-        self.mouse_x : int = 0
-        self.mouse_y : int = 0
-        self.clicked_x : int = 0
-        self.clicked_y : int = 0
-        self.clicked_trace = None
+        self.tracing_trace : Trace          = None
+        self.hosted_trace : Trace           = None
 
-        self.lclick : bool = False
-        self.rclick : bool = False
-        self.mclick : bool = False
+        self.mouse_x : int                  = 0
+        self.mouse_y : int                  = 0
+        self.clicked_x : int                = 0
+        self.clicked_y : int                = 0
+        self.clicked_trace                  = None
 
-        self.mouse_boundary_timer : QTimer = None
-        self.hover_display_timer : QTimer = None
-        self.hover_display : QTextEdit = None
-        self.displayed_item = None
+        self.lclick : bool                  = False
+        self.rclick : bool                  = False
+        self.mclick : bool                  = False
 
-        self.single_click : bool = False
-        self.click_time : float = None
-        self.max_click_time : float = 0.15
+        self.mouse_boundary_timer : QTimer  = None
+        self.hover_display_timer : QTimer   = None
+        self.hover_display : QTextEdit      = None
+        self.displayed_item                 = None
 
-        self.timer : QTimer = None
-        self.time : str = None
+        self.single_click : bool            = False
+        self.click_time : float             = None
+        self.max_click_time : float         = 0.15
 
-        self.selected_trace_names : set = {}
-        self.selected_ztrace_names : set = {}
+        self.timer : QTimer                 = None
+        self.time : str                     = None
 
-        self.pencil_r : QCursor = None
-        self.pencil_l : QCursor = None
+        self.selected_trace_names : set     = {}
+        self.selected_ztrace_names : set    = {}
 
-        self.edit_flag_event : QAction = None
+        self.pencil_r : QCursor             = None
+        self.pencil_l : QCursor             = None
+
+        self.edit_flag_event : QAction      = None
     
     def createField(self, series : Series):
         """Re-creates the field widget when a new series is opened.
@@ -109,41 +110,41 @@ class FieldWidgetBase:
         """
         self.series = series 
 
-        # close the manager if applicable
+        ## Close manager if exists
         if self.table_manager:
             self.table_manager.closeAll()
 
-        # load the section
+        ## Load section
         self.section = self.series.loadSection(self.series.current_section)
         
-        # load/clear the series states
+        ## Load/clear series states
         self.clearStates()
         self.series_states[self.section]  # initialize the current section
 
-        # create section view
+        ## Create section view
         self.section_layer = SectionLayer(self.section, self.series)
 
-        # create zarr view if applicable
+        ## Create zarr view if applicable
         self.createZarrLayer()
         
-        # reset b section and layer
+        ## Reset b section and layer
         self.b_section = None
         self.b_section_layer = None
 
-        # hide/show defaults
+        ## Hide/show defaults
         self.hide_trace_layer = False
         self.show_all_traces = False
         self.hide_image = False
 
-        # propagate tform defaults
+        ## Propagate tform defaults
         self.propagate_tform = False
         self.stored_tform = Transform.identity()
         self.propagated_sections = set()
 
-        # clear copy/paste clipboard
+        ## Clear copy/paste clipboard
         self.clipboard = []
 
-        # create a new manager
+        ## Create new manager
         self.table_manager = TableManager(
             self.series,
             self.section,
@@ -151,11 +152,11 @@ class FieldWidgetBase:
             self.mainwindow,
         )
 
-        # reset the cursor
+        ## Reset cursor
         self.mouse_mode = 0
         self.setCursor(QCursor(Qt.ArrowCursor))
         
-        # ensure that the first section is found
+        ## Ensure first section is found
         if self.series.current_section not in self.series.sections:
             self.series.current_section = self.series.sections.keys()[0]
 
@@ -163,28 +164,28 @@ class FieldWidgetBase:
         self.tracing_trace = Trace("TRACE", (255, 0, 255))
         self.status_list = ["Section: " + str(self.series.current_section)]
         
-        # blend default
-        self.blend_sections = False
+        ## Blend default
+        self.blend_sections       = False
         
-        # click defaults
-        self.lclick = False
-        self.rclick = False
-        self.mclick = False
+        ## Click defaults
+        self.lclick               = False
+        self.rclick               = False
+        self.mclick               = False
 
-        # mouse tool defaults
-        self.is_panzooming = False
-        self.is_gesturing = False
-        self.is_line_tracing = False
-        self.is_moving_trace = False
-        self.is_selecting_traces = False
-        self.is_scissoring = False
-        self.closed_trace_shape = "trace"
+        ## Mouse tool defaults
+        self.is_panzooming        = False
+        self.is_gesturing         = False
+        self.is_line_tracing      = False
+        self.is_moving_trace      = False
+        self.is_selecting_traces  = False
+        self.is_scissoring        = False
+        self.closed_trace_shape   = "trace"
 
-        # clear selected
+        ## Clear selected
         self.selected_trace_names = {}
         self.selected_ztrace_names = {}
 
-        # set up the timer
+        ## Set up timer
         if not self.series.isWelcomeSeries():
             self.time = str(round(time.time()))
             open(os.path.join(self.series.getwdir(), self.time), "w").close()
@@ -243,20 +244,23 @@ class FieldWidgetBase:
                 generate_traces (bool): True if traces should be regenerated
                 update (bool): True if view widget should be updated
         """
-        # resize series window to match view proportions
+        ## Resize series window to match view proportions
         self.resizeWindow(self.pixmap_dim)
 
-        # calculate the scaling
-        window_x, window_y, window_w, window_h = tuple(self.series.window)
+        ## Calculate scaling
+        _, _, window_w, window_h = tuple(self.series.window)
         pixmap_w, pixmap_h = tuple(self.pixmap_dim)
-        # scaling: ratio of screen pixels to actual image pixels (should be equal)
+        
+        ## Scaling: Screen pixels to image pixels ratio (should be equal)
         x_scaling = pixmap_w / (window_w / self.section.mag)
         y_scaling = pixmap_h / (window_h / self.section.mag)
+        
         assert(abs(x_scaling - y_scaling) < 1e-6)
+        
         self.scaling = x_scaling
 
-        # generate section view
-        view = self.section_layer.generateView(
+        ## Generate section view
+        view = self.section_layer.generateView(  ## TODO: Add group visibility as an argument?
             self.pixmap_dim,
             self.series.window,
             generate_image=generate_image,

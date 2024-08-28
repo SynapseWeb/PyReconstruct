@@ -1,3 +1,4 @@
+import os
 import re
 
 class HostTree():
@@ -10,8 +11,10 @@ class HostTree():
                 series (Series): the series that contains the host tree
         """
         self.objects = {}
+
         for obj_name, hosts in host_dict.items():
             self.add(obj_name, hosts)
+
         self.series = series
     
     def add(self, obj_name : str, hosts : list):
@@ -21,6 +24,10 @@ class HostTree():
                 obj_name (str): the name of the object
                 hosts (list): the hosts of the above obj
         """
+
+        if isinstance(hosts, str):
+            hosts = [hosts]
+        
         for name in ([obj_name] + list(hosts)):
             if name not in self.objects:
                 self.objects[name] = {
@@ -219,7 +226,6 @@ def passesFilters(s, re_filters):
             return True
     return False
 
-import os
 
 def generate_directory_tree_string(path, prefix=""):
     tree_string = ""

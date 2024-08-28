@@ -407,49 +407,59 @@ def checkMag(s_series, o_series):
         
     return True
 
-def getUserColsMenu(series, newUserCol, setUserCol, editUserCol):
-    # create the submenu for adding to categorical column
-    def getSetCall(col_name, opt):
-        return (lambda : setUserCol(col_name=col_name, opt=opt))
-    def getEditCall(col_name):
-        return (lambda : editUserCol(col_name=col_name))
-    custom_categories = []
-    menu_i = 0  # keep track of numbers for unique attribute
-    opts_i = 0
-    for col_name, opts in series.user_columns.items():
-        d = {
-            "attr_name": f"user_col_{menu_i}_menu",
-            "text": col_name,
-            "opts":
-            [
-                (f"edit_user_col_{menu_i}_act", "Edit...", "", getEditCall(col_name)),
-                (f"user_col_{opts_i}_act", "(blank)", "", getSetCall(col_name, "")),
-            ]
-        }
-        menu_i += 1
-        opts_i += 1
-        for opt in opts:
-            d["opts"].append(
-                (f"user_col_{opts_i}_act", opt, "", getSetCall(col_name, opt))
-            )
-            opts_i += 1
-        custom_categories.append(d)
-        
-    return {
-        "attr_name": "customcategoriesmenu",
-        "text": "Custom categories",
-        "opts": [("newusercol_act", "New...", "", newUserCol)] + custom_categories
-    }
-
 
 def get_menu_dict(attr_name: str, title: str, options: list):
-    """Get a menu dictionary."""
+    """Return a menu dictionary."""
 
     return {
         "attr_name": attr_name,
         "text": title,
         "opts": options
     }
+
+
+def getUserColsMenu(series, newUserCol, setUserCol, editUserCol):
+    """Create submenu for editing categorical columns."""
+    
+    def getSetCall(col_name, opt):
+        return (lambda : setUserCol(col_name=col_name, opt=opt))
+    
+    def getEditCall(col_name):
+        return (lambda : editUserCol(col_name=col_name))
+    
+    custom_categories = []
+    menu_i = 0  # keep track of numbers for unique attribute
+    opts_i = 0
+
+    for col_name, opts in series.user_columns.items():
+
+        d = get_menu_dict(
+            f"user_col_{menu_i}_menu",
+            col_name,
+            [
+                (f"edit_user_col_{menu_i}_act", "Edit...", "", getEditCall(col_name)),
+                (f"user_col_{opts_i}_act", "(blank)", "", getSetCall(col_name, "")),
+            ]
+        )
+        
+        menu_i += 1
+        opts_i += 1
+
+        for opt in opts:
+
+            d["opts"].append(
+                (f"user_col_{opts_i}_act", opt, "", getSetCall(col_name, opt))
+            )
+
+            opts_i += 1
+
+        custom_categories.append(d)
+
+    opts_list = [("newusercol_act", "New...", "", newUserCol)] + custom_categories
+        
+    return get_menu_dict(
+        "customcategoriesmenu", "Custom categories", opts_list
+    )
 
 
 def getAlignmentsMenu(series, setAlignment):
@@ -459,6 +469,7 @@ def getAlignmentsMenu(series, setAlignment):
         return (lambda : setAlignment(alignment))
     
     opts_list = []
+
     for alignment in sorted(series.alignments):
         opts_list.append(
             (f"{alignment}_alignment_act", alignment, "checkbox", getCall(alignment))

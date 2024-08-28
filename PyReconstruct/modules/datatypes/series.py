@@ -4,14 +4,12 @@ import json
 import shutil
 from datetime import datetime
 from copy import deepcopy
-import traceback
 
 from PySide6.QtCore import QSettings
 
 from .log import LogSet, LogSetPair
 from .ztrace import Ztrace
 from .section import Section
-from .contour import Contour
 from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
@@ -22,14 +20,11 @@ from .host_tree import HostTree
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
-    assets_dir,
     welcome_series_dir,
     getDateTime
 )
-from PyReconstruct.modules.calc import mergeTraces
 from PyReconstruct.modules.constants import welcome_series_dir, default_traces
 from PyReconstruct.modules.gui.utils import getProgbar
-from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 
 
 class Series():
@@ -130,7 +125,7 @@ class Series():
         
         if exc_type is not None:
             traceback.print_exception(exc_type, exc_value, traceback)
-            
+
         self.close()
     
     # OPENING, LOADING, AND MOVING THE JSER FILE
@@ -795,33 +790,6 @@ class Series():
         """
         return SeriesIterator(self, show_progress, message, series_states, breakable)
 
-    # def map(self, fn, *args, message="Modifying series..."):
-    #     """Map a function to every section in the series.
-        
-    #         Params:
-    #             fn (function): the function to run on the section
-    #             *args: the arguments to pass into the function AFTER the section
-    #     """
-    #     # create wrapper func
-    #     results = {}
-    #     def wrapper(snum, fn, *args):
-    #         section = self.loadSection(snum)
-    #         results[snum] = fn(section, *args)
-        
-    #     threadpool = ThreadPoolProgBar()
-
-    #     # create and run threadpool
-    #     for snum in self.sections:
-    #         threadpool.createWorker(
-    #             wrapper,
-    #             snum,
-    #             fn,
-    #             *args
-    #         )
-    #     threadpool.startAll(message)
-
-    #     return results
-
     def modifyAlignments(self, alignment_dict : dict, series_states=None, log_event=True):
         """Modify the series's alignment.
 
@@ -1052,7 +1020,7 @@ class Series():
             self.sections[snum] = sname.replace(old_name, new_name)
         self.name = new_name
 
-    # series-wide trace functions
+    #### Series-wide trace functions ###############################################################
     
     def deleteObjects(self, obj_names : list, series_states=None):
         """Delete object(s) from the series.
@@ -1361,9 +1329,9 @@ class Series():
 
                 for name, value in other_uc.items():
                     if name not in self_uc:
+                        ## if the current series has a user_column setting already, do not override it
+                        ## is there a better way to handle this?
                         self_uc[name] = value
-                        # if the current series has a user_column setting already, do not override it
-                        # is there a better way to handle this?
     
     def importObjAttrs(self, other, regex_filters=[]):
         """Import the object attributes from another series.
@@ -1996,8 +1964,9 @@ class Series():
     
     def getAlignments(self) -> list:
         """Return a list of alignment names."""
-        snum = list(self.sections.keys())[0]  # get a valid section number
-        anames = list(self.data["sections"][snum]["tforms"].keys())
+        snum = list(self.sections.keys())[0]  # grab valid section number
+        sec_data = self.data["sections"]
+        anames = list(sec_data[snum]["tforms"].keys())
         return anames
 
     def updateCurationFromHistory(self):
@@ -2119,6 +2088,7 @@ class Series():
     @property
     def user(self):
         return self.getOption("username")
+
     @user.setter
     def user(self, value):
         self.setOption("username", value)
@@ -2126,6 +2096,7 @@ class Series():
     @property
     def avg_mag(self):
         return self.data.getAvgMag()
+
     @property
     def avg_thickness(self):
          return self.data.getAvgThickness()
@@ -2518,7 +2489,6 @@ class Series():
 
     
 class SeriesIterator():
-
 
     def __init__(self, series : Series, show_progress : bool, message : str, series_states, breakable=True):
         """Create the series iterator object.

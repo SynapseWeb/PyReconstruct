@@ -1,6 +1,7 @@
 """Calculate Feret diameters.
 
-Sourced from: http://code.activestate.com/recipes/117225-convex-hull-and-diameter-of-2d-point-sets/
+Sourced from:
+http://code.activestate.com/recipes/117225-convex-hull-and-diameter-of-2d-point-sets/
 
 """
 

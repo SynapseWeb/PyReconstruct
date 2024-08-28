@@ -6,9 +6,9 @@ from .trace_layer import TraceLayer
 
 from PyReconstruct.modules.datatypes import (
     Series,
-    Section,
-    Transform
+    Section
 )
+
 
 class SectionLayer(ImageLayer, TraceLayer):
 
@@ -21,6 +21,7 @@ class SectionLayer(ImageLayer, TraceLayer):
         """
         if load_image_layer:
             ImageLayer.__init__(self, section, series)
+            
         TraceLayer.__init__(self, section, series)
     
     def generateView(
@@ -33,7 +34,7 @@ class SectionLayer(ImageLayer, TraceLayer):
         show_all_traces=False,
         hide_image=False
         ):
-        """Generate the pixmap view for the section.
+        """Generate pixmap view for a section.
         
             Params:
                 pixmap_dim (tuple): the dimensions of the view
@@ -41,25 +42,25 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
         """
-        # save attributes
+        ## Save attributes
         self.series.window = window
         self.pixmap_dim = pixmap_dim
         
-        # set the series screen mag and scaling
+        ## Set series screen mag and scaling
         self.series.screen_mag = window[2] / pixmap_dim[0]
         self.scaling = pixmap_dim[0] / (window[2] / self.section.mag)
 
-        # generate image
+        ## Generate image
         if hide_image:
             self.image_layer = QPixmap(*pixmap_dim)
             self.image_layer.fill(Qt.black)
         elif generate_image:
             self.image_layer = self.generateImageLayer(pixmap_dim, window)
         
-        # if user requests traces to be hidden
+        ## Hide all traces if requested
         if hide_traces:
             return self.image_layer.copy()        
-            
+
         if generate_traces:
             self.trace_layer = self.generateTraceLayer(
                 pixmap_dim,
@@ -68,7 +69,7 @@ class SectionLayer(ImageLayer, TraceLayer):
                 generate_image
             )
         
-        # combine pixmaps
+        ## Combine pixmaps
         view = self.image_layer.copy()
         painter = QPainter(view)
         painter.drawPixmap(0, 0, self.trace_layer)

@@ -77,7 +77,10 @@ class Section():
 
         self.calgrid = section_data["calgrid"]
 
-        # for use with GUI
+        ## Modify temp_hide based on group visibility
+        self.setGroupVisibility()
+        
+        ## For GUI use
         self.clearTracking()
     
     @property
@@ -681,6 +684,32 @@ class Section():
         self.selected_traces : list[Trace] = []
 
         return modified
+
+    def setGroupVisibility(self, groups: Union[List[str], None]=None) -> None:
+        """Modify temp_hide based on group visibility."""
+
+        if not groups:
+
+            return
+
+        obj_groups = self.series.object_groups
+
+        to_hide = set()
+        
+        for group in groups:
+            
+            objs = obj_groups.getGroupObjects(group)
+            to_hide = to_hide.union(objs)
+
+        if not to_hide:
+
+            return
+
+        for trace in self.tracesAsList():
+            
+            if trace.name in to_hide:
+                
+                self.temp_hide.append(trace)
 
     def closeTraces(self, traces : list = None, closed=True, log_event=True):
         """Close or open traces.

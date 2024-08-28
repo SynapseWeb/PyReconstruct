@@ -35,6 +35,7 @@ class Trace():
     @property
     def name(self):
         return self._name
+
     @name.setter  # prevent unusual whitespace in names
     def name(self, value):
         assert (value is None or type(value) is str)

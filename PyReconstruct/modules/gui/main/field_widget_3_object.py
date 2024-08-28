@@ -315,7 +315,7 @@ class FieldWidgetObject(FieldWidgetTrace):
         """Add objects to a group."""
 
         obj_groups = self.series.object_groups
-        groups = obj_groups.getGroupList()
+        starting_groups = obj_groups.getGroupList()
         
         # ask the user for the group
         group_name, confirmed = ObjectGroupDialog(self, obj_groups).exec()
@@ -333,9 +333,13 @@ class FieldWidgetObject(FieldWidgetTrace):
                 self.series.addLog(
                     name, None, f"Add to group '{group_name}'"
                 )
+        
+            ## Update series visibility
+            if group_name not in starting_groups:
+                self.series.groups_visibility[group_name] = True
 
-        if set(groups) != set(obj_groups.getGroupList()):
-            self.mainwindow.createMenuBar()
+                ## Update menubar
+                self.mainwindow.createMenuBar()
 
         return True
     
@@ -345,7 +349,7 @@ class FieldWidgetObject(FieldWidgetTrace):
         # ask the user for the group
 
         obj_groups = self.series.object_groups
-        groups = obj_groups.getGroupList()
+        starting_groups = obj_groups.getGroupList()
         
         group_name, confirmed = ObjectGroupDialog(
             self, obj_groups, new_group=False
@@ -365,8 +369,12 @@ class FieldWidgetObject(FieldWidgetTrace):
                     name, None, f"Remove from group '{group_name}'"
                 )
 
-        if set(groups) != set(obj_groups.getGroupList()):
-            self.mainwindow.createMenuBar()
+            ## Update group visibility
+            if group_name not in obj_groups.getGroupList():
+                del self.series.groups_visibility[group_name]
+            
+                ## Create menubar
+                self.mainwindow.createMenuBar()
 
         return True
 
@@ -376,7 +384,7 @@ class FieldWidgetObject(FieldWidgetTrace):
         self.series_states.addState()
 
         obj_groups = self.series.object_groups
-        groups = obj_groups.getGroupList()
+        starting_groups = obj_groups.getGroupList()
         
         for name in obj_names:
             
@@ -387,7 +395,15 @@ class FieldWidgetObject(FieldWidgetTrace):
                     name, None, f"Remove from all object groups"
                 )
 
-        if set(groups) != set(obj_groups.getGroupList()):
+        ## Update group visibility
+        group_diffs = set(starting_groups) - set(obj_groups.getGroupList())
+        if group_diffs:
+
+            ## Loop over each group that differs and rm from group viz
+            for diff in group_diffs:
+                del self.series.groups_visibility[diff]
+            
+            ## Update menubar
             self.mainwindow.createMenuBar()
 
         return True

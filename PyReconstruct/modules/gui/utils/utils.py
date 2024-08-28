@@ -477,16 +477,21 @@ def getAlignmentsMenu(series, setAlignment):
     
     return get_menu_dict("alignmentsmenu", "Series alignment", opts_list)
 
-def getGroupsMenu(series):
+def getGroupsMenu(self):
     """Create submenu for group visibility."""
+
+    group_viz = self.series.groups_visibility
+
     
     def getCall(group):
-        return (lambda : print(group))
+        return lambda: self.toggleGroupViz(group)
     
     opts_list = []
 
-    obj_groups = series.object_groups.getGroupList()
-    for group in sorted(obj_groups):
+    obj_groups = self.series.groups_visibility
+
+    for group in sorted(obj_groups.keys()):
+
         opts_list.append(
             (f"{group}_viz_act", group, "checkbox", getCall(group))
         )

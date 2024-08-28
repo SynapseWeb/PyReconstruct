@@ -118,7 +118,7 @@ class Series():
         self.host_tree = HostTree(series_data["host_tree"], self)
 
         ## Group visibility
-        self.groups_hidden = []
+        self.groups_visibility = self.initGroupViz()
 
     def __enter__(self):
         
@@ -2467,7 +2467,13 @@ class Series():
         """Clear the tracking of modified ztraces and modified objects."""
         self.modified_ztraces = set()
         self.modified_objects = set()
-    
+
+    def initGroupViz(self) -> dict:
+        """Get initial group visibility."""
+
+        groups = self.object_groups.getGroupList()
+        return {group: True for group in groups}
+
     @property
     def alignments(self):
         """Return the possible alignments for the series."""

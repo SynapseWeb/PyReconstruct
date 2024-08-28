@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import (
     QKeySequence,
     QShortcut,
-    QPixmap
+    QPixmap,
+    QAction
 )
 from PySide6.QtCore import Qt, QSettings
 

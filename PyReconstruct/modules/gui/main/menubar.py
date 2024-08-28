@@ -360,11 +360,14 @@ def return_view_menu(self):
         ]
     }
 
-    if(self.series.object_groups.groups):
-        view_menu["opts"].append(
-            getGroupsMenu(self.series)
-        )
+    obj_groups = self.series.object_groups.groups
+
+    if(obj_groups):
         
+        view_menu["opts"].append(
+            getGroupsMenu(self)
+
+        )
 
     return view_menu
 

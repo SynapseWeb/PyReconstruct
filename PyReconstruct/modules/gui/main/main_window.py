@@ -11,7 +11,7 @@ class MainWindow(QMainWindow):
         super().__init__() # initialize QMainWindow
 
         ## Catch all exceptions and display errors
-        sys.excepthook = customExcepthook  # defined in gui/utils
+        sys.excepthook = customExcepthook  # defined in gui.utils
 
         self.setWindowTitle("PyReconstruct")
         self.setWindowIcon(QPixmap(icon_path))
@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self.zarr_palette           =  None
         self.viewer                 =  None
         self.shortcuts_widget       =  None
+        self.group_viz              =  None
         self.is_zooming             =  False
         self.restart_mainwindow     =  False
         self.check_actions_enabled  =  False
@@ -90,7 +91,7 @@ class MainWindow(QMainWindow):
 
         ## Populate menu bar with menus and options
         populateMenuBar(self, self.menubar, menu)
-    
+
     def createContextMenus(self):
         """Create right-click menus used in the field."""
         ## Create user columns options
@@ -120,7 +121,7 @@ class MainWindow(QMainWindow):
 
         ## Check alignment in alignment submenu
         self.changeAlignment(self.series.alignment)
-    
+
     def checkActions(self, context_menu=False, clicked_trace=None, clicked_label=None):
         """Define enabled and disabled actions based on field context.
         
@@ -178,40 +179,45 @@ class MainWindow(QMainWindow):
                 self.importlabels_act.setEnabled(False)
                 self.mergelabels_act.setEnabled(False)
         
-        # MENUBAR
+        #### Menubar ###############################################################################
 
-        # disable saving for welcome series
+        ## Disable saving welcome series
         is_not_welcome_series = not self.series.isWelcomeSeries()
         self.save_act.setEnabled(is_not_welcome_series)
         self.saveas_act.setEnabled(is_not_welcome_series)
         self.backupmenu.setEnabled(is_not_welcome_series)
 
-        # check for palette
+        ## Check for palette
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
         self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
         self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
 
-        # undo/redo
+        ## Group visibility
+        for group, viz in self.series.groups_visibility.items():
+            menu_attr = getattr(self, f"{group}_viz_act")
+            menu_attr.setChecked(viz)
+
+        ## Undo/redo
         can_undo_3D, can_undo_2D, _ = self.field.series_states.canUndo(self.field.section.n)
         self.undo_act.setEnabled(can_undo_3D or can_undo_2D)
         can_redo_3D, can_redo_2D, _ = self.field.series_states.canUndo(self.field.section.n, redo=True)
         self.redo_act.setEnabled(can_redo_3D or can_redo_2D)
 
-        # check clipboard for paste options
+        ## Check clipboard for paste options
         if self.field.clipboard:
             self.paste_act.setEnabled(True)
         else:
             self.paste_act.setEnabled(False)
             self.pasteattributes_act.setEnabled(False)
 
-        # zarr images
+        ## Zarr images
         self.zarrimage_act.setEnabled(not self.field.section_layer.is_zarr_file)
         self.scalezarr_act.setEnabled(self.field.section_layer.is_zarr_file)
 
-        # calibrate
+        ## Calibrate
         self.calibrate_act.setEnabled(bool(self.field.section.selected_traces))
 
-        # # zarr layer
+        # ## Zarr layer
         # self.removezarrlayer_act.setEnabled(bool(self.series.zarr_overlay_fp))
             
     def createShortcuts(self):
@@ -2671,6 +2677,14 @@ class MainWindow(QMainWindow):
                 )
                 self.field.reload()
         
+    def toggleGroupViz(self, group):
+        """Toggle visibility of a group."""
+
+        group_viz = self.series.groups_visibility
+        group_viz[group] = not group_viz[group]
+
+        self.field.reload()
+    
     def restart(self):
         self.restart_mainwindow = True
 

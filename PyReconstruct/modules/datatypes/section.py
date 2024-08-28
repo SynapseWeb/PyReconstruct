@@ -82,7 +82,7 @@ class Section():
         self.calgrid = section_data["calgrid"]
 
         ## Modify temp_hide based on group visibility
-        self.setGroupVisibility(series.groups_hidden)
+        self.setGroupVisibility(series.groups_visibility)
         
         ## For GUI use
         self.clearTracking()
@@ -689,10 +689,13 @@ class Section():
 
         return modified
 
-    def setGroupVisibility(self, groups: Union[List[str], None]=None) -> None:
+    def setGroupVisibility(self, group_viz: Union[List[str], None]=None) -> None:
         """Modify temp_hide based on group visibility."""
 
-        if not groups:
+        ## Get list of groups to hide
+        hide_groups = [group for group, viz in group_viz.items() if not viz]
+
+        if not hide_groups:
 
             return
 
@@ -700,7 +703,7 @@ class Section():
 
         to_hide = set()
         
-        for group in groups:
+        for group in hide_groups:
             
             objs = obj_groups.getGroupObjects(group)
             to_hide = to_hide.union(objs)
@@ -710,9 +713,9 @@ class Section():
             return
 
         for trace in self.tracesAsList():
-            
-            if trace.name in to_hide:
-                
+
+            if trace.name in list(to_hide):
+
                 self.temp_hide.append(trace)
 
     def closeTraces(self, traces : list = None, closed=True, log_event=True):

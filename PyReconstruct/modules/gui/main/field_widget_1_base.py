@@ -260,7 +260,7 @@ class FieldWidgetBase:
         self.scaling = x_scaling
 
         ## Generate section view
-        view = self.section_layer.generateView(  ## TODO: Add group visibility as an argument?
+        view = self.section_layer.generateView(
             self.pixmap_dim,
             self.series.window,
             generate_image=generate_image,

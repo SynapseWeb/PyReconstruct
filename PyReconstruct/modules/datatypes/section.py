@@ -52,6 +52,7 @@ class Section():
         self.align_locked = section_data["align_locked"]
 
         self.tforms = TransformsDict()
+        
         for a in section_data["tforms"]:
             self.tforms[a] = Transform(section_data["tforms"][a])
         
@@ -59,7 +60,9 @@ class Section():
         self.contours : dict[str, Contour] = {}
 
         for name in section_data["contours"]:
+            
             trace_list = []
+            
             for trace_data in section_data["contours"][name]:
                 trace = Trace.fromList(trace_data, name)
                 # screen for defective traces
@@ -68,6 +71,7 @@ class Section():
                     trace.closed = False
                 if l > 1:
                     trace_list.append(trace)
+                    
             self.contours[name] = Contour(
                 name,
                 trace_list
@@ -78,7 +82,7 @@ class Section():
         self.calgrid = section_data["calgrid"]
 
         ## Modify temp_hide based on group visibility
-        self.setGroupVisibility()
+        self.setGroupVisibility(series.groups_hidden)
         
         ## For GUI use
         self.clearTracking()

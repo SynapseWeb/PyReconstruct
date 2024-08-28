@@ -117,6 +117,9 @@ class Series():
         # host tree
         self.host_tree = HostTree(series_data["host_tree"], self)
 
+        ## Group visibility
+        self.groups_hidden = []
+
     def __enter__(self):
         
         return self

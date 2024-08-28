@@ -133,7 +133,7 @@ class AllOptionsDialog(QDialog):
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
             [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
-            [("check", ("Diplay closest field item", self.series.getOption("display_closest", use_defaults)))]
+            [("check", ("Display closest field item", self.series.getOption("display_closest", use_defaults)))]
         ]
         def setOption(response):
             s = "rect" if response[0][0][1] else "lasso"

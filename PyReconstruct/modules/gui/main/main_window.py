@@ -194,8 +194,11 @@ class MainWindow(QMainWindow):
 
         ## Group visibility
         for group, viz in self.series.groups_visibility.items():
-            menu_attr = getattr(self, f"{group}_viz_act")
-            menu_attr.setChecked(viz)
+            try:
+                menu_attr = getattr(self, f"{group}_viz_act")
+                menu_attr.setChecked(viz)
+            except AttributeError:
+                pass
 
         ## Undo/redo
         can_undo_3D, can_undo_2D, _ = self.field.series_states.canUndo(self.field.section.n)
@@ -1638,7 +1641,7 @@ class MainWindow(QMainWindow):
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
             ["Type:"],
             [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
-            [("check", ("Diplay closest field item", self.series.getOption("display_closest")))]
+            [("check", ("Display closest field item", self.series.getOption("display_closest")))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
         if not confirmed:

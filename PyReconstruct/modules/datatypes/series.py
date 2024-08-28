@@ -64,6 +64,7 @@ class Series():
             for name, palette_group in series_data["palette_traces"].items()
         ))
         self.palette_index = series_data["palette_index"]
+        self.groups_visibility = {}
 
         self.ztraces = series_data["ztraces"]
         for name in self.ztraces:
@@ -2472,7 +2473,14 @@ class Series():
         """Get initial group visibility."""
 
         groups = self.object_groups.getGroupList()
-        return {group: True for group in groups}
+
+        if not groups:
+            
+            return {}
+        
+        else:
+            
+            return {group: True for group in groups}
 
     @property
     def alignments(self):

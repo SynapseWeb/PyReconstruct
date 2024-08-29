@@ -428,7 +428,33 @@ class TraceLayer():
             h *= 2
             painter.drawRect(x, y, h, h)
         painter.end()
-   
+
+    def trace_visibile_p(self, trace) -> bool:
+        """Determine visibility of a trace in the field."""
+
+        temp_hide = trace in self.section.temp_hide
+        show_all_traces = self.show_all_traces
+        group_hide = trace in self.section.traces_group_hide
+        trace_not_hidden = not trace.hidden
+
+        if temp_hide:  # always hide when dragging
+        
+            show_trace = False
+
+        elif show_all_traces:  # show all temporarily
+
+            show_trace = True
+                
+        elif trace_not_hidden:  # trace unhidden, check group viz
+
+            show_trace = True if not group_hide else False
+
+        else:  # trace hidden
+
+            show_trace = False
+
+        return show_trace
+        
     def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:
         """Draw traces on a transparent background.
         
@@ -475,27 +501,7 @@ class TraceLayer():
 
         for trace in trace_list:
 
-            temp_hide = trace in self.section.temp_hide
-            group_hide = trace in self.section.traces_group_hide
-            trace_not_hidden = not trace.hidden
-
-            if temp_hide:  # always hide trace when dragging
-
-                show_trace = False
-
-            elif show_all_traces:  # show all temporarily
-
-                show_trace = True
-                
-            elif trace_not_hidden:  # trace unhidden, check group viz
-
-                show_trace = True if not group_hide else False
-
-            else:  # trace hidden
-
-                show_trace = False
-
-            if show_trace:
+            if self.trace_visibile_p(trace):
                 
                 trace_in_view = self._drawTrace(
                     trace_layer,

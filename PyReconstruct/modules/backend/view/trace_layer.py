@@ -476,9 +476,24 @@ class TraceLayer():
         for trace in trace_list:
 
             temp_hide = trace in self.section.temp_hide
+            group_hide = trace in self.section.traces_group_hide
             trace_not_hidden = not trace.hidden
-            
-            show_trace = not temp_hide and (show_all_traces or trace_not_hidden)
+
+            if temp_hide:  # always hide trace when dragging
+
+                show_trace = False
+
+            elif show_all_traces:  # show all temporarily
+
+                show_trace = True
+                
+            elif trace_not_hidden:  # trace unhidden, check group viz
+
+                show_trace = True if not group_hide else False
+
+            else:  # trace hidden
+
+                show_trace = False
 
             if show_trace:
                 

@@ -35,7 +35,6 @@ class MainWindow(QMainWindow):
         self.zarr_palette           =  None
         self.viewer                 =  None
         self.shortcuts_widget       =  None
-        self.group_viz              =  None
         self.is_zooming             =  False
         self.restart_mainwindow     =  False
         self.check_actions_enabled  =  False

@@ -64,14 +64,16 @@ class Series():
             for name, palette_group in series_data["palette_traces"].items()
         ))
         self.palette_index = series_data["palette_index"]
-        self.groups_visibility = {}
 
         self.ztraces = series_data["ztraces"]
         for name in self.ztraces:
             self.ztraces[name] = Ztrace.fromDict(name, self.ztraces[name])
 
         self.alignment = series_data["alignment"]
+        
         self.object_groups = ObjGroupDict(self, "objects", series_data["object_groups"])
+        self.groups_visibility = self.initGroupViz()
+
         self.ztrace_groups = ObjGroupDict(self, "ztraces", series_data["ztrace_groups"])
 
         self.obj_attrs = series_data["obj_attrs"]

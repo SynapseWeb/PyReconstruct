@@ -39,7 +39,8 @@ class Section():
         self.selected_ztraces = []
         self.selected_flags = []
 
-        self.temp_hide = []
+        self.temp_hide = []          # traces to temp hide
+        self.traces_group_hide = []  # traces to hide by group viz
 
         with open(self.filepath, "r") as f:
             section_data = json.load(f)
@@ -690,7 +691,7 @@ class Section():
         return modified
 
     def setGroupVisibility(self, group_viz: Union[List[str], None]=None) -> None:
-        """Modify temp_hide based on group visibility."""
+        """Modify traces_group_hide based on group visibility."""
 
         ## Get list of groups to hide
         hide_groups = [group for group, viz in group_viz.items() if not viz]
@@ -716,7 +717,7 @@ class Section():
 
             if trace.name in list(to_hide):
 
-                self.temp_hide.append(trace)
+                self.traces_group_hide.append(trace)
 
     def closeTraces(self, traces : list = None, closed=True, log_event=True):
         """Close or open traces.

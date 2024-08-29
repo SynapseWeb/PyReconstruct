@@ -883,7 +883,7 @@ class ObjectTableWidget(DataTable):
         structure = [
             ["Filter by objects with the following host(s):"],
             [("multicombo", list(self.series.data["objects"].keys()), self.host_filters)],
-            [("check", ("limit to only direct hosts", self.direct_hosts_only))],
+            [("check", ("limit to direct hosts", self.direct_hosts_only))],
         ]
         response, confirmed = QuickDialog.get(self, structure, "Object Host")
         if not confirmed:

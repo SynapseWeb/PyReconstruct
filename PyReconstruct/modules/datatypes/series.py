@@ -605,10 +605,10 @@ class Series():
                 "Trace tags"   : False,
                 "Locked"       : True,
                 "Last user"    : True,
-                "Curate"       : False,
-                "Alignment"    : False,
-                "Comment"      : True,
-                "Orientation"  : False
+                "Curate"         : False,
+                "Alignment"      : False,
+                "Comment"        : True,
+                "Configuration"  : False
                 
             }.items()),
             

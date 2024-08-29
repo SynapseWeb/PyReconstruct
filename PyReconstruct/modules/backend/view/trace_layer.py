@@ -32,7 +32,7 @@ from PyReconstruct.modules.calc import (
     cutTraces,
     area
 )
-from PyReconstruct.modules.gui.utils import notify, drawOutlinedText
+from PyReconstruct.modules.gui.utils import drawOutlinedText
 
 class TraceLayer():
 

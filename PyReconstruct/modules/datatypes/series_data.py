@@ -326,8 +326,8 @@ class SeriesData():
                 
         return v
 
-    def getOrientation(self, obj_name: str) -> Union[str, None]:
-        """Get the orientation of the object.
+    def getConfiguration(self, obj_name: str) -> Union[str, None]:
+        """Get the configuration of the object.
 
             Params:
                 obj_name (str): the name of the object to retrieve data for
@@ -345,15 +345,15 @@ class SeriesData():
                 closed.append(trace_data.closed)
 
         if sum(closed) == 0:
-            orientation = "open"
+            config = "open"
             
         elif sum(closed) == len(closed):
-            orientation = "closed"
+            config = "closed"
             
         else:
-            orientation = "mixed"
+            config = "mixed"
 
-        return orientation
+        return config
     
     def getTags(self, obj_name : str) -> set:
         """Get the tags associated with an object.

@@ -50,7 +50,7 @@ class ObjectTableWidget(DataTable):
         self.re_filters = set([".*"])
         self.tag_filters = set()
         self.group_filters = set()
-        self.orientation_filters = {
+        self.config_filters = {
             "closed"         : True,
             "open"           : True,
             "mixed"          : True
@@ -139,7 +139,7 @@ class ObjectTableWidget(DataTable):
                     ("groupfilter_act", "Group filter...", "", self.setGroupFilter),
                     ("tagfilter_act", "Tag filter...", "", self.setTagFilter),
                     ("crstatusfilter_act", "Curation filter...", "", self.setCRFilter),
-                    ("orientationfilter_act", "Orientation filter...", "", self.setOrientationFilter),
+                    ("configfilter_act", "Configuration filter...", "", self.setConfigurationFilter),
                     ("hostfilter_act", "Host filter...", "", self.setHostFilter),
                     {
                         "attr_name": "usercolfiltersmenu",
@@ -361,11 +361,11 @@ class ObjectTableWidget(DataTable):
             comment = self.series.getAttr(name, "comment")
             items.append(QTableWidgetItem(comment))
 
-        elif item_type == "Orientation":
+        elif item_type == "Configuration":
 
             items.append(
                 QTableWidgetItem(
-                    self.series.data.getOrientation(name)
+                    self.series.data.getConfiguration(name)
                 )
             )
             
@@ -427,16 +427,16 @@ class ObjectTableWidget(DataTable):
                 if self.cr_user_filters:
                     return False
 
-        ## Check orientation
-        if dict(self.columns)["Orientation"]:
+        ## Check config
+        if dict(self.columns)["Configuration"]:
             
-            req_orientations = [
+            req_configs = [
                 ori for ori, req
-                in self.orientation_filters.items()
+                in self.config_filters.items()
                 if req == True
             ]
             
-            if self.series.data.getOrientation(name) not in req_orientations:
+            if self.series.data.getConfiguration(name) not in req_configs:
                 return False
             
         ## Check regex
@@ -718,26 +718,26 @@ class ObjectTableWidget(DataTable):
         # call through manager to update self
         self.manager.recreateTable(self)
 
-    def setOrientationFilter(self):
-        """Filter by object orientation."""
+    def setConfigurationFilter(self):
+        """Filter by object config."""
         structure = [
-            ["Object orientation:"],
+            ["Object configuration:"],
             [
                 (
                     "check",
-                    *((s,c) for s, c in self.orientation_filters.items())
+                    *((s,c) for s, c in self.config_filters.items())
                 )
             ]
         ]
         
         response, confirmed = QuickDialog.get(
-            self, structure, "Orientation Filters"
+            self, structure, "Configuration Filters"
         )
 
         if not confirmed:
             return
 
-        self.orientation_filters = dict(response[0])
+        self.config_filters = dict(response[0])
 
         ## Call through manager to update self
         self.manager.recreateTable(self)

@@ -448,9 +448,9 @@ class SeriesData():
             Params:
                 out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
         """
-        out_str = "Name,Section,Index,Tags,Length,Area,Radius,Feret-Min,Feret-Max\n"
+        out_str = "Name,Section,Index,Tags,Length,Area,Radius,Feret-Max,Feret-Min\n"
 
-        # iterate through all traces
+        ## Iterate through all traces
         for name in sorted(list(self.data["objects"].keys())):
             for snum in sorted(list(self.series.sections.keys())):
                 trace_list = self.getTraceData(name, snum)

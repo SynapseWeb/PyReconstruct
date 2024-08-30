@@ -262,8 +262,9 @@ class DataTable(QDockWidget):
         self.manager.recreateTable(self)
     
     def export(self):
-        """Export the object list as a csv file."""
-        # get the location from the user
+        """Export datatable as a csv file."""
+
+        ## Query user for location
         file_path = FileDialog.get(
             "save",
             self,
@@ -271,21 +272,24 @@ class DataTable(QDockWidget):
             file_name=f"{self.name}.csv",
             filter="Comma Separated Values (*.csv)"
         )
-        if not file_path: return
-        # unload the table into the csv file
+        if not file_path:
+            return
+        
         csv_file = open(file_path, "w")
-        # headers first
+        
+        ## Headers first
         items = []
         for c in range(self.table.columnCount()):
             items.append(self.table.horizontalHeaderItem(c).text())
         csv_file.write(",".join(items) + "\n")
-        # data
+        
+        ## Then data
         for r in range(self.table.rowCount()):
             items = []
             for c in range(self.table.columnCount()):
                 items.append(self.table.item(r, c).text())
             csv_file.write(",".join(items) + "\n")
-        # close file
+
         csv_file.close()        
     
     def backspace(self):

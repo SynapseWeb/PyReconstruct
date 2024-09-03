@@ -18,13 +18,13 @@ class MainWindow(QMainWindow):
 
         ## Set main window to slightly less than monitor
         screen = QApplication.primaryScreen()
-        screen_info = get_screen_info(screen)
+        self.screen_info = get_screen_info(screen)
 
         self.setGeometry(
-            50,                          # x
-            80,                          # y 
-            screen_info["width"] - 100,  # width
-            screen_info["height"] - 160  # height
+            50,                               # x
+            80,                               # y 
+            self.screen_info["width"] - 100,  # width
+            self.screen_info["height"] - 160  # height
         )
 
         self.series                 =  None

@@ -279,11 +279,18 @@ class DataTable(QDockWidget):
         
         ## Headers first
         items = []
+        checkable = []
         
         for c in range(self.table.columnCount()):
             
             header_item = self.table.horizontalHeaderItem(c)
-            items.append(header_item.text())
+            header_title = header_item.text()
+
+            ## Track checkable item cols
+            if header_title in ("Hidden", "Closed"):
+                checkable.append(c)
+            
+            items.append(header_title)
             
         csv_file.write(",".join(items) + "\n")
         
@@ -294,11 +301,25 @@ class DataTable(QDockWidget):
             
             for c in range(self.table.columnCount()):
 
-                cell_text = self.table.item(r, c).text()
+                cell = self.table.item(r, c)
+                
+                if c in checkable:  # hidden and closed cols
 
-                ## Remove commas in single cells (e.g., for multiple tags)
-                if "," in cell_text:
-                    cell_text = cell_text.replace(",", "")
+                    if cell.checkState() == Qt.Checked:
+
+                        cell_text = "yes"
+
+                    else:
+
+                        cell_text = "no"
+
+                else:
+
+                    cell_text = cell.text()
+
+                    if "," in cell_text:  # e.g., multiple tags
+                        
+                        cell_text = cell_text.replace(",", "")
                     
                 items.append(cell_text)
                 

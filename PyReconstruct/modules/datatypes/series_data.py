@@ -446,22 +446,43 @@ class SeriesData():
         """Export all of the individual trace data into a CSV file.
         
             Params:
-                out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
+                out_fp (str): filepath of exported CSV (str returned if no filepath provided)
         """
-        out_str = "Name,Section,Index,Tags,Length,Area,Radius,Feret-Max,Feret-Min\n"
+        out_str = "Name,Section,Index,Hidden,Closed,Tags,Length,Area,Radius,Feret-Max,Feret-Min\n"
 
         ## Iterate through all traces
-        for name in sorted(list(self.data["objects"].keys())):
-            for snum in sorted(list(self.series.sections.keys())):
+        objs = self.data["objects"].keys()
+        
+        for name in sorted(objs):
+            
+            sections = self.series.sections.keys()
+            
+            for snum in sorted(sections):
+                
                 trace_list = self.getTraceData(name, snum)
+                
                 if not trace_list:
+                    
                     continue
+                
                 for i, t in enumerate(trace_list):
-                    trace_line = (
-                        f"{name},{snum},{i},{' '.join(t.getTags())}," +
-                        f"{round(t.getLength(), 7)},{round(t.getArea(), 7)}," +
-                        f"{round(t.getRadius(), 7)},{round(t.getFeret()[1], 7)},{round(t.getFeret()[0], 7)}"
-                    )
+
+                    hidden     = "yes" if t.hidden else "no"
+                    closed     = "yes" if t.closed else "no"
+                    tags       = ' '.join(t.getTags())
+                    length     = round(t.getLength(), 7)
+                    xs_area    = round(t.getArea(), 7)
+                    radius     = round(t.getRadius(), 7)
+
+                    feret      = t.getFeret()
+                    feret_max  = round(feret[1], 7)
+                    feret_min  = round(feret[0], 7)
+
+                    vals = [name, snum, i, hidden, closed, tags, length, xs_area, radius, feret_max, feret_min]
+
+                    vals = list(map(str, vals))
+                    
+                    trace_line = ','.join(vals)
                     out_str += trace_line + "\n"
         
         # export the csv file

@@ -279,15 +279,29 @@ class DataTable(QDockWidget):
         
         ## Headers first
         items = []
+        
         for c in range(self.table.columnCount()):
-            items.append(self.table.horizontalHeaderItem(c).text())
+            
+            header_item = self.table.horizontalHeaderItem(c)
+            items.append(header_item.text())
+            
         csv_file.write(",".join(items) + "\n")
         
         ## Then data
         for r in range(self.table.rowCount()):
+            
             items = []
+            
             for c in range(self.table.columnCount()):
-                items.append(self.table.item(r, c).text())
+
+                cell_text = self.table.item(r, c).text()
+
+                ## Remove commas in single cells (e.g., for multiple tags)
+                if "," in cell_text:
+                    cell_text = cell_text.replace(",", "")
+                    
+                items.append(cell_text)
+                
             csv_file.write(",".join(items) + "\n")
 
         csv_file.close()        

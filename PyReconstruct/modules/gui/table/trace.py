@@ -407,7 +407,7 @@ class TraceTableWidget(DataTable):
         
         self.context_menu.exec(event.globalPos())
 
-    # MENU-RELATED FUNCTIONS
+    #### Menu-related functions ############################################
 
     def exportAll(self):
         """Export the trace list as a csv file."""

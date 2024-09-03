@@ -8,8 +8,8 @@ PyReconstruct is an actively maintained, extensible version of RECONSTRUCT writt
 
 Please send us a message should you have questions:
 
--   Julian Falco: julian.falco@utexas.edu
 -   Michael Chirillo: m.chirillo@utexas.edu
+-   Julian Falco: julian.falco@utexas.edu
 
 <a id="documentation"></a>
 

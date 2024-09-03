@@ -6,7 +6,7 @@ ROOT = pathlib.Path(__file__).parent
 VERSION = '1.11.0'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
-AUTHOR_EMAIL = 'julian.falco@utexas.edu'
+AUTHOR_EMAIL = 'm.chirillo@utexas.edu'
 URL = 'https://github.com/SynapseWeb/PyReconstruct'
 LICENSE = 'GNU GLPv3'
 DESCRIPTION = 'RECONSTRUCT in Python'
@@ -16,7 +16,7 @@ LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
       'PySide6==6.5.2',
-      'opencv-python==4.7.0.68',
+      'opencv-python==4.8.1.78',
       'numpy==1.24.1',
       'scikit-image==0.23.2',
       'trimesh==3.18.1',

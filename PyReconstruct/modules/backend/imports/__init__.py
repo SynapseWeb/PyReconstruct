@@ -92,3 +92,30 @@ def install_module(module: str) -> bool:
         )
 
         return False
+
+
+def is_conda_package_installed(package_name: str) -> bool:
+    """Check if conda package installed"""
+
+    try:
+        
+        result = subprocess.run(
+            ['conda', 'list', package_name], capture_output=True, text=True, check=True
+        )
+
+        results = result.stdout.strip().split("\n")
+        
+        results = [line for line in results if not line.startswith("#")]
+        
+        if not results:
+            
+            return False
+        
+        else:
+            
+            return True
+    
+    except subprocess.CalledProcessError:
+        
+        return False
+

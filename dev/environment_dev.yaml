@@ -10,5 +10,5 @@ dependencies:
   - lxml
   - scikit-image
   - pip:
-    - -r ./pip-requirements.txt
+    - -r ../requirements.txt
     - git+https://github.com/funkelab/funlib.show.neuroglancer

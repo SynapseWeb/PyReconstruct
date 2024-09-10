@@ -2,7 +2,6 @@ import pathlib
 from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
-
 VERSION = '1.11.0'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
@@ -14,19 +13,8 @@ DESCRIPTION = 'RECONSTRUCT in Python'
 LONG_DESCRIPTION = (ROOT / "readme.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 
-INSTALL_REQUIRES = [
-      'PySide6==6.5.2',
-      'opencv-python==4.8.1.78',
-      'numpy==1.24.1',
-      'scikit-image==0.23.2',
-      'trimesh==3.18.1',
-      'vedo==2023.4.7',
-      'zarr==2.18.2',
-      'lxml==5.2.2',
-      'gitpython==3.1.43',
-      'qdarkstyle==3.2.3'
-]
-
+reqs_txt = (ROOT / "requirements.txt").read_text()
+INSTALL_REQUIRES = reqs_txt.strip().split("\n")
 
 SHELL_SCRIPTS = []  # define shell scripts to install
 

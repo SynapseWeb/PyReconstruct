@@ -394,7 +394,8 @@ class ObjectTableWidget(DataTable):
                 return False
 
         ## Check groups
-        if len(self.group_filters) != 0:  # if group filter requested
+        filters_len = len(self.group_filters)
+        if filters_len != 0:  # if group filter requested
             object_groups = self.series.object_groups.getObjectGroups(name)
             groups_len = len(object_groups)
             union_len = len(object_groups.union(self.group_filters))

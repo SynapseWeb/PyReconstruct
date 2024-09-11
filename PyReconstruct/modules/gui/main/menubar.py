@@ -157,11 +157,11 @@ def return_series_menu(self):
                 "text": "Trace Palette",
                 "opts":
                 [
-                    ("modifytracepalette_act", "All palettes...", self.series, self.mouse_palette.modifyAllPaletteButtons),
+                    ("modifytracepalette_act", "Edit all palettes...", self.series, self.mouse_palette.modifyAllPaletteButtons),
                     ("resetpalette_act", "Reset current palette", "", self.resetTracePalette),
                     None,
-                    ("exporttracepalette_act", "trace palette as CSV...", "", self.exportTracePaletteCSV),
-                    ("importtracepalettecsv_act", "Trace palette from CSV...", "", self.importTracePaletteCSV),
+                    ("exporttracepalette_act", "Export as CSV...", "", self.exportTracePaletteCSV),
+                    ("importtracepalettecsv_act", "Import from CSV...", "", self.importTracePaletteCSV),
                 ]
             },
             {

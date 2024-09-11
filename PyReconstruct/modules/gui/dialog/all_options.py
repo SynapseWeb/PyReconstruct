@@ -131,8 +131,8 @@ class AllOptionsDialog(QDialog):
         structure = [
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
-            ["Type:"],
-            [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
+            ["Select:"],
+            [("radio", ("All touched traces", t=="inc"), ("Only completed encircled traces", t=="exc"))],
             [("check", ("Display closest field item", self.series.getOption("display_closest", use_defaults)))]
         ]
         def setOption(response):

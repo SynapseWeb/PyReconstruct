@@ -1638,8 +1638,8 @@ class MainWindow(QMainWindow):
         structure = [
             ["Shape:"],
             [("radio", ("Rectangle", s=="rect"), ("Lasso", s=="lasso"))],
-            ["Type:"],
-            [("radio", ("Include intersected traces", t=="inc"), ("Exclude intersected traces", t=="exc"))],
+            ["Select:"],
+            [("radio", ("All touched traces", t=="inc"), ("Only completed encircled traces", t=="exc"))],
             [("check", ("Display closest field item", self.series.getOption("display_closest")))]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Pointer Settings")
@@ -1670,9 +1670,11 @@ class MainWindow(QMainWindow):
     def modifyKnife(self, event=None):
         """Modify the knife properties."""
         structure = [
-            ["Delete traces smaller than this percent of the"],
-            ["original trace when using the knife."],
-            ["% area:", ("float", self.series.getOption("knife_del_threshold"), (0, 100))],
+            ["Delete traces smaller than this percent:\n"],
+            [
+                "% original trace:",
+                ("float", self.series.getOption("knife_del_threshold"), (0, 100))
+            ],
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
         if not confirmed:

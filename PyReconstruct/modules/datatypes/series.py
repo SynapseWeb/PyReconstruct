@@ -1190,6 +1190,15 @@ class Series():
         
         self.modified = True
     
+    def listObjects(self):
+        """List all objects in a series."""
+
+        series_data = self.data.data
+        objs = list(series_data["objects"].keys())
+        objs.sort()
+
+        return objs
+
     def removeAllTraceTags(self, obj_names : list, series_states=None, log_event=True):
         """Remove all tags from all traces on a set of objects.
         

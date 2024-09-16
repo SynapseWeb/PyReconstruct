@@ -20,7 +20,7 @@ else
 fi
 
 echo "Checking dependencies..."
-python3.10 -m pip install -r ./PyReconstruct/requirements.txt
+python3.10 -m pip install -r ./requirements.txt
 
 echo "Starting PyReconstruct..."
 echo "Do NOT close this window while using PyReconstruct!"

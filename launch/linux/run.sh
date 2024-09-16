@@ -3,10 +3,10 @@
 DIR=$( cd -- "$( dirname -- "$(readlink -f "${BASH_SOURCE[0]}" || ${BASH_SOURCE[0]})" )" &> /dev/null && pwd )
 
 # Get correct python command
-if python --version 2>&1 | grep -q '^Python 3.10'; then
+if python --version 2>&1 | grep -q '^Python 3.11'; then
     PY_CMD=python
 else
-    PY_CMD=Python3.10
+    PY_CMD=Python3.11
 fi
 
 cd $DIR/../..
@@ -19,5 +19,5 @@ if [ ! -f "env/bin/activate" ]; then
 fi
 
 source env/bin/activate
-pip install -r PyReconstruct/requirements.txt
+pip install -r requirements.txt
 python PyReconstruct/run.py

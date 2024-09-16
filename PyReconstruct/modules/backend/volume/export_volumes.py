@@ -8,7 +8,7 @@ from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
 
 
-def export3DObjects(series: Series, obj_names : list, output_dir : str, export_type = str):
+def export3DObjects(series: Series, obj_names : list, output_dir : str, export_type: str, notify_user: bool = True):
     """Export 3D objects.
 
         Params:
@@ -77,4 +77,6 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
                 export_type,
             )
 
-    notify(f"Object(s) exported to directory:\n\n{output_directory.absolute()}\n")
+    if notify_user:
+        
+        notify(f"Object(s) exported to directory:\n\n{output_directory.absolute()}\n")

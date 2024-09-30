@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
 
     def test(self) -> None:
         """Run test here."""
+        print(f"{QApplication.font().pointSize() = }")
         notify("test message!")
 
     def createMenuBar(self):
@@ -446,19 +447,30 @@ class MainWindow(QMainWindow):
         self.series.setOption("fill_opacity", opacity)
         self.field.generateView(generate_image=False)
 
-    def openSeries(self, series_obj=None, jser_fp=None):
+    def openSeries(self, series_obj=None, jser_fp=None, query_prev=True):
         """Open an existing series and create the field.
         
             Params:
                 series_obj (Series): the series object (optional)
+                query_prev (bool): True if query user about saving data
         """
-        # user has another series open
-        if self.series:
+
+        if self.series:  # series open and save yes
+            
             first_open = False
-            response = self.saveToJser(notify=True)
-            if response == "cancel":
-                return
+
+            if query_prev:
+                
+                response = self.saveToJser(notify=True, close=True)
+                
+                if response == "cancel":
+                    return
+            else:
+
+                self.series.close()
+                    
         else:
+
             first_open = True
         
         if not series_obj:  # if series is not provided            
@@ -636,7 +648,11 @@ class MainWindow(QMainWindow):
             Params:
                 image_locations (list): the filepaths for the section images.
         """
-        # get images from user
+
+        ## Save existing backend series
+        self.saveToJser(notify=True, close=False)
+        
+        ## Query user for images
         if not image_locations:
             if from_zarr:
                 valid_zarr = False
@@ -666,37 +682,42 @@ class MainWindow(QMainWindow):
                 )
                 if len(image_locations) == 0: return
         
-        # get the name of the series from user
+        ## Query user for series name
         if series_name is None:
             series_name, confirmed = QInputDialog.getText(
                 self, "New Series", "Enter series name:")
             if not confirmed:
                 return
-        # get calibration (microns per pix) from user
+            
+        ## Query user for calibration (microns per px)
         if mag is None:
             mag, confirmed = QInputDialog.getDouble(
                 self, "New Series", "Enter image calibration (μm/px):",
                 0.00254, minValue=0.000001, decimals=6)
             if not confirmed:
                 return
-        # get section thickness (microns) from user
+            
+        ## Query user for section thickness (microns)
         if thickness is None:
             thickness, confirmed = QInputDialog.getDouble(
                 self, "New Series", "Enter section thickness (μm):",
                 0.05, minValue=0.000001, decimals=6)
             if not confirmed:
                 return
-        
-        # save and clear the existing backend series
-        self.saveToJser(notify=True, close=True)
-        
-        # create new series
-        series = Series.new(sorted(image_locations), series_name, mag, thickness)
-    
-        # open series after creating
-        self.openSeries(series)
 
-        # prompt the user to save the series
+        ## Create new series
+        series = Series.new(
+            sorted(image_locations),
+            series_name,
+            mag,
+            thickness
+        )
+    
+        ## Open series
+        ## No need to query user about saving prev (already done above)
+        self.openSeries(series, query_prev=False)
+
+        ## Prompt user to save series
         self.saveAsToJser()
     
     def newFromXML(self, series_fp : str = None):
@@ -1232,7 +1253,7 @@ class MainWindow(QMainWindow):
         super().keyReleaseEvent(event)
     
     def saveAllData(self):
-        """Write current series and section data into hidden JSON files."""
+        """Write current series and section data into hidden files."""
         if self.series.isWelcomeSeries():
             return
         # # save the trace palette
@@ -1271,21 +1292,21 @@ class MainWindow(QMainWindow):
             self.series.setOption("autobackup", False)
     
     def saveToJser(self, notify=False, close=False):
-        """Save data to JSER file.
+        """Store data in JSER file.
         
         Params:
             notify (bool): If true, display notification.
             close (bool): If true, delete hidden series files.
         """
 
-        # store series data in hidden files
-        self.saveAllData()
-
-        # if welcome series, close without saving
+        ## If welcome series, close without saving
         if self.series.isWelcomeSeries():
             return
-        
-        # notify user and series modified
+
+        ## Populate hidden files with unsaved data
+        self.saveAllData()
+
+        ## Notify (query) user when series modified
         if notify and self.series.modified:
             save = saveNotify()
             if save == "no":
@@ -1295,12 +1316,12 @@ class MainWindow(QMainWindow):
             elif save == "cancel":
                 return "cancel"
         
-        # user closing and series not modified
+        # User closing and series not modified
         if close and not self.series.modified:
             self.series.close()
             return
 
-        # save-as if no jser filepath
+        ## Save-as if no jser filepath
         if not self.series.jser_fp:
             self.saveAsToJser(close=close)
         else:  
@@ -1311,15 +1332,15 @@ class MainWindow(QMainWindow):
         self.seriesModified(False)
     
     def saveAsToJser(self, close=False):
-        """Prompt user to determine save location."""
-        # store series data in hidden files
+        """Prompt user for save location."""
+        ## Store series data in hidden files
         self.saveAllData()
 
-        # if welcome series, close without saving
+        ## If welcome series, close without saving
         if self.series.isWelcomeSeries():
             return
 
-        # get location from user
+        ## Query user for location
         new_jser_fp = FileDialog.get(
             "save",
             self,
@@ -1329,7 +1350,7 @@ class MainWindow(QMainWindow):
         )
         if not new_jser_fp: return
         
-        # move hidden folder to new jser directory
+        ## Move hidden folder to new jser directory        
         self.series.move(
             new_jser_fp,
             self.field.section,

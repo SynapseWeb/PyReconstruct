@@ -134,7 +134,7 @@ class Series():
 
         self.close()
     
-    # OPENING, LOADING, AND MOVING THE JSER FILE
+    ## OPENING, LOADING, AND MOVING THE JSER FILE
     @staticmethod
     def openJser(fp : str):
         """Process the file containing all section and series information.
@@ -352,23 +352,27 @@ class Series():
                 section (Section): the section file being used (in GUI)
                 b_section (Section): the secondary section file being used (in GUI)
             """
-        # move/rename the hidden directory
+        
+        ## Move/Rename hidden directory
         old_name = self.name
         new_name = os.path.basename(new_jser_fp)
         new_name = new_name[:new_name.rfind(".")]
+
         old_hidden_dir = os.path.dirname(self.filepath)
+
         new_hidden_dir = os.path.join(
             os.path.dirname(new_jser_fp),
             "." + new_name
         )
+
         shutil.move(old_hidden_dir, new_hidden_dir)
 
-        # manually hide dir if windows
+        ## Manually hide dir if Windows
         if os.name == "nt":
             import subprocess
             subprocess.check_call(["attrib", "+H", new_hidden_dir])
 
-        # rename all of the files
+        ## Rename all files
         for f in os.listdir(new_hidden_dir):
             if old_name in f:
                 new_f = f.replace(old_name, new_name)
@@ -377,23 +381,25 @@ class Series():
                     os.path.join(new_hidden_dir, new_f)
                 )
         
-        # rename the series
+        ## Rename series
         self.rename(new_name)
 
-        # change the filepaths for the series and section files
+        ## Update filepaths in series and section files
         self.jser_fp = new_jser_fp
         self.hidden_dir = new_hidden_dir
+        
         self.filepath = os.path.join(
             new_hidden_dir,
             os.path.basename(self.filepath).replace(old_name, new_name)
         )
 
-        # update loaded sections in GUI
+        ## Update loaded sections in GUI
         if section:
             section.filepath = os.path.join(
                 new_hidden_dir,
                 os.path.basename(section.filepath).replace(old_name, new_name)
             )
+            
         if b_section:
             b_section.filepath = os.path.join(
                 new_hidden_dir,
@@ -686,44 +692,60 @@ class Series():
                 (Series): the newly created series object
         """
         try:
+            
             wdir = os.path.dirname(image_locations[0])
-            if "zarr" in wdir:  # create series adjacent to zarr if needed
+            
+            if "zarr" in wdir:  # create series next to zarr if necessary
+                
                 src_dir = wdir[:wdir.rfind("zarr") + len("zarr")]
                 wdir = os.path.dirname(src_dir)
+                
             else:
+                
                 src_dir = wdir
+                
             hidden_dir = createHiddenDir(wdir, series_name)
+            
         except PermissionError:
+            
             print(
                 "Series cannot be created adjacent to images due "
-                "to permissions; creating in home folder instead."
+                "to user not having proper permissions. Creating "
+                "in home folder instead."
             )
+            
             if os.name == "nt":
+                
                 wdir = os.environ.get("HOMEPATH")
+                
             else:
+                
                 wdir = os.environ.get("HOME")
+                
             hidden_dir = createHiddenDir(wdir, series_name)
 
         series_data = Series.getEmptyDict()
-
-        series_data["src_dir"] = src_dir  # the directory of the images
+        series_data["src_dir"] = src_dir  # img dir
         sections = {}
-        for i in range(len(image_locations)):
+
+        for i, _ in enumerate(image_locations):
             sections[i] = series_name + "." + str(i)
 
         series_fp = os.path.join(hidden_dir, series_name + ".ser")
+        
         with open(series_fp, "w") as series_file:
             series_file.write(json.dumps(series_data, indent=2))
         
-        # create section files (.#)
-        for i in range(len(image_locations)):
-            Section.new(series_name, i, image_locations[i], mag, thickness, hidden_dir)
+        ## Create section files (.number files)
+        for i, img in enumerate(image_locations):
+            Section.new(series_name, i, img, mag, thickness, hidden_dir)
 
-        # create empty existing_log.csv file
-        with open(os.path.join(hidden_dir, "existing_log.csv"), "w") as f:
+        ## Create empty existing_log.csv file
+        existing_log_path = os.path.join(hidden_dir, "existing_log.csv")
+        with open(existing_log_path, "w") as f:
             f.write("Date, Time, User, Obj, Sections, Event")
 
-        # create series object
+        ## Create series object
         series = Series(series_fp, sections)
         
         # save the jser file
@@ -733,7 +755,7 @@ class Series():
         # )
         # series.saveJser()
 
-        # create the first log
+        ## Create initial log
         series.addLog(None, None, "Create series")
         
         return series

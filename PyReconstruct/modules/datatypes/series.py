@@ -408,11 +408,15 @@ class Series():
     
     def close(self):
         """Clear the hidden directory of the series."""
-        if self.leave_open:
+        
+        if self.isWelcomeSeries() or self.leave_open:
             return
+        
         if os.path.isdir(self.hidden_dir):
+            
             for f in os.listdir(self.hidden_dir):
                 os.remove(os.path.join(self.hidden_dir, f))
+                
             os.rmdir(self.hidden_dir)
     
     @staticmethod

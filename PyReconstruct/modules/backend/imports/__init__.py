@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from PyReconstruct.modules.gui.utils import notifyConfirm, notify as note
 
@@ -47,12 +47,22 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
         unavail_str = ", ".join(unavailable)
             
         response = notifyConfirm(
-            f"This feature requires additional python packages to work ({unavail_str}). "
+            f"This feature requires additional Python packages to work ({unavail_str}). "
             "Would you like to install them into your current environment?",
             yn=True
         )
 
         if response == True:
+
+            ## Catch modules with different names on pip install
+            mod_pip_names = {
+                "cloudvolume": "cloud-volume"
+            }
+            
+            for mod, pip_install_name in mod_pip_names.items():
+                if mod in unavailable:
+                    index = unavailable.index(mod)
+                    unavailable[index] = (mod, pip_install_name)
 
             pip_outcomes = map(install_module, unavailable)
             return all(list(pip_outcomes))
@@ -64,17 +74,23 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
     return False
 
 
-def install_module(module: str) -> bool:
+def install_module(module: Union[str, Tuple[str, str]]) -> bool:
     """Interactively install a pip module."""
 
+    if isinstance(module, tuple):
+        
+        module, pip_install_name = module
+        
+    else:
+        
+        pip_install_name = module
+
     output = subprocess.run(
-        f"pip install {module}",
+        f"pip install {pip_install_name}",
         capture_output=True,
         text=True,
         shell=True
     )
-
-    print(f"return code {output.returncode}")
 
     if output.returncode == 0:
 

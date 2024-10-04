@@ -38,6 +38,10 @@ from .repo_info import (
     repo_string
 )
 
+from .remotes import (
+    kharris2015
+)
+
 from .getdatetime import(
     getDateTime
 )

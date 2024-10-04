@@ -8,3 +8,5 @@ zarr==2.18.2
 lxml==5.2.2
 gitpython==3.1.43
 qdarkstyle==3.2.3
+cloud-volume==11.0.0
+tifffile==2024.9.20

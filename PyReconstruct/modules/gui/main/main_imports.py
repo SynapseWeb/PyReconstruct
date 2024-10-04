@@ -101,6 +101,10 @@ from PyReconstruct.modules.backend.imports import (
     modules_available
 )
 
+from PyReconstruct.modules.backend.remote import (
+    download_vol_as_tifs
+)
+
 from PyReconstruct.modules.datatypes import (
     Series,
     Transform,
@@ -120,7 +124,8 @@ from PyReconstruct.modules.constants import (
     gh_submit,
     developers_mailto_str,
     repo_info,
-    repo_string
+    repo_string,
+    kharris2015
 )
 
 from PyReconstruct.assets.scripts.projects import (

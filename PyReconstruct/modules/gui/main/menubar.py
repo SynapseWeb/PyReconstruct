@@ -391,7 +391,8 @@ def return_help_menu(self):
                     ("openwiki_act", "PyReconstruct user guide", "", lambda : self.openWebsite(kh_wiki)),
                     ("openrepo_act", "PyReconstruct source code", "", lambda : self.openWebsite(gh_repo)),
                     ("openkhlab_act", "KH lab website", "", lambda : self.openWebsite(kh_web)),
-                    ("openkhatlast_act", "Atlas of Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas))
+                    ("openkhatlast_act", "Atlas of Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas)),
+                    ("download2015", "Download harris2015 example images", "", self.downloadExample)
                 ]
             },
             {

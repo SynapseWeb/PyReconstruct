@@ -73,8 +73,9 @@ class MainWindow(QMainWindow):
 
     def test(self) -> None:
         """Run test here."""
-        print(f"{QApplication.font().pointSize() = }")
-        notify("test message!")
+        
+        #print(f"{QApplication.font().pointSize() = }")
+        notify("Test message!")            
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -1082,6 +1083,56 @@ class MainWindow(QMainWindow):
         png = self.series.loadSection(s).exportAsPNG(fp, float(scale))
         
         notify(f"Traces exported to file:\n\n{png}")
+
+    def downloadExample(self):
+        """Download example kharris2015 images to local machine."""
+                
+        if not modules_available(["cloudvolume", "tifffile"], notify=True):
+            return
+
+        confirm = notifyConfirm(
+            "harris2015 is a published volume (~2 nm/px, ~50 nm section thickness) from the "
+            "middle of stratum radiatum in hippocampal area CA1 of an adult rat (p77). It is "
+            "stored remotely at neurodata.io and a small subvolume of 10 sections can be "
+            "downloaded here.\n\n"
+            "See the publication:\n\n"
+            "Harris et al. (2015) A resource from 3D electron microscopy of hippocampal "
+            "neuropil for user training and tool development. Sci Data Sep 1;2:150046. PMID:"
+            "26347348\n\n"
+            "Click OK to select a location to store example images."
+        )
+
+        if not confirm: return
+
+        download_dir = FileDialog.get(
+                "dir",
+                self,
+                "Select folder to store images",
+            )
+        
+        if not download_dir: return
+
+        success = download_vol_as_tifs(
+            kharris2015,
+            [[2560, 4560], [2072, 4072], [48, 58]],
+            output_dir=download_dir,
+            output_prefix="kharris2015"
+        )
+
+        if success:
+
+            notify(
+                "harris2015 example images downloaded successfully to:\n\n"
+                f"{download_dir}\n\n"
+                "Start a new series by going to File > New from images and selecting "
+                "the downloaded images."
+            )
+
+        if not success:
+
+            notify(
+                "Something went wrong. Please try downloading example images again."
+            )
 
     def randomizeProject(self):
 

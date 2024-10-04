@@ -168,7 +168,7 @@ def notify(message):
         
         QMessageBox.information(
             mainwindow,
-            "Notify",
+            "Message",
             message,
             QMessageBox.Ok
         )

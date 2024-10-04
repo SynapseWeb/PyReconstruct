@@ -718,6 +718,9 @@ class MainWindow(QMainWindow):
         ## No need to query user about saving prev (already done above)
         self.openSeries(series, query_prev=False)
 
+        ## Set view to entire image
+        self.field.home()
+
         ## Prompt user to save series
         self.saveAsToJser()
     
@@ -1116,7 +1119,7 @@ class MainWindow(QMainWindow):
             kharris2015,
             [[2560, 4560], [2072, 4072], [48, 58]],
             output_dir=download_dir,
-            output_prefix="kharris2015"
+            output_prefix="harris2015"
         )
 
         if success:

@@ -392,7 +392,7 @@ def return_help_menu(self):
                     ("openrepo_act", "PyReconstruct source code", "", lambda : self.openWebsite(gh_repo)),
                     ("openkhlab_act", "KH lab website", "", lambda : self.openWebsite(kh_web)),
                     ("openkhatlast_act", "Atlas of Ultrastructural Neurocytology", "", lambda : self.openWebsite(kh_atlas)),
-                    ("download2015", "Download harris2015 example images", "", self.downloadExample)
+                    ("download2015", "Harris2015 example images", "", self.downloadExample)
                 ]
             },
             {

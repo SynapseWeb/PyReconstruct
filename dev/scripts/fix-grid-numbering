@@ -50,14 +50,21 @@ class GridFile:
 
             return None
 
-    def rename_file(self) -> None:
+    def rename_file(self, log: Union[Path, None]=None) -> None:
 
         if self.matches_pattern and self.name_corrected:
 
             new_path = self.filepath.with_name(self.name_corrected)
             self.filepath.rename(new_path)
 
-            print(f"{self.name} → {self.name_corrected}")
+            change = f"{self.name} → {self.name_corrected}"
+            print(change)
+
+            if log:
+
+                with log.open("a") as f:
+                    
+                    f.write(change + "\n")
 
 
 class ImgDir:
@@ -87,7 +94,10 @@ class ImgDir:
 
         for img in self.grid_images:
 
-            img.rename_file()
+            log_name = f"{self.directory.name}_img_changes.txt"
+            log_fp = self.directory / log_name
+            
+            img.rename_file(log=log_fp)
 
         if self.jsers:  ## TODO: Correct to allow user to point to specific jser
 

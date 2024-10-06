@@ -1,5 +1,28 @@
 #!/usr/bin/env python
 
+"""
+Correct image names based on grids and sections.
+
+Example usage: fix-grid-numbering <directory>
+
+This command will rename images based on grids and sections present in the
+specified directory. (Images failing to match a regular expression will be
+ignored.)
+
+For example:
+
+123_g3_s17_example.tif
+
+will be renamed to:
+
+123_G003_S017_example.tif
+
+If a jser file is present with the images, a copy with sections sorted by the
+new image names will be made.
+
+A log with image name changes will also be output to the specificed directory.
+"""
+
 import sys
 import re
 import json
@@ -142,7 +165,7 @@ class ImgDir:
 
 def usage():
 
-    print("Usage: fix-grid-numbering <directory>")
+    print(__doc__)
     sys.exit()
 
 

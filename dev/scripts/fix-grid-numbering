@@ -2,6 +2,7 @@
 
 import sys
 import re
+import json
 from pathlib import Path
 from typing import Union
 
@@ -12,6 +13,7 @@ class GridFile:
 
         self.filepath = Path(filepath)
         self.name = filepath.name
+        self.name_original = self.name
         self.grid_pattern = r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|section|Section)(\d+)_(.*?)$'
         self.name_corrected = self.correct_name()
 
@@ -72,11 +74,61 @@ class ImgDir:
             
             raise NotADirectoryError(f"{self.directory} is not a directory.")
 
+        self.grid_images = [
+            GridFile(f)
+            for f
+            in self.directory.iterdir()
+            if f.suffix != ".jser"
+        ]
+        
+        self.jsers = list(self.directory.glob("*.jser"))
+
     def correct_grid_naming(self):
 
-        for f in self.directory.iterdir():
+        for img in self.grid_images:
 
-            GridFile(f).rename_file()
+            img.rename_file()
+
+        if self.jsers:  ## TODO: Correct to allow user to point to specific jser
+
+            original_jser = self.jsers[0]
+            
+            with original_jser.open("r") as jser:
+                
+                jser_data = json.load(jser)
+
+            for section in jser_data.get("sections"):
+
+                src_img = section.get("src")
+
+                for g in self.grid_images:
+
+                    # print(f"{g.name = }")
+                    # print(f"{g.name_original = }")
+                    # print(f"{src_img = }")
+
+                    if src_img == g.name:
+
+                        section["src"] = g.name_corrected
+
+            ## Re-sort sections
+
+            resorted = sorted(
+                jser_data["sections"],
+                key=lambda section: section["src"]
+            )
+
+            jser_data["sections"] = resorted
+
+            ## Write a new jser to file
+
+            new_jser_name = original_jser.stem + "_corrected.jser"
+            new_jser = original_jser.with_name(new_jser_name)
+                        
+            with new_jser.open("w") as new_jser:
+
+                new_jser.write(json.dumps(jser_data))
+
 
 def usage():
 

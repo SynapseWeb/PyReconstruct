@@ -32,12 +32,16 @@ from typing import Union
 
 class GridFile:
 
-    def __init__(self, filepath):
+    def __init__(
+            self,
+            filepath:str,
+            regexp:str=r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|section|Section)(\d+)_(.*?)$'
+    ) -> None:
 
         self.filepath = Path(filepath)
-        self.name = filepath.name
+        self.name = self.filepath.name
         self.name_original = self.name
-        self.grid_pattern = r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|section|Section)(\d+)_(.*?)$'
+        self.grid_pattern = regexp
         self.name_corrected = self.correct_name()
 
     @property 
@@ -124,43 +128,52 @@ class ImgDir:
 
         if self.jsers:  ## TODO: Correct to allow user to point to specific jser
 
-            original_jser = self.jsers[0]
-            
-            with original_jser.open("r") as jser:
-                
-                jser_data = json.load(jser)
+            Jser(self.jsers[0]).correct_naming()
 
-            for section in jser_data.get("sections"):
 
-                src_img = section.get("src")
+class Jser:
 
-                for g in self.grid_images:
+    def __init__(
+            self,
+            filepath:Union[Path, str],
+            pattern:str=r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|section|Section)(\d+)_(.*?)$'
+    ) -> None:
 
-                    # print(f"{g.name = }")
-                    # print(f"{g.name_original = }")
-                    # print(f"{src_img = }")
+        self.filepath = Path(filepath)
+        self.pattern = pattern
+        self.regexp = re.compile(pattern)
+        self.correct_fp = self.filepath.with_name(self.filepath.stem + "_corrected.jser")
 
-                    if src_img == g.name:
+    def correct_naming(self):
 
-                        section["src"] = g.name_corrected
+        with self.filepath.open("r") as jser:
 
-            ## Re-sort sections
+            jser_data = json.load(jser)
 
-            resorted = sorted(
-                jser_data["sections"],
-                key=lambda section: section["src"]
-            )
+        for sec in jser_data["sections"]:
+    
+            original_src = sec["src"]
+    
+            if self.regexp.search(original_src):
 
-            jser_data["sections"] = resorted
+                match = re.match(self.pattern, original_src)
+    
+                before_g  = match.group(1)
+                g_number  = match.group(3)
+                s_number  = match.group(5)
+                end       = match.group(6)
 
-            ## Write a new jser to file
+                sec["src"] = f"{before_g}_G{g_number:0>3}_S{s_number:0>3}_{end}"
 
-            new_jser_name = original_jser.stem + "_corrected.jser"
-            new_jser = original_jser.with_name(new_jser_name)
-                        
-            with new_jser.open("w") as new_jser:
+        ## Sort sections by new src names
+        jser_data["sections"] = sorted(
+            jser_data["sections"], key=lambda x: x["src"]
+        )
 
-                new_jser.write(json.dumps(jser_data))
+        ## Write a new jser file
+        with self.correct_fp.open("w") as jser:
+
+            jser.write(json.dumps(jser_data))
 
 
 def usage():

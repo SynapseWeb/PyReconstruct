@@ -30,7 +30,8 @@ class Section():
         """
         self.n = n
         self.series = series
-        self.filepath = os.path.join(
+        
+        self.filepath = os.path.join(  # hidden trace file
             self.series.getwdir(),
             self.series.sections[n]
         )

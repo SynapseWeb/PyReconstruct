@@ -1094,7 +1094,7 @@ class MainWindow(QMainWindow):
             return
 
         confirm = notifyConfirm(
-            "harris2015 is a published volume (~2 nm/px, ~50 nm section thickness) from the "
+            "Harris2015 is a published volume (~2 nm/px, ~50 nm section thickness) from the "
             "middle of stratum radiatum in hippocampal area CA1 of an adult rat (p77). It is "
             "stored remotely at neurodata.io and a small subvolume of 10 sections can be "
             "downloaded here.\n\n"

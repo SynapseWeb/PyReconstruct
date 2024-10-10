@@ -121,7 +121,7 @@ class ImgDir:
 
         for img in self.grid_images:
 
-            log_name = f"{self.directory.name}_img_changes.txt"
+            log_name = f"{self.directory.absolute().name}_img_changes.txt"
             log_fp = self.directory / log_name
             
             img.rename_file(log=log_fp)
@@ -136,7 +136,7 @@ class Jser:
     def __init__(
             self,
             filepath:Union[Path, str],
-            pattern:str=r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|section|Section)(\d+)_(.*?)$'
+            pattern:str=r'^(.*?)_(g|G|grid|Grid)(\d+).*?(s|S|sec_section|Section)(\d+)_(.*?)$'
     ) -> None:
 
         self.filepath = Path(filepath)
@@ -144,13 +144,18 @@ class Jser:
         self.regexp = re.compile(pattern)
         self.correct_fp = self.filepath.with_name(self.filepath.stem + "_corrected.jser")
 
+        with self.filepath.open("r") as jser:
+            self.data = json.load(jser)
+
+    def make_new_jser(self, output: Path):
+
+        with output.open("w") as jser:
+            
+            jser.write(json.dumps(self.data))
+
     def correct_naming(self):
 
-        with self.filepath.open("r") as jser:
-
-            jser_data = json.load(jser)
-
-        for sec in jser_data["sections"]:
+        for sec in self.data["sections"]:
     
             original_src = sec["src"]
     
@@ -166,14 +171,15 @@ class Jser:
                 sec["src"] = f"{before_g}_G{g_number:0>3}_S{s_number:0>3}_{end}"
 
         ## Sort sections by new src names
-        jser_data["sections"] = sorted(
-            jser_data["sections"], key=lambda x: x["src"]
+        self.data["sections"] = sorted(
+            self.data["sections"], key=lambda x: x["src"]
         )
 
-        ## Write a new jser file
-        with self.correct_fp.open("w") as jser:
+        ## Update src_dir
+        self.data["series"]["src_dir"] = str(self.filepath.parent.resolve())
 
-            jser.write(json.dumps(jser_data))
+        ## Write data to a new jser file
+        self.make_new_jser(self.correct_fp)
 
 
 def usage():

@@ -48,7 +48,7 @@ def download_vol_as_tifs(address:str,
                          roi: List[List[int]],
                          output_dir: [str, Path]=".",
                          output_prefix: str="layer") -> bool:
-    """Download a remotely hosted volume as a tif stack."""
+    """Download remotely hosted volume as a tif stack."""
 
     cutout = get_remote_vol(address, roi)
 

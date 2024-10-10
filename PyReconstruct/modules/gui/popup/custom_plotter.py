@@ -246,7 +246,7 @@ class VPlotter(vedo.Plotter):
                 side_len, color, alpha, lw = None, None, None, None
             
             structure = [
-                ["Side length:", ("float", round(side_len, 4))],
+                ["Edge length (μm):", ("float", round(side_len, 4))],
                 ["Color:", ("color", color)],
                 ["Opacity (0-1):", ("float", alpha)],
                 ["Outline width:", ("float", lw)]

@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from datetime import datetime
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -51,10 +52,22 @@ def get_welcome_setup() -> tuple:
     welcome_dir = Path(welcome_series_dir)
     welcome_ser = welcome_dir  / "welcome.ser"
 
+    date = datetime.now().strftime("%m%d")
+    welcome_src_today = welcome_dir.parent / f"dates/{date}"
+
+    ## Check if date specific splash image exists
+    if welcome_src_today.exists():
+
+        welcome_src = str(welcome_src_today)
+
+    else:
+
+        welcome_src = str(welcome_dir.parent)
+
     welcome_setup = (
         str(welcome_ser),        # .ser
         {0: "welcome.0"},        # secs
-        str(welcome_dir.parent)  # src
+        welcome_src              # src
     )
 
     return welcome_setup

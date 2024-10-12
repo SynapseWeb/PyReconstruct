@@ -428,7 +428,7 @@ class Section():
         """
         if trace.name in self.contours:
             self.contours[trace.name].remove(trace)
-            self.removed_traces.append(trace.copy())
+            self.removed_traces.append(trace)
         if log_event:
             self.series.addLog(trace.name, self.n, "Delete trace(s)")
     

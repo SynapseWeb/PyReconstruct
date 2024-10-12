@@ -516,8 +516,16 @@ class FieldWidgetMouse(FieldWidgetData):
                 self.setTracingTrace(
                     self.series.palette_traces[self.series.palette_index[0]][self.series.palette_index[1]]
                 )
+
+                ## NOTE: saveState is usually invoked through newTrace; however,
+                ## because this event is not logged through that function,
+                ## saveState must be called here explicitly.
+                
+                self.saveState() 
                 self.generateView()
+                
             else:
+                
                 self.update()
     
     def stampPress(self, event):
@@ -610,7 +618,7 @@ class FieldWidgetMouse(FieldWidgetData):
                     return
                 self.is_scissoring = True
                 self.deselectAllTraces()
-                self.section.deleteTraces([self.selected_trace])
+                self.section.deleteTraces([self.selected_trace], log_event=False)
                 self.generateView(generate_image=False)
                 self.current_trace = self.section_layer.traceToPix(self.selected_trace)
 

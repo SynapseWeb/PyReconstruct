@@ -478,24 +478,16 @@ class TraceLayer():
             trace_list = self.section.tracesAsList()
             
         else:
-            
-            trace_found = False
-            
-            for trace in self.section.removed_traces:
-                
-                for view_trace in self.traces_in_view:
-                    
-                    if trace.isSameTrace(view_trace):
-                        trace_found = True
-                        break
-                    
-                if trace_found and view_trace in self.traces_in_view:
-                    self.traces_in_view.remove(view_trace)
-                    
-            for trace in self.section.added_traces:
-                self.traces_in_view.append(trace)
-                
             trace_list = self.traces_in_view.copy()
+
+            # recently removed traces should be taken out of the view
+            for trace in self.section.removed_traces:
+                if trace in trace_list:
+                    trace_list.remove(trace)
+
+            # assume any recently added traces will be in view        
+            for trace in self.section.added_traces:
+                trace_list.append(trace)
         
         self.traces_in_view = []
 

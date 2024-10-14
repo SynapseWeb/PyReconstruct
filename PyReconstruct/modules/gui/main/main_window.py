@@ -54,11 +54,7 @@ class MainWindow(QMainWindow):
         ## Otherwise open welcome series
         else:
 
-            w_ser, w_secs, w_src = get_welcome_setup()
-            welcome_series = Series(w_ser, w_secs)
-            welcome_series.src_dir = w_src
-            
-            self.openSeries(series_obj=welcome_series)
+            self.openWelcomeSeries()
 
         ## Set main window as parent of progress bar
         setMainWindow(self)
@@ -71,11 +67,22 @@ class MainWindow(QMainWindow):
         ## Prompt for username
         self.changeUsername()
 
+    def openWelcomeSeries(self):
+        """Open a welcome series."""
+
+        w_ser, w_secs, w_src = get_welcome_setup()
+        welcome_series = Series(w_ser, w_secs)
+        welcome_series.src_dir = w_src
+            
+        self.openSeries(series_obj=welcome_series)
+
     def test(self) -> None:
         """Run test here."""
         
-        #print(f"{QApplication.font().pointSize() = }")
-        notify("Test message!")            
+        ##print(f"{QApplication.font().pointSize() = }")
+        ##notify("Test message!")
+
+        self.closeSeries()
 
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -2776,7 +2783,7 @@ class MainWindow(QMainWindow):
             _ = os.system('clear')
         
         self.close()
-            
+
     def closeEvent(self, event):
         """Save all data to files when the user exits."""
         response = self.saveToJser(notify=True, close=True)

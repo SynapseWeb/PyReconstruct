@@ -33,6 +33,7 @@ def return_file_menu(self):
             },
             ("open_act", "Open", self.series, self.openSeries),
             getOpenRecentMenu(self.series, self.openSeries),
+            ("close_act", "Close", "", self.openWelcomeSeries),
             None,  # None acts as menu divider
             ("save_act", "Save", self.series, self.saveToJser),
             ("saveas_act", "Save as...", "", self.saveAsToJser),

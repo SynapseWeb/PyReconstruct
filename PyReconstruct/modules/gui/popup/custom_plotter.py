@@ -18,6 +18,7 @@ from PyReconstruct.modules.datatypes import Series
 
 from .help3D import Help3DWidget
 
+from vtk import vtkOBJExporter
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 
@@ -314,7 +315,6 @@ class VPlotter(vedo.Plotter):
                 scene_obj.setAlpha(new_alpha, self.series)
         
         self.render()
-
         
     def translateSelected(self, dx : float, dy : float, dz : float):
         """Translate the selected meshes.
@@ -683,6 +683,7 @@ class VPlotter(vedo.Plotter):
         self.camera.SetFocalPoint(avg_center)
         self.render()
 
+
 class Container(QMainWindow):
 
     def closeEvent(self, event):
@@ -693,7 +694,8 @@ class Container(QMainWindow):
 class CustomPlotter(QVTKRenderWindowInteractor):
 
     def __init__(self, mainwindow, names=[], ztraces=False, load_fp=None):
-        # use container to create menubar
+
+        ## Use container to create menubar
         self.container = Container()
         super().__init__(self.container)
         self.container.setCentralWidget(self)
@@ -710,10 +712,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.undo_states = []
         self.redo_states = []
 
-        # Create vedo renderer
+        ## Create vedo renderer
         self.plt = VPlotter(self, qt_widget=self)
 
-        # create the menu bar
+        ## Create menu bar
         menubar_list = [
             {
                 "attr_name": "filemenu",
@@ -785,6 +787,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                             }
                         ]
                     },
+                    ("exportscene_act", "Export scene...", "", self.exportScene),
                     ("settrinc_act", "Set translate/rotate step...", "", self.setStep),
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
                     ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
@@ -824,11 +827,11 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 self.addToScene([], names, remove_first=False, save_state=False)
             else:
                 self.addToScene(names, [], remove_first=False, save_state=False)
-        
+                
         self.plt.show(*self.plt.actors, resetcam=(False if load_fp else None))
         self.show()
         self.container.show()
-    
+        
     def keyPressEvent(self, event : QKeyEvent):
         """Filter the keypresses to only use the allowed keys.
         
@@ -840,17 +843,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             self.plt._keypress(self, event)
         else:
             self.plt.customShortcut(event)
-    
+            
     def toggleScaleCube(self):
         """Toggle the scale cube."""
         self.plt.toggleScaleCube(
             self.togglesc_act.isChecked()
         )
-    
+        
     def moveScaleCubeHelp(self):
         """Inform the user of how to move the scale cube."""
         notify(sc_help_message)
-    
+        
     def clearScene(self):
         """Clear the scene."""
         self.undo_states = []
@@ -885,7 +888,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         else:
             with open(save_fp, "w") as f:
                 json.dump(d, f)
-    
+                
     def loadScene(self, load_fp : str = None, add_only=False):
         """Load a scene.
         
@@ -901,22 +904,22 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             )
             if not load_fp:
                 return
-        
+            
         # load the JSON file
         with open(load_fp, "r") as f:
             d = json.load(f)
-        
+            
         # clear the plot if not adding to the scene
         if not add_only:
             self.clearScene()
-        
+            
         # add the objects to the scene and match attributes
         for fp, scene_objs in d["scene_objects"]["series_fps"].items():
             series = self.series if fp == self.series.jser_fp else fp
             objs = scene_objs["objects"]
             ztraces = scene_objs["ztraces"]
             self.plt.addToScene(objs, ztraces, series=series)
-        
+            
         # add scale cube if making from new
         if not add_only:
             for sc_dict in d["scene_objects"]["scale_cubes"]:
@@ -929,10 +932,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             self.plt.camera.SetViewUp(d["camera"]["view_up"])
             self.plt.camera.SetDistance(d["camera"]["distance"])
             self.plt.show(resetcam=False)
-    
+            
     def addFromOtherSeries(self):
         """Add objects or ztrace from another series."""
-        # prompt the user for the series
+        ## Query user for the series
         jser_fp = FileDialog.get(
             "file",
             self,
@@ -942,7 +945,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         if not jser_fp:
             return
 
-        # open the series
+        ## Open other series
         series = Series.openJser(jser_fp)
 
         # get the possible traces and ztraces from the other series
@@ -964,8 +967,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         included_objs = []
         included_ztraces = []
         for requested, name_pool, included in (
-            (response[0], obj_names, included_objs),
-            (response[1], ztrace_names, included_ztraces)
+                (response[0], obj_names, included_objs),
+                (response[1], ztrace_names, included_ztraces)
         ):
             for pattern in requested:
                 for name in name_pool:
@@ -974,7 +977,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         # add to the scene
         self.plt.addToScene(included_objs, included_ztraces, series=series)
-    
+        
     def organizeScene(self):
         """Organize the scene by arranging objects in a row."""
         structure = [
@@ -993,15 +996,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         group_by_host = response[0][0][1]
         for i in range(3):
             if response[1][i][1]: axis = i
-        spacing = response[2]
+            spacing = response[2]
 
         self.plt.organizeScene(group_by_host, axis, spacing)
-    
+        
     def saveState(self):
         """Save an undo state."""
         self.undo_states.append(self.saveScene(return_dict=True))
         self.redo_states = []
-    
+        
     def loadState(self, save_state : dict, reload=False):
         """Load a previous scene state.
         
@@ -1009,15 +1012,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 save_state (dict): the state to load--exactly what is exported by saveScene
                 reload (bool): True if objects should be replaced from their series (will only act on selected objects)
         """
-        # reload the selected objects if requested
+        ## Reload (i.e., remove) selected objects if requested
         if reload:
             for obj in self.plt.selected.copy():
                 self.plt.removeSceneObj(obj)
 
-        # keep track of the ids that have been found in the file
+        ## Track IDs found in file
         checked_ids = set()
 
-        # check the objects and the ztraces
+        ## Check objects and ztraces
         series_objs_to_add = {}
         for series_fp, oz_dict in save_state["series_fps"].items():
             series_objs_to_add[series_fp] = to_add = {"objects" : [], "ztraces": []}
@@ -1025,34 +1028,34 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 for scene_obj_dict in scene_obj_list:
                     obj_id = scene_obj_dict["id"]
                     checked_ids.add(obj_id)
-                    #  keep track of object if not in scene
+                    ##  Track objects not in scene
                     if obj_id not in self.plt.objs.keys():
                         to_add[data_type].append(scene_obj_dict.copy())
-                    # directly modify object otherwise
-                    # possible things that have changed: color, alpha, and tform
+                        ## Directly modify object otherwise
+                        ## Things that can change: color, alpha, and tform
                     else:
                         scene_obj = self.plt.objs[obj_id]
                         scene_obj.setAttrs(scene_obj_dict, self.series)
-        
-        # remove objects that were not found in the save state
+                        
+        ## Remove objects not found in save state
         for obj_id in set(self.plt.objs.keys()):
             if obj_id not in checked_ids:
                 scene_obj = self.plt.objs[obj_id]
                 self.plt.removeSceneObj(scene_obj)
-        
-        # check the scale cubes
+                
+        ## Check scale cubes
         for sc_dict in save_state["scale_cubes"]:
             sc_id = sc_dict["id"]
             checked_ids.add(sc_id)
             # create scale cube if not in scene
             if sc_id not in self.plt.objs.keys():
                 self.plt.toggleScaleCube(True, sc_dict)
-            # directly modify otherwise
+                # directly modify otherwise
             else:
                 sc_obj = self.plt.objs[sc_id]
                 sc_obj.setAttrs(sc_dict, self.series)
-        
-        # add removed objects back into scene
+                
+        ## Add removed objects back to scene
         for series_fp, to_add in series_objs_to_add.items():
             series = self.series if series_fp == self.series.jser_fp else series_fp
             self.plt.addToScene(
@@ -1061,7 +1064,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 series=series,
                 save_state=False
             )
-    
+            
     def undo(self, redo=False):
         """Undo or redo a state.
         
@@ -1080,10 +1083,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         else:
             state = self.undo_states.pop()
             self.redo_states.append(current_state)
-        
+            
         self.loadState(state["scene_objects"])
         self.plt.render()
-    
+        
     def setStep(self):
         """Set the translate/rotate increments."""
         structure = [
@@ -1096,7 +1099,29 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         
         self.series.setOption("translate_step_3D", response[0])
         self.series.setOption("rotate_step_3D", response[1])
-    
+
+    def exportScene(self):
+        """Export 3D scene as an obj file."""
+
+        filename = FileDialog.get(
+            "save",
+            self,
+            "Save Screenshot",
+            "*.obj"
+        )
+
+        if not filename:
+            return
+
+        renWin = self.plt.window  # get VTK render window from vedo plot
+
+        exporter = vtkOBJExporter()
+        exporter.SetFilePrefix(filename.rsplit(".", 1)[0])
+        exporter.SetInput(renWin)
+        exporter.Write()
+
+        print(f"Scene exported to: {filename}")
+        
     def screenshot(self):
         """Save a screenshot of the scene."""
         
@@ -1116,13 +1141,13 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.plt.screenshot(filename, scale=scale_dpi)
         
         print(f"Scene export at dpi of {dpi} to: {filename}")
-    
+        
     def reload(self):
         """Reload all the objects in the scene."""
         self.mainwindow.saveAllData()
         scene_state = self.plt.objs.getExportDict()
         self.loadState(scene_state, reload=True)
-    
+        
     def closeEvent(self, event):
         self.plt.close()
         self.is_closed = True
@@ -1398,6 +1423,8 @@ possible_chars = (
     [chr(n) for n in range(97, 123)] +
     [chr(n) for n in range(48, 58)]
 )
+
+
 def generateID(existing_pool=None):
     """Generate an ID for a flag.
     
@@ -1411,6 +1438,7 @@ def generateID(existing_pool=None):
     else:
         return id
 
+
 def combineBounds(bounds, new_bounds):
     combined = []
     for ((min1, max1), (min2, max2)) in zip(bounds, new_bounds):
@@ -1420,7 +1448,7 @@ def combineBounds(bounds, new_bounds):
     return combined
 
 
-sc_help_message = """To move the scale cube, you must first select it by left-clicking it.
+sc_help_message = """To move the scale cube, left-click on it to select it.
 
 Move the scale cube in XY using the arrow keys (Up/Down/Left/Right).
 

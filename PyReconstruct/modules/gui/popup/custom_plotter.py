@@ -1191,18 +1191,12 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 print(e)
                 continue
             
-        ## Load mesh and combine into single obj file
-        all_meshes = [trimesh.load(f) for f in obj_files]
+        # ## Load mesh and combine into single obj file
+        # all_meshes = [trimesh.load(f) for f in obj_files]
+        # combined_mesh = trimesh.util.concatenate(all_meshes)
+        # combined_mesh.export("/home/michael/tmp/obj/combined.obj")
 
-        print("mesh types: ")
-        for mesh in all_meshes: print(type(mesh))
-                
-        combined_mesh = trimesh.util.concatenate(all_meshes)
-        combined_mesh.export("/home/michael/tmp/obj/combined.obj")
-
-        
-
-        ## Combine mtl files
+        ## Combine mtl (material) files
 
         combo_mtl_f = "combo_test.mtl"
         
@@ -1215,6 +1209,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
                 with f.open("r") as one_mtl:
                     mtl_combo.write(one_mtl.read() + "\n")
+
+                f.unlink()
 
         ## Combine obj files
 
@@ -1250,7 +1246,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 continue
 
             obj_lines = f.read_text().split("\n")
-            del obj_lines[0:2]  # remove first two lines
+            del obj_lines[0:2]  # remove first two lines in obj file
             
             n_verts = sum([l.startswith("v ") for l in obj_lines])
 
@@ -1264,6 +1260,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     obj_combo.write(line + "\n")
 
             line_tracker += n_verts
+
+            f.unlink()
 
     def screenshot(self):
         """Save a screenshot of the scene."""

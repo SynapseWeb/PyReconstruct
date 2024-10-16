@@ -7,6 +7,7 @@ import numpy as np
 from typing import List, Union
 from pathlib import Path
 
+import trimesh
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import Qt
@@ -1108,9 +1109,6 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         def convert_vedo_to_tm(obj):
 
-            import trimesh
-            from trimesh.visual.material import SimpleMaterial
-
             polydata = obj.msh.polydata()
             points = polydata.GetPoints()
 
@@ -1150,11 +1148,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
             return mtl_str
 
+        obj_files = []
+
         for _, obj in self.plt.objs.scene_objects.items():
 
             try:
 
-                obj_fp = export_dir / f"{obj.name}.obj"
+                obj_name = obj.name.replace(" ", "_")
+
+                obj_fp = export_dir / f"{obj_name}.obj"
                 mtl_fp = obj_fp.with_suffix(".mtl")
 
                 ## Write obj file
@@ -1167,13 +1169,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 obj_lines = obj_lines.split("\n")
 
                 obj_lines.insert(1, f"mtllib {mtl_fp.name}")
-                obj_lines.insert(2, f"o {obj.name}")
-                obj_lines.insert(3, f"usemtl {obj.name}")
+                obj_lines.insert(2, f"o {obj_name}")
+                obj_lines.insert(3, f"usemtl {obj_name}")
 
                 with obj_fp.open("w") as f:
                     
                     for line in obj_lines:
                         f.write(line + "\n")
+
+                obj_files.append(obj_fp)  # track obj files (may do this in a tmp folder instead)
 
                 ## Write mtl file
 
@@ -1186,7 +1190,81 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
                 print(e)
                 continue
+            
+        ## Load mesh and combine into single obj file
+        all_meshes = [trimesh.load(f) for f in obj_files]
+
+        print("mesh types: ")
+        for mesh in all_meshes: print(type(mesh))
+                
+        combined_mesh = trimesh.util.concatenate(all_meshes)
+        combined_mesh.export("/home/michael/tmp/obj/combined.obj")
+
         
+
+        ## Combine mtl files
+
+        combo_mtl_f = "combo_test.mtl"
+        
+        with (export_dir / combo_mtl_f).open("w") as mtl_combo:
+
+            for f in export_dir.glob("*.mtl"):
+
+                if f.name == combo_mtl_f:
+                    continue
+
+                with f.open("r") as one_mtl:
+                    mtl_combo.write(one_mtl.read() + "\n")
+
+        ## Combine obj files
+
+        combo_obj_f = "combo_test.obj"
+
+        with (export_dir / combo_obj_f).open("w") as obj_combo:
+
+            obj_intro = (
+                "# Exported from PyReconstruct 3D scene\n"
+                f"mtllib {combo_mtl_f}\n"
+            )
+
+            obj_combo.write(obj_intro)
+
+        def alter_face_indices(obj_line, add):
+            """Alter face indices when combining .obj files."""
+            
+            if not obj_line.startswith("f "):
+
+                return obj_line
+
+            line_parts = obj_line.strip().split(" ")
+
+            _, x, y, z = line_parts
+
+            return f"f {int(x) + add} {int(y) + add} {int(z) + add}"
+
+        line_tracker = 0
+
+        for f in export_dir.glob("*.obj"):
+
+            if f.name.startswith("comb"):
+                continue
+
+            obj_lines = f.read_text().split("\n")
+            del obj_lines[0:2]  # remove first two lines
+            
+            n_verts = sum([l.startswith("v ") for l in obj_lines])
+
+            obj_lines = list(
+                map(lambda elem: alter_face_indices(elem, line_tracker), obj_lines)
+            )
+
+            with (export_dir / combo_obj_f).open("a") as obj_combo:
+
+                for line in obj_lines:
+                    obj_combo.write(line + "\n")
+
+            line_tracker += n_verts
+
     def screenshot(self):
         """Save a screenshot of the scene."""
         

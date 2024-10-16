@@ -7,20 +7,24 @@ import numpy as np
 from typing import List, Union
 from pathlib import Path
 
-import trimesh
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
-from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.datatypes import Series
+from PyReconstruct.modules.backend.volume import (
+    generateVolumes,
+    convert_vedo_to_tm,
+    return_mesh_mtl,
+    combine_mtl_files,
+    combine_obj_files
+)
 
 from .help3D import Help3DWidget
 
-import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 
@@ -789,12 +793,12 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                             }
                         ]
                     },
-                    ("exportscene_act", "Export scene...", "", self.exportScene),
                     ("settrinc_act", "Set translate/rotate step...", "", self.setStep),
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
                     ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
                     None,
-                    ("screenshot_act", "Save screenshot...", "", self.screenshot),
+                    ("exportscene_act", "Export scene...", "", self.exportScene),
+                    ("screenshot_act", "Save scene screenshot...", "", self.screenshot),
                 ]
             },
             {
@@ -1105,185 +1109,26 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     def exportScene(self):
         """Export 3D scene as an obj file."""
 
-        export_dir = Path("/home/michael/tmp/obj")
+        fp = FileDialog.get(
+            "save", self, "Save scene as obj",
+            filter="*.obj",
+            file_name="scene.obj"
+        )
 
-        def convert_vedo_to_tm(obj):
+        if not fp: return
 
-            polydata = obj.msh.polydata()
-            points = polydata.GetPoints()
+        combo_obj_fp = Path(fp)
+        export_dir = combo_obj_fp.parent
 
-            ## Scale cube be different yo
-            if obj.name == "Scale Cube":
-
-                print(type(obj.msh))
-                print("scale cube points:")
-                print(points.GetData())
-
-                n_points = points.GetNumberOfPoints()
-                point_array = np.zeros((n_points, 3))
-                
-                for i in range(n_points):
-                    point_array[i] = points.GetPoint(i)
-
-                mesh = trimesh.Trimesh(
-                    vertices=point_array,
-                    prcess=False
-                )
-
-                return mesh.convex_hull
-                
-            verts = np.array(
-                [points.GetPoint(i) for i in range (points.GetNumberOfPoints())]
-            )
-
-            faces = []
-
-            for i in range(polydata.GetNumberOfCells()):
-
-                cell = polydata.GetCell(i)
-                face = [cell.GetPointId(j) for j in range(cell.GetNumberOfPoints())]
-
-                if len(face) == 3:  # make sure trianglulated
-
-                    faces.append(face)
-
-            mesh = trimesh.Trimesh(
-                vertices=verts,
-                faces=np.array(faces)
-            )
-
-            return mesh
-
-        def return_mesh_mtl(obj):
-
-            col_norm = list(
-                map(lambda x: x/255, obj.color)
-            )
-
-            mtl_str = (
-                f"newmtl {obj.name}\n"
-                f"Ka {col_norm[0]} {col_norm[1]} {col_norm[2]}\n"
-                f"Kd {col_norm[0]} {col_norm[1]} {col_norm[2]}\n"
-                f"Ks 0.5 0.5 0.5\n"
-                f"Ns 10.0\n"
-            )
-
-            return mtl_str
-
-        obj_files = []
-
-        for _, obj in self.plt.objs.scene_objects.items():
-
-            try:
-
-                obj_name = obj.name.replace(" ", "_")
-
-                obj_fp = export_dir / f"{obj_name}.obj"
-                mtl_fp = obj_fp.with_suffix(".mtl")
-
-                ## Write obj file
-
-                tm_mesh = convert_vedo_to_tm(obj)
-                tm_mesh.export(str(obj_fp))
-
-                ## Add obj meta data
-                obj_lines = obj_fp.read_text().strip()
-                obj_lines = obj_lines.split("\n")
-
-                obj_lines.insert(1, f"mtllib {mtl_fp.name}")
-                obj_lines.insert(2, f"o {obj_name}")
-                obj_lines.insert(3, f"usemtl {obj_name}")
-
-                with obj_fp.open("w") as f:
-                    
-                    for line in obj_lines:
-                        f.write(line + "\n")
-
-                obj_files.append(obj_fp)  # track generated obj files
-
-                ## Write mtl file
-
-                mtl_txt = return_mesh_mtl(obj)
-                
-                with mtl_fp.open("w") as mtl:
-                    mtl.write(mtl_txt)
-
-            except Exception as e:
-
-                print(e)
-                continue
-            
-        # ## Load mesh and combine into single obj file
-        # all_meshes = [trimesh.load(f) for f in obj_files]
-        # combined_mesh = trimesh.util.concatenate(all_meshes)
-        # combined_mesh.export("/home/michael/tmp/obj/combined.obj")
+        obj_files = self.plt.objs.exportAsObjs(export_dir)
+        mtl_files = [f.with_suffix(".mtl") for f in obj_files]
 
         ## Combine mtl (material) files
-
-        combo_mtl_f = "combo_test.mtl"
-        
-        with (export_dir / combo_mtl_f).open("w") as mtl_combo:
-
-            for f in export_dir.glob("*.mtl"):
-
-                if f.name == combo_mtl_f:
-                    continue
-
-                with f.open("r") as one_mtl:
-                    mtl_combo.write(one_mtl.read() + "\n")
-
-                f.unlink()
+        combo_mtl = combo_obj_fp.with_suffix(".mtl")
+        combine_mtl_files(mtl_files, combo_mtl)
 
         ## Combine obj files
-
-        combo_obj_f = "combo_test.obj"
-
-        with (export_dir / combo_obj_f).open("w") as obj_combo:
-
-            obj_intro = (
-                "# Exported from PyReconstruct 3D scene\n"
-                f"mtllib {combo_mtl_f}\n"
-            )
-
-            obj_combo.write(obj_intro)
-
-        def alter_face_indices(obj_line, add):
-            """Alter face indices when combining .obj files."""
-            
-            if not obj_line.startswith("f "):
-
-                return obj_line
-
-            line_parts = obj_line.strip().split(" ")
-
-            _, x, y, z = line_parts
-
-            return f"f {int(x) + add} {int(y) + add} {int(z) + add}"
-
-        line_tracker = 0
-
-        for f in export_dir.glob("*.obj"):
-
-            if f.name.startswith("comb"):
-                continue
-
-            obj_lines = f.read_text().split("\n")
-            del obj_lines[0:2]  # remove first two lines in obj file
-            
-            n_verts = sum([l.startswith("v ") for l in obj_lines])
-
-            obj_lines = list(
-                map(lambda elem: alter_face_indices(elem, line_tracker), obj_lines)
-            )
-
-            with (export_dir / combo_obj_f).open("a") as obj_combo:
-
-                for line in obj_lines:
-                    obj_combo.write(line + "\n")
-
-            line_tracker += n_verts
-
-            f.unlink()
+        combine_obj_files(obj_files, combo_obj_fp)
 
     def screenshot(self):
         """Save a screenshot of the scene."""
@@ -1574,6 +1419,56 @@ class SceneObjectList():
         
         return host_group
 
+    def exportAsObjs(self, export_dir):
+        """Export scene objects as obj and mtl files."""
+
+        obj_files = []
+
+        for _, obj in self.scene_objects.items():
+
+            try:
+
+                obj_name = obj.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
+
+                obj_fp = export_dir / f"{obj_name}.obj"
+                mtl_fp = obj_fp.with_suffix(".mtl")
+
+                ## Write obj file
+
+                tm_mesh = convert_vedo_to_tm(obj)
+                tm_mesh.export(str(obj_fp))
+
+                ## Add obj meta data
+                obj_lines = obj_fp.read_text().strip()
+                obj_lines = obj_lines.split("\n")
+
+                obj_lines.insert(1, f"mtllib {mtl_fp.name}")
+                obj_lines.insert(2, f"o {obj_name}")
+                obj_lines.insert(3, f"usemtl {obj_name}")
+
+                with obj_fp.open("w") as f:
+                    
+                    for line in obj_lines:
+                        f.write(line + "\n")
+
+                obj_files.append(obj_fp)  # track generated obj files
+
+                ## Write mtl file
+
+                mtl_txt = return_mesh_mtl(obj)
+                
+                with mtl_fp.open("w") as mtl:
+                    mtl.write(mtl_txt)
+
+            except Exception as e:
+
+                print(f"An exception occured while exporting {obj.name} from the 3D scene:")
+                print(e)
+                
+                continue
+                
+        return obj_files
+    
 
 class State3D():
 

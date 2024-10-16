@@ -1112,6 +1112,26 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             polydata = obj.msh.polydata()
             points = polydata.GetPoints()
 
+            ## Scale cube be different yo
+            if obj.name == "Scale Cube":
+
+                print(type(obj.msh))
+                print("scale cube points:")
+                print(points.GetData())
+
+                n_points = points.GetNumberOfPoints()
+                point_array = np.zeros((n_points, 3))
+                
+                for i in range(n_points):
+                    point_array[i] = points.GetPoint(i)
+
+                mesh = trimesh.Trimesh(
+                    vertices=point_array,
+                    prcess=False
+                )
+
+                return mesh.convex_hull
+                
             verts = np.array(
                 [points.GetPoint(i) for i in range (points.GetNumberOfPoints())]
             )
@@ -1136,7 +1156,9 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         def return_mesh_mtl(obj):
 
-            col_norm = list(map(lambda x: x/255, obj.color))
+            col_norm = list(
+                map(lambda x: x/255, obj.color)
+            )
 
             mtl_str = (
                 f"newmtl {obj.name}\n"
@@ -1177,7 +1199,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     for line in obj_lines:
                         f.write(line + "\n")
 
-                obj_files.append(obj_fp)  # track obj files (may do this in a tmp folder instead)
+                obj_files.append(obj_fp)  # track generated obj files
 
                 ## Write mtl file
 

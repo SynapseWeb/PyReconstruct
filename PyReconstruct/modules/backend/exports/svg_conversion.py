@@ -17,6 +17,7 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
     from svgwrite.extensions import Inkscape
 
     img_fp = section_data.src_fp
+    mag = section_data.mag
     h, w = getImgDims(section_data.src_fp)
 
     ## Create drawing
@@ -69,9 +70,9 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
             if trace.hidden:  # don't render hidden traces
                 continue
 
-            points = trace.asPixels(section_data.mag, h)
+            points = trace.asPixels(mag, h)
             color = svgwrite.rgb(*trace.color)
-            
+
             path_data = "M " + " L ".join(f"{x},{y}" for x, y in points)
 
             if trace.closed: path_data = path_data + " Z"
@@ -86,6 +87,30 @@ def export_svg(section_data, svg_fp) -> Union[str, Path]:
             )
 
             trace_layer.add(path_obj)
+
+    ## Insert scale bar
+
+    sb_length = 1  # microns 
+    px_micron = 1 // mag
+    
+    sb_w = int(sb_length * px_micron)
+    sb_h = int(sb_w * 0.2)
+
+    color = svgwrite.rgb(0, 0, 0)  # black scale bar
+    points = [(0, 0), (0, sb_h), (sb_w, sb_h), (sb_w, 0)]
+    
+    path_data = "M " + " L ".join(f"{x},{y}" for x, y in points) + " Z"
+
+    path_obj = dwg.path(
+                d=path_data,
+                id="scale_bar",
+                stroke=color,
+                stroke_width=0,
+                fill=color,
+                fill_opacity=1.0
+            )
+
+    trace_layer.add(path_obj)
 
     ## Add layers to drawing
     dwg.add(image_layer)

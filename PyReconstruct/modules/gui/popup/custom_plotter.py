@@ -5,6 +5,7 @@ import vedo
 import json
 import numpy as np
 from typing import List, Union
+from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QKeyEvent
@@ -12,9 +13,15 @@ from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
-from PyReconstruct.modules.backend.volume import generateVolumes
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.datatypes import Series
+from PyReconstruct.modules.backend.volume import (
+    generateVolumes,
+    convert_vedo_to_tm,
+    return_mesh_mtl,
+    combine_mtl_files,
+    combine_obj_files
+)
 
 from .help3D import Help3DWidget
 
@@ -314,7 +321,6 @@ class VPlotter(vedo.Plotter):
                 scene_obj.setAlpha(new_alpha, self.series)
         
         self.render()
-
         
     def translateSelected(self, dx : float, dy : float, dz : float):
         """Translate the selected meshes.
@@ -683,6 +689,7 @@ class VPlotter(vedo.Plotter):
         self.camera.SetFocalPoint(avg_center)
         self.render()
 
+
 class Container(QMainWindow):
 
     def closeEvent(self, event):
@@ -693,7 +700,8 @@ class Container(QMainWindow):
 class CustomPlotter(QVTKRenderWindowInteractor):
 
     def __init__(self, mainwindow, names=[], ztraces=False, load_fp=None):
-        # use container to create menubar
+
+        ## Use container to create menubar
         self.container = Container()
         super().__init__(self.container)
         self.container.setCentralWidget(self)
@@ -710,10 +718,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.undo_states = []
         self.redo_states = []
 
-        # Create vedo renderer
+        ## Create vedo renderer
         self.plt = VPlotter(self, qt_widget=self)
 
-        # create the menu bar
+        ## Create menu bar
         menubar_list = [
             {
                 "attr_name": "filemenu",
@@ -789,7 +797,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
                     ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
                     None,
-                    ("screenshot_act", "Save screenshot...", "", self.screenshot),
+                    ("exportscene_act", "Export scene...", "", self.exportScene),
+                    ("screenshot_act", "Save scene screenshot...", "", self.screenshot),
                 ]
             },
             {
@@ -824,11 +833,11 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 self.addToScene([], names, remove_first=False, save_state=False)
             else:
                 self.addToScene(names, [], remove_first=False, save_state=False)
-        
+                
         self.plt.show(*self.plt.actors, resetcam=(False if load_fp else None))
         self.show()
         self.container.show()
-    
+        
     def keyPressEvent(self, event : QKeyEvent):
         """Filter the keypresses to only use the allowed keys.
         
@@ -840,17 +849,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             self.plt._keypress(self, event)
         else:
             self.plt.customShortcut(event)
-    
+            
     def toggleScaleCube(self):
         """Toggle the scale cube."""
         self.plt.toggleScaleCube(
             self.togglesc_act.isChecked()
         )
-    
+        
     def moveScaleCubeHelp(self):
         """Inform the user of how to move the scale cube."""
         notify(sc_help_message)
-    
+        
     def clearScene(self):
         """Clear the scene."""
         self.undo_states = []
@@ -885,7 +894,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         else:
             with open(save_fp, "w") as f:
                 json.dump(d, f)
-    
+                
     def loadScene(self, load_fp : str = None, add_only=False):
         """Load a scene.
         
@@ -901,22 +910,22 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             )
             if not load_fp:
                 return
-        
+            
         # load the JSON file
         with open(load_fp, "r") as f:
             d = json.load(f)
-        
+            
         # clear the plot if not adding to the scene
         if not add_only:
             self.clearScene()
-        
+            
         # add the objects to the scene and match attributes
         for fp, scene_objs in d["scene_objects"]["series_fps"].items():
             series = self.series if fp == self.series.jser_fp else fp
             objs = scene_objs["objects"]
             ztraces = scene_objs["ztraces"]
             self.plt.addToScene(objs, ztraces, series=series)
-        
+            
         # add scale cube if making from new
         if not add_only:
             for sc_dict in d["scene_objects"]["scale_cubes"]:
@@ -929,10 +938,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
             self.plt.camera.SetViewUp(d["camera"]["view_up"])
             self.plt.camera.SetDistance(d["camera"]["distance"])
             self.plt.show(resetcam=False)
-    
+            
     def addFromOtherSeries(self):
         """Add objects or ztrace from another series."""
-        # prompt the user for the series
+        ## Query user for the series
         jser_fp = FileDialog.get(
             "file",
             self,
@@ -942,7 +951,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         if not jser_fp:
             return
 
-        # open the series
+        ## Open other series
         series = Series.openJser(jser_fp)
 
         # get the possible traces and ztraces from the other series
@@ -964,8 +973,8 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         included_objs = []
         included_ztraces = []
         for requested, name_pool, included in (
-            (response[0], obj_names, included_objs),
-            (response[1], ztrace_names, included_ztraces)
+                (response[0], obj_names, included_objs),
+                (response[1], ztrace_names, included_ztraces)
         ):
             for pattern in requested:
                 for name in name_pool:
@@ -974,7 +983,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         # add to the scene
         self.plt.addToScene(included_objs, included_ztraces, series=series)
-    
+        
     def organizeScene(self):
         """Organize the scene by arranging objects in a row."""
         structure = [
@@ -993,15 +1002,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         group_by_host = response[0][0][1]
         for i in range(3):
             if response[1][i][1]: axis = i
-        spacing = response[2]
+            spacing = response[2]
 
         self.plt.organizeScene(group_by_host, axis, spacing)
-    
+        
     def saveState(self):
         """Save an undo state."""
         self.undo_states.append(self.saveScene(return_dict=True))
         self.redo_states = []
-    
+        
     def loadState(self, save_state : dict, reload=False):
         """Load a previous scene state.
         
@@ -1009,15 +1018,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 save_state (dict): the state to load--exactly what is exported by saveScene
                 reload (bool): True if objects should be replaced from their series (will only act on selected objects)
         """
-        # reload the selected objects if requested
+        ## Reload (i.e., remove) selected objects if requested
         if reload:
             for obj in self.plt.selected.copy():
                 self.plt.removeSceneObj(obj)
 
-        # keep track of the ids that have been found in the file
+        ## Track IDs found in file
         checked_ids = set()
 
-        # check the objects and the ztraces
+        ## Check objects and ztraces
         series_objs_to_add = {}
         for series_fp, oz_dict in save_state["series_fps"].items():
             series_objs_to_add[series_fp] = to_add = {"objects" : [], "ztraces": []}
@@ -1025,34 +1034,34 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 for scene_obj_dict in scene_obj_list:
                     obj_id = scene_obj_dict["id"]
                     checked_ids.add(obj_id)
-                    #  keep track of object if not in scene
+                    ##  Track objects not in scene
                     if obj_id not in self.plt.objs.keys():
                         to_add[data_type].append(scene_obj_dict.copy())
-                    # directly modify object otherwise
-                    # possible things that have changed: color, alpha, and tform
+                        ## Directly modify object otherwise
+                        ## Things that can change: color, alpha, and tform
                     else:
                         scene_obj = self.plt.objs[obj_id]
                         scene_obj.setAttrs(scene_obj_dict, self.series)
-        
-        # remove objects that were not found in the save state
+                        
+        ## Remove objects not found in save state
         for obj_id in set(self.plt.objs.keys()):
             if obj_id not in checked_ids:
                 scene_obj = self.plt.objs[obj_id]
                 self.plt.removeSceneObj(scene_obj)
-        
-        # check the scale cubes
+                
+        ## Check scale cubes
         for sc_dict in save_state["scale_cubes"]:
             sc_id = sc_dict["id"]
             checked_ids.add(sc_id)
             # create scale cube if not in scene
             if sc_id not in self.plt.objs.keys():
                 self.plt.toggleScaleCube(True, sc_dict)
-            # directly modify otherwise
+                # directly modify otherwise
             else:
                 sc_obj = self.plt.objs[sc_id]
                 sc_obj.setAttrs(sc_dict, self.series)
-        
-        # add removed objects back into scene
+                
+        ## Add removed objects back to scene
         for series_fp, to_add in series_objs_to_add.items():
             series = self.series if series_fp == self.series.jser_fp else series_fp
             self.plt.addToScene(
@@ -1061,7 +1070,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                 series=series,
                 save_state=False
             )
-    
+            
     def undo(self, redo=False):
         """Undo or redo a state.
         
@@ -1080,10 +1089,10 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         else:
             state = self.undo_states.pop()
             self.redo_states.append(current_state)
-        
+            
         self.loadState(state["scene_objects"])
         self.plt.render()
-    
+        
     def setStep(self):
         """Set the translate/rotate increments."""
         structure = [
@@ -1096,7 +1105,33 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         
         self.series.setOption("translate_step_3D", response[0])
         self.series.setOption("rotate_step_3D", response[1])
-    
+
+    def exportScene(self):
+        """Export 3D scene as an obj file."""
+
+        fp = FileDialog.get(
+            "save", self, "Save scene as obj",
+            filter="*.obj",
+            file_name="scene.obj"
+        )
+
+        if not fp: return
+
+        combo_obj_fp = Path(fp)
+        export_dir = combo_obj_fp.parent
+
+        obj_files = self.plt.objs.exportAsObjs(export_dir)
+        mtl_files = [f.with_suffix(".mtl") for f in obj_files]
+
+        ## Combine mtl (material) files
+        combo_mtl = combo_obj_fp.with_suffix(".mtl")
+        combine_mtl_files(mtl_files, combo_mtl)
+
+        ## Combine obj files
+        combine_obj_files(obj_files, combo_obj_fp)
+
+        notify(f"Scene exported to:\n\n{combo_obj_fp.absolute()}")
+
     def screenshot(self):
         """Save a screenshot of the scene."""
         
@@ -1116,13 +1151,13 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.plt.screenshot(filename, scale=scale_dpi)
         
         print(f"Scene export at dpi of {dpi} to: {filename}")
-    
+        
     def reload(self):
         """Reload all the objects in the scene."""
         self.mainwindow.saveAllData()
         scene_state = self.plt.objs.getExportDict()
         self.loadState(scene_state, reload=True)
-    
+        
     def closeEvent(self, event):
         self.plt.close()
         self.is_closed = True
@@ -1240,13 +1275,18 @@ class SceneObject():
         if "color" in attrs_dict: self.setColor(attrs_dict["color"])
         if "alpha" in attrs_dict: self.setAlpha(attrs_dict["alpha"], series)
         if "tform" in attrs_dict: self.applyTform(attrs_dict["tform"])
-
     
     @property
     def bounds(self):
         b = self.msh.bounds()
         return [(b[i], b[i+1]) for i in range(0, len(b), 2)]
 
+    @property
+    def obj_file_data(self):
+        """Get vertices and faces formatted as Wavefront obj file."""
+
+        pass
+        
 
 class SceneObjectList():
 
@@ -1381,6 +1421,56 @@ class SceneObjectList():
         
         return host_group
 
+    def exportAsObjs(self, export_dir):
+        """Export scene objects as obj and mtl files."""
+
+        obj_files = []
+
+        for _, obj in self.scene_objects.items():
+
+            try:
+
+                obj_name = obj.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
+
+                obj_fp = export_dir / f"{obj_name}.obj"
+                mtl_fp = obj_fp.with_suffix(".mtl")
+
+                ## Write obj file
+
+                tm_mesh = convert_vedo_to_tm(obj)
+                tm_mesh.export(str(obj_fp))
+
+                ## Add obj meta data
+                obj_lines = obj_fp.read_text().strip()
+                obj_lines = obj_lines.split("\n")
+
+                obj_lines.insert(1, f"mtllib {mtl_fp.name}")
+                obj_lines.insert(2, f"o {obj_name}")
+                obj_lines.insert(3, f"usemtl {obj_name}")
+
+                with obj_fp.open("w") as f:
+                    
+                    for line in obj_lines:
+                        f.write(line + "\n")
+
+                obj_files.append(obj_fp)  # track generated obj files
+
+                ## Write mtl file
+
+                mtl_txt = return_mesh_mtl(obj)
+                
+                with mtl_fp.open("w") as mtl:
+                    mtl.write(mtl_txt)
+
+            except Exception as e:
+
+                print(f"An exception occured while exporting {obj.name} from the 3D scene:")
+                print(e)
+                
+                continue
+                
+        return obj_files
+    
 
 class State3D():
 
@@ -1398,6 +1488,8 @@ possible_chars = (
     [chr(n) for n in range(97, 123)] +
     [chr(n) for n in range(48, 58)]
 )
+
+
 def generateID(existing_pool=None):
     """Generate an ID for a flag.
     
@@ -1411,6 +1503,7 @@ def generateID(existing_pool=None):
     else:
         return id
 
+
 def combineBounds(bounds, new_bounds):
     combined = []
     for ((min1, max1), (min2, max2)) in zip(bounds, new_bounds):
@@ -1420,11 +1513,12 @@ def combineBounds(bounds, new_bounds):
     return combined
 
 
-sc_help_message = """To move the scale cube, you must first select it by left-clicking it.
+sc_help_message = """To move the scale cube, left-click on it to select it.
 
 Move the scale cube in XY using the arrow keys (Up/Down/Left/Right).
 
 Move the scale cube in Z using Ctrl+Up/Down."""
+
 
 def distance(pt1 : tuple, pt2 : tuple):
     """Calculate the distance between two points."""
@@ -1432,6 +1526,7 @@ def distance(pt1 : tuple, pt2 : tuple):
     for n1, n2 in zip(pt1, pt2):
         s += (n2 - n1)**2
     return s ** (1/2)
+
 
 def avgPt(pts : list):
     """Get the average of a set of points."""
@@ -1444,8 +1539,10 @@ def avgPt(pts : list):
         avg[i] = n / len(pts)
     return avg
 
+
 def getShift(mat):
     return (mat[0, 3], mat[1, 3], mat[2, 3])
+
 
 def getZYXRot(mat):
     R = mat[:3, :3]

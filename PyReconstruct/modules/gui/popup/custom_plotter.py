@@ -5,6 +5,7 @@ import vedo
 import json
 import numpy as np
 from typing import List, Union
+from pathlib import Path
 
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QKeyEvent
@@ -18,7 +19,7 @@ from PyReconstruct.modules.datatypes import Series
 
 from .help3D import Help3DWidget
 
-from vtk import vtkOBJExporter
+import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 
@@ -1103,24 +1104,88 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     def exportScene(self):
         """Export 3D scene as an obj file."""
 
-        filename = FileDialog.get(
-            "save",
-            self,
-            "Save Screenshot",
-            "*.obj"
-        )
+        export_dir = Path("/home/michael/tmp/obj")
 
-        if not filename:
-            return
+        def convert_vedo_to_tm(obj):
 
-        renWin = self.plt.window  # get VTK render window from vedo plot
+            import trimesh
+            from trimesh.visual.material import SimpleMaterial
 
-        exporter = vtkOBJExporter()
-        exporter.SetFilePrefix(filename.rsplit(".", 1)[0])
-        exporter.SetInput(renWin)
-        exporter.Write()
+            polydata = obj.msh.polydata()
+            points = polydata.GetPoints()
 
-        print(f"Scene exported to: {filename}")
+            verts = np.array(
+                [points.GetPoint(i) for i in range (points.GetNumberOfPoints())]
+            )
+
+            faces = []
+
+            for i in range(polydata.GetNumberOfCells()):
+
+                cell = polydata.GetCell(i)
+                face = [cell.GetPointId(j) for j in range(cell.GetNumberOfPoints())]
+
+                if len(face) == 3:  # make sure trianglulated
+
+                    faces.append(face)
+
+            mesh = trimesh.Trimesh(
+                vertices=verts,
+                faces=np.array(faces)
+            )
+
+            return mesh
+
+        def return_mesh_mtl(obj):
+
+            col_norm = list(map(lambda x: x/255, obj.color))
+
+            mtl_str = (
+                f"newmtl {obj.name}\n"
+                f"Ka {col_norm[0]} {col_norm[1]} {col_norm[2]}\n"
+                f"Kd {col_norm[0]} {col_norm[1]} {col_norm[2]}\n"
+                f"Ks 0.5 0.5 0.5\n"
+                f"Ns 10.0\n"
+            )
+
+            return mtl_str
+
+        for _, obj in self.plt.objs.scene_objects.items():
+
+            try:
+
+                obj_fp = export_dir / f"{obj.name}.obj"
+                mtl_fp = obj_fp.with_suffix(".mtl")
+
+                ## Write obj file
+
+                tm_mesh = convert_vedo_to_tm(obj)
+                tm_mesh.export(str(obj_fp))
+
+                ## Add obj meta data
+                obj_lines = obj_fp.read_text().strip()
+                obj_lines = obj_lines.split("\n")
+
+                obj_lines.insert(1, f"mtllib {mtl_fp.name}")
+                obj_lines.insert(2, f"o {obj.name}")
+                obj_lines.insert(3, f"usemtl {obj.name}")
+
+                with obj_fp.open("w") as f:
+                    
+                    for line in obj_lines:
+                        f.write(line + "\n")
+
+                ## Write mtl file
+
+                mtl_txt = return_mesh_mtl(obj)
+                
+                with mtl_fp.open("w") as mtl:
+                    mtl.write(mtl_txt)
+
+            except Exception as e:
+
+                print(e)
+                continue
         
     def screenshot(self):
         """Save a screenshot of the scene."""
@@ -1265,13 +1330,18 @@ class SceneObject():
         if "color" in attrs_dict: self.setColor(attrs_dict["color"])
         if "alpha" in attrs_dict: self.setAlpha(attrs_dict["alpha"], series)
         if "tform" in attrs_dict: self.applyTform(attrs_dict["tform"])
-
     
     @property
     def bounds(self):
         b = self.msh.bounds()
         return [(b[i], b[i+1]) for i in range(0, len(b), 2)]
 
+    @property
+    def obj_file_data(self):
+        """Get vertices and faces formatted as Wavefront obj file."""
+
+        pass
+        
 
 class SceneObjectList():
 

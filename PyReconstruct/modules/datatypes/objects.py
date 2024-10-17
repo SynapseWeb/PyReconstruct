@@ -26,7 +26,7 @@ class Objects():
         """Export a CSV containing the quantitative data for all objects.
         
             Params:
-                out_fp (str): the filepath for the newly created CSV (function returns str if filepath not provided)
+                out_fp (str): filepath for newly created CSV (function returns str if filepath not provided)
         """
         sep = "|"
         
@@ -35,6 +35,7 @@ class Objects():
         out_str += f"Curation_Date{sep}Alignment{sep}Comment\n"
 
         for obj_name in sorted(self.series.data["objects"].keys()):
+            
             out_str += f"{obj_name}{sep}"
             out_str += f"{self.series.data.getStart(obj_name)}{sep}"
             out_str += f"{self.series.data.getEnd(obj_name)}{sep}"
@@ -45,6 +46,7 @@ class Objects():
             out_str += f"{':'.join(self.series.data.getTags(obj_name))}{sep}"
             out_str += f"{self.series.getAttr(obj_name, 'last_user')}{sep}"
             curation = self.series.getAttr(obj_name, "curation")
+
             if curation:
                 status, user, date = tuple(curation)
                 if status:
@@ -53,17 +55,23 @@ class Objects():
                     status = "Needs Curation"
             else:
                 status = user = date = ""
+
             out_str += f"{status}{sep}{user}{sep}{date}{sep}"
+
             alignment = self.series.getAttr(obj_name, "alignment")
             if not alignment: alignment = ""
             out_str += f"{alignment}{sep}"
-            out_str += f"{self.series.getAttr(obj_name, 'comment')}\n"
+
+            ## Remove seperator from comments
+            comments = self.series.getAttr(obj_name, "comment").replace(sep, "_")
+            out_str += comments + "\n"
             
         if out_fp:
+            
             with open(out_fp, "w") as f:
                 f.write(out_str)
-        else:
-            return out_str
+
+        return out_str
 
 class SeriesObject():
 

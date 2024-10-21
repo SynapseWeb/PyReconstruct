@@ -317,6 +317,9 @@ def return_view_menu(self):
         "text": "View",
         "opts":
         [
+            ("copyscreen_act", "Copy view to clipboard", "", lambda : self.saveFieldView(False)),
+            ("copyscreen_act", "Save view to file", "", lambda : self.saveFieldView(True)),
+            None,
             ("changetheme_act", "Change theme", "", self.setTheme),
             None,
             ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),

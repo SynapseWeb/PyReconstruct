@@ -82,8 +82,8 @@ class MainWindow(QMainWindow):
         ##print(f"{QApplication.font().pointSize() = }")
         ##notify("Test message!")
 
-        self.closeSeries()
-
+        print("test!")
+        
     def createMenuBar(self):
         """Create the menu for the main window."""
         menu = return_menubar(self)
@@ -2771,6 +2771,71 @@ class MainWindow(QMainWindow):
 
         self.field.reload()
     
+    def saveFieldView(self, save_to_file=False) -> None:
+        """Export mainwindow to clipboard."""
+
+        exported_image = QImage(
+            self.rect().width(),
+            self.rect().height(),
+            QImage.Format_ARGB32
+        )
+        
+        exported_image.fill(Qt.transparent)
+
+        ## Draw base image
+        with QPainter(exported_image) as painter:
+
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+            painter.drawImage(
+                exported_image.rect(),
+                QImage(self.field.section.src_fp),
+                self.rect()
+            )
+
+        ## Capture paint events in a separate step
+        temp_pixmap = QPixmap(exported_image.size())
+        temp_pixmap.fill(Qt.transparent)
+
+        with QPainter(temp_pixmap) as temp_painter:
+            
+            # Call the widget's paint method and replay paint events
+            self.render(
+                temp_painter,
+                QPoint(0, 0),  # target position
+                QRegion(self.rect()),  # source region
+                QWidget.RenderFlag.DrawChildren | QWidget.RenderFlag.DrawWindowBackground
+            )
+
+        ## Combine layers
+        with QPainter(exported_image) as painter:
+            painter.drawPixmap(0, 0, temp_pixmap)
+
+        if save_to_file:
+
+            fp = FileDialog.get(
+                "save",
+                self,
+                "Field view",
+                file_name="field.png",
+                filter="*.tif, *.tiff, *.jpeg, *jgp, *.png"
+            )
+            
+            if not fp: return False
+            
+            exported_image.save(fp)
+
+        else:
+            
+            ## Create clipboard and set
+            clipboard = QApplication.clipboard()
+        
+            clipboard.setPixmap(
+                QPixmap.fromImage(exported_image)
+            )
+
+        return None
+
     def restart(self):
         self.restart_mainwindow = True
 

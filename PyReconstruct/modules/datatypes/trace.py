@@ -23,25 +23,30 @@ class Trace():
                 color (tuple): the color of the trace: (R, G, B) 0-255
                 closed (bool): True if trace is closed
         """
-        self.name = name
-        self.color = color
-        self.closed = closed
-        self.negative = False
-        self.points = []
-        self.hidden = False  # default to False
-        self.tags = set()
-        self.fill_mode = ("none", "none")
+        self.name       = name
+        self.color      = color
+        self.closed     = closed
+        self.negative   = False
+        self.points     = []
+        self.hidden     = False
+        self.tags       = set()
+        self.fill_mode  = ("none", "none")
     
     @property
     def name(self):
         return self._name
 
-    @name.setter  # prevent unusual whitespace in names
+    @name.setter
     def name(self, value):
+        """Replace whitespace and commas with underscores."""
+        
         assert (value is None or type(value) is str)
+
         if value is not None:
+            
             value = value.strip()
-            value = "_".join(value.split()).replace(",", "_")  # replace all whitespace and commas with underscores
+            value = "_".join(value.split()).replace(",", "_")
+            
         self._name = value
     
     def copy(self):
@@ -50,10 +55,12 @@ class Trace():
             Returns:
                 (Trace): a copy of the object
         """
+        
         copy_trace = Trace("", [0,0,0])
         copy_trace.__dict__ = self.__dict__.copy()
         copy_trace.points = self.points.copy()
         copy_trace.tags = self.tags.copy()
+
         return copy_trace
     
     def add(self, point : tuple):
@@ -67,8 +74,7 @@ class Trace():
     def asPixels(self, mag: float, img_height: int):
         """Return points as a list of (x, y) pixels."""
 
-        points_as_pixs = point_list_2_pix(self.points, mag, img_height)
-        return points_as_pixs
+        return point_list_2_pix(self.points, mag, img_height)
 
     def isSameTrace(self, other) -> bool:
         """Check if traces have the same name, color, and points.

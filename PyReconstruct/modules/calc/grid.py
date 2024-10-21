@@ -27,7 +27,10 @@ class Grid():
         ymax = max([y.max() for y in yvals])
 
         # create an empty grid
-        self.grid = np.array(np.zeros((ymax-ymin+2, xmax-xmin+2)), dtype="int")
+        self.grid = np.array(
+            np.zeros((ymax-ymin+2, xmax-xmin+2)),
+            dtype="int"
+        )
 
         # draw knife line on grid if applicable
         if self.cutline is not None:
@@ -172,12 +175,20 @@ class Grid():
             Returns:
                 (list) the exterior of the trace(s) (also represented as lists)
         """
-        cv_traces, hierarchy = cv2.findContours(self.grid.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+        cv_traces, hierarchy = cv2.findContours(
+            self.grid.astype(np.uint8),
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_NONE
+        )
+        
         traces = []
+        
         for trace in cv_traces:
             new_trace = self.getAnchorTrace(trace[:,0,:])
             new_trace += self.grid_shift
             traces.append(new_trace.tolist())
+            
         return traces
 
     def getInteriors(self) -> list:

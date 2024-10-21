@@ -10,19 +10,29 @@ from typing import List, Union
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QMainWindow, 
+    QMainWindow,
+    QWidget,
     QInputDialog, 
     QApplication,
     QMessageBox, 
     QMenu
 )
+
 from PySide6.QtGui import (
     QKeySequence,
     QShortcut,
     QPixmap,
-    QAction
+    QAction,
+    QImage,
+    QPainter,
+    QRegion
 )
-from PySide6.QtCore import Qt, QSettings
+
+from PySide6.QtCore import (
+    Qt,
+    QPoint,
+    QSettings
+)
 
 from .field_widget import FieldWidget
 

@@ -56,6 +56,7 @@ will be ignored."""
 tip_conflicts = """When this option is checked, traces that have not been
 resolved through overlap or history will be flagged."""
 
+
 def addTip(widget : QWidget, tip_text : str):
     """Add a tip to a widget with text.
     
@@ -85,41 +86,59 @@ class ImportSeriesDialog(QDialog):
         vlayout = QVBoxLayout()
         vlayout.setSpacing(10)
 
-        # generate the import widgets
+        ## Create import widgets
         import_widgets = []
         self.responses = {}
 
-        # trace
+        ## Trace tab
         import_widgets.append(("traces", ImportTracesWidget(self, series, other)))
 
-        # ztrace
+        # ## Group tab
+        # structure = [
+        #     ["Restrict to importing object in groups:"],
+        #     [("multicombo", list(other.object_groups.getGroupList()), [], False)]
+        # ]
+        
+        # import_widgets.append(("groups", ImportWidget(self, structure)))
+
+        ## Z-trace tab
         structure = [
-            ["Ztrace regex filters:"],
+            ["Z-trace regex filters:"],
             [("multicombo", list(other.ztraces.keys()), [], False)],
             [("check", ("Import z-trace groups", True))]
         ]
+
         import_widgets.append(("z-traces", ImportWidget(self, structure)))
 
-        # flags
+        ## Flags tab
         sections = list(series.sections.keys())
+        
         structure = [
-            ["From section", ("int", min(sections), sections), "to", ("int", max(sections), sections), " "]
+            [
+                "From section",
+                ("int", min(sections), sections),
+                "to",
+                ("int", max(sections), sections),
+                " "
+            ]
         ]
+
         import_widgets.append(("flags", ImportWidget(self, structure)))
 
-        # object attributes
+        ## Obj attrs tab
         structure = [
             [("check",
-              ("Import object groups", False),
-              ("Import object hosts", False),
-              ("Import user columns ", False),
-              ("Import z-trace groups", False),
-              ("Import misc object attributes\n(includes 3D settings, alignment, curation, etc.)", False),
+              ("Object groups", False),
+              ("Hosts", False),
+              ("User columns ", False),
+              ("Z-trace groups", False),
+              ("Misc object attributes\n(3D settings, alignments, curation, etc.)", False),
             )]
         ]
+
         import_widgets.append(("attributes", ImportWidget(self, structure)))
 
-        # alignments
+        ## Alignments tab
         import_widgets.append((
             "alignments",
             MultiImportAs(
@@ -130,7 +149,7 @@ class ImportSeriesDialog(QDialog):
             )
         ))
 
-        # palettes
+        ## Palettes tab
         import_widgets.append((
             "palettes",
             MultiImportAs(
@@ -141,7 +160,7 @@ class ImportSeriesDialog(QDialog):
             )
         ))
 
-        # bc profiles
+        ## BC profiles tab
         import_widgets.append((
             "brightness/contrast profiles",
             MultiImportAs(
@@ -152,7 +171,7 @@ class ImportSeriesDialog(QDialog):
             )
         ))
 
-        # tabs for different import widgets
+        ## Tabs for different import widgets
         tabs = QTabWidget(self)
         for name, widget in import_widgets:
             vl = QVBoxLayout()
@@ -184,14 +203,21 @@ class ImportSeriesDialog(QDialog):
     def accept(self):
         """Run when user clicks OK."""
         self.responses = {}
+        
         for name, import_widget in self.import_widgets.items():
+            
             import_widget : QWidget
+            
             if not import_widget.isEnabled():
                 continue
+            
             response, confirmed = import_widget.getResponse()
+
             if not confirmed:
                 return
+            
             self.responses[name] = response
+
         super().accept()
 
     def exec(self):
@@ -201,6 +227,7 @@ class ImportSeriesDialog(QDialog):
             return self.responses, True
         else:
             return None, False
+
 
 class ImportTracesWidget(QWidget):
 
@@ -217,18 +244,12 @@ class ImportTracesWidget(QWidget):
 
         vlayout = QVBoxLayout()
         vlayout.setSpacing(10)
+        
         top_hlayout = QHBoxLayout()
         top_vlayout1 = QVBoxLayout()
         top_vlayout2 = QVBoxLayout()
 
-        # # series filepath
-        # hlayout = QHBoxLayout()
-        # hlayout.addWidget(QLabel(self, text="Series:"))
-        # self.series_fp = BrowseWidget(self, filter="*.jser")
-        # hlayout.addWidget(self.series_fp)
-        # vlayout.addLayout(hlayout)
-
-        # section range
+        ## Section range
         snums = list(series.sections.keys())
         smin = min(snums)
         smax = max(snums)
@@ -244,26 +265,26 @@ class ImportTracesWidget(QWidget):
         hlayout.addStretch()
         top_vlayout1.addLayout(hlayout)
 
-        # check series histories checkbox
+        ## Check series histories checkbox
         self.check_histories = QCheckBox(self, text="Check series histories")
         addTip(self.check_histories, tip_history)
         top_vlayout1.addSpacing(10)
         top_vlayout1.addWidget(self.check_histories)
 
-        # flag conflicts checkbox
+        ## Flag conflicts checkbox
         self.flag_conflicts = QCheckBox(self, text="Flag conflicts")
         addTip(self.flag_conflicts, tip_conflicts)
         self.flag_conflicts.setChecked(True)
         top_vlayout1.addSpacing(5)
         top_vlayout1.addWidget(self.flag_conflicts)
 
-        # import object attributes checkbox
+        ## Import object attrs checkbox
         self.import_attrs = QCheckBox(self, text="Import object attributes")
         self.import_attrs.setChecked(True)
         top_vlayout1.addSpacing(5)
         top_vlayout1.addWidget(self.import_attrs)
 
-        # object regex filters
+        ## Object regex filters
         top_vlayout2.addWidget(QLabel(self, text="Object regex filters:"))
         self.regex_filters = MultiInput(
             self,
@@ -274,20 +295,37 @@ class ImportTracesWidget(QWidget):
         )
         top_vlayout2.addWidget(self.regex_filters)
 
-        # arrange layouts for the top of the dialog
+        top_vlayout2.addWidget(
+            QLabel(self, text="Restrict to obj groups:")
+        )
+
+        self.group_filters = MultiInput(
+            self,
+            entries=[],
+            combo=True,
+            combo_items=other.object_groups.getGroupList(),
+            restrict_to_opts=False
+        )
+
+        top_vlayout2.addWidget(self.group_filters)
+
+        ## Arrange layouts for top of dialog
+        
         w1 = BorderedWidget(self)
         w1.setLayout(top_vlayout1)
         top_hlayout.addWidget(w1)
+        
         w2 = BorderedWidget(self)
         w2.setLayout(top_vlayout2)
         top_hlayout.addWidget(w2)
+
         vlayout.addLayout(top_hlayout)
 
-        # create container widget for overlap-related parameters
+        ## Create container widget for overlap-related parameters
         container = BorderedWidget(self)
         cvlayout = QVBoxLayout()
 
-        # overlap threshold text
+        ## Overlap threshold text
         hlayout = QHBoxLayout()
         lbl = QLabel(self ,text="Overlap threshold:")
         addTip(lbl, tip_overlap)
@@ -297,7 +335,7 @@ class ImportTracesWidget(QWidget):
         hlayout.addStretch()
         cvlayout.addLayout(hlayout)
 
-        # overlap threshold slider
+        ## Overlap threshold slider
         slider = QSlider(Qt.Horizontal, self)
         slider.setMinimum(0)
         slider.setMaximum(100)
@@ -305,7 +343,7 @@ class ImportTracesWidget(QWidget):
         slider.setValue(50)
         cvlayout.addWidget(slider)
 
-        # radio button options
+        ## Radio button options
         hlayout = QHBoxLayout()
         vl1 = QVBoxLayout()
         vl1.addWidget(QLabel(
@@ -388,30 +426,39 @@ class ImportTracesWidget(QWidget):
     def getResponse(self):
         """Get the response from the user."""
         if self.accept():
+
             keep_above = "self"  # establish defaults (redundant)
             keep_below = ""
+
             i = self.above_threshold.getSelectedIndex()
+
             if i == 0: keep_above = "self"
             elif i == 1: keep_above = "other"
             elif i == 2: keep_above = ""
+
             i = self.below_threshold.getSelectedIndex()
             if i == 0: keep_below = "self"
             elif i == 1: keep_below = "other"
             elif i == 2: keep_below = ""
 
-            return (
+            response = (
                 (int(self.smin.text()), int(self.smax.text()) + 1),
                 self.regex_filters.getEntries(),
+                self.group_filters.getEntries(),
                 float(self.overlap_threshold.text()),
                 self.flag_conflicts.isChecked(),
                 self.check_histories.isChecked(),
                 self.import_attrs.isChecked(),
                 keep_above,
                 keep_below,
-            ), True
+            )
+
+            return response, True
         
         else:
+            
             return None, False
+
 
 class ImportWidget(QWidget):
 
@@ -445,6 +492,7 @@ class ImportWidget(QWidget):
             return tuple(self.responses), True
         else:
             return None, False
+
 
 class ImportAs(QWidget):
 

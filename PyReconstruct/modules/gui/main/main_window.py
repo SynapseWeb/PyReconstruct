@@ -2642,6 +2642,7 @@ class MainWindow(QMainWindow):
             (
                 srange,
                 regex_filters,
+                group_filters,
                 threshold,
                 flag_conflicts,
                 check_history,
@@ -2653,7 +2654,8 @@ class MainWindow(QMainWindow):
             self.series.importTraces(
                 o_series, 
                 srange, 
-                regex_filters, 
+                regex_filters,
+                group_filters,
                 threshold, 
                 flag_conflicts, 
                 check_history,

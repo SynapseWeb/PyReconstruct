@@ -1310,14 +1310,14 @@ class Series():
         if log_event:
             self.addLog(None, None, f"{'Hide' if hidden else 'Unhide'} all traces in series")
     
-    def importObjectGroups(self, other, regex_filters=[]):
+    def importObjectGroups(self, other, regex_filters=[], group_filters=[]):
         """Import the object groups from another series.
         
             Params:
                 other (Series): the other series
                 regex_filters (list): the regex filters for the objects to include
         """
-        self.object_groups.merge(other.object_groups, regex_filters)
+        self.object_groups.merge(other.object_groups, regex_filters, group_filters)
     
     def importZtraceGroups(self, other, regex_filters=[]):
         """Import the ztrace groups from another series.
@@ -1328,16 +1328,18 @@ class Series():
         """
         self.ztrace_groups.merge(other.ztrace_groups, regex_filters)
     
-    def importHostTree(self, other, regex_filters=[]):
+    def importHostTree(self, other, regex_filters=[], restrict_to=[]):
         """Import the host tree from another series.
         
             Params:
                 other (Series): the other series
-                regex_filters (list): the regex filters for the objects to include
+                regex_filters (list): regex filters for objects
+                group_filters (list): group filters for objects
         """
-        self.host_tree.merge(other.host_tree, regex_filters)
+            
+        self.host_tree.merge(other.host_tree, regex_filters, restrict_to)
     
-    def importUserCols(self, other, regex_filters=[]):
+    def importUserCols(self, other, regex_filters=[], restrict_to=[]):
         """Import user columns."""
         # import the user columns
         merged_user_columns = updateDictLists(
@@ -1349,6 +1351,10 @@ class Series():
 
         # import the user column object attributes
         for obj_name, obj_data in other.obj_attrs.items():
+
+            if restrict_to and obj_name not in restrict_to:
+                continue
+            
             if obj_name not in self.data["objects"]:
                 continue
 
@@ -1374,15 +1380,19 @@ class Series():
                         ## is there a better way to handle this?
                         self_uc[name] = value
     
-    def importObjAttrs(self, other, regex_filters=[]):
+    def importObjAttrs(self, other, regex_filters=[], restrict_to=[]):
         """Import the object attributes from another series.
         
             Params:
                 other (Series): the other series
                 regex_filters (list): the regex filters for the objects to include
         """
-        # import the object attributes
+
         for obj_name, obj_data in other.obj_attrs.items():
+
+            if restrict_to and obj_name not in restrict_to:
+                continue
+            
             if obj_name not in self.data["objects"]:
                 continue
 
@@ -1412,9 +1422,11 @@ class Series():
                         self.obj_attrs[obj_name]["curation"] = attr_value
     
     def importTraces(
-            self, other, 
+            self,
+            other, 
             srange : tuple = None, 
-            regex_filters : list = [], 
+            regex_filters : list = [],
+            group_filters : list = [],
             threshold : float = 0.95, 
             flag_conflicts : bool = True,
             check_history : bool = True,
@@ -1428,7 +1440,8 @@ class Series():
             Params:
                 other (Series): the series to import from
                 srange (tuple): the range of sections to include in import (exclusive)
-                regex_filters (list): the filters for the objects to import
+                regex_filters (list): regex filters for objects
+                group_filters (list): group filters for objects
                 threshold (float): the overlap threshold
                 remove_old_overlaps (bool): True if old traces overlapping new traces should be removed
                 flag_conflicts (bool): True if conflicts should be flagged
@@ -1443,10 +1456,10 @@ class Series():
         # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
         #     return
         
-        # supress logging for object creation
+        ## Supress logging for object creation
         self.data.supress_logging = True
 
-        # get the current date and time for tagging
+        ## Get current date and time for tagging
         d, t = getDateTime()
         dt_str = d + "-" + t
         
@@ -1459,29 +1472,53 @@ class Series():
             message="Importing traces...",
             series_states=series_states
         ):
-            if (
-                snum not in range(*srange) or 
-                snum not in other.sections
-            ):  # skip if section is not requested or does not exist in other series
+            ## Skip if section not requested or does not exist in other series
+            skip = snum not in range(*srange) or snum not in other.sections
+            
+            if skip: 
                 continue
-            print("loading section", snum)
+            
             o_section = other.loadSection(snum)  # other section
             histories_param = histories if check_history else None  # skip history if checking is not requested
-            section.importTraces(o_section, regex_filters, threshold, flag_conflicts, histories_param, keep_above, keep_below, dt_str)
+
+            section.importTraces(
+                o_section,
+                regex_filters,
+                group_filters,
+                threshold,
+                flag_conflicts,
+                histories_param,
+                keep_above,
+                keep_below,
+                dt_str
+            )
         
-        # unsupress logging for object creation
+        ## Un-supress logging for object creation
         self.data.supress_logging = False
 
-        # import ALL object attributes
-        if import_obj_attrs:
-            self.importObjectGroups(other, regex_filters)
-            self.importHostTree(other, regex_filters)
-            self.importObjAttrs(other, regex_filters)
-            self.importUserCols(other, regex_filters)
+        ## Restrict object if with group filters
+        restrict_to = []  # empty = no additional restrictions
+        
+        if group_filters:
 
-        # import the history
+            other_groups = other.object_groups.getGroupDict()
+            
+            for gf in group_filters:
+                restrict_to += other_groups[gf]
+
+        ## Import ALL object attributes
+        if import_obj_attrs:
+            
+            self.importObjectGroups(other, regex_filters, group_filters)
+            self.importHostTree(other, regex_filters, restrict_to)
+            self.importObjAttrs(other, regex_filters, restrict_to)
+            self.importUserCols(other, regex_filters, restrict_to)
+
+        ## Import history
         if log_event:
+            
             self.addLog(None, None, "Begin importing traces from another series")
+
             histories.importLogs(
                 self,
                 traces=True,
@@ -1489,6 +1526,7 @@ class Series():
                 srange=srange,
                 regex_filters=regex_filters
             )
+            
             self.addLog(None, None, "Finish importing traces from another series")
         
         self.save()

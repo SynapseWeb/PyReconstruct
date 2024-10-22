@@ -132,15 +132,24 @@ class ObjGroupDict():
         """Get a list of objects."""
         return list(self.objects.keys())
     
-    def merge(self, other, regex_filters=[]):
+    def merge(self, other, regex_filters=[], group_filters=[]):
         """Merge other object group dict into self."""
+        
         for obj in other.getObjectList():
+            
             if self.contain_type == "objects" and obj not in self.series.data["objects"]:
                 continue
+            
             elif self.contain_type == "ztraces" and obj not in self.series.ztraces:
                 continue
+            
             if passesFilters(obj, regex_filters):
+                
                 for group in other.getObjectGroups(obj):
+                    
+                    if group_filters and group not in group_filters:
+                        continue
+                    
                     self.add(group, obj)
     
     def copy(self):

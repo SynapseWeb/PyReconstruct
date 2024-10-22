@@ -877,18 +877,21 @@ class Section():
     def importTraces(
             self, 
             other,
-            regex_filters=[], 
-            threshold : float = 0.95, 
-            flag_conflicts : bool = True, 
-            histories : LogSetPair = None, 
-            keep_above : str = "self",
-            keep_below : str = "",
-            dt_str : str = None):
+            regex_filters: list=[],
+            group_filters: list=[],
+            threshold : float=0.95, 
+            flag_conflicts : bool=True, 
+            histories : LogSetPair=None, 
+            keep_above : str="self",
+            keep_below : str="",
+            dt_str : str=None
+    ):
         """Import the traces from another section.
         
             Params:
                 other (Section): the section with traces to import
-                regex_filters (list): the list of regex filters for objects
+                regex_filters (list): regex filters for objects
+                group_filters (list): group filters for objects
                 threshold (float): the overlap threshold
                 flag_conflicts (bool): True if conflicts should be flagged
                 histories (LogSetPair): the self history and the other history
@@ -896,29 +899,58 @@ class Section():
                 keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 dt_str (str): the datetime string for tagging purposes
         """
-        all_contour_names = list(set(self.contours.keys()) | set(other.contours.keys()))
-        mags_match = abs(other.mag - self.mag) <= 1e-8
 
+        all_contour_names = list(
+            set(self.contours.keys()) | set(other.contours.keys())
+        )
+
+        if group_filters:
+
+            other_groups = other.series.object_groups.getGroupDict()
+        
         for cname in all_contour_names:
-            # check filters, skip if does not pass
-            passes_filters = False if regex_filters else True
-            for rf in regex_filters:
-                if bool(re.fullmatch(rf, cname)):
-                    passes_filters = True
-            if not passes_filters:
-                continue
 
-            # flag as modified
+            if regex_filters:
+
+                passes_filter = False
+
+                for rf in regex_filters:
+                
+                    if bool(re.fullmatch(rf, cname)):
+                        passes_filter = True
+
+                if not passes_filter:
+
+                    continue
+
+            if group_filters:
+
+                passes_filter = False
+
+                for gf in group_filters:
+
+                    if cname in other_groups[gf]:
+                        passes_filter = True
+
+                if not passes_filter:
+
+                    continue
+
+            ## Flag as modified
             self.modified_contours.add(cname)
 
-            # create an empty contour if does not exist
+            ## Create empty contour if does not exist
             if cname not in self.contours:
                 self.contours[cname] = Contour(cname, [])
+                
             if cname not in other.contours:
                 other.contours[cname] = Contour(cname, [])
             
-            # adjust the contours on the other series to match the magnification of the current series
+            ## Adjust contours in other series to match current series mag
+            mags_match = abs(other.mag - self.mag) <= 1e-8
+
             if not mags_match:
+                
                 for trace in other.contours[cname]:
                     trace.magScale(other.mag, self.mag)
 

@@ -162,7 +162,7 @@ class HostTree():
                     stack.append(n)
         return host_group
     
-    def merge(self, other, regex_filters=None):
+    def merge(self, other, regex_filters=None, restrict_to=[]):
         """Merge two host trees together.
         
             Params:
@@ -170,9 +170,14 @@ class HostTree():
                 regex_filters (list): the list of regex filters required to pass
         """
         for obj_name, d in other.objects.items():
+
+            if restrict_to and obj_name not in restrict_to:
+                    continue
+
+            
             if (
-                obj_name not in self.series.data["objects"] or
-                not passesFilters(obj_name, regex_filters)
+                    obj_name not in self.series.data["objects"] or
+                    not passesFilters(obj_name, regex_filters)
             ):
                 continue
 

@@ -23,6 +23,7 @@ from PySide6.QtGui import (
     QAction
 )
 
+from PyReconstruct.modules.gui.utils import get_clicked
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.constants import locations as loc
 
@@ -184,9 +185,7 @@ class FieldWidget(QWidget, FieldWidgetView):
         Overwritten from QWidget class.
         """
         # check what was clicked
-        self.lclick = Qt.LeftButton in event.buttons()
-        self.rclick = Qt.RightButton in event.buttons()
-        self.mclick = Qt.MiddleButton in event.buttons()
+        self.lclick, self.mclick, self.rclick = get_clicked(event)
 
         # ignore middle clicks combined with other clicks
         if self.mclick and (self.lclick or self.rclick):

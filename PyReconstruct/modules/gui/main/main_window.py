@@ -2817,7 +2817,7 @@ class MainWindow(QMainWindow):
                 "save",
                 self,
                 "Field view",
-                file_name="field.png",
+                file_name=f"field_sec_{self.series.current_section}.png",
                 filter="*.tif, *.tiff, *.jpeg, *jgp, *.png"
             )
             
@@ -2835,6 +2835,33 @@ class MainWindow(QMainWindow):
             )
 
         return None
+
+    def addScaleBar(self):
+        """Add scale bar to the field."""
+
+        structure = [
+            ["Width (μm):", (True, "float", 2.0), " "],
+            ["Height (μm):", (True, "float", 0.2), " "]
+        ]
+
+        response, confirmed = QuickDialog.get(
+            self, structure, "Scale bar settings"
+        )
+        
+        if not confirmed:
+            return
+
+        w, h = response
+        
+        scale_bar_trace = Trace.get_scale_bar()
+        pix_x, pix_y = get_center_pixel(self)
+
+        self.field.placeGrid(
+            pix_x, pix_y,
+            scale_bar_trace,
+            w, h, 0, 0, 1, 1,
+            scale_bar=True
+        )
 
     def restart(self):
         self.restart_mainwindow = True
@@ -2863,4 +2890,6 @@ qdark_addon = """
 QPushButton {border: 1px solid transparent}
 QComboBox {padding-right: 40px}
 """
-# QTableWidget:item:alternate {background-color: #222C36;}  # removed because it overrides the background color of qtablewidgetitems
+
+## Removed following as it overrides background color of qtablewidgetitems
+## QTableWidget:item:alternate {background-color: #222C36;}  

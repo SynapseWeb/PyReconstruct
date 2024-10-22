@@ -79,7 +79,8 @@ from PyReconstruct.modules.gui.utils import (
     getOpenRecentMenu,
     customExcepthook,
     get_screen_info,
-    get_welcome_setup
+    get_welcome_setup,
+    get_center_pixel
 )
 from PyReconstruct.modules.gui.table import (
     HistoryTableWidget,
@@ -117,6 +118,7 @@ from PyReconstruct.modules.backend.remote import (
 
 from PyReconstruct.modules.datatypes import (
     Series,
+    Trace,
     Transform,
     Flag
 )

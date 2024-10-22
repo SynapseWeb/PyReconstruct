@@ -546,6 +546,20 @@ class Trace():
 
         return intersect_area / union_area
 
+    @staticmethod
+    def get_scale_bar():
+        """Return a scale bar trace object."""
+
+        ## Initialize trace
+        scale_bar_trace = Trace("scale_bar", color=(0, 0, 0))
+
+        ## Add attrs
+        scale_bar_trace.points = [
+            (0, 0), (0, 0.2), (2, 0.2), (2, 0)
+        ]
+        scale_bar_trace.fill_mode = ("solid", "always")
+
+        return scale_bar_trace
 
 def convertMode(arg):
     """Translate between Reconstruct and PyReconstruct fill modes."""

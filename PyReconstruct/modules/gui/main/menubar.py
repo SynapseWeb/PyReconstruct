@@ -51,8 +51,8 @@ def return_file_menu(self):
                 "text": "Backup",
                 "opts":
                 [
+                    ("manualbackup_act", "Backup now...", self.series, self.manualBackup),
                     ("setbackup_act", "Settings...", "", self.setBackup),
-                    ("manualbackup_act", "Backup with comment...", self.series, self.manualBackup),
                 ]
             },
             {
@@ -91,7 +91,7 @@ def return_edit_menu(self):
             ("pasteattributes_act", "Paste attributes", self.series, self.field.pasteAttributes),
             None,
             ("pastetopalette_act", "Paste attributes to palette", self.series, self.pasteAttributesToPalette),
-            ("pastetopalettewithshape_act", "Paste attributes to palette (include shape)", self.series, lambda : self.pasteAttributesToPalette(True)),
+            ("pastetopalettewithshape_act", "Paste attributes to palette (+shape)", self.series, lambda : self.pasteAttributesToPalette(True)),
             None,
             {
                 "attr_name": "bcmenu",
@@ -171,7 +171,7 @@ def return_series_menu(self):
                 "opts":
                 [
                     ("calibrate_act", "Calibrate pixel size...", "", self.calibrateMag),
-                    ("setmag_act", "Manually set magnification...", "", self.setSeriesMag),
+                    ("setmag_act", "Manually set pixel mag...", "", self.setSeriesMag),
                 ]
             },
             {
@@ -211,6 +211,7 @@ def return_section_menu(self):
             ("flicker_act", "Flicker section", self.series, self.flickerSections),
             None,
             ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
+            ("addscalebar", "Add scalebar...", "", self.addScaleBar),
             {
                 "attr_name": "exportsecmenu",
                 "text": "Export section",
@@ -276,7 +277,7 @@ def return_alignments_menu(self):
             },
             None,
             ("unlocksection_act", "Unlock current section", self.series, self.field.unlockSection),
-            ("changetform_act", "Change transformation", self.series, self.changeTform),
+            ("changetform_act", "Edit transformation", self.series, self.changeTform),
             ("linearalign_act", "Estimate affine transform", "", self.field.affineAlign),
             # ("quickalign_act", "Auto-align", "Ctrl+\\", self.field.quickAlign)
         ]
@@ -326,7 +327,7 @@ def return_view_menu(self):
             None,
             ("homeview_act", "Set view to image", "Home", self.field.home),
             ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
-            ("findview_act", "Set zoom for finding contours...", "", self.setFindZoom),
+            ("findview_act", "Set zoom when finding contours...", "", self.setFindZoom),
             None,
             ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
             None,

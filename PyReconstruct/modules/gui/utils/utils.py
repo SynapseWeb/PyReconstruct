@@ -46,6 +46,35 @@ def get_screen_info(screen: QScreen) -> dict:
     return screen_info
 
 
+def get_window_size(window) -> tuple:
+    """Return width and height of the mainwindow."""
+    
+    return (
+        window.size().width(),
+        window.size().height()
+    )
+
+
+def get_center_pixel(window) -> tuple:
+    """Return the center pixel of the mainwindow."""
+
+    width, height = get_window_size(window)
+
+    return width // 2, height // 2
+
+
+def get_clicked(event) -> tuple:
+    """Return L, M, and R mouse clicks."""
+
+    buttons = event.buttons()
+    
+    return (
+        Qt.LeftButton in buttons,
+        Qt.MiddleButton in buttons,
+        Qt.RightButton in buttons
+    )
+
+
 def get_welcome_setup() -> tuple:
     """Return welcome series setup."""
 

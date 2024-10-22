@@ -21,7 +21,10 @@ from .utils import (
     getAlignmentsMenu,
     getOpenRecentMenu,
     get_welcome_setup,
-    getGroupsMenu
+    getGroupsMenu,
+    get_clicked,
+    get_window_size,
+    get_center_pixel
 )
 from .str_helper import sortList, lessThan
 from .completer_box import CompleterBox

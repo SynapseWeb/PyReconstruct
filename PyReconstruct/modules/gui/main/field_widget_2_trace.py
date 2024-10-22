@@ -564,7 +564,8 @@ class FieldWidgetTrace(FieldWidgetBase):
         ref_trace : Trace,
         w : float, h : float,
         dx : float, dy : float,
-        nx : int, ny : int):
+        nx : int, ny : int,
+        scale_bar: bool=False):
         """Place a grid on the field.
         
             Params:
@@ -578,12 +579,15 @@ class FieldWidgetTrace(FieldWidgetBase):
                 nx (int): the number of columns
                 ny (int): the number of rows
         """
-        # get mouse coords and convert to field coords
-        field_x, field_y = pixmapPointToField(pix_x, pix_y, self.pixmap_dim, self.series.window, self.section.mag)
+        ## Get mouse coords and convert to field coords
+        field_x, field_y = pixmapPointToField(
+            pix_x, pix_y, self.pixmap_dim, self.series.window, self.section.mag
+        )
+            
         origin = field_x + w/2, field_y - h/2
 
-        # create custom trace if using the sampling grid
-        if self.series.getOption("sampling_frame_grid"):
+        ## Create custom trace if creating sampling grid
+        if self.series.getOption("sampling_frame_grid") and not scale_bar:
             n = 0.5
             nw, nh = n * w, n * h
             exc_points = [

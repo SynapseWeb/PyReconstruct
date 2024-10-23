@@ -5,7 +5,7 @@ from .context_menu_list import get_context_menu_list_trace
 from PySide6.QtWidgets import QInputDialog
 
 from PyReconstruct.modules.datatypes import Trace, Flag
-from PyReconstruct.modules.calc import pixmapPointToField
+from PyReconstruct.modules.calc import pixmapPointToField, rolling_average
 from PyReconstruct.modules.gui.dialog import (
     QuickDialog,
     FlagDialog,
@@ -410,7 +410,16 @@ class FieldWidgetTrace(FieldWidgetBase):
         return wrapper
     
     @field_interaction
-    def newTrace(self, trace_points : list, base_trace : Trace, points_as_pix=True, closed=True, reduce_points=True, log_event=True):
+    def newTrace(
+            self,
+            trace_points : list,
+            base_trace : Trace,
+            points_as_pix=True,
+            closed=True,
+            reduce_points=True,
+            log_event=True,
+            simplify=False
+    ):
         """Create a new trace from pixel coordinates.
         
             Params:
@@ -419,17 +428,44 @@ class FieldWidgetTrace(FieldWidgetBase):
                 points_as_pix (bool): True if points provided are in screen pixel coords (False if field coords)
                 closed (bool): whether or not the new trace is closed
                 reduce_points (bool): True if points should be simplified
+                simplify (bool): True if points should be further simplifed
                 log_event (bool): True if action should be logged
         """
         if len(trace_points) < 2:  # do not create a new trace if there is only one point
             return False
+
+        if simplify:
+
+            window = self.series.getOption("roll_window")
+            
+            if window %2 == 0:
+                window += 1
+
+            if len(trace_points) <= window:
+
+                pass
+
+            else:
+                
+                trace_points = rolling_average(trace_points, window, circular=closed, as_int=True)            
         
         # simplify if requested
         if reduce_points:
+            
             if closed:
+                
                 trace_points = getExterior(trace_points)  # get exterior if closed (will reduce points)
+                
             else:
+
                 trace_points = reducePoints(trace_points, closed=False)  # only reduce points if trace is open
+
+        # if simplify:
+
+        #     from simplification.cutil import simplify_coords_vw
+        #     print(f"\nn_original = {len(trace_points)}")
+        #     trace_points = simplify_coords_vw(trace_points, 100)
+        #     print(f"\nn_new = {len(trace_points)}")
 
         # create the new trace
         new_trace = base_trace.copy()

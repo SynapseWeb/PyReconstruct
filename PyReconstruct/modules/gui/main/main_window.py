@@ -953,8 +953,10 @@ class MainWindow(QMainWindow):
     
     def changeTraceMode(self):
         """Change the trace mode and shape."""
+
         current_shape = self.field.closed_trace_shape
         current_mode = self.series.getOption("trace_mode")
+
         structure = [
             ["Mode:"],
             [("radio",
@@ -968,29 +970,40 @@ class MainWindow(QMainWindow):
                 ("Rectangle", current_shape == "rect"),
                 ("Ellipse", current_shape == "circle")
             )],
-            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))]
+            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))],
+            [("check", ("Apply rolling average while scribbling", self.series.getOption("roll_average"))),
+             ("int", self.series.getOption("roll_window"))]
         ]
+
         response, confirmed = QuickDialog.get(self, structure, "Closed Trace Mode")
+
         if not confirmed:
             return
         
         if response[0][0][1]:
             new_mode = "scribble"
+
         elif response[0][1][1]:
             new_mode = "poly"
+
         else:
             new_mode = "combo"
         
         if response[1][1][1]:
             new_shape = "rect"
+
         elif response[1][2][1]:
             new_shape = "circle"
+
         else:
             new_shape = "trace"
         
         self.series.setOption("trace_mode", new_mode)
         self.field.closed_trace_shape = new_shape
+        
         self.series.setOption("auto_merge", response[2][0][1])
+        self.series.setOption("roll_average", response[3][0][1])
+        self.series.setOption("roll_window", response[4])
 
     def changeTracingTrace(self, trace):
         """Change the trace utilized by the user.

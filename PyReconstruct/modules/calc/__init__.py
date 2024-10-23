@@ -15,7 +15,8 @@ from .quantification import (
     linesIntersect,
     lineIntersectsContour,
     colorize,
-    ellipseFromPair
+    ellipseFromPair,
+    rolling_average
 )
 from .feret import (
     feret

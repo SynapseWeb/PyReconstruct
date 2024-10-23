@@ -25,8 +25,8 @@ class FieldWidgetMouse(FieldWidgetData):
     """
     MOUSE FUNCTIONS
     ---------------
-    These functions are the functions directly called when
-    the user performs actions with the mouse in the field.
+    These functions are directly called when user performs mouse actions
+    in the field.
     """
 
     def setMouseMode(self, mode : int):
@@ -224,31 +224,38 @@ class FieldWidgetMouse(FieldWidgetData):
     def pointerRelease(self, event):
         """Called when mouse is released in pointer mode."""
 
-        # user single-clicked
+        ## User single-clicked
         if self.lclick and self.isSingleClicking():
-            # if user selected a label id
+            
+            ## If user selected a label id
             if self.zarr_layer and self.zarr_layer.selectID(
                 self.mouse_x, self.mouse_y
             ):
                 self.generateView(update=False)
-            # if user selected a trace
+                
+            ## If user selected a trace
             elif self.selected_trace:
-                # if user selected a normal trace
+                
+                ## normal trace selected
                 if self.selected_type == "trace":
                     if not self.series.getAttr(self.selected_trace.name, "locked"):
                         self.selectTrace(self.selected_trace)
-                # if user selected a ztrace
+                        
+                ## z-trace selected
                 elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
-                # if user selected a flag
+                    
+                ## flag selected
                 elif self.selected_type == "flag":
                     self.selectFlag(self.selected_trace)
         
-        # user moved traces
+        ## User moved traces
         elif self.lclick and self.is_moving_trace:
-            # unhide the traces
+            
+            ## Unhide traces
             self.section.temp_hide = []
-            # save the traces in their final position
+            
+            ## Save traces in final position
             self.is_moving_trace = False
             dx = (event.x() - self.clicked_x) * self.series.screen_mag
             dy = (event.y() - self.clicked_y) * self.series.screen_mag * -1
@@ -256,8 +263,9 @@ class FieldWidgetMouse(FieldWidgetData):
             self.generateView(update=False)
             self.saveState()
         
-        # user selected an area (lasso) of traces
+        ## User selected an area (lasso) of traces
         elif self.lclick and self.is_selecting_traces:
+            
             self.is_selecting_traces = False
             self.deactivateMouseBoundaryTimer()
             selected_traces = self.section_layer.getTraces(self.current_trace)
@@ -399,14 +407,18 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def tracePress(self, event):
         """Called when mouse is pressed in trace mode."""
+        
         if self.is_line_tracing:
+            
             self.linePress(event)
+            
         else:
+            
             self.last_x = event.x()
             self.last_y = event.y()
             self.current_trace = [(self.last_x, self.last_y)]
 
-        # start line tracing of only trace mode set
+        ## Start line tracing of only trace mode set
         trace_mode = self.series.getOption("trace_mode")
         if trace_mode == "poly":
             self.is_line_tracing = True
@@ -415,24 +427,32 @@ class FieldWidgetMouse(FieldWidgetData):
 
     def traceMove(self, event):
         """Called when mouse is moved in trace mode."""
+        
         if self.is_line_tracing:
+            
             self.update()
+            
         else:
+            
             self.pencilMove(event)
     
     def traceRelease(self, event):
         """Called when mouse is released in trace mode."""
+        
         trace_mode = self.series.getOption("trace_mode")
-        # user is already line tracing
+
+        ## User is already line tracing
         if self.is_line_tracing:
             self.lineRelease(event)
-        # user decided to line trace (in combo trace_mode)
+
+        ## User decided to line trace (in combo trace_mode)
         elif trace_mode == "combo" and self.isSingleClicking():
             self.current_trace = [self.current_trace[0]]
             self.is_line_tracing = True
             self.activateMouseBoundaryTimer()
             self.mainwindow.checkActions()
-        # user is not line tracing
+
+        ## User is not line tracing
         elif not self.is_line_tracing:
             self.pencilRelease(event)
 
@@ -445,9 +465,13 @@ class FieldWidgetMouse(FieldWidgetData):
             # draw trace on pixmap
             x = event.x()
             y = event.y()
+            
             if self.closed_trace_shape == "trace" or self.mouse_mode == OPENTRACE:
+                
                 self.current_trace.append((x, y))
+                
             elif self.closed_trace_shape == "rect":
+                
                 x1, y1 = self.current_trace[0]
                 self.current_trace = [
                     (x1, y1),
@@ -455,10 +479,14 @@ class FieldWidgetMouse(FieldWidgetData):
                     (x, y),
                     (x1, y)
                 ]
+                
             elif self.closed_trace_shape == "circle":
+                
                 self.current_trace = ellipseFromPair(self.clicked_x, self.clicked_y, x, y)
+                
             self.last_x = x
             self.last_y = y
+            
             self.update()
 
     def pencilRelease(self, event):
@@ -467,16 +495,22 @@ class FieldWidgetMouse(FieldWidgetData):
         Completes and adds trace.
         """
         closed = (self.mouse_mode == CLOSEDTRACE)
+        
         if self.lclick:
+            
             if len(self.current_trace) < 2:
                 return
+
             self.newTrace(
                 self.current_trace,
                 self.tracing_trace,
-                closed=closed
+                closed=closed,
+                simplify=self.series.getOption("roll_average")
             )
+            
             if closed and len(self.current_trace) > 2:
                 self.autoMerge()
+                
             self.current_trace = []
     
     def linePress(self, event):
@@ -492,6 +526,7 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def lineRelease(self, event=None, override=False, log_event=True):
         """Called when mouse is released in line mode."""
+        
         if override or self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
             closed = (self.mouse_mode == CLOSEDTRACE)
             self.is_line_tracing = False

@@ -26,6 +26,7 @@ def area(pts : list) -> float:
         s += x[i]*y[i+1] - x[i+1]*y[i]
     return abs(s/2)
 
+
 def centroid(pts : list) -> tuple:
     """Find the location of centroid.
     
@@ -54,6 +55,7 @@ def centroid(pts : list) -> tuple:
         y_avg = sum([p[1] for p in pts])/len(pts)
         return round(x_avg, 6), round(y_avg, 6)
 
+
 def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     """Calculate Euclidean distance between two points in 2D space.
     
@@ -67,6 +69,7 @@ def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     """
     dist = ((x1-x2)**2 + (y1-y2)**2) ** 0.5
     return dist
+
 
 def distance3D(x1 : float, y1 : float, z1 : float, x2 : float, y2 : float, z2 : float) -> float:
     """Calculate Euclidean distance between two points in 3D space.
@@ -83,6 +86,7 @@ def distance3D(x1 : float, y1 : float, z1 : float, x2 : float, y2 : float, z2 : 
     """
     dist = ((x1-x2)**2 + (y1-y2)**2 + (z2-z1)**2) ** 0.5
     return dist
+
 
 def lineDistance(pts : list, closed=True) -> float:
     """Calculate distance along multi-vertex line.
@@ -109,6 +113,7 @@ def lineDistance(pts : list, closed=True) -> float:
         dist += point_dist
     return round(dist, 7)
 
+
 def sigfigRound(n : float, sf : int) -> float:
     """Round a float to a specified number of significant figures.
     
@@ -123,6 +128,7 @@ def sigfigRound(n : float, sf : int) -> float:
     greatest_place = math.floor(math.log(abs(n))/math.log(10))
     return round(n, sf - (greatest_place+1))
 
+
 def getDistanceFromTrace(x : float, y: float, trace : list, factor=1.0, absolute=True):
     """Find the distance a point is from a given trace (uses opencv).
     
@@ -135,6 +141,7 @@ def getDistanceFromTrace(x : float, y: float, trace : list, factor=1.0, absolute
     """
     pp_test = cv2.pointPolygonTest((np.array(trace) * factor).astype(int), (x * factor, y * factor), measureDist=True)
     return abs(pp_test / factor) if absolute else pp_test / factor
+
 
 def pointInPoly(x : float, y: float, trace : list) -> bool:
     """Find if a point is in a given trace (uses opencv).
@@ -149,6 +156,7 @@ def pointInPoly(x : float, y: float, trace : list) -> bool:
     pp_test = cv2.pointPolygonTest(np.array(trace).astype(int), (x, y), measureDist=False)
     return pp_test >= 0
 
+
 def ccwpoly(pts):
     s = 0
     for i in range(len(pts)):
@@ -157,13 +165,16 @@ def ccwpoly(pts):
         s += (x2 - x1) * (y2 + y1)
     return s < 0
 
+
 # source: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
 def ccw(A,B,C):
     return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
+
 def linesIntersect(A, B, C, D):
     """Return true if line segments AB and CD intersect."""
     return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
 
 def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
     p1 = (x1, y1)
@@ -179,6 +190,7 @@ def lineIntersectsContour(x1, y1, x2, y2, contour, closed=True):
             return True
     return False
 
+
 def colorize(n):
     cn = (n % 156) ** 3
     c = [0, 0, 0]
@@ -186,6 +198,7 @@ def colorize(n):
         c[i] = cn % 156 + 100
         cn //= 156
     return c
+
 
 def ellipseFromPair(x1, y1, x2, y2, number=100):
     """Create an ellipse from two points in space."""
@@ -204,3 +217,82 @@ def ellipseFromPair(x1, y1, x2, y2, number=100):
         ))
     
     return ellipse
+
+
+def pad_points(points, padding):
+    """Add padding to a circular list of points."""
+
+    if padding==0:
+
+        return points
+
+    indices = np.arange(len(points))
+    
+    half_window = padding // 2
+
+    padded_indices = np.concatenate([
+        indices[-padding:],
+        indices,
+        indices[:padding]
+    ], axis=0)
+
+    return [points[i] for i in list(padded_indices)]
+
+
+def rolling_average(points, window, circular=True, as_int=False):
+
+    n_points = len(points)
+    points = np.asarray(points)
+    
+    if window %2 == 0:
+        raise ValueError("Window size must be odd")
+
+    half_window = window // 2
+
+    smooth = [0] * n_points  # empty
+
+    if circular:  # close traces
+        
+        points = np.asarray(
+            pad_points(points, half_window)
+        )
+
+        for i in range(half_window, n_points + half_window):
+
+            start = i - half_window
+            end = i + half_window + 1
+        
+            mean = np.mean(
+                points[start:end],
+                axis=0
+            )
+        
+            smooth[start] = (
+                round(mean[0], 5),
+                round(mean[1], 5)
+            )
+
+    else:  # open traces
+
+        for i in range(n_points):
+
+            if i < half_window or i > (n_points - half_window - 1):
+                
+                smooth[i] = points[i]
+                continue
+
+            mean = np.mean(
+                points[i:i+half_window+1],
+                axis=0
+            )
+
+            smooth[i] = (
+                round(mean[0], 5),
+                round(mean[1], 5)
+            )
+
+    if as_int:
+
+        return [(int(elem[0]), int(elem[1])) for elem in smooth]
+
+    return smooth

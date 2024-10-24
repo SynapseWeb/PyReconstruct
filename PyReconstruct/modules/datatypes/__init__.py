@@ -5,6 +5,7 @@ from .contour import Contour
 from .trace import Trace
 from .ztrace import Ztrace
 from .flag import Flag
+from .points import Points
 
 from .obj_group_dict import ObjGroupDict
 

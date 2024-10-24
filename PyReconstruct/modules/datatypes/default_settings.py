@@ -61,7 +61,7 @@ default_settings = {
     "pointer": ["lasso", "exc"],  # MFO
     "auto_merge": False,  # MFO
     "roll_average": False,
-    "roll_window": 20,
+    "roll_window": 10,
     "trace_mode": "combo",  # combo, poly, scribble  # MFO
     "knife_del_threshold": 1.0,  # MFO
     "grid": [1, 1, 1, 1, 1, 1],  # MFO

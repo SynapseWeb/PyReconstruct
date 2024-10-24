@@ -1006,7 +1006,7 @@ class MainWindow(QMainWindow):
         self.series.setOption("roll_window", response[4])
 
     def changeTracingTrace(self, trace):
-        """Change the trace utilized by the user.
+        """Change trace utilized by the user.
 
         Called when user clicks on trace palette.
 
@@ -1023,6 +1023,7 @@ class MainWindow(QMainWindow):
                 save (bool): saves data to files if True
         """
         if section_num is None:
+            
             section_num, confirmed = QInputDialog.getText(
                 self,
                 "Go To Section",

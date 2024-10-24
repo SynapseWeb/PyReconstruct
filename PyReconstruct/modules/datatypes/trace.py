@@ -561,6 +561,7 @@ class Trace():
 
         return scale_bar_trace
 
+
 def convertMode(arg):
     """Translate between Reconstruct and PyReconstruct fill modes."""
     if type(arg) is int:

@@ -173,7 +173,7 @@ def combine_obj_files(obj_list: List[Path], combo_file: Path, remove: bool=True)
     
     with combo_file.open("w") as obj_combo:
 
-        pyrecon_plug = "# Exported from PyReconstruct 3D scene]\n"
+        pyrecon_plug = "# Exported from PyReconstruct 3D scene\n"
         mtl_info = f"mtllib {mtl_file.name}\n"
 
         obj_intro = pyrecon_plug

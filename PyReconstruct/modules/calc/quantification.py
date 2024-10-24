@@ -1,9 +1,12 @@
-"""Mathematical formulae."""
+"""Math formulae."""
 
 
 import math
 import cv2
 import numpy as np
+from typing import List
+
+from scipy.interpolate import CubicSpline
 
 
 def area(pts : list) -> float:
@@ -69,6 +72,12 @@ def distance(x1 : float, y1 : float, x2 : float, y2 : float) -> float:
     """
     dist = ((x1-x2)**2 + (y1-y2)**2) ** 0.5
     return dist
+
+
+def euclidean_distance(p1: tuple, p2: tuple):
+    """Calculate Euclidean distance between two points."""
+
+    return np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
 
 def distance3D(x1 : float, y1 : float, z1 : float, x2 : float, y2 : float, z2 : float) -> float:
@@ -219,17 +228,15 @@ def ellipseFromPair(x1, y1, x2, y2, number=100):
     return ellipse
 
 
-def pad_points(points, padding):
-    """Add padding to a circular list of points."""
+def pad_circular_points(points, padding):
+    """Add padding to a circular path."""
 
-    if padding==0:
+    if padding == 0:
 
         return points
 
     indices = np.arange(len(points))
     
-    half_window = padding // 2
-
     padded_indices = np.concatenate([
         indices[-padding:],
         indices,
@@ -239,60 +246,98 @@ def pad_points(points, padding):
     return [points[i] for i in list(padded_indices)]
 
 
+def pad_open_points(points, padding):
+    """Add padding to an open path by extending endpoints."""
+
+    if padding == 0:
+
+        return points
+
+    x_vals, y_vals = map(list, zip(*points))
+
+    x_vals = [x_vals[0]] * padding + x_vals + [x_vals[-1]] * padding
+    y_vals = [y_vals[0]] * padding + y_vals + [y_vals[-1]] * padding
+
+    return list(
+        zip(x_vals, y_vals)
+    )
+
+
 def rolling_average(points, window, circular=True, as_int=False):
+    """Calculate rolling average of a path."""
 
-    n_points = len(points)
-    points = np.asarray(points)
-    
     if window %2 == 0:
-        raise ValueError("Window size must be odd")
+        raise ValueError("Window size must be odd to avoid asymmetric smoothing")
 
+    n_points = len(points)    
     half_window = window // 2
-
     smooth = [0] * n_points  # empty
 
-    if circular:  # close traces
-        
-        points = np.asarray(
-            pad_points(points, half_window)
+    if circular:  # closed traces
+
+        points = pad_circular_points(points, half_window)
+
+    else:
+
+        points = pad_open_points(points, half_window)
+
+    points = np.asarray(points)
+            
+    for i in range(half_window, n_points + half_window):
+
+        start = i - half_window
+        end = i + half_window + 1
+
+        mean = np.mean(
+            points[start:end],
+            axis=0
         )
 
-        for i in range(half_window, n_points + half_window):
-
-            start = i - half_window
-            end = i + half_window + 1
-        
-            mean = np.mean(
-                points[start:end],
-                axis=0
-            )
-        
-            smooth[start] = (
-                round(mean[0], 5),
-                round(mean[1], 5)
-            )
-
-    else:  # open traces
-
-        for i in range(n_points):
-
-            if i < half_window or i > (n_points - half_window - 1):
+        smooth[start] = (
+            round(mean[0], 5),
+            round(mean[1], 5)
+        )
                 
-                smooth[i] = points[i]
-                continue
-
-            mean = np.mean(
-                points[i:i+half_window+1],
-                axis=0
-            )
-
-            smooth[i] = (
-                round(mean[0], 5),
-                round(mean[1], 5)
-            )
-
     if as_int:
 
         return [(int(elem[0]), int(elem[1])) for elem in smooth]
 
     return smooth
+
+
+def interpolate_points(points: List[tuple], spacing=0.01):
+    """Interpolate points around a path."""
+
+    ## Determine if path open or closed
+    if points[0] != points[-1]:  # open path
+        bound_cond = "not-a-knot"
+    else:  # closed pathp
+        bound_cond = "periodic"
+
+    x, y = zip(*points)
+
+    ## Calculate cumulative arc lengths (distances between consecutive points)
+    distances = [0]
+    
+    for i in range(1, len(points)):
+        
+        distances.append(distances[-1] + euclidean_distance(points[i-1], points[i]))
+
+    ## Total path length
+    total_length = distances[-1]
+
+    ## Create cubic splines for x and y based on distances
+    cs_x = CubicSpline(distances, x, bc_type=bound_cond)
+    cs_y = CubicSpline(distances, y, bc_type=bound_cond)
+
+    # Generate new distances at equal intervals
+    num_new_points = int(total_length / spacing)
+    new_distances = np.linspace(0, total_length, num_new_points)
+
+    # Interpolate new points at these distances
+    x_new = [round(elem, 5) for elem in cs_x(new_distances)]
+    y_new = [round(elem, 5) for elem in cs_y(new_distances)]
+
+    return list(
+        zip(x_new, y_new)
+    )

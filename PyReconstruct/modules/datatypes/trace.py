@@ -72,7 +72,7 @@ class Trace():
         self.points.append(point)
     
     def asPixels(self, mag: float, img_height: int):
-        """Return points as a list of (x, y) pixels."""
+        """Return points as a list of (x, y) pixels on image."""
 
         return point_list_2_pix(self.points, mag, img_height)
 

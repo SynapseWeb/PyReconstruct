@@ -969,6 +969,32 @@ class FieldWidgetTrace(FieldWidgetBase):
             self.series.addLog(name, self.section.n, "Modify trace(s)")
             
             return True
+
+    @trace_function
+    @field_interaction
+    def smoothTraces(self, traces: list):
+        """Smooth traces."""
+
+        window = self.series.getOption("roll_window")
+        
+        for trace in traces:
+            
+            current_points = Points(trace.points, trace.closed)
+
+            smoothed = current_points.interp_rolling_average(
+                spacing=0.004, window=window, as_int=False
+            )
+
+            if smoothed[0] == smoothed[-1]:
+                
+                smoothed = smoothed[:-1]
+
+            trace.points = smoothed
+            
+            self.series.addLog(trace.name, self.section.n, "Smoothed trace(s)")
+
+        return True
+
         
     @trace_function
     @field_interaction

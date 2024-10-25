@@ -6,9 +6,9 @@ from PyReconstruct.modules.calc import interpolate_points, rolling_average
 
 
 ## Define complex types
-Coordinate: TypeAlias = Union[int, float]
-Point: TypeAlias = Tuple[Coordinate, Coordinate]
-PointSeq: TypeAlias = List[Point]
+Coordinate = Union[int, float]
+Point = Tuple[Coordinate, Coordinate]
+PointSeq = List[Point]
 
 
 class Points:
@@ -68,7 +68,7 @@ class Points:
         
         return type(self)(interpolated, self.closed)
 
-    def interp_rolling_average(self, spacing: Union[float, int]=0.01, window: int=20) -> PointSeq:
+    def interp_rolling_average(self, spacing: Union[float, int]=0.01, window: int=20, as_int: bool =True) -> PointSeq:
         """Return output from rolling average."""
 
         interpolated = self.interpolate(spacing)
@@ -77,11 +77,17 @@ class Points:
             window += 1
 
         if len(interpolated) <= window:
+
+            if as_int:
             
-            return interpolated.as_ints()
+                return interpolated.as_ints()
+
+            else:
+
+                return interpolated.points
 
         return rolling_average(
-            interpolated.points, window, circular=self.closed, as_int=True
+            interpolated.points, window, circular=self.closed, as_int=as_int
         )
 
     def as_ints(self) -> PointSeq:

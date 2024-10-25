@@ -4,6 +4,8 @@ import json
 import shutil
 from datetime import datetime
 from copy import deepcopy
+from pathlib import Path
+from typing import Union
 
 from PySide6.QtCore import QSettings
 
@@ -2237,7 +2239,40 @@ class Series():
             trace_list.append(t)
         
         self.palette_traces[palette_name] = trace_list
-    
+
+    def exportObjectsCSV(self, output_fp: Union[str, Path]="", notify: bool=False) -> None:
+        """Export all object data as CSV file."""
+
+        self.objects.exportCSV(str(output_fp))
+
+        if notify:
+
+            print(f"CSV exported to: {str(output_fp)}")
+
+    def exportZtracesCSV(self, output_fp: Union[str, Path]="", notify:bool=False) -> None:
+        """Export all z-trace data as CSV file."""
+
+        sep = "|"
+
+        out_str = f"series{sep}ztrace{sep}start{sep}end{sep}length\n"
+
+        for _, z in self.ztraces.items():
+
+            start = z.getStart()
+            end = z.getEnd()
+            z_len = round(z.getDistance(self), 5)
+            
+            out_str += f"{self.code}{sep}{z.name}{sep}{start}{sep}{end}{sep}{z_len}\n"
+
+        if output_fp:
+
+            with open(str(output_fp), "w") as f:
+                f.write(out_str)
+
+        if notify:
+
+            print(f"CSV exported to {str(output_fp)}")
+
     def getEditorsFromHistory(self):
         """Get the set of editors from the history of the series."""
         editors = set()

@@ -30,12 +30,15 @@ class Objects():
         """
         sep = "|"
         
-        out_str = f"Name{sep}Start{sep}End{sep}Count{sep}Flat_Area{sep}Volume{sep}Groups{sep}"
+        out_str = f"Series{sep}Name{sep}Start{sep}End{sep}Count{sep}Flat_Area{sep}Volume{sep}Groups{sep}"
         out_str += f"Trace_Tags{sep}Last_User{sep}Curation_Status{sep}Curation_User{sep}"
         out_str += f"Curation_Date{sep}Alignment{sep}Comment\n"
 
+        series_code = self.series.code
+
         for obj_name in sorted(self.series.data["objects"].keys()):
-            
+
+            out_str += f"{series_code}{sep}"
             out_str += f"{obj_name}{sep}"
             out_str += f"{self.series.data.getStart(obj_name)}{sep}"
             out_str += f"{self.series.data.getEnd(obj_name)}{sep}"

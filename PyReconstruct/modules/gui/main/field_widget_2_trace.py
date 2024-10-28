@@ -995,22 +995,10 @@ class FieldWidgetTrace(FieldWidgetBase):
         
         for trace in traces:
             
-            current_points = Points(trace.points, trace.closed)
-
-            smoothed = current_points.interp_rolling_average(
-                spacing=0.004, window=window, as_int=False
-            )
-
-            if smoothed[0] == smoothed[-1]:
-                
-                smoothed = smoothed[:-1]
-
-            trace.points = smoothed
-            
+            trace.smooth(window, spacing=0.004)
             self.series.addLog(trace.name, self.section.n, "Smoothed trace(s)")
 
         return True
-
         
     @trace_function
     @field_interaction

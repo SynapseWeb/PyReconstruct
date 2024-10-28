@@ -1,7 +1,10 @@
+from typing import Union
+
 from skimage.draw import polygon
 import numpy as np
 
 from .transform import Transform
+from .points import Points
 
 from PyReconstruct.modules.calc import centroid, distance, feret
 from PyReconstruct.modules.constants import blank_palette_contour
@@ -72,7 +75,7 @@ class Trace():
         self.points.append(point)
     
     def asPixels(self, mag: float, img_height: int):
-        """Return points as a list of (x, y) pixels on image."""
+        """Return points as a list of (x, y) pixels on an image."""
 
         return point_list_2_pix(self.points, mag, img_height)
 
@@ -546,6 +549,21 @@ class Trace():
 
         return intersect_area / union_area
 
+    def smooth(self, window: int, spacing: Union[int, float]) -> None:
+        """Smooth trace."""
+
+        unsmoothed = Points(self.points, self.closed)
+
+        smoothed = unsmoothed.interp_rolling_average(
+            spacing, window, as_int=False
+        )
+
+        if smoothed[0] == smoothed[-1]:
+
+            smoothed = smoothed[-1]
+
+        self.points = smoothed
+    
     @staticmethod
     def get_scale_bar():
         """Return a scale bar trace object."""

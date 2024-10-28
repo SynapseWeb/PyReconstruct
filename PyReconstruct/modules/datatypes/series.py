@@ -1143,10 +1143,14 @@ class Series():
             message="Modifying object(s)...",
             series_states=series_states
         ):
-            # move object attrs
-            # note on why this has to be done once inside the loop:
-            # the loop is what initiats the series_state data collection, and the renaming must happen after the series state collection
-            # however, it must also happen before the object is fully deleted
+
+            # Move object attrs
+
+            # Note on why this has to be done once inside the loop: the loop is
+            # what initiates series_state data collection, and renaming must
+            # happen after the series state collection; however, it must also
+            # happen before the object is fully deleted.
+            
             if not attrs_migrated:
                 for obj_name in obj_names:
                     if obj_name != name:
@@ -1173,6 +1177,37 @@ class Series():
                 section.save()
         
         self.modified = True
+
+    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> None:
+        """Smooth all traces belonging to an object."""
+
+        window = self.getOption("roll_window")
+        
+        if log_event:
+
+            for obj_name in obj_names:
+
+                self.addLog(obj_name, None, f"Smooth {obj_name} traces")
+
+        for _, section in self.enumerateSections(
+                message="Smoothing traces...",
+                series_states=series_states
+        ):
+            
+            for obj_name in obj_names:
+                
+                obj = section.contours.get(obj_name)
+                
+                if obj:
+
+                    section.modified_contours.add(obj_name)
+                    
+                    for trace in obj.traces:
+                        trace.smooth(window=window, spacing=0.004)
+
+            section.save()
+
+            self.modified = True
     
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.

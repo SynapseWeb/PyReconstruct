@@ -177,6 +177,19 @@ class FieldWidgetObject(FieldWidgetTrace):
             )
                 
         return True
+
+    @object_function(update_objects=True, reload_field=True)
+    def smoothObject(self, obj_names: list):
+        """Smooth object traces."""
+
+        self.series_states.addState()
+
+        self.series.smoothObject(
+            obj_names,
+            series_states=self.series_states
+        )
+
+        return True
     
     @object_function(update_objects=True, reload_field=False)
     def editComment(self, obj_names : list):

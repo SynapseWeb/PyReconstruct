@@ -86,6 +86,7 @@ def get_context_menu_list_obj(self):
                 ("editobjradius_act", "Edit radius...", "", self.editRadius),
                 ("editobjshape_act", "Edit shape...", "", self.editShape),
                 None,
+                ("smoothtraces_act", "Smooth object traces", "", self.smoothObject),
                 ("splitobj_act", "Split traces into individual objects", "", self.splitObject),
                 None,
                 ("hideobj_act", "Hide", "", self.hideObj),

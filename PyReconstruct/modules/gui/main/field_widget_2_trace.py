@@ -994,7 +994,8 @@ class FieldWidgetTrace(FieldWidgetBase):
         window = self.series.getOption("roll_window")
         
         for trace in traces:
-            
+
+            self.section.modified_contours.add(trace.name)
             trace.smooth(window, spacing=0.004)
             self.series.addLog(trace.name, self.section.n, "Smoothed trace(s)")
 

@@ -71,8 +71,9 @@ class TableManager():
                 obj_names = self.section.contours.keys()
             else:
                 obj_names = self.section.getAllModifiedNames()
-                
+
         for table in self.tables["object"] + self.tables["trace"]:
+            
             table.updateData(obj_names)
         
         if clear_tracking:

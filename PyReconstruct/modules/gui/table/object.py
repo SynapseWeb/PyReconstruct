@@ -383,6 +383,11 @@ class ObjectTableWidget(DataTable):
             Params:
                 name (str): the name of the object
         """
+
+        ## Return False if obj does not exists
+        if name not in self.series.data["objects"]:
+            return False
+        
         ## Check user columns
         if self.user_col_filters:
             passes_filters = False
@@ -415,16 +420,23 @@ class ObjectTableWidget(DataTable):
         if dict(self.columns)["Curate"]:
             
             obj_curation = self.series.getAttr(name, "curation")
+            
             if obj_curation:
+                
                 cr_status, user, date = tuple(obj_curation)
                 cr_status = "Curated" if cr_status else "Needs curation"
+
                 if not self.cr_status_filter[cr_status]:
                     return False
+
                 if self.cr_user_filters and user not in self.cr_user_filters:
-                    return False          
+                    return False
+                
             else:
+                
                 if not self.cr_status_filter["Blank"]:
                     return False
+                
                 if self.cr_user_filters:
                     return False
 
@@ -436,8 +448,10 @@ class ObjectTableWidget(DataTable):
                 in self.config_filters.items()
                 if req == True
             ]
-            
-            if self.series.data.getConfiguration(name) not in req_configs:
+
+            obj_config = self.series.data.getConfiguration(name)
+
+            if obj_config not in req_configs and obj_config is not None:
                 return False
             
         ## Check regex
@@ -484,24 +498,29 @@ class ObjectTableWidget(DataTable):
                 names (iterable): the names of the objects to update
         """
         for name in names:
-            # check if object passes filters
-            if not self.passesFilters(name):
-                # special case: does not pass filter anymore but exists on table
-                row, exists_in_table = self.table.getRowIndex(name)
-                if exists_in_table:
-                    self.table.removeRow(row)
-                return
 
-            # update if it does
             row, exists_in_table = self.table.getRowIndex(name)
-            if exists_in_table and name not in self.series.data["objects"]:  # completely delete object
+            exists_in_series = name in self.series.data["objects"]
+            pass_filters = self.passesFilters(name)
+
+            remove = exists_in_table and (not exists_in_series or not pass_filters)
+
+            ## Completely delete object
+            if remove:  
+                
                 self.table.removeRow(row)
-            elif exists_in_table and name in self.series.data["objects"]:  # update existing object
+
+            ## Update existing row
+            elif exists_in_table and exists_in_series:
+                
                 self.setRow(name, row)
-            elif not exists_in_table and name in self.series.data["objects"]:  # add new object
+
+            ## Add new row
+            elif not exists_in_table and exists_in_series and pass_filters:  
+                
                 self.table.insertRow(row)
                 self.setRow(name, row)
-        
+
         self.mainwindow.checkActions()
     
     def mouseDoubleClickEvent(self, event):

@@ -1766,17 +1766,29 @@ class MainWindow(QMainWindow):
     def modifyKnife(self, event=None):
         """Modify the knife properties."""
         structure = [
-            ["Delete traces smaller than this percent:\n"],
+            [
+                "Delete traces smaller than this percent:\n"
+            ],
             [
                 "% original trace:",
                 ("float", self.series.getOption("knife_del_threshold"), (0, 100))
             ],
+            [
+                "\nOptionally smooth while cutting:"
+            ],
+            [
+                ("check", ("Smooth cuts", self.series.getOption("roll_knife_average"))),
+                ("int", self.series.getOption("roll_knife_window"))
+            ]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
         if not confirmed:
             return
-        
+
         self.series.setOption("knife_del_threshold", response[0])
+        self.series.setOption("roll_knife_average", response[1][0][1])
+        self.series.setOption("roll_knife_window", response[2])
+        
         self.seriesModified()
     
     def resetTracePalette(self):

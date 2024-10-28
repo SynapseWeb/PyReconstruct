@@ -502,32 +502,48 @@ class FieldWidgetTrace(FieldWidgetBase):
                 scalpel_trace (list): the list of pixel points defining the scalpel cut
                 log_event (bool): True if the action should be logged
         """
+
         if len(self.section.selected_traces) == 0:
-            notify("Please select the trace you wish to cut.")
+            notify("Select trace you would like to cut.")
             return False
+        
         if len(set(t.name for t in self.section.selected_traces)) > 1:
-            notify("Please select only one object to cut at a time.")
+            notify("Select a single object to cut at a time.")
             return False
         
         closed = self.section.selected_traces[0].closed
+        
         for t in self.section.selected_traces[1:]:
+            
             if t.closed != closed:
-                notify("Please select traces that are all exclusively open or closed.")
+                
+                notify("Select traces that are all exclusively open or closed.")
                 return False
         
         traces = self.section.selected_traces.copy()
 
-        # assume they are all the same, they will suffer the consequences if not
+        ## Assume same, otherwise suffer consequences
         example_trace = traces[0]
-        # combine the tags
+        ## Combine tags
         for trace in traces[1:]:
             for tag in trace.tags:
                 example_trace.tags.add(tag)
 
-        # pixelize the selected traces
+        ## Pixelize the selected traces
         traces_to_cut = [self.section_layer.traceToPix(t) for t in traces]
+
+        ## Smooth cut if requested
+        if self.series.getOption("roll_knife_average"):
+            
+            window = self.series.getOption("roll_knife_window")
+            scalpel_points = Points(scalpel_trace, closed=False)
+            
+            scalpel_trace = scalpel_points.interp_rolling_average(
+                spacing=4,  # pixels
+                window=window
+            )        
         
-        # run the cut calculation
+        ## Crunch the numbers
         cut_traces = cutTraces(
             traces_to_cut, 
             scalpel_trace, 
@@ -535,10 +551,10 @@ class FieldWidgetTrace(FieldWidgetBase):
             closed=example_trace.closed
         )
 
-        # delete the old traces
+        ## Remove old traces
         self.section.deleteTraces(traces, log_event=False)
 
-        # create new traces from calculation
+        ## Create new traces
         for piece in cut_traces:
             self.newTrace(
                 piece,

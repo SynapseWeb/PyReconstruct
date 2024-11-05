@@ -11,6 +11,15 @@ Point = Tuple[Coordinate, Coordinate]
 PointSeq = List[Point]
 
 
+def get_int_list(points: PointSeq) -> PointSeq:
+    """Return PointSeq as integers"""
+
+    integerize = lambda x: (int(x[0]), int(x[1]))
+    mapped_points = map(integerize, points)
+
+    return list(mapped_points)
+
+
 class Points:
 
     def __init__(self, points: PointSeq, closed: bool) -> None:
@@ -61,6 +70,11 @@ class Points:
 
         return len(self.points)
 
+    def as_ints(self) -> PointSeq:
+        """Return coordinates as integers."""
+
+        return get_int_list(self.points)
+
     def interpolate(self, spacing=0.01):
         """Return new interpolated Point object."""
 
@@ -68,14 +82,12 @@ class Points:
         
         return type(self)(interpolated, self.closed)
 
-    def interp_rolling_average(self, spacing: Union[float, int]=0.01, window: int=20, as_int: bool =True) -> PointSeq:
-        """Return output from rolling average."""
+    def interp_rolling_average(self, spacing: Union[float, int]=0.01, window: int=20, as_int: bool=True) -> PointSeq:
+        """Return output from rolling average with interpolation."""
 
         interpolated = self.interpolate(spacing)
 
-        if window %2 == 0:
-            window += 1
-
+        ## If less than window, return points
         if len(interpolated) <= window:
 
             if as_int:
@@ -86,16 +98,15 @@ class Points:
 
                 return interpolated.points
 
-        return rolling_average(
-            interpolated.points, window, circular=self.closed, as_int=as_int
-        )
+        ## Otherwise perform moving average smoothing
+        mode = "circular" if self.closed else "shrinking"
+        smoothed = rolling_average(interpolated.points, window, edge_mode=mode)
 
-    def as_ints(self) -> PointSeq:
-        """Return coordinates as integers."""
+        if as_int:
 
-        integerize = lambda x: (int(x[0]), int(x[1]))
-        mapped = map(integerize, self.points)
+            return get_int_list(smoothed)
 
-        return list(mapped)
+        else:
+
+            return smoothed
         
-

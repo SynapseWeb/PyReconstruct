@@ -228,81 +228,87 @@ def ellipseFromPair(x1, y1, x2, y2, number=100):
     return ellipse
 
 
-def pad_circular_points(points, padding):
-    """Add padding to a circular path."""
-
-    if padding == 0:
-
-        return points
-
-    indices = np.arange(len(points))
+def get_window_points(points, idx, max_size, edge_mode):
+    """Get points for window centered at idx with given maximum size.
     
-    padded_indices = np.concatenate([
-        indices[-padding:],
-        indices,
-        indices[:padding]
-    ], axis=0)
+    Params:
+        points (list): list of [x, y, snum] points
+        idx (int): center index for the window
+        max_size (int): maximum window size
+        edge_mode (str): how to handle edges - "padded", "shrinking", or "circular"
+        
+    Returns:
+        tuple: (window_x, window_y) lists of x and y coordinates
+    """
+    if edge_mode == "shrinking":
+        
+        ## Calculate growing window size from ends
+        dist_from_start = idx
+        dist_from_end = len(points) - 1 - idx
+        dist_from_edge = min(dist_from_start, dist_from_end)
 
-    return [points[i] for i in list(padded_indices)]
+        ## Window size grows from 1 at edges to max_size in middle
+        current_size = min(1 + 2 * dist_from_edge, max_size)
+        half = current_size // 2
+        start_idx = idx - half
+        end_idx = idx + half + 1
 
-
-def pad_open_points(points, padding):
-    """Add padding to an open path by extending endpoints."""
-
-    if padding == 0:
-
-        return points
-
-    x_vals, y_vals = map(list, zip(*points))
-
-    x_vals = [x_vals[0]] * padding + x_vals + [x_vals[-1]] * padding
-    y_vals = [y_vals[0]] * padding + y_vals + [y_vals[-1]] * padding
-
-    return list(
-        zip(x_vals, y_vals)
-    )
-
-
-def rolling_average(points, window, circular=True, as_int=False):
-    """Calculate rolling average of a path."""
-
-    if window %2 == 0:
-        raise ValueError("Window size must be odd to avoid asymmetric smoothing")
-
-    n_points = len(points)    
-    half_window = window // 2
-    smooth = [0] * n_points  # empty
-
-    if circular:  # closed traces
-
-        points = pad_circular_points(points, half_window)
-
+        return (
+            [p[0] for p in points[start_idx:end_idx]], 
+            [p[1] for p in points[start_idx:end_idx]]
+        )
+        
     else:
-
-        points = pad_open_points(points, half_window)
-
-    points = np.asarray(points)
+        
+        half = max_size // 2
+        window_x = []
+        window_y = []
+        
+        for i in range(-half, half + 1):
             
-    for i in range(half_window, n_points + half_window):
-
-        start = i - half_window
-        end = i + half_window + 1
-
-        mean = np.mean(
-            points[start:end],
-            axis=0
-        )
-
-        smooth[start] = (
-            round(mean[0], 5),
-            round(mean[1], 5)
-        )
+            if edge_mode == "circular":
+                point_idx = (idx + i) % len(points)
                 
-    if as_int:
+            else:  # padded
+                point_idx = max(0, min(idx + i, len(points) - 1))
+            
+            window_x.append(points[point_idx][0])
+            window_y.append(points[point_idx][1])
+            
+        return window_x, window_y
 
-        return [(int(elem[0]), int(elem[1])) for elem in smooth]
 
-    return smooth
+def rolling_average(points, window=10, edge_mode="padded"):
+    """Smooth z-trace with configurable edge handling.
+    
+    Params:
+        series (Series): the series object (contains transform data)
+        smooth (int): the smoothing factor
+        edge_mode (str): how to handle edges - "padded", "shrinking", or "circular"
+    """
+    if edge_mode not in ["padded", "shrinking", "circular"]:
+        raise ValueError("edge_mode must be 'padded', 'shrinking', or 'circular'")
+
+    new_points = [None] * len(points)
+
+    # Process each point
+    for i in range(len(points)):
+        
+        ## Get window points
+        window_x, window_y = get_window_points(points, i, window, edge_mode)
+        
+        ## Calculate moving average
+        window_size = len(window_x)  # window len variable depending on edge mode
+        xMA = sum(window_x) / window_size
+        yMA = sum(window_y) / window_size
+        
+        ## Update point with smoothed values
+        new_points[i] = (
+            round(xMA, 4),
+            round(yMA, 4)
+        )
+
+    return new_points
 
 
 def interpolate_points(points: List[tuple], spacing=0.01):

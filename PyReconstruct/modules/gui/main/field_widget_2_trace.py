@@ -5,11 +5,7 @@ from .context_menu_list import get_context_menu_list_trace
 from PySide6.QtWidgets import QInputDialog
 
 from PyReconstruct.modules.datatypes import Trace, Flag, Points
-from PyReconstruct.modules.calc import (
-    pixmapPointToField,
-    rolling_average,
-    interpolate_points
-)
+from PyReconstruct.modules.calc import pixmapPointToField
 from PyReconstruct.modules.gui.dialog import (
     QuickDialog,
     FlagDialog,
@@ -448,8 +444,7 @@ class FieldWidgetTrace(FieldWidgetBase):
                 points_obj = Points(trace_points, closed)
 
                 trace_points = points_obj.interp_rolling_average(
-                    spacing=4,  # pixels
-                    window=window
+                    spacing=4, window=window
                 )
 
         if reduce_points:

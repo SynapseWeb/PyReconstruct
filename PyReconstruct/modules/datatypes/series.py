@@ -1034,17 +1034,29 @@ class Series():
                 smooth (int): the smoothing factor
                 newztrace (bool): False if ztrace should be overwritten
         """
-        # smooth the ztraces
+        ## Smooth ztraces
         for name in names:
-            # create a new ztrace if requested
+
+            
+            
+            ## Create new ztrace if requested
             if newztrace:
+                
                 ztrace = self.ztraces[name].copy()
+                ztrace_align = self.getAttr(name, "alignment", ztrace=True)
+                
                 new_name = f"{ztrace.name}_smooth{smooth}"
+
                 ztrace.name = new_name
                 self.ztraces[new_name] = ztrace
+                self.setAttr(new_name, "alignment", ztrace_align, ztrace=True)
+                
             else:
+                
                 ztrace = self.ztraces[name]
+                
             ztrace.smooth(self, smooth)
+            
             self.modified_ztraces.add(ztrace.name)
         
             if log_event:

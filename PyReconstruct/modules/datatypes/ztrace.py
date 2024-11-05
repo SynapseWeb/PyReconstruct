@@ -1,4 +1,4 @@
-from PyReconstruct.modules.calc import distance3D
+from PyReconstruct.modules.calc import distance3D, rolling_average
 
 from PyReconstruct.modules.datatypes_legacy import ZContour as XMLZContour
 
@@ -198,78 +198,38 @@ class Ztrace():
         return max([s for x, y, s in self.points])   
 
     def smooth(self, series, smooth=10):
-        """Smooth z-trace (based on legacy Reconstruct algorithm).
+        """Smooth z-trace via padded moving average.
         
             Params:
                 series (Series): the series object (contains transform data)
                 smooth (int): the smoothing factor
         """
-        # transform the points
+        ## Transform points
         points = []
+
+        z_align = series.getAttr(self.name, "alignment", ztrace=True)
+        snums = []
+
         for pt in self.points:
+            
             x, y, snum = pt
-            tform = series.data["sections"][snum]["tforms"][series.alignment]
+
+            tform = series.data["sections"][snum]["tforms"][z_align]
             x, y = tform.map(x, y)
-            points.append([x, y, snum])
-        
-        x = [None] * smooth
-        y = [None] * smooth
 
-        pt_idx = 0
-        p = points[pt_idx]
+            snums.append(snum)
+            points.append((x, y))
 
-        for i in range(int(smooth/2) + 1):
-            
-             x[i] = p[0]
-             y[i] = p[1]
+        ## Calculate rolling average
+        points = rolling_average(points, smooth, edge_mode="padded")
         
-        q = p
-    
-        for i in range(int(smooth/2) + 1, smooth):
-        
-            x[i] = q[0]
-            y[i] = q[1]
-            
-            pt_idx += 1
-            q = points[pt_idx]
-        
-        xMA = 0
-        yMA = 0
-
-        for i in range(smooth):
-            
-            xMA += x[i]/smooth
-            yMA += y[i]/smooth
-        
-        for i, point in enumerate(points):  # Loop over all points
-        
-            point[0] = round(xMA, 4)
-            point[1] = round(yMA, 4)
-        
-            old_x = x[0]
-            old_y = y[0]
-        
-            for i in range(smooth - 1):
-                x[i] = x[i+1]
-                y[i] = y[i+1]
-        
-            try:
-                pt_idx += 1
-                q = points[pt_idx]
-                x[smooth - 1] = q[0]
-                y[smooth - 1] = q[1]
-        
-            except:
-                pass
-                
-            xMA += (x[smooth-1] - old_x) / smooth
-            yMA += (y[smooth-1] - old_y) / smooth
-        
-        # reverse-transform the points
+        ## De-transform points to base image coordinates
         self.points = []
+        points = [p + (s,) for p, s in zip(points, snums)]  # re-combine snums with points
+
         for pt in points:
             x, y, snum = pt
-            tform = series.data["sections"][snum]["tforms"][series.alignment]
+            tform = series.data["sections"][snum]["tforms"][z_align]
             x, y = tform.map(x, y, inverted=True)
             self.points.append((x, y, snum))
     

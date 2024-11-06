@@ -1228,8 +1228,10 @@ class FieldWidgetTrace(FieldWidgetBase):
     @ztrace_function
     def removeZtrace3D(self, names : list):
         """Remove object(s) from the scene."""
+        
         if names:
-            self.mainwindow.removeFrom3D(names, ztraces=True)
+            self.mainwindow.removeFrom3D(obj_names=[], ztraces=names)
+            
         # return nothing -- no need to update anything
     
     @ztrace_function

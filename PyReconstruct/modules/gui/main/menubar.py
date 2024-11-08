@@ -344,7 +344,7 @@ def return_view_menu(self):
                             ("togglepalette_act", "Trace palette", "checkbox", self.mouse_palette.togglePalette),
                             ("toggleinc_act",  "Section increment buttons", "checkbox", self.mouse_palette.toggleIncrement),
                             ("togglebc_act", "Brightness/contrast sliders", "checkbox", self.mouse_palette.toggleBC),
-                            
+                            ("togglesb_act", "Scale bar", "checkbox", self.mouse_palette.toggleSB),
                         ]
                     },
                     {

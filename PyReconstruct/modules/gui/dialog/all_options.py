@@ -84,6 +84,7 @@ class AllOptionsDialog(QDialog):
             ],
             "View": [
                 ["theme"],
+                ["scale_bar"],
                 ["show_ztraces"],
                 ["show_flags"],
                 ["fill_opacity"],
@@ -260,6 +261,28 @@ class AllOptionsDialog(QDialog):
             self.series.setOption("theme", theme)
             
         self.addOptionWidget("theme", structure, setOption)
+
+        # scale bar opts
+
+        sbw = self.series.getOption("scale_bar_width")
+        sbw = (sbw - 20) / 80 * 100  # adjust scale bar width value so that it is between 0 and 100 (rather than 20 and 100)
+        structure = [
+            [("check", 
+              ("show numbers", self.series.getOption("show_scale_bar_text", use_defaults)),
+              ("show ticks", self.series.getOption("show_scale_bar_ticks", use_defaults))
+            )],
+            ["Scale bar size:"],
+            [("slider", sbw)],
+        ]
+
+        def setOption(response):
+            self.series.setOption("show_scale_bar_text", response[0][0][1])
+            self.series.setOption("show_scale_bar_ticks", response[0][1][1])
+            sbw = response[1]
+            sbw = int(sbw / 100 * 80 + 20)
+            self.series.setOption("scale_bar_width", sbw)
+
+        self.addOptionWidget("scale_bar", structure, setOption)
 
         # show_ztraces
         structure = [

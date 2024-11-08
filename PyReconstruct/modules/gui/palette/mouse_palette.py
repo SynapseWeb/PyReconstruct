@@ -6,6 +6,7 @@ from PySide6.QtGui import QIcon, QPixmap, QColor, QFont
 from PySide6.QtCore import QSize, Qt
 
 from .buttons import PaletteButton, ModeButton, MoveableButton
+from .scale_bar import ScaleBar
 from .outlined_label import OutlinedLabel
 from .help import palette_help
 
@@ -91,8 +92,14 @@ class MousePalette():
         self.palette_hidden = False
         self.inc_hidden = False
         self.bc_hidden = False
+        self.sb_hidden = False
         
         self.help_widget = None
+
+        # create scale palette
+        self.sb_x = 0.01
+        self.sb_y = 0.99
+        self.createSB()
     
     def placeModeButton(self, button, pos : int):
         """Place the mode button in the main window.
@@ -586,7 +593,8 @@ class MousePalette():
             "mode": (fx1, fx2 - mblen, fy1, fy2 - (mblen + 10) * len(buttons) + 10),
             "trace": (fx1 + pblen*5, fx2 - pblen*6 - 3, fy1 + pblen, fy2 - pblen),
             "inc": (fx1, fx2 - ibw, fy1, fy2 - ibh*2 - 15),
-            "bc": (fx1, fx2 - 6*bcsize - 5, fy1, fy2 - 2*bcsize - 20)
+            "bc": (fx1, fx2 - 6*bcsize - 5, fy1, fy2 - 2*bcsize - 20),
+            "sb": (fx1, fx2 - 10, fy1, fy2 - 50)
         }
 
     def togglePalette(self):
@@ -607,6 +615,11 @@ class MousePalette():
         for b, s in self.bc_widgets:
             b.hide() if self.bc_hidden else b.show()
             s.hide() if self.bc_hidden else s.show()
+    
+    def toggleSB(self):
+        """Hide/Unhide the scale bar."""
+        self.sb_hidden = not self.sb_hidden
+        self.sb.hide() if self.sb_hidden else self.sb.show()
     
     def resetPos(self):
         """Reset the positions of the buttons."""
@@ -785,6 +798,29 @@ class MousePalette():
             "Palette Help", 
             html=True
         )
+    
+    def getScale(self):
+        """Get the scale from the mainwindow."""
+        real_width = self.mainwindow.series.window[2]
+        pix_width = self.mainwindow.field.pixmap_dim[0]
+        return real_width / pix_width
+    
+    def setScale(self):
+        if "sb" in dir(self):
+            self.sb.setScale(self.getScale())
+    
+    def createSB(self):
+        """Create the scale bar."""
+        sb_w = int(self.series.getOption("scale_bar_width") / 100 * self.mainwindow.field.width())
+        self.sb = ScaleBar(self.mainwindow, self, sb_w, 50, 1)
+        self.setScale()
+        self.placeSB()
+        self.sb.show()
+    
+    def placeSB(self):
+        """Place the scale bar."""
+        x, y = self.getButtonCoords("sb")
+        self.sb.move(x, y)
         
     def resize(self):
         """Move the buttons to fit the main window."""
@@ -797,6 +833,7 @@ class MousePalette():
         self.placeLabel()
         self.placeIncrementButtons()
         self.placeBCButtons()
+        self.placeSB()
     
     def reset(self):
         """Reset the mouse palette when opening a new series."""
@@ -818,4 +855,5 @@ class MousePalette():
         for b, s in self.bc_widgets:
             b.close()
             s.close()
+        self.sb.close()
         

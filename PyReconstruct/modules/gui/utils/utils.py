@@ -290,7 +290,15 @@ def unsavedNotify():
 
     return response == QMessageBox.Yes
 
-def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tuple, c2 : tuple, size : int, right_justify=False):
+def drawOutlinedText(
+        painter : QPainter, 
+        x : int, y : int, 
+        text : str, 
+        c1 : tuple = (255, 255, 255), 
+        c2 : tuple = (0, 0, 0),
+        size : int = 0, 
+        right_justify=False
+    ):
     """Draw outlined text using a QPainter object.
     
         Params:
@@ -302,6 +310,8 @@ def drawOutlinedText(painter : QPainter, x : int, y : int, text : str, c1 : tupl
             c2 (tuple): the outline color of the text
             size (int): the size of the text
     """
+    # create the font
+    if not size: size = painter.font().pixelSize()
     font = QFont("Courier New", size, QFont.Bold)
 
     if right_justify:

@@ -304,6 +304,10 @@ class FieldWidgetBase:
         
         self.field_pixmap = view
 
+        # update the scale bar
+        if self.mainwindow.mouse_palette:
+            self.mainwindow.mouse_palette.setScale()
+
         self.mainwindow.checkActions()
         if update:
             self.update()

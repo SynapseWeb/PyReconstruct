@@ -144,7 +144,12 @@ default_settings = {
     "rotate_step_3D": 10,  # MFO
 
     # recently opened series
-    "recently_opened_series": []
+    "recently_opened_series": [],
+
+    # scale bar settings
+    "scale_bar_width": 25,  # displayed as this percentage of the screen (min should be 20)
+    "show_scale_bar_text": True,
+    "show_scale_bar_ticks": True,
 }
 
 default_series_settings = {

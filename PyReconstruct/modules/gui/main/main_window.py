@@ -199,6 +199,7 @@ class MainWindow(QMainWindow):
         self.togglepalette_act.setChecked(not self.mouse_palette.palette_hidden)
         self.toggleinc_act.setChecked(not self.mouse_palette.inc_hidden)
         self.togglebc_act.setChecked(not self.mouse_palette.bc_hidden)
+        self.togglesb_act.setChecked(not self.mouse_palette.sb_hidden)
 
         ## Group visibility
         for group, viz in self.series.groups_visibility.items():

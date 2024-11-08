@@ -1161,7 +1161,7 @@ class Series():
                 series_states: the series states as store in the GUI
                 log_event (bool): True if event should be logged
         """
-        # preemptively create log
+        ## Preemptively create log
         if log_event:
             for obj_name in obj_names:
                 if name and obj_name != name:
@@ -1170,43 +1170,55 @@ class Series():
                 else:
                     self.addLog(obj_name, None, "Modify object")
         
-        # modify the object on every section
+        ## Modify object on every section
         attrs_migrated = False
         for snum, section in self.enumerateSections(
             message="Modifying object(s)...",
             series_states=series_states
         ):
 
-            # Move object attrs
+            ## Move object attrs
 
-            # Note on why this has to be done once inside the loop: the loop is
-            # what initiates series_state data collection, and renaming must
-            # happen after the series state collection; however, it must also
-            # happen before the object is fully deleted.
+            ## Note why this must be done once inside the loop: the loop
+            ## initiates series_state data collection, and renaming must happen
+            ## after the series state collection; however, it must also happen
+            ## before the object is fully deleted.
             
-            if not attrs_migrated:
+            if name and not attrs_migrated:
+                
                 for obj_name in obj_names:
+
                     if obj_name != name:
                         self.renameObjAttrs(obj_name, name)
+                        
                 attrs_migrated = True
             
             if snum not in sections:  # skip sections that are not included
                 continue
 
             traces = []
+            
             for obj_name in obj_names:
+                
                 if obj_name in section.contours:
                     traces += section.contours[obj_name].getTraces()
+                    
             if traces:
-                section.editTraceAttributes(traces, name, color, tags, mode, add_tags=True, log_event=False)
-                # gather new traces
+                
+                section.editTraceAttributes(
+                    traces, name, color, tags, mode, add_tags=True, log_event=False
+                )
+                
+                ## Gather new traces
                 if name:
                     traces = section.contours[name].getTraces()
+                    
                 else:
                     traces = []
                     for obj_name in obj_names:
                         if obj_name in section.contours:
                             traces += section.contours[obj_name].getTraces()
+                            
                 section.save()
         
         self.modified = True
@@ -1232,9 +1244,8 @@ class Series():
                 obj = section.contours.get(obj_name)
                 
                 if obj:
-
-                    section.modified_contours.add(obj_name)
                     
+                    section.modified_contours.add(obj_name)
                     for trace in obj.traces:
                         trace.smooth(window=window, spacing=0.004)
 

@@ -135,7 +135,8 @@ class FieldWidgetObject(FieldWidgetTrace):
     @object_function(update_objects=True, reload_field=True)
     def editAttributes(self, obj_names : list):
         """Edit the name of object(s) in the entire series."""
-        # ask the user for the new object name
+        
+        ## Query user for new object name
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
             tags = self.series.data.getTags(obj_names[0])
@@ -154,12 +155,14 @@ class FieldWidgetObject(FieldWidgetTrace):
             return False
         
         attr_trace, sections = response
-        
-        # modify the object on every section
+
+        ## Modify object on every section
         t = attr_trace
+
         name, color, tags, mode = (
             t.name, t.color, t.tags, t.fill_mode
         )
+
         self.series.editObjectAttributes(
             obj_names,
             name,
@@ -170,7 +173,7 @@ class FieldWidgetObject(FieldWidgetTrace):
             series_states=self.series_states
         )
 
-        # decorator will not know to update the new name and the host trees if the name is changed
+        ## Decorator will not know to update new name and host trees if name is changed
         if name:
             self.table_manager.updateObjects(
                 self.series.host_tree.getObjToUpdate([name] + obj_names)
@@ -665,7 +668,7 @@ class FieldWidgetObject(FieldWidgetTrace):
     
     @object_function(update_objects=True, reload_field=False)
     def setHosts(self, names : list):
-        """Set the host(s) for the selected object(s)."""
+        """Set host(s) for selected object(s)."""
         if len(names) == 1:
             current_hosts = self.series.getObjHosts(names[0])
         else:
@@ -680,19 +683,23 @@ class FieldWidgetObject(FieldWidgetTrace):
             return False
         host_names = list(set(response[0]))
         
-        # check to ensure that objects are not hosts of each other
+        ## Ensure objects do not host each other
         for hn in host_names:
+            
             if hn in names:
-                notify("An object cannot be a host of itself.")
+                notify("An object cannot host itself.")
                 return False
-            if bool(set(names) & set(self.series.getObjHosts(hn, traverse=True))):  # if any intersection exists between the two
-                notify("Objects cannot be hosts of each other.")
+
+            ## If intersection exists
+            trav_hosts = set(self.series.getObjHosts(hn, traverse=True))
+            if bool(set(names) & trav_hosts):
+                notify("Objects cannot host each other.")
                 return False
         
         self.series_states.addState()
         self.series.setObjHosts(names, host_names)
 
-        # manual call to update entire host tree
+        ## Explicitly update entire host tree
         self.table_manager.updateObjects(
             self.series.host_tree.getObjToUpdate(names)
         )

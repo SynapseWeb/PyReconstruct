@@ -15,7 +15,7 @@ Please send us a message should you have questions:
 
 # Documentation
 
-Documentation, including an in-depth installation guide, quickstart, and manuals, can be found at our lab's [wiki site](https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide) hosted at UT Austin and at the [PyReconstruct repo wiki](https://github.com/SynapseWeb/PyReconstruct/wiki). A quick launch guide follows below.
+An installation guide, quickstart, and manuals can be found at our lab's [wiki site](https://wikis.utexas.edu/display/khlab/PyReconstruct+user+guide) hosted at UT Austin and at the [PyReconstruct repo wiki](https://github.com/SynapseWeb/PyReconstruct/wiki). A quick launch guide follows below.
 
 <a id="submitting-bug-reports-and-feature-requests"></a>
 
@@ -33,7 +33,7 @@ or stable PyReconstruct:
 pip install pyreconstruct
 ```
 
-Then launch PyReconstruct from the command line:
+then launch PyReconstruct from the command line:
 
 ```
 PyReconstruct

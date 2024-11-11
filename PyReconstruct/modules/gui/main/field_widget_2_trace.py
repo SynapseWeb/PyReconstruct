@@ -477,10 +477,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         if simplify:
 
             window = self.series.getOption("roll_window")
-
-            if not len(new_trace.points) <= window:
-
-                new_trace.smooth(window=window, spacing=0.004)
+            new_trace.smooth(window=window, spacing=0.004)
         
         # add the trace to the section and select
         self.section.addTrace(new_trace, log_event=log_event)

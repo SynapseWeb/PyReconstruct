@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from typing import List
 
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 
 
 def area(pts : list) -> float:
@@ -314,12 +314,6 @@ def rolling_average(points, window=10, edge_mode="padded"):
 def interpolate_points(points: List[tuple], spacing=0.01):
     """Interpolate points around a path."""
 
-    ## Determine if path open or closed
-    if points[0] != points[-1]:  # open path
-        bound_cond = "not-a-knot"
-    else:  # closed path
-        bound_cond = "periodic"
-
     x, y = zip(*points)
 
     ## Calculate cumulative arc lengths (distances between consecutive points)
@@ -327,22 +321,24 @@ def interpolate_points(points: List[tuple], spacing=0.01):
     
     for i in range(1, len(points)):
         
-        distances.append(distances[-1] + euclidean_distance(points[i-1], points[i]))
+        distances.append(
+            distances[-1] + euclidean_distance(points[i-1], points[i])
+        )
 
     ## Total path length
     total_length = distances[-1]
 
-    ## Create cubic splines for x and y based on distances
-    cs_x = CubicSpline(distances, x, bc_type=bound_cond)
-    cs_y = CubicSpline(distances, y, bc_type=bound_cond)
+    ## Interpolate curve using parametric functions
+    interp_x = interp1d(distances, x)
+    interp_y = interp1d(distances, y)
 
     # Generate new distances at equal intervals
     num_new_points = int(total_length / spacing)
     new_distances = np.linspace(0, total_length, num_new_points)
 
     # Interpolate new points at these distances
-    x_new = [round(elem, 5) for elem in cs_x(new_distances)]
-    y_new = [round(elem, 5) for elem in cs_y(new_distances)]
+    x_new = [round(elem, 5) for elem in interp_x(new_distances)]
+    y_new = [round(elem, 5) for elem in interp_y(new_distances)]
 
     return list(
         zip(x_new, y_new)

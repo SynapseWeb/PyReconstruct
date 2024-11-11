@@ -461,8 +461,16 @@ class FieldWidgetTrace(FieldWidgetBase):
         # get the points
         tform = self.section.tform
         for point in trace_points:
+            
             if points_as_pix:
-                point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.series.window, self.section.mag)
+                point = pixmapPointToField(
+                    point[0],
+                    point[1],
+                    self.pixmap_dim,
+                    self.series.window,
+                    self.section.mag
+                )
+                
             rtform_point = tform.map(*point, inverted=True) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
 

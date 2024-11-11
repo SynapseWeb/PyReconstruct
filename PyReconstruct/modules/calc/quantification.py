@@ -317,7 +317,7 @@ def interpolate_points(points: List[tuple], spacing=0.01):
     ## Determine if path open or closed
     if points[0] != points[-1]:  # open path
         bound_cond = "not-a-knot"
-    else:  # closed pathp
+    else:  # closed path
         bound_cond = "periodic"
 
     x, y = zip(*points)

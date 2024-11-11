@@ -435,18 +435,6 @@ class FieldWidgetTrace(FieldWidgetBase):
         if len(trace_points) < 2:  # do not create if one point
             return False
 
-        if simplify:  # Apply interpolation and rolling average
-
-            window = self.series.getOption("roll_window")
-
-            if not len(trace_points) <= window:
-
-                points_obj = Points(trace_points, closed)
-
-                trace_points = points_obj.interp_rolling_average(
-                    spacing=4, window=window
-                )
-
         if reduce_points:
 
             if closed:
@@ -477,6 +465,14 @@ class FieldWidgetTrace(FieldWidgetBase):
                 point = pixmapPointToField(point[0], point[1], self.pixmap_dim, self.series.window, self.section.mag)
             rtform_point = tform.map(*point, inverted=True) # apply the inverse tform to fix trace to base image
             new_trace.add(rtform_point)
+
+        if simplify:
+
+            window = self.series.getOption("roll_window")
+
+            if not len(new_trace.points) <= window:
+
+                new_trace.smooth(window=window, spacing=0.004)
         
         # add the trace to the section and select
         self.section.addTrace(new_trace, log_event=log_event)

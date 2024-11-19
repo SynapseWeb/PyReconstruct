@@ -83,6 +83,7 @@ def get_context_menu_list_obj(self):
             "text": "Operations",
             "opts":
             [
+                ("copyobj_act", "Create copy of object(s)", "", self.copyObjects),
                 ("editobjradius_act", "Edit radius...", "", self.editRadius),
                 ("editobjshape_act", "Edit shape...", "", self.editShape),
                 None,

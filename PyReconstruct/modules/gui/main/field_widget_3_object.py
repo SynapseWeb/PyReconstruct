@@ -449,6 +449,20 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         return True
     
+    @object_function(update_objects=True, reload_field=True)
+    def copyObjects(self, obj_names: list):
+        """Make copies of object(s)."""
+
+        self.series_states.addState()
+
+        series_states = self.mainwindow.field.series_states
+        copies = self.series.copyObjects(obj_names, series_states)
+
+        ## Update dictionary data and tables
+        self.table_manager.updateObjects(copies)
+
+        return True
+
     @object_function(update_objects=False, reload_field=False)
     def edit3D(self, obj_names : list):
         """Edit the 3D options for an object or set of objects."""
@@ -547,6 +561,8 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         series_states = self.mainwindow.field.series_states
         new_names = self.series.splitObject(name, series_states)
+
+        print(f"{new_names = }")
 
         self.table_manager.updateObjects(new_names)  # manual call to update the objects
 

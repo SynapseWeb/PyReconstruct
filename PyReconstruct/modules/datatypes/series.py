@@ -16,7 +16,7 @@ from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
-from .objects import Objects
+from .objects import Objects, SeriesObject
 from .default_settings import default_settings, default_series_settings
 from .host_tree import HostTree
 
@@ -1112,6 +1112,65 @@ class Series():
                 section.save()  # deleting object will automatically be logged
         
         self.modified = True
+
+    def copyObjects(self, obj_names: list, series_states=None, log_event=True) -> list:
+        """Copy object(s) from the series
+
+            Params:
+                obj_names (list): the objects to delete
+                series_states (dict): for use with GUI states
+
+        """
+
+        if log_event:
+
+            for obj_name in obj_names:
+                self.addLog(obj_name, None, f"Create copy {obj_name}_copy")
+
+        for snum, section in self.enumerateSections(
+                message="Copying object(s)...",
+                series_states=series_states
+        ):
+
+            modified = False
+
+            for obj_name in obj_names:
+                
+                if obj_name in section.contours:
+
+                    traces = section.contours[obj_name].getTraces()
+                    copy_name = f"{obj_name}_copy"
+                    
+                    for trace in traces:
+
+                        copy_trace = trace.copy()
+                        copy_trace.name = copy_name
+                        section.addTrace(copy_trace, log_event=False)
+
+                    modified = True
+
+            if modified:
+                section.save()
+
+        ## Assign object attrs to copies
+        for obj_name in obj_names:
+
+            copy_name = f"{obj_name}_copy"
+
+            ## Collect original obj attrs
+            ser_obj = SeriesObject(self, obj_name)
+            align = ser_obj.alignment
+            groups = ser_obj.groups
+            hosts = self.getObjHosts(obj_name)
+
+            ## Set to copies
+            self.setAttr(copy_name, "alignment", align, ztrace=False)
+            for group in groups: self.object_groups.add(group, copy_name)
+            self.setObjHosts([copy_name], hosts)
+
+        self.modified = True
+
+        return [f"{obj}_copy" for obj in obj_names]
     
     def deleteAllTraces(self, trace_name : str, tags : set = None, series_states=None):
         """Delete all traces with a certain name and tag set.

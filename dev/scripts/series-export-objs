@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+"""Export PyReconsruct objects as obj files.
+
+usage: series-export-objs <jser filepath> <object_1> [object_2] ...
+"""
+
+import sys
+from pathlib import Path
+
+
+def export(jser, objs_to_export: list) -> None:
+
+    from PyReconstruct.modules.datatypes import Series
+    from PyReconstruct.modules.backend.volume import export3DObjects
+
+    with Series.openJser(jser) as ser:
+
+        series_objs = ser.objects.getNames()  # get all objs in series
+
+        ## Make sure all objs_to_export exist in series
+        test_obj_req = [
+            (obj in series_objs) for obj in objs_to_export
+        ]
+
+        if not all(test_obj_req):
+
+            not_in_series = test_obj_req.index(False)
+
+            print("The following objs do not exists in this series:")
+
+            for i, test in enumerate(test_obj_req):
+
+                if not test: print(objs_to_export[i])
+
+        else:
+
+            export3DObjects(
+                ser, objs_to_export, ".", "obj", False
+            )
+
+    return None
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) < 2:
+        
+        print(__doc__)
+        sys.exit(0)
+
+    _, jser, *objs = sys.argv
+    
+    if not jser.endswith(".jser") or not Path(jser).exists() or len(objs) < 1:
+
+        print("Please provide a valid jser filepath and at least one object to export.")
+        print(__doc__.split("\n")[2])
+        sys.exit(1)
+
+    export(jser, objs)
+    print("Objects exported to current workig directory")

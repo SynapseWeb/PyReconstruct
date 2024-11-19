@@ -168,6 +168,14 @@ class TableManager():
         for table in self.tables["object"]:
             table.updateObjCols()
     
+    def hasFocus(self):
+        """Check if one of the tables is focused."""
+        for table_type in self.tables:
+            for data_table in self.tables[table_type]:
+                if data_table.table.hasFocus():
+                    return data_table
+        return None
+    
     def refresh(self):
         """Reload all of the section data.
         

@@ -2289,11 +2289,14 @@ class MainWindow(QMainWindow):
     
     def backspace(self):
         """Called when backspace is pressed."""
-        w = self.focusWidget()
-        if isinstance(w, CopyTableWidget):
-            w.backspace()
-        else:
-            self.field.backspace()
+        # use table if focused; otherwise, use field
+        w = self.getFocusWidget()
+        if w: w.backspace()
+    
+    def copy(self):
+        """Called when Ctrl+C is pressed."""
+        w = self.getFocusWidget()
+        if w: w.copy()
     
     def undo(self, redo=False):
         """Perform an undo/redo action.
@@ -2337,14 +2340,6 @@ class MainWindow(QMainWindow):
         # only 2D possible
         elif can_2D:
             act2D()
-    
-    def copy(self):
-        """Called when Ctrl+C is pressed."""
-        w = self.focusWidget()
-        if isinstance(w, CopyTableWidget):
-            w.copy()
-        else:
-            self.field.copy()
         
     def pasteAttributesToPalette(self, use_shape=False):
         """Paste the attributes from the first clipboard trace to the selected palette button."""
@@ -2610,14 +2605,6 @@ class MainWindow(QMainWindow):
                 qdarkstyle.load_stylesheet_pyside6() + 
                 qdark_addon
             )
-    
-    def setHost(self):
-        """Set the host of the selected object(s) in the field or on the table."""
-        w = self.focusWidget()
-        if isinstance(w, ObjectTableWidget):
-            w.setHosts()
-        else:
-            self.field.setHosts()
     
     def addToRecentSeries(self, series_fp : str = None):
         """Add a series to the recently opened series list."""
@@ -2891,6 +2878,17 @@ class MainWindow(QMainWindow):
             w, h, 0, 0, 1, 1,
             scale_bar=True
         )
+    
+    def getFocusWidget(self):
+        """Get the widget the user is focused on.
+        
+        Currently will only return a DataTable or the FieldWidget.
+        """
+        table = self.field.table_manager.hasFocus()
+        if table:
+            return table
+        else:
+            return self.field
 
     def restart(self):
         self.restart_mainwindow = True

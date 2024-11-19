@@ -32,6 +32,7 @@ class DataTable(QDockWidget):
         self.name = data_name
         self.series = series
         self.mainwindow = mainwindow
+
         # get the series states
         self.series_states = manager.series_states
 
@@ -325,7 +326,7 @@ class DataTable(QDockWidget):
                 
             csv_file.write(",".join(items) + "\n")
 
-        csv_file.close()        
+        csv_file.close()
     
     def backspace(self):
         """Called when user hits delete or backspace.

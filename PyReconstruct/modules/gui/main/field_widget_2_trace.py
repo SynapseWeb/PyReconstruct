@@ -21,7 +21,12 @@ from PyReconstruct.modules.calc import (
     reducePoints, 
     cutTraces,
 )
-from PyReconstruct.modules.gui.table import CopyTableWidget, getCopyTableWidget
+from PyReconstruct.modules.gui.table import (
+    CopyTableWidget, 
+    getCopyTableWidget, 
+    TraceTableWidget,
+    ZtraceTableWidget
+)
 
 from .field_widget_1_base import FieldWidgetBase
 
@@ -797,34 +802,16 @@ class FieldWidgetTrace(FieldWidgetBase):
             
             ## Get the selected names
             vscroll = None  # scroll bar if object list
-            w = self.mainwindow.focusWidget()
-
-            ## NOTE: focuseWidget() might fail to return proper widget when
-            ## lists are undocked. To get around this issue,
-            ## getCopyTableWidget() will return appropriate focus.
+            data_table = self.table_manager.hasFocus()
             
-            if isinstance(w, FieldWidgetTrace):
+            if isinstance(data_table, TraceTableWidget):
+                selected_traces = data_table.getTraces(data_table.getSelected())
 
-                selected_traces = self.section.selected_traces.copy()
-                
-            else:  # looking for CopyTablewidget
-
-                try:  # will fail if attempted to focus on undocked widget
-                    
-                    selected_items = w.container.getSelected()
-
-                except AttributeError:  # fall-back if focusWidget() fails
-
-                    focus_id = self.mainwindow.field.focus_table_id
-                    w = getCopyTableWidget(self.mainwindow, focus_id)
-                    selected_items = w.container.getSelected()
-
-                finally: 
-
-                    selected_traces = w.container.getTraces(selected_items)
-                
-                vscroll = w.verticalScrollBar()  # track scroll bar pos
+                vscroll = data_table.table.verticalScrollBar()  # track scroll bar pos
                 scroll_pos = vscroll.value()
+            
+            else:
+                selected_traces = self.section.selected_traces.copy()
                 
             ## If no objs selected
             if not selected_traces:
@@ -1126,19 +1113,15 @@ class FieldWidgetTrace(FieldWidgetBase):
         def wrapper(self, *args, **kwargs):
             # get the selected names
             vscroll = None  # scroll bar if object list
-            w = self.mainwindow.focusWidget()
-            if isinstance(w, FieldWidgetTrace):
-                selected_ztraces = self.section.selected_ztraces.copy()
-                # reduce to only ztrace names
-                selected_ztraces = [z.name for z, i in selected_ztraces]
-            elif isinstance(w, CopyTableWidget):
-                selected_ztraces = w.container.getSelected()
-                # also keep track of the scroll bar position
-                # keep track of scroll bar position
-                vscroll = w.verticalScrollBar()
+            data_table = self.table_manager.hasFocus()
+
+            if isinstance(data_table, ZtraceTableWidget):
+                selected_ztraces = data_table.getSelected()
+                vscroll = data_table.table.verticalScrollBar() # keep track of scroll bar position
                 scroll_pos = vscroll.value()
+            
             else:
-                return
+                selected_ztraces = self.section.selected_ztraces.copy()
             
             # check that conditions are met
             if not selected_ztraces:

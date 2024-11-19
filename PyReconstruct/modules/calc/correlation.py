@@ -16,7 +16,6 @@ def correlate(image1: np.ndarray, image2: np.ndarray) -> tuple:
 
     ## Convert to grayscale if RGB
     if len(image1.shape) == 3:
-        print("reshaping")
         image1 = np.mean(image1, axis=2)
     if len(image2.shape) == 3:
         image2 = np.mean(image2, axis=2)

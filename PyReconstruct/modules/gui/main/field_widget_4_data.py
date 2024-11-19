@@ -381,8 +381,6 @@ class FieldWidgetData(FieldWidgetObject):
         window = self.series.window
         dim = self.pixmap_dim
 
-        print(f"{window = }")
-
         arr_prev = self.b_section_layer.generateImageArray(dim, window)
         arr_curr = self.section_layer.generateImageArray(dim, window)
 
@@ -391,10 +389,16 @@ class FieldWidgetData(FieldWidgetObject):
 
         x, y = correlate(arr_curr, arr_prev)  # get cross correlation
 
-        print(x, y)
+        shift_x = x / self.scaling * self.section.mag
+        shift_y = (y / self.scaling * self.section.mag) * -1
+        
+        shift_tform = Transform([1, 0, shift_x, 0, 1, shift_y])
 
         tform = self.section.tform
-        shift_tform = Transform([1, 0, x, 0, 1, y])
+        self.section.tform = shift_tform * tform
+
+        self.generateView()
+        self.saveState()
 
     def calibrateMag(self, trace_lengths : dict, log_event=True):
         """Calibrate the pixel mag based on the lengths of given traces.

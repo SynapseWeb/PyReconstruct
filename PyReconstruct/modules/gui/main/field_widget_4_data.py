@@ -2,6 +2,8 @@ import os
 import time
 import math
 
+import cv2
+
 from PySide6.QtWidgets import (
     QInputDialog,
 )
@@ -9,7 +11,8 @@ from PySide6.QtWidgets import (
 from PyReconstruct.modules.calc import (
     pixmapPointToField,
     centroid,
-    lineDistance
+    lineDistance,
+    correlate
 )
 from PyReconstruct.modules.datatypes import Transform
 from PyReconstruct.modules.gui.dialog import (
@@ -363,7 +366,36 @@ class FieldWidgetData(FieldWidgetObject):
 
         # change the transform
         self.changeTform(a2b_tform)
-    
+
+    def corrAlign(self):
+        """Align image by correlation using FFT."""
+
+        if not self.b_section_layer or self.section.align_locked:
+            if self.section.align_locked:
+                notify(
+                    "Make sure to unlock section before "
+                    "preforming alignment by correlation."
+                )
+            return
+
+        window = self.series.window
+        dim = self.pixmap_dim
+
+        print(f"{window = }")
+
+        arr_prev = self.b_section_layer.generateImageArray(dim, window)
+        arr_curr = self.section_layer.generateImageArray(dim, window)
+
+        arr_prev = cv2.cvtColor(arr_prev, cv2.COLOR_RGB2BGR)
+        arr_curr = cv2.cvtColor(arr_curr, cv2.COLOR_RGB2BGR)
+
+        x, y = correlate(arr_curr, arr_prev)  # get cross correlation
+
+        print(x, y)
+
+        tform = self.section.tform
+        shift_tform = Transform([1, 0, x, 0, 1, y])
+
     def calibrateMag(self, trace_lengths : dict, log_event=True):
         """Calibrate the pixel mag based on the lengths of given traces.
 

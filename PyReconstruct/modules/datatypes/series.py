@@ -1154,19 +1154,7 @@ class Series():
 
         ## Assign object attrs to copies
         for obj_name in obj_names:
-
-            copy_name = f"{obj_name}_copy"
-
-            ## Collect original obj attrs
-            ser_obj = SeriesObject(self, obj_name)
-            align = ser_obj.alignment
-            groups = ser_obj.groups
-            hosts = self.getObjHosts(obj_name)
-
-            ## Set to copies
-            self.setAttr(copy_name, "alignment", align, ztrace=False)
-            for group in groups: self.object_groups.add(group, copy_name)
-            self.setObjHosts([copy_name], hosts)
+            self.objects.copyObjAttrs(obj_name, f"{obj_name}_copy")
 
         self.modified = True
 
@@ -2651,6 +2639,9 @@ class Series():
         n = 1
         digits = len(str(self.data.getCount(name)))
         new_names = set()
+
+        ## Grab original obj attrs
+        ##ser_obj = Series
 
         for snum, section in self.enumerateSections(
             message="Splitting object...",

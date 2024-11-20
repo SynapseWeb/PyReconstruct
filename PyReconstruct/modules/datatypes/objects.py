@@ -76,6 +76,39 @@ class Objects():
 
         return out_str
 
+    def getSourceAttrs(self, source_obj) -> tuple:
+        """Get relavant source obj attrs."""
+        
+        series_obj = SeriesObject(self.series, source_obj)
+
+        return (
+            series_obj.alignment,                # alignment 
+            series_obj.groups,                   # groups
+            self.series.getObjHosts(source_obj)  # hosts
+        )
+
+    def assignCopyAttrs(self, target_obj, alignment: str, groups: list, hosts: str) -> None:
+        """Assign relevant attributes to copied objects."""
+
+        ## Alignments
+        self.series.setAttr(
+            target_obj, "alignment", alignment, ztrace=False
+        )
+
+        ## Groups
+        for group in groups:  # groups
+            self.series.object_groups.add(group, target_obj)  # groups
+
+        ## Hosts
+        self.series.setObjHosts([target_obj], hosts)
+
+    def copyObjAttrs(self, source_obj: str, target_obj: str) -> None:
+        """Copy relavant obj attrs to another obj."""
+
+        alignment, groups, hosts = self.getSourceAttrs(source_obj)
+        self.assignCopyAttrs(target_obj, alignment, groups, hosts)        
+        
+    
 class SeriesObject():
 
     def __init__(self, series, obj_name : str):

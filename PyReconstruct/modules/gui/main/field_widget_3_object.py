@@ -562,8 +562,6 @@ class FieldWidgetObject(FieldWidgetTrace):
         series_states = self.mainwindow.field.series_states
         new_names = self.series.splitObject(name, series_states)
 
-        print(f"{new_names = }")
-
         self.table_manager.updateObjects(new_names)  # manual call to update the objects
 
         return True

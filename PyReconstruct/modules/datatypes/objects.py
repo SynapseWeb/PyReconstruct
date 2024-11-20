@@ -83,7 +83,7 @@ class Objects():
 
         return (
             series_obj.alignment,                # alignment 
-            series_obj.groups,                   # groups
+            set(series_obj.groups),              # groups
             self.series.getObjHosts(source_obj)  # hosts
         )
 

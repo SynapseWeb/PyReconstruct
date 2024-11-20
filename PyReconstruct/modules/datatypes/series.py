@@ -2640,8 +2640,8 @@ class Series():
         digits = len(str(self.data.getCount(name)))
         new_names = set()
 
-        ## Grab original obj attrs
-        ##ser_obj = Series
+        ## Get original obj attrs
+        alignment, obj_groups, host = self.objects.getSourceAttrs(name)
 
         for snum, section in self.enumerateSections(
             message="Splitting object...",
@@ -2657,6 +2657,10 @@ class Series():
                     section.addTrace(trace, log_event=False)
                     n += 1
                 section.save()
+
+        ## Assign original attrs to new objects
+        for obj in new_names:
+            self.objects.assignCopyAttrs(obj, alignment, obj_groups, host)
         
         if log_event:
             self.addLog(name, None, "Split into individual objects per trace")

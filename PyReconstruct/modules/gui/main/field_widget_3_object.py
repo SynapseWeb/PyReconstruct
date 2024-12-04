@@ -495,6 +495,18 @@ class FieldWidgetObject(FieldWidgetTrace):
                 self.series.setAttr(name, "3D_mode", new_type)
             if new_opacity is not None:
                 self.series.setAttr(name, "3D_opacity", new_opacity)
+        
+        # if this object exists in the 3D scene, update its opacity
+        if self.mainwindow.viewer:
+            for name in obj_names:
+                scene_obj = self.mainwindow.viewer.plt.objs.search(
+                    name,
+                    "object",
+                    self.series.jser_fp
+                )
+                if scene_obj:
+                    print("alpha set")
+                    scene_obj.setAlpha(new_opacity)
                     
         self.mainwindow.seriesModified(True)
         

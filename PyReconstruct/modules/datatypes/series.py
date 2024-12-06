@@ -633,6 +633,7 @@ class Series():
                 "Length"       : True,
                 "Area"         : True,
                 "Radius"       : True,
+                "Centroid"     : False,
                 "Feret"        : False,
                 
             }.items()),

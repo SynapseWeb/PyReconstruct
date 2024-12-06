@@ -30,6 +30,7 @@ class TraceData():
             self.area = area(tformed_points)
             if self.negative: self.area *= -1
         self.radius = trace.getRadius(tform)
+        self.centroid = trace.getCentroid(tform)
         self.feret = trace.getFeret(tform)
     
     def getTags(self):
@@ -43,6 +44,9 @@ class TraceData():
     
     def getRadius(self):
         return self.radius
+
+    def getCentroid(self):
+        return self.centroid
 
     def getFeret(self):
         return self.feret
@@ -443,12 +447,12 @@ class SeriesData():
         return c
     
     def exportTracesCSV(self, out_fp : str = None):
-        """Export all of the individual trace data into a CSV file.
+        """Export all trace data to a CSV file.
         
             Params:
                 out_fp (str): filepath of exported CSV (str returned if no filepath provided)
         """
-        out_str = "Name,Section,Index,Hidden,Closed,Tags,Length,Area,Radius,Feret-Max,Feret-Min\n"
+        out_str = "Name,Section,Index,Hidden,Closed,Tags,Length,Area,Radius,Centroid-x,Centroid-y,Feret-Max,Feret-Min\n"
 
         ## Iterate through all traces
         objs = self.data["objects"].keys()
@@ -474,11 +478,29 @@ class SeriesData():
                     xs_area    = round(t.getArea(), 7)
                     radius     = round(t.getRadius(), 7)
 
+                    centroid   = t.getCentroid()
+                    centroid_x = round(centroid[0], 7)
+                    centroid_y = round(centroid[1], 7)
+
                     feret      = t.getFeret()
                     feret_max  = round(feret[1], 7)
                     feret_min  = round(feret[0], 7)
 
-                    vals = [name, snum, i, hidden, closed, tags, length, xs_area, radius, feret_max, feret_min]
+                    vals = [
+                        name,
+                        snum,
+                        i,
+                        hidden,
+                        closed,
+                        tags,
+                        length,
+                        xs_area,
+                        radius,
+                        centroid_x,
+                        centroid_y,
+                        feret_max,
+                        feret_min
+                    ]
 
                     vals = list(map(str, vals))
                     

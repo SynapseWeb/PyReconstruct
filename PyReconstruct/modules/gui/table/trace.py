@@ -103,12 +103,24 @@ class TraceTableWidget(DataTable):
         elif item_type == "Radius":
             
             items.append(QTableWidgetItem(str(round(trace_data.getRadius(), 5))))
+
+        elif item_type == "Centroid":
+
+            centroid_x, centroid_y = trace_data.getCentroid()
+
+            items.extend(
+                (QTableWidgetItem(str(round(centroid_x, 5))),
+                 QTableWidgetItem(str(round(centroid_y, 5))))
+            )
             
         elif item_type == "Feret":
             
             feret_min, feret_max = trace_data.getFeret()
-            items.extend((QTableWidgetItem(str(round(feret_max, 5))),
-                          QTableWidgetItem(str(round(feret_min, 5)))))
+
+            items.extend(
+                (QTableWidgetItem(str(round(feret_max, 5))),
+                 QTableWidgetItem(str(round(feret_min, 5))))
+            )
 
         return items
     
@@ -289,6 +301,8 @@ class TraceTableWidget(DataTable):
         for col_group, checked in self.columns:
             if not checked:
                 continue
+            elif col_group == "Centroid":
+                headers_to_display.extend(("Centroid-x", "Centroid-y"))
             elif col_group == "Feret":
                 headers_to_display.extend(("Feret-Max", "Feret-Min"))
             else:

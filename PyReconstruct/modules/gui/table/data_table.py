@@ -334,6 +334,10 @@ class DataTable(QDockWidget):
         Should be overwritten in child classes.
         """
         pass
+
+    def copy(self):
+        """Copy text from the table"""
+        return self.table.copy()
     
     def closeEvent(self, event):
         """Remove self from manager table list."""

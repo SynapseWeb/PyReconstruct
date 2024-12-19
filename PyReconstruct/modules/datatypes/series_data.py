@@ -123,6 +123,24 @@ class SeriesData():
     def __getitem__(self, index):
         """Allow direct indexing of data dictionary."""
         return self.data[index]
+
+    @property
+    def objects(self):
+        """Return all object data."""
+
+        return self.data["objects"]
+
+    @property
+    def traces(self):
+        """Return all trace data by object."""
+
+        trace_data = {}
+
+        for obj_name, obj_data in self.objects.items():
+
+            trace_data[obj_name] = obj_data.traces
+
+        return trace_data
     
     def refresh(self):
         """Completely refresh the series data."""

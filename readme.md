@@ -50,12 +50,12 @@ If you notice a problem, would like to suggest a feature, or have ideas on impro
 If you use PyReconstruct in published work, please cite this repo:
 
 ```
-@software{Falco2024,
+@software{Falco2025,
 author = {Falco, Julian and Chirillo, Michael},
 title = {PyReconstruct},
-version = {1.14.0},
-month = {november},
-year = {2024}
+version = {1.15.0},
+month = {january},
+year = {2025}
 url = {https://github.com/synapseweb/pyreconstruct},
 }
 ```

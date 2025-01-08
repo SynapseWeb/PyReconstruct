@@ -545,7 +545,10 @@ class SectionTableWidget(DataTable):
             return
         
         src, index, mag, thickness = response
-        src = os.path.basename(src)
+        if not src:
+            src = "no-image"
+        else:
+            src = os.path.basename(src)
 
         self.mainwindow.saveAllData()
         

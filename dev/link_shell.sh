@@ -41,7 +41,8 @@ echo 'Adding repo to sys.path...'
 
 REPO_PATH=$(realpath ..)
 PYTHON=$($ENV_BIN/python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
-CONDA_PTH=$ENV_DIR/lib/$PYTHON/site-packages/conda.pth
+SITE_PKGS=$ENV_DIR/lib/$PYTHON/site-packages
+CONDA_PTH=$SITE_PKGS/conda.pth
 
 if [ ! -f $CONDA_PTH ] || ! grep -q $REPO_PATH $CONDA_PTH ; then
   echo $REPO_PATH >> $CONDA_PTH
@@ -49,3 +50,10 @@ fi
 
 echo 'Repo added to sys.path.'
 
+echo 'Adding Python tweaks...'
+
+echo 'import sys'                                                >> $SITE_PKGS/sitecustomize.py
+echo 'from PyReconstruct.modules.datatypes.series import Series' >> $SITE_PKGS/sitecustomize.py
+echo 'sys.modules["__main__"].open_series = Series.openJser'     >> $SITE_PKGS/sitecustomize.py
+
+echo 'Tweaks done!'

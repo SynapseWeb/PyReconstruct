@@ -560,7 +560,7 @@ class Trace():
 
         if smoothed[0] == smoothed[-1]:
 
-            smoothed = smoothed[-1]
+            smoothed = smoothed[:-1]
 
         self.points = smoothed
     

@@ -482,7 +482,8 @@ class FieldWidgetTrace(FieldWidgetBase):
         if simplify:
 
             window = self.series.getOption("roll_window")
-            new_trace.smooth(window=window, spacing=0.004)
+            interpol_spacing = self.series.avg_mag / 2
+            new_trace.smooth(window=window, spacing=interpol_spacing)  # spacing a function of pixel mag
         
         # add the trace to the section and select
         self.section.addTrace(new_trace, log_event=log_event)

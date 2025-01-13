@@ -1,5 +1,3 @@
-import os
-
 from PySide6.QtWidgets import (
     QDialog,
     QWidget,
@@ -97,7 +95,9 @@ class AllOptionsDialog(QDialog):
                 ["2D_step"],
                 ["3D_step"],
                 ["left_handed"],
-                ["time"]
+                ["time"],
+                ["computation"]
+                
             ],
             "Backup": [
                 ["backup"],
@@ -276,6 +276,7 @@ class AllOptionsDialog(QDialog):
         ]
 
         def setOption(response):
+            
             self.series.setOption("show_scale_bar_text", response[0][0][1])
             self.series.setOption("show_scale_bar_ticks", response[0][1][1])
             sbw = response[1]
@@ -361,6 +362,19 @@ class AllOptionsDialog(QDialog):
         def setOption(response):
             self.series.setOption("utc", response[0][0][1])
         self.addOptionWidget("time", structure, setOption)
+
+        # computational power
+        cpu_max = self.series.getOption("cpu_max")
+
+        structure = [
+            ["CPU usage:"],
+            ["min", ("slider", cpu_max), "max"]
+        ]
+        
+        def setOption(response):
+            self.series.setOption("cpu_max", response[0])
+            
+        self.addOptionWidget("computation", structure, setOption)
 
         # columns
         structure = [
@@ -461,7 +475,6 @@ class AllOptionsDialog(QDialog):
         # set the tab
         self.tabs.setCurrentIndex(current_tab)
 
-
 # all widgets used in the options MUST have a accept() and set() method
 # accept is used to check if the response are valid
 # set is used to actually set the series options. This happens only if accept returns True
@@ -497,7 +510,7 @@ class OptionWidget(QuickDialog):
     
     def paintEvent(self, event):
         super().paintEvent(event)
-        # draw the border manually
+        ## Draw border manually
         painter = QPainter(self)
-        painter.setPen(QApplication.palette().color(QPalette.WindowText))  # Set the color of the border
-        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Adjust the rectangle to draw inside the border
+        painter.setPen(QApplication.palette().color(QPalette.WindowText))  # Set border color
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  # Draw rectangle inside border

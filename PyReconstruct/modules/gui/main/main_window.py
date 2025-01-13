@@ -82,7 +82,10 @@ class MainWindow(QMainWindow):
         ##print(f"{QApplication.font().pointSize() = }")
         ##notify("Test message!")
 
-        print("test!")
+        usage = self.series.getOption("cpu_max")
+        cpus_to_use = determine_cpus(usage)
+
+        print(f"{cpus_to_use = }")
         
     def createMenuBar(self):
         """Create the menu for the main window."""
@@ -384,17 +387,29 @@ class MainWindow(QMainWindow):
 
         python_bin = sys.executable
         zarr_converter = Path(assets_dir) / "scripts/start_process.py"
+
+        cores = determine_cpus(  # determine number of cores to use
+            self.series.getOption("cpu_max")
+        )
         
         if create_new:
             
             convert_cmd = [
-                python_bin, str(zarr_converter.absolute()), "convert_zarr", self.series.src_dir, zarr_fp
+                python_bin,
+                str(zarr_converter.absolute()),
+                "convert_zarr",
+                str(cores),
+                self.series.src_dir, zarr_fp
             ]
             
         else:
             
             convert_cmd = [
-                python_bin, str(zarr_converter.absolute()), "convert_zarr", self.series.src_dir
+                python_bin,
+                str(zarr_converter.absolute()),
+                "convert_zarr",
+                str(cores),
+                self.series.src_dir
             ]
 
         if os.name == 'nt':

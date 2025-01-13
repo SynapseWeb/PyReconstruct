@@ -6,19 +6,20 @@ from multiprocessing import Pool
 import cv2
 import zarr
 
-
 os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
 os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = "18500000000"  # Go big or go home?
 
-if len(sys.argv) == 3:
+cores = int(sys.argv[1])  # number of cores to use
+
+if len(sys.argv) == 4:
     
-    img_dir = sys.argv[1]
-    zarr_fp = sys.argv[2]
+    img_dir = sys.argv[2]
+    zarr_fp = sys.argv[3]
     create_new = True
     
-elif len(sys.argv) == 2:
+elif len(sys.argv) == 4:
     
-    zarr_fp = sys.argv[1]
+    zarr_fp = sys.argv[2]
     create_new = False
     
 else:
@@ -72,21 +73,25 @@ def create2D(args):
 if __name__ == "__main__":
 
     if create_new:
+        
         zg = zarr.group(zarr_fp, overwrite=True)
         zg.create_group("scale_1")
         message = "Converting to zarr now..."
+        
     else:
+        
         zg = zarr.open(zarr_fp)
         message = "Updating zarr scales now..."
 
     print(message)
 
-    processes = os.cpu_count()
+    processes = cores
 
     while True:
 
         try:
-            print(f"\n\nTRYING WITH PROCESSES: {processes}\n\n")
+            
+            print(f"\n\nAttempting to convert with n cores: {processes}\n\n")
 
             t_all_start = time.perf_counter()
 
@@ -119,3 +124,4 @@ if __name__ == "__main__":
         except:
 
             processes -= 1
+            print(f"\n\nAttempting to convert with n cores: {processes}\n\n")

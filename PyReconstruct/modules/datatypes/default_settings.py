@@ -44,6 +44,7 @@ default_settings = {
     # misc preferences
     "left_handed": False,  # MFO
     "utc": False,  # MFO
+    "cpu_max": 100, 
 
     # view
     "3D_xy_res": 0,  # 0-100  # MFO

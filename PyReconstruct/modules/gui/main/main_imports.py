@@ -82,6 +82,9 @@ from PyReconstruct.modules.gui.utils import (
     get_welcome_setup,
     get_center_pixel
 )
+
+from PyReconstruct.modules.backend.func import determine_cpus
+
 from PyReconstruct.modules.gui.table import (
     HistoryTableWidget,
     CopyTableWidget,

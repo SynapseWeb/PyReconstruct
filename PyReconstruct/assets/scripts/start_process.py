@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
 
             self.message("Changing file permissions...")
 
-            zarr = sys.argv[2]
+            zarr = sys.argv[3]
 
             os.system(f"find {zarr} -type d -exec chmod g+rwx {{}} +")
             os.system(f"find {zarr} -type f -exec chmod g+rw {{}} +")

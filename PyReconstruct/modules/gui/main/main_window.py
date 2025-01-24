@@ -1855,11 +1855,11 @@ class MainWindow(QMainWindow):
     def exportToZarr(self):
         """Export series as a neuroglancer-compatible zarr."""
 
-        if not modules_available("rechunker"):
+        if not modules_available("dask"):
 
             notify(
-                "Rechunker module is not available, but "
-                "conversion will continue with chunk size (1, 256, 256)."
+                "The 'dask' module (needed to rechunk your zarr after conversion) is not "
+                "available, but conversion will continue with a chunk size of (1, 256, 256)."
             )
 
         all_sections = sorted(list(self.series.sections.keys()))
@@ -1902,6 +1902,8 @@ class MainWindow(QMainWindow):
             args = {
                 
                 "--groups"        : groups,
+                "--start_section" : start,
+                "--end_section"   : end,
                 "--max_tissue"    : max_tissue,
                 "--output"        : output
                 

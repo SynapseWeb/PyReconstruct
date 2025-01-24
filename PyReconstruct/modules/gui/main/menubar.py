@@ -60,8 +60,8 @@ def return_file_menu(self):
                 "text": "Export",
                 "opts":
                 [
-                    ("exportxml_act", "as legacy XML series...", "", self.exportToXML),
-                    ("exportngzarr_act", "as neuroglancer zarr...", "", self.exportToZarr)
+                    ("exportxml_act", "to legacy Reconstruct (XML)...", "", self.exportToXML),
+                    ("exportngzarr_act", "to Neuroglancer (Zarr)...", "", self.exportToZarr)
                 ]
             },
             None,

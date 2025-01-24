@@ -6,14 +6,15 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime, timezone
+
 import zarr
 import cv2
 
 from PySide6.QtWidgets import QApplication
 
-from PyReconstruct.modules.gui.utils import notify as note
-
 from PyReconstruct.modules.backend.imports import modules_available
+
+from PyReconstruct.modules.backend.func import stdout_to_devnull
 
 from PyReconstruct.modules.datatypes import Series
 
@@ -39,9 +40,9 @@ from PyReconstruct.assets.scripts.create_ng_zarr.utils import (
 
 qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
 
-if qt_offscreen and not modules_available("rechunker", notify=False):
+if qt_offscreen and not modules_available("dask", notify=False):
 
-    print("Please pip install 'rechunker' before converting series to zarr.")
+    print("Please pip install 'dask' before converting series to zarr.")
     sys.exit()
 
 t_convert = datetime.now(timezone.utc)
@@ -54,13 +55,17 @@ jser_fp, output_zarr, start, end, mag, padding, max_tissue = parse_args(args)
 
 print_flush("Opening series...")
 
-series = Series.openJser(jser_fp)
+series = stdout_to_devnull(Series.openJser)(jser_fp)
+
+print_flush("Series open...")
 
 print_flush("Gathering args...")
 
 groups = flatten_list(args.groups) if args.groups else None
 
-all_sections = sorted(list(series.sections.keys()))
+all_sections = sorted(
+    list(series.sections.keys())
+)
 
 if start is None: start = all_sections[1]  # steer clear of cal grid
 if end is None: end = all_sections[-1]
@@ -161,25 +166,36 @@ zarr_fp = seriesToZarr(
 if groups:
 
     padding *= img_mag
-    window_groups = groupsToVolume(series, groups, padding)
+    raw_section_bounds = [min(sections), max(sections)]
+    
+    window_groups = groupsToVolume(
+        series,
+        groups,
+        padding,
+        restrict_to_sections=raw_section_bounds
+    )
+
+    section_diff = min(window_groups[1]) - raw_section_bounds[0]
 
     for group in groups:
 
         print_flush(f"Converting group {group} to labels...")
+        
         seriesToLabels(
             series,
             zarr_fp,
             group,
             window=window_groups,
             img_mag=img_mag,
-            raw_window=window
+            raw_window=window,
+            section_diff=section_diff
         )
 
 series.close()
 
 ## Rechunk if possible
 
-if modules_available("rechunker"):
+if modules_available("dask"):
 
     print_flush("Rechunking datasets...")
 

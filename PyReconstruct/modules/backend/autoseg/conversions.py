@@ -24,8 +24,8 @@ def setDT():
     dt = now.strftime("%Y%m%d_%H%M%")
 
 
-def get_offset(window, resolution, img_mag, relative_to):
-    """Calculate offset from window."""
+def get_offset(window, resolution, img_mag, relative_to, section_diff=0):
+    """Calculate offset from a window."""
 
     lat, ax = window
 
@@ -52,8 +52,8 @@ def get_offset(window, resolution, img_mag, relative_to):
 
     x = round(x_diff_scaled * 1000)
     y = round(y_diff_scaled * 1000)
-
-    z = ( ax[0] - 1 ) * resolution[0]
+    
+    z = section_diff * resolution[0]  # offset in z
 
     offset = [z, -y, x]
 
@@ -66,12 +66,10 @@ def rechunk(
 ):
     """Rechunk all available datasets."""
 
-    from rechunker import rechunk
+    import dask.array as da
 
     if not isinstance(zarr_fp, Path):
         zarr_fp = Path(zarr_fp)
-
-    rechunked = []
     
     z = zarr.open(str(zarr_fp), "r")
 
@@ -79,40 +77,25 @@ def rechunk(
 
         if not isinstance(src_arr, zarr.Array):
             continue
+
+        src_fp = zarr_fp / arr_name
+        target_fp = src_fp.with_name(arr_name + "_rechunked")
         
-        original     = zarr_fp / arr_name
-        intermediate = zarr_fp / f"{arr_name}_tmp"
-        target       = zarr_fp / f"{arr_name}_rechunked"
-
-        if target.exists():
+        da_old = da.from_zarr(src_fp)
+        da_new = da_old.rechunk((8, 256, 256))
         
-            shutil.rmtree(str(target))
+        da_new.to_zarr(target_fp)
 
-        target_store = zarr.DirectoryStore(
-            str(target)
-        )
+        zarr.open(target_fp, "r+").attrs.update(src_arr.attrs)
 
-        rechunk_plan = rechunk(
-            src_arr,
-            target_chunks=target_chunks,
-            max_mem='1GB',  # adjust as needed
-            target_store=target_store,
-            temp_store=str(intermediate)
-        )
+        ## Remove original
+        shutil.rmtree(str(src_fp))
+        target_fp.rename(src_fp)
         
-        rechunk_plan.execute()
-
-        rechunked.append((original, target))
-
-    for original, new in rechunked:
-
-        shutil.rmtree(str(original))
-        new.rename(original)
-
     return True
 
 
-def groupsToVolume(series: Series, groups: list=None, padding: float=None):
+def groupsToVolume(series: Series, groups: list=None, padding: float=None, restrict_to_sections: list=None):
     """Convert objects in groups into a volume based on max and min x/y/section values.
 
         Params:
@@ -120,6 +103,7 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
             series (Series): a series object
             srange (tuple): the range of sections (exclusive)
             padding (float): padding (μm) to add around object
+            restrict_to_sections (list): restrict volume to sections
         Returns:
            [x position, y position, width, height], [start, end]
     """
@@ -134,7 +118,7 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
             group_objects += series.object_groups.getGroupObjects(group)
 
     for snum, section in series.enumerateSections():
-        
+
         tform = section.tform
 
         # for each object to be included...
@@ -142,7 +126,7 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
         for border_obj in group_objects:
         
             if border_obj in section.contours:
-                
+
                 xmin, ymin, xmax, ymax = section.contours[border_obj].getBounds(tform)
 
                 sec_range.add(snum)
@@ -154,7 +138,10 @@ def groupsToVolume(series: Series, groups: list=None, padding: float=None):
     y = min(y_vals)
     h = max(y_vals) - y
 
-    sec_range = [min(sec_range), max(sec_range) + 1]
+    if restrict_to_sections:
+        start, end = restrict_to_sections
+        sec_range = [sec for sec in sec_range if sec >= start and sec <= end]
+        sec_range = [min(sec_range), max(sec_range) + 1]
 
     if padding:
         
@@ -220,6 +207,7 @@ def seriesToZarr(series : Series,
     if os.path.isdir(data_fp): shutil.rmtree(data_fp)  # delete existing zarr
         
     data_zg = zarr.open(data_fp, "a")
+    
     data_zg.create_dataset(
         "raw",
         shape=shape,
@@ -242,7 +230,9 @@ def seriesToZarr(series : Series,
 
     # save attributes
     data_zg["raw"].attrs["offset"] = offset
-    data_zg["raw"].attrs["resolution"] = resolution 
+    data_zg["raw"].attrs["voxel_size"] = resolution 
+    data_zg["raw"].attrs["axis_names"] = ["z", "y", "x"]
+    data_zg["raw"].attrs["units"] = ["nm", "nm", "nm"]
 
     # save additional attributes for loading back into jser
     data_zg["raw"].attrs["window"] = window
@@ -257,6 +247,7 @@ def seriesToZarr(series : Series,
     
     # create threadpool and interate through series
     threadpool = ThreadPoolProgBar()
+    
     for i, snum in enumerate(sections):
         threadpool.createWorker(
             exportSection,
@@ -267,6 +258,7 @@ def seriesToZarr(series : Series,
             window,
             pixmap_dim
         )
+        
     threadpool.startAll("Converting series to zarr...")
 
     return data_fp
@@ -278,7 +270,8 @@ def seriesToLabels(series: Series,
                    window: Union[List, None] = None,
                    img_mag: float = 0.00254,
                    chunk_size: tuple = (1, 256, 256),
-                   raw_window=Union[List, None]):
+                   raw_window=Union[List, None],
+                   section_diff: int=0):
     """Export contours as labels to an existing zarr.
     
         Params:
@@ -295,7 +288,7 @@ def seriesToLabels(series: Series,
     sections = list(range(*window[1]))
     mag = raw.attrs["true_mag"]
     alignment = raw.attrs["alignment"]
-    resolution = raw.attrs["resolution"]
+    resolution = raw.attrs["voxel_size"]
 
     if window:
 
@@ -303,7 +296,8 @@ def seriesToLabels(series: Series,
             window,
             resolution,
             img_mag,
-            relative_to=raw_window
+            relative_to=raw_window,
+            section_diff=section_diff
         )
         
         window = window[0]
@@ -345,7 +339,9 @@ def seriesToLabels(series: Series,
     )
     
     data_zg[dataset_name].attrs["offset"] = offset
-    data_zg[dataset_name].attrs["resolution"] = resolution
+    data_zg[dataset_name].attrs["voxel_size"] = resolution
+    data_zg[dataset_name].attrs["axis_names"] = ["z", "y", "x"]
+    data_zg[dataset_name].attrs["units"] = ["nm", "nm", "nm"]
 
     # create threadpool
     threadpool = ThreadPoolProgBar()
@@ -737,9 +733,4 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
     
     # return the series
     return series
-
-    
-
-
-
 

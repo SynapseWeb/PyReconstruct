@@ -31,7 +31,7 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
     for module in modules:
 
         try:
-
+            
             __import__(module)
 
         except ModuleNotFoundError:
@@ -56,7 +56,8 @@ def modules_available(modules: Union[str, List[str]], notify: bool=True) -> bool
 
             ## Catch modules with different names on pip install
             mod_pip_names = {
-                "cloudvolume": "cloud-volume"
+                "cloudvolume": "cloud-volume",
+                "dask": "dask==2024.12.1"
             }
             
             for mod, pip_install_name in mod_pip_names.items():

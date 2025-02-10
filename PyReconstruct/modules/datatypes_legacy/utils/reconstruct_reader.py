@@ -112,15 +112,40 @@ def process_section_file(path, data_check=False):
             image_data["_path"] = section._path
             image_data["transform"] = transform
 
-            # Image contours
+            # Image contours (usually 1 but can be multiple or none)
+    
             image_contours = [child for child in children if child.tag == "Contour"]
+            
             if len(image_contours) > 1:
+                
                 raise Exception(f"No support for images with multiple domain contours: index {data['index']}.")
+            
             elif not image_contours:
-                raise Exception(f"No support for images without domain contour: index {data['index']}")
+
+                ## If no domain contour proceed with fake contour
+                
+                fake_image_contour_data = {
+                    "name": "domain_fake",
+                    "comment": "None",
+                    "hidden": "False",
+                    "closed": "True",
+                    "simplified": False,
+                    "mode": 11,
+                    "boder": (1.0, 0.0, 1.0),
+                    "fill": (1.0, 0.0, 1.0),
+                    "points": _get_points_float("0 0, 1 0, 1 1, 1 0,")
+                }
+                    
+                image_contour_data = fake_image_contour_data
+                
             else:
+                
                 image_contour_data = extract_section_contour_attributes(
-                    image_contours[0])
+                    image_contours[0]
+                )
+
+                print(f"{image_contour_data = }")
+                
                 image_data.update(image_contour_data)
 
             image = Image(**image_data)

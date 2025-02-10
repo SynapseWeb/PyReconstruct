@@ -238,7 +238,9 @@ class VPlotter(vedo.Plotter):
         if not self.selected:
             return
         
-        only_scale_cubes = all((obj.type == "scale_cube") for obj in self.selected)
+        only_scale_cubes = all(
+            (obj.type == "scale_cube") for obj in self.selected
+        )
         
         # if only scale cubes being modified
         if only_scale_cubes:
@@ -277,12 +279,16 @@ class VPlotter(vedo.Plotter):
 
         # mixed objects being modified
         else:
+            
             # get defaults
             if len(self.selected) == 1:
+                
                 obj = self.selected[0]
                 color = obj.color
                 alpha = obj.alpha
-            else:
+
+            else:  # multiple objs selected
+                
                 color, alpha = None, None
             
             structure = [
@@ -301,6 +307,29 @@ class VPlotter(vedo.Plotter):
                 if alpha: obj.setAlpha(alpha, self.series)
         
         self.updateSelected()
+        self.render()
+
+    def changeBackground(self):
+        """Modify the background color of a scene."""
+
+        background_color = tuple(
+            int(e * 255) for e in self.renderer.GetBackground()
+        )
+        
+        structure = [
+            ["Color:", ("color", background_color)],
+        ]
+
+        response, confirmed = QuickDialog.get(None, structure, "Background color")
+        
+        if not confirmed:
+            return
+
+        self.saveState()
+
+        new_color = response[0]
+
+        self.background(new_color)
         self.render()
     
     def incAlpha(self, i : float):
@@ -796,6 +825,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     ("settrinc_act", "Set translate/rotate step...", "", self.setStep),
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
                     ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
+                    ("backgroud_act", "Change background", "", self.plt.changeBackground),
                     None,
                     ("exportscene_act", "Export scene...", "", self.exportScene),
                     ("screenshot_act", "Save scene screenshot...", "", self.screenshot),

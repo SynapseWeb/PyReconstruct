@@ -1,6 +1,6 @@
 import sys
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 
 def customExcepthook(exctype, value, traceback):
@@ -14,5 +14,12 @@ def customExcepthook(exctype, value, traceback):
         "please issue a bug report at:\n\n"
         "https://github.com/synapseweb/pyreconstruct/issues"
     )
+
+    active_window = QApplication.activeWindow()
+    parent = active_window if active_window else None
     
-    QMessageBox.critical(None, "Error", message, QMessageBox.Ok)
+    QMessageBox.critical(parent, "Error", message, QMessageBox.Ok)
+    
+    if active_window:
+        active_window.activateWindow()
+        

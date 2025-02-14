@@ -79,13 +79,7 @@ class MainWindow(QMainWindow):
     def test(self) -> None:
         """Run test here."""
         
-        ##print(f"{QApplication.font().pointSize() = }")
-        ##notify("Test message!")
-
-        usage = self.series.getOption("cpu_max")
-        cpus_to_use = determine_cpus(usage)
-
-        print(f"{cpus_to_use = }")
+        print("test!")
         
     def createMenuBar(self):
         """Create the menu for the main window."""

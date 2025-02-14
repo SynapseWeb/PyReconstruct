@@ -117,6 +117,7 @@ def newMenu(widget : QWidget, container, menu_dict : dict):
     for item in menu_dict["opts"]:
         addItem(widget, menu, item)
 
+
 def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     """Create an action within a menu.
     
@@ -148,6 +149,7 @@ def newAction(widget : QWidget, container : QMenu, action_tuple : tuple):
     widget.addAction(action)
     setattr(widget, act_name, action)
 
+
 def newQAction(widget : QWidget, container : QMenu, action : QAction):
     """Add an existing action to the menu.
     
@@ -157,6 +159,7 @@ def newQAction(widget : QWidget, container : QMenu, action : QAction):
             action (QAction): the action to add to the menu
     """
     container.addAction(action)
+
 
 def addItem(widget : QWidget, container, item):
     """Add an item to an existing menu or menubar
@@ -175,6 +178,7 @@ def addItem(widget : QWidget, container, item):
     elif item is None:
         container.addSeparator()
 
+
 def populateMenu(widget : QWidget, menu : QMenu, menu_list : list):
     """Create a menu.
     
@@ -185,6 +189,7 @@ def populateMenu(widget : QWidget, menu : QMenu, menu_list : list):
     """
     for item in menu_list:
         addItem(widget, menu, item)
+
 
 def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     """Create a menubar for a widget.
@@ -198,10 +203,12 @@ def populateMenuBar(widget : QWidget, menu : QMenuBar, menubar_list : list):
     for menu_dict in menubar_list:
         newMenu(widget, menu, menu_dict)
 
+
 def setMainWindow(mw):
     """Set the main window for the gui functions."""
     global mainwindow
     mainwindow = mw
+
 
 def notify(message):
     """Notify the user."""
@@ -215,10 +222,13 @@ def notify(message):
             QMessageBox.Ok
         )
 
+        mainwindow.activateWindow()  # focus on mainwindow
+
     else:
 
         print(message)
         input("Press any key to continue...")
+
 
 def notifyConfirm(message, yn=False):
     """Notify the user and give option to OK or cancel."""
@@ -256,9 +266,11 @@ def notifyConfirm(message, yn=False):
             
             return response == QMessageBox.Ok
 
+
 def noUndoWarning():
     """Inform the user of an action that can't be undone."""
     return notifyConfirm("WARNING: This action cannot be undone.")
+
 
 def saveNotify():
     response = QMessageBox.question(
@@ -278,6 +290,7 @@ def saveNotify():
         return "no"
     else:
         return "cancel"
+
 
 def unsavedNotify():
     response = QMessageBox.question(
@@ -346,8 +359,8 @@ def drawOutlinedText(
     painter.strokePath(path, pen)
     painter.fillPath(path, brush)
 
-# PROGRESS BAR
 
+# PROGRESS BAR
 class BasicProgbar():
     def __init__(self, text : str, maximum=100):
         """Create a 'vanilla' progress indicator.
@@ -381,6 +394,7 @@ class BasicProgbar():
     def close(self):
         """Force finish the progbar."""
         print()
+
 
 def getProgbar(text, cancel=True, maximum=100):
     """Create a progress bar (either for pyqt or in cmd text).
@@ -416,6 +430,7 @@ def getProgbar(text, cancel=True, maximum=100):
     
     return progbar
 
+
 def notifyLocked(obj_names, series, series_states):
     """Open a dialog when the user tries to interact with a locked object."""
     if len(obj_names) > 1:
@@ -438,6 +453,7 @@ def notifyLocked(obj_names, series, series_states):
         return True
     else:
         return False
+
 
 def checkMag(s_series, o_series):
     """Check the magnification between the two series. If different, prompt user for response."""
@@ -528,6 +544,7 @@ def getAlignmentsMenu(series, setAlignment):
         )
     
     return get_menu_dict("alignmentsmenu", "Series alignment", opts_list)
+
 
 def getGroupsMenu(self):
     """Create submenu for group visibility."""

@@ -26,6 +26,11 @@ from .utils import (
     get_window_size,
     get_center_pixel
 )
+
 from .str_helper import sortList, lessThan
+
 from .completer_box import CompleterBox
+
 from .errors import customExcepthook
+
+from .colors import rgb_norm_1, rgb_norm_256, is_light

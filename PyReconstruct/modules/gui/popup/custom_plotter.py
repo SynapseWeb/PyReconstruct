@@ -12,7 +12,6 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
-from PyReconstruct.modules.gui.utils import populateMenuBar, notify, notifyConfirm
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.backend.volume import (
@@ -21,6 +20,14 @@ from PyReconstruct.modules.backend.volume import (
     return_mesh_mtl,
     combine_mtl_files,
     combine_obj_files
+)
+from PyReconstruct.modules.gui.utils import (
+    populateMenuBar,
+    notify,
+    notifyConfirm,
+    rgb_norm_1,
+    rgb_norm_256,
+    is_light
 )
 
 from .help3D import Help3DWidget
@@ -38,11 +45,15 @@ class VPlotter(vedo.Plotter):
 
         self.objs = SceneObjectList()
 
-        self.selected_text = vedo.Text2D(pos="top-left", font="Courier")
+        self.text_color = "black"
+        
+        ## Text displaying selected objs
+        self.selected_text = vedo.Text2D(pos="top-left", font="Courier", c=self.text_color)
         self.add(self.selected_text)
         self.selected = []
 
-        self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier")
+        ## Text dispalying underlying obj and mouse position
+        self.pos_text = vedo.Text2D(pos="bottom-left", font="Courier", c=self.text_color)
         self.add(self.pos_text)
         self.add_callback("MouseMove", self.mouseMoveEvent)
 
@@ -104,31 +115,55 @@ class VPlotter(vedo.Plotter):
     
     def updateSelected(self):
         """Update the selected names text."""
-        # update the text
+
+        ## Update text showing selected objs
         if not self.selected:
+            
             self.selected_text.text("")
+            
         else:
+            
             names = []
+            
             for o in self.selected:
                 name = o.name
                 if o.series_fp != self.series.jser_fp:
                     name += f" ({os.path.basename(o.series_fp)[:-5]})"
                 names.append(name)
+
             name_str = "\n".join(names[:5])
+
             if len(self.selected) > 5:
                 name_str += "\n..."
-            self.selected_text.text(f"Selected:\n{name_str}")
 
-        # update the object highlight(s)
+            self.selected_text.text(f"Selected:\n{name_str}")
+            self.selected_text.c(self.text_color)
+            self.pos_text.c(self.text_color)
+
+        ## Update object highlighting
         for scene_obj in self.objs.values():
+            
             if scene_obj in self.selected:
+                
                 if scene_obj.type == "scale_cube":
+                    
                     scene_obj.msh.color((64, 64, 64))
+                    
                 else:
+                    
                     scene_obj.msh.lw(1)
+                    
+                    if self.text_color == "black":  
+                        scene_obj.msh.lc("lightgray")
+                        
+                    else:
+                        scene_obj.msh.lc("darkgray")
+                    
             else:
+                
                 if scene_obj.type == "scale_cube":
                     scene_obj.msh.color(scene_obj.color)
+                    
                 else:
                     scene_obj.msh.lw(0)
         
@@ -312,13 +347,8 @@ class VPlotter(vedo.Plotter):
     def changeBackground(self):
         """Modify the background color of a scene."""
 
-        background_color = tuple(
-            int(e * 255) for e in self.renderer.GetBackground()
-        )
-        
-        structure = [
-            ["Color:", ("color", background_color)],
-        ]
+        background_color = rgb_norm_256(self.renderer.GetBackground())
+        structure = [["Color:", ("color", background_color)]]
 
         response, confirmed = QuickDialog.get(None, structure, "Background color")
         
@@ -330,8 +360,12 @@ class VPlotter(vedo.Plotter):
         new_color = response[0]
 
         self.background(new_color)
-        self.render()
-    
+
+        ## Adjust text color
+        self.text_color = "black" if is_light(new_color) else "white"
+
+        self.updateSelected()  # self.updateSelected() calls self.render()
+
     def incAlpha(self, i : float):
         """Increment the transparency of the selected meshes.
         
@@ -1180,7 +1214,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         self.plt.screenshot(filename, scale=scale_dpi)
         
-        print(f"Scene export at dpi of {dpi} to: {filename}")
+        print(f"Scene exported at {dpi} dpi to: {filename}")
         
     def reload(self):
         """Reload all the objects in the scene."""

@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtGui import QPainter, QPixmap, QImage
 from PySide6.QtCore import Qt
 
 from .image_layer import ImageLayer
@@ -32,7 +32,8 @@ class SectionLayer(ImageLayer, TraceLayer):
         generate_traces=True,
         hide_traces=False,
         show_all_traces=False,
-        hide_image=False
+        hide_image=False,
+        invert_image=False
         ):
         """Generate pixmap view for a section.
         
@@ -56,6 +57,12 @@ class SectionLayer(ImageLayer, TraceLayer):
             self.image_layer.fill(Qt.black)
         elif generate_image:
             self.image_layer = self.generateImageLayer(pixmap_dim, window)
+        
+        # Invert base color if requested
+        if invert_image:
+            temp_img = self.image_layer.toImage()
+            temp_img.invertPixels(QImage.InvertRgb)
+            self.image_layer = QPixmap.fromImage(temp_img)
         
         ## Hide all traces if requested
         if hide_traces:

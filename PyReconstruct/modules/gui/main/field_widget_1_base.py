@@ -127,6 +127,9 @@ class FieldWidgetBase:
         ## Create zarr view if applicable
         self.createZarrLayer()
         
+        # Reset invert color option to false
+        self.series.setOption("invert_colors", False)
+        
         ## Reset b section and layer
         self.b_section = None
         self.b_section_layer = None
@@ -258,6 +261,9 @@ class FieldWidgetBase:
         assert(abs(x_scaling - y_scaling) < 1e-6)
         
         self.scaling = x_scaling
+        
+        # check if image should be inverted
+        invert_image = self.series.getOption("invert_colors")
 
         ## Generate section view
         view = self.section_layer.generateView(
@@ -267,7 +273,8 @@ class FieldWidgetBase:
             generate_traces=generate_traces,
             hide_traces=self.hide_trace_layer,
             show_all_traces=self.show_all_traces,
-            hide_image=self.hide_image
+            hide_image=self.hide_image,
+            invert_image=invert_image
         )
 
         # blend b section if requested
@@ -312,6 +319,11 @@ class FieldWidgetBase:
         if update:
             self.update()
     
+    def toggleInvertColors(self):
+        current = self.series.getOption("invert_colors")
+        self.series.setOption("invert_colors", not current)
+        self.generateView()
+        
     def clearStates(self) -> None:
         """Create/clear the states for each section."""
         self.series_states = SeriesStates(self.series)

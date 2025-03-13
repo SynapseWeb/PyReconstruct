@@ -2,7 +2,7 @@ import pathlib
 from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = '1.16.0'
+VERSION = '1.16.1'
 PACKAGE_NAME = 'PyReconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'm.chirillo@utexas.edu'

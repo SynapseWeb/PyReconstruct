@@ -17,7 +17,7 @@ if len(sys.argv) == 4:
     zarr_fp = sys.argv[3]
     create_new = True
     
-elif len(sys.argv) == 4:
+elif len(sys.argv) == 3:
     
     zarr_fp = sys.argv[2]
     create_new = False

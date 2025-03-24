@@ -3,7 +3,7 @@ env/
 venv/
 build/
 dist/
-PyReconstruct.egg-info/
+*.egg-info/
 **/__pycache__/
 *.pyc
 run_julian.sh

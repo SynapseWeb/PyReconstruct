@@ -53,6 +53,7 @@ default_settings = {
     "screenshot_res": 300,
     "show_ztraces": True,  # MFO
     "fill_opacity": 0.2,  # MFO
+    "invert_colors": False,  # MFO
     "find_zoom": 95.0,  # MFO
     "show_flags": "unresolved",  # MFO
     "display_closest": True,  # MFO

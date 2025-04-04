@@ -37,14 +37,15 @@ from .field_widget_5_mouse import (
     STAMP, 
     GRID, 
     FLAG, 
-    HOST
+    HOST,
+    ZTOOL
 )
 from .field_widget_7_view import FieldWidgetView
 
 
 class FieldWidget(QWidget, FieldWidgetView):
     """
-    This is the final class that handles all of the GUI functions.
+    Final field class that handles all GUI functions.
     """
 
     def __init__(self, series : Series, mainwindow : QMainWindow):
@@ -141,7 +142,7 @@ class FieldWidget(QWidget, FieldWidgetView):
     def event(self, event):
         """Overwritten from QWidget.event.
         
-        Added to catch gestures and zorder events.
+        Added to catch gestures and order events.
         """
         if event.type() == QEvent.Gesture:
             self.gestureEvent(event)
@@ -224,50 +225,67 @@ class FieldWidget(QWidget, FieldWidgetView):
             self.mousePanzoomPress(event)
             return
 
-        # pull up right-click menu if requirements met
-        context_menu = (
-            self.rclick and
-            not (self.mouse_mode == PANZOOM) and
-            not self.is_line_tracing and
-            not self.hosted_trace
+        ## Define conditions to restrict showing context menu
+        exclude_context = any(
+            (
+                self.mouse_mode in (PANZOOM, ZTOOL), 
+                self.is_line_tracing,
+                self.hosted_trace
+            )
         )
-        if context_menu:
+        
+        if self.rclick and not exclude_context:  # open context menu
+
             clicked_label = None
+
             if self.zarr_layer:
                 clicked_label = self.zarr_layer.getID(event.x(), event.y())
+
             self.clicked_trace, clicked_type = self.section_layer.getTrace(event.x(), event.y())
+
             self.mainwindow.checkActions(context_menu=True, clicked_trace=self.clicked_trace, clicked_label=clicked_label)
             self.lclick, self.rclick, self.mclick = False, False, False
+
             if clicked_label:
                 self.mainwindow.label_menu.exec(event.globalPos())
+
             elif clicked_type == "flag":
                 self.trigger_edit_flag = True
+
             else:
                 self.mainwindow.field_menu.exec(event.globalPos())
+
             self.mainwindow.checkActions()
+
             return
 
         if self.mouse_mode == POINTER:
             self.pointerPress(event)
+
         elif self.mouse_mode == PANZOOM:
             self.mousePanzoomPress(event) 
+
         elif self.mouse_mode == KNIFE:
             self.knifePress(event)
+
         elif self.mouse_mode == SCISSORS:
             self.scissorsPress(event)
+
+        elif self.mouse_mode == ZTOOL:
+            self.ztoolPress(event)
         
         elif self.usingLocked():
             self.notifyLocked(self.tracing_trace.name)
 
-        elif (
-            self.mouse_mode == CLOSEDTRACE or
-            self.mouse_mode == OPENTRACE
-        ):
+        elif self.mouse_mode in (CLOSEDTRACE, OPENTRACE):
             self.tracePress(event)
+            
         elif self.mouse_mode == STAMP:
             self.stampPress(event)
+            
         elif self.mouse_mode == GRID:
             self.gridPress(event)
+            
         elif self.mouse_mode == HOST:
             self.hostPress(event)
 
@@ -330,6 +348,8 @@ class FieldWidget(QWidget, FieldWidgetView):
             self.stampMove(event)
         elif self.mouse_mode == HOST:
             self.hostMove(event)
+        elif self.mouse_mode == ZTOOL:
+            self.ztoolMove(event)
 
     def mouseReleaseEvent(self, event):
         """Called when mouse button is released.
@@ -383,10 +403,11 @@ class FieldWidget(QWidget, FieldWidgetView):
             self.gridRelease(event)
         elif self.mouse_mode == HOST:
             self.hostRelease(event)
+        elif self.mouse_mode == ZTOOL:
+            self.ztoolRelease(event)
         
         self.lclick = False
         self.rclick = False
         self.mclick = False
         self.single_click = False
-
 

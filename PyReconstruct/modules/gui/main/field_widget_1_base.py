@@ -53,6 +53,7 @@ class FieldWidgetBase:
         self.blend_sections : bool          = False
 
         self.current_trace : list           = []
+        self.current_ztrace: list          = []
         self.moving_traces : list           = None
         self.moving_points : list           = None
         self.moving_flags : list            = None
@@ -66,6 +67,7 @@ class FieldWidgetBase:
         self.is_panzooming : bool           = False
         self.is_gesturing : bool            = False
         self.is_scissoring : bool           = False
+        self.is_z_tracing : bool            = False
 
         self.closed_trace_shape             = "trace"
 

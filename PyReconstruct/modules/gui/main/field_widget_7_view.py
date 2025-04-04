@@ -197,7 +197,7 @@ class FieldWidgetView(FieldWidgetPaint):
     
     def endPendingEvents(self):
         """End ongoing events that are connected to the mouse."""
-        if self.is_line_tracing:
+        if self.is_line_tracing and not self.is_z_tracing:
             self.lineRelease(override=True)
     
     def backspace(self):

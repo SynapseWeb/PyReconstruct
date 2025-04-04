@@ -19,7 +19,7 @@ from PyReconstruct.modules.constants import locations as loc
 
 from .field_widget_4_data import FieldWidgetData
 
-POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG, HOST = range(10)
+POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG, HOST, ZTOOL = range(11)
 
 class FieldWidgetMouse(FieldWidgetData):
     """
@@ -35,29 +35,34 @@ class FieldWidgetMouse(FieldWidgetData):
             Params:
                 mode (int): number corresponding to mouse mode
         """
-        self.endPendingEvents()  # end any mouse-related pending events
+        self.endPendingEvents()  # end pending mouse events
         self.mouse_mode = mode
 
-        # set the cursor icon
+        ## Set cursor icon
         if mode in (POINTER, HOST):
             cursor = QCursor(Qt.ArrowCursor)
+            
         elif mode == PANZOOM:
             cursor = QCursor(Qt.SizeAllCursor)
+            
         elif mode == KNIFE:
             cursor = QCursor(
                 QPixmap(os.path.join(loc.img_dir, "knife.cur")),
                 hotX=5, hotY=5
             )
-        elif (mode == OPENTRACE or
-              mode == CLOSEDTRACE):
+            
+        elif mode in (OPENTRACE, CLOSEDTRACE):
             cursor = self.pencil_l if self.series.getOption("left_handed") else self.pencil_r
-        elif (mode == STAMP or
-              mode == GRID):
+            
+        elif mode in (STAMP, GRID, ZTOOL):
             cursor = QCursor(Qt.CrossCursor)
+            
         elif mode == SCISSORS:
             cursor = QCursor(Qt.CrossCursor)
+            
         elif mode == FLAG:
             cursor = QCursor(Qt.WhatsThisCursor)
+            
         self.setCursor(cursor)
 
     def checkMouseBoundary(self):
@@ -89,7 +94,7 @@ class FieldWidgetMouse(FieldWidgetData):
             self.generateView()
     
     def activateMouseBoundaryTimer(self):
-        """Activate the timer to check the mouse boundary."""
+        """Activate timer to check mouse boundary."""
         if self.mouse_boundary_timer is None:
             self.mouse_boundary_timer = QTimer(self)
             self.mouse_boundary_timer.timeout.connect(self.checkMouseBoundary)
@@ -420,6 +425,7 @@ class FieldWidgetMouse(FieldWidgetData):
 
         ## Start line tracing of only trace mode set
         trace_mode = self.series.getOption("trace_mode")
+        
         if trace_mode == "poly":
             self.is_line_tracing = True
             self.activateMouseBoundaryTimer()
@@ -527,25 +533,35 @@ class FieldWidgetMouse(FieldWidgetData):
     def lineRelease(self, event=None, override=False, log_event=True):
         """Called when mouse is released in line mode."""
         
-        if override or self.rclick and self.is_line_tracing:  # complete existing trace if right mouse button
+        if override or self.rclick and self.is_line_tracing:  # complete existing trace if r-click
+            
             closed = (self.mouse_mode == CLOSEDTRACE)
+
             self.is_line_tracing = False
+
             self.deactivateMouseBoundaryTimer()
+
             if len(self.current_trace) > 1:
+                
                 current_trace_copy = self.current_trace.copy()
+                
                 self.newTrace(
                     current_trace_copy,
                     self.tracing_trace,
                     closed=closed,
                     log_event=(log_event and (not self.is_scissoring))
                 )
+                
                 if log_event and self.is_scissoring:
                     self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
+                    
                 if closed and len(self.current_trace) > 2:
                     self.autoMerge()
+                    
             self.current_trace = []
 
             if self.is_scissoring:
+                
                 self.is_scissoring = False
                 self.setMouseMode(SCISSORS)
                 self.setTracingTrace(
@@ -795,3 +811,81 @@ class FieldWidgetMouse(FieldWidgetData):
                 self.hosted_trace = None
                 self.current_trace = []
         self.update()
+
+    def ztoolPress(self, event):
+        """Called when mouse is pressed in ztool mode."""
+        
+        if self.lclick:  # L-click
+
+            x, y, s = event.x(), event.y(), self.section.n
+
+            tform = self.section.tform
+            point = pixmapPointToField(x, y, self.pixmap_dim, self.series.window, self.section.mag)
+            x, y = tform.map(*point, inverted=True)
+
+            if not self.is_z_tracing:  # first point
+                
+                self.current_trace = [(x, y)]
+                self.current_ztrace = [(x, y, s)]
+
+                self.is_z_tracing = True
+                self.is_line_tracing = True
+
+                self.activateMouseBoundaryTimer()
+                self.mainwindow.checkActions()
+
+            else:  # subsequent points
+                
+                self.current_trace.append((x, y))
+                self.current_ztrace.append((x, y, s))
+
+                self.update()
+
+        else:  # R-click
+
+            pass
+
+    def ztoolMove(self, event):
+        """Called when mouse is moved in ztool mode."""
+
+        pass
+
+    def ztoolRelease(self, event):
+        """Called when mouse is released in ztool mode."""
+
+        if self.rclick and self.is_z_tracing:  # complete ztrace if R-click
+            
+            self.is_z_tracing = False
+            self.is_line_tracing = False
+
+            self.deactivateMouseBoundaryTimer()
+
+            if len(self.current_trace) > 1:
+
+                # print(self.tracing_trace.name)
+                # print(self.tracing_trace.color)
+                # print(self.current_ztrace)
+
+                # current_trace_copy = self.current_trace.copy()
+
+                self.series_states.addState()
+
+                self.series.createZtrace(
+                    self.tracing_trace.name,
+                    cross_sectioned=True,
+                    z_points=self.current_ztrace,
+                    ztrace_color=self.tracing_trace.color
+                )
+                
+                self.mainwindow.field.table_manager.updateZtraces()
+                    
+                self.current_trace = []
+                self.current_ztrace = []
+
+                self.saveState() 
+                self.generateView()
+                
+            else:
+                
+                self.update()
+

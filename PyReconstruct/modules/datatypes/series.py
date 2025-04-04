@@ -919,66 +919,76 @@ class Series():
         
         return zvals
     
-    def createZtrace(self, obj_name : str, cross_sectioned : bool = True, log_event=True):
+    def createZtrace(
+            self,
+            obj_name : str,
+            cross_sectioned : bool = True,
+            z_points : list = [],
+            ztrace_color : tuple = (0, 0, 0),
+            log_event=True
+    ):
         """Create a ztrace from an existing object in the series.
         
             Params:
                 obj_name (str): the name of the object to create the ztrace from
                 cross_sectioned (bool): True if one ztrace point per section, False if multiple per section
+                z_points (list): points provided if creating ztrace from field
+                ztrace_color (tuple): color of ztrace to display in field
                 log_event (bool): True if event should be logged
         """
-        ztrace_name = f"{obj_name}_zlen"
-        ztrace_color = (0, 0, 0)  # default to black
+        if not z_points:  # append name with "_zlen"
+            ztrace_name = f"{obj_name}_zlen"
+        else:  # use tracing_trace name
+            ztrace_name = obj_name
 
         ## Remove existing ztrace with same name
         
         if ztrace_name in self.ztraces:
             del(self.ztraces[ztrace_name])
-        
-        ## If create on midpoints, make one point per section
+            if log_event: self.addLog(ztrace_name, None, "Updated ztrace")
 
-        if cross_sectioned:
-            
-            points = []
-            
-            for snum, section in self.enumerateSections(
-                message="Creating ztrace..."
-            ):
-                
-                if obj_name in section.contours:
-                    
-                    contour = section.contours[obj_name]
-                    p = (*contour.getMidpoint(), snum)
-                    points.append(p)
-                    
-        ## Otherwise, make points by trace history by section. Each trace gets
-        ## its own point, ztrace points made in chronological order of trace
-        ## history. (Accomodates obliquely and longitudinally sectioned objects.
-        
-        else:
-            
-            points = []
+        if not z_points:  # generate points from already traced object if non provided
 
-            for snum, section in self.enumerateSections(
-                message="Creating ztrace..."
-            ):
-                
-                if obj_name in section.contours:
-                    
-                    contour = section.contours[obj_name]
+            ## If create on midpoints, make one point per section
 
-                    for trace in contour:
-                        # get the midpoint
-                        p = (*trace.getMidpoint(), snum)
-                        points.append(p)
-        
+            if cross_sectioned:
+
+                for snum, section in self.enumerateSections(
+                    message="Creating ztrace..."
+                ):
+
+                    if obj_name in section.contours:
+
+                        contour = section.contours[obj_name]
+                        p = (*contour.getMidpoint(), snum)
+                        z_points.append(p)
+
+            ## Otherwise, make points by trace history by section. Each trace gets
+            ## its own point, ztrace points made in chronological order of trace
+            ## history. (Accomodates obliquely and longitudinally sectioned objects.
+
+            else:
+
+                for snum, section in self.enumerateSections(
+                    message="Creating ztrace..."
+                ):
+
+                    if obj_name in section.contours:
+
+                        contour = section.contours[obj_name]
+
+                        for trace in contour:
+                            # get the midpoint
+                            p = (*trace.getMidpoint(), snum)
+                            z_points.append(p)
+
         self.ztraces[ztrace_name] = Ztrace(
             ztrace_name,
             ztrace_color,
-            points
+            z_points
         )
 
-        ## Assign obj alingment to new ztrace
+        ## Assign obj alignment to new ztrace
         
         obj_align = self.getAttr(obj_name, "alignment")
         self.setAttr(ztrace_name, "alignment", obj_align, ztrace=True)

@@ -54,6 +54,7 @@ class MousePalette():
         self.createModeButton("Grid", 7)
         self.createModeButton("Flag", 8)
         self.createModeButton("Host", 9)
+        self.createModeButton("Ztool", 10)
 
         # create palette buttons
         self.trace_x = 0.51

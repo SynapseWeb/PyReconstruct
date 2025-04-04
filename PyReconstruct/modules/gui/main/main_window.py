@@ -148,39 +148,58 @@ class MainWindow(QMainWindow):
         
         if not (bool(selected_traces) ^ bool(selected_ztraces)):
             
-            for a in self.trace_actions: a.setEnabled(False)
-            for a in self.ztrace_actions: a.setEnabled(False)
+            for a in self.trace_actions:
+                a.setEnabled(False)
+
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
                 
         ## If selected trace in highlighted traces
         
-        elif ((not context_menu and selected_traces) or
-              (context_menu and clicked_trace in selected_traces)
+        elif (
+                (not context_menu and selected_traces) or
+                (context_menu and clicked_trace in selected_traces)
         ):
             
-            for a in self.ztrace_actions: a.setEnabled(False)
-            for a in self.trace_actions: a.setEnabled(True)
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
+                
+            for a in self.trace_actions:
+                a.setEnabled(True)
                 
         ## If selected ztrace in highlighted ztraces
         
-        elif ((not context_menu and field_section.selected_ztraces) or
-              (context_menu and clicked_trace in field_section.selected_ztraces)
+        elif (
+                (not context_menu and field_section.selected_ztraces) or
+                (context_menu and clicked_trace in field_section.selected_ztraces)
         ):
             
-            for a in self.trace_actions: a.setEnabled(False)
-            for a in self.ztrace_actions: a.setEnabled(True)
+            for a in self.trace_actions:
+                a.setEnabled(False)
+                
+            for a in self.ztrace_actions:
+                a.setEnabled(True)
             
         else:
             
-            for a in self.trace_actions: a.setEnabled(False)
-            for a in self.ztrace_actions: a.setEnabled(False)
+            for a in self.trace_actions:
+                a.setEnabled(False)
+                
+            for a in self.ztrace_actions:
+                a.setEnabled(False)
 
         # check labels
         if clicked_label:
+            
             if clicked_label in self.field.zarr_layer.selected_ids:
+
                 self.importlabels_act.setEnabled(True)
+
                 if len(self.zarr_layer.selected_ids) > 1:
                     self.mergelabels_act.setEnabled(True)
+                    
             else:
+                
                 self.importlabels_act.setEnabled(False)
                 self.mergelabels_act.setEnabled(False)
         

@@ -862,12 +862,6 @@ class FieldWidgetMouse(FieldWidgetData):
 
             if len(self.current_trace) > 1:
 
-                # print(self.tracing_trace.name)
-                # print(self.tracing_trace.color)
-                # print(self.current_ztrace)
-
-                # current_trace_copy = self.current_trace.copy()
-
                 self.series_states.addState()
 
                 self.series.createZtrace(
@@ -882,7 +876,6 @@ class FieldWidgetMouse(FieldWidgetData):
                 self.current_trace = []
                 self.current_ztrace = []
 
-                self.saveState() 
                 self.generateView()
                 
             else:

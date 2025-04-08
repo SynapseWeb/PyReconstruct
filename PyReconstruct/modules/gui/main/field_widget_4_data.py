@@ -128,7 +128,7 @@ class FieldWidgetData(FieldWidgetObject):
 
         self.section.tform = new_tform
         self.series.addLog(None, self.section.n, "Modify transform")
-        
+
         self.generateView()
         self.saveState()
     

@@ -936,7 +936,7 @@ class Series():
                 ztrace_color (tuple): color of ztrace to display in field
                 log_event (bool): True if event should be logged
         """
-        if not z_points:  # append name with "_zlen"
+        if not z_points:  # append name with "_zlen" if creating from obj
             ztrace_name = f"{obj_name}_zlen"
         else:  # use tracing_trace name
             ztrace_name = obj_name
@@ -988,10 +988,13 @@ class Series():
             z_points
         )
 
-        ## Assign obj alignment to new ztrace
-        
-        obj_align = self.getAttr(obj_name, "alignment")
-        self.setAttr(ztrace_name, "alignment", obj_align, ztrace=True)
+        ## Assign alignement to ztrace 
+        if not z_points:  # use obj alignment
+            alignment = self.getAttr(obj_name, "alignment")
+        else:  # use current alignment 
+            alignment = self.alignment
+
+        self.setAttr(ztrace_name, "alignment", alignment, ztrace=True)
 
         ## Set modified and log event
         

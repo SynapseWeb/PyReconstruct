@@ -167,25 +167,25 @@ if groups:
 
     padding *= img_mag
     raw_section_bounds = [min(sections), max(sections)]
-    
-    window_groups = groupsToVolume(
-        series,
-        groups,
-        padding,
-        restrict_to_sections=raw_section_bounds
-    )
-
-    section_diff = min(window_groups[1]) - raw_section_bounds[0]
 
     for group in groups:
 
         print_flush(f"Converting group {group} to labels...")
+
+        window_group = groupsToVolume(
+            series,
+            [group],
+            padding,
+            restrict_to_sections=raw_section_bounds
+        )
+
+        section_diff = min(window_group[1]) - raw_section_bounds[0]
         
         seriesToLabels(
             series,
             zarr_fp,
             group,
-            window=window_groups,
+            window=window_group,
             img_mag=img_mag,
             raw_window=window,
             section_diff=section_diff

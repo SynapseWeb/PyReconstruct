@@ -824,6 +824,9 @@ class MainWindow(QMainWindow):
         # open new series
         self.openSeries(series)
 
+        # set view to home
+        self.field.home()
+
         # prompt user to save series
         self.saveAsToJser()
     

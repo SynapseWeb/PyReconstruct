@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing_extensions import get_annotations
 import numpy as np
 from pathlib import Path
 from datetime import datetime
@@ -19,9 +20,83 @@ dt = None
 
 def setDT():
     """Set date and time."""
+
     global dt
     now = datetime.now()
     dt = now.strftime("%Y%m%d_%H%M%")
+
+
+def get_zarr_array(zarr: zarr.hierarchy.Group, path: str="raw"):
+    """Find and return array in zarr container."""
+
+    from zarr import Array as z_array
+
+    if isinstance(zarr[path], z_array):
+
+        return zarr[path]
+    
+    elif isinstance(zarr[f"{path}/s0"], z_array):
+
+        return zarr[f"{path}/s0"]
+
+    else:
+
+        return ValueError("No zarr array found.")
+
+
+def get_true_mag(zarr_array):
+    """Get true magnification of a zarr.
+
+    True mag from original series typically a float in nanometers, while mag for
+    neuroglancer is typically an int in microns.
+    """
+
+    if "true_mag" in zarr_array.attrs:
+        true_mag = zarr_array.attrs["true_mag"]
+        
+    elif "resolution" in zarr_array.attrs:
+        true_mag = zarr_array.attrs["resolution"][-1]
+
+    else:  # no resolution provided
+        true_mag = 0.004  # default to x, y res of 4 nm × 4 nm
+
+    return true_mag
+
+
+def get_array_offset(zarr_array):
+    """Get offset of a zarr array."""
+
+    try:
+        offset = zarr_array.attrs["offset"]
+
+    except KeyError:
+        offset = [0, 0, 0]
+
+    return offset
+
+
+def get_resolution(zarr_array):
+    """Get resolution of a zarr array."""
+
+    try:
+        resolution = zarr_array.attrs["resolution"]
+
+    except KeyError:
+        resolution = zarr_array.attrs["voxel_size"]
+
+    return resolution
+
+
+def get_thickness(zarr_array):
+    """Get thickness (in nm) of series in zarr format."""
+
+    try:
+        thickness = zarr_array.attrs["resolution"][0]
+        
+    except KeyError:
+        thickness = zarr_array.attrs["voxel_size"][0]
+
+    return thickness / 1000  # μm -> nm
 
 
 def get_offset(window, resolution, img_mag, relative_to, section_diff=0):
@@ -39,7 +114,7 @@ def get_offset(window, resolution, img_mag, relative_to, section_diff=0):
         lat[1] + lat[3]
     )
 
-    ## do the things...
+    ## Do the things...
 
     scale_x = resolution[2] / 1000 / img_mag
     scale_y = resolution[1] / 1000 / img_mag
@@ -367,56 +442,71 @@ def seriesToLabels(series: Series,
         series.object_groups.removeGroup(del_group)
 
 
-def labelsToObjects(series : Series, data_fp : str, group : str, labels : list = None):
+def labelsToObjects(series : Series, data_fp : str, group : str, ids: list = None) -> None:
     """Convert labels in a zarr file to objects in a series.
     
         Params:
             series (Series): the series to import zarr data into
             data_zg (str): the filepath for the zarr group
             group (str): the name of the group with labels of interest
-            labels (list): the labels to import (will import all if None)
+            ids (list): the labels to import (will import all if None)
         Returns:
             the threadpool
     """
     data_zg = zarr.open(data_fp)
+    
     if group not in data_zg:
         return
-    
-    sections = data_zg["raw"].attrs["sections"]
 
-    # create threadpool and iterate through sections
+    raw = get_zarr_array(data_zg, "raw")
+    labels_array = get_zarr_array(data_zg, group)
+    sections = raw.attrs["sections"]
+
+    resolution_z = labels_array.attrs["voxel_size"][0]
+    offset_z = labels_array.attrs["offset"][0]
+    section_start = int(offset_z / resolution_z)
+
+    ## Create threadpool and iterate across sections
     setDT()
     threadpool = ThreadPoolProgBar()
-    for snum in sections:
+
+    for snum in range(section_start, max(sections) + 1):
         threadpool.createWorker(
             importSection,
             data_zg,
             group,
             snum,
             series,
-            labels
+            ids
         )
+
     threadpool.startAll("Converting labels to contours...")
 
 
 def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
-    """Get the exteriors from a mask.
+    """Get exteriors from a mask.
     
         Params:
             mask (np.ndarray): the mask to extract exteriors from
         Returns:
             (list[np.ndarray]): the list of exteriors
     """
-    cv_detected, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cv_detected, hierarchy = cv2.findContours(
+        mask.astype(np.uint8),
+        cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    
     exteriors = []
+
     for e in cv_detected:
         e = e[:,0,:]
         # invert the y axis
-        e[:,1] *= -1
-        e[:,1] += mask.shape[0]
+        # e[:,1] *= -1
+        # e[:,1] += mask.shape[0]
         # reduce the points
         e = reducePoints(e, array=True)
         exteriors.append(e)
+
     return exteriors
 
 
@@ -524,46 +614,48 @@ def importSection(data_zg, group, snum, series, ids=None):
             series (Series): the series
             ids (list): the ids to include in importing
     """
-    # get relevant information from zarr
-    labels = data_zg[group]
-    resolution = labels.attrs["resolution"]
-    try:
-        offset = labels.attrs["offset"]
-    except KeyError:
-        offset = [0, 0, 0]
+    
+    labels_array = get_zarr_array(data_zg, group)
+    resolution = get_resolution(labels_array)
+    offset = get_array_offset(labels_array)
+    z_offset = int(offset[0] / resolution[0])
 
+    # print(f"{resolution = }")
+    # print(f"{offset = }")
+    # print(f"{z_offset = }")
 
-    raw = data_zg["raw"]
-    raw_resolution = raw.attrs["resolution"]
-    try:
-        raw_offset = raw.attrs["offset"]
-    except KeyError:
-        raw_offset = [0, 0, 0]
+    raw = get_zarr_array(data_zg, "raw")
+    raw_resolution = get_resolution(raw)
+    raw_offset = get_array_offset(raw)
 
+    # print(f"{resolution = }")
+    # print(f"{raw_resolution = }")
+    # print(f"{raw_offset = }")
+    
     window = raw.attrs["window"]
     sections = raw.attrs["sections"]
     mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
     alignment = raw.attrs["alignment"]
     tform = Transform(alignment[str(snum)])
 
-    # check if section was segmented
-    z = sections.index(snum)
-    if not 0 <= z < labels.shape[0]:
-        print(f"Section {snum} importing finished")
-        return
-    # load the section and data
+    # print(f"{mag = }")
+
+    ## Load section and corresponding data
     section = series.loadSection(snum)
-    arr = labels[z]
+    z = sections.index(snum)
+    arr = labels_array[z - z_offset]
     
     pixmap_dim = (arr.shape[1], arr.shape[0])
 
-    # modify the window to adjust for offset and resolution
+    ## Modify window to adjust for offset and resolution
     zarr_window = window.copy()
 
-    field_offset_x = (offset[2] / resolution[2] - raw_offset[2] / raw_resolution[2]) * mag
-    field_offset_y = (offset[1] / resolution[1] - raw_offset[2] / raw_resolution[2]) * mag
     field_width = pixmap_dim[0] * mag
     field_height = pixmap_dim[1] * mag
+
+    field_offset_x = (offset[2] / resolution[2] - raw_offset[2] / raw_resolution[2]) * mag
+    field_offset_y = (offset[1] / resolution[1] - raw_offset[1] / raw_resolution[1]) * mag
+    field_offset_y = field_height - field_offset_y  # account for zarr origin at top of image
 
     zarr_window[0] += field_offset_x
     zarr_window[1] += field_offset_y
@@ -601,29 +693,42 @@ def importSection(data_zg, group, snum, series, ids=None):
     # iterate through label ids
     if ids is None:
         ids = np.unique(arr)
+        
     for id in ids:
+        
         if id == 0:
             continue
+
         # get exteriors for the label
         exteriors = getExteriors(arr == id)
+
         for ext in exteriors:
-            # convert to float
+            ## Convert to float
             ext = ext.astype(np.float64)
-            # add offset to coordinates
-            ext[:,0] += offset[2] / resolution[2]
-            ext[:,1] += offset[1] / resolution[1]
-            # scale to actual coordinates
+
+            ## Add offset to coordinates
+            ext[:,0] += offset[2] / resolution[2]  # x
+
+            ext[:,1] += offset[1] / resolution[1]  # y
+            ext[:,1] *= -1
+            ext[:,1] += raw.shape[1]
+
+            ## Convert to coordinates
             ext *= mag
-            # add origin
+            
+            ## Add origin back (if ROI originaly exported with offset)
             ext[:,0] += window[0]
             ext[:,1] += window[1]
-            # apply reverse transform
-            trace_points = tform.map(ext.tolist(), inverted=True)          
-            # create the trace and add to section
+            
+            ## Apply reverse transform
+            trace_points = tform.map(ext.tolist(), inverted=True)
+            
+            ## Create the trace and add to section
             trace = Trace(name=f"autoseg_{id}", color=tuple(map(int, colorize(id))))
             trace.points = trace_points
             trace.fill_mode = ("transparent", "unselected")
             section.addTrace(trace)
+
         # add trace to group
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 
@@ -641,32 +746,23 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
     ng_zarr = zarr.open(zarr_fp, "r+")
 
     ## Assume "raw" exists
-    raw = ng_zarr["raw"]
+    raw = get_zarr_array(ng_zarr, "raw")
 
-    ## Save the original attributes
+    ## Save original attributes
     original_attr_items = []
 
     ## These modified while making new series
     for k in ("window", "sections", "alignment"):
         try:
-            original_attr_items.append((k, raw.attrs[k]))
+            original_attr_items.append(
+                (k, raw.attrs[k])
+            )
         except KeyError:
             pass
 
-    ## Set magnification
-    if "true_mag" in raw.attrs:
-        
-        true_mag = raw.attrs["true_mag"]
-        
-    elif "resolution" in raw.attrs:
-        
-        true_mag = raw.attrs["resolution"][-1]
-        raw.attrs["true_mag"] = true_mag
-
-    else:  # no resolution provided
-
-        true_mag = 4  # default to lat res of 4x4
-        raw.attrs["true_mag"] = true_mag
+    ## Get true mag
+    true_mag = get_true_mag(raw)
+    raw.attrs["true_mag"] = true_mag
 
     ## Set window
     z, y, x = raw.shape
@@ -675,23 +771,24 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
 
     ## Set the sections
     sections = list(range(z))
-    digits = len(str(sections[-1]))
+    n_digits = len(str(sections[-1]))
     raw.attrs["sections"] = sections
 
     ## Set alignment
     alignment = {}
+    
     for snum in sections:
         alignment[str(snum)] = Transform.identity().getList()
+        
     raw.attrs["alignment"] = alignment
 
     ## Get thickness
-    thickness = raw.attrs["resolution"][0] / 1000  # nm -> μm
+    thickness = get_thickness(raw)
 
     ## Create zarr containing the images
-    ## (i.e., split out each section into a new individual group)
+    ## (i.e., each section becomes an zarr group)
 
     images_dir = Path(zarr_fp).with_name(f"{name}_images.zarr")
-    print(images_dir)
 
     images_zarr = zarr.open(images_dir, "w-")
     images_zarr.create_group("scale_1")
@@ -700,16 +797,15 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
 
     for i, snum in enumerate(sections):
 
-        src = f"section{snum:0{digits}d}"
-        print(f"Woring on {src}...")
+        src = f"section{snum:0{n_digits}d}"
+        print(f"Working on {src}...")
 
         images.create_dataset(src, data=raw[i])
 
         img_loc = os.path.join(images_dir, "scale_1", src)
-        print(img_loc)
         image_locations.append(img_loc)
     
-    # create the new series
+    ## Create new series
     series = Series.new(
         image_locations,
         name,
@@ -717,7 +813,7 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
         thickness
     )
 
-    # import the label data into the series
+    ## Import label data into series
     for label_group in label_groups:
         if label_group in ng_zarr:
             labelsToObjects(
@@ -726,11 +822,10 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
                 label_group,
             )
     
-    # reset the original attributes for the raw
+    ## Reset original attributes for raw
     for key, value in original_attr_items:
         raw.attrs[key] = value
-
     
-    # return the series
+    ## Return series
     return series
 

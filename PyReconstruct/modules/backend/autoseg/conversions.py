@@ -23,7 +23,7 @@ def setDT():
 
     global dt
     now = datetime.now()
-    dt = now.strftime("%Y%m%d_%H%M%")
+    dt = now.strftime("%Y%m%d_%H%M")
 
 
 def get_zarr_array(zarr: zarr.hierarchy.Group, path: str="raw"):
@@ -510,6 +510,38 @@ def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
     return exteriors
 
 
+def exterior_to_points(ext: list[np.ndarray], offset, resolution, raw, window, tform, mag):
+    """Convert exterior to trace points."""
+
+    ## Convert to float
+    ext = ext.astype(np.float64)
+
+    ## Add offset to coordinates
+    ext[:,0] += offset[2] / resolution[2]  # x
+
+    ext[:,1] += offset[1] / resolution[1]  # y
+    ext[:,1] *= -1
+    ext[:,1] += raw.shape[1]
+
+    ## Convert to coordinates
+    ext *= mag
+            
+    ## Add origin back (if ROI originaly exported with offset)
+    ext[:,0] += window[0]
+    ext[:,1] += window[1]
+            
+    ## Apply reverse transform
+    trace_points = tform.map(ext.tolist(), inverted=True)
+
+    return trace_points
+
+
+def colorize_id(id):
+    """Return color for ID."""
+
+    return tuple(map(int, colorize(id)))
+
+
 def exportSection(data_zg,
                   snum : int,
                   series : Series,
@@ -620,30 +652,26 @@ def importSection(data_zg, group, snum, series, ids=None):
     offset = get_array_offset(labels_array)
     z_offset = int(offset[0] / resolution[0])
 
-    # print(f"{resolution = }")
-    # print(f"{offset = }")
-    # print(f"{z_offset = }")
-
     raw = get_zarr_array(data_zg, "raw")
     raw_resolution = get_resolution(raw)
     raw_offset = get_array_offset(raw)
 
-    # print(f"{resolution = }")
-    # print(f"{raw_resolution = }")
-    # print(f"{raw_offset = }")
-    
     window = raw.attrs["window"]
     sections = raw.attrs["sections"]
     mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
     alignment = raw.attrs["alignment"]
     tform = Transform(alignment[str(snum)])
 
-    # print(f"{mag = }")
-
     ## Load section and corresponding data
     section = series.loadSection(snum)
     z = sections.index(snum)
-    arr = labels_array[z - z_offset]
+
+    try:
+        arr = labels_array[z - z_offset]
+        
+    except zarr.errors.BoundsCheckError:  # return if out of bounds
+        return
+        
     
     pixmap_dim = (arr.shape[1], arr.shape[0])
 
@@ -699,37 +727,22 @@ def importSection(data_zg, group, snum, series, ids=None):
         if id == 0:
             continue
 
-        # get exteriors for the label
+        ## Get exteriors for ID
         exteriors = getExteriors(arr == id)
 
+        ## Add exteriors as traces
         for ext in exteriors:
-            ## Convert to float
-            ext = ext.astype(np.float64)
 
-            ## Add offset to coordinates
-            ext[:,0] += offset[2] / resolution[2]  # x
+            trace_name = f"autoseg_{id}"
+            trace_color = colorize_id(id)
 
-            ext[:,1] += offset[1] / resolution[1]  # y
-            ext[:,1] *= -1
-            ext[:,1] += raw.shape[1]
-
-            ## Convert to coordinates
-            ext *= mag
-            
-            ## Add origin back (if ROI originaly exported with offset)
-            ext[:,0] += window[0]
-            ext[:,1] += window[1]
-            
-            ## Apply reverse transform
-            trace_points = tform.map(ext.tolist(), inverted=True)
-            
-            ## Create the trace and add to section
-            trace = Trace(name=f"autoseg_{id}", color=tuple(map(int, colorize(id))))
-            trace.points = trace_points
+            trace = Trace(name=trace_name, color=trace_color)
+            trace.points = exterior_to_points(ext, offset, resolution, raw, window, tform, mag)
             trace.fill_mode = ("transparent", "unselected")
+            
             section.addTrace(trace)
 
-        # add trace to group
+        ## Add trace to group
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
 
     section.save()
@@ -744,14 +757,12 @@ def zarrToNewSeries(zarr_fp : str, label_groups : list, name : str):
             name (str): the name of the new series
     """
     ng_zarr = zarr.open(zarr_fp, "r+")
-
-    ## Assume "raw" exists
-    raw = get_zarr_array(ng_zarr, "raw")
+    raw = get_zarr_array(ng_zarr, "raw")  # assume "raw" exists as zarr path
 
     ## Save original attributes
     original_attr_items = []
 
-    ## These modified while making new series
+    ## These attrs modified while making new series
     for k in ("window", "sections", "alignment"):
         try:
             original_attr_items.append(

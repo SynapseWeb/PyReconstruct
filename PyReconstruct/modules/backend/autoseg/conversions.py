@@ -563,7 +563,8 @@ def exportSection(data_zg,
 
     arr = slayer.generateImageArray(
         pixmap_dim, 
-        window
+        window,
+        bc=False
     )
 
     data_zg["raw"][z] = arr

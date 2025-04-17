@@ -167,7 +167,7 @@ class ImageLayer():
             painter.drawPolygon(self.bc_poly)
         painter.end()
 
-    def generateImageLayer(self, pixmap_dim : tuple, window : list, get_crop_only=False) -> QPixmap:
+    def generateImageLayer(self, pixmap_dim : tuple, window : list, get_crop_only=False, bc=True) -> QPixmap:
         """Generate the image layer.
         
             Params:
@@ -310,18 +310,19 @@ class ImageLayer():
         
         # step 12: draw brightness and contrast
         # create the brightness/contrast polygon (draws as a polygon over the image)
-        self.bc_poly = QPolygon()
-        for x, y in self.base_corners:
-            x, y = (x * mag, y * mag)
-            x, y = tform.map(x, y)
-            x, y = fieldPointToPixmap(x, y, self.series.window, self.pixmap_dim, self.section.mag)
-            self.bc_poly.append(QPoint(x, y))
-        self._drawBrightness(image_layer)
-        self._drawContrast(image_layer)
+        if bc:
+            self.bc_poly = QPolygon()
+            for x, y in self.base_corners:
+                x, y = (x * mag, y * mag)
+                x, y = tform.map(x, y)
+                x, y = fieldPointToPixmap(x, y, self.series.window, self.pixmap_dim, self.section.mag)
+                self.bc_poly.append(QPoint(x, y))
+            self._drawBrightness(image_layer)
+            self._drawContrast(image_layer)
 
         return image_layer
     
-    def generateImageArray(self, pixmap_dim : tuple, window : list, get_crop_only=False):
+    def generateImageArray(self, pixmap_dim : tuple, window : list, get_crop_only=False, bc : bool = True):
         """Generate the image layer.
         
             Params:
@@ -334,7 +335,8 @@ class ImageLayer():
         qimage = self.generateImageLayer(
             pixmap_dim,
             window,
-            get_crop_only
+            get_crop_only,
+            bc
         ).toImage()
         qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
 

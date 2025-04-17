@@ -565,15 +565,24 @@ class TraceLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         arr = np.zeros(shape=(pixmap_h, pixmap_w), dtype=np.uint32)   
 
+        id_lookup_table = {}
+        
         for trace in traces:
+
+            name = trace.name
+            name_id = hashName(name)
+            
             self._drawTraceLabel(
                 arr, 
                 trace, 
-                hashName(trace.name), 
+                name_id, 
                 tform
             )
 
-        return arr
+            id_lookup_table.update({name: name_id})
+
+        return arr, id_lookup_table
+
 
 def hashName(name : str):
     """Create a hash label for a name.

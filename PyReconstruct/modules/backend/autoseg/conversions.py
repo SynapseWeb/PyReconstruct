@@ -1,6 +1,5 @@
 import os
 import shutil
-from typing_extensions import get_annotations
 import numpy as np
 from pathlib import Path
 from datetime import datetime
@@ -566,8 +565,8 @@ def exportSection(data_zg,
         pixmap_dim, 
         window
     )
+
     data_zg["raw"][z] = arr
-    # print(f"Section {snum} exporting finished")
 
 
 def exportTraces(data_zg,
@@ -601,13 +600,15 @@ def exportTraces(data_zg,
     else:
         tform = None
 
-    # gather the traces
+    ## Gather traces
     traces = []
+    
     if is_group:
         group = group_or_tag
         for cname in series.object_groups.getGroupObjects(group):
             if cname in section.contours:
                 traces += section.contours[cname].getTraces()
+
     else:
         tag = group_or_tag
         for cname in series.object_groups.getGroupObjects(del_group): # only search recent seg group to save time
@@ -615,13 +616,18 @@ def exportTraces(data_zg,
                 for trace in section.contours[cname]:
                     if tag in trace.tags:
                         traces.append(trace)
-    
-    data_zg[f"labels_{group_or_tag}"][z] = slayer.generateLabelsArray(
+
+    array, sec_id_dict = slayer.generateLabelsArray(
             pixmap_dim,
             window,
             traces,
             tform=tform
     )
+
+    labels_name = f"labels_{group_or_tag}"
+
+    data_zg[labels_name][z] = array
+    data_zg[labels_name].attrs["gt_lookup"] = sec_id_dict
 
     # delete group if requested
     if not is_group:

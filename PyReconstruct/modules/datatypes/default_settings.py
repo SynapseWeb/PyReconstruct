@@ -1,13 +1,13 @@
-import os
+import getpass
 
 # MFO = modifiable from options dialog
 
 def get_username() -> str:
     """Return username."""
     try:
-        user = os.getlogin()
-    except FileNotFoundError:
-        user = os.environ.get("USER")
+        user = getpass.getuser()
+    except OSError:
+        user = 'default'
     return user
 
 default_settings = {

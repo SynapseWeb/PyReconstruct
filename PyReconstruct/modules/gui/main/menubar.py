@@ -330,8 +330,9 @@ def return_view_menu(self):
             ("viewmag_act", "View magnification...", "", self.field.setViewMagnification),
             ("findview_act", "Set zoom when finding contours...", "", self.setFindZoom),
             None,
-            ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),
+            ("toggleztraces_act", "Toggle show Z-traces", "", self.toggleZtraces),            
             None,
+            ("invertcolors_act", "Invert Colors", "checkbox", self.field.toggleInvertColors),
             {
                 "attr_name": "palettemenu",
                 "text": "Palette",

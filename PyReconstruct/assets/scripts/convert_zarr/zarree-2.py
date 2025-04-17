@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     processes = cores
 
-    while True:
+    while True and processes > 0:
 
         try:
             
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
             break
         
-        except:
+        except Exception as e:
 
+            print(f"Failed with core n of {processes} with exception: {e}")
             processes -= 1
-            print(f"\n\nAttempting to convert with n cores: {processes}\n\n")

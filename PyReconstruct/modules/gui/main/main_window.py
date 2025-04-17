@@ -412,7 +412,8 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                self.series.src_dir, zarr_fp
+                f"\"{self.series.src_dir}\"",
+                zarr_fp
             ]
             
         else:
@@ -422,7 +423,7 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                self.series.src_dir
+                f"\"{self.series.src_dir}\""
             ]
 
         if os.name == 'nt':

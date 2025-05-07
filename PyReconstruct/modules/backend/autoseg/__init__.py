@@ -4,5 +4,6 @@ from .conversions import (
     labelsToObjects,
     groupsToVolume,
     zarrToNewSeries,
+    createZarrName,
     rechunk
 )

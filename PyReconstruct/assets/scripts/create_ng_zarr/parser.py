@@ -81,6 +81,12 @@ def get_args ():
         help="Inclue all possible tissue and black space",
     )
 
+    parser.add_argument(
+        "--labels_only",
+        action="store_true",
+        help="Export only labels",
+    )
+
     args = parser.parse_args()
 
     ## Optional toml config file
@@ -116,8 +122,9 @@ def parse_args(args):
     mag = float(args.mag)
     padding = int(args.padding)
     max_tissue = bool(args.max_tissue)
+    labels_only = bool(args.labels_only)
 
     if start: start = int(start)
     if end: end = int(end)
 
-    return jser_fp, output_zarr, start, end, mag, padding, max_tissue
+    return jser_fp, output_zarr, start, end, mag, padding, max_tissue, labels_only

@@ -261,12 +261,12 @@ def seriesToZarr(series : Series,
 
     ## Calculate field attributes
     shape = (
-        len(sections),  # z
-        round(window[3]/mag),   # height
-        round(window[2]/mag)    # width
+        len(sections),          # z
+        round(window[3]/mag),   # h
+        round(window[2]/mag)    # w
     )
 
-    pixmap_dim = shape[2], shape[1]  # the w and h of a 2D array
+    pixmap_dim = shape[2], shape[1]  # w and h of a 2D array
 
     ## Create zarr
     
@@ -274,7 +274,8 @@ def seriesToZarr(series : Series,
         
         zarr_name = createZarrName(window)
         
-        if not output_dir: output_dir = os.path.dirname(series.jser_fp)
+        if not output_dir:
+            output_dir = os.path.dirname(series.jser_fp)
             
         data_fp = os.path.join(output_dir, zarr_name)
         
@@ -289,6 +290,8 @@ def seriesToZarr(series : Series,
         dtype=np.uint8
     )
 
+    raw = data_zg["raw"]
+
     ## Get values for saving zarr files (from last known section)
     section_thickness = series.loadSection(sections[0]).thickness
     z_res = int(section_thickness * 1000)
@@ -299,27 +302,27 @@ def seriesToZarr(series : Series,
     ## Get series alignment
     alignment = {}
     for snum in sections:
-        current_tranform = series.data["sections"][snum]["tforms"][series.alignment].getList()
-        alignment[str(snum)] = current_tranform
+        snum_tform = series.data["sections"][snum]["tforms"][series.alignment].getList()
+        alignment[str(snum)] = snum_tform
 
-    # save attributes
-    data_zg["raw"].attrs["offset"] = offset
-    data_zg["raw"].attrs["voxel_size"] = resolution 
-    data_zg["raw"].attrs["axis_names"] = ["z", "y", "x"]
-    data_zg["raw"].attrs["units"] = ["nm", "nm", "nm"]
+    ## Save attributes
+    raw.attrs["offset"] = offset
+    raw.attrs["voxel_size"] = resolution 
+    raw.attrs["axis_names"] = ["z", "y", "x"]
+    raw.attrs["units"] = ["nm", "nm", "nm"]
 
-    # save additional attributes for loading back into jser
-    data_zg["raw"].attrs["window"] = window
-    data_zg["raw"].attrs["sections"] = sections
-    data_zg["raw"].attrs["true_mag"] = mag
-    data_zg["raw"].attrs["alignment"] = alignment
+    ## Save additional attributes for loading back into jser
+    raw.attrs["window"] = window
+    raw.attrs["sections"] = sections
+    raw.attrs["true_mag"] = mag
+    raw.attrs["alignment"] = alignment
 
-    # save other info to root .zattrs
+    ## Save other info to root .zattrs
     if other_attrs:
         for k, v in other_attrs.items():
             data_zg.attrs[k] = v
     
-    # create threadpool and interate through series
+    ## Create threadpool and interate through series
     threadpool = ThreadPoolProgBar()
     
     for i, snum in enumerate(sections):
@@ -344,7 +347,7 @@ def seriesToLabels(series: Series,
                    window: Union[List, None] = None,
                    img_mag: float = 0.00254,
                    chunk_size: tuple = (1, 256, 256),
-                   raw_window=Union[List, None],
+                   raw_window: Union[List, None] = None,
                    section_diff: int=0):
     """Export contours as labels to an existing zarr.
     
@@ -360,9 +363,9 @@ def seriesToLabels(series: Series,
 
     shape = raw.shape
     sections = list(range(*window[1]))
-    mag = raw.attrs["true_mag"]
+    mag = get_true_mag(raw)
+    resolution = get_resolution(raw)
     alignment = raw.attrs["alignment"]
-    resolution = raw.attrs["voxel_size"]
 
     if window:
 
@@ -479,7 +482,7 @@ def labelsToObjects(series : Series, data_fp : str, group : str, ids: list = Non
             ids
         )
 
-    threadpool.startAll("Converting labels to contours...")
+    threadpool.startAll(f"Converting {group} to contours...")
 
 
 def getExteriors(mask : np.ndarray) -> list[np.ndarray]:
@@ -751,6 +754,7 @@ def importSection(data_zg, group, snum, series, ids=None):
 
         ## Add trace to group
         series.object_groups.add(f"seg_{dt}", f"autoseg_{id}")
+        series.object_groups.add(f"seg_{group}", f"autoseg_{id}")
 
     section.save()
 

@@ -22,6 +22,7 @@ from PyReconstruct.modules.backend.autoseg import (
     seriesToZarr,
     seriesToLabels,
     groupsToVolume,
+    createZarrName,
     rechunk
 )
 
@@ -51,7 +52,7 @@ print(f"Starting conversion...")
 
 args = get_args()
 
-jser_fp, output_zarr, start, end, mag, padding, max_tissue = parse_args(args)
+jser_fp, output_zarr, start, end, mag, padding, max_tissue, labels_only = parse_args(args)
 
 print_flush("Opening series...")
 
@@ -153,14 +154,24 @@ if not QApplication.instance():
 
 print_flush("Creating zarr...")
 
-zarr_fp = seriesToZarr(
-    series,
-    sections,
-    img_mag,
-    window=window,
-    data_fp=output_zarr,
-    other_attrs=additional_attrs
-)
+if not output_zarr:
+    zarr_name = createZarrName(window)
+
+if not labels_only:
+
+    ## Create "raw" image dataset
+    zarr_fp = seriesToZarr(
+        series,
+        sections,
+        img_mag,
+        window=window,
+        data_fp=output_zarr,
+        other_attrs=additional_attrs
+    )
+
+else:
+
+    zarr_fp = output_zarr
 
 ## Add labels to zarr if groups provided
 if groups:

@@ -669,8 +669,13 @@ def importSection(data_zg, group, snum, series, ids=None):
     window = raw.attrs["window"]
     sections = raw.attrs["sections"]
     mag = raw.attrs["true_mag"] / raw_resolution[-1] * resolution[-1]
-    alignment = raw.attrs["alignment"]
-    tform = Transform(alignment[str(snum)])
+
+    ## Get section transformation
+    try:
+        alignment = raw.attrs["alignment"]
+        tform = Transform(alignment[str(snum)])
+    except KeyError:
+        return
 
     ## Load section and corresponding data
     section = series.loadSection(snum)
@@ -678,10 +683,8 @@ def importSection(data_zg, group, snum, series, ids=None):
 
     try:
         arr = labels_array[z - z_offset]
-        
     except zarr.errors.BoundsCheckError:  # return if out of bounds
-        return
-        
+        return        
     
     pixmap_dim = (arr.shape[1], arr.shape[0])
 
@@ -728,7 +731,7 @@ def importSection(data_zg, group, snum, series, ids=None):
     # )
     # arr[exclude_arr != 0] = 0
 
-    # iterate through label ids
+    ## Iterate through label ids
     if ids is None:
         ids = np.unique(arr)
         

@@ -144,7 +144,7 @@ def process_section_file(path, data_check=False):
                     image_contours[0]
                 )
 
-                print(f"{image_contour_data = }")
+                #print(f"{image_contour_data = }")
                 
                 image_data.update(image_contour_data)
 

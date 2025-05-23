@@ -114,6 +114,7 @@ def xmlToJSON(xml_dir : str) -> Series:
 
     return series
 
+
 def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     # grab the series file
     xml_series = process_series_file(series_fp)
@@ -147,6 +148,7 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
         json.dump(series_dict, f)
     return json_series_fp
 
+
 def getReconcropperData(json_fp):
     with open(json_fp, "r") as f:
         json_data = json.load(f)
@@ -169,6 +171,7 @@ def getReconcropperData(json_fp):
                 alignment_dict[section_name][aname] = tform_list
                 
     return alignment_dict
+
 
 def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
 
@@ -244,46 +247,55 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
     # return the section's transform
     return tform
 
+
 def jsonToXML(series : Series, new_dir : str):
-    """Convert a series in JSON to XML.
+    """Convert a json series to xml for use in legacy Reconstruct
     
         Params:
-            original_series (Series): the series to convert
-            new_dir (str): the directory to store the new files
+            original_series (Series): series to convert
+            new_dir (str): directory to store the new files
     """
-    # convert the sections
+    ## Convert sections
     for snum, section in series.enumerateSections(message="Exporting series as XML..."):
         thickness = sectionJSONtoXML(series, section, new_dir)
 
-    # convert the series
-    seriesJSONtoXML(series, new_dir, thickness)
+    final_sec = str(snum)
+
+    ## Convert series
+    seriesJSONtoXML(series, new_dir, thickness, final_sec)
     
 
-def seriesJSONtoXML(series : Series, new_dir : str, thickness: float):
-    # create the blank series and replace text as needed
+def seriesJSONtoXML(series : Series, new_dir : str, thickness: str, last_section: str):
+    
+    ## Create blank series and replace text as needed
     xml_text = blank_series_no_contours
+                        
     xml_text = xml_text.replace("[SECTION_NUM]", str(series.current_section))
-    xml_text = xml_text.replace("[SECTION_THICKNESS]", str(thickness))
+    xml_text = xml_text.replace("[SECTION_THICKNESS]", thickness)
+    xml_text = xml_text.replace("[LAST3DSECTION]", last_section)
+    xml_text = xml_text.replace("[LASTTHUMBSECTION]", last_section)
 
     xml_palette = []
+
     for trace in series.palette_traces[series.palette_index[0]]:
         xml_palette.append(trace.getXMLObj(legacy_format=True))
+        
     all_contours = '\n'.join(xml_palette)
 
     xml_text = xml_text.replace("[CONTOURS]", all_contours)
 
-    # create the series file
+    ## Create series file
     series_fp = os.path.join(new_dir, series.name + ".ser")
     with open(series_fp, "w") as f:
         f.write(xml_text)
     
-    # load the series file and insert ztraces
+    ## Load series file and insert ztraces
     xml_series = process_series_file(series_fp)
     for ztrace in series.ztraces.values():
         xml_series.zcontours.append(ztrace.getXMLObj(series))
     
-    # set the section thickness
-    xml_series.defaultThickness = series.avg_thickness
+    ## Set section thickness
+    xml_series.defaultThickness = round(series.avg_thickness, 4)
     
     write_series(
         xml_series,
@@ -294,40 +306,56 @@ def seriesJSONtoXML(series : Series, new_dir : str, thickness: float):
         
 
 def sectionJSONtoXML(series : Series, section : Section, new_dir : str):
-    # create a blank xml section
+
+    sec_index      = str(section.n)
+    sec_thickness  = str(round(section.thickness, 4))
+    sec_mag        = str(round(section.mag, 4))
+    sec_src        = section.src
+    sec_locked     = section.align_locked
+    
+    ## create blank xml section
     xml_text = blank_section
-    xml_text = xml_text.replace("[SECTION_INDEX]", str(section.n))
-    xml_text = xml_text.replace("[SECTION_THICKNESS]", str(section.thickness))
-    xml_text = xml_text.replace("[TRANSFORM_DIM]", "3")
-    xml_text = xml_text.replace("[XCOEF]", "0 1 0 0 0 0") # to be replaced
-    xml_text = xml_text.replace("[YCOEF]", "0 0 1 0 0 0") # to be replaced
-    xml_text = xml_text.replace("[IMAGE_MAG]", str(section.mag))
-    xml_text = xml_text.replace("[IMAGE_SOURCE]", section.src)
+
+    xml_text = xml_text.replace("[SECTION_INDEX]", sec_index)
+    xml_text = xml_text.replace("[SECTION_THICKNESS]", sec_thickness)
+    xml_text = xml_text.replace("[TRANSFORM_DIM]", "3")  # always affine
+    xml_text = xml_text.replace("[XCOEF]", "0 1 0 0 0 0")  # to be replaced
+    xml_text = xml_text.replace("[YCOEF]", "0 0 1 0 0 0")  # to be replaced
+    xml_text = xml_text.replace("[IMAGE_MAG]", sec_mag)
+    xml_text = xml_text.replace("[IMAGE_SOURCE]", sec_src)
     xml_text = xml_text.replace("[IMAGE_LENGTH]", "100000")
     xml_text = xml_text.replace("[IMAGE_HEIGHT]", "100000")
 
-    # save the file
+    ## Save file
     section_fp = os.path.join(
         new_dir,
-        f"{series.name}.{section.n}"
+        f"{series.name}.{sec_index}"
     )
+
     with open(section_fp, "w") as xml_file:
         xml_file.write(xml_text)
     
-    # load the xml section and input data
+    ## Load xml section and input data
     xml_section = process_section_file(section_fp)
-    xml_section.images[0].src = section.src
-    xml_section.images[0].mag = section.mag
-    xml_section.alignLocked = section.align_locked
-    xml_section.thickness = section.thickness
+    
+    xml_section.images[0].src = sec_src
+    xml_section.images[0].mag = sec_mag
+    xml_section.alignLocked = sec_locked
+    xml_section.thickness = sec_thickness
+
     t = section.tform.getList()
+
     xcoef = [t[2], t[0], t[1]]
     ycoef = [t[5], t[3], t[4]]
+
     xml_tform = XMLTransform(xcoef=xcoef, ycoef=ycoef).inverse
     xml_section.images[0].transform = xml_tform
+
     xml_section.contours = []
+
     for trace in section.tracesAsList():
         xml_section.contours.append(trace.getXMLObj(xml_tform))
+
     write_section(
         xml_section,
         directory=os.path.dirname(section_fp),
@@ -335,8 +363,5 @@ def sectionJSONtoXML(series : Series, section : Section, new_dir : str):
         overwrite=True
     )
 
-    return section.thickness
+    return sec_thickness  # to pass to seriesJSONToXML
 
-
-
-        

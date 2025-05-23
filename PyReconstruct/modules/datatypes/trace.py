@@ -1,3 +1,4 @@
+import re
 from typing import Union
 
 from skimage.draw import polygon
@@ -222,6 +223,10 @@ class Trace():
                 x, y = pt[0] * r_scaling, pt[1] * r_scaling  # modify radius for palette trace
                 formatted_point = f'{x} {y}, '
                 xml_points += formatted_point
+
+            ## Deal with brackets in trace palette names (not allowable in legacy Reconstruct)
+            if re.search(r"<|\{", xml_contour.name):
+                xml_contour.name = re.sub(r"[<>{}]", "", xml_contour.name)
             
             xml_text = xml_text.replace("[NAME]", xml_contour.name)
             xml_text = xml_text.replace("[CLOSED]", str(xml_contour.closed))

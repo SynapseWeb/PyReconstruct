@@ -47,13 +47,14 @@ class FieldWidgetBase:
 
         self.propagate_tform : bool         = False
 
+        self.focus_mode : bool              = False
         self.hide_trace_layer : bool        = False
         self.show_all_traces : bool         = False
         self.hide_image : bool              = False
         self.blend_sections : bool          = False
 
         self.current_trace : list           = []
-        self.current_ztrace: list          = []
+        self.current_ztrace: list           = []
         self.moving_traces : list           = None
         self.moving_points : list           = None
         self.moving_flags : list            = None
@@ -269,7 +270,8 @@ class FieldWidgetBase:
             generate_traces=generate_traces,
             hide_traces=self.hide_trace_layer,
             show_all_traces=self.show_all_traces,
-            hide_image=self.hide_image
+            hide_image=self.hide_image,
+            focus_mode=self.focus_mode
         )
 
         # blend b section if requested
@@ -282,7 +284,8 @@ class FieldWidgetBase:
                 generate_traces=generate_traces,
                 hide_traces=self.hide_trace_layer,
                 show_all_traces=self.show_all_traces,
-                hide_image=self.hide_image
+                hide_image=self.hide_image,
+                focus_mode=self.focus_mode
             )
             # overlay a and b sections
             painter = QPainter(view)

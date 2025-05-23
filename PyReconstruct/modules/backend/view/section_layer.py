@@ -32,7 +32,8 @@ class SectionLayer(ImageLayer, TraceLayer):
         generate_traces=True,
         hide_traces=False,
         show_all_traces=False,
-        hide_image=False
+        hide_image=False,
+        focus_mode=False
         ):
         """Generate pixmap view for a section.
         
@@ -66,7 +67,8 @@ class SectionLayer(ImageLayer, TraceLayer):
                 pixmap_dim,
                 window,
                 show_all_traces,
-                generate_image
+                generate_image,
+                focus_mode
             )
         
         ## Combine pixmaps

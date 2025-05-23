@@ -340,6 +340,24 @@ class FieldWidgetTrace(FieldWidgetBase):
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
         self.generateView()
+
+    def toggleFocusMode(self):
+        """Toggle focus mode."""
+        
+        self.focus_mode = not self.focus_mode
+
+        if self.focus_mode:
+            
+            print("focus mode on")
+
+            focus_on = self.section.selected_traces[-1]
+            self.section.selected_traces = [focus_on]
+            
+        else:
+            
+            print("focus mode off")
+
+        self.generateView()
     
     # no field_interaction decorator: this function is able to override the disabled trace layer
     def unhideAllTraces(self):

@@ -28,6 +28,8 @@ def get_field_menu_list(self):
             "text": "View",
             "opts":
             [
+                ("focus_act", "Toggle focus mode", self.series, self.field.toggleFocusMode),
+                None,
                 ("unhideall_act", "Unhide all traces", self.series, self.field.unhideAllTraces),
                 None,
                 ("hideall_act", "Toggle hide all", self.series, self.field.toggleHideAllTraces),

@@ -76,6 +76,7 @@ default_settings = {
     # shortcuts 
     "alloptions_act": "Shift+O",
     "flicker_act": "/",
+    "focus_act": "X",
     "hideall_act": "H",
     "showall_act": "A",
     "hideimage_act": "I",

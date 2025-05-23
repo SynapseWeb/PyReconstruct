@@ -455,13 +455,21 @@ class TraceLayer():
 
         return show_trace
         
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:
+    def generateTraceLayer(
+            self,
+            pixmap_dim :
+            tuple, window : list,
+            show_all_traces=False,
+            focus_mode=False,
+            window_moved=True
+    ) -> QPixmap:
         """Draw traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the view of the window (x, y, w, h)
                 show_all_traces (bool): True if all traces are displayed regardless of hidden status
+                focus_mode (bool): True if in focus mode
                 window_moved (bool): True if the window has moved (upstream: same as generate_image)
             Returns:
                 (QPixmap): the pixmap with traces drawn in

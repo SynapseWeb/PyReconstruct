@@ -33,9 +33,9 @@ fix_ser_file(){
   $cmd -i 's/warnSaveSection/\'\nwarnSaveSection'/g' $1
   $cmd -i 's/beepDeleting/\'\nbeepDeleting'/g' $1
   $cmd -i 's/beepPaging/\'\nbeepPaging'/g' $1
-  $cmd -i 's/hideTraces/\'\nhideTraces'/g' $1
+  $cmd -i 's/\(<!un\)hideTraces/\'\nhideTraces'/g' $1
   $cmd -i 's/unhideTraces/\'\nunhideTraces'/g' $1
-  $cmd -i 's/hideDomains/\'\nhideDomains'/g' $1
+  $cmd -i 's/\(<!un\)hideDomains/\'\nhideDomains'/g' $1
   $cmd -i 's/unhideDomains/\'\nunhideDomains'/g' $1
   $cmd -i 's/useAbsolutePaths/\'\nuseAbsolutePaths'/g' $1
   $cmd -i 's/defaultThickness/\'\ndefaultThickness'/g' $1

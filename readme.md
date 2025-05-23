@@ -53,8 +53,8 @@ If you use PyReconstruct in published work, please cite this repo:
 @software{Falco2025,
 author = {Falco, Julian and Chirillo, Michael},
 title = {PyReconstruct},
-version = {1.18.0},
-month = {April},
+version = {1.19.0},
+month = {May},
 year = {2025}
 url = {https://github.com/synapseweb/pyreconstruct},
 }

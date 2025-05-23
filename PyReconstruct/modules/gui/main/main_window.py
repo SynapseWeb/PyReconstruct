@@ -838,10 +838,10 @@ class MainWindow(QMainWindow):
                 export_fp (str): the filepath for the XML .ser file
         """
 
-        # save the current data
+        ## Save current data
         self.saveAllData()
 
-        # get the new xml series filepath from the user
+        ## Get new xml series filepath from user
         if not export_fp:
             export_fp = FileDialog.get(
                 "save",
@@ -852,7 +852,7 @@ class MainWindow(QMainWindow):
             )
             if not export_fp: return False
         
-        # convert the series
+        ## Convert series
         jsonToXML(self.series, os.path.dirname(export_fp))
     
     def seriesModified(self, modified=True):

@@ -6,6 +6,6 @@ authors:
 - family-names: "Chirillo"
   given-names: "Michael"
 title: "PyReconstruct"
-version: 1.18.0
-date-released: 2025-04-17
+version: 1.19.0
+date-released: 2025-05-28
 url: "https://github.com/synapseweb/pyreconstruct"

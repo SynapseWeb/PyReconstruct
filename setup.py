@@ -2,7 +2,7 @@ import pathlib
 from setuptools import setup, find_packages
 
 ROOT = pathlib.Path(__file__).parent
-VERSION = '1.18.0'
+VERSION = '1.19.0'
 PACKAGE_NAME = 'pyreconstruct'
 AUTHOR = 'Julian Falco & Michael Chirillo'
 AUTHOR_EMAIL = 'm.chirillo@utexas.edu'

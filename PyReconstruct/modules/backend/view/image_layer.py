@@ -171,23 +171,23 @@ class ImageLayer():
         """Generate the image layer.
         
             Params:
-                pixmap_dim (tuple): the w and h of the main window
-                window (list): the x, y, w, and h of the field window
-                get_crop_only (bool): returns only the direct crop from the image (only for use with brightness/contrast functions)
+                pixmap_dim (tuple): w and h of the main window
+                window (list): x, y, w, and h of the field window
+                get_crop_only (bool): only return direct image crop (used in bright/contr funcs)
             Returns:
-                image_layer (QPixmap): the image laye
+                image_layer (QPixmap): the image layer
         """
-        # set attrs
+        ## Set attrs
         self.series.window = window
         self.pixmap_dim = pixmap_dim
 
-        # return blank if image was not found
+        ## Return blank if image not found
         if not self.image_found:
             blank_pixmap = QPixmap(*pixmap_dim)
             blank_pixmap.fill(Qt.black)
             return blank_pixmap
 
-        # setup
+        ## Setup
         tform = self.section.tform
         mag = self.section.mag
         wx, wy, ww, wh = tuple(self.series.window)
@@ -195,7 +195,7 @@ class ImageLayer():
         iw, ih = self.bw, self.bh
         s = self.scaling = pmw / (ww / mag)
 
-        # step 0: get the applicable zarr scale if using zarr file for images
+        ## Step 0: Get appoprioate scale if using multi-resolution zarr
         if self.is_zarr_file:
             scale_level = self.scales[-1]
             for scale in self.scales[:-1]:
@@ -209,7 +209,7 @@ class ImageLayer():
             scale_level = 1
         
 
-        # step 1: get the polygon for the window
+        ## Step 1: Get window polygon
         poly_window = [
             (wx, wy),
             (wx, wy + wh),
@@ -217,16 +217,16 @@ class ImageLayer():
             (wx + ww, wy)
         ]
 
-        # step 2: untransform the window poly
+        ## Step 2: Untransform window polygon
         utf_poly_window = tform.map(poly_window, inverted=True)
 
-        # step 3: convert to pixel coordinates
+        ## Step 3: Convert to pixel coordinates
         utf_pixel_poly_window = [(x / mag, y / mag) for x, y in utf_poly_window]
 
-        # step 4: get bounds to crop image
+        ## Step 4: Get bounds to crop image
         bounds = getBounds(utf_pixel_poly_window)
 
-        # step 5: adjust bounds to image dimensions and get necessary filling
+        ## Step 5: Adjust bounds to image dimensions and get necessary filling
         bounds, filling = adjustBounds(bounds, iw, ih)
         # check if completely out of bounds
         if bounds is None:
@@ -237,9 +237,9 @@ class ImageLayer():
         xmin, ymin, xmax, ymax = bounds
         xminp, yminp, xmaxp, ymaxp = filling
         
-        # step 6: get crop from image
+        ## Step 6: Get crop from image
         if self.is_zarr_file:
-            # scale the cropping values accordingly
+            ## scale cropping values accordingly
             xmins, ymins, xmaxs, ymaxs = (round(n / scale_level) for n in bounds)
             ihs = round(ih / scale_level)
             zarr_saved = self.image[

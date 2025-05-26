@@ -43,7 +43,7 @@ qt_offscreen = os.getenv("QT_QPA_PLATFORM") == "offscreen"
 
 if qt_offscreen and not modules_available("dask", notify=False):
 
-    print("Please pip install 'dask' before converting series to zarr.")
+    print("Please pip install 'dask' into your environment before converting series to zarr.")
     sys.exit()
 
 t_convert = datetime.now(timezone.utc)

@@ -250,7 +250,7 @@ def seriesToZarr(series : Series,
             series (Series): the series to convert
             sections (list): the sections to include (exclusive; ASSUME sorted already)
             mag (float): the microns per pixel for the zarr file
-            window (list): the window (x, y, width, height) for the resulting zarr
+            window (list): the window (x, y, width, height [μm]) for the resulting zarr
             data_fp (str): filename of output zarr
             output_dir (str): directory to store zarr
             other_attrs (dict): other infoformation to store in .zattrs
@@ -261,12 +261,12 @@ def seriesToZarr(series : Series,
 
     ## Calculate field attributes
     shape = (
-        len(sections),          # z
-        round(window[3]/mag),   # h
-        round(window[2]/mag)    # w
+        len(sections),          # z (number of sections)
+        round(window[3]/mag),   # h (in px)
+        round(window[2]/mag)    # w (in px)
     )
 
-    pixmap_dim = shape[2], shape[1]  # w and h of a 2D array
+    pixmap_dim = shape[2], shape[1]  # w and h (px) of a 2D array
 
     ## Create zarr
     
@@ -292,12 +292,12 @@ def seriesToZarr(series : Series,
 
     raw = data_zg["raw"]
 
-    ## Get values for saving zarr files (from last known section)
+    ## Get values for saving zarr files (from last known section) [TODO: Fix to 50, 2, 2] 
     section_thickness = series.loadSection(sections[0]).thickness
     z_res = int(section_thickness * 1000)
     xy_res = int(mag * 1000)
     resolution = [z_res, xy_res, xy_res]
-    offset = [0, 0, 0]
+    offset = [0, 0, 0] # [TODO: Make real value if crop)
 
     ## Get series alignment
     alignment = {}
@@ -373,7 +373,7 @@ def seriesToLabels(series: Series,
             window,
             resolution,
             img_mag,
-            relative_to=raw_window,
+            relative_to=raw_window,                                     
             section_diff=section_diff
         )
         

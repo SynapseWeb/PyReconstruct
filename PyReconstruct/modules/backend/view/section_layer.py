@@ -32,7 +32,8 @@ class SectionLayer(ImageLayer, TraceLayer):
         generate_traces=True,
         hide_traces=False,
         show_all_traces=False,
-        hide_image=False
+        hide_image=False,
+        focus_on=False
         ):
         """Generate pixmap view for a section.
         
@@ -41,6 +42,7 @@ class SectionLayer(ImageLayer, TraceLayer):
                 window (list): the x, y, w, h of the field view
                 generate_image (bool): whether or not to regenerate the image
                 generate_traces (bool): whether or not to regenerate the traces
+                focus_on (str): name of object to focus on
         """
         ## Save attributes
         self.series.window = window
@@ -66,7 +68,8 @@ class SectionLayer(ImageLayer, TraceLayer):
                 pixmap_dim,
                 window,
                 show_all_traces,
-                generate_image
+                window_moved=generate_image,
+                focus_on=focus_on
             )
         
         ## Combine pixmaps

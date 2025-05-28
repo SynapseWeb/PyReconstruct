@@ -47,13 +47,14 @@ class FieldWidgetBase:
 
         self.propagate_tform : bool         = False
 
+        self.focus_mode : bool              = False
         self.hide_trace_layer : bool        = False
         self.show_all_traces : bool         = False
         self.hide_image : bool              = False
         self.blend_sections : bool          = False
 
         self.current_trace : list           = []
-        self.current_ztrace: list          = []
+        self.current_ztrace: list           = []
         self.moving_traces : list           = None
         self.moving_points : list           = None
         self.moving_flags : list            = None
@@ -134,6 +135,7 @@ class FieldWidgetBase:
         self.b_section_layer = None
 
         ## Hide/show defaults
+        self.focus_mode = False
         self.hide_trace_layer = False
         self.show_all_traces = False
         self.hide_image = False
@@ -269,7 +271,8 @@ class FieldWidgetBase:
             generate_traces=generate_traces,
             hide_traces=self.hide_trace_layer,
             show_all_traces=self.show_all_traces,
-            hide_image=self.hide_image
+            hide_image=self.hide_image,
+            focus_on=self.focus_mode
         )
 
         # blend b section if requested
@@ -282,7 +285,8 @@ class FieldWidgetBase:
                 generate_traces=generate_traces,
                 hide_traces=self.hide_trace_layer,
                 show_all_traces=self.show_all_traces,
-                hide_image=self.hide_image
+                hide_image=self.hide_image,
+                focus_on=self.focus_mode
             )
             # overlay a and b sections
             painter = QPainter(view)
@@ -384,18 +388,18 @@ class FieldWidgetBase:
             Params:
                 new_section_num (int): the new section number to display
         """
-        # check if requested section exists
+        ## Check if requested section exists
         if new_section_num not in self.series.sections:
             return
         
-        # check if already on section
+        ## Check if already on section
         if new_section_num == self.series.current_section:
             return
         
-        # move current section data to b section
+        ## Move current section data to b section
         self.swapABsections()
 
-        # load new section if required
+        ## Load new section if necessary
         if new_section_num != self.series.current_section:
             # load section
             self.section = self.series.loadSection(new_section_num)
@@ -404,7 +408,11 @@ class FieldWidgetBase:
             # set new current section
             self.series.current_section = new_section_num
             # clear selected traces
-            self.section.selected_traces = []
+            if self.focus_mode:
+                obj_traces = [t for t in self.section.tracesAsList() if t.name == self.focus_mode]
+                self.section.selected_traces = obj_traces
+            else:
+                self.section.selected_traces = []
         
         # create section undo/redo state object if needed
         states = self.series_states[new_section_num]

@@ -205,12 +205,13 @@ class TraceLayer():
         
         return copied_traces
     
-    def _drawTrace(self, trace_layer : QPixmap, trace : Trace) -> bool:
+    def _drawTrace(self, trace_layer : QPixmap, trace : Trace, color=None) -> bool:
         """Draw a trace on the current trace layer and return bool indicating if trace is in the current view.
         
             Params:
                 trace_layer (QPixmap): the pixmap to draw the traces
                 trace (Trace): the trace to draw on the pixmap
+                color (bool): optionally force a color
             Returns:
                 (bool) if the trace is within the current field window view
         """        
@@ -247,12 +248,15 @@ class TraceLayer():
         trace_bounds = xmin, ymin, xmax, ymax
         screen_bounds = 0, 0, *self.pixmap_dim
 
+        ## Get color
+        draw_color = color if color else trace.color 
+
         ## Draw if in view
         if boundsOverlap(trace_bounds, screen_bounds):
             
             ## Set up painter
             painter = QPainter(trace_layer)
-            painter.setPen(QPen(QColor(*trace.color), 1))
+            painter.setPen(QPen(QColor(*draw_color), 1))
 
             ## Draw trace
             if trace.closed:
@@ -262,8 +266,10 @@ class TraceLayer():
             
             ## Draw highlight
             if trace in self.section.selected_traces:
-                painter.setPen(QPen(QColor(*trace.color), 8))
+
+                painter.setPen(QPen(QColor(*draw_color), 8))
                 painter.setOpacity(0.4)
+
                 if trace.closed:
                     painter.drawPolygon(qpoints)
                 else:
@@ -279,6 +285,10 @@ class TraceLayer():
             ):
                 
                 fill = True
+
+            elif trace.closed and color:  # in order words, color forced
+
+                fill = True
                 
             else:
                 
@@ -287,11 +297,14 @@ class TraceLayer():
             ## Fill in shape if requested
             if fill:
                 
-                painter.setPen(QPen(QColor(*trace.color), 1))
-                painter.setBrush(QBrush(QColor(*trace.color)))
+                painter.setPen(QPen(QColor(*draw_color), 1))
+                painter.setBrush(QBrush(QColor(*draw_color)))
                 
                 ## determine fill type
-                if trace.fill_mode[0] == "transparent":  # transparent fill
+                if color:  # color forced:
+                    painter.setOpacity(0.25)
+                
+                elif trace.fill_mode[0] == "transparent":  # transparent fill
                     painter.setOpacity(self.series.getOption("fill_opacity"))
                     
                 elif trace.fill_mode[0] == "solid":  # solid
@@ -455,13 +468,21 @@ class TraceLayer():
 
         return show_trace
         
-    def generateTraceLayer(self, pixmap_dim : tuple, window : list, show_all_traces=False, window_moved=True) -> QPixmap:
+    def generateTraceLayer(
+            self,
+            pixmap_dim :
+            tuple, window : list,
+            show_all_traces=False,
+            window_moved=True,
+            focus_on=False,
+    ) -> QPixmap:
         """Draw traces on a transparent background.
         
             Params:
                 pixmap_dim (tuple): the w and h of the pixmap to be output
                 window (list): the view of the window (x, y, w, h)
                 show_all_traces (bool): True if all traces are displayed regardless of hidden status
+                focus_mode (bool): True if in focus mode
                 window_moved (bool): True if the window has moved (upstream: same as generate_image)
             Returns:
                 (QPixmap): the pixmap with traces drawn in
@@ -474,7 +495,6 @@ class TraceLayer():
         trace_layer.fill(Qt.transparent)
 
         if window_moved:
-            
             trace_list = self.section.tracesAsList()
             
         else:
@@ -494,10 +514,20 @@ class TraceLayer():
         for trace in trace_list:
 
             if self.trace_visibile_p(trace):
-                
+
+                color = None  # default to assigned color
+
+                if focus_on:
+                    
+                    if trace.name == focus_on:
+                        color = (246, 249, 72)
+                    else:
+                        color = (42, 255, 128)
+
                 trace_in_view = self._drawTrace(
                     trace_layer,
-                    trace
+                    trace,
+                    color
                 )
                 
                 if trace_in_view:
@@ -507,7 +537,7 @@ class TraceLayer():
         ## Draw ztraces
         self.zsegments_in_view = []
         
-        if self.series.getOption("show_ztraces"):
+        if self.series.getOption("show_ztraces") and not focus_on:
             
             for ztrace in self.series.ztraces.values():
                 
@@ -519,7 +549,7 @@ class TraceLayer():
         
         ## Draw flags
         self.flags_in_view = []
-        if self.series.getOption("show_flags") != "none":
+        if self.series.getOption("show_flags") != "none" and not focus_on:
             for flag in self.section.flags:
                 if self.series.getOption("show_flags") == "unresolved" and flag.resolved:
                     continue

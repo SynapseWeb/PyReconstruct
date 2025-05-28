@@ -260,15 +260,18 @@ class FieldWidgetTrace(FieldWidgetBase):
             Params:
                 trace (Trace): the trace to select
         """
-        # disable if trace layer is hidden
+        ## Disable if trace layer hidden
         if self.hide_trace_layer:
             return
         
         if not trace:
             return
+
+        ## Remove trace is already selected
         if trace in self.section.selected_traces:
             self.section.selected_traces.remove(trace)
-        else:
+                
+        else:  # otherwise select it
             self.section.addSelectedTrace(trace)
 
         self.generateView(generate_image=False)
@@ -286,6 +289,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         for trace in traces:
             if trace not in self.section.selected_traces:
                 self.section.addSelectedTrace(trace)
+                
         for ztrace_i in ztraces_i:
             if ztrace_i not in self.section.selected_ztraces:
                 self.section.selected_ztraces.append(ztrace_i)
@@ -340,6 +344,35 @@ class FieldWidgetTrace(FieldWidgetBase):
                 if trace.hidden:
                     self.section.selected_traces.remove(trace)
         self.generateView()
+
+    def toggleFocusMode(self):
+        """Toggle focus mode."""
+
+        if not self.focus_mode:
+
+            if self.section.selected_traces:
+
+                ## Force switch to pointer mode
+                self.mainwindow.mouse_palette.activateModeButton("Pointer")
+
+                last_selected = self.section.selected_traces[-1] # last selected trace
+                self.focus_mode = last_selected.name
+                
+                obj_traces = [t for t in self.section.tracesAsList() if t.name == self.focus_mode]
+                self.section.selected_traces = obj_traces
+
+                self.generateView()
+                self.copy()  # copy traces to paste attributes
+
+            else:
+
+                notify("Please select at least one trace in the field.")
+                self.focus_mode = False
+
+        else:
+
+            self.focus_mode = False
+            self.generateView()
     
     # no field_interaction decorator: this function is able to override the disabled trace layer
     def unhideAllTraces(self):
@@ -512,6 +545,8 @@ class FieldWidgetTrace(FieldWidgetBase):
         if len(set(t.name for t in self.section.selected_traces)) > 1:
             notify("Select a single object to cut at a time.")
             return False
+
+        ## Make sure selected traces are all closed or all open
         
         closed = self.section.selected_traces[0].closed
         

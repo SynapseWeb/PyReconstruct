@@ -19,6 +19,8 @@ from PyReconstruct.modules.constants import locations as loc
 
 from .field_widget_4_data import FieldWidgetData
 
+from .focus_mode import focus_edit_p, focus_comparison
+
 POINTER, PANZOOM, KNIFE, SCISSORS, CLOSEDTRACE, OPENTRACE, STAMP, GRID, FLAG, HOST, ZTOOL = range(11)
 
 class FieldWidgetMouse(FieldWidgetData):
@@ -136,14 +138,16 @@ class FieldWidgetMouse(FieldWidgetData):
         """
         # select, deselect or move
         if self.lclick:
+
             self.is_moving_trace = False
             self.is_selecting_traces = False
             self.clicked_x, self.clicked_y = event.x(), event.y()
+            
             self.selected_trace, self.selected_type = self.section_layer.getTrace(
                 self.clicked_x,
                 self.clicked_y
             )
-    
+
     def pointerMove(self, event):
         """Called when mouse is moved in pointer mode."""
         # ignore if not clicking
@@ -243,9 +247,34 @@ class FieldWidgetMouse(FieldWidgetData):
                 
                 ## normal trace selected
                 if self.selected_type == "trace":
-                    if not self.series.getAttr(self.selected_trace.name, "locked"):
+
+                    obj_locked = self.series.getAttr(self.selected_trace.name, "locked")
+
+                    if not obj_locked and not self.focus_mode:
                         self.selectTrace(self.selected_trace)
                         
+                    if self.focus_mode and focus_edit_p(event):
+
+                        self.selectTrace(self.selected_trace)
+
+                        clicked_focus_obj = focus_comparison(self.selected_trace, self.focus_mode)
+
+                        if clicked_focus_obj:  ## remove is selecting same obj
+
+                            self.section.editTraceAttributes(
+                                traces=[self.selected_trace],
+                                name=f"{self.selected_trace.name}_split",
+                                color=self.selected_trace.color,
+                                tags=self.selected_trace.tags,
+                                mode=self.selected_trace.fill_mode
+                            )
+
+                            self.generateView()
+
+                        else:  ## incorporate into obj
+                            
+                            self.pasteAttributes()
+
                 ## z-trace selected
                 elif self.selected_type == "ztrace_pt":
                     self.selectZtrace(self.selected_trace)
@@ -713,11 +742,12 @@ class FieldWidgetMouse(FieldWidgetData):
         self.last_y = event.y()
         self.current_trace = [(self.last_x, self.last_y)]
 
-    def knifeMove(self, event):
-        """Called when mouse is moved in pencil mode with a mouse button pressed.
+    def knifeMove(self, event): 
+        """Called when mouse is moved in knife mode with a mouse button pressed.
 
         Draws continued knife trace on the screen.
         """
+
         if self.lclick:
             # draw knife trace on pixmap
             x = event.x()
@@ -726,13 +756,16 @@ class FieldWidgetMouse(FieldWidgetData):
             self.update()
 
     def knifeRelease(self, event):
-        """Called when mouse is released in pencil mode.
+        """Called when mouse is released in knife mode.
 
         Completes and adds trace.
         """
+
         if self.lclick:
             self.cutTrace(self.current_trace)
+            
         self.current_trace = []
+        
         self.update()
     
     def flagRelease(self, event):

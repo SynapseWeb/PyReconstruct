@@ -854,6 +854,8 @@ class MainWindow(QMainWindow):
         
         ## Convert series
         jsonToXML(self.series, os.path.dirname(export_fp))
+
+        notify("Legacy series (xml) exported to:\n\n{os.path.dirname(export_fp)}")
     
     def seriesModified(self, modified=True):
         """Change the title of the window reflect modifications."""
@@ -2377,12 +2379,19 @@ class MainWindow(QMainWindow):
         
     def pasteAttributesToPalette(self, use_shape=False):
         """Paste the attributes from the first clipboard trace to the selected palette button."""
+        
+        if self.field.focus_mode:
+            return
+        
         if not self.field.clipboard and not self.field.section.selected_traces:
             return
+        
         elif not self.field.clipboard:
             trace = self.field.section.selected_traces[0]
+            
         else:
             trace = self.field.clipboard[0]
+            
         self.mouse_palette.pasteAttributesToButton(trace, use_shape)
     
     def displayShortcuts(self):
@@ -2946,6 +2955,7 @@ class MainWindow(QMainWindow):
         if self.viewer and not self.viewer.is_closed:
             self.viewer.close()
         event.accept()
+
 
 qdark_addon = """
 QPushButton {border: 1px solid transparent}

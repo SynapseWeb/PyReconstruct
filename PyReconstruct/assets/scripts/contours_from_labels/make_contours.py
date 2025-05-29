@@ -11,6 +11,7 @@ from PyReconstruct.modules.backend.autoseg.conversions import getLabelsToObjects
 from PyReconstruct.assets.scripts.contours_from_labels.utils import (
     get_zarr_groups,
     make_jser_copy,
+    parallel_import_sections,
     print_help,
     validate_input,
 )
@@ -27,11 +28,15 @@ if __name__ == "__main__":
 
     ## Iterate through groups and import labels
     for g in get_zarr_groups(zarr_fp):
+
+        print(f"Working on group {g}...")
         
         zg, secs, start = getLabelsToObjectsData(zarr_fp, g)
-        
-        for snum in range(start, max(secs) + 1):
-            importSection(zg, g, snum, series)
+        end = max(secs)
+
+        results = parallel_import_sections(
+            zg, g, start, end, series, num_workers=4
+        )
 
     ## Save and close series
     series.saveJser()

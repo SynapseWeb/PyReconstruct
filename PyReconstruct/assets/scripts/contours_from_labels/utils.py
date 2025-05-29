@@ -5,7 +5,9 @@ import sys
 import shutil
 from pathlib import Path
 from typing import Union, List, Tuple
+from multiprocessing import Pool, Manager
 
+from PyReconstruct.modules.backend.autoseg.conversions import importSection
 
 def print_flush(s: str):
     """Correct I/O buffering."""
@@ -115,21 +117,40 @@ def get_zarr_groups(zarr_fp: str) -> List[str]:
     return [d.name for d in Path(zarr_fp).iterdir() if d.name.startswith("labels")]
 
         
-
+def process_section(args):
+    # Unpack arguments
+    zg, g, snum, series, counter_dict, total = args
     
+    # Your original function
+    result = importSection(zg, g, snum, series)
+    
+    # Update progress
+    counter_dict['value'] += 1
+    percent = (counter_dict['value'] / total) * 100
+    sys.stdout.write(f"\rProgress: {percent:.1f}% ({counter_dict['value']}/{total})")
+    sys.stdout.flush()
+    
+    return result
 
 
-
-# def flatten_list(nested_list):
-#     """Recursively flatten lists to handle groups."""
-
-#     if not (bool(nested_list)):  # if empty list
-
-#         return nested_list
-
-#     if isinstance(nested_list[0], list):
-
-#         return flatten_list(*nested_list[:1]) + flatten_list(nested_list[1:])
-
-#     return nested_list[:1] + flatten_list(nested_list[1:])
+def parallel_import_sections(zg, g, start, max_secs, series, num_workers=None):
+    # Calculate total iterations
+    total = max_secs - start + 1
+    section_range = range(start, max_secs + 1)
+    
+    with Manager() as manager:
+        counter_dict = manager.dict({'value': 0})
+        
+        # Create argument tuples for each section
+        args_list = [(zg, g, snum, series, counter_dict, total) for snum in section_range]
+        
+        # Process in parallel
+        with Pool(processes=num_workers) as pool:
+            results = pool.map(process_section, args_list)
+    
+    sys.stdout.write(f"\rProgress: 100.0% ({total}/{total})")
+    sys.stdout.flush()
+    print()  # New line after progress bar
+    
+    return results
 

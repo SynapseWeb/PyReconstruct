@@ -2798,7 +2798,7 @@ class MainWindow(QMainWindow):
         if not zarr_fp:
             return
                 
-        if not zarr_fp.endswith("zarr"):
+        if not zarr_fp.endswith("zarr"):  # TODO: Validate zarrs more appropriately
             notify("Selected file is not a valid zarr.")
         
         groups = [f for f in os.listdir(zarr_fp) if not f.startswith(".") and not f=="raw"]

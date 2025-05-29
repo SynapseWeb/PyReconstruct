@@ -444,17 +444,8 @@ def seriesToLabels(series: Series,
         series.object_groups.removeGroup(del_group)
 
 
-def labelsToObjects(series : Series, data_fp : str, group : str, ids: list = None) -> None:
-    """Convert labels in a zarr file to objects in a series.
-    
-        Params:
-            series (Series): the series to import zarr data into
-            data_zg (str): the filepath for the zarr group
-            group (str): the name of the group with labels of interest
-            ids (list): the labels to import (will import all if None)
-        Returns:
-            the threadpool
-    """
+def getLabelsToObjectsData(data_fp: str, group: str) -> tuple:
+
     data_zg = zarr.open(data_fp)
     
     if group not in data_zg:
@@ -467,6 +458,23 @@ def labelsToObjects(series : Series, data_fp : str, group : str, ids: list = Non
     resolution_z = labels_array.attrs["voxel_size"][0]
     offset_z = labels_array.attrs["offset"][0]
     section_start = int(offset_z / resolution_z)
+
+    return data_zg, sections, section_start
+
+
+def labelsToObjects(series : Series, data_fp : str, group : str, ids: list = None) -> None:
+    """Convert labels in a zarr file to objects in a series.
+    
+        Params:
+            series (Series): the series to import zarr data into
+            data_zg (str): the filepath for the zarr group
+            group (str): the name of the group with labels of interest
+            ids (list): the labels to import (will import all if None)
+        Returns:
+            the threadpool
+    """
+
+    data_zg, sections, section_start = getLabelsToObjectsData(data_fp, group)
 
     ## Create threadpool and iterate across sections
     setDT()
@@ -684,8 +692,8 @@ def importSection(data_zg, group, snum, series, ids=None):
     try:
         arr = labels_array[z - z_offset]
     except zarr.errors.BoundsCheckError:  # return if out of bounds
-        return        
-    
+        return
+
     pixmap_dim = (arr.shape[1], arr.shape[0])
 
     ## Modify window to adjust for offset and resolution

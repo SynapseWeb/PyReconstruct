@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-from .quantification import area, lineDistance
+from .polygon import cut_closed_traces, cut_open_traces
+
 
 class Grid():
 
@@ -271,33 +272,68 @@ def mergeTraces(trace_list : list) -> list:
         new_traces[i] = reducePoints(new_traces[i])
     return new_traces
 
-def cutTraces(trace_list, cut_trace : list, del_threshold : float, closed=True) -> list:
-    """Cut a set of traces.
+# def cutTraces(trace_list, cut_trace : list, del_threshold : float, closed=True) -> list:
+#     """Cut a set of traces.
     
-        Params:
-            trace_list (list): set of traces
-            cut_line (list): a single curve
-        Returns:
-            (list) the newly cut traces
+#         Params:
+#             trace_list (list): set of traces
+#             cut_line (list): a single curve
+#         Returns:
+#             (list) the newly cut traces
+#     """
+#     if closed:
+        
+#         new_traces = []
+        
+#         threshold = sum(area(t) for t in trace_list) * (del_threshold / 100)
+#         grid = Grid(trace_list, cut_trace)
+#         interiors = grid.getInteriors()
+
+#         # print(f"{interiors = }")
+#         # print(f"{reducePoints(interiors[0]) = }")
+
+#         ## Only include traces that pass threshold check
+#         for i in range(len(interiors)):
+#             if area(interiors[i]) >= threshold: 
+#                 new_traces.append(reducePoints(interiors[i]))
+#     else:
+        
+#         new_traces = []
+        
+#         for trace in trace_list:
+#             threshold = lineDistance(trace, closed=False) * (del_threshold / 100)
+#             new_traces += cutOpenTrace(trace, cut_trace)
+            
+#         for t in new_traces.copy():
+#             if lineDistance(t, closed=False) < threshold:
+#                 new_traces.remove(t)
+    
+#     return new_traces
+
+
+def cutTraces(trace_list, cut_trace, del_threshold=0.0, closed=True):
+    """Cut a set of traces using polygon operations.
+    
+    Args:
+        trace_list (list): List of traces, each a list of points
+        cut_trace (list): A single curve representing the cut line
+        del_threshold (float): Deletion threshold as percentage
+        closed (bool): Whether traces are closed polygons
+        
+    Returns:
+        list: The newly cut traces
     """
+    if not trace_list or not cut_trace:
+        return trace_list
+        
     if closed:
-        threshold = sum(area(t) for t in trace_list) * (del_threshold / 100)
-        grid = Grid(trace_list, cut_trace)
-        interiors = grid.getInteriors()
-        new_traces = []
-        for i in range(len(interiors)):
-            if area(interiors[i]) >= threshold: # exclude traces that are smaller than 1% of the original trace area
-                new_traces.append(reducePoints(interiors[i]))
+        new_traces = cut_closed_traces(trace_list, cut_trace, del_threshold)
+
     else:
-        new_traces = []
-        for trace in trace_list:
-            threshold = lineDistance(trace, closed=False) * (del_threshold / 100)
-            new_traces += cutOpenTrace(trace, cut_trace)
-        for t in new_traces.copy():
-            if lineDistance(t, closed=False) < threshold:
-                new_traces.remove(t)
-    
+        new_traces = cut_open_traces(trace_list, cut_trace, del_threshold)
+
     return new_traces
+
 
 # Function to check if two line segments intersect
 def intersection(line1, line2):

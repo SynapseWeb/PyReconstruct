@@ -23,6 +23,7 @@ from pathlib import Path
 
 
 import cv2
+from numpy.lib.index_tricks import IndexExpression
 import zarr
 import numpy as np
 from colorama import Fore, Style
@@ -283,7 +284,7 @@ if __name__ == "__main__":
     except IndexError:
         
         restrict = False
-    
+
     print("Opening series...")
     series = Series.openJser(jser)
 
@@ -311,8 +312,8 @@ if __name__ == "__main__":
             arr_image = get_img_as_array(series, i)
 
             print("  Making labels array...")
-            arr_labels = get_labels_as_arr(series, i, group=group)
-            
+            arr_labels = get_labels_as_arr(series, i, group=group)[0]
+
             if np.count_nonzero(arr_labels) == 0:
                 no_group_objs.append(section_n)
 

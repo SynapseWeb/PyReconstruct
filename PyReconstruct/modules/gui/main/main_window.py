@@ -1096,9 +1096,18 @@ class MainWindow(QMainWindow):
         if not fps:
             return None
 
-        print(fps)
+        for fp in fps:
 
-        #notify("ROI files imported as traces.")
+            print(f"Importing {fp} ...")
+
+            roi = Roi(fp)
+
+            coords = roi.get_field_coordinates(
+                img_height=1000,
+                mag=self.field.section.mag
+            )
+
+        notify(".roi files imported as traces.")
 
     def exportSectionSVG(self):
         """Export untransformed traces as svg."""

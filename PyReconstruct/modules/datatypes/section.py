@@ -9,11 +9,10 @@ from .flag import Flag
 from .transform import Transform
 from .log import LogSetPair
 
-from PyReconstruct.modules.gui.utils import notify
-
 from PyReconstruct.modules.calc import (
     getDistanceFromTrace,
-    distance
+    distance,
+    getImgDims
 )
 
 from PyReconstruct.modules.backend.exports import export_svg, export_png
@@ -127,6 +126,10 @@ class Section():
                 self.series.src_dir,
                 self.src
             )
+
+    @property
+    def img_dims(self):
+        return getImgDims(self.src_fp)
     
     @property
     def zarr_scales(self):

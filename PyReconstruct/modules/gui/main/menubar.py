@@ -213,12 +213,21 @@ def return_section_menu(self):
             ("findcontour_act", "Find contour...", self.series, self.field.findContourDialog),
             ("addscalebar", "Add scalebar...", "", self.addScaleBar),
             {
+                "attr_name": "importsecmenu",
+                "text": "Import",
+                "opts":
+                [
+                    ("importroi_act", "ImageJ .roi file(s)...", "", self.importROIFiles)
+                ]
+            },
+            {
                 "attr_name": "exportsecmenu",
-                "text": "Export section",
+                "text": "Export",
                 "opts":
                 [
                     ("exportsvg_act", "As svg...", "", self.exportSectionSVG),
-                    ("exportpng_act", "As png...", "", self.exportSectionPNG)
+                    ("exportpng_act", "As png...", "", self.exportSectionPNG),
+                    ("exportroi_act", "As png...", "", self.exportROIFiles)
                 ]
             }
         ]

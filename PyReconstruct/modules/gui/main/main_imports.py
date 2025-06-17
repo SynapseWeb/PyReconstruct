@@ -112,7 +112,8 @@ from PyReconstruct.modules.backend.volume import (
 )
 
 from PyReconstruct.modules.backend.imports import (
-    modules_available
+    modules_available,
+    Roi
 )
 
 from PyReconstruct.modules.backend.remote import (

@@ -1088,6 +1088,40 @@ class MainWindow(QMainWindow):
         if self.field.b_section:
             self.changeSection(self.field.b_section.n, save=False)
 
+    def importROIFiles(self):
+        """Import traces from ImageJ .roi files."""
+
+        fps = FileDialog.get("files", self, "Select .roi file(s)", filter="*.roi")
+
+        if not fps:
+            return None
+
+        h, _ = self.field.section.img_dims
+        mag = self.field.section.mag
+
+        for fp in fps:
+
+            print(f"Importing {fp}")
+
+            roi = Roi(fp)
+            coords = roi.get_field_coordinates(h, mag)  # px -> coords
+
+            trace = Trace(
+                Path(fp).stem,
+                (255, 255, 0)
+            )
+
+            self.field.newTrace(
+                coords,
+                trace,
+                points_as_pix=False,  # provide as coordinates
+                closed=roi.closed,
+                reduce_points=False,
+                simplify=False
+            )
+
+        notify(".roi files imported as traces.")
+
     def exportSectionSVG(self):
         """Export untransformed traces as svg."""
 
@@ -1142,6 +1176,15 @@ class MainWindow(QMainWindow):
         png = self.series.loadSection(s).exportAsPNG(fp, float(scale))
         
         notify(f"Traces exported to file:\n\n{png}")
+
+    def exportROIFiles(self):
+        """Export traces as ImageJ .roi files."""
+
+        #notify("Traces exported as .roi files.")
+
+        notify("This feature is still being implemented! Stay tuned!")
+
+        pass
 
     def downloadExample(self):
         """Download example kharris2015 images to local machine."""

@@ -9,8 +9,6 @@ from .flag import Flag
 from .transform import Transform
 from .log import LogSetPair
 
-from PyReconstruct.modules.gui.utils import notify
-
 from PyReconstruct.modules.calc import (
     getDistanceFromTrace,
     distance

@@ -1096,15 +1096,28 @@ class MainWindow(QMainWindow):
         if not fps:
             return None
 
+        h, _ = self.field.section.img_dims
+        mag = self.field.section.mag
+
         for fp in fps:
 
-            print(f"Importing {fp} ...")
+            print(f"Importing {fp}")
 
             roi = Roi(fp)
+            coords = roi.get_field_coordinates(h, mag)  # px -> coords
 
-            coords = roi.get_field_coordinates(
-                img_height=1000,
-                mag=self.field.section.mag
+            trace = Trace(
+                Path(fp).stem,
+                (255, 255, 0)
+            )
+
+            self.field.newTrace(
+                coords,
+                trace,
+                points_as_pix=False,  # provide as coordinates
+                closed=roi.closed,
+                reduce_points=False,
+                simplify=False
             )
 
         notify(".roi files imported as traces.")

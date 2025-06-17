@@ -1,6 +1,10 @@
 """ImageJ .roi file."""
 
 from typing import List, Tuple
+
+import numpy as np
+from scipy.interpolate import splprep, splev
+
 from .mod_imports import modules_available
 
 
@@ -31,4 +35,23 @@ class Roi:
         """Return field coordinates of roi trace."""
 
         coords = self.roi.coordinates().tolist()
-        return [(x * mag, (img_height - y) * mag) for (x, y) in coords]  # flip y
+
+        if self.closed and (not coords[0] == coords[1]):
+            coords.append(coords[0])
+
+        x = np.array([p[0] for p in coords])
+        y = np.array([img_height - p[1] for p in coords])
+
+        # Create a periodic spline representation (k=3 for cubic, s=0 for exact interpolation)
+        tck, u = splprep([x, y], s=0, per=1, k=3)
+
+        # Evaluate the spline at more points
+        u_new = np.linspace(0, 1, 100)
+        smooth_x, smooth_y = splev(u_new, tck)
+
+        smooth_x = [x * mag for x in smooth_x] 
+        smooth_y = [y * mag for y in smooth_y]
+
+        return list(zip(smooth_x, smooth_y))
+
+    

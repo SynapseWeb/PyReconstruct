@@ -1180,11 +1180,22 @@ class MainWindow(QMainWindow):
     def exportROIFiles(self):
         """Export traces as ImageJ .roi files."""
 
-        #notify("Traces exported as .roi files.")
+        directory = FileDialog.get("dir", self, "Select directory to export .roi files.")
 
-        notify("This feature is still being implemented! Stay tuned!")
+        if not directory:
+            return
 
-        pass
+        h, _ = self.field.section.img_dims
+        mag = self.field.section.mag
+
+        contours = self.field.section.contours
+
+        for _, contour in contours.items():
+            for trace in contour.traces:
+                exporter = RoiExporter(trace, mag, h)
+                exporter.export_roi(directory)
+
+        notify("Traces exported as .roi files.")
 
     def downloadExample(self):
         """Download example kharris2015 images to local machine."""

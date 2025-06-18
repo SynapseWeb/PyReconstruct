@@ -24,7 +24,7 @@ class Roi:
     def trace_closed_p(self) -> bool:
         """Return true if trace closed else false."""
 
-        roi_closed_types = [0, 1, 2, 3, 9, 10]
+        roi_closed_types = [0, 1, 2, 3, 7, 9, 10]
 
         if self.roi.roitype in roi_closed_types:
             return True

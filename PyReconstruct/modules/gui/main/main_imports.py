@@ -116,6 +116,8 @@ from PyReconstruct.modules.backend.imports import (
     Roi
 )
 
+from PyReconstruct.modules.backend.exports.roi_export import RoiExporter
+
 from PyReconstruct.modules.backend.remote import (
     download_vol_as_tifs
 )

@@ -75,10 +75,10 @@ class Trace():
         """
         self.points.append(point)
     
-    def asPixels(self, mag: float, img_height: int):
+    def asPixels(self, mag: float, img_height: int, subpix: bool=False):
         """Return points as a list of (x, y) pixels on an image."""
 
-        return point_list_2_pix(self.points, mag, img_height)
+        return point_list_2_pix(self.points, mag, img_height, subpix)
 
     def isSameTrace(self, other) -> bool:
         """Check if traces have the same name, color, and points.
@@ -568,7 +568,7 @@ class Trace():
             smoothed = smoothed[:-1]
 
         self.points = smoothed
-    
+
     @staticmethod
     def get_scale_bar():
         """Return a scale bar trace object."""

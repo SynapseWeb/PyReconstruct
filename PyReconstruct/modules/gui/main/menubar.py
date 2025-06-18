@@ -225,9 +225,9 @@ def return_section_menu(self):
                 "text": "Export",
                 "opts":
                 [
-                    ("exportsvg_act", "As svg...", "", self.exportSectionSVG),
-                    ("exportpng_act", "As png...", "", self.exportSectionPNG),
-                    ("exportroi_act", "As png...", "", self.exportROIFiles)
+                    ("exportsvg_act", "As .svg...", "", self.exportSectionSVG),
+                    ("exportpng_act", "As .png...", "", self.exportSectionPNG),
+                    ("exportroi_act", "As .roi...", "", self.exportROIFiles)
                 ]
             }
         ]

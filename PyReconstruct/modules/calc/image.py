@@ -24,11 +24,20 @@ def getImgDims(img_fp: Union[str, Path]) -> Tuple[height, width]:
         return img.shape
 
 
-def point_2_pix(coordinate: Sequence[float], mag: float, height: height) -> Tuple[int, int]:
+def point_2_pix(
+        coordinate: Sequence[float],
+        mag: float, height: height,
+        subpix: bool=False
+) -> Union[Tuple[float, float], Tuple[int, int]]:
             """Convert a single point to pixels."""
 
-            x = int(coordinate[0] // mag)
-            y = int(height - (coordinate[1] // mag))
+            x = coordinate[0] / mag
+            y = height - (coordinate[1] / mag)
+
+            if not subpix:
+                
+                x = int(x)
+                y = int(y)
             
             return x, y
 
@@ -36,10 +45,12 @@ def point_2_pix(coordinate: Sequence[float], mag: float, height: height) -> Tupl
 def point_list_2_pix(
         points: List[Tuple[int, int]],
         mag: float,
-        height: int) -> List[Tuple[int, int]]:
+        height: int,
+        subpix: bool=False
+) -> List[Tuple[int, int]]:
     """Convert a points list to pixels."""
     
-    mapped_points = map(lambda x: point_2_pix(x, mag, height), points)
+    mapped_points = map(lambda x: point_2_pix(x, mag, height, subpix), points)
     return list(mapped_points)
                 
         

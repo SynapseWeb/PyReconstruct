@@ -1,6 +1,7 @@
 """Functions for creating Python objects from RECONSTRUCT XML files."""
 import re
 import os
+from copy import deepcopy
 
 from lxml import etree
 
@@ -10,6 +11,8 @@ from ..classes.contour import Contour
 from ..classes.image import Image
 from ..classes.transform import Transform
 from ..classes.zcontour import ZContour
+
+from PyReconstruct.modules.constants import blank_series
 
 
 def str_to_bool(string):
@@ -26,10 +29,13 @@ def process_series_directory(path, data_check=False, progbar=None):
     for filename in os.listdir(path):
         if ".ser" in filename:
             series_files.append(filename)
-    assert len(series_files) == 1, "There is more than one Series file in the provided directory"
+    assert len(series_files) == 1, "There is more than one .ser file in the provided directory"
+    
     series_file = series_files[0]
     series_path = os.path.join(path, series_file)
     series = process_series_file(series_path)
+
+    print("Hello 1")
 
     # if there is a progress bar, set up
     section_regex = re.compile(r"{}.[0-9]+$".format(series.name))
@@ -39,6 +45,9 @@ def process_series_directory(path, data_check=False, progbar=None):
             if re.match(section_regex, filename):
                 final_value += 1
         prog_value = 0
+
+    print("Hello 2")
+    
     # Gather Sections from provided path
     for filename in os.listdir(path):
         if re.match(section_regex, filename):
@@ -48,14 +57,16 @@ def process_series_directory(path, data_check=False, progbar=None):
             if progbar:
                 if progbar.wasCanceled(): return
                 prog_value += 1
-                progbar.setValue(prog_value/final_value * 100)    
+                progbar.setValue(prog_value/final_value * 100)
+
+    print(series.sections)
+
+    print("Hello 3")
 
     if data_check:
         thickness_set = set([sec.thickness for _, sec in series.sections.items()])
         if len(thickness_set) > 1:
-            print("One or more section(s) in series {} contain different thicknesses.".format(
-                series.name
-            ))
+            print(f"One or more section(s) in series {series.name} contain different thicknesses.")
 
     return series
 
@@ -66,6 +77,7 @@ def process_series_file(path):
     root = tree.getroot()
 
     # Create Series and populate with metadata
+    print("Extracting series attributes...")
     data = extract_series_attributes(root)
     data["name"] = os.path.basename(path).replace(".ser", "")
     data["path"] = os.path.dirname(path)
@@ -175,7 +187,6 @@ def process_section_file(path, data_check=False):
     return section
 
 
-
 def _get_points_int(points):
     return zip(
         [int(x.replace(",", "")) for x in points.split()][0::2],
@@ -249,7 +260,29 @@ def extract_section_attributes(node):
     return attributes
 
 
+def fill_missing_ser_attributes(node):
+    """Fill in missing attrs from a placeholder .ser file."""
+
+    placeholder = etree.fromstring(blank_series)
+    attrs_already_present = list(node.attrib.keys())
+
+    ## Add missing attributes
+    for n, v in placeholder.attrib.items():
+        if n not in attrs_already_present:
+            node.set(n, v)
+
+    ## Add missing trace pallete items
+    if len(node) != 20:
+        for palette_item in placeholder:
+            node.append(deepcopy(palette_item))
+
+    return node
+
+
 def extract_series_attributes(node):
+
+    node = fill_missing_ser_attributes(node)
+    
     attributes = {
         "index": int(node.get("index")),
         "viewport": tuple(float(x) for x in node.get("viewport").split(" ")),

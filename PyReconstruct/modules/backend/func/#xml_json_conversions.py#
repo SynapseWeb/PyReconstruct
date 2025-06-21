@@ -130,6 +130,7 @@ def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     series_dict = Series.getEmptyDict()
 
     # get the current section
+    ## TODO: Set to first av
     series_dict["current_section"] = xml_series.index
 
     # get the view window

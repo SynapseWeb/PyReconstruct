@@ -855,7 +855,7 @@ class MainWindow(QMainWindow):
         ## Convert series
         jsonToXML(self.series, os.path.dirname(export_fp))
 
-        notify("Legacy series (xml) exported to:\n\n{os.path.dirname(export_fp)}")
+        notify(f"Legacy series (xml) exported to:\n\n{os.path.dirname(export_fp)}")
     
     def seriesModified(self, modified=True):
         """Change the title of the window reflect modifications."""

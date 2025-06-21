@@ -32,6 +32,9 @@ def xmlToJSON(xml_dir : str) -> Series:
     series_fp = ""
     section_fps = []
     json_fp = ""
+
+    print("Gathering files...")
+    
     for f in os.listdir(xml_dir):
         if f.endswith(".ser"):
             series_fp = os.path.join(xml_dir, f)
@@ -40,6 +43,8 @@ def xmlToJSON(xml_dir : str) -> Series:
             json_fp = os.path.join(xml_dir, f)
         elif f[f.rfind(".")+1:].isnumeric():
             section_fps.append(os.path.join(xml_dir, f))
+
+    print("Creating hidden folder...")
     
     # create the hidden folder containing the JSON files
     sname = os.path.basename(series_fp)
@@ -53,6 +58,8 @@ def xmlToJSON(xml_dir : str) -> Series:
     progress = 0
     final_value = len(section_fps) + 1
     if json_fp: final_value += 1
+
+    print("Converting series...")
     
     # convert the series file
     json_series_fp = seriesXMLToJSON(series_fp, section_fps, hidden_dir)
@@ -70,13 +77,19 @@ def xmlToJSON(xml_dir : str) -> Series:
     progbar.setValue(progress/final_value * 100)
 
     # convert the section files and gather section names and tforms
+    print("Converting section files...")
+
     sections = {}
     section_tforms = {}
+
     for section_fp in section_fps:
+        
         snum = int(section_fp[section_fp.rfind(".")+1:])
         tform = sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir)
+
         sections[snum] = f"{sname}.{snum}"
         section_tforms[snum] = tform
+
         if progbar.wasCanceled(): return
         progress += 1
         progbar.setValue(progress/final_value * 100)
@@ -85,8 +98,9 @@ def xmlToJSON(xml_dir : str) -> Series:
     with open(os.path.join(hidden_dir, "existing_log.csv"), "w") as f:
         f.write("Date, Time, User, Obj, Sections, Event")
     
-    # open the series file
+    # open the series file, modify current section and ztraces
     series = Series(json_series_fp, sections)
+    series.current_section = min(series.sections.keys())
 
     # modify the ztraces
     for ztrace in series.ztraces.values():
@@ -101,14 +115,6 @@ def xmlToJSON(xml_dir : str) -> Series:
                 new_points.append(new_point)
         ztrace.points = new_points
     
-    # save the jser file
-    # series.save()
-    # series.jser_fp = os.path.join(
-    #     xml_dir,
-    #     f"{series_name}.jser"
-    # )
-    # series.saveJser()
-
     # log create the first log in the series
     series.addLog(None, None, "Create series from XML files")
 
@@ -117,11 +123,13 @@ def xmlToJSON(xml_dir : str) -> Series:
 
 def seriesXMLToJSON(series_fp, section_fps, hidden_dir):
     # grab the series file
+    print("Processing series file...")
     xml_series = process_series_file(series_fp)
     # create an empty JSON series
     series_dict = Series.getEmptyDict()
 
     # get the current section
+    ## TODO: Set to first available section
     series_dict["current_section"] = xml_series.index
 
     # get the view window

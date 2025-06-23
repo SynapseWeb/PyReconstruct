@@ -9,11 +9,28 @@ import zarr
 os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
 os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = "18500000000"  # Go big or go home?
 
+def clean_windows_path(path):
+    
+    if not sys.platform.startswith('win'):
+        return path
+        
+    # Remove surrounding quotes if present
+    if (path.startswith('"') and path.endswith('"')) or (path.startswith("'") and path.endswith("'")):
+        path = path[1:-1]
+    
+    # Handle paths with nested quotes
+    path = path.replace('""', '"').replace("''", "'")
+    
+    # Replace forward slashes with backslashes for Windows
+    path = path.replace('/', '\\')
+    
+    return path
+
 cores = int(sys.argv[1])  # number of cores to use
 
 if len(sys.argv) == 4:
-    
-    img_dir = sys.argv[2]
+
+    img_dir = clean_windows_path(sys.argv[2])
     zarr_fp = sys.argv[3]
     create_new = True
     

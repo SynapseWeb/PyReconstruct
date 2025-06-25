@@ -88,7 +88,7 @@ def make_pyr_transforms(project_file, scale=1, cal_grid=False):
             width_ratio = img_width_1 / img_width  # left here for now 
         
             # Get section transform, make sane, append to list
-            transform = scale_req.get("cafm")
+            transform = scale_req.get("alt_cafm")
             transform = cafm_to_sanity(transform, dim=img_height, scale_ratio=height_ratio)
             pyr_transforms.append(transform)
 

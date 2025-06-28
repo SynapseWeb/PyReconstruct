@@ -108,7 +108,8 @@ from PyReconstruct.modules.backend.autoseg import (
 )
 
 from PyReconstruct.modules.backend.volume import (
-    export3DObjects
+    export3DObjects,
+    export3DData
 )
 
 from PyReconstruct.modules.backend.imports import (

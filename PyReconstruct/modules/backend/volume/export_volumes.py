@@ -1,7 +1,7 @@
 """Export 3D objects."""
 
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import trimesh
@@ -24,47 +24,13 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             void
     """
 
+    ## Collect 3D objects
+    
     obj_data = {}
 
     for obj_name in obj_names:
 
-        mode = series.getAttr(obj_name, "3D_mode")
-            
-        if mode == "surface":
-            obj_data[obj_name] = Surface(obj_name, series)
-            
-        elif mode == "spheres":
-            obj_data[obj_name] = Spheres(obj_name, series)
-            
-        elif mode == "contours":
-            obj_data[obj_name] = Contours(obj_name, series)
-
-    for snum, section in series.enumerateSections(show_progress=False):
-
-        # # Assume somewhat uniform section thickness
-        # tform = section.tform
-
-        for obj_name in obj_names:
-
-            if obj_name not in section.contours:
-
-                continue
-
-            ## Get objects alignment
-            obj_alignment = series.getAttr(obj_name, "alignment")
-
-            if not obj_alignment:
-                
-                tform = section.tform
-            
-            else:
-
-                tform = section.tforms[obj_alignment]
-            
-            for trace in section.contours[obj_name]:
-
-                ## Collect all points if generating full surface
-                obj_data[obj_name].addTrace(trace, snum, tform)
+        obj_data[obj_name] = get_3D_mesh(series, obj_name)
 
     ## Iterate through objects and export 3D meshes
 
@@ -83,7 +49,93 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     if notify_user:
         
-        notify(f"Object(s) exported to directory:\n\n{output_directory.absolute()}\n")
+        notify(f"Object(s) exported to directory:\n\n{Path(output_directory).absolute()}\n")
+
+
+def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: bool=True) -> None:
+    """Export quantitative data from meshes."""
+
+    sep = ","
+    csv_str = f"Series{sep}Name{sep}MeshType{sep}SurfaceArea{sep}Volume\n"
+    series_code = series.code
+
+    errors = {}
+
+    for obj in obj_names:
+
+        try:
+
+            obj_data = get_3D_mesh(series, obj)
+            obj_type = type(obj_data).__name__.lower()
+            tm = obj_data.generateTrimesh()
+
+            surface_area = round(tm.area, 5)
+            volume = round(tm.volume, 5)
+
+            csv_str += f"{series_code}{sep}{obj}{sep}{obj_type}{sep}{surface_area}{sep}{volume}\n"
+
+        except Exception as e:
+
+            errors[obj] = e
+
+    if not errors:
+
+        with open(output_fp, "w") as fp:
+            fp.write(csv_str)
+
+        if notify_user:
+            notify(f"Data exported to:\n\n{Path(output_fp).absolute()}\n")
+
+    if errors:
+
+        print(errors)
+        notify("There were errors exporting data from some or all of the objects. See console.")
+
+        
+def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contours]:
+    """Get mesh for an object."""
+
+    ## Create initial 3D obj
+
+    mode = series.getAttr(obj_name, "3D_mode")
+            
+    if mode == "surface":
+        obj_data = Surface(obj_name, series)
+            
+    elif mode == "spheres":
+        obj_data = Spheres(obj_name, series)
+            
+    elif mode == "contours":
+        obj_data = Contours(obj_name, series)
+
+    ## Iterate through sections and collect data
+
+    for snum, section in series.enumerateSections(show_progress=False):
+
+        ## Assume somewhat uniform section thickness
+        # tform = section.tform
+
+        if obj_name not in section.contours:
+
+            continue
+
+        ## Get alignment
+        obj_alignment = series.getAttr(obj_name, "alignment")
+
+        if not obj_alignment:
+
+            tform = section.tform
+
+        else:
+
+            tform = section.tforms[obj_alignment]
+
+        for trace in section.contours[obj_name]:
+
+            ## Collect all points if generating full surface
+            obj_data.addTrace(trace, snum, tform)
+    
+    return obj_data
 
 
 def convert_vedo_to_tm(obj) -> trimesh.Trimesh:

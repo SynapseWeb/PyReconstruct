@@ -121,7 +121,7 @@ def get_context_menu_list_obj(self):
                 ("removeobj3D_act", "Remove from scene", "", self.remove3D),
                 {
                     "attr_name": "exportobj3D",
-                    "text": "Export",
+                    "text": "Export meshes",
                     "opts":
                     [
                         ("export3D_act", "Wavefront (.obj)", "", lambda : self.exportAs3D("obj")),
@@ -132,6 +132,7 @@ def get_context_menu_list_obj(self):
                     ]
                     
                     },
+                ("exportmeshdata", "Export quantitative data", "", self.export3DData),
                 None,
                 ("editobj3D_act", "Edit 3D settings...", "", self.edit3D)
             ]

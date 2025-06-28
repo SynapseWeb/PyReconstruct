@@ -311,6 +311,11 @@ class FieldWidgetObject(FieldWidgetTrace):
         """Export 3D objects."""
         self.mainwindow.exportAs3D(obj_names, export_type)
 
+    @object_function(update_objects=False, reload_field=False)
+    def export3DData(self, obj_names: list):
+        """Export quantitative data from 3D meshes."""
+        self.mainwindow.export3DData(obj_names)
+        
     @object_function(update_objects=True, reload_field=False)
     def addToGroup(self, obj_names : list, log_event=True):
         """Add objects to a group."""

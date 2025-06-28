@@ -883,7 +883,7 @@ class ObjectTableWidget(DataTable):
             return
         
         self.series.exportUserColsText(out_fp)
-    
+
     def importUserColText(self):
         """Import user columns from a text file."""
         fp = FileDialog.get(

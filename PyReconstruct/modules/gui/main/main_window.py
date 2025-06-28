@@ -2372,6 +2372,25 @@ class MainWindow(QMainWindow):
             )
         if not export_dir: return
         export3DObjects(self.series, obj_names, export_dir, export_type)
+
+    def export3DData(self, obj_names):
+        """Export quantitative data from meshes."""
+        
+        notify(
+            f"3D surface area and volume measurements depend on the meshing algorithm "
+            f"implemented in PyReconstruct. We recommend verifying proper mesh quality by "
+            f"inspecting objects in the 3D scene before analyzing quantitative data.\n\n"
+            f"Click OK to specificy where to save this data."
+        )
+        
+        self.saveAllData()
+        
+        output_fp = FileDialog.get(
+            "save", self, "Save data as CSV file", "*.csv", "mesh_data.csv"
+        )
+        if not output_fp: return
+
+        export3DData(self.series, obj_names, output_fp)
     
     def toggleCuration(self):
         """Quick shortcut to toggle curation on/off for the tables."""

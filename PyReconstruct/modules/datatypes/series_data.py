@@ -1,4 +1,5 @@
 """Collect data to pass to table manager."""
+
 from typing import Union
 
 from PyReconstruct.modules.calc import lineDistance, area
@@ -345,8 +346,15 @@ class SeriesData():
             
             for trace_data in trace_list:
                 v += trace_data.getArea() * self.data["sections"][snum]["thickness"]
-                
+        
         return v
+
+    def getSurfaceArea(self, obj_name: str) -> float:
+        """Get the surface area of an object."""
+
+        from PyReconstruct.modules.backend.volume.export_volumes import get_3D_mesh
+
+        pass
 
     def getConfiguration(self, obj_name: str) -> Union[str, None]:
         """Get the configuration of the object.

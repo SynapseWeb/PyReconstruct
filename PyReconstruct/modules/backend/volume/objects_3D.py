@@ -59,6 +59,7 @@ class Object3D():
             if s < self.extremes[4]: self.extremes[4] = s
             if s > self.extremes[5]: self.extremes[5] = s
 
+
 class Surface(Object3D):
 
     def __init__(self, *args):
@@ -256,6 +257,7 @@ class Spheres(Object3D):
         }
         
         return mesh_data
+
 
 class Contours(Object3D):
 

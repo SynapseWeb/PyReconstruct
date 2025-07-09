@@ -1,7 +1,9 @@
 import re
+from pathlib import Path
 from datetime import datetime
 
-from PyReconstruct.modules.constants import getDateTime
+from PyReconstruct.modules.constants import getDateTime, get_now, remove_days_from_today
+
 
 class Log():
 
@@ -234,14 +236,6 @@ class LogSet():
             else:
                 self.all_logs.append(log)
         
-        # # for debugging
-        # # Clear console
-        # if os.name == 'nt':  # Windows
-        #     _ = os.system('cls')
-        # else:  # Mac and Linux
-        #     _ = os.system('clear')
-        # print(str(self).replace(", ", "\t"))
-    
     def addExistingLog(self, log : Log, track_dyn=False):
         """Add an existing log object to the set.
         
@@ -333,6 +327,42 @@ class LogSet():
                 return i
             i -= 1
         return i
+
+    @staticmethod
+    def exportLogHistory(hidden_dir: str, output_fp: str, older_than: int) -> None:
+        """Export log history as CSV for external storage."""
+
+        existing_log = Path(hidden_dir) / "existing_log.csv"
+        storage_log = Path(output_fp)
+        new_log = existing_log.with_name("new_log.csv")
+
+        if storage_log.exists(): storage_log.unlink()  # remove if already exists
+        
+        older_than = remove_days_from_today(older_than)
+
+        with storage_log.open("a") as external_store, new_log.open("a") as new:
+            
+            with existing_log.open("r") as log:
+                
+                for line in log.readlines():
+                    
+                    if "Date" in line:
+
+                        external_store.write(line)
+                        new.write(line)
+                        
+                    else:
+
+                        log_date = line.split(",")[0].strip()
+                        log_date = datetime.strptime(log_date, "%y-%m-%d").date()
+
+                        if log_date <= older_than:
+                            external_store.write(line)
+                        else:
+                            new.write(line)
+
+        new_log.replace(existing_log)  # overwrite old log
+                        
 
 class LogSetPair():
 

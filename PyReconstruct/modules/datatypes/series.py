@@ -323,6 +323,7 @@ class Series():
                     jser_data["log"] += "\n" + str(self.log_set)
                 # save the series
                 jser_data["series"] = filedata
+                print(f"{self.log_set = }")
             elif filename == "existing_log.csv":
                 with open(fp, "r") as f:
                     existing_log = ""

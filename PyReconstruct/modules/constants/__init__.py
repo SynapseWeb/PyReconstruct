@@ -43,5 +43,7 @@ from .remotes import (
 )
 
 from .getdatetime import(
-    getDateTime
+    getDateTime,
+    get_now,
+    remove_days_from_today
 )

@@ -146,6 +146,14 @@ def return_series_menu(self):
                 ]
             },
             {
+                "attr_name": "serieslogmenu",
+                "text": "Log",
+                "opts":
+                [
+                    ("offloadlog_act", "Offload log history...", "", self.offloadLog),
+                ]
+            },
+            {
                 "attr_name": "threedeemenu",
                 "text": "3D",
                 "opts":

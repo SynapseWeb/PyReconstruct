@@ -2278,6 +2278,73 @@ class MainWindow(QMainWindow):
         self.series.hideAllTraces(hidden)
         self.field.reload()
     
+    def exportLog(self):
+        """Export complete log history"""
+
+        pass
+
+    def offloadLog(self):
+        """Offload log history to external file for storage."""
+
+        ## Notify user
+        note_offloading = (
+            f"Log creation in PyReconstruct is still a work in progress. Series with extensive "
+            f"log history may become very large. You can reduce series size in some cases by "
+            f"offloading and saving log history externally as a CSV file. \n\nClick OK to select "
+            f"where to save the log CSV."
+        )
+
+        confirm = notifyConfirm(note_offloading)
+
+        if not confirm:
+            return
+
+        ## Get filepath
+
+        path_check_ok = False
+
+        while not path_check_ok:
+
+            output_fp = FileDialog.get("save", self, "Save data as CSV file", "*.csv", "log_export.csv")
+            if not output_fp:
+
+                return
+
+            elif Path(output_fp).exists():
+
+                notify(
+                    f"To prevent accidnetally overwriting previously offloaded logs, "
+                    f"please provide a filename that does not yet exist."
+                )
+
+            else:
+
+                path_check_ok = True
+
+        ## Query for age of exported existing data
+
+        structure = [
+            ["Export history older than x days: ", ("int", 10)],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Export log history")
+        
+        if not confirmed:
+            return
+
+        days = response[0]
+
+        ## Export for external storage
+
+        LogSet.exportLogHistory(self.series.hidden_dir, output_fp, days)
+        self.series.addLog(None, None, f"Offloaded log to {output_fp}")
+
+        notify(
+            f"Log offloaded to external CSV file.\n\n"
+            f"Be sure to save offloaded log data in a safe place."
+        )
+
+        return None
+
     def setFindZoom(self):
         """Set the magnification for find contour."""
         z, confirmed = QInputDialog.getInt(

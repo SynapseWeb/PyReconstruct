@@ -127,7 +127,8 @@ from PyReconstruct.modules.datatypes import (
     Series,
     Trace,
     Transform,
-    Flag
+    Flag,
+    LogSet
 )
 
 from PyReconstruct.modules.constants import (

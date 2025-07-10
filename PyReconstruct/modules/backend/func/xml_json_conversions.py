@@ -201,19 +201,22 @@ def sectionXMLtoJSON(section_fp, alignment_dict, hidden_dir):
         image = xml_section.images[0] # assume only one image
     else:
         image = None
-    
+
     if image:
+
         section_dict["src"] = image.src
         section_dict["mag"] = image.mag
         xml_tform = image.transform
         tform = Transform(
             list(xml_tform.tform()[:2,:].reshape(6))
         )
+        
     else:
+
         print(f"Section: {fname} does not contain any image data.")
         section_dict["src"] = ""
         section_dict["mag"] = 0.00254
-        xml_tform = XMLTransform(xcoef=[1, 0, 0, 0, 0, 0], ycoef=[0, 1, 0, 0, 0, 0])
+        xml_tform = None
         tform = Transform.identity()
 
     # get thickness

@@ -674,8 +674,6 @@ class FieldWidgetMouse(FieldWidgetData):
         # get mouse coords and convert to field coords
         if self.lclick:
             pix_x, pix_y = event.x(), event.y()
-            print(f"{pix_x = }")
-            print(f"{pix_y = }")
             self.placeGrid(
                 pix_x, pix_y,
                 self.tracing_trace,

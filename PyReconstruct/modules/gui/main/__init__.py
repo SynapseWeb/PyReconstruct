@@ -1,2 +1,2 @@
 from .main_window import MainWindow
-from .field_widget import FieldWidget
+from .field.field_widget import FieldWidget

@@ -27,7 +27,7 @@ from PyReconstruct.modules.gui.utils import get_clicked
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.constants import locations as loc
 
-from .field.field_widget_5_mouse import (
+from .field_widget_5_mouse import (
     POINTER, 
     PANZOOM, 
     KNIFE, 
@@ -40,7 +40,7 @@ from .field.field_widget_5_mouse import (
     HOST,
     ZTOOL
 )
-from .field.field_widget_7_view import FieldWidgetView
+from .field_widget_7_view import FieldWidgetView
 
 
 class FieldWidget(QWidget, FieldWidgetView):

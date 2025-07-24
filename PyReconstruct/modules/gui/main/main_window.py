@@ -34,7 +34,7 @@ class MainWindow(
         self._initialize(filename)
 
     def restart(self):
-        """Restart the application and clear console."""
+        """Restart application and clear console."""
         self.restart_mainwindow = True
 
         # Clear console
@@ -44,7 +44,7 @@ class MainWindow(
         self.close()
 
     def closeEvent(self, event):
-        """Save all data to hidden files when user exits."""
+        """Save all data to disk when user exits."""
         response = self.saveToJser(notify=True, close=True)
         
         if response == "cancel":

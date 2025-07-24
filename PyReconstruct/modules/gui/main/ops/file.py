@@ -7,11 +7,16 @@ import os
 import time
 
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QInputDialog
+from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.palette import MousePalette
-from PyReconstruct.modules.gui.utils import get_welcome_setup, saveNotify, unsavedNotify
+from PyReconstruct.modules.gui.utils import (
+    get_welcome_setup,
+    saveNotify,
+    unsavedNotify,
+    get_hidden_dir
+)
 from PyReconstruct.modules.gui.dialog import FileDialog, BackupDialog, BackupCommentDialog
 from PyReconstruct.modules.backend.func import xmlToJSON
 from PyReconstruct.modules.backend.autoseg import zarrToNewSeries
@@ -40,45 +45,42 @@ class FileOperations:
         """
 
         if self.series:  # series open and save yes
-            
             first_open = False
-
             if query_prev:
-                
                 response = self.saveToJser(notify=True, close=True)
-                
                 if response == "cancel":
                     return
             else:
-
                 self.series.close()
-                    
         else:
-
-            first_open = True
+            first_open = True  # first series to open this session
         
-        if not series_obj:  # if series is not provided            
-            # get the new series
+        if not series_obj:  # if series not provided
+            
+            ## Get new series
             new_series = None
-            if not jser_fp:
+
+            if not jser_fp: # exit if no series provided
                 jser_fp = FileDialog.get("file", self, "Open Series", filter="*.jser")
-                if not jser_fp: return  # exit function if user does not provide series
+                if not jser_fp:
+                    return
 
-            # check for a hidden series folder
-            sdir = os.path.dirname(jser_fp)
-            sname = os.path.basename(jser_fp)
-            sname = sname[:sname.rfind(".")]
-            hidden_series_dir = os.path.join(sdir, f".{sname}")
+            ## Check for hidden series folder
+            hidden_series_path = get_hidden_dir(jser_fp)
 
-            if os.path.isdir(hidden_series_dir):
-                # find the series and timer files
+            if hidden_series_path.is_dir():
+                
+                ## Find .ser, trace files, and timer file
                 new_series_fp = ""
                 sections = {}
-                for f in os.listdir(hidden_series_dir):
-                    # check if the series is currently being modified
-                    if "." not in f:
+    
+                for f in hidden_series_path.iterdir():
+                    
+                    # check if series is currently being worked on
+                    if not f.name.count('.'):  # no extension = timer file
                         current_time = round(time.time())
-                        time_diff = current_time - int(f)
+                        time_diff = current_time - int(f.name)
+
                         if time_diff <= 7:  # the series is currently being operated on
                             QMessageBox.information(
                                 self,
@@ -86,35 +88,37 @@ class FileOperations:
                                 "This series is already open in another window.",
                                 QMessageBox.Ok
                             )
+
                             if not self.series:
                                 exit()
                             else:
                                 return
                     else:
-                        ext = f[f.rfind(".")+1:]
+                        ext = f.suffix[1:]  # Remove the leading dot
                         if ext.isnumeric():
-                            sections[int(ext)] = f
+                            sections[int(ext)] = f.name
                         elif ext == "ser":
-                            new_series_fp = os.path.join(hidden_series_dir, f)                    
+                            new_series_fp = f
 
-                # if a series file has been found
+                ## If .ser file found
                 if new_series_fp:
-                    # ask the user if they want to open a previously unsaved series
+                    ## Query user about opening previously unsaved series
                     open_unsaved = unsavedNotify()
                     if open_unsaved:
-                        new_series = Series(new_series_fp, sections)
+                        new_series = Series(str(new_series_fp), sections)
                         new_series.modified = True
                         new_series.jser_fp = jser_fp
                     else:
                         # remove the folder if not needed
-                        for f in os.listdir(hidden_series_dir):
-                            os.remove(os.path.join(hidden_series_dir, f))
-                        os.rmdir(hidden_series_dir)
+                        for f in hidden_series_path.iterdir():
+                            f.unlink()  # Delete file
+                            hidden_series_path.rmdir()  # Remove directory
                 else:
                     # remove the folder if no series file detected
-                    for f in os.listdir(hidden_series_dir):
-                        os.remove(os.path.join(hidden_series_dir, f))
-                    os.rmdir(hidden_series_dir)
+                    for f in hidden_series_path.iterdir():
+                        f.unlink()  # Delete file
+                    hidden_series_path.rmdir()  # Remove directory
+#########################
 
             # open the JSER file if no unsaved series was opened
             if not new_series:

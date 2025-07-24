@@ -303,6 +303,7 @@ def unsavedNotify():
 
     return response == QMessageBox.Yes
 
+
 def drawOutlinedText(
         painter : QPainter, 
         x : int, y : int, 

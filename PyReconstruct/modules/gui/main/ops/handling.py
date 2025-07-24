@@ -1,5 +1,7 @@
 """Input handling operations."""
 
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -389,3 +391,12 @@ class HandlingOperations:
         else:
             return self.field
 
+    def restart(self):
+        """Restart application and clear console."""
+        self.restart_mainwindow = True
+
+        # Clear console
+        if os.name == 'nt': _ = os.system('cls')
+        else: _ = os.system('clear')
+        
+        self.close()    

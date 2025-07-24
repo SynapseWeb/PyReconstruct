@@ -9,16 +9,13 @@ import time
 from typing import Tuple, Optional
 from pathlib import Path
 
-from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.gui.palette import MousePalette
 from PyReconstruct.modules.gui.utils import (
     get_welcome_setup,
     saveNotify,
-    unsavedNotify,
-    get_hidden_dir
+    unsavedNotify
 )
 from PyReconstruct.modules.gui.dialog import FileDialog, BackupDialog, BackupCommentDialog
 from PyReconstruct.modules.backend.func import xmlToJSON
@@ -26,8 +23,9 @@ from PyReconstruct.modules.backend.autoseg import zarrToNewSeries
 
 from ..field.field_widget import FieldWidget
 
+from .series import SeriesOperations
 
-class FileOperations:
+class FileOperations(SeriesOperations):
     """File operations for MainWindow."""
     
     def openWelcomeSeries(self):
@@ -49,125 +47,31 @@ class FileOperations:
 
         should_continue, first_open = self.prepOpenSeries(query_prev)
         
-        if not should_continue:
-            return  # exit if user cancelled
-    
-        if not series_obj:  # if no series obj provided
-            
-            ## Get new series
-            new_series = None
+        if not should_continue:  # user cancelled
+            return
 
-            if not jser_fp: # return if no series provided
-                jser_fp = FileDialog.get("file", self, "Open Series", filter="*.jser")
-                if not jser_fp:
-                    return
-
-            ## Check for hidden series folder
-            hidden_series_path = get_hidden_dir(jser_fp)
-            new_series = self.processHiddenDir(hidden_series_path, jser_fp)
-
-            # open the JSER file if no unsaved series was opened
-            if not new_series:
-                new_series = Series.openJser(jser_fp)
-                # user pressed cancel
-                if new_series is None:
-                    if self.series is None:
-                        exit()
-                    else:
-                        return
-            
-            # clear the series
-            if self.series and not self.series.isWelcomeSeries():
-                self.series.close()
-
-            self.series = new_series
-
-        # else series already provided
-        else:
-            # clear current series
-            if self.series and not self.series.isWelcomeSeries():
-                self.series.close()
-                
-            # set new series
-            self.series = series_obj
+        self.series = self.setup_series_obj(series_obj, jser_fp)
         
-        # set the title of the main window
-        self.seriesModified(self.series.modified)
-
-        # set explorer filepath
-        if not self.series.isWelcomeSeries() and self.series.jser_fp:
-            settings = QSettings("KHLab", "PyReconstruct")
-            settings.setValue("last_folder", os.path.dirname(self.series.jser_fp))
-
-        # create field
-        if self.field is not None:  # close previous field widget
-            self.field.createField(self.series)
-        else:
-            self.field = FieldWidget(self.series, self)
-            self.setCentralWidget(self.field)
-
-        # create mouse palette
-        if self.mouse_palette: # close previous mouse dock
-            self.mouse_palette.reset()
-        else:
-            self.mouse_palette = MousePalette(self)
-            self.createPaletteShortcuts()
-        palette_group, index = tuple(self.series.palette_index)
-        self.changeTracingTrace(
-            self.series.palette_traces[palette_group][index]
-        ) # set the current trace
-
-        # ensure that images are found
-        if not self.field.section_layer.image_found:
-            # check jser directory
-            src_path = os.path.join(
-                os.path.dirname(self.series.jser_fp),
-                os.path.basename(self.field.section.src)
-            )
-            images_found = os.path.isfile(src_path)
-            
-            if images_found:
-                self.changeSrcDir(src_path)
-            else:
-                self.changeSrcDir(notify=True)
-        # prompt user to scale zarr images if not scaled
-        elif (self.field.section_layer.image_found and 
-            self.field.section_layer.is_zarr_file and
-            not self.field.section_layer.is_scaled):
-            reply = QMessageBox.question(
-                self,
-                "Zarr Scaling",
-                "Zarr not scaled.\nWould you like to scale now?",
-                QMessageBox.Yes,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.srcToZarr(create_new=False)
+        if not self.series:
+            return
         
-        # get the series code from the user if needed
-        if not self.series.isWelcomeSeries() and not self.series.code:
-            detected_code = re.search(
-                self.series.getOption("series_code_pattern"), 
-                self.series.name
-            )
-            if detected_code:
-                self.series.code = detected_code.group()
-            self.setSeriesCode(cancelable=False)
-            self.seriesModified()
-        
-        # notify new users of any warnings
-        if not first_open:
-            self.notifyNewEditor()
-        
-        # create the menus
+        ## Setup routines
+        self.set_window_title()
+        self.set_explorer_fp()
+        self.create_field()
+        self.create_mouse_palette()
+        self.find_images()
+        self.get_series_code()
+
+        if not first_open: self.notifyNewEditor()  # notify new user of warnings
+
         self.createMenuBar()
         self.createContextMenus()
-        if not self.actions_initialized:
-            self.createShortcuts()
+
+        if not self.actions_initialized: self.createShortcuts()
         self.actions_initialized = True
 
-        # add the series to recently opened
-        self.addToRecentSeries()
+        self.addToRecentSeries()  # add to recently opened
         
     def prepOpenSeries(self, query_prev=True) -> Tuple[bool, bool]:
         """Prepare to open an existing series.
@@ -241,7 +145,7 @@ class FileOperations:
                 # remove the folder if not needed
                 for f in hidden_series_path.iterdir():
                     f.unlink()  # Delete file
-                    hidden_series_path.rmdir()  # Remove directory
+                    shutil.rmtree(hidden_series_path)  # Remove directory
         else:
             # remove the folder if no series file detected
             for f in hidden_series_path.iterdir():

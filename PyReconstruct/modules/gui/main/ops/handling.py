@@ -1,5 +1,6 @@
 """Input handling operations."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from PyReconstruct.modules.gui.dialog import GridDialog, QuickDialog
@@ -199,8 +200,9 @@ class HandlingOperations:
         """
         self.field.setTracingTrace(trace)
     
-    def wheelEvent(self, event):
+    def handleWheelEvent(self, event):
         """Called when mouse scroll is used."""
+        
         # do nothing if middle button is clicked
         if self.field.mclick:
             return
@@ -308,7 +310,20 @@ class HandlingOperations:
         self.series.setOption("roll_knife_window", response[2])
         
         self.seriesModified()
-    
+
+    def handleCloseEvent(self, event):
+        """Save all data to disk when user exits."""
+        response = self.saveToJser(notify=True, close=True)
+        
+        if response == "cancel":
+            event.ignore()
+            return
+        
+        if self.viewer and not self.viewer.is_closed:
+            self.viewer.close()
+            
+        event.accept()
+        
     def backspace(self):
         """Called when backspace is pressed."""
         # use table if focused; otherwise, use field

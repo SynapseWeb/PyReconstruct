@@ -29,9 +29,14 @@ class MainWindow(
 ):
 
     def __init__(self, filename):
-        """Construct skeleton for an empty main window."""
         super().__init__()
         self._initialize(filename)
+
+    def wheelEvent(self, event):
+        self.handleWheelEvent(event)
+
+    def closeEvent(self, event):
+        self.handleCloseEvent(event)
 
     def restart(self):
         """Restart application and clear console."""
@@ -41,20 +46,7 @@ class MainWindow(
         if os.name == 'nt': _ = os.system('cls')
         else: _ = os.system('clear')
         
-        self.close()
-
-    def closeEvent(self, event):
-        """Save all data to disk when user exits."""
-        response = self.saveToJser(notify=True, close=True)
-        
-        if response == "cancel":
-            event.ignore()
-            return
-        
-        if self.viewer and not self.viewer.is_closed:
-            self.viewer.close()
-            
-        event.accept()
+        self.close()    
 
 
 qdark_addon = """

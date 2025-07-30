@@ -1,6 +1,7 @@
 """Application series operations."""
 
 import os
+import re
 from typing import Optional, Union, List
 
 from PySide6.QtCore import QSettings
@@ -18,7 +19,7 @@ class SeriesOperations:
     def setup_series_obj (
             self,
             series_obj: Optional[Series],
-            jser_fp: Union[str, List[str]]
+            jser_fp: Optional[ Union[str, List[str]] ]
     ) -> Optional[Series]:
         """Return a series object or None."""
 
@@ -57,7 +58,6 @@ class SeriesOperations:
                 self.series.close()  # clear current series
                 
             return series_obj  # set new series
-
 
     def set_window_title(self):
         """Set main window title."""

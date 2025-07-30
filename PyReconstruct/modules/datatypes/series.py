@@ -16,17 +16,18 @@ from .trace import Trace
 from .transform import Transform
 from .obj_group_dict import ObjGroupDict
 from .series_data import SeriesData
-from .objects import Objects, SeriesObject
+from .objects import Objects
 from .default_settings import default_settings, default_series_settings
 from .host_tree import HostTree
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
+    getWorkingDir,
     welcome_series_dir,
     getDateTime
 )
 from PyReconstruct.modules.constants import welcome_series_dir, default_traces
-from PyReconstruct.modules.gui.utils import getProgbar
+from PyReconstruct.modules.gui.utils import getProgbar, get_hidden_dir, get_ser_file
 
 
 class Series():
@@ -146,13 +147,15 @@ class Series():
             Returns:
                 (Series): the series object created from the jser
         """
-        # check for existing hidden folder
-        sdir = os.path.dirname(fp)
-        sname = os.path.basename(fp)
-        sname = sname[:sname.rfind(".")]
-        hidden_dir = os.path.join(sdir, f".{sname}")
-        ser_filepath = os.path.join(hidden_dir, f"{sname}.ser")
-        if os.path.isdir(hidden_dir) and os.path.isfile(ser_filepath):
+        fp_obj = Path(fp)
+        sname = fp_obj.stem
+        sdir = str(fp_obj.parent)
+
+        ## Check for existing hidden dir
+        hidden_dir = str(get_hidden_dir(fp_obj))
+        dot_ser_fp = str(get_ser_file(fp_obj))
+        
+        if os.path.isdir(hidden_dir) and os.path.isfile(dot_ser_fp):
             # gather sections
             sections = {}
             for f in os.listdir(hidden_dir):
@@ -162,9 +165,12 @@ class Series():
                 if ext.isnumeric():
                     snum = int(ext)
                     sections[snum] = f
-            series = Series(ser_filepath, sections)
+                    
+            series = Series(dot_ser_fp, sections)
+
             series.jser_fp = fp
             series.leave_open = True
+
             return series
 
         # load json
@@ -698,38 +704,8 @@ class Series():
             Returns:
                 (Series): the newly created series object
         """
-        try:
-            
-            wdir = os.path.dirname(image_locations[0])
-            
-            if "zarr" in wdir:  # create series next to zarr if necessary
-                
-                src_dir = wdir[:wdir.rfind("zarr") + len("zarr")]
-                wdir = os.path.dirname(src_dir)
-                
-            else:
-                
-                src_dir = wdir
-                
-            hidden_dir = createHiddenDir(wdir, series_name)
-            
-        except PermissionError:
-            
-            print(
-                "Series cannot be created adjacent to images due "
-                "to user not having proper permissions. Creating "
-                "in home folder instead."
-            )
-            
-            if os.name == "nt":
-                
-                wdir = os.environ.get("HOMEPATH")
-                
-            else:
-                
-                wdir = os.environ.get("HOME")
-                
-            hidden_dir = createHiddenDir(wdir, series_name)
+        wdir, src_dir = getWorkingDir(image_locations)
+        hidden_dir = createHiddenDir(wdir, series_name)
 
         series_data = Series.getEmptyDict()
         series_data["src_dir"] = src_dir  # img dir

@@ -6,8 +6,6 @@ import uuid
 from pathlib import Path
 from typing import Union
 
-from PyReconstruct.modules.datatypes import Series
-
 
 def randomize_images(project_dir):
     """Randomize and collect images."""
@@ -57,6 +55,8 @@ def sort_images(image_dir):
 
 def create_new(img_dir):
     """Create a new series."""
+
+    from PyReconstruct.modules.datatypes import Series
 
     images_list = sort_images(img_dir)
     mag = 0.00254

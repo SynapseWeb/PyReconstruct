@@ -11,6 +11,7 @@ from .blank_legacy_files import (
 
 from .locations import (
     createHiddenDir,
+    getWorkingDir,
     src_dir,
     assets_dir,
     img_dir,

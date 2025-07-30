@@ -37,4 +37,4 @@ from .colors import rgb_norm_1, rgb_norm_256, is_light
 
 from .focus_mode import focus_edit_p, focus_comparison
 
-from .file_utils import get_hidden_dir
+from .file_utils import get_hidden_dir, get_ser_file

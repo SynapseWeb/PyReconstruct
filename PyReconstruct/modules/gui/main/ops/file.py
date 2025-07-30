@@ -13,17 +13,22 @@ from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import (
+    notify,
     get_welcome_setup,
     saveNotify,
     unsavedNotify
 )
-from PyReconstruct.modules.gui.dialog import FileDialog, BackupDialog, BackupCommentDialog
+from PyReconstruct.modules.gui.dialog import (
+    FileDialog,
+    QuickDialog,
+    BackupDialog,
+    BackupCommentDialog
+)
 from PyReconstruct.modules.backend.func import xmlToJSON
 from PyReconstruct.modules.backend.autoseg import zarrToNewSeries
 
-from ..field.field_widget import FieldWidget
-
 from .series import SeriesOperations
+
 
 class FileOperations(SeriesOperations):
     """File operations for MainWindow."""
@@ -45,17 +50,20 @@ class FileOperations(SeriesOperations):
                 query_prev (bool): True if query user about saving data
         """
 
+        ## Prepare open series (e.g., checks for existing hidden dir)
+
         should_continue, first_open = self.prepOpenSeries(query_prev)
         
         if not should_continue:  # user cancelled
             return
+
+        ## Setup routines
 
         self.series = self.setup_series_obj(series_obj, jser_fp)
         
         if not self.series:
             return
         
-        ## Setup routines
         self.set_window_title()
         self.set_explorer_fp()
         self.create_field()
@@ -63,12 +71,15 @@ class FileOperations(SeriesOperations):
         self.find_images()
         self.get_series_code()
 
-        if not first_open: self.notifyNewEditor()  # notify new user of warnings
+        if not first_open:
+            self.notifyNewEditor()  # notify new user of any warnings
 
         self.createMenuBar()
         self.createContextMenus()
 
-        if not self.actions_initialized: self.createShortcuts()
+        if not self.actions_initialized:
+            self.createShortcuts()
+            
         self.actions_initialized = True
 
         self.addToRecentSeries()  # add to recently opened
@@ -183,7 +194,7 @@ class FileOperations(SeriesOperations):
                     )
                     if not zarr_fp: return
                     
-                    # get the image names in the zarr
+                    # get image names in zarr
                     if "scale_1" in os.listdir(zarr_fp):
                         valid_zarr = True
                         image_locations = []
@@ -303,14 +314,9 @@ class FileOperations(SeriesOperations):
         if not series:
             return
 
-        # open new series
         self.openSeries(series)
-
-        # set view to home
-        self.field.home()
-
-        # prompt user to save series
-        self.saveAsToJser()
+        self.field.home()  # set view to home
+        self.saveAsToJser()  # prompt to save series
     
     def saveAllData(self):
         """Write current series and section data into hidden files."""

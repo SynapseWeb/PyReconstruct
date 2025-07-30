@@ -2,17 +2,12 @@
 
 from PySide6.QtWidgets import QMainWindow
 
-## Core functions
-from .ops import Initialization, HandlingOperations, FileOperations                
-
-## UI components
-from .ops import MenuOperations, UIOperations, ViewOperations                      
-
-## Content manipulation
-from .ops import ImageOperations, NavigationOperations, ImportExportOperations     
-
-## Advanced features
-from .ops import HistoryOperations, ThreeDimensionalOperations, ProjectOperations  
+from .ops import (
+    Initialization, HandlingOperations, FileOperations,                # core funcs
+    MenuOperations, UIOperations, ViewOperations,                      # ui components        
+    ImageOperations, NavigationOperations, ImportExportOperations,     # content manipulation
+    HistoryOperations, ThreeDimensionalOperations, ProjectOperations,  # advanced features
+)
 
 
 class MainWindow(

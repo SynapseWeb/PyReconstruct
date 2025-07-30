@@ -12,7 +12,7 @@ from ..field.context_menu_list import get_field_menu_list
 class MenuOperations:
 
     def createMenuBar(self):
-        """Create the menu for the main window."""
+        """Create main window menubar."""
         menu = return_menubar(self)
 
         if self.menubar:

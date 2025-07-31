@@ -4,11 +4,9 @@
 
 # PyReconstruct
 
-PyReconstruct is an actively maintained, extensible version of RECONSTRUCT written in Python in the lab of Kristen Harris at the University of Texas at Austin. This project is currently under heavy development, but we are happy to make the application publicly available now.
+PyReconstruct is an actively maintained, extensible version of _Reconstruct_ written in Python in the lab of Kristen Harris at the University of Texas at Austin. Please check out [our paper](https://doi.org/10.1073/pnas.2505822122) introducing PyReconstruct and feel free to send us a message if you have any questions:
 
-Please send us a message should you have questions:
-
--   Michael Chirillo: m.chirillo@utexas.edu
+-   Michael Chirillo: michael.chirillo@uri.edu
 -   Julian Falco: julian.falco@utexas.edu
 
 <a id="documentation"></a>
@@ -47,15 +45,32 @@ If you notice a problem, would like to suggest a feature, or have ideas on impro
 
 # Citation
 
-If you use PyReconstruct in published work, please cite this repo:
+If you use PyReconstruct in published work, please cite [our paper](https://doi.org/10.1073/pnas.2505822122):
+
+```
+@article{Chirillo2025,
+	title = {{PyReconstruct}: {A} fully open-source, collaborative successor to {Reconstruct}},
+	author = {Chirillo, Michael A. and Falco, Julian N. and Musslewhite, Michael D. and Lindsey, Larry F. and Harris, Kristen M.},
+	journal = {Proceedings of the National Academy of Sciences},
+	volume = {122},
+	number = {31},
+	pages = {e2505822122},
+	year = {2025},
+	month = {July},
+	doi = {10.1073/pnas.2505822122},
+	url = {https://www.pnas.org/doi/10.1073/pnas.2505822122}
+}
+```
+
+and this repo if you'd like:
 
 ```
 @software{Falco2025,
-author = {Falco, Julian and Chirillo, Michael},
-title = {PyReconstruct},
-version = {1.19.0},
-month = {May},
-year = {2025}
-url = {https://github.com/synapseweb/pyreconstruct},
+    author = {Falco, Julian and Chirillo, Michael},
+    title = {PyReconstruct},
+    version = {1.19.0},
+    month = {May},
+    year = {2025}
+    url = {https://github.com/synapseweb/pyreconstruct},
 }
 ```

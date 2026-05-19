@@ -1,6 +1,6 @@
 PySide6==6.5.2
 cloud-volume==11.0.0
-gitpython==3.1.47
+gitpython==3.1.50
 lxml==6.1.0
 numcodecs==0.15.0
 numpy==1.24.1

@@ -34,12 +34,12 @@ cores = int(sys.argv[1])  # number of cores to use
 if len(sys.argv) == 4:
 
     img_dir = clean_windows_path(sys.argv[2])
-    zarr_fp = sys.argv[3]
+    zarr_fp = clean_windows_path(sys.argv[3])
     create_new = True
-    
+
 elif len(sys.argv) == 3:
-    
-    zarr_fp = sys.argv[2]
+
+    zarr_fp = clean_windows_path(sys.argv[2])
     create_new = False
     
 else:

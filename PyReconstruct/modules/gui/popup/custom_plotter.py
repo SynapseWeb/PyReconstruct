@@ -901,7 +901,22 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         self.plt.show(*self.plt.actors, resetcam=(False if load_fp else None))
         self.show()
         self.container.show()
-        
+
+    def _getPixelRatio(self):
+        """Return the device pixel ratio of the screen this widget is on.
+
+        Overrides QVTKRenderWindowInteractor._getPixelRatio, which samples the
+        screen under the mouse cursor (QCursor.pos()). On multi-monitor or
+        fractional-scaling setups that is frequently not the screen the 3D
+        scene is displayed on, so VTK sized the render window and scaled mouse
+        events by the wrong ratio -- the intermittent high-DPI coordinate
+        mapping issue. devicePixelRatioF() always reflects this widget's own
+        screen and is fractional-aware (e.g. 1.25, 1.5), so both the render
+        window sizing (resizeEvent) and the mouse-event scaling
+        (_setEventInformation) stay consistent with what is actually rendered.
+        """
+        return self.devicePixelRatioF()
+
     def keyPressEvent(self, event : QKeyEvent):
         """Filter the keypresses to only use the allowed keys.
         

@@ -1284,35 +1284,59 @@ class Series():
         
         self.modified = True
 
-    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> None:
-        """Smooth all traces belonging to an object."""
+    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> dict:
+        """Smooth all traces belonging to an object.
+
+        Malformed traces with too few points to smooth (e.g. "pixel dust"
+        artifacts) are skipped rather than smoothed.
+
+            Returns:
+                (dict): {obj_name: sorted list of section numbers} for contours
+                    that had one or more traces skipped for being malformed
+        """
 
         window = self.getOption("roll_window")
-        
+
         if log_event:
 
             for obj_name in obj_names:
 
                 self.addLog(obj_name, None, f"Smooth {obj_name} traces")
 
-        for _, section in self.enumerateSections(
+        malformed = {}
+
+        for snum, section in self.enumerateSections(
                 message="Smoothing traces...",
                 series_states=series_states
         ):
-            
+
             for obj_name in obj_names:
-                
+
                 obj = section.contours.get(obj_name)
-                
+
                 if obj:
-                    
-                    section.modified_contours.add(obj_name)
+
+                    smoothed_any = False
+
                     for trace in obj.traces:
-                        trace.smooth(window=window, spacing=0.004)
+
+                        if trace.smooth(window=window, spacing=0.004):
+
+                            smoothed_any = True
+
+                        else:
+
+                            malformed.setdefault(obj_name, set()).add(snum)
+
+                    if smoothed_any:
+
+                        section.modified_contours.add(obj_name)
 
             section.save()
 
             self.modified = True
+
+        return {name: sorted(snums) for name, snums in malformed.items()}
     
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.

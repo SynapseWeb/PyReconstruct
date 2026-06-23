@@ -554,8 +554,20 @@ class Trace():
 
         return intersect_area / union_area
 
-    def smooth(self, window: int, spacing: Union[int, float]) -> None:
-        """Smooth trace."""
+    def smooth(self, window: int, spacing: Union[int, float]) -> bool:
+        """Smooth trace in place.
+
+        Malformed traces with too few points to smooth (e.g. "pixel dust"
+        artifacts) are left untouched.
+
+            Returns:
+                (bool): True if the trace was smoothed, False if it was
+                    skipped for having too few points
+        """
+
+        if len(self.points) < 3:
+
+            return False
 
         unsmoothed = Points(self.points, self.closed)
 
@@ -563,11 +575,17 @@ class Trace():
             spacing, window, as_int=False
         )
 
+        if not smoothed:
+
+            return False
+
         if smoothed[0] == smoothed[-1]:
 
             smoothed = smoothed[:-1]
 
         self.points = smoothed
+
+        return True
 
     @staticmethod
     def get_scale_bar():

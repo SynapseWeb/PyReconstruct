@@ -172,10 +172,18 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         self.series_states.addState()
 
-        self.series.smoothObject(
+        malformed = self.series.smoothObject(
             obj_names,
             series_states=self.series_states
         )
+
+        if malformed:
+
+            names = ", ".join(sorted(malformed))
+            notify(
+                "Some contours were skipped because they were malformed "
+                f"(too few points to smooth): {names}"
+            )
 
         return True
     

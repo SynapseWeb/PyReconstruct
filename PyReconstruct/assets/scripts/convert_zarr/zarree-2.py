@@ -281,6 +281,11 @@ if __name__ == "__main__":
     processes = max(1, min(cores, MAX_WORKERS))
     print(f"Converting with {processes} worker process(es)...", flush=True)
 
+    total = len(images)
+    # machine-readable progress markers consumed by the converter window
+    # (start_process.py) to drive the progress bar / ETA.
+    print(f"@@PROGRESS@@ TOTAL {total}", flush=True)
+
     t_all_start = time.perf_counter()
 
     # plain, picklable args only -- never the zarr group itself
@@ -289,6 +294,7 @@ if __name__ == "__main__":
         for filename in images
     ]
 
+    done = 0
     with Pool(processes) as p:
 
         # imap (ordered) + main-as-sole-writer => deterministic, race-free writes
@@ -298,7 +304,9 @@ if __name__ == "__main__":
                 if filename not in zg[scale_group]:
                     zg[scale_group].create_dataset(filename, data=arr)
 
+            done += 1
             print(f"Time for conversion {filename}: {round(duration, 2)} s", flush=True)
+            print(f"@@PROGRESS@@ STEP {done} {total}", flush=True)
 
     print(f"All tasks completed: {round(time.perf_counter() - t_all_start, 2)} s", flush=True)
 

@@ -20,11 +20,11 @@ from PySide6.QtCore import Qt
 class MalformedContoursDialog(QDialog):
     """Report contours skipped during object smoothing for being malformed.
 
-    Each row is one trace that could not be smoothed (too few points to
-    interpolate -- often "pixel dust" left over from preprocessing the
-    .jser). The dialog shows enough context to track each one down: the
-    object, the section, how many points the trace had, where it sits, and
-    why it was skipped. Double-clicking a row focuses the field on it, and
+    Each row is one trace that could not be smoothed (typically too few
+    points to interpolate a curve). The dialog shows enough context to track
+    each one down: the object, the section, how many points the trace had,
+    where it sits, and why it was skipped. Selecting a row and clicking
+    "Go to contour" (or double-clicking the row) focuses the field on it, and
     the list can be copied or exported for triage.
     """
 
@@ -57,14 +57,15 @@ class MalformedContoursDialog(QDialog):
         trace_word = "trace" if num_traces == 1 else "traces"
         obj_word = "object" if num_objs == 1 else "objects"
         was_were = "was" if num_traces == 1 else "were"
-        they = "it" if num_traces == 1 else "they"
         heading = QLabel(
             f"{num_traces} contour {trace_word} across {num_objs} {obj_word} "
-            f"{was_were} skipped while smoothing because {they} could not be "
-            "smoothed. These are often \"pixel dust\" artifacts introduced "
-            "when the .jser was preprocessed; see the Reason column for each "
-            "trace. The malformed traces were left untouched.\n\n"
-            "Double-click a row to focus the field on it.",
+            f"{was_were} skipped while smoothing.\n\n"
+            "A trace is malformed when it cannot be smoothed — usually "
+            "because it has too few points to interpolate a curve (fewer "
+            "than 3). These traces were left unchanged; the Reason column "
+            "explains why each one was skipped.\n\n"
+            "Select a row and click “Go to contour” to focus the "
+            "field on that trace.",
             self,
         )
         heading.setWordWrap(True)
@@ -82,14 +83,31 @@ class MalformedContoursDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.cellDoubleClicked.connect(self._onDoubleClick)
 
-        copy_button = QPushButton("Copy to clipboard", self)
+        self.goto_button = QPushButton("Go to contour", self)
+        self.goto_button.setToolTip(
+            "Focus the field on the selected contour"
+        )
+        self.goto_button.setEnabled(False)
+        self.goto_button.clicked.connect(self.goToSelectedContour)
+        # connected after the button exists so the slot can safely touch it
+        self.table.itemSelectionChanged.connect(self._updateGoToEnabled)
+
+        copy_button = QPushButton("Copy table list", self)
+        copy_button.setToolTip(
+            "Copy the table of malformed contours above to the clipboard "
+            "(tab-separated, including the column headers)"
+        )
         copy_button.clicked.connect(self.copyToClipboard)
 
-        save_button = QPushButton("Save as CSV…", self)
+        save_button = QPushButton("Save table as CSV…", self)
+        save_button.setToolTip(
+            "Save the table of malformed contours above to a CSV file"
+        )
         save_button.clicked.connect(self.saveCSV)
 
         buttonbox = QDialogButtonBox(QDialogButtonBox.Close, self)
         buttonbox.rejected.connect(self.reject)
+        buttonbox.addButton(self.goto_button, QDialogButtonBox.ActionRole)
         buttonbox.addButton(copy_button, QDialogButtonBox.ActionRole)
         buttonbox.addButton(save_button, QDialogButtonBox.ActionRole)
 
@@ -122,6 +140,9 @@ class MalformedContoursDialog(QDialog):
                 (name_item, section_item, points_item, loc_item, reason_item)
             ):
                 item.setTextAlignment(Qt.AlignCenter)
+                # show the full cell value on hover; columns are stretched to
+                # fit the window, so wider values (e.g. the Reason) truncate
+                item.setToolTip(item.text())
                 self.table.setItem(row, col, item)
 
     @staticmethod
@@ -131,15 +152,29 @@ class MalformedContoursDialog(QDialog):
             return "—"
         return f"({loc[0]}, {loc[1]})"
 
-    def _onDoubleClick(self, row, _col):
-        """Focus the field on the double-clicked contour."""
-        if not self.navigate:
+    def _updateGoToEnabled(self):
+        """Enable the Go-to button only while a row is selected."""
+        self.goto_button.setEnabled(self.table.selectionModel().hasSelection())
+
+    def _navigateToRow(self, row):
+        """Focus the field on the contour in the given table row."""
+        if not self.navigate or row < 0:
             return
         item = self.table.item(row, 0)
         if item is None:
             return
         section_num, obj_name = item.data(Qt.UserRole)
         self.navigate(section_num, obj_name)
+
+    def goToSelectedContour(self):
+        """Focus the field on the currently selected contour."""
+        rows = self.table.selectionModel().selectedRows()
+        if rows:
+            self._navigateToRow(rows[0].row())
+
+    def _onDoubleClick(self, row, _col):
+        """Focus the field on the double-clicked contour."""
+        self._navigateToRow(row)
 
     def _rows_for_export(self):
         """Return the report as a list of rows (header first).

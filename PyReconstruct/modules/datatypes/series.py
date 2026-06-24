@@ -1284,15 +1284,18 @@ class Series():
         
         self.modified = True
 
-    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> dict:
+    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> list:
         """Smooth all traces belonging to an object.
 
         Malformed traces with too few points to smooth (e.g. "pixel dust"
         artifacts) are skipped rather than smoothed.
 
             Returns:
-                (dict): {obj_name: sorted list of section numbers} for contours
-                    that had one or more traces skipped for being malformed
+                (list): one record per skipped trace, each a dict with keys
+                    "name" (object name), "section" (section number),
+                    "points" (point count), "location" ((x, y) of the first
+                    point, or None when the trace has no points) and "reason"
+                    (why it was skipped). Empty when nothing was skipped.
         """
 
         window = self.getOption("roll_window")
@@ -1303,7 +1306,7 @@ class Series():
 
                 self.addLog(obj_name, None, f"Smooth {obj_name} traces")
 
-        malformed = {}
+        malformed = []
 
         for snum, section in self.enumerateSections(
                 message="Smoothing traces...",
@@ -1326,7 +1329,24 @@ class Series():
 
                         else:
 
-                            malformed.setdefault(obj_name, set()).add(snum)
+                            num_points = len(trace.points)
+
+                            malformed.append({
+                                "name": obj_name,
+                                "section": snum,
+                                "points": num_points,
+                                "location": (
+                                    tuple(round(c, 4) for c in trace.points[0])
+                                    if num_points else None
+                                ),
+                                # Trace.smooth only returns falsy for these two
+                                # reasons, distinguishable by the point count.
+                                "reason": (
+                                    "Fewer than 3 points"
+                                    if num_points < 3
+                                    else "Smoothing produced no points"
+                                ),
+                            })
 
                     if smoothed_any:
 
@@ -1336,7 +1356,7 @@ class Series():
 
             self.modified = True
 
-        return {name: sorted(snums) for name, snums in malformed.items()}
+        return malformed
     
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.

@@ -11,6 +11,7 @@ from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
     ShapesDialog,
     ObjectGroupDialog,
+    MalformedContoursDialog,
 )
 from PyReconstruct.modules.gui.popup import (
     TextWidget,
@@ -179,13 +180,23 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         if malformed:
 
-            names = ", ".join(sorted(malformed))
-            notify(
-                "Some contours were skipped because they were malformed "
-                f"(too few points to smooth): {names}"
+            # surface the skipped contours in a dialog with enough detail to
+            # track them down; double-clicking a row focuses the field on it
+            self.malformed_contours_dialog = MalformedContoursDialog(
+                self.mainwindow,
+                malformed,
+                navigate=self.focusMalformedContour,
             )
+            self.malformed_contours_dialog.show()
 
         return True
+
+    def focusMalformedContour(self, section_num: int, obj_name: str):
+        """Focus the field on a contour reported in the malformed dialog."""
+
+        # route through the canonical navigation path so an in-progress trace
+        # is finalized and field data is saved before the section switch
+        self.mainwindow.setToObject(obj_name, section_num)
     
     @object_function(update_objects=True, reload_field=False)
     def editComment(self, obj_names : list):

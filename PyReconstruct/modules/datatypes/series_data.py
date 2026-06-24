@@ -2,6 +2,8 @@
 
 from typing import Union
 
+import numpy as np
+
 from PyReconstruct.modules.calc import lineDistance, area, centroid, distance, feret
 
 from .section import Section
@@ -49,10 +51,19 @@ class TraceData():
         else:
             self.radius = 0
 
-        # feret() sorts its input in place, so compute it last (after the
-        # order-dependent length/area/centroid above)
-        self.feret = feret(tformed_points) if self.closed else (0, 0)
-    
+        # Defer the expensive convex-hull Feret diameter. It is only read by the
+        # per-section trace table and CSV export, never by the object table, so
+        # computing it for every trace up front (a third of the geometry cost)
+        # is wasted on most series. Keep the mapped points as a compact float64
+        # array (exact, same bits as the python floats) and compute the Feret
+        # lazily on first request, then drop the points to reclaim memory.
+        if self.closed:
+            self._feret = None
+            self._feret_points = np.asarray(tformed_points, dtype=float)
+        else:
+            self._feret = (0, 0)
+            self._feret_points = None
+
     def getTags(self):
         return self.tags
 
@@ -69,7 +80,11 @@ class TraceData():
         return self.centroid
 
     def getFeret(self):
-        return self.feret
+        if self._feret is None:
+            pts = self._feret_points
+            self._feret = feret([(float(x), float(y)) for x, y in pts]) if len(pts) else (0, 0)
+            self._feret_points = None  # free once computed
+        return self._feret
 
     def __lt__(self, other):
         return self.index < other.index

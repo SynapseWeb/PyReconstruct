@@ -227,10 +227,13 @@ class LogSet():
                 # remove object from dynamic log
                 if obj_name in self.dyn_logs:
                     del(self.dyn_logs[obj_name])
-                # remove all previous logs associated with the object
-                for l in self.all_logs.copy():
-                    if l.obj_name == obj_name and "Create object" not in l.event:
-                        self.all_logs.remove(l)
+                # remove all previous logs associated with the object in a
+                # single pass (the per-element list.remove() loop was O(n^2)
+                # per deleted object)
+                self.all_logs = [
+                    l for l in self.all_logs
+                    if not (l.obj_name == obj_name and "Create object" not in l.event)
+                ]
                 self.all_logs.append(log)
             # non-special cases
             else:

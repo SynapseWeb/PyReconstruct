@@ -24,13 +24,9 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             void
     """
 
-    ## Collect 3D objects
-    
-    obj_data = {}
+    ## Collect 3D objects (single pass over the sections)
 
-    for obj_name in obj_names:
-
-        obj_data[obj_name] = get_3D_mesh(series, obj_name)
+    obj_data = get_3D_meshes(series, obj_names)
 
     ## Iterate through objects and export 3D meshes
 
@@ -61,11 +57,14 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
 
     errors = {}
 
+    ## Build all meshes in a single pass over the sections
+    meshes = get_3D_meshes(series, obj_names)
+
     for obj in obj_names:
 
         try:
 
-            obj_data = get_3D_mesh(series, obj)
+            obj_data = meshes[obj]
             obj_type = type(obj_data).__name__.lower()
             tm = obj_data.generateTrimesh()
 
@@ -92,50 +91,60 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
         notify("There were errors exporting data from some or all of the objects. See console.")
 
         
-def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contours]:
-    """Get mesh for an object."""
-
-    ## Create initial 3D obj
+def _init_3D_obj(series: Series, obj_name: str) -> Union[Surface, Spheres, Contours]:
+    """Create the initial (empty) 3D object for the object's configured mode."""
 
     mode = series.getAttr(obj_name, "3D_mode")
-            
-    if mode == "surface":
-        obj_data = Surface(obj_name, series)
-            
-    elif mode == "spheres":
-        obj_data = Spheres(obj_name, series)
-            
-    elif mode == "contours":
-        obj_data = Contours(obj_name, series)
 
-    ## Iterate through sections and collect data
+    if mode == "surface":
+        return Surface(obj_name, series)
+
+    elif mode == "spheres":
+        return Spheres(obj_name, series)
+
+    elif mode == "contours":
+        return Contours(obj_name, series)
+
+
+def get_3D_meshes(series: Series, obj_names: list) -> dict:
+    """Get meshes for several objects in a SINGLE pass over the sections.
+
+    Each section is loaded from disk once and its traces distributed to every
+    requested object, instead of re-scanning the whole series once per object.
+
+        Params:
+            series (Series): the series containing the object data
+            obj_names (list): the objects to build meshes for
+        Returns:
+            (dict): obj_name -> Surface/Spheres/Contours
+    """
+    obj_data = {name: _init_3D_obj(series, name) for name in obj_names}
+
+    # precompute each object's alignment once (not once per section)
+    alignments = {name: series.getAttr(name, "alignment") for name in obj_data}
+    wanted = set(obj_data)
 
     for snum, section in series.enumerateSections(show_progress=False):
 
-        ## Assume somewhat uniform section thickness
-        # tform = section.tform
+        for obj_name in (wanted & section.contours.keys()):
 
-        if obj_name not in section.contours:
+            obj_alignment = alignments[obj_name]
 
-            continue
+            if not obj_alignment:
+                tform = section.tform
+            else:
+                tform = section.tforms[obj_alignment]
 
-        ## Get alignment
-        obj_alignment = series.getAttr(obj_name, "alignment")
+            for trace in section.contours[obj_name]:
+                obj_data[obj_name].addTrace(trace, snum, tform)
 
-        if not obj_alignment:
-
-            tform = section.tform
-
-        else:
-
-            tform = section.tforms[obj_alignment]
-
-        for trace in section.contours[obj_name]:
-
-            ## Collect all points if generating full surface
-            obj_data.addTrace(trace, snum, tform)
-    
     return obj_data
+
+
+def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contours]:
+    """Get mesh for a single object."""
+
+    return get_3D_meshes(series, [obj_name])[obj_name]
 
 
 def convert_vedo_to_tm(obj) -> trimesh.Trimesh:

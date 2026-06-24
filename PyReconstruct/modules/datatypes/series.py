@@ -789,8 +789,9 @@ class Series():
 
         d = self.getDict()
         with open(self.filepath, "w") as f:
-            f.write(json.dumps(d, indent=1))
-    
+            # internal hidden working file -- write compact (no indent)
+            json.dump(d, f)
+
     def getwdir(self) -> str:
         """Get the working directory of the series.
         

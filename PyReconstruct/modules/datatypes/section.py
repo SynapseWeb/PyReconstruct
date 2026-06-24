@@ -325,7 +325,9 @@ class Section():
     
         d = self.getDict()
         with open(self.filepath, "w") as f:
-            f.write(json.dumps(d, indent=1))
+            # internal hidden working file -- write compact (no indent) to cut
+            # serialization cost and the bytes re-read on every saveJser
+            json.dump(d, f)
     
     def tracesAsList(self) -> list[Trace]:
         """Return the trace dictionary as a list. Does NOT copy traces.
@@ -717,11 +719,11 @@ class Section():
 
             return
 
-        for trace in self.tracesAsList():
+        # only visit contours that are actually hidden (avoids scanning every
+        # trace on the section and rebuilding a list per trace)
+        for name in (to_hide & self.contours.keys()):
 
-            if trace.name in list(to_hide):
-
-                self.traces_group_hide.append(trace)
+            self.traces_group_hide.extend(self.contours[name])
 
     def closeTraces(self, traces : list = None, closed=True, log_event=True):
         """Close or open traces.

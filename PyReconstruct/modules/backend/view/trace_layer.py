@@ -48,6 +48,10 @@ class TraceLayer():
         self.traces_in_view = []
         self.zsegments_in_view = []
         self.show_all_traces = False
+        # membership sets recomputed each generateTraceLayer call
+        self._selected_set = set()
+        self._temp_hide_set = set()
+        self._group_hide_set = set()
     
     def pointToPix(self, pt : tuple, apply_tform=True, tform : Transform = None, qpoint=False) -> tuple:
         """Return the pixel point corresponding to a field point.
@@ -265,7 +269,7 @@ class TraceLayer():
                 painter.drawPolyline(qpoints)
             
             ## Draw highlight
-            if trace in self.section.selected_traces:
+            if trace in self._selected_set:
 
                 painter.setPen(QPen(QColor(*draw_color), 8))
                 painter.setOpacity(0.4)
@@ -280,7 +284,7 @@ class TraceLayer():
                 (trace.closed) and
                 (trace.fill_mode[0] != "none") and (
                     (trace.fill_mode[1] == "always") or
-                    ((trace.fill_mode[1] == "selected") == (trace in self.section.selected_traces))
+                    ((trace.fill_mode[1] == "selected") == (trace in self._selected_set))
                 )
             ):
                 
@@ -445,9 +449,9 @@ class TraceLayer():
     def trace_visibile_p(self, trace) -> bool:
         """Determine visibility of a trace in the field."""
 
-        temp_hide = trace in self.section.temp_hide
+        temp_hide = trace in self._temp_hide_set
         show_all_traces = self.show_all_traces
-        group_hide = trace in self.section.traces_group_hide
+        group_hide = trace in self._group_hide_set
         trace_not_hidden = not trace.hidden
 
         if temp_hide:  # always hide when dragging
@@ -493,6 +497,13 @@ class TraceLayer():
         pixmap_w, pixmap_h = tuple(pixmap_dim)
         trace_layer = QPixmap(pixmap_w, pixmap_h)
         trace_layer.fill(Qt.transparent)
+
+        # precompute membership sets for the per-trace loop below; testing
+        # against these is O(1) instead of an O(n) scan of the backing lists
+        # (which is O(n^2) overall when many traces are selected or hidden)
+        self._selected_set = set(self.section.selected_traces)
+        self._temp_hide_set = set(self.section.temp_hide)
+        self._group_hide_set = set(self.section.traces_group_hide)
 
         if window_moved:
             trace_list = self.section.tracesAsList()

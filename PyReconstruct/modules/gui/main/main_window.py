@@ -1,6 +1,8 @@
 """The main window."""
 
 
+import shutil
+
 from .main_imports import *
 
 
@@ -1429,24 +1431,39 @@ class MainWindow(QMainWindow):
         self.field.section.save(update_series_data=False)
         self.series.save()
     
-    def backup(self, check_auto=False, comment=""):
-        """Automatically backup the jser if requested."""
+    def backup(self, check_auto=False, comment="", from_saved=False):
+        """Automatically backup the jser if requested.
+
+        Params:
+            from_saved (bool): if True, copy the already-saved jser file rather
+                than re-serializing the entire series again. Used by the save
+                paths so a save + autobackup is one full serialization, not two.
+        """
         if check_auto and not self.series.getOption("autobackup"):
             return
-        
+
         # make sure the backup directory exists
         if not os.path.isdir(self.series.getOption("backup_dir")):
             notify(
-                "Backup folder not found.\n" + 
+                "Backup folder not found.\n" +
                 "Please set the backup folder in following dialog."
             )
             self.series.setOption("backup_dir", "")
             self.setBackup()
-        
+
         # double check if user entered a valid backup directory
         if os.path.isdir(self.series.getOption("backup_dir")):
             fp = self.series.getBackupPath(comment)
-            self.series.saveJser(fp)
+            if (
+                from_saved
+                and self.series.jser_fp
+                and os.path.isfile(self.series.jser_fp)
+            ):
+                # the series was just saved -- copy those bytes instead of
+                # re-dumping the entire (potentially very large) jser again
+                shutil.copyfile(self.series.jser_fp, fp)
+            else:
+                self.series.saveJser(fp)
         else:
             notify(
                 "Backup folder not found.\n" +
@@ -1488,10 +1505,14 @@ class MainWindow(QMainWindow):
         ## Save-as if no jser filepath
         if not self.series.jser_fp:
             self.saveAsToJser(close=close)
-        else:  
-            self.backup(check_auto=True)
-            self.series.saveJser(close=close)
-        
+        else:
+            # save the real jser once, then copy those bytes to the backup
+            # (avoids a second full serialization of the whole series)
+            self.series.saveJser()
+            self.backup(check_auto=True, from_saved=True)
+            if close:
+                self.series.close()
+
         # mark series as unmodified
         self.seriesModified(False)
     
@@ -1527,9 +1548,11 @@ class MainWindow(QMainWindow):
         if self.field.b_section:
             self.field.series_states[self.field.b_section]
         
-        # save file
-        self.backup(check_auto=True)
-        self.series.saveJser(close=close)
+        # save file (save once, then copy those bytes to the backup)
+        self.series.saveJser()
+        self.backup(check_auto=True, from_saved=True)
+        if close:
+            self.series.close()
 
         # mark series as unmodified
         self.seriesModified(False)

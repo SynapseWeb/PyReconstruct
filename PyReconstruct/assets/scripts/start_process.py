@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QPlainTextEdit, QVBoxLayout, QWidget, QLabel,
     QProgressBar,
 )
-from PySide6.QtCore import QProcess
+from PySide6.QtCore import QProcess, Qt
 
 
 class MainWindow(QMainWindow):
@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.progress.setTextVisible(True)
 
         self.eta = QLabel("", self)
+        self.eta.setAlignment(Qt.AlignCenter)
 
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)

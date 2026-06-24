@@ -2,7 +2,7 @@
 
 from typing import Union
 
-from PyReconstruct.modules.calc import lineDistance, area
+from PyReconstruct.modules.calc import lineDistance, area, centroid, distance, feret
 
 from .section import Section
 from .transform import Transform
@@ -23,16 +23,35 @@ class TraceData():
         self.hidden = trace.hidden
         self.negative = trace.negative
         self.tags = trace.tags
+
+        # Map the points through the tform ONCE and reuse for every metric.
+        # Previously getRadius/getCentroid/getFeret each re-mapped all of the
+        # trace's points (3 full maps per trace) and getRadius recomputed the
+        # centroid that getCentroid also computed. For affine tforms the
+        # centroid of the mapped points equals the mapped centroid of the raw
+        # points (up to rounding), so a single map + single centroid is
+        # equivalent.
         tformed_points = tform.map(trace.points)
-        self.length = lineDistance(tformed_points, closed=trace.closed)
+
+        self.length = lineDistance(tformed_points, closed=self.closed)
+
         if not self.closed:
             self.area = 0
         else:
             self.area = area(tformed_points)
             if self.negative: self.area *= -1
-        self.radius = trace.getRadius(tform)
-        self.centroid = trace.getCentroid(tform)
-        self.feret = trace.getFeret(tform)
+
+        cx, cy = centroid(tformed_points)
+        self.centroid = (cx, cy)
+
+        if tformed_points:
+            self.radius = max(distance(cx, cy, x, y) for x, y in tformed_points)
+        else:
+            self.radius = 0
+
+        # feret() sorts its input in place, so compute it last (after the
+        # order-dependent length/area/centroid above)
+        self.feret = feret(tformed_points) if self.closed else (0, 0)
     
     def getTags(self):
         return self.tags

@@ -170,6 +170,13 @@ class DataTable(QDockWidget):
         # create the table object
         self.table = CopyTableWidget(self, len(filtered_data), len(self.horizontal_headers), self.main_widget)
 
+        # bound how many rows resizeColumnsToContents() samples. By default Qt
+        # measures the text of up to 1000 rows per column on every resize (and
+        # a resize runs on table creation and on every incremental row update),
+        # which is expensive with thousands of objects. Sampling the first ~100
+        # rows keeps column widths sensible at a fraction of the cost.
+        self.table.horizontalHeader().setResizeContentsPrecision(100)
+
         # connect table functions
         self.table.mouseDoubleClickEvent = self.mouseDoubleClickEvent
         self.table.backspace = self.backspace

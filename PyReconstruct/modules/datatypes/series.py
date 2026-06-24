@@ -23,7 +23,9 @@ from .host_tree import HostTree
 from PyReconstruct.modules.constants import (
     createHiddenDir,
     welcome_series_dir,
-    getDateTime
+    getDateTime,
+    fast_loads,
+    fast_dumps
 )
 from PyReconstruct.modules.constants import welcome_series_dir, default_traces
 from PyReconstruct.modules.gui.utils import getProgbar
@@ -48,8 +50,8 @@ class Series():
         self.sections = sections
         self.name = os.path.basename(self.filepath)[:-4]
 
-        with open(filepath, "r") as f:
-            series_data = json.load(f)
+        with open(filepath, "rb") as f:
+            series_data = fast_loads(f.read())
 
         Series.updateJSON(series_data)
 
@@ -168,8 +170,8 @@ class Series():
             return series
 
         # load json
-        with open(fp, "r") as f:
-            jser_data = json.load(f)
+        with open(fp, "rb") as f:
+            jser_data = fast_loads(f.read())
         
         # UPDATE FROM OLD JSER FORMATS
         updated_jser_data = {}
@@ -220,8 +222,8 @@ class Series():
         series_data["log_set"] = []
         Series.updateJSON(series_data)
         series_fp = os.path.join(hidden_dir, sname + ".ser")
-        with open(series_fp, "w") as f:
-            json.dump(series_data, f)
+        with open(series_fp, "wb") as f:
+            f.write(fast_dumps(series_data))
         if progbar.wasCanceled():
             return None
         progress += 1
@@ -244,8 +246,8 @@ class Series():
             # gather the section numbers and section filenames
             sections[snum] = filename
                 
-            with open(section_fp, "w") as f:
-                json.dump(section_data, f)
+            with open(section_fp, "wb") as f:
+                f.write(fast_dumps(section_data))
             
             if progbar.wasCanceled():
                 return None
@@ -309,12 +311,12 @@ class Series():
             fp = os.path.join(self.hidden_dir, filename)
 
             if ext.isnumeric():
-                with open(fp, "r") as f:
-                    filedata = json.load(f)
+                with open(fp, "rb") as f:
+                    filedata = fast_loads(f.read())
                 jser_data["sections"][int(ext)] = filedata
             elif ext == "ser":
-                with open(fp, "r") as f:
-                    filedata = json.load(f)
+                with open(fp, "rb") as f:
+                    filedata = fast_loads(f.read())
                 # manually remove log set from series data if exists
                 if filedata.get("log_set"): del(filedata["log_set"])
                 # add the log_set string to the log
@@ -335,11 +337,11 @@ class Series():
             progbar.setValue(progress/final_value * 100)
             progress += 1
         
-        save_str = json.dumps(jser_data)
+        save_bytes = fast_dumps(jser_data)
 
         jser_fp = self.jser_fp if not save_fp else save_fp
-        with open(jser_fp, "w") as f:
-            f.write(save_str)
+        with open(jser_fp, "wb") as f:
+            f.write(save_bytes)
         
         if close:
             self.close()
@@ -788,9 +790,9 @@ class Series():
             return
 
         d = self.getDict()
-        with open(self.filepath, "w") as f:
-            # internal hidden working file -- write compact (no indent)
-            json.dump(d, f)
+        with open(self.filepath, "wb") as f:
+            # internal hidden working file -- write compact bytes
+            f.write(fast_dumps(d))
 
     def getwdir(self) -> str:
         """Get the working directory of the series.

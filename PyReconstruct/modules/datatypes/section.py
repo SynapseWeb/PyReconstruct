@@ -15,6 +15,8 @@ from PyReconstruct.modules.calc import (
     getImgDims
 )
 
+from PyReconstruct.modules.constants import fast_loads, fast_dumps
+
 from PyReconstruct.modules.backend.exports import export_svg, export_png
 
 
@@ -42,8 +44,8 @@ class Section():
         self.temp_hide = []          # traces to temp hide
         self.traces_group_hide = []  # traces to hide by group viz
 
-        with open(self.filepath, "r") as f:
-            section_data = json.load(f)
+        with open(self.filepath, "rb") as f:
+            section_data = fast_loads(f.read())
         
         Section.updateJSON(section_data, n)  # update any missing attributes
 
@@ -324,10 +326,10 @@ class Section():
             self.series.data.updateSection(self, update_traces=True)
     
         d = self.getDict()
-        with open(self.filepath, "w") as f:
-            # internal hidden working file -- write compact (no indent) to cut
+        with open(self.filepath, "wb") as f:
+            # internal hidden working file -- write compact bytes to cut
             # serialization cost and the bytes re-read on every saveJser
-            json.dump(d, f)
+            f.write(fast_dumps(d))
     
     def tracesAsList(self) -> list[Trace]:
         """Return the trace dictionary as a list. Does NOT copy traces.

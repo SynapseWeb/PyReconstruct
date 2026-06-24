@@ -1,5 +1,4 @@
 import sys
-import os
 import time
 from pathlib import Path
 
@@ -150,16 +149,6 @@ class MainWindow(QMainWindow):
             self.eta.setText("Complete.")
 
             self.message("Zarr processing finished.")
-
-            if sys.platform == "linux":
-
-                self.message("Changing file permissions...")
-
-                zarr = sys.argv[3]
-
-                os.system(f"find {zarr} -type d -exec chmod g+rwx {{}} +")
-                os.system(f"find {zarr} -type f -exec chmod g+rw {{}} +")
-
             self.message("You can close this window.")
             self.heading.setText("Zarr processing done. You can safely close this window now.")
 

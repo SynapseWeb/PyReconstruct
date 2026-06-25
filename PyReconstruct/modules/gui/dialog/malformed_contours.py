@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from PyReconstruct.modules.gui.utils import notifyConfirm
+
 
 class MalformedContoursDialog(QDialog):
     """Report contours skipped during object smoothing for being malformed.
@@ -30,16 +32,21 @@ class MalformedContoursDialog(QDialog):
 
     COLUMNS = ["Object", "Section", "Point count", "Location (x, y)", "Reason"]
 
-    def __init__(self, mainwindow: QWidget, records: list, navigate=None):
+    def __init__(self, mainwindow: QWidget, records: list, navigate=None,
+                 delete=None):
         """Create the malformed-contours dialog.
 
             Params:
                 mainwindow (QWidget): the parent window
                 records (list): list of dicts, each with keys "name",
-                    "section", "points", "location" ((x, y) or None) and
-                    "reason"
+                    "section", "points", "location" ((x, y) or None), "reason"
+                    and "trace" (the Trace object, used for deletion)
                 navigate (callable): optional navigate(section_num, obj_name)
                     callback used to focus the field on a double-clicked row
+                delete (callable): optional delete(records) callback that
+                    removes the given records from the series and returns the
+                    records actually deleted; the Delete buttons are only shown
+                    when it is provided
         """
         super().__init__(mainwindow)
         # destroy (don't merely hide) on close so repeated runs don't leave
@@ -48,33 +55,19 @@ class MalformedContoursDialog(QDialog):
         self.mainwindow = mainwindow
         self.records = records
         self.navigate = navigate
+        self.delete = delete
 
         self.setWindowTitle("Malformed contours skipped while smoothing")
         self.resize(660, 420)
 
-        num_traces = len(records)
-        num_objs = len({r["name"] for r in records})
-        trace_word = "trace" if num_traces == 1 else "traces"
-        obj_word = "object" if num_objs == 1 else "objects"
-        was_were = "was" if num_traces == 1 else "were"
-        heading = QLabel(
-            f"{num_traces} contour {trace_word} across {num_objs} {obj_word} "
-            f"{was_were} skipped while smoothing.\n\n"
-            "A trace is malformed when it cannot be smoothed — usually "
-            "because it has too few points to interpolate a curve (fewer "
-            "than 3). These traces were left unchanged; the Reason column "
-            "explains why each one was skipped.\n\n"
-            "Select a row and click “Go to contour” to focus the "
-            "field on that trace.",
-            self,
-        )
-        heading.setWordWrap(True)
+        self.heading = QLabel(self._headingText(), self)
+        self.heading.setWordWrap(True)
 
-        self.table = QTableWidget(num_traces, len(self.COLUMNS), self)
+        self.table = QTableWidget(len(self.records), len(self.COLUMNS), self)
         self.table.setHorizontalHeaderLabels(self.COLUMNS)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.table.verticalHeader().setVisible(False)
         self.table.setSortingEnabled(False)
         self._populate()
@@ -89,8 +82,6 @@ class MalformedContoursDialog(QDialog):
         )
         self.goto_button.setEnabled(False)
         self.goto_button.clicked.connect(self.goToSelectedContour)
-        # connected after the button exists so the slot can safely touch it
-        self.table.itemSelectionChanged.connect(self._updateGoToEnabled)
 
         copy_button = QPushButton("Copy table list", self)
         copy_button.setToolTip(
@@ -105,25 +96,94 @@ class MalformedContoursDialog(QDialog):
         )
         save_button.clicked.connect(self.saveCSV)
 
+        # destructive actions, only when a delete callback is provided
+        self.delete_selected_button = None
+        self.delete_all_button = None
+        if self.delete:
+            self.delete_selected_button = QPushButton("Delete selected", self)
+            self.delete_selected_button.setToolTip(
+                "Delete the selected contour(s) from the series (can be undone)"
+            )
+            self.delete_selected_button.setEnabled(False)
+            self.delete_selected_button.clicked.connect(
+                self.deleteSelectedContours
+            )
+
+            self.delete_all_button = QPushButton("Delete all", self)
+            self.delete_all_button.setToolTip(
+                "Delete every contour listed above from the series "
+                "(can be undone)"
+            )
+            self.delete_all_button.setEnabled(bool(self.records))
+            self.delete_all_button.clicked.connect(self.deleteAllContours)
+
+        # connected after the buttons exist so the slot can safely touch them
+        self.table.itemSelectionChanged.connect(self._updateRowActionButtons)
+
         buttonbox = QDialogButtonBox(QDialogButtonBox.Close, self)
         buttonbox.rejected.connect(self.reject)
         buttonbox.addButton(self.goto_button, QDialogButtonBox.ActionRole)
         buttonbox.addButton(copy_button, QDialogButtonBox.ActionRole)
         buttonbox.addButton(save_button, QDialogButtonBox.ActionRole)
+        if self.delete:
+            buttonbox.addButton(
+                self.delete_selected_button, QDialogButtonBox.ActionRole
+            )
+            buttonbox.addButton(
+                self.delete_all_button, QDialogButtonBox.ActionRole
+            )
 
         layout = QVBoxLayout()
-        layout.addWidget(heading)
+        layout.addWidget(self.heading)
         layout.addWidget(self.table)
         layout.addWidget(buttonbox)
         self.setLayout(layout)
 
+    def _headingText(self):
+        """Build the heading text from the current records."""
+        num_traces = len(self.records)
+        if not num_traces:
+            return (
+                "All listed malformed contours have been deleted.\n\n"
+                "You can close this window."
+            )
+
+        num_objs = len({r["name"] for r in self.records})
+        trace_word = "trace" if num_traces == 1 else "traces"
+        obj_word = "object" if num_objs == 1 else "objects"
+        was_were = "was" if num_traces == 1 else "were"
+
+        action = (
+            "Select one or more rows, then use “Go to contour” to focus the "
+            "field, or “Delete selected” / “Delete all” to remove them."
+            if self.delete
+            else "Select a row and click “Go to contour” to focus the field "
+            "on that trace."
+        )
+
+        return (
+            f"{num_traces} contour {trace_word} across {num_objs} {obj_word} "
+            f"{was_were} skipped while smoothing.\n\n"
+            "A trace is malformed when it cannot be smoothed — usually "
+            "because it has too few points to interpolate a curve (fewer "
+            "than 3). These traces were left unchanged; the Reason column "
+            "explains why each one was skipped.\n\n"
+            f"{action}"
+        )
+
     def _populate(self):
         """Fill the table from the records."""
+        # Qt may hand back a *copy* of a stored Python object, so identity
+        # through item data is unreliable. Stash a stable int key per row and
+        # resolve it back to the real record via this map; the key travels with
+        # the row through re-sorting.
+        self._records_by_key = {}
         for row, r in enumerate(self.records):
 
+            self._records_by_key[row] = r
+
             name_item = QTableWidgetItem(str(r["name"]))
-            # stash navigation target on the row so it survives re-sorting
-            name_item.setData(Qt.UserRole, (int(r["section"]), str(r["name"])))
+            name_item.setData(Qt.UserRole, row)
 
             section_item = QTableWidgetItem()
             section_item.setData(Qt.DisplayRole, int(r["section"]))
@@ -152,19 +212,30 @@ class MalformedContoursDialog(QDialog):
             return "—"
         return f"({loc[0]}, {loc[1]})"
 
-    def _updateGoToEnabled(self):
-        """Enable the Go-to button only while a row is selected."""
-        self.goto_button.setEnabled(self.table.selectionModel().hasSelection())
+    def _updateRowActionButtons(self):
+        """Enable selection-dependent buttons only while a row is selected."""
+        has_selection = self.table.selectionModel().hasSelection()
+        self.goto_button.setEnabled(has_selection)
+        if self.delete_selected_button is not None:
+            self.delete_selected_button.setEnabled(has_selection)
+
+    def _recordAtRow(self, row):
+        """Return the record for the given table row (or None)."""
+        if row < 0:
+            return None
+        item = self.table.item(row, 0)
+        if item is None:
+            return None
+        return self._records_by_key.get(item.data(Qt.UserRole))
 
     def _navigateToRow(self, row):
         """Focus the field on the contour in the given table row."""
-        if not self.navigate or row < 0:
+        if not self.navigate:
             return
-        item = self.table.item(row, 0)
-        if item is None:
+        record = self._recordAtRow(row)
+        if record is None:
             return
-        section_num, obj_name = item.data(Qt.UserRole)
-        self.navigate(section_num, obj_name)
+        self.navigate(record["section"], record["name"])
 
     def goToSelectedContour(self):
         """Focus the field on the currently selected contour."""
@@ -175,6 +246,59 @@ class MalformedContoursDialog(QDialog):
     def _onDoubleClick(self, row, _col):
         """Focus the field on the double-clicked contour."""
         self._navigateToRow(row)
+
+    def _selectedRecords(self):
+        """Return the records for the currently selected rows."""
+        records = []
+        for index in self.table.selectionModel().selectedRows():
+            record = self._recordAtRow(index.row())
+            if record is not None:
+                records.append(record)
+        return records
+
+    def deleteSelectedContours(self):
+        """Delete the contours for the currently selected rows."""
+        self._deleteRecords(self._selectedRecords())
+
+    def deleteAllContours(self):
+        """Delete every contour listed in the dialog."""
+        self._deleteRecords(list(self.records))
+
+    def _deleteRecords(self, records):
+        """Confirm, delete the given records, and prune the rows that went."""
+        if not self.delete or not records:
+            return
+        count = len(records)
+        noun = "contour" if count == 1 else "contours"
+        if not notifyConfirm(
+            f"Delete {count} malformed {noun} from the series?\n\n"
+            "This can be undone (Ctrl+Z).",
+            yn=True,
+        ):
+            return
+        deleted = self.delete(records)
+        self._pruneRecords(deleted or [])
+
+    def _pruneRecords(self, deleted):
+        """Remove the rows/records that were actually deleted."""
+        if not deleted:
+            return
+        deleted_ids = {id(r) for r in deleted}
+        # remove bottom-up so earlier row indices stay valid
+        for row in range(self.table.rowCount() - 1, -1, -1):
+            item = self.table.item(row, 0)
+            if item is None:
+                continue
+            key = item.data(Qt.UserRole)
+            record = self._records_by_key.get(key)
+            if record is not None and id(record) in deleted_ids:
+                self.table.removeRow(row)
+                del self._records_by_key[key]
+        self.records = list(self._records_by_key.values())
+        self.heading.setText(self._headingText())
+        if self.delete_all_button is not None:
+            self.delete_all_button.setEnabled(bool(self.records))
+        self._updateRowActionButtons()
 
     def _rows_for_export(self):
         """Return the report as a list of rows (header first).

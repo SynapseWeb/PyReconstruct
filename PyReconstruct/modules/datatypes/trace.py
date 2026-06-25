@@ -583,6 +583,10 @@ class Trace():
 
             smoothed = smoothed[:-1]
 
+        if not smoothed:
+
+            return False
+
         self.points = smoothed
 
         return True

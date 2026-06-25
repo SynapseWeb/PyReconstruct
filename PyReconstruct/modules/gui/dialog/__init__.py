@@ -19,3 +19,4 @@ from .shortcuts import ShortcutsDialog
 from .backup_comment import BackupCommentDialog
 from .table_columns import TableColumnsDialog
 from .import_series import ImportSeriesDialog
+from .malformed_contours import MalformedContoursDialog

@@ -25,6 +25,14 @@ class Points:
     def __init__(self, points: PointSeq, closed: bool) -> None:
 
         self.points: PointSeq
+        self.closed: bool = closed
+
+        if not points:
+            # Nothing to normalize. This happens when interpolation produces
+            # no points (a degenerate, near-zero-length trace). Leave it empty
+            # so callers can detect that there is nothing to smooth.
+            self.points = []
+            return
 
         ends_match = points[0] == points[-1]
 
@@ -47,8 +55,6 @@ class Points:
             else:
 
                 self.points = points
-            
-        self.closed: bool = closed
 
     def __str__(self) -> str:
 

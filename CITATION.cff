@@ -1,11 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Chirillo"
-  given-names: "Michael"
-- family-names: "Falco"
-  given-names: "Julian"
+- family-names: "Kristen Harris Lab"
 title: "PyReconstruct"
-version: 1.19.0
-date-released: 2025-05-28
+version: 1.20.0
+date-released: 2026-06-30
 url: "https://github.com/synapseweb/pyreconstruct"

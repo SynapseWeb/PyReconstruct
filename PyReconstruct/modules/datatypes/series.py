@@ -1284,15 +1284,20 @@ class Series():
         
         self.modified = True
 
-    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> dict:
+    def smoothObject(self, obj_names: list, series_states=None, log_event=True) -> list:
         """Smooth all traces belonging to an object.
 
         Malformed traces with too few points to smooth (e.g. "pixel dust"
         artifacts) are skipped rather than smoothed.
 
             Returns:
-                (dict): {obj_name: sorted list of section numbers} for contours
-                    that had one or more traces skipped for being malformed
+                (list): one record per skipped trace, each a dict with keys
+                    "name" (object name), "section" (section number),
+                    "points" (point count), "location" ((x, y) of the first
+                    point, or None when the trace has no points), "reason"
+                    (why it was skipped) and "match" (a {"color", "points"}
+                    signature used to re-find and delete the trace later).
+                    Empty when nothing was skipped.
         """
 
         window = self.getOption("roll_window")
@@ -1303,7 +1308,7 @@ class Series():
 
                 self.addLog(obj_name, None, f"Smooth {obj_name} traces")
 
-        malformed = {}
+        malformed = []
 
         for snum, section in self.enumerateSections(
                 message="Smoothing traces...",
@@ -1326,7 +1331,35 @@ class Series():
 
                         else:
 
-                            malformed.setdefault(obj_name, set()).add(snum)
+                            num_points = len(trace.points)
+
+                            malformed.append({
+                                "name": obj_name,
+                                "section": snum,
+                                "points": num_points,
+                                "location": (
+                                    tuple(round(c, 4) for c in trace.points[0])
+                                    if num_points else None
+                                ),
+                                # Trace.smooth only returns falsy for these two
+                                # reasons, distinguishable by the point count.
+                                "reason": (
+                                    "Fewer than 3 points"
+                                    if num_points < 3
+                                    else "Smoothing produced no points"
+                                ),
+                                # signature used to re-find this exact trace at
+                                # delete time (sections are reloaded fresh from
+                                # disk). points are rounded to the 7 decimals
+                                # save() writes, so the match survives a reload.
+                                "match": {
+                                    "color": trace.color,
+                                    "points": [
+                                        (round(x, 7), round(y, 7))
+                                        for x, y in trace.points
+                                    ],
+                                },
+                            })
 
                     if smoothed_any:
 
@@ -1336,8 +1369,75 @@ class Series():
 
             self.modified = True
 
-        return {name: sorted(snums) for name, snums in malformed.items()}
-    
+        return malformed
+
+    def deleteMalformedTraces(self, records : list, series_states=None) -> list:
+        """Delete specific malformed traces reported by smoothObject.
+
+        Each record must carry the keys produced by smoothObject — in
+        particular "name", "section" and "match" (a {"color", "points"}
+        signature). Because sections are reloaded fresh from disk, the stored
+        signature is matched against each candidate trace by color and
+        7-decimal-rounded points rather than by object identity, so the exact
+        trace is removed even across a save/reload. A record whose trace can no
+        longer be found (e.g. it was edited or re-smoothed in the meantime) is
+        skipped and left out of the returned list.
+
+            Params:
+                records (list): malformed-contour records to delete
+                series_states: the series states as stored in the GUI (undo)
+            Returns:
+                (list): the records whose trace was found and deleted
+        """
+        ## Group records by section so each section is loaded and saved once
+        by_section = {}
+        for record in records:
+            by_section.setdefault(record["section"], []).append(record)
+
+        if not by_section:
+            return []
+
+        deleted = []
+        for snum, section in self.enumerateSections(
+            message="Deleting malformed contours...",
+            series_states=series_states
+        ):
+            removed_any = False
+            for record in by_section.get(snum, []):
+                contour = section.contours.get(record["name"])
+                if not contour:
+                    continue
+                for trace in contour:
+                    if self._traceMatchesSignature(trace, record["match"]):
+                        section.removeTrace(trace)
+                        deleted.append(record)
+                        removed_any = True
+                        break
+            if removed_any:
+                section.save()
+
+        if deleted:
+            self.modified = True
+        return deleted
+
+    @staticmethod
+    def _traceMatchesSignature(trace, signature) -> bool:
+        """Whether a trace matches a malformed record's signature.
+
+        Compares color and points; points are rounded to 7 decimals (the
+        precision save() writes to disk) so a signature captured before save
+        still matches the trace once it is reloaded.
+        """
+        if trace.color != signature["color"]:
+            return False
+        points = trace.points
+        if len(points) != len(signature["points"]):
+            return False
+        for (x, y), (sx, sy) in zip(points, signature["points"]):
+            if round(x, 7) != sx or round(y, 7) != sy:
+                return False
+        return True
+
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.
         

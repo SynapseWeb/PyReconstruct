@@ -11,6 +11,7 @@ from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
     ShapesDialog,
     ObjectGroupDialog,
+    MalformedContoursDialog,
 )
 from PyReconstruct.modules.gui.popup import (
     TextWidget,
@@ -179,13 +180,68 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         if malformed:
 
-            names = ", ".join(sorted(malformed))
-            notify(
-                "Some contours were skipped because they were malformed "
-                f"(too few points to smooth): {names}"
+            # surface the skipped contours in a dialog with enough detail to
+            # track them down; double-clicking a row focuses the field on it
+            self.malformed_contours_dialog = MalformedContoursDialog(
+                self.mainwindow,
+                malformed,
+                navigate=self.focusMalformedContour,
+                delete=self.deleteMalformedContours,
             )
+            self.malformed_contours_dialog.show()
 
         return True
+
+    def focusMalformedContour(self, section_num: int, obj_name: str):
+        """Focus the field on a contour reported in the malformed dialog."""
+
+        # route through the canonical navigation path so an in-progress trace
+        # is finalized and field data is saved before the section switch
+        self.mainwindow.setToObject(obj_name, section_num)
+
+    def deleteMalformedContours(self, records: list) -> list:
+        """Delete malformed contours chosen in the dialog.
+
+        Mirrors the object-list delete/reload path: refuse locked objects, save
+        field data, delete via the series (whose enumerateSections records the
+        undo state), then refresh the tables and field. Returns the records
+        actually deleted so the dialog can prune exactly those rows.
+        """
+        if not records:
+            return []
+
+        # like the object_function delete path, never modify locked objects
+        names = {r["name"] for r in records}
+        if any(self.series.getAttr(n, "locked") for n in names):
+            notify(
+                "Cannot delete contours of locked objects.\n"
+                "Please unlock before deleting."
+            )
+            return []
+
+        # persist field edits to section data before reloading sections
+        self.mainwindow.saveAllData()
+
+        deleted = self.series.deleteMalformedTraces(
+            records,
+            series_states=self.series_states,
+        )
+
+        if deleted:
+            self.table_manager.updateObjects({r["name"] for r in deleted})
+            self.reload()
+            self.mainwindow.seriesModified(True)
+
+        missed = len(records) - len(deleted)
+        if missed:
+            were = "was" if missed == 1 else "were"
+            notify(
+                f"{missed} of {len(records)} listed contour(s) {were} not "
+                "found and could not be deleted — they may have been changed "
+                "or removed since smoothing."
+            )
+
+        return deleted
     
     @object_function(update_objects=True, reload_field=False)
     def editComment(self, obj_names : list):

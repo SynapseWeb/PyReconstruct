@@ -66,6 +66,11 @@ of pairs of points touched by each pair of lines."""
 def feret(Points):
     """Given a list of 2d points, returns the minimum and maximum feret diameters."""
     sq_dist_pairs = [((p[0]-q[0])**2 + (p[1]-q[1])**2, (p,q)) for p, q in rotatingCalipers(Points)]
+    if not sq_dist_pairs:
+        # Degenerate point set (empty, a single point, or all points
+        # coincident) collapses the convex hull so rotatingCalipers yields
+        # nothing. Such a trace has no extent, so its feret diameters are 0.
+        return 0.0, 0.0
     min_feret_sq, _ = min(sq_dist_pairs)
     max_feret_sq, _ = max(sq_dist_pairs)
     return sqrt(min_feret_sq), sqrt(max_feret_sq)

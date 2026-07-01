@@ -175,8 +175,13 @@ if __name__ == "__main__":
 
         zarr_converter = str(dir_scripts / "create_ng_zarr/create_ng_zarr.py")
     
-    zarr_args = [zarr_converter] + args[2:]
-    
+    # In a frozen build the exe can't run a .py directly; run.py intercepts the
+    # "__run_script__" sentinel and runs the script via runpy.
+    if getattr(sys, "frozen", False):
+        zarr_args = ["__run_script__", zarr_converter] + args[2:]
+    else:
+        zarr_args = [zarr_converter] + args[2:]
+
     app = QApplication(args)
     window = MainWindow()
     window.show()

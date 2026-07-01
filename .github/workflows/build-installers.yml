@@ -1,0 +1,180 @@
+name: build-installers
+
+# Builds unsigned one-click installers with PyInstaller and (on a version tag)
+# publishes them to THIS repo's GitHub Releases:
+#   * push to main / workflow_dispatch -> build only (validates that main still
+#     freezes on every platform; produces artifacts, no release).
+#   * tag vX.Y.Z                        -> build + publish a GitHub Release.
+# Uses no hardcoded owner, so it runs on a fork as-is. Signing is deferred
+# (proof of concept): installers are unsigned (Windows SmartScreen / macOS
+# Gatekeeper); see packaging/README.md and the per-platform notes.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create / update GitHub Releases
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2022, plat: Windows, arch: x86_64 }
+          # Two native single-arch macOS builds rather than one universal2 build:
+          # the native dependency stack (vtk, scipy, scikit-image, opencv,
+          # the cloud-volume codecs) ships per-arch wheels, not universal2, so a
+          # universal2 freeze would force source builds and likely fail. Each arch
+          # is built on its own native runner, where PyInstaller freezes for the
+          # arch of the runner's Python.
+          #   macos-14 = Apple Silicon (arm64); macos-15-intel = Intel (x86_64).
+          # GitHub retired the macos-13 Intel image in Dec 2025; macos-15-intel is
+          # the current Intel label, available until macOS 15 retires (~Fall 2027),
+          # after which GitHub drops x86_64 macOS runners entirely. The Intel dmg is
+          # purely additive: if that leg is unavailable or fails, fail-fast:false
+          # plus the release jobs' failure-tolerant gate still ship the arm64 and
+          # Windows installers.
+          - { os: macos-14,       plat: macOS,   arch: arm64 }
+          - { os: macos-15-intel, plat: macOS,   arch: x86_64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # setuptools-scm needs full history + tags
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project, build tools, PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install setuptools-scm "pyinstaller>=6,<7"
+          python -m pip install -e .
+
+      - name: Compute version
+        shell: bash
+        run: |
+          V="$(python -m setuptools_scm)"
+          case "$V" in
+            0.0.0*|*unknown*)
+              echo "::error::setuptools-scm produced a fallback version ($V) — missing tags or fetch-depth:0?"
+              exit 1 ;;
+          esac
+          echo "PYR_VERSION=$V" >> "$GITHUB_ENV"
+          echo "PYR_PUBLIC=${V%%+*}" >> "$GITHUB_ENV"
+
+      - name: Smoke test (imports; offscreen render skipped on headless CI)
+        env:
+          QT_QPA_PLATFORM: offscreen
+          PYRECON_SMOKE_SKIP_RENDER: "1"
+        run: python packaging/smoke_test.py
+
+      - name: Generate macOS icon
+        if: runner.os == 'macOS'
+        run: bash packaging/macos/make_icns.sh
+
+      - name: PyInstaller freeze
+        run: pyinstaller --noconfirm packaging/PyReconstruct.spec
+
+      - name: Frozen self-test (Windows) — catches windowed-only import bugs
+        if: runner.os == 'Windows'
+        run: |
+          $p = Start-Process -FilePath "dist\PyReconstruct\PyReconstruct.exe" -ArgumentList "--selftest" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "frozen self-test failed (exit $($p.ExitCode))"; exit 1 }
+          Write-Host "frozen self-test OK"
+
+      - name: Frozen self-test (macOS) — catches windowed-only import bugs
+        if: runner.os == 'macOS'
+        run: |
+          dist/PyReconstruct.app/Contents/MacOS/PyReconstruct --selftest
+          echo "frozen self-test OK"
+
+      - name: Build Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DPYR_VERSION=$env:PYR_PUBLIC" "packaging\windows\PyReconstruct.iss"
+          New-Item -ItemType Directory -Force -Path dist-assets | Out-Null
+          Move-Item "packaging\windows\Output\*.exe" dist-assets\
+
+      - name: Build macOS dmg
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dist-assets
+          ARCH="${{ matrix.arch }}" bash packaging/macos/make_dmg.sh
+          mv PyReconstruct-*.dmg dist-assets/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.plat }}-${{ matrix.arch }}
+          path: dist-assets/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    # publish whatever built, even if one matrix leg failed (don't hide a good installer)
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') && (needs.build.result == 'success' || needs.build.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4          # needed for packaging/linux/ + release notes
+        with:
+          fetch-depth: 0                   # full history + tags for the changelog link
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Package the Linux .sh installer
+        # The Linux installer is a script bundle (no frozen binary), so it has no
+        # build-matrix leg — assemble it here and ship it as a release asset.
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGE="PyReconstruct-linux-installer"
+          mkdir -p "$STAGE"
+          cp packaging/linux/install.sh packaging/linux/uninstall.sh \
+             packaging/linux/pyreconstruct.desktop.in packaging/linux/README.md "$STAGE"/
+          # Standalone installs pin to this exact tag, so a vX.Y.Z asset installs
+          # vX.Y.Z (not bleeding main).
+          sed -i "s#DEFAULT_SOURCE=\"git+https://github.com/SynapseWeb/PyReconstruct.git\"#DEFAULT_SOURCE=\"git+https://github.com/SynapseWeb/PyReconstruct.git@${GITHUB_REF_NAME}\"#" "$STAGE/install.sh"
+          tar -czf "dist/PyReconstruct-${VERSION}-Linux-installer.tar.gz" "$STAGE"
+      - name: Generate checksums
+        run: cd dist && for f in *; do [ -f "$f" ] && sha256sum "$f" > "$f.sha256"; done
+      - name: Build release notes
+        # A short header plus a link to the technical changelog (a compare view
+        # against the previous tag). If a WHATS_NEW.md exists it is used for the
+        # highlights; otherwise the header alone is shown.
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          {
+            echo "## PyReconstruct ${VERSION}"
+            if [ -f WHATS_NEW.md ]; then
+              awk -v ver="$VERSION" '
+                /^##[ \t]+\[/ { t=$0; sub(/^##[ \t]+\[/,"",t); sub(/\].*/,"",t); sub(/^[vV]/,"",t); cap=(t==ver); next }
+                cap { print }
+              ' WHATS_NEW.md
+            fi
+            echo ""
+            echo "---"
+            PREV=$(git tag --sort=-version:refname | awk -v c="$GITHUB_REF_NAME" 'found{print; exit} $0==c{found=1}')
+            if [ -n "$PREV" ]; then
+              echo "_Full changelog:_ **[compare ${PREV} → ${GITHUB_REF_NAME}](https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${GITHUB_REF_NAME})**"
+            else
+              echo "_Full changelog:_ **[commit history](https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME})**"
+            fi
+          } > release_body.md
+          echo "----- release_body.md -----"; cat release_body.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          prerelease: false
+          # Stage a release as a hidden DRAFT (e.g. for a live demo): set the repo
+          # variable STAGE_RELEASE_AS_DRAFT=true, push the tag, then hit "Publish"
+          # when ready — assets are pre-built so it goes live instantly. Unset or
+          # false (the default) publishes the release immediately.
+          draft: ${{ vars.STAGE_RELEASE_AS_DRAFT == 'true' }}
+          body_path: release_body.md

@@ -9,6 +9,12 @@ from .blank_legacy_files import (
     blank_series_no_contours
 )
 
+from .frozen import (
+    is_frozen,
+    bundle_base,
+    script_launch_prefix,
+)
+
 from .locations import (
     createHiddenDir,
     src_dir,

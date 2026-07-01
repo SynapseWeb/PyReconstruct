@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyreconstruct"
+dynamic = ["version"]
+description = "RECONSTRUCT in Python"
+readme = "readme.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Kristen Harris Lab", email = "michael.chirillo@uri.edu" },
+]
+
+# Runtime dependencies mirror requirements.txt (the pins the app is verified
+# against). Two deltas are packaging-motivated and documented inline:
+#   * opencv-python -> opencv-python-headless: the app uses cv2 only for image
+#     processing (no cv2 GUI), and the headless build ships no Qt plugins, which
+#     avoids a plugin clash with PySide6 in the frozen build.
+#   * certifi: a frozen bundle has no OS trust store, so the stdlib SSL context
+#     finds no CA certificates; certifi's cacert.pem is bundled and pointed at
+#     by packaging/rthook_ssl.py at launch.
+#   * packaging: used for version parsing in modules/constants/repo_info.py.
+dependencies = [
+    "PySide6==6.5.2",
+    "vtk==9.3.1",
+    "vedo==2023.4.7",
+    "opencv-python-headless==4.8.1.78",
+    "numpy==1.24.1",
+    "scipy==1.14.1",
+    "scikit-image==0.23.2",
+    "shapely==2.1.1",
+    "trimesh==3.18.1",
+    "zarr==2.18.2",
+    "numcodecs==0.15.0",
+    "cloud-volume==11.0.0",
+    "lxml==6.1.0",
+    "tifffile==2024.9.20",
+    "qdarkstyle==3.2.3",
+    "gitpython==3.1.50",
+    "certifi",
+    "packaging",
+]
+
+[project.urls]
+Homepage = "https://github.com/SynapseWeb/PyReconstruct"
+
+[project.scripts]
+PyReconstruct = "PyReconstruct.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["PyReconstruct*"]
+
+[tool.setuptools.package-data]
+PyReconstruct = ["assets/**/*", "assets/welcome_series/.welcome/*"]
+
+[tool.setuptools_scm]
+# Tag-derived version. Writes PyReconstruct/_version.py at build time so the
+# frozen app can read its version without git or installed package metadata.
+version_file = "PyReconstruct/_version.py"
+fallback_version = "0.0.0+unknown"

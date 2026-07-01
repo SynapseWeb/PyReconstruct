@@ -145,7 +145,8 @@ from PyReconstruct.modules.constants import (
     developers_mailto_str,
     repo_info,
     repo_string,
-    kharris2015
+    kharris2015,
+    script_launch_prefix,
 )
 
 from PyReconstruct.assets.scripts.projects import (

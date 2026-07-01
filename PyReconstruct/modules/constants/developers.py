@@ -1,6 +1,6 @@
 developers_data = [
     {"name": "Julian Falco", "email": "julian.falco@utexas.edu"},
-    {"name": "Michael Chirillo", "email": "m.chirillo@utexas.edu"}
+    {"name": "Michael Chirillo", "email": "michael.chirillo@uri.edu"}
 ]
 
 developers_names = [person["name"] for person in developers_data]

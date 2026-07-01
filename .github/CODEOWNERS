@@ -1,0 +1,9 @@
+# CODEOWNERS for PyReconstruct
+#
+# Code owners are automatically requested for review when a pull request
+# changes matching files. See:
+# https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repository.
+# Michael Chirillo and Julian Falco.
+* @quasiTriestino @julian-falco

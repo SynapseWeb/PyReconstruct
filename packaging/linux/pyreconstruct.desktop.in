@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.4
+Name=PyReconstruct
+GenericName=Image Reconstruction Tool
+Comment=RECONSTRUCT in Python — trace and reconstruct 3D structures from serial images
+Exec="@EXEC@" %f
+TryExec=@EXEC@
+Icon=pyreconstruct
+Terminal=false
+Categories=Science;Biology;
+Keywords=reconstruct;neuron;segmentation;microscopy;electron;
+StartupNotify=true
+StartupWMClass=PyReconstruct

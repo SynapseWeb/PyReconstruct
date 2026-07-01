@@ -17,13 +17,15 @@ def createHiddenDir(jser_dir, series_name):
     
     return hidden_dir
 
-fp                  =  os.path.realpath(__file__)
-src_dir             =  Path(fp).parents[2]
+from .frozen import is_frozen, bundle_base
+
+if is_frozen():  # assets bundled at <_MEIPASS>/PyReconstruct/assets
+    src_dir = bundle_base() / "PyReconstruct"
+else:
+    src_dir = Path(os.path.realpath(__file__)).parents[2]
+
 assets_dir          =  os.path.join(src_dir, "assets")
 welcome_series_dir  =  os.path.join(assets_dir, "welcome_series", ".welcome")
 checker_dir         =  os.path.join(assets_dir, "checker")
 img_dir             =  os.path.join(assets_dir, "img")
 icon_path           =  os.path.join(img_dir, "PyReconstruct.ico")
-
-# Clean up
-del fp

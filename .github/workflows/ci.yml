@@ -1,0 +1,141 @@
+name: CI
+
+# Quality gate for every pull request targeting main and every push to main
+# (post-merge validation). It does not build or publish installers; it only
+# checks that the tree lints clean on the critical-error set, compiles, imports,
+# installs with a working entry point, and produces a valid wheel.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# One in-flight run per ref; a newer push to the same PR/branch supersedes it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: the gate only reads the repo; it touches no secrets.
+permissions:
+  contents: read
+
+jobs:
+  # Fast, OS-independent static checks. No heavy dependency install, so this
+  # fails quickly on syntax/lint problems before the build matrix spins up.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"   # PySide6==6.5.2 ships wheels for 3.11 only
+
+      - name: Install ruff
+        run: python -m pip install "ruff==0.15.20"
+
+      # Blocking: the critical-error set defined in ruff.toml (syntax + undefined
+      # names). The current tree passes this clean.
+      - name: Ruff lint (critical errors)
+        run: ruff check .
+
+      # Compile the importable package. Bundled asset scripts under
+      # PyReconstruct/assets are excluded: they are shipped as package data, not
+      # imported, and include a known-broken standalone snippet.
+      - name: Compile sources
+        run: python -m compileall -q -x "PyReconstruct/assets/" PyReconstruct
+
+  # Cross-platform: install the package from setup.py, confirm it imports and the
+  # console entry point resolves, then build the wheel and validate metadata.
+  build-and-import:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30   # headroom for the cold wheel install (vtk/scipy/PySide6/...)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install headless Qt system libs (Linux)
+        # PySide6 6.5 needs these even under the offscreen platform. Only needed
+        # on the Linux runner; the macOS/Windows images ship the equivalents.
+        if: runner.os == 'Linux'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+
+      - name: Install package (from setup.py)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Import package and resolve entry point (headless)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        # bash on all three runners so the quoting below behaves identically
+        # (the Windows default shell is pwsh). Run from a scratch dir so the
+        # installed package is imported, not the checkout, and verify the
+        # console_script the installer/updater rely on resolves to a callable.
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -c "import PyReconstruct; print('import OK:', PyReconstruct.__file__)"
+          python -c "import importlib.metadata as im; ep=[e for e in im.entry_points(group='console_scripts') if e.name=='PyReconstruct']; assert ep, 'PyReconstruct console_script missing'; fn=ep[0].load(); print('entry point OK:', ep[0].value, '->', fn)"
+
+      - name: Build wheel and check metadata
+        # Wheel only: the source tree has no MANIFEST.in, so an sdist round-trip
+        # would drop required package data. Building the wheel from the source
+        # tree is what the installers/updater consume.
+        # bash on all runners so the dist/* glob expands consistently (pwsh is
+        # the Windows default).
+        shell: bash
+        run: |
+          python -m pip install build twine
+          python -m build --wheel
+          twine check dist/*
+
+  # Backend/geometry unit tests. Headless (offscreen QPA) so no X server is
+  # needed; the datatypes transitively import PySide6. Linux only: the suite is
+  # pure Python and platform-independent, so one runner is enough.
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install headless Qt system libs
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+
+      - name: Install package + pytest
+        # setup.py has no test extra, so pytest is installed explicitly. Pinned
+        # to the 9.x line the suite is verified against.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . "pytest>=9,<10"
+
+      - name: Run tests (headless / offscreen)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest tests -ra

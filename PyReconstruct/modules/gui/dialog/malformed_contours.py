@@ -20,13 +20,13 @@ from PyReconstruct.modules.gui.utils import notifyConfirm
 
 
 class MalformedContoursDialog(QDialog):
-    """Report contours skipped during object smoothing for being malformed.
+    """Report traces skipped during object smoothing.
 
     Each row is one trace that could not be smoothed (typically too few
     points to interpolate a curve). The dialog shows enough context to track
     each one down: the object, the section, how many points the trace had,
     where it sits, and why it was skipped. Selecting a row and clicking
-    "Go to contour" (or double-clicking the row) focuses the field on it, and
+    "Go to trace" (or double-clicking the row) focuses the field on it, and
     the list can be copied or exported for triage.
     """
 
@@ -34,7 +34,7 @@ class MalformedContoursDialog(QDialog):
 
     def __init__(self, mainwindow: QWidget, records: list, navigate=None,
                  delete=None):
-        """Create the malformed-contours dialog.
+        """Create the skipped-traces dialog.
 
             Params:
                 mainwindow (QWidget): the parent window
@@ -229,7 +229,7 @@ class MalformedContoursDialog(QDialog):
         return self._records_by_key.get(item.data(Qt.UserRole))
 
     def _navigateToRow(self, row):
-        """Focus the field on the contour in the given table row."""
+        """Focus the field on the trace in the given table row."""
         if not self.navigate:
             return
         record = self._recordAtRow(row)
@@ -238,13 +238,13 @@ class MalformedContoursDialog(QDialog):
         self.navigate(record["section"], record["name"])
 
     def goToSelectedContour(self):
-        """Focus the field on the currently selected contour."""
+        """Focus the field on the currently selected trace."""
         rows = self.table.selectionModel().selectedRows()
         if rows:
             self._navigateToRow(rows[0].row())
 
     def _onDoubleClick(self, row, _col):
-        """Focus the field on the double-clicked contour."""
+        """Focus the field on the double-clicked trace."""
         self._navigateToRow(row)
 
     def _selectedRecords(self):
@@ -257,11 +257,11 @@ class MalformedContoursDialog(QDialog):
         return records
 
     def deleteSelectedContours(self):
-        """Delete the contours for the currently selected rows."""
+        """Delete the traces for the currently selected rows."""
         self._deleteRecords(self._selectedRecords())
 
     def deleteAllContours(self):
-        """Delete every contour listed in the dialog."""
+        """Delete every trace listed in the dialog."""
         self._deleteRecords(list(self.records))
 
     def _deleteRecords(self, records):

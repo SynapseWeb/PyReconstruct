@@ -57,7 +57,7 @@ class MalformedContoursDialog(QDialog):
         self.navigate = navigate
         self.delete = delete
 
-        self.setWindowTitle("Malformed contours skipped while smoothing")
+        self.setWindowTitle("Traces skipped during smoothing")
         self.resize(660, 420)
 
         self.heading = QLabel(self._headingText(), self)
@@ -76,23 +76,23 @@ class MalformedContoursDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.cellDoubleClicked.connect(self._onDoubleClick)
 
-        self.goto_button = QPushButton("Go to contour", self)
+        self.goto_button = QPushButton("Go to trace", self)
         self.goto_button.setToolTip(
-            "Focus the field on the selected contour"
+            "Focus the field on the selected trace"
         )
         self.goto_button.setEnabled(False)
         self.goto_button.clicked.connect(self.goToSelectedContour)
 
         copy_button = QPushButton("Copy table list", self)
         copy_button.setToolTip(
-            "Copy the table of malformed contours above to the clipboard "
+            "Copy the table of skipped traces above to the clipboard "
             "(tab-separated, including the column headers)"
         )
         copy_button.clicked.connect(self.copyToClipboard)
 
         save_button = QPushButton("Save table as CSV…", self)
         save_button.setToolTip(
-            "Save the table of malformed contours above to a CSV file"
+            "Save the table of skipped traces above to a CSV file"
         )
         save_button.clicked.connect(self.saveCSV)
 
@@ -102,7 +102,7 @@ class MalformedContoursDialog(QDialog):
         if self.delete:
             self.delete_selected_button = QPushButton("Delete selected", self)
             self.delete_selected_button.setToolTip(
-                "Delete the selected contour(s) from the series (can be undone)"
+                "Delete the selected trace(s) from the series (can be undone)"
             )
             self.delete_selected_button.setEnabled(False)
             self.delete_selected_button.clicked.connect(
@@ -111,7 +111,7 @@ class MalformedContoursDialog(QDialog):
 
             self.delete_all_button = QPushButton("Delete all", self)
             self.delete_all_button.setToolTip(
-                "Delete every contour listed above from the series "
+                "Delete every trace listed above from the series "
                 "(can be undone)"
             )
             self.delete_all_button.setEnabled(bool(self.records))
@@ -144,7 +144,7 @@ class MalformedContoursDialog(QDialog):
         num_traces = len(self.records)
         if not num_traces:
             return (
-                "All listed malformed contours have been deleted.\n\n"
+                "All listed traces have been deleted.\n\n"
                 "You can close this window."
             )
 
@@ -154,17 +154,17 @@ class MalformedContoursDialog(QDialog):
         was_were = "was" if num_traces == 1 else "were"
 
         action = (
-            "Select one or more rows, then use “Go to contour” to focus the "
+            "Select one or more rows, then use “Go to trace” to focus the "
             "field, or “Delete selected” / “Delete all” to remove them."
             if self.delete
-            else "Select a row and click “Go to contour” to focus the field "
+            else "Select a row and click “Go to trace” to focus the field "
             "on that trace."
         )
 
         return (
-            f"{num_traces} contour {trace_word} across {num_objs} {obj_word} "
-            f"{was_were} skipped while smoothing.\n\n"
-            "A trace is malformed when it cannot be smoothed — usually "
+            f"{num_traces} {trace_word} across {num_objs} {obj_word} "
+            f"{was_were} skipped during smoothing.\n\n"
+            "A trace is skipped when it cannot be smoothed — usually "
             "because it has too few points to interpolate a curve (fewer "
             "than 3). These traces were left unchanged; the Reason column "
             "explains why each one was skipped.\n\n"
@@ -269,9 +269,9 @@ class MalformedContoursDialog(QDialog):
         if not self.delete or not records:
             return
         count = len(records)
-        noun = "contour" if count == 1 else "contours"
+        noun = "trace" if count == 1 else "traces"
         if not notifyConfirm(
-            f"Delete {count} malformed {noun} from the series?\n\n"
+            f"Delete {count} {noun} from the series?\n\n"
             "This can be undone (Ctrl+Z).",
             yn=True,
         ):
@@ -325,8 +325,8 @@ class MalformedContoursDialog(QDialog):
         """Save the report to a CSV file the user chooses."""
         fp, _ = QFileDialog.getSaveFileName(
             self,
-            "Save malformed contours",
-            "malformed_contours.csv",
+            "Save skipped traces",
+            "skipped_traces.csv",
             "CSV files (*.csv);;All files (*)",
         )
         if not fp:

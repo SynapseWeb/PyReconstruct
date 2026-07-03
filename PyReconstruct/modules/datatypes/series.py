@@ -1293,11 +1293,13 @@ class Series():
             Returns:
                 (list): one record per skipped trace, each a dict with keys
                     "name" (object name), "section" (section number),
-                    "points" (point count), "location" ((x, y) of the first
-                    point, or None when the trace has no points), "reason"
-                    (why it was skipped) and "match" (a {"color", "points"}
-                    signature used to re-find and delete the trace later).
-                    Empty when nothing was skipped.
+                    "points" (point count), "index" (the trace's position
+                    within the contour on that section, used to focus the
+                    field on that exact trace), "location" ((x, y) of the
+                    first point, or None when the trace has no points),
+                    "reason" (why it was skipped) and "match" (a
+                    {"color", "points"} signature used to re-find and delete
+                    the trace later). Empty when nothing was skipped.
         """
 
         window = self.getOption("roll_window")
@@ -1323,7 +1325,7 @@ class Series():
 
                     smoothed_any = False
 
-                    for trace in obj.traces:
+                    for index, trace in enumerate(obj.traces):
 
                         if trace.smooth(window=window, spacing=0.004):
 
@@ -1336,6 +1338,9 @@ class Series():
                             malformed.append({
                                 "name": obj_name,
                                 "section": snum,
+                                # position within the contour, so the dialog can
+                                # frame this exact trace (findTrace) on go-to
+                                "index": index,
                                 "points": num_points,
                                 "location": (
                                     tuple(round(c, 4) for c in trace.points[0])

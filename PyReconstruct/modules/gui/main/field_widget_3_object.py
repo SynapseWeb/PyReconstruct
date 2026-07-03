@@ -192,12 +192,16 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         return True
 
-    def focusMalformedContour(self, section_num: int, obj_name: str):
-        """Focus the field on a contour reported in the malformed dialog."""
+    def focusMalformedContour(self, section_num: int, obj_name: str, index: int = 0):
+        """Focus the field on a trace reported in the malformed dialog."""
 
-        # route through the canonical navigation path so an in-progress trace
-        # is finalized and field data is saved before the section switch
-        self.mainwindow.setToObject(obj_name, section_num)
+        # switch to the trace's section first (changeSection finalizes any
+        # in-progress trace and saves field data before the switch), then frame
+        # the individual trace the way the Trace List does, rather than the
+        # whole object
+        self.mainwindow.changeSection(section_num)
+        self.mainwindow.field.findTrace(obj_name, index)
+        self.mainwindow.field.setFocus()
 
     def deleteMalformedContours(self, records: list) -> list:
         """Delete malformed contours chosen in the dialog.

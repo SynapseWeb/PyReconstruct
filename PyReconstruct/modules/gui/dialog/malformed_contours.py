@@ -41,8 +41,9 @@ class MalformedContoursDialog(QDialog):
                 records (list): list of dicts, each with keys "name",
                     "section", "points", "location" ((x, y) or None), "reason"
                     and "trace" (the Trace object, used for deletion)
-                navigate (callable): optional navigate(section_num, obj_name)
-                    callback used to focus the field on a double-clicked row
+                navigate (callable): optional navigate(section_num, obj_name,
+                    index) callback used to focus the field on a
+                    double-clicked row
                 delete (callable): optional delete(records) callback that
                     removes the given records from the series and returns the
                     records actually deleted; the Delete buttons are only shown
@@ -235,7 +236,7 @@ class MalformedContoursDialog(QDialog):
         record = self._recordAtRow(row)
         if record is None:
             return
-        self.navigate(record["section"], record["name"])
+        self.navigate(record["section"], record["name"], record["index"])
 
     def goToSelectedContour(self):
         """Focus the field on the currently selected contour."""

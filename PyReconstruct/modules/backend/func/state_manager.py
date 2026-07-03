@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import time
 from copy import deepcopy
 
@@ -20,11 +21,12 @@ class FieldState():
             tforms : dict, 
             flags : list,
             contours_fp : str = None,
-            updated_contours=None, 
-            updated_ztraces=None
+            updated_contours=None,
+            updated_ztraces=None,
+            src_fp : str = None
         ):
         """Create a field state with traces and the transform.
-        
+
             Params:
                 contours (dict): all the contours on a section
                 tforms (dict): the tforms for the section state
@@ -32,6 +34,10 @@ class FieldState():
                 contours_fp (str): the filepath to store the contours
                 updated_contours: the names of the modified contours
                 updated_ztraces: the names of the modified ztraces
+                src_fp (str): if given, the section's on-disk file, whose
+                    bytes are copied to contours_fp as the baseline instead of
+                    re-serializing the contours. Only valid when that file
+                    still equals the in-memory contours (see initialize).
         """
         self.contours = {}
         self.contours_fp = contours_fp
@@ -50,6 +56,14 @@ class FieldState():
                     self.contours[contour_name] = Contour(contour_name)
         # store contours in json
         elif contours is None:  # assume stored in JSON already
+            self.contours = None
+        elif src_fp is not None:  # copy the section's on-disk file as baseline
+            # The section is unmodified since it was loaded, so its on-disk
+            # file already equals this baseline. Copy the bytes rather than
+            # re-serializing every contour (the dominant cost of the first
+            # edit to an object's sections on large series). getContours reads
+            # this section-file layout back.
+            shutil.copyfile(src_fp, self.contours_fp)
             self.contours = None
         else:  # store contours if provided with both fp and contours
             for contour_name in updated_contours:
@@ -85,8 +99,25 @@ class FieldState():
         contours = {}
         if self.contours_fp:
             with open(self.contours_fp, "r") as f:
-                contours = json.load(f)
-                for cname, contour in contours.items():
+                data = json.load(f)
+            if isinstance(data.get("contours"), dict):
+                # baseline copied from the on-disk section file: parse its
+                # contours exactly as Section.__init__ does (screening out
+                # defective traces) so the restored state matches a fresh load
+                for cname, trace_list in data["contours"].items():
+                    traces = []
+                    for trace_data in trace_list:
+                        trace = Trace.fromList(trace_data, cname)
+                        l = len(trace.points)
+                        if l == 2:
+                            trace.closed = False
+                        if l > 1:
+                            traces.append(trace)
+                    contours[cname] = Contour(cname, traces)
+            else:
+                # baseline serialized as a contours-only dict (dirty-section
+                # fallback and pre-existing .s0 files)
+                for cname, contour in data.items():
                     contours[cname] = Contour(cname, [Trace.fromList(trace) for trace in contour])
             return contours
         else:
@@ -103,8 +134,10 @@ class FieldState():
     def getModifiedContours(self):
         if self.contours_fp:
             with open(self.contours_fp, "r") as f:
-                contours = json.load(f)
-            return set(contours.keys())
+                data = json.load(f)
+            if isinstance(data.get("contours"), dict):
+                return set(data["contours"].keys())
+            return set(data.keys())
         else:
             return set(self.contours.keys())
     
@@ -144,12 +177,25 @@ class SectionStates():
                 series (Series): the series that contains the sections
         """
         contours_fp = os.path.join(series.hidden_dir, f"{series.sections[section.n]}.s0")
+        # When the section is unmodified since it was loaded from disk (the
+        # case for every initialize() on the hot paths: series-wide object
+        # operations and section navigation both load a section and initialize
+        # it immediately), its on-disk file equals this baseline, so copy the
+        # file instead of re-serializing all contours. Fall back to serializing
+        # the in-memory contours when the section is dirty (rare, e.g. a
+        # b-section with unsaved edits re-initialized on save-as).
+        section_clean = not (
+            section.getAllModifiedNames()
+            or section.tformsModified()
+            or section.flags_modified
+        )
         self.current_state = FieldState(
-            section.contours, 
-            series.ztraces, 
-            section.tforms, 
+            section.contours,
+            series.ztraces,
+            section.tforms,
             section.flags,
-            contours_fp
+            contours_fp,
+            src_fp=(section.filepath if section_clean else None)
         )
         self.initialized = True
     

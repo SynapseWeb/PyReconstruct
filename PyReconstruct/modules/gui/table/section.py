@@ -14,7 +14,8 @@ from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
     noUndoWarning,
-    notify
+    notify,
+    getProgbar
 )
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
 from PyReconstruct.modules.datatypes import Series
@@ -209,13 +210,23 @@ class SectionTableWidget(DataTable):
         
         self.mainwindow.saveAllData()
 
+        # set up progress
+        progbar = getProgbar(
+            text=f"{'Locking' if lock else 'Unlocking'} sections...",
+            cancel=False
+        )
+        progress = 0
+        final_value = len(section_numbers)
+
         for snum in section_numbers:
             section = self.series.loadSection(snum)
             section.align_locked = lock
             section.save()
             if log_event:
                 self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
-        
+            progress += 1
+            progbar.setValue(progress/final_value * 100)
+
         self.manager.updateSections(section_numbers)
         
         # update the field

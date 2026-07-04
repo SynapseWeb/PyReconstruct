@@ -210,22 +210,31 @@ class SectionTableWidget(DataTable):
         
         self.mainwindow.saveAllData()
 
-        # set up progress
-        progbar = getProgbar(
-            text=f"{'Locking' if lock else 'Unlocking'} sections...",
-            cancel=False
-        )
+        # set up progress (skip for single sections, e.g. a lock checkbox toggle)
         progress = 0
         final_value = len(section_numbers)
+        if final_value > 1:
+            progbar = getProgbar(
+                text=f"{'Locking' if lock else 'Unlocking'} sections...",
+                cancel=False
+            )
+        else:
+            progbar = None
 
-        for snum in section_numbers:
-            section = self.series.loadSection(snum)
-            section.align_locked = lock
-            section.save()
-            if log_event:
-                self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
-            progress += 1
-            progbar.setValue(progress/final_value * 100)
+        try:
+            for snum in section_numbers:
+                section = self.series.loadSection(snum)
+                section.align_locked = lock
+                section.save()
+                if log_event:
+                    self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
+                progress += 1
+                if progbar is not None:
+                    progbar.setValue(progress/final_value * 100)
+        finally:
+            # make sure the dialog is closed if the loop exits early
+            if progbar is not None and progress < final_value:
+                progbar.close()
 
         self.manager.updateSections(section_numbers)
         

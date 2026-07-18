@@ -48,6 +48,7 @@ def get_field_menu_list(self):
         None,
         ("selectall_act", "Select all traces", self.series, self.field.selectAllTraces),
         ("deselect_act", "Deselect traces", self.series, self.field.deselectAllTraces),
+        ("invertselection_act", "Invert selection", self.series, self.field.invertTraceSelection),
         None,
         ("delete_act", "Delete", "Del", self.backspace),
     ]

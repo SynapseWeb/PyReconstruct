@@ -667,7 +667,37 @@ class Section():
         self.deselectAllTraces()
         for trace in self.tracesAsList():
             self.addSelectedTrace(trace)
-    
+
+    def invertTraceSelection(self, include_hidden=False):
+        """Invert the trace selection: deselect every selected trace and
+        select every unselected trace.
+
+        Only traces visible in the field can become selected: hidden and
+        group-hidden traces are skipped unless include_hidden is True (the
+        show-all-traces mode). Locked objects are never selected
+        (addSelectedTrace refuses them). Selected ztrace points and flags are
+        left untouched.
+
+        (Only meant for GUI use.)
+
+            Params:
+                include_hidden (bool): True if hidden traces may be selected
+        """
+        selected = set(self.selected_traces)
+        group_hidden = set(self.traces_group_hide)
+
+        to_select = []
+        for trace in self.tracesAsList():
+            if trace in selected:
+                continue
+            if not include_hidden and (trace.hidden or trace in group_hidden):
+                continue
+            to_select.append(trace)
+
+        self.selected_traces : list[Trace] = []
+        for trace in to_select:
+            self.addSelectedTrace(trace)
+
     def hideTraces(self, traces : list = None, hide=True, log_event=True):
         """Hide traces.
 

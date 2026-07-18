@@ -95,6 +95,8 @@ def get_context_menu_list_obj(self):
                 None,
                 ("hideobj_act", "Hide", "", self.hideObj),
                 ("unhideobj_act", "Unhide", "", lambda : self.hideObj(False)),
+                ("hideunselectedobj_act", "Hide unselected objects", "", self.hideUnselectedObjects),
+                ("showallobj_act", "Show all objects", "", self.unhideAllObjects),
                 None,
                 ("removealltags_act", "Remove all tags", "", self.removeAllTags),
                 None,

@@ -356,6 +356,7 @@ class FieldWidgetData(FieldWidgetObject):
         blen = len(b_traces)
         if alen < 3:
             notify("Please select 3 or more traces for aligning.")
+            return
         if alen != blen:
             notify("Please select the same number of traces on each section.")
             return

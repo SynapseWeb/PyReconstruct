@@ -215,13 +215,20 @@ class FieldWidgetData(FieldWidgetObject):
                 )
                 if modify_section: included_sections.append(snum)
         
+        # locked sections are left untouched: warn the user, then exclude them
+        locked_sections = set()
         for snum in included_sections:
             section = self.series.loadSection(snum)
             if section.align_locked:
-                if not notifyConfirm("Locked sections will not be modified.\nWould you still like to propagate the transform?"):
-                    return
-                break
-        
+                locked_sections.add(snum)
+        if locked_sections:
+            if not notifyConfirm("Locked sections will not be modified.\nWould you still like to propagate the transform?"):
+                return
+            included_sections = [
+                snum for snum in included_sections
+                if snum not in locked_sections
+            ]
+
         # create the progress bar
         if included_sections:
             progbar = getProgbar(
@@ -232,12 +239,20 @@ class FieldWidgetData(FieldWidgetObject):
             final_value = len(included_sections)
             progbar.setValue(0)
 
+            # record a series-wide undo state for the propagation
+            self.series_states.addState()
+
             try:
                 for snum in included_sections:
                     section = self.series.loadSection(snum)
+                    # capture the section's pre-modification state
+                    self.series_states[section]
                     new_tform = self.stored_tform * section.tform
                     section.tform = new_tform
                     section.save()
+                    # record the undo state so the propagation is undoable
+                    self.series_states[snum].addState(section, self.series)
+                    self.series_states.addSectionUndo(snum)
                     self.propagated_sections.add(snum)
                     if log_event:
                         self.series.addLog(None, snum, "Modify transform")

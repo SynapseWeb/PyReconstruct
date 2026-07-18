@@ -20,3 +20,4 @@ from .backup_comment import BackupCommentDialog
 from .table_columns import TableColumnsDialog
 from .import_series import ImportSeriesDialog
 from .malformed_contours import MalformedContoursDialog
+from .copy_to_sections import CopyToSectionsDialog

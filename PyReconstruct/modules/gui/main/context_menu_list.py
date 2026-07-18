@@ -43,6 +43,7 @@ def get_field_menu_list(self):
         None,
         self.cut_act,
         self.copy_act,
+        ("copytosections_act", "Copy to sections...", "", self.field.copyTracesToSections),
         self.paste_act,
         self.pasteattributes_act,
         None,
@@ -163,6 +164,16 @@ def get_context_menu_list_trace(self, is_in_field=True):
     
     context_menu = [
         ("edittrace_act", "Edit attributes...", sc, self.traceDialog),
+    ]
+
+    # "Copy to sections..." lives at the field context-menu top level (next to
+    # "Copy") when invoked in the field; in the trace list it appears here.
+    if not is_in_field:
+        context_menu.append(
+            ("copytosections_act", "Copy to sections...", "", self.copyTracesToSections)
+        )
+
+    context_menu += [
         None,
         ("smoothtraces_act", "Smooth traces", "", self.smoothTraces),
         ("mergetraces_act", "Merge traces", sc, self.mergeTraces),

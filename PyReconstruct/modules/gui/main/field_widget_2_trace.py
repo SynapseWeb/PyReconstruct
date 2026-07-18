@@ -12,6 +12,7 @@ from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
     ShapesDialog,
     ObjectGroupDialog,
+    CopyToSectionsDialog,
 )
 from PyReconstruct.modules.gui.utils import notify
 from PyReconstruct.modules.calc import (
@@ -877,7 +878,65 @@ class FieldWidgetTrace(FieldWidgetBase):
             # call to update is handled by field_interaction decorator
         
         return wrapper
-    
+
+    @trace_function
+    def copyTracesToSections(self, traces : list):
+        """Copy the selected trace(s) onto multiple chosen sections at the same
+        field (x, y) location."""
+        if self.hide_trace_layer:
+            return False
+
+        # convert the selection to field coordinates, exactly as the copy path
+        # does, so the traces can be re-projected onto each target section
+        tform = self.section.tform
+        field_traces = []
+        for trace in traces:
+            field_trace = trace.copy()
+            field_trace.points = [tform.map(*p) for p in trace.points]
+            field_traces.append(field_trace)
+
+        # choose the target sections
+        chosen, confirmed = CopyToSectionsDialog(self, self.series).get()
+        if not confirmed:
+            return False
+
+        # never copy onto the source (current) section
+        current = self.series.current_section
+        excluded_current = current in chosen
+        chosen.discard(current)
+
+        if not chosen:
+            notify("No other sections were selected to copy to.")
+            return False
+
+        names = list(set(t.name for t in field_traces))
+
+        copied_to, skipped = self.series.copyTracesToSections(
+            field_traces, chosen, self.series_states
+        )
+
+        # refresh the object/trace lists and the field view (only if anything
+        # actually changed)
+        if copied_to:
+            self.table_manager.updateObjects(names)
+            self.reload()
+
+        # report the outcome to the user
+        msgs = []
+        if copied_to:
+            msgs.append(f"Copied trace(s) to {len(copied_to)} section(s).")
+        if skipped:
+            msgs.append(
+                "Skipped section(s) with a non-invertible transform: "
+                + ", ".join(str(n) for n in sorted(skipped))
+            )
+        if excluded_current:
+            msgs.append(f"The current section ({current}) was left unchanged.")
+        if msgs:
+            notify("\n".join(msgs))
+
+        return bool(copied_to)
+
     @trace_function
     @field_interaction
     def traceDialog(self, traces : list):

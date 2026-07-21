@@ -508,6 +508,24 @@ class TraceLayer():
             # assume any recently added traces will be in view        
             for trace in self.section.added_traces:
                 trace_list.append(trace)
+
+            # Guard against a stale cache. An attribute edit (color, name, tags
+            # or fill via Section.editTraceAttributes) does not mutate a trace
+            # in place; it removes the trace and adds a fresh copy. The
+            # incremental cache above stays correct only while
+            # section.added_traces / removed_traces still describe that swap. A
+            # table refresh calls section.clearTracking() and empties those
+            # lists, after which trace_list can still hold the old, replaced
+            # object and would draw its stale attributes. Detect any cached
+            # trace that is no longer a live member of its contour and fall back
+            # to a full rebuild so current attributes are drawn. Only the
+            # on-screen traces are checked, so a selection-only refresh stays on
+            # the fast path and does not rebuild.
+            for trace in trace_list:
+                contour = self.section.contours.get(trace.name)
+                if contour is None or trace not in contour:
+                    trace_list = self.section.tracesAsList()
+                    break
         
         self.traces_in_view = []
 

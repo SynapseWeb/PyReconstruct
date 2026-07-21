@@ -83,6 +83,73 @@ def parse_section_spec(text : str, valid_sections) -> tuple:
     return chosen, bad, missing
 
 
+def format_section_run(numbers) -> str:
+    """Format section numbers as a compact, readable list.
+
+    A run of three or more consecutive numbers is collapsed to "lo-hi"
+    (e.g. [2, 3, 4, 5, 10] -> "2-5, 10"); singletons and pairs stay listed
+    plainly so a short run like "2, 3" is not obscured by a range.
+
+        Params:
+            numbers (iterable): the section numbers to render
+        Returns:
+            (str): the formatted list, "" for no numbers
+    """
+    nums = sorted(set(numbers))
+    if not nums:
+        return ""
+
+    runs = []
+    start = prev = nums[0]
+    for n in nums[1:]:
+        if n == prev + 1:
+            prev = n
+        else:
+            runs.append((start, prev))
+            start = prev = n
+    runs.append((start, prev))
+
+    parts = []
+    for lo, hi in runs:
+        if hi - lo >= 2:  # 3+ consecutive: collapse to a range
+            parts.append(f"{lo}-{hi}")
+        else:  # single number or a pair: list plainly
+            parts.extend(str(n) for n in range(lo, hi + 1))
+    return ", ".join(parts)
+
+
+def format_copy_result(copied_to, skipped, excluded_current=None) -> str:
+    """Build the user-facing summary for a "Copy to sections" run.
+
+    Reports the sections that ACTUALLY received the trace(s) rather than a bare
+    count, so the message reflects what was done (a self-check), not what was
+    typed. Existing non-invertible "skipped" reporting is preserved, and the
+    excluded current section is noted when applicable.
+
+        Params:
+            copied_to (iterable): section numbers that received the trace(s)
+            skipped (iterable): section numbers skipped (non-invertible tform)
+            excluded_current (int): the current section left unchanged, or None
+        Returns:
+            (str): the message to show, "" if there is nothing to report
+    """
+    msgs = []
+    if copied_to:
+        unique = sorted(set(copied_to))
+        noun = "section" if len(unique) == 1 else "sections"
+        msgs.append(f"Copied trace(s) to {noun} {format_section_run(unique)}.")
+    if skipped:
+        msgs.append(
+            "Skipped section(s) with a non-invertible transform: "
+            + ", ".join(str(n) for n in sorted(skipped))
+        )
+    if excluded_current is not None:
+        msgs.append(
+            f"The current section ({excluded_current}) was left unchanged."
+        )
+    return "\n".join(msgs)
+
+
 class CopyToSectionsDialog(QDialog):
     """Pick the target sections to copy the selected trace(s) onto."""
 

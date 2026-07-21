@@ -13,6 +13,7 @@ from PyReconstruct.modules.gui.dialog import (
     ShapesDialog,
     ObjectGroupDialog,
     CopyToSectionsDialog,
+    format_copy_result,
 )
 from PyReconstruct.modules.gui.utils import notify
 from PyReconstruct.modules.calc import (
@@ -921,19 +922,13 @@ class FieldWidgetTrace(FieldWidgetBase):
             self.table_manager.updateObjects(names)
             self.reload()
 
-        # report the outcome to the user
-        msgs = []
-        if copied_to:
-            msgs.append(f"Copied trace(s) to {len(copied_to)} section(s).")
-        if skipped:
-            msgs.append(
-                "Skipped section(s) with a non-invertible transform: "
-                + ", ".join(str(n) for n in sorted(skipped))
-            )
-        if excluded_current:
-            msgs.append(f"The current section ({current}) was left unchanged.")
-        if msgs:
-            notify("\n".join(msgs))
+        # report the outcome to the user, listing the sections that ACTUALLY
+        # received the trace(s) so the message reflects what was done
+        message = format_copy_result(
+            copied_to, skipped, current if excluded_current else None
+        )
+        if message:
+            notify(message)
 
         return bool(copied_to)
 

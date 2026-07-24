@@ -160,6 +160,7 @@ help_shortcuts = [
     "Field Interactions",
     ("selectall_act", "Select all traces on section"),
     ("deselect_act", "Deselect all traces on section"),
+    ("invertselection_act", "Invert selected traces on section"),
     ("edittrace_act", "Edit attributes of selected trace(s)"),
     ("mergetraces_act", "Merge selected traces"),
     ("mergeobjects_act", "Merge attributes of selected traces"),

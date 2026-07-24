@@ -6,6 +6,8 @@ dist/
 *.egg-info/
 **/__pycache__/
 *.pyc
+.claude
+CLAUDE.md
 run_julian.sh
 convert_to_zarr.sh
 fix_field_tags.sh

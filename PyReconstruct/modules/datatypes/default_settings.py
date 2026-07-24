@@ -88,6 +88,7 @@ default_settings = {
     "homeview_act": "Home",
     "selectall_act": "Ctrl+A",
     "deselect_act": "Ctrl+D",
+    "invertselection_act": "Ctrl+Shift+I",
     "edittrace_act": "Ctrl+E",
     "mergetraces_act": "Ctrl+M",
     "mergeobjects_act": "Ctrl+Shift+M",

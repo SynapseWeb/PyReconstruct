@@ -364,6 +364,51 @@ class FieldWidgetObject(FieldWidgetTrace):
 
         return True
 
+    # update_objects=False so the decorator does NOT run its locked-check on the
+    # selection (the SELECTED objects are the ones being kept, not modified) and
+    # does not refresh the wrong rows -- both are handled against the complement
+    # below.
+    @object_function(update_objects=False, reload_field=True)
+    def hideUnselectedObjects(self, obj_names : list):
+        """Isolate the selected object(s): hide every OTHER object throughout the
+        whole series, so the isolation persists as sections change.
+
+        Objects in the complement are hidden regardless of their locked state --
+        locking guards edits and quantification, not visibility. An empty
+        selection is a no-op (the decorator returns before we get here), so this
+        can never blank the series.
+
+            Params:
+                obj_names (list): the objects to keep visible (object-list
+                    selection, or the objects owning the field's selected traces)
+            Returns:
+                (bool): True if any object was hidden
+        """
+        keep = set(obj_names)
+        others = [name for name in self.series.data["objects"] if name not in keep]
+        if not others:  # everything is already selected -> nothing to hide
+            return False
+
+        self.series.hideObjects(others, True, self.series_states)
+        self.table_manager.updateObjects(others)
+
+        return True
+
+    def unhideAllObjects(self):
+        """Show all objects: unhide every object throughout the whole series.
+
+        The clear restore for "Hide unselected objects"; undoable series-wide,
+        like the object hide itself.
+        """
+        all_names = list(self.series.data["objects"].keys())
+        if not all_names:
+            return
+        self.mainwindow.saveAllData()
+        self.series.hideObjects(all_names, False, self.series_states)
+        self.table_manager.updateObjects(all_names)
+        self.mainwindow.seriesModified(True)
+        self.reload()
+
     @object_function(update_objects=False, reload_field=False)
     def addTo3D(self, obj_names : list):
         """Generate a 3D view of an object"""

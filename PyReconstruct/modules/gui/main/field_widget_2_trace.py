@@ -417,6 +417,14 @@ class FieldWidgetTrace(FieldWidgetBase):
         self.section.selectAllTraces()
         self.generateView(generate_image=False)
 
+    def invertTraceSelection(self):
+        """Invert which traces are selected on the section."""
+        # disable if trace layer is hidden
+        if self.hide_trace_layer:
+            return
+        self.section.invertTraceSelection(include_hidden=self.show_all_traces)
+        self.generateView(generate_image=False)
+
     ############################################################################
     ## Interactions only accessible through the field ##########################
     ############################################################################

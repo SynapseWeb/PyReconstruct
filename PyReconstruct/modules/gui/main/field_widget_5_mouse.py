@@ -570,10 +570,19 @@ class FieldWidgetMouse(FieldWidgetData):
 
             self.deactivateMouseBoundaryTimer()
 
+            recreated = False
+
             if len(self.current_trace) > 1:
                 
                 current_trace_copy = self.current_trace.copy()
                 
+                # detect whether newTrace actually added the replacement: it is
+                # a no-op when the trace layer is hidden (@field_interaction) or
+                # when the retraced line collapses to < 2 points. The return
+                # value cannot be used here because it carries log_event, which
+                # is forced False while scissoring.
+                added_before = len(self.section.added_traces)
+
                 self.newTrace(
                     current_trace_copy,
                     self.tracing_trace,
@@ -581,10 +590,12 @@ class FieldWidgetMouse(FieldWidgetData):
                     log_event=(log_event and (not self.is_scissoring))
                 )
                 
-                if log_event and self.is_scissoring:
+                recreated = len(self.section.added_traces) > added_before
+
+                if recreated and log_event and self.is_scissoring:
                     self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
                     
-                if closed and len(self.current_trace) > 2:
+                if recreated and closed and len(self.current_trace) > 2:
                     self.autoMerge()
                     
             self.current_trace = []
@@ -592,6 +603,17 @@ class FieldWidgetMouse(FieldWidgetData):
             if self.is_scissoring:
                 
                 self.is_scissoring = False
+
+                # The scissors pickup deletes the original trace up front
+                # (scissorsPress) and relies on this completion to recreate it.
+                # If the replacement was never created -- most importantly while
+                # the trace layer is hidden, where newTrace is suppressed -- put
+                # the original trace back instead of silently destroying the
+                # user's work. See upstream issue #51.
+                if not recreated and self.tracing_trace is not None:
+                    self.section.addTrace(self.tracing_trace, log_event=False)
+                    self.section.addSelectedTrace(self.tracing_trace)
+
                 self.setMouseMode(SCISSORS)
                 self.setTracingTrace(
                     self.series.palette_traces[self.series.palette_index[0]][self.series.palette_index[1]]

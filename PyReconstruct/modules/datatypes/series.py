@@ -1177,11 +1177,10 @@ class Series():
     def copyTracesToSections(self, traces : list, section_numbers, series_states=None, log_event=True):
         """Copy traces into multiple sections at the same field (x, y) location.
 
-        The traces' points must be given in FIELD coordinates (i.e. already
-        mapped through a section transform, the same form the clipboard/paste
-        path uses). Each target section stores the points through its own
-        inverse transform, so the traces land at the identical field x-y on
-        every section regardless of how each section is aligned.
+        The traces' points must be given in FIELD (not SCREEN) coordinates.
+        Each target section stores the points through its own inverse
+        transform, so the traces land at the identical field x-y on every
+        section regardless of how each section is aligned.
 
         An alignment lock protects a section's transform, not its trace
         content, so traces are copied onto every chosen section regardless of

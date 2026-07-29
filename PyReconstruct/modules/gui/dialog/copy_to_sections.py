@@ -1,3 +1,5 @@
+import random
+
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -121,7 +123,7 @@ def format_section_run(numbers) -> str:
 def format_copy_result(copied_to, skipped, excluded_current=None) -> str:
     """Build the user-facing summary for a "Copy to sections" run.
 
-    Reports the sections that ACTUALLY received the trace(s) rather than a bare
+    Reports the sections that actually received the trace(s) rather than a bare
     count, so the message reflects what was done (a self-check), not what was
     typed. Existing non-invertible "skipped" reporting is preserved, and the
     excluded current section is noted when applicable.
@@ -159,7 +161,6 @@ class CopyToSectionsDialog(QDialog):
         self.valid_sections = set(series.sections.keys())
         self.sections = None
 
-        current = series.current_section
         self.smin, self.smax = min(self.valid_sections), max(self.valid_sections)
         smin, smax = self.smin, self.smax
 
@@ -167,17 +168,27 @@ class CopyToSectionsDialog(QDialog):
 
         vlayout = QVBoxLayout()
 
+        # Creating a realistic placeholder for a given series.
+        #
+        # Sampled from the sections that actually EXIST rather than from
+        # range(smin, smax + 1): a series with gaps would otherwise offer an
+        # example section the user cannot copy to, which the parse step then
+        # rejects. k is clamped because random.sample raises ValueError when the
+        # population is smaller than k (a one- or two-section series).
+        existing = sorted(self.valid_sections)
+        random_sections = sorted(random.sample(existing, k=min(3, len(existing))))  # get up to 3 random sections and sort
+        random_sections = ", ".join(str(s) for s in random_sections)  # join into string
+        section_placeholders = f"e.g. \"{smin}-{smax}\" or \"{random_sections}\""
+
         info = QLabel(self, text=(
-            "Copy the selected trace(s) onto other sections at the same "
-            "location.\n"
-            f"The current section ({current}) is left unchanged.\n"
+            "Copy selected trace(s) onto other sections.\n"
             f"Enter section numbers or ranges from {smin} to {smax}, "
-            "e.g. \"10-20\" or \"5, 8, 11\"."
+            f"{section_placeholders}."
         ))
         vlayout.addWidget(info)
 
         self.spec_input = QLineEdit(self)
-        self.spec_input.setPlaceholderText("e.g. 10-20 or 5, 8, 11")
+        self.spec_input.setPlaceholderText(section_placeholders)
         vlayout.addWidget(self.spec_input)
 
         buttonbox = QDialogButtonBox(

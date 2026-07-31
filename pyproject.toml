@@ -43,11 +43,24 @@ dependencies = [
     "packaging",
 ]
 
+# Test-only, not installed for end users. Qt is already a runtime dependency,
+# so the widget tests need nothing beyond pytest itself.
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+]
+
 [project.urls]
 Homepage = "https://github.com/SynapseWeb/PyReconstruct"
 
 [project.scripts]
 PyReconstruct = "PyReconstruct.cli:main"
+
+# testpaths keeps collection inside tests/. Without it pytest also picks up
+# packaging/smoke_test.py, which is a launcher check for a frozen build rather
+# than a unit test and crashes when imported into a test session.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 include = ["PyReconstruct*"]

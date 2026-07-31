@@ -110,7 +110,10 @@ class TraceDialog(QDialog):
             shape_row.addStretch()
 
         tags_text = QLabel(self, text="Tags:")
-        self.tags_input = MultiInput(self, tags)
+        # sorted because trace.tags is a set: unsorted, a tag lands on a
+        # different row every time the dialog opens, so the row a user is part
+        # way through editing is not the row they left off on
+        self.tags_input = MultiInput(self, sorted(tags))
 
         self.selected_input = QCheckBox("Fill when selected")
         if fill_condition in ("selected", "always"):

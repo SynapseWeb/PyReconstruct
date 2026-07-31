@@ -1209,6 +1209,7 @@ class Series():
             mode : tuple = None, 
             sections : list = None, 
             series_states=None,
+            add_tags : bool = True,
             log_event=True):
         """Edit the attributes of objects.
         
@@ -1216,10 +1217,17 @@ class Series():
                 obj_names (list): the names of the objects to rename
                 name (str): the new name for the objects
                 color (tuple): the new color for the objects
-                tags (set): the tags to ADD to the traces of the objects
+                tags (set): the tags for the traces of the objects
                 mode (tuple): the display mode to set for the traces
                 section (list): the section numbers to modify the object on (default: all)
                 series_states: the series states as store in the GUI
+                add_tags (bool): True if tags should be added to each trace's
+                    existing tags, False if they should REPLACE them. Only a
+                    replacement can remove a tag, so a caller that shows the user
+                    the current tags and takes an edited set back must pass False.
+                    Additive is the default because a caller working on a
+                    selection whose tags it never displayed cannot ask for a
+                    replacement without discarding tags the user never saw.
                 log_event (bool): True if event should be logged
         """
         ## Preemptively create log
@@ -1267,7 +1275,7 @@ class Series():
             if traces:
                 
                 section.editTraceAttributes(
-                    traces, name, color, tags, mode, add_tags=True, log_event=False
+                    traces, name, color, tags, mode, add_tags=add_tags, log_event=False
                 )
                 
                 ## Gather new traces

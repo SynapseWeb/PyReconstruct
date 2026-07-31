@@ -20,6 +20,8 @@ from .objects import Objects, SeriesObject
 from .default_settings import default_settings, default_series_settings
 from .host_tree import HostTree
 
+from PyReconstruct.modules.calc import area, lineDistance
+
 from PyReconstruct.modules.constants import (
     createHiddenDir,
     welcome_series_dir,
@@ -1376,8 +1378,12 @@ class Series():
 
         return malformed
 
-    def deleteMalformedTraces(self, records : list, series_states=None) -> list:
+    def deleteMalformedTraces(self, records : list, series_states=None, message="Deleting malformed contours...") -> list:
         """Delete specific malformed traces reported by smoothObject.
+
+        Also used by the data clean-up operations (pixel-dust / empty traces),
+        which produce records with the same schema (name, section, match); pass
+        a different ``message`` so the progress bar reads sensibly.
 
         Each record must carry the keys produced by smoothObject — in
         particular "name", "section" and "match" (a {"color", "points"}
@@ -1404,7 +1410,7 @@ class Series():
 
         deleted = []
         for snum, section in self.enumerateSections(
-            message="Deleting malformed contours...",
+            message=message,
             series_states=series_states
         ):
             removed_any = False
@@ -1442,6 +1448,332 @@ class Series():
             if round(x, 7) != sx or round(y, 7) != sy:
                 return False
         return True
+
+    @staticmethod
+    def _cleanupRecord(obj_name, snum, index, trace, reason, area=None) -> dict:
+        """Build a clean-up candidate record.
+
+        Uses the same schema smoothObject produces (so the records can be
+        deleted with deleteMalformedTraces and shown in the review dialog): a
+        "match" signature of color + 7-decimal-rounded points re-finds the exact
+        trace after the section is reloaded from disk. An optional physical
+        area (um^2) is carried for display in the pixel-dust review list.
+        """
+        num_points = len(trace.points)
+        record = {
+            "name": obj_name,
+            "section": snum,
+            "index": index,
+            "points": num_points,
+            "location": (
+                tuple(round(c, 4) for c in trace.points[0])
+                if num_points else None
+            ),
+            "reason": reason,
+            "match": {
+                "color": trace.color,
+                "points": [
+                    (round(x, 7), round(y, 7)) for x, y in trace.points
+                ],
+            },
+        }
+        if area is not None:
+            record["area"] = area
+        return record
+
+    @staticmethod
+    def _traceArea(trace, tform) -> float:
+        """Physical area (um^2) of a trace, matching the object/trace tables.
+
+        Mirrors TraceData: map the points through the section transform, then
+        run the same quantification the tables use. Open traces have no
+        enclosed area.
+        """
+        if not trace.closed or len(trace.points) < 3:
+            return 0.0
+        return abs(area(tform.map(trace.points)))
+
+    def findPixelDustTraces(self, threshold_area : float, include_locked=False) -> list:
+        """Find tiny "pixel-dust" traces at or below an area threshold.
+
+        A candidate is a CLOSED trace whose physical area (um^2, computed the
+        same way the object/trace tables report it) is greater than zero and at
+        or below ``threshold_area``. Zero-area / degenerate traces are left to
+        findEmptyTraces so the two operations stay disjoint. Open traces (lines)
+        have no enclosed area and are never pixel dust. Locked objects are
+        skipped unless ``include_locked`` is True. This only scans; nothing is
+        modified. Use deleteMalformedTraces to remove the chosen records.
+
+            Params:
+                threshold_area (float): the maximum area (um^2), inclusive
+                include_locked (bool): True to also consider locked objects
+            Returns:
+                (list): candidate records (see _cleanupRecord)
+        """
+        candidates = []
+        for snum, section in self.enumerateSections(
+            message="Scanning for pixel-dust traces...",
+        ):
+            tform = section.tform
+            for cname in section.contours:
+                if not include_locked and self.getAttr(cname, "locked"):
+                    continue
+                for index, trace in enumerate(section.contours[cname]):
+                    if not trace.closed or len(trace.points) < 3:
+                        continue
+                    trace_area = self._traceArea(trace, tform)
+                    if 0 < trace_area <= threshold_area:
+                        candidates.append(self._cleanupRecord(
+                            cname, snum, index, trace,
+                            reason=(
+                                f"Area {trace_area:.6g} um^2 "
+                                f"(<= {threshold_area:.6g})"
+                            ),
+                            area=trace_area,
+                        ))
+        return candidates
+
+    def findEmptyTraces(self, include_locked=False) -> list:
+        """Find empty / degenerate traces (no meaningful geometry).
+
+        A trace is empty when it encloses/spans nothing: no points, a closed
+        trace with zero area (fewer than 3 points or fully collinear/coincident
+        points), or an open trace with zero length (all points coincident).
+        These are unambiguous to remove. Locked objects are skipped unless
+        ``include_locked`` is True. Scans only; use deleteMalformedTraces to
+        remove the chosen records.
+
+            Params:
+                include_locked (bool): True to also consider locked objects
+            Returns:
+                (list): candidate records (see _cleanupRecord)
+        """
+        candidates = []
+        for snum, section in self.enumerateSections(
+            message="Scanning for empty traces...",
+        ):
+            tform = section.tform
+            for cname in section.contours:
+                if not include_locked and self.getAttr(cname, "locked"):
+                    continue
+                for index, trace in enumerate(section.contours[cname]):
+                    npts = len(trace.points)
+                    if npts == 0:
+                        reason = "No points"
+                    elif trace.closed:
+                        if self._traceArea(trace, tform) == 0:
+                            reason = "Closed trace enclosing zero area"
+                        else:
+                            continue
+                    else:
+                        length = lineDistance(
+                            tform.map(trace.points), closed=False
+                        )
+                        if length == 0:
+                            reason = "Open trace of zero length"
+                        else:
+                            continue
+                    candidates.append(self._cleanupRecord(
+                        cname, snum, index, trace, reason=reason,
+                    ))
+        return candidates
+
+    ## A pair of traces is only worth measuring an overlap ratio for if that
+    ## ratio could possibly clear the threshold. _duplicatePairs proves a
+    ## ceiling on the ratio from quantities it already has, and skips the pair
+    ## when the ceiling falls this far below the threshold. The ceiling bounds
+    ## the ratio of the true geometry; getOverlapRatio measures a rasterized
+    ## approximation of it, which can read slightly high, so the ceiling is not
+    ## applied at the threshold itself.
+    _OVERLAP_CEILING_MARGIN = 0.05
+
+    @classmethod
+    def _duplicatePairs(cls, entries : list, threshold : float):
+        """Yield every pair of differently-named traces on a section that overlap.
+
+        ``entries`` is one tuple per trace,
+        ``(xmin, ymin, xmax, ymax, area, name, index, trace)``, where the bounds
+        and area are in the trace's own untransformed coordinates (the space
+        Trace.getOverlapRatio works in). Yields
+        ``(entry_a, entry_b, ratio, points_match)`` per overlapping pair, ``a``
+        before ``b`` in (name, index) order so the output does not depend on
+        which order the section's contours were walked in.
+
+        Comparing across names means comparing every trace on the section with
+        every other, and a dense autosegmented section carries enough traces
+        that measuring an overlap ratio for each of those pairs is not viable:
+        Trace.getOverlapRatio rasterizes both polygons, which costs about 3 ms a
+        pair. Two filters keep the number of ratios measured proportional to the
+        number of traces rather than to its square:
+
+          1. **An x-sorted sweep.** Entries are sorted by ``xmin``, so once a
+             later entry starts to the right of where the current one ends, no
+             remaining entry can touch it and the inner loop stops. Pairs whose
+             bounding boxes are disjoint are therefore never even enumerated,
+             and Trace.getOverlapRatio would have answered 0 for all of them.
+          2. **A ceiling on the ratio.** The overlap ratio is an
+             intersection-over-union, so it is at most
+             ``min(box_intersection, area_a, area_b) / max(area_a, area_b)``:
+             the shapes cannot share more than the overlap of their bounding
+             boxes, nor more than the smaller of them, and their union is at
+             least the larger of them. Two traces of the same structure have
+             nearly the same area and nearly the same bounding box, which puts
+             that ceiling near 1; two neighboring autosegmented traces whose
+             boxes merely touch put it near 0.
+
+        Point-for-point matches are settled before either filter can reach them,
+        because a trace with no area at all (a straight line, say) is still a
+        duplicate of an identical copy of itself, and both filters reason about
+        areas. That mirrors Trace.overlaps, which also answers on points first.
+
+        **Every bounding-box test here is slack by Trace's point-match
+        tolerance**, and it has to be. Two traces can match point for point
+        within that tolerance while their bounding boxes do not quite touch, so a
+        strict box test throws away pairs that Trace.overlaps calls duplicates.
+
+            Params:
+                entries (list): per-trace tuples, described above
+                threshold (float): the overlap ratio above which two traces
+                    count as duplicates, as in Trace.overlaps
+            Yields:
+                (tuple): (entry_a, entry_b, ratio, points_match)
+        """
+        ## sorted by xmin so the inner loop can stop rather than run to the end
+        entries = sorted(entries, key=lambda e: e[0])
+        ceiling_floor = threshold - cls._OVERLAP_CEILING_MARGIN
+        tol = Trace.POINTS_MATCH_TOLERANCE
+        n = len(entries)
+        for i in range(n):
+            a = entries[i]
+            axmin, aymin, axmax, aymax, aarea, aname, aindex, atrace = a
+            for j in range(i + 1, n):
+                b = entries[j]
+                bxmin, bymin, bxmax, bymax, barea, bname, bindex, btrace = b
+                if bxmin > axmax + tol:
+                    break  # sorted by xmin: nothing further can reach a
+                if aname == bname:
+                    continue  # same-name duplicates are deleteDuplicateTraces'
+                if atrace.closed != btrace.closed:
+                    continue  # as in Trace.overlaps
+                if aymax + tol < bymin or bymax + tol < aymin:
+                    continue  # boxes overlap in x but not in y
+
+                ## first, second: the pair in a stable order for the caller
+                if (aname, aindex) <= (bname, bindex):
+                    first, second = a, b
+                else:
+                    first, second = b, a
+
+                if atrace.pointsMatch(btrace):
+                    yield first, second, 1.0, True
+                    continue
+
+                ## the ceiling (see the docstring). Both areas zero means there
+                ## is nothing to reason about, and getOverlapRatio answers 0 for
+                ## that case rather than dividing by a collapsed bounding box.
+                ## The box overlap is clamped at zero because the tests above are
+                ## slack by the point-match tolerance, so a pair whose boxes miss
+                ## each other by less than that reaches here.
+                larger = aarea if aarea > barea else barea
+                if larger > 0:
+                    box_intersection = max(
+                        0.0,
+                        min(axmax, bxmax) - max(axmin, bxmin)
+                    ) * max(
+                        0.0,
+                        min(aymax, bymax) - max(aymin, bymin)
+                    )
+                    ceiling = min(box_intersection, aarea, barea) / larger
+                    if ceiling <= ceiling_floor:
+                        continue
+
+                ratio = atrace.getOverlapRatio(btrace)
+                if Trace.ratioIsOverlap(ratio, threshold):
+                    yield first, second, ratio, False
+
+    def findDifferentlyNamedDuplicates(self, threshold : float,
+                                       include_locked=False) -> list:
+        """Find traces that duplicate each other under two different names.
+
+        The same-name case is Series.deleteDuplicateTraces, and it stays exactly
+        as it is: that comparison only ever sees traces already grouped under one
+        contour name, so two people tracing one structure under two names produce
+        a duplicate it cannot find. This scans across names instead, comparing
+        every trace on a section with every other one, and reports what it finds.
+
+        Reports only; nothing is modified. Which of the two names is the right
+        one is a judgment about the data rather than something geometry can
+        settle, so this operation does not choose, and the review list it feeds
+        offers no delete. Locked objects are skipped unless ``include_locked``
+        is True, matching findPixelDustTraces and findEmptyTraces.
+
+        Overlap is decided exactly as it is for same-name duplicates, by
+        Trace.overlaps' two tests: an identical point sequence, or an overlap
+        ratio above ``threshold``. See _duplicatePairs for how the comparison is
+        kept affordable across a whole section.
+
+            Params:
+                threshold (float): the overlap ratio above which two traces
+                    count as duplicates
+                include_locked (bool): True to also consider locked objects
+            Returns:
+                (list): one record per pair (see _cleanupRecord), describing the
+                    first trace of the pair, with the second carried alongside
+                    under the "other_" keys, plus the measured "ratio"
+        """
+        candidates = []
+        for snum, section in self.enumerateSections(
+            message="Scanning for duplicates named differently...",
+        ):
+            tform = section.tform
+            entries = []
+            for cname in section.contours:
+                if not include_locked and self.getAttr(cname, "locked"):
+                    continue
+                for index, trace in enumerate(section.contours[cname]):
+                    if not trace.points:
+                        continue  # nothing to compare; findEmptyTraces' business
+                    xmin, ymin, xmax, ymax = trace.getBounds()
+                    ## the untransformed polygon area, in the same coordinates
+                    ## getOverlapRatio rasterizes, for the ceiling in
+                    ## _duplicatePairs. Not the physical area: that is measured
+                    ## through the section transform, below, for the pairs that
+                    ## survive.
+                    entries.append((
+                        xmin, ymin, xmax, ymax, abs(area(trace.points)),
+                        cname, index, trace
+                    ))
+
+            for first, second, ratio, points_match in self._duplicatePairs(
+                entries, threshold
+            ):
+                fname, findex, ftrace = first[5], first[6], first[7]
+                sname, sindex, strace = second[5], second[6], second[7]
+                if points_match:
+                    reason = f"Point-for-point match with '{sname}'"
+                else:
+                    reason = (
+                        f"Overlap {ratio:.4g} with '{sname}' "
+                        f"(above {threshold:.4g})"
+                    )
+                record = self._cleanupRecord(
+                    fname, snum, findex, ftrace, reason=reason,
+                    area=self._traceArea(ftrace, tform),
+                )
+                other = self._cleanupRecord(
+                    sname, snum, sindex, strace, reason=reason,
+                    area=self._traceArea(strace, tform),
+                )
+                record["ratio"] = ratio
+                record["other_name"] = other["name"]
+                record["other_index"] = other["index"]
+                record["other_points"] = other["points"]
+                record["other_location"] = other["location"]
+                record["other_area"] = other["area"]
+                record["other_match"] = other["match"]
+                candidates.append(record)
+
+        return candidates
 
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.

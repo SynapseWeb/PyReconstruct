@@ -2384,6 +2384,123 @@ class MainWindow(QMainWindow):
         self.field.reload()
         self.seriesModified(True)
 
+    def findDifferentlyNamedDuplicates(self):
+        """Report traces that duplicate each other under two different names.
+
+        The sibling of "Remove duplicate traces...", for the case that one
+        cannot see: two people tracing the same structure give it two names, so
+        the two traces never end up in the same contour and the same-name
+        comparison never puts them side by side.
+
+        This reports and does not delete. Which of the two names survives is a
+        question about the data rather than about geometry, so the review list
+        opens without a delete callback and nothing in the series is touched.
+        """
+        self.saveAllData()
+
+        # the same two controls as "Remove duplicate traces...", so the pair of
+        # operations reads the same way
+        structure = [
+            ["Overlap threshold:", ("float", 0.95, (0, 1))],
+            [("check", ("check locked traces", False))]
+        ]
+        response, confirmed = QuickDialog.get(
+            self, structure, "Find duplicates named differently"
+        )
+        if not confirmed:
+            return
+        threshold = response[0]
+        include_locked = response[1][0][1]
+
+        pairs = self.series.findDifferentlyNamedDuplicates(
+            threshold, include_locked
+        )
+        if not pairs:
+            notify(
+                "No differently-named duplicate traces found at that overlap "
+                "threshold."
+            )
+            return
+
+        # review list only: no delete callback, so the dialog shows no Delete
+        # buttons and this operation cannot change the series
+        self.differently_named_duplicates_dialog = (
+            DifferentlyNamedDuplicatesDialog(
+                self,
+                pairs,
+                navigate=self.field.focusMalformedContour,
+            )
+        )
+        self.differently_named_duplicates_dialog.show()
+
+    def removePixelDustTraces(self):
+        """Find tiny "pixel-dust" traces and remove them through a review list.
+
+        Scans the series for small closed traces at or below a user-chosen area
+        threshold (um^2), then opens a reviewable list: nothing is removed until
+        the user inspects the candidates, deselects any to keep, and deletes.
+        Deletion is a single undoable operation (see deleteMalformedContours).
+        """
+        self.saveAllData()
+
+        structure = [
+            ["Maximum trace area (um^2):", ("float", 0.01)],
+        ]
+        response, confirmed = QuickDialog.get(
+            self, structure, "Remove pixel-dust traces"
+        )
+        if not confirmed:
+            return
+        threshold = response[0]
+        if threshold is None or threshold <= 0:
+            notify("Please enter an area threshold greater than zero.")
+            return
+
+        # locked objects are always left alone: the review-list delete path
+        # (deleteMalformedContours) refuses locked objects, so surfacing them
+        # here would be a dead end. Empty-trace removal skips locked the same way.
+        candidates = self.series.findPixelDustTraces(threshold)
+        if not candidates:
+            notify("No pixel-dust traces found at or below that area.")
+            return
+
+        # reviewable list: the user confirms/deselects before anything is deleted
+        self.pixel_dust_dialog = PixelDustDialog(
+            self,
+            candidates,
+            navigate=self.field.focusMalformedContour,
+            delete=self.field.deleteMalformedContours,
+        )
+        self.pixel_dust_dialog.show()
+
+    def removeEmptyTraces(self):
+        """Find and remove empty / degenerate traces (no meaningful geometry).
+
+        These are unambiguous (no points, zero-area closed traces, or zero-length
+        open traces), so they are removed after a single count-stating
+        confirmation rather than a review list. Locked objects are left alone.
+        Removal is one undoable operation.
+        """
+        self.saveAllData()
+
+        candidates = self.series.findEmptyTraces(include_locked=False)
+        if not candidates:
+            notify("No empty traces found.")
+            return
+
+        count = len(candidates)
+        noun = "empty trace" if count == 1 else "empty traces"
+        if not notifyConfirm(
+            f"Remove {count} {noun} from the series?\n\n"
+            "This can be undone (Ctrl+Z).",
+            yn=True,
+        ):
+            return
+
+        deleted = self.field.deleteMalformedContours(candidates)
+        if deleted:
+            notify(f"Removed {len(deleted)} {noun}.")
+
     def addTo3D(self, names, ztraces=False):
         """Generate the 3D view for a list of objects.
         

@@ -110,6 +110,7 @@ class MainWindow(QMainWindow):
             self.objectmenu,
             self.cut_act,
             self.copy_act,
+            self.copytosections_act,
             self.pasteattributes_act,
         ]
         self.ztrace_actions = [

@@ -1,7 +1,9 @@
 import os
+import sys
 import math
 import zarr
 import subprocess
+import contextlib
 import numpy as np
 
 from PySide6.QtWidgets import QApplication
@@ -19,6 +21,23 @@ from PySide6.QtGui import (
     QPolygon
 )
 os.environ['QT_IMAGEIO_MAXALLOC'] = "0"  # disable max image size
+
+@contextlib.contextmanager
+def suppressStderr():
+    """Silence warnings libtiff's default handler writes directly to the
+    process's stderr fd (e.g. unknown TIFF tags). Qt's TIFF plugin statically
+    links libtiff without exposing TIFFSetWarningHandler, so there's no
+    Python-level way to disable them; this redirects the fd instead."""
+    stderr_fd = sys.stderr.fileno()
+    saved_fd = os.dup(stderr_fd)
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull_fd, stderr_fd)
+        yield
+    finally:
+        os.dup2(saved_fd, stderr_fd)
+        os.close(devnull_fd)
+        os.close(saved_fd)
 
 from PyReconstruct.modules.datatypes import (
     Series,
@@ -77,7 +96,8 @@ class ImageLayer():
         # if saved as normal images
         else:
             src_path = self.section.src_fp
-            self.image = QImage(src_path)
+            with suppressStderr():
+                self.image = QImage(src_path)
             if self.image.isNull():
                 self.image_found = False
             else:

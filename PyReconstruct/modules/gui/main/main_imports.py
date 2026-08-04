@@ -99,7 +99,8 @@ from PyReconstruct.modules.backend.func import (
 )
 
 from PyReconstruct.modules.backend.view import (
-    optimizeSeriesBC
+    optimizeSeriesBC,
+    suppressStderr
 )
 
 from PyReconstruct.modules.backend.autoseg import (

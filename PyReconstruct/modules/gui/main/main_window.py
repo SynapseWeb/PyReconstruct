@@ -2983,9 +2983,11 @@ class MainWindow(QMainWindow):
 
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
+            with suppressStderr():
+                tiff_image = QImage(self.field.section.src_fp)
             painter.drawImage(
                 exported_image.rect(),
-                QImage(self.field.section.src_fp),
+                tiff_image,
                 self.rect()
             )
 

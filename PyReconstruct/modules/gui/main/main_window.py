@@ -412,7 +412,7 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                f"\"{self.series.src_dir}\"",
+                self.series.src_dir,
                 zarr_fp
             ]
 
@@ -422,19 +422,20 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                f"\"{self.series.src_dir}\""
+                self.series.src_dir
             ]
 
+        # Pass argv as a list on every platform, never through a shell, so paths
+        # read from the series file stay single literal arguments.
         if os.name == 'nt':
 
             subprocess.Popen(
                 convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW
             )
-            
+
         else:
 
-            convert_cmd = " ".join(convert_cmd)
-            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
+            subprocess.Popen(convert_cmd, stdout=None, stderr=None)
 
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.
@@ -1998,7 +1999,7 @@ class MainWindow(QMainWindow):
         convert_cmd = launch_prefix + [
             str(zarr_converter.absolute()),
             "create_ng_zarr",
-            f"\"{self.series.jser_fp}\""
+            self.series.jser_fp
         ]
 
         for argname, arg in args.items():
@@ -2011,24 +2012,25 @@ class MainWindow(QMainWindow):
 
                         convert_cmd += [
                             "--output",
-                            f"\"{arg}\""
+                            str(arg)
                         ]
-                        
+
                     else:
 
                         convert_cmd += [argname] + str(arg).split()
 
+        # Pass argv as a list on every platform, never through a shell, so paths
+        # read from the series file stay single literal arguments.
         if os.name == 'nt':
 
             subprocess.Popen(
                 convert_cmd,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
-            
+
         else:
 
-            convert_cmd = " ".join(convert_cmd)
-            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
+            subprocess.Popen(convert_cmd, stdout=None, stderr=None)
     
     # AUTOSEG FUNCTIONS TEMPORARILY REMOVED
 

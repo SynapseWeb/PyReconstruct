@@ -56,6 +56,8 @@ from PyReconstruct.modules.gui.dialog import (
     ShortcutsDialog,
     BackupCommentDialog,
     ImportSeriesDialog,
+    PixelDustDialog,
+    DifferentlyNamedDuplicatesDialog,
 )
 
 from PyReconstruct.modules.gui.popup import (

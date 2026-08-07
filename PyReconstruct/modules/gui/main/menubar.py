@@ -197,7 +197,17 @@ def return_series_menu(self):
             },
             None,
             ("findobjectfirst_act", "Find first object contour...", self.series, self.findObjectFirst),
-            ("removeduplicates_act", "Remove duplicate traces", "", self.deleteDuplicateTraces),
+            {
+                "attr_name": "cleanupmenu",
+                "text": "Clean up",
+                "opts":
+                [
+                    ("removeduplicates_act", "Remove duplicate traces...", "", self.deleteDuplicateTraces),
+                    ("finddiffnamedduplicates_act", "Find duplicates named differently...", "", self.findDifferentlyNamedDuplicates),
+                    ("removepixeldust_act", "Remove pixel-dust traces...", "", self.removePixelDustTraces),
+                    ("removeempty_act", "Remove empty traces...", "", self.removeEmptyTraces),
+                ]
+            },
             None,
             ("updatecuration_act", "Update curation from history", "", self.updateCurationFromHistory),
             None,

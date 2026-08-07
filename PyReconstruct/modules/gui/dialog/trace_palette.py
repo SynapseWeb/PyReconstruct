@@ -12,6 +12,25 @@ from PyReconstruct.modules.gui.utils import notify
 
 from .quick_dialog import QuickTabDialog, getLayout
 
+
+def parseTags(text : str):
+    """Split the text of a Tags cell into a list of tags.
+
+    The cell is edited in place, so deleting part of it routinely leaves a stray
+    separator behind: taking "spine" out of "axon, spine" leaves "axon, ", and an
+    untagged trace starts out as "". Splitting on ", " alone turned both of those
+    into an empty tag, because "".split(", ") is [""], and that empty tag was
+    then written into the palette and offered in the tag filters. Split on the
+    comma itself, strip each piece, and drop whatever is left empty.
+
+        Params:
+            text (str): the contents of the Tags cell
+        Returns:
+            (list) the tags, in the order they were entered
+    """
+    return [tag.strip() for tag in text.split(",") if tag.strip()]
+
+
 class TracePaletteDialog(QuickTabDialog):
 
     def __init__(self, parent, series : Series):
@@ -62,7 +81,9 @@ class TracePaletteDialog(QuickTabDialog):
                 (True, "text", t.name),
                 (True, "color", t.color),
                 (True, "shape", shape),
-                ("text", ", ".join(t.tags)),
+                # sorted because t.tags is a set: the cell would otherwise list
+                # the same tags in a different order every time it is opened
+                ("text", ", ".join(sorted(t.tags))),
                 (True, "combo", ["none", "transparent", "solid"], t.fill_mode[0]),
                 (True, "combo", ["none", "selected", "unselected", "always"], t.fill_mode[1]),
                 (True, "float", round(t.getRadius(), 7))
@@ -179,7 +200,7 @@ class TracePaletteDialog(QuickTabDialog):
 
                 x = [p[0] for p in shape]
                 y = [p[1] for p in shape]
-                tags = tags.split(", ")
+                tags = parseTags(tags)
 
                 t = Trace.fromList([
                     name, x, y, color, True, False, False,

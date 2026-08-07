@@ -43,7 +43,7 @@ def get_field_menu_list(self):
         None,
         self.cut_act,
         self.copy_act,
-        ("copytosections_act", "Copy to sections...", "", self.field.copyTracesToSections),
+        ("copytosections_act", "Copy to sections...", self.series, self.field.copyTracesToSections),
         self.paste_act,
         self.pasteattributes_act,
         None,

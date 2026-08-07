@@ -100,6 +100,7 @@ default_settings = {
     "undo_act": "Ctrl+Z",
     "redo_act": "Ctrl+Y",
     "copy_act": "Ctrl+C",
+    "copytosections_act": "Ctrl+Alt+C",
     "cut_act": "Ctrl+X",
     "paste_act": "Ctrl+V",
     "pasteattributes_act": "Ctrl+B",

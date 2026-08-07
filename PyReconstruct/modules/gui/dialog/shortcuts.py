@@ -175,6 +175,7 @@ help_shortcuts = [
     ("undo_act", "Undo"),
     ("redo_act", "Redo"),
     ("copy_act", "Copy selected traces to clipboard"),
+    ("copytosections_act", "Copy selected traces onto other sections"),
     ("cut_act", "Cut selected traces to clipboard"),
     ("paste_act", "Paste clipboard traces into section"),
     ("pasteattributes_act", "Apply attributes of copied traces to selected trace(s)"),

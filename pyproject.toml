@@ -43,6 +43,14 @@ dependencies = [
     "packaging",
 ]
 
+[project.optional-dependencies]
+# Test-only, not shipped to end users. The suite drives the widgets through
+# PySide6 directly (a module-scoped QApplication fixture), so pytest is the
+# only addition.
+test = [
+    "pytest>=8",
+]
+
 [project.urls]
 Homepage = "https://github.com/SynapseWeb/PyReconstruct"
 
@@ -54,6 +62,13 @@ include = ["PyReconstruct*"]
 
 [tool.setuptools.package-data]
 PyReconstruct = ["assets/**/*", "assets/welcome_series/.welcome/*"]
+
+[tool.pytest.ini_options]
+# Collection is pinned to tests/ because packaging/smoke_test.py matches
+# pytest's default *_test.py pattern while being a standalone script: its module
+# body builds a QApplication and renders a VTK scene, which is not something a
+# collection pass should do.
+testpaths = ["tests"]
 
 [tool.setuptools_scm]
 # Tag-derived version. Writes PyReconstruct/_version.py at build time so the

@@ -873,6 +873,58 @@ class MainWindow(QMainWindow):
         if self.field:
             self.checkActions()
     
+    def importAlignmentsFromSeries(self, jser_fp : str = None):
+        """Import alignments from another series.
+
+        Same import that ImportSeriesDialog's Alignments tab performs, reached
+        from Alignments > Import alignments so that all three alignment sources
+        (.jser, .txt, SWiFT) sit together.
+
+            Params:
+                jser_fp (str): the filepath for the series to import from
+        """
+        if jser_fp is None:
+            jser_fp = FileDialog.get(
+                "file",
+                self,
+                "Select Series",
+                filter="*.jser"
+            )
+        if not jser_fp: return
+
+        self.saveAllData()
+
+        o_series = Series.openJser(jser_fp)
+
+        try:
+            if not checkMag(self.series, o_series):
+                return
+
+            import_as, confirmed = ImportAlignmentsDialog(
+                self, self.series, o_series
+            ).exec()
+            if not confirmed or not import_as:
+                return
+
+            self.series.importTransforms(
+                o_series,
+                import_as,
+                self.field.series_states
+            )
+        finally:
+            o_series.close()
+
+        # the alignment submenus list the series' alignments by name
+        self.createContextMenus()
+
+        # reload the section
+        self.field.reload()
+
+        # refresh the data and lists
+        self.field.table_manager.recreateTables()
+
+        notify("Alignments imported successfully.")
+
     def importTransforms(self, tforms_fp : str = None):
         """Import transforms from a text file.
         

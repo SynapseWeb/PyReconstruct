@@ -23,7 +23,7 @@ from PySide6.QtCore import Qt
 
 from .helper import BrowseWidget, MultiInput, BorderedWidget, RadioButtonGroup, resizeLineEdit
 from .quick_dialog import getLayout
-from PyReconstruct.modules.gui.utils import notify
+from PyReconstruct.modules.gui.utils import notify, notifyConfirm
 from PyReconstruct.modules.datatypes import Series
 
 
@@ -143,9 +143,10 @@ class ImportSeriesDialog(QDialog):
             "alignments",
             MultiImportAs(
                 self, 
-                other.alignments, 
-                series.alignments, 
-                "alignment"
+                other.alignments,
+                series.alignments,
+                "alignment",
+                allow_overwrite=True,
             )
         ))
 
@@ -227,6 +228,71 @@ class ImportSeriesDialog(QDialog):
             return self.responses, True
         else:
             return None, False
+
+
+class ImportAlignmentsDialog(QDialog):
+    """Import alignments, and nothing else, from another series.
+
+    The same alignments are reachable through ImportSeriesDialog's Alignments
+    tab, which is the whole-series merge: seven tabs, six of them about
+    something else. A user who only wants a colleague's alignment has to find it
+    in there, so Alignments > Import alignments offers this one-tab version too.
+    Both run the same MultiImportAs widget and therefore the same overwrite
+    prompt.
+    """
+
+    def __init__(self, parent : QWidget, series : Series, other : Series):
+        """Create the import-alignments dialog.
+
+            Params:
+                parent (QWidget): the parent widget
+                series (Series): the current series obj
+                other (Series): the series importing from
+        """
+        super().__init__(parent)
+        self.setWindowTitle("Import Alignments")
+
+        vlayout = QVBoxLayout()
+        vlayout.setSpacing(10)
+
+        vlayout.addWidget(QLabel(
+            f"Import alignments from {os.path.basename(other.jser_fp)}:",
+            self,
+        ))
+
+        self.import_widget = MultiImportAs(
+            self,
+            other.alignments,
+            series.alignments,
+            "alignment",
+            allow_overwrite=True,
+            default_to_source=True,
+        )
+        vlayout.addWidget(self.import_widget)
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        buttonbox = QDialogButtonBox(QBtn)
+        buttonbox.accepted.connect(self.accept)
+        buttonbox.rejected.connect(self.reject)
+        vlayout.addWidget(buttonbox)
+
+        self.setLayout(vlayout)
+        self.response = None
+
+    def accept(self):
+        """Run when user clicks OK."""
+        response, confirmed = self.import_widget.getResponse()
+        if not confirmed:
+            return  # stay open: the widget already said why
+        self.response = response
+        super().accept()
+
+    def exec(self):
+        """Run the dialog."""
+        confirmed = super().exec()
+        if confirmed:
+            return self.response, True
+        return None, False
 
 
 class ImportTracesWidget(QWidget):
@@ -494,16 +560,52 @@ class ImportWidget(QWidget):
             return None, False
 
 
+def collidingImportNames(entries, existing) -> list:
+    """Return the target names in entries that already exist, in order.
+
+    Kept as a plain function (no Qt) because it is the whole decision behind the
+    overwrite prompt: warn only about names that really are already taken, and
+    name them. Duplicates are collapsed so a two-row import onto one existing
+    name reads as one collision.
+
+        Params:
+            entries (list): (source name, target name) pairs
+            existing (iterable): the names the series already uses
+        Returns:
+            (list): the colliding target names, first-seen order, deduped
+    """
+    taken = set(existing)
+    collisions = []
+    for _source, target in entries:
+        if target in taken and target not in collisions:
+            collisions.append(target)
+    return collisions
+
+
 class ImportAs(QWidget):
 
-    def __init__(self, parent=None, combo_items=[]):
-        """Create the import __ as __ widget."""
+    def __init__(self, parent=None, combo_items=[], default_to_source=False):
+        """Create the import __ as __ widget.
+
+            Params:
+                parent (QWidget): the parent widget
+                combo_items (list): the names available to import
+                default_to_source (bool): True if the target name should
+                    prefill with (and follow) the selected source name
+        """
         super().__init__(parent)
 
         # set up the inputs
         self.input_1 = QComboBox(self)
         self.input_1.addItems(combo_items)
         self.input_2 = QLineEdit("", self)
+
+        if default_to_source:
+            # importing an alignment under its own name is the common case, so
+            # prefill it and keep following the combo until the user types
+            self.input_2.setText(self.input_1.currentText())
+            self.input_1.currentTextChanged.connect(self._followSource)
+            self.input_2.textEdited.connect(self._stopFollowingSource)
 
         # set up the layout
         hlayout = QHBoxLayout()
@@ -513,7 +615,18 @@ class ImportAs(QWidget):
         hlayout.addWidget(self.input_2)
 
         self.setLayout(hlayout)
-    
+
+    def _followSource(self, text):
+        """Mirror the selected source name into the target field."""
+        self.input_2.setText(text)
+
+    def _stopFollowingSource(self, _text):
+        """Stop mirroring once the user has typed a name of their own."""
+        try:
+            self.input_1.currentTextChanged.disconnect(self._followSource)
+        except RuntimeError:
+            pass
+
     def getResponse(self):
         """Get the user response."""
         return (
@@ -524,8 +637,29 @@ class ImportAs(QWidget):
 
 class MultiImportAs(QWidget):
 
-    def __init__(self, parent : QWidget, other_items, self_items, name : str):
-        """Create the multi line edit widget."""
+    def __init__(
+        self,
+        parent : QWidget,
+        other_items,
+        self_items,
+        name : str,
+        allow_overwrite : bool = False,
+        default_to_source : bool = False,
+    ):
+        """Create the multi line edit widget.
+
+            Params:
+                parent (QWidget): the parent widget
+                other_items (iterable): names available in the other series
+                self_items (iterable): names already in the current series
+                name (str): what one item is called, for messages
+                allow_overwrite (bool): True if a name that already exists may
+                    be replaced after the user confirms it. False rejects the
+                    name outright, which is the behavior for palettes and
+                    brightness/contrast profiles.
+                default_to_source (bool): True if each row's target name should
+                    prefill from its source name
+        """
         super().__init__(parent)
 
         vbl = QVBoxLayout()
@@ -533,10 +667,12 @@ class MultiImportAs(QWidget):
         self.other_items = other_items
         self.self_items = self_items
         self.name = name
+        self.allow_overwrite = allow_overwrite
+        self.default_to_source = default_to_source
 
         # create the inputs
         self.inputs = []
-        w = ImportAs(self, self.other_items)
+        w = ImportAs(self, self.other_items, self.default_to_source)
         self.input_layout.addWidget(w)
         self.inputs.append(w)
         vbl.addLayout(self.input_layout)
@@ -556,7 +692,7 @@ class MultiImportAs(QWidget):
     
     def add(self):
         """Add a line edit row to the field."""
-        w = ImportAs(self, self.other_items)
+        w = ImportAs(self, self.other_items, self.default_to_source)
         self.input_layout.addWidget(w)
         self.inputs.append(w)
     
@@ -587,16 +723,37 @@ class MultiImportAs(QWidget):
             if not new_name:
                 notify("Please enter a valid name.")
                 return False
-            if new_name in self.self_items:
+            if new_name in self.self_items and not self.allow_overwrite:
                 notify(f"{self.name.capitalize()} name already exists in current series.")
                 return False
             if new_name in new_names:
                 notify(f"Cannot import multiple {self.name}s as the same name.")
                 return False
             new_names.add(new_name)
-        
+
+        collisions = collidingImportNames(entries, self.self_items)
+        if collisions and not self.confirmOverwrite(collisions):
+            return False
+
         return True
-    
+
+    def confirmOverwrite(self, collisions : list) -> bool:
+        """Ask before replacing names that already exist in this series.
+
+        Only reached when allow_overwrite is set and a target name really is
+        taken, so the prompt never fires on an import that adds new names.
+        """
+        listed = "\n".join(f"    {name}" for name in collisions)
+        plural = "s" if len(collisions) > 1 else ""
+        return notifyConfirm(
+            f"This series already has the following {self.name}{plural}:\n\n"
+            f"{listed}\n\n"
+            f"Importing under {'these names' if plural else 'this name'} will "
+            f"replace the existing {self.name}{plural} on every section.\n\n"
+            "Continue?",
+            yn=True,
+        )
+
     def getResponse(self):
         """Get the user response"""
         if self.accept():

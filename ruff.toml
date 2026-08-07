@@ -1,0 +1,25 @@
+# Ruff configuration for PyReconstruct.
+#
+# Kept in a standalone ruff.toml (rather than pyproject.toml) so linting stays
+# independent of the packaging metadata in setup.py.
+#
+# The lint selection below is deliberately narrow: it is the canonical
+# "critical-error" set (syntax errors and undefined names) that the current
+# tree already passes clean, so CI gates on genuine bugs without forcing a
+# whole-repo reformat. Style/import-hygiene rules (E/W/F401/...) are reported
+# by CI but not enforced yet; they can be adopted incrementally later.
+
+target-version = "py311"   # matches the PySide6==6.5.2 pin (3.11-only wheels)
+
+# Bundled helper scripts shipped as package data, not part of the importable
+# package. They are excluded here because they are not on any import path and
+# include known-broken standalone snippets.
+extend-exclude = ["PyReconstruct/assets"]
+
+[lint]
+# E9  - syntax errors
+# F63 - invalid comparisons / assert on tuple, etc.
+# F7  - misplaced statements (break/continue/return outside function/loop, ...)
+# F82 - undefined name / undefined name in __all__
+# This is the same "must-not-merge" set flake8 users pin; it is bug-class only.
+select = ["E9", "F63", "F7", "F82"]

@@ -12,7 +12,7 @@ from PySide6.QtGui import (
     QFont,
 )
 
-from PyReconstruct.modules.calc import colorize
+from PyReconstruct.modules.backend.autoseg.palette import palette_color
 from PyReconstruct.modules.backend.view import drawArrow
 from PyReconstruct.modules.gui.utils import drawOutlinedText
 from PyReconstruct.modules.datatypes import Flag, Trace
@@ -197,7 +197,11 @@ class FieldWidgetPaint(FieldWidgetMouse):
                 # prioritize showing label name
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
-                    c = colorize(label_id)
+                    c = palette_color(
+                        label_id,
+                        self.series.getOption("autoseg_color_palette") or None,
+                        self.series.getOption("autoseg_color_seed") or 0,
+                    )
                     drawOutlinedText(
                         field_painter,
                         *pos,

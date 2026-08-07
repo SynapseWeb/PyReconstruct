@@ -2265,7 +2265,35 @@ class MainWindow(QMainWindow):
         
     #     self.field.zarr_layer.mergeLabels()
     #     self.field.generateView()
-    
+
+    def shuffleAutosegColors(self):
+        """Re-roll the autoseg import color arrangement and refresh the preview.
+
+        Backs the "Shuffle colors" button on the zarr import overlay. Picks a
+        new color seed (guaranteed to produce a different arrangement) and
+        regenerates the field view, which re-reads the seed and recolors the
+        label overlay in place -- so the user sees the new colors immediately
+        and the eventual import bakes in exactly those colors. Only the live
+        preview and future imports are affected; traces imported earlier keep
+        their already-assigned colors.
+        """
+        from PyReconstruct.modules.backend.autoseg.palette import next_shuffle_seed
+
+        current = self.series.getOption("autoseg_color_seed") or 0
+        palette = self.series.getOption("autoseg_color_palette") or None
+        # Enforce the "always reshuffles" guarantee over the labels actually
+        # visible on this section, not a fixed 1..63 range: with only a few
+        # labels on screen a new seed could recolor ids the user can't see and
+        # leave the visible ones unchanged (a no-op click). Fall back to the
+        # default range when the overlay can't supply present ids.
+        zarr_layer = self.field.zarr_layer
+        present_ids = zarr_layer.getPresentIds() if zarr_layer else None
+        self.series.setOption(
+            "autoseg_color_seed",
+            next_shuffle_seed(current, palette, ids=present_ids)
+        )
+        self.field.generateView()
+
     def hideSeriesTraces(self, hidden=True):
         """Hide or unhide all traces in the entire series.
         

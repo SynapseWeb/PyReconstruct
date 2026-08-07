@@ -73,6 +73,14 @@ default_settings = {
     "flag_color": [255, 0, 0],  # MFO
     "palette_inc_all": True,
 
+    # autoseg import trace colors
+    # Colors for autoseg-imported traces are chosen from a curated,
+    # grayscale-visible palette, mapped deterministically from each label id
+    # (see modules/backend/autoseg/palette.py). Leave the palette empty to use
+    # the shipped default; bump the seed to reshuffle the id -> color mapping.
+    "autoseg_color_palette": [],  # list of [R, G, B]; [] = built-in default
+    "autoseg_color_seed": 0,
+
     # shortcuts 
     "alloptions_act": "Shift+O",
     "flicker_act": "/",

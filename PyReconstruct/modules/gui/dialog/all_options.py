@@ -15,6 +15,7 @@ from PySide6.QtGui import (
 )
 from .quick_dialog import QuickDialog
 from .backup import BackupDialog
+from .autoseg_palette import AutosegColorsWidget
 
 from PyReconstruct.modules.datatypes import Series
 
@@ -87,6 +88,7 @@ class AllOptionsDialog(QDialog):
                 ["show_flags"],
                 ["fill_opacity"],
                 ["find_zoom"],
+                ["autoseg_colors"],
                 ["smoothing_3D"]
             ],
             "User/Series": [
@@ -328,6 +330,10 @@ class AllOptionsDialog(QDialog):
         def setOption(response):
             self.series.setOption("find_zoom", response[0])
         self.addOptionWidget("find_zoom", structure, setOption)
+
+        # autoseg import colors (seed + editable palette)
+        autoseg_widget = AutosegColorsWidget(self, self.series, use_defaults)
+        self.addOptionWidget("autoseg_colors", autoseg_widget)
 
         # user
         structure = [

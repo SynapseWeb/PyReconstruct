@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QColorDialog,
     QApplication,
 )
 from PySide6.QtGui import QColor, QPixmap, QIcon, QPainter, QPalette
@@ -37,7 +36,7 @@ from PySide6.QtCore import QSize, Qt
 
 from .helper import resizeLineEdit
 from PyReconstruct.modules.backend.autoseg.palette import DEFAULT_AUTOSEG_PALETTE
-from PyReconstruct.modules.gui.utils import notify
+from PyReconstruct.modules.gui.utils import notify, getColor
 
 # A palette of one color makes every label id the same color and leaves the seed
 # and "Shuffle colors" button with nothing to reshuffle (next_shuffle_seed no-ops
@@ -184,7 +183,7 @@ class AutosegColorsWidget(QWidget):
 
     def _pick_color(self, initial):
         """Open QColorDialog; return an [R, G, B] list or None if cancelled."""
-        color = QColorDialog.getColor(QColor(*initial), self)
+        color = getColor(initial, self)
         if color.isValid():
             return [color.red(), color.green(), color.blue()]
         return None

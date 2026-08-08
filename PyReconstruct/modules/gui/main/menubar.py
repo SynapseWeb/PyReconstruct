@@ -1,4 +1,4 @@
-from PyReconstruct.modules.gui.utils import getOpenRecentMenu, getGroupsMenu
+from PyReconstruct.modules.gui.utils import getOpenRecentMenu, getGroupsMenu, get_menu_dict
 
 from PyReconstruct.modules.constants import (
     kh_web,
@@ -338,9 +338,29 @@ def return_autoseg_menu(self):
     }
 
 
+def getThemeMenu(self):
+    """Create submenu for selecting the theme."""
+
+    theme = self.series.getOption("theme")
+
+    def getCall(new_theme):
+        return lambda : self.setTheme(new_theme=new_theme)
+
+    themes = [
+        ("theme_default_act", "Default", "default"),
+        ("theme_qdark_act", "Dark", "qdark"),
+    ]
+    opts_list = [
+        (act_name, text, "checkbox-True" if theme == value else "checkbox", getCall(value))
+        for act_name, text, value in themes
+    ]
+
+    return get_menu_dict("thememenu", "Theme", opts_list)
+
+
 def return_view_menu(self):
     """Return view menu."""
-    
+
     view_menu = {
         "attr_name": "viewmenu",
         "text": "View",
@@ -349,7 +369,7 @@ def return_view_menu(self):
             ("copyscreen_act", "Copy view to clipboard", "", lambda : self.saveFieldView(False)),
             ("copyscreen_act", "Save view to file", "", lambda : self.saveFieldView(True)),
             None,
-            ("changetheme_act", "Change theme", "", self.setTheme),
+            getThemeMenu(self),
             None,
             ("fillopacity_act", "Edit fill opacity...", "", self.setFillOpacity),
             None,

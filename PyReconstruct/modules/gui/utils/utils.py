@@ -11,7 +11,8 @@ from PySide6.QtWidgets import (
     QProgressDialog,
     QMessageBox,
     QLabel,
-    QTableWidget
+    QTableWidget,
+    QColorDialog
 )
 from PySide6.QtGui import (
     QAction,
@@ -589,6 +590,20 @@ def getOpenRecentMenu(series, openSeries):
         "text": "Open recent",
         "opts": opts_list
     }
+
+
+def getColor(initial=None, parent=None):
+    """Prompt the user for a color via QColorDialog.
+
+        Params:
+            initial (tuple): the initial RGB color, or None
+            parent (QWidget): the parent widget for the dialog
+        Returns:
+            (QColor): the selected color (check isValid() for cancellation)
+    """
+    if initial:
+        return QColorDialog.getColor(QColor(*initial), parent)
+    return QColorDialog.getColor(parent=parent)
 
 
 def ask_yes_no(prompt="Please enter y/[n]: "):

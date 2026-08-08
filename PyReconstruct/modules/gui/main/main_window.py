@@ -4,11 +4,21 @@
 from .main_imports import *
 
 
+## The platform's native style name, captured before any theme switch
+## (e.g. to the Fusion-based dark prototype) ever changes it, so "Default"
+## can restore the true original look rather than whatever was set last.
+_original_style_name = None
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, filename):
         """Constructs a skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
+
+        global _original_style_name
+        if _original_style_name is None:
+            _original_style_name = QApplication.instance().style().objectName()
 
         ## Catch all exceptions and display errors
         sys.excepthook = customExcepthook  # defined in gui.utils
@@ -2831,43 +2841,23 @@ class MainWindow(QMainWindow):
         
         self.viewer.setFocus()
     
-    def setTheme(self, new_theme=None):
+    def setTheme(self, new_theme):
         """Change the theme."""
-        if new_theme is None:
-            theme = self.series.getOption("theme")
-            structure = [
-                ["Theme:"],
-                [("radio", ("Default", theme=="default"), ("Dark", theme=="qdark"))]
-            ]
-            response, confirmed = QuickDialog.get(
-                self, structure, "Theme"
-            )
-            if not confirmed:
-                return
-            
-            if response[0][0][1]:
-                new_theme = "default"
-            elif response[0][1][1]:
-                new_theme = "qdark"
-            else:
-                return
-        
         app = QApplication.instance()
         if new_theme == "default":
             self.series.setOption("theme", "default")
             app.setStyleSheet("")
+            app.setStyle(QStyleFactory.create(_original_style_name))
             app.setPalette(app.style().standardPalette())
         elif new_theme == "qdark":
-            try:
-                import qdarkstyle
-            except:
-                notify("Unable to import dark theme.")
-                return
             self.series.setOption("theme", "qdark")
-            app.setStyleSheet(
-                qdarkstyle.load_stylesheet_pyside6() + 
-                qdark_addon
-            )
+            app.setStyleSheet("")
+            app.setStyle(QStyleFactory.create("Fusion"))
+            app.setPalette(fusion_dark_palette())
+
+        # rebuild the menu bar so its checkmarks reflect the new theme and
+        # every menu widget is (re)created under the new style/palette
+        self.createMenuBar()
     
     def addToRecentSeries(self, series_fp : str = None):
         """Add a series to the recently opened series list."""
@@ -3179,10 +3169,32 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
-qdark_addon = """
-QPushButton {border: 1px solid transparent}
-QComboBox {padding-right: 40px}
-"""
+def fusion_dark_palette():
+    """Build a dark QPalette for the Fusion style.
 
-## Removed following as it overrides background color of qtablewidgetitems
-## QTableWidget:item:alternate {background-color: #222C36;}  
+    A QPalette (rather than a QSS stylesheet, as a previous dark theme
+    used) doesn't route every widget through Qt's stylesheet engine --
+    which is what broke QColorDialog's spectrum picker (it would change
+    the selected color on mouse move instead of only on click).
+    """
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+    palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(127, 127, 127)
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(127, 127, 127)
+    )
+    return palette

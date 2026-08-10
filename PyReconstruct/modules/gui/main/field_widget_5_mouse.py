@@ -269,6 +269,15 @@ class FieldWidgetMouse(FieldWidgetData):
                                 mode=self.selected_trace.fill_mode
                             )
 
+                            # Record the split as an undo state, in the same
+                            # order @field_interaction uses (issue #99). The
+                            # split renames a trace out of the focused object
+                            # and into a brand-new <obj>_split contour; without
+                            # a state naming BOTH contours, a later undo
+                            # restores the original trace while leaving the
+                            # <obj>_split copy in place -- one trace becomes
+                            # two.
+                            self.saveState()
                             self.generateView()
 
                         else:  ## incorporate into obj
@@ -609,7 +618,7 @@ class FieldWidgetMouse(FieldWidgetData):
                 # If the replacement was never created -- most importantly while
                 # the trace layer is hidden, where newTrace is suppressed -- put
                 # the original trace back instead of silently destroying the
-                # user's work. See upstream issue #51.
+                # user's work. See issue #51.
                 if not recreated and self.tracing_trace is not None:
                     self.section.addTrace(self.tracing_trace, log_event=False)
                     self.section.addSelectedTrace(self.tracing_trace)

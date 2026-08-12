@@ -213,7 +213,7 @@ def _stub_color(monkeypatch, rgb):
     def fake_getColor(initial=None, parent=None, *a, **k):
         return _C(*rgb) if rgb is not None else _C()
 
-    monkeypatch.setattr(ape.QColorDialog, "getColor", staticmethod(fake_getColor))
+    monkeypatch.setattr(ape, "getColor", fake_getColor)
 
 
 def test_add_color_appends_picked_color(qapp, monkeypatch):

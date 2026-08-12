@@ -18,6 +18,11 @@ on:
 permissions:
   contents: write   # create / update GitHub Releases
 
+# # Global environment variables
+# env:
+#   # Force all GitHub Actions to run on Node 24 to suppress Node 20 deprecation warnings
+#   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     strategy:
@@ -42,11 +47,11 @@ jobs:
           - { os: macos-15-intel, plat: macOS,   arch: x86_64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0          # setuptools-scm needs full history + tags
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 

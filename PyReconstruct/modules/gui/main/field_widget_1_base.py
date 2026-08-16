@@ -32,13 +32,13 @@ class FieldWidgetBase:
     """
     
     def initAttrs(self, series : Series, mainwindow : QMainWindow):
-        
+
         self.mainwindow                     = mainwindow
         self.series                         = series
 
         self.section : Section              = None
         self.b_section : Section            = None
-        
+
         self.pixmap_dim : tuple             = None
         self.section_layer : SectionLayer   = None
 
@@ -52,6 +52,8 @@ class FieldWidgetBase:
         self.show_all_traces : bool         = False
         self.hide_image : bool              = False
         self.blend_sections : bool          = False
+
+        self.hover_columns : list           = None
 
         self.current_trace : list           = []
         self.current_ztrace: list           = []
@@ -108,11 +110,16 @@ class FieldWidgetBase:
     
     def createField(self, series : Series):
         """Re-creates the field widget when a new series is opened.
-        
+
             Params:
                 series (Series): the new series to load
         """
-        self.series = series 
+        self.series = series
+
+        ## Initialize hover columns from series option
+        from PyReconstruct.modules.gui.dialog.hover_columns import HoverColumnsDialog
+        default_columns = [(col, True) for col in HoverColumnsDialog.AVAILABLE_COLUMNS]
+        self.hover_columns = self.series.getOption("hover_columns") or default_columns
 
         ## Close manager if exists
         if self.table_manager:

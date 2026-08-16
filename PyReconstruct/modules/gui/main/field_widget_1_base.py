@@ -69,6 +69,7 @@ class FieldWidgetBase:
         self.is_gesturing : bool            = False
         self.is_scissoring : bool           = False
         self.is_z_tracing : bool            = False
+        self.is_image_loading : bool        = False
 
         self.closed_trace_shape             = "trace"
 
@@ -242,12 +243,15 @@ class FieldWidgetBase:
         """Generate the output view.
 
         Nothing is returned: self.field_pixmap is set with the view.
-        
+
             Params:
                 generate_image (bool): True if image should be regenerated
                 generate_traces (bool): True if traces should be regenerated
                 update (bool): True if view widget should be updated
         """
+        if generate_image:
+            self.is_image_loading = True
+
         ## Resize series window to match view proportions
         self.resizeWindow(self.pixmap_dim)
 
@@ -317,6 +321,9 @@ class FieldWidgetBase:
         self.mainwindow.checkActions()
         if update:
             self.update()
+
+        if generate_image:
+            self.is_image_loading = False
     
     def clearStates(self) -> None:
         """Create/clear the states for each section."""

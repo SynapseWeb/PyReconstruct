@@ -450,7 +450,9 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def tracePress(self, event):
         """Called when mouse is pressed in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         if self.is_line_tracing:
             
             self.linePress(event)
@@ -471,7 +473,9 @@ class FieldWidgetMouse(FieldWidgetData):
 
     def traceMove(self, event):
         """Called when mouse is moved in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         if self.is_line_tracing:
             
             self.update()
@@ -482,7 +486,9 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def traceRelease(self, event):
         """Called when mouse is released in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         trace_mode = self.series.getOption("trace_mode")
 
         ## User is already line tracing

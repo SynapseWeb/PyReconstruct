@@ -14,6 +14,7 @@ from PySide6.QtGui import (
     QPainter,
     QPalette,
 )
+from PySide6.QtCore import Qt
 
 from .file_dialog import FileDialog
 
@@ -75,6 +76,13 @@ class MultiInput(QWidget):
         self.container = parent
         self.is_combo = combo
 
+        # True once the user has changed the field: typed in a row, or added or
+        # removed one. A caller that prefilled the field with a real value does
+        # not need this -- what came back is what the user left there -- but one
+        # that had no single value to show does, to tell an untouched blank field
+        # apart from a field the user deliberately emptied.
+        self.edited = False
+
         # attributes only applicable to combobox
         self.combo_items = combo_items
         self.restrict_to_opts = restrict_to_opts
@@ -92,38 +100,106 @@ class MultiInput(QWidget):
                 w.setCurrentText(entry)
             else:
                 w = QLineEdit(self, text=entry)
+            self._trackEdits(w)
             self.input_layout.addWidget(w)
             self.inputs.append(w)
         vbl.addLayout(self.input_layout)
 
         # create the add/remove buttons
+        #
+        # Neither button takes focus: "-" removes the row being edited, and it
+        # can only know which row that is if pressing the button leaves the
+        # caret where the user put it.
         ar_row = QHBoxLayout()
         ar_row.addStretch(10)
         remove = QPushButton(self, text="-")
+        remove.setFocusPolicy(Qt.NoFocus)
         remove.clicked.connect(self.remove)
         ar_row.addWidget(remove)
         add = QPushButton(self, text="+")
+        add.setFocusPolicy(Qt.NoFocus)
         add.clicked.connect(self.add)
         ar_row.addWidget(add)
         vbl.addLayout(ar_row)
 
         self.setLayout(vbl)
     
+    def _trackEdits(self, w):
+        """Have a row report the user typing in it.
+
+        Connected after the row's initial text is set, so prefilling the field
+        does not count as an edit.
+        """
+        def mark(*args):
+            self.edited = True
+
+        if self.is_combo:
+            w.editTextChanged.connect(mark)
+        else:
+            w.textEdited.connect(mark)
+
     def add(self):
         """Add a line edit row to the field."""
         if self.is_combo:
             w = CompleterBox(self, self.combo_items)
         else:
             w = QLineEdit(self)
+        self._trackEdits(w)
         self.input_layout.addWidget(w)
         self.inputs.append(w)
-    
+        self.edited = True
+
+    def currentIndex(self):
+        """Index of the row being edited, or the last row if none has focus.
+
+            Returns:
+                (int) an index into self.inputs, -1 if the field has no rows
+        """
+        # an editable combobox is focused through its own internal line edit,
+        # so walk up from the focused widget until the row itself is found
+        w = QApplication.focusWidget()
+        while w is not None:
+            if w in self.inputs:
+                return self.inputs.index(w)
+            w = w.parentWidget()
+        return len(self.inputs) - 1
+
     def remove(self):
-        """Remove a line edit row from the field."""
-        if self.inputs:
-            self.inputs.pop().deleteLater()
-            self.container.adjustSize()
-    
+        """Remove the row being edited (the last row if none has focus).
+
+        "-" popped the final row wherever the caret was, so correcting the first
+        of several entries meant deleting every row below it and typing them
+        again. The field also keeps one row alive: removing the only row clears
+        its text instead, since a field with no line edit in it cannot be typed
+        into at all.
+        """
+        if not self.inputs:
+            return
+
+        self.edited = True
+
+        if len(self.inputs) == 1:
+            if self.is_combo:
+                self.inputs[0].setCurrentText("")
+            else:
+                self.inputs[0].setText("")
+            return
+
+        w = self.inputs.pop(self.currentIndex())
+        self.input_layout.removeWidget(w)
+        w.deleteLater()
+
+        # removeWidget() only marks the layouts dirty and posts a layout
+        # request, which is delivered after this slot returns, so both size
+        # hints still describe the layout with the removed row in it. Activating
+        # them makes the hints current, otherwise adjustSize() resizes to the
+        # previous row count and leaves a band of empty space in the dialog.
+        self.layout().activate()
+        container_layout = self.container.layout()
+        if container_layout is not None:
+            container_layout.activate()
+        self.container.adjustSize()
+
     def getEntries(self):
         """Get the strings input by the user."""
         l = []

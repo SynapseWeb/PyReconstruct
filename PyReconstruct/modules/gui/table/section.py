@@ -163,12 +163,12 @@ class SectionTableWidget(DataTable):
             Params:
                 single (bool): True if only one section should be selected
         """
-        selected_indeces = self.table.selectedIndexes()
-        if len(selected_indeces) < 1:
+        selected_rows = self.selectedRows()
+        if len(selected_rows) < 1:
             return
         n_list = []
-        for i in selected_indeces:
-            text = self.table.item(i.row(), 0).text()
+        for r in selected_rows:
+            text = self.table.item(r, 0).text()
             n = int(text.split()[0])
             n_list.append(n)
         

@@ -255,8 +255,7 @@ class FlagTableWidget(DataTable):
             Returns:
                 (str | list): the name of the object(s)
         """
-        selected_indexes = self.table.selectedIndexes()
-        selected_flags = [self.displayed_flags[i.row()] for i in selected_indexes]
+        selected_flags = [self.displayed_flags[r] for r in self.selectedRows()]
 
         if single:
             if len(selected_flags) != 1:

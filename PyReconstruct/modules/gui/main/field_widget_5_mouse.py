@@ -128,8 +128,46 @@ class FieldWidgetMouse(FieldWidgetData):
         for t in self.section.selected_traces:
             if t.name == self.tracing_trace.name and t.closed:
                 traces_to_merge.append(t)
-        if len(traces_to_merge) > 1:
-            self.mergeTraces(restrict=traces_to_merge)
+        if len(traces_to_merge) < 2:
+            return
+
+        # the trace just drawn: newTrace appends it to the selection
+        new_trace = traces_to_merge[-1]
+
+        # Only the traces the new stroke actually runs into are merged, and
+        # transitively: it runs into A, A runs into B.
+        #
+        # Merging is destructive -- the traces are deleted and rebuilt from one
+        # set of attributes -- so a trace the stroke shares nothing with has to
+        # be left alone. Tags belong to a trace, not to the contour it is part
+        # of, and every trace of a contour can carry its own; rebuilding the
+        # whole selection from a single trace's attributes threw that away, in
+        # whichever direction. Which is also why nothing done here may depend on
+        # what is merely *selected*: the selection is a lineage that outlives
+        # each merge, since the merged trace is what stays selected.
+        group = [new_trace]
+        candidates = traces_to_merge[:-1]
+        growing = True
+        while growing:
+            growing = False
+            for trace in candidates.copy():
+                if any(trace.overlaps(g, threshold=0) for g in group):
+                    group.append(trace)
+                    candidates.remove(trace)
+                    growing = True
+
+        if len(group) < 2:  # a stroke on its own stays exactly as drawn
+            return
+
+        # What the merged trace keeps: the stroke's own attributes, which are
+        # the palette the user is tracing with, plus the tags of every trace it
+        # absorbed -- a tag on a trace being extended is not something the user
+        # asked to lose by extending it.
+        attrs = new_trace.copy()
+        for trace in group:
+            attrs.mergeTags(trace)
+
+        self.mergeTraces(restrict=group, attrs_from=attrs)
 
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.

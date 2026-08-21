@@ -355,17 +355,20 @@ class MousePalette():
             Params:
                 bpos (int): the position of the palette button
         """
+        # a drag of the palette ends in a click on the button that was dragged,
+        # which must not change which trace is selected. Restoring the checked
+        # states from the palette index leaves the selection alone AND leaves it
+        # described correctly: toggling the dragged button instead used to
+        # unhighlight the selected trace, or highlight a second one, while
+        # palette_index went on pointing at the real selection. That drift is
+        # why paletteButtonChanged below asks the index rather than the buttons.
         if self.is_dragging:
             for i, button in enumerate(self.palette_buttons):
-                if i == bpos:
-                    button.setChecked(not button.isChecked())    
-                    return
-        
+                button.setChecked(i == self.series.palette_index[1])
+            return
+
         for i, button in enumerate(self.palette_buttons):
             if i == bpos:
-                if self.is_dragging:
-                    button.setChecked(not button.isChecked())
-                    return
                 button.setChecked(True)
                 self.mainwindow.changeTracingTrace(button.trace)
                 self.series.palette_index[1] = i
@@ -382,7 +385,13 @@ class MousePalette():
         for pos, b in enumerate(self.palette_buttons):
             if b == button:
                 self.setPaletteButtonTip(b, pos)
-                if b.isChecked():
+                # the selected button is the one palette_index names: that is
+                # what updateLabel and the tracing trace are set from when a
+                # series opens. A button's checked state is how the selection is
+                # drawn, and it can disagree -- so asking it meant that editing
+                # the selected trace, tags included, sometimes never reached the
+                # pencil and the next trace drawn kept the old attributes.
+                if pos == self.series.palette_index[1]:
                     self.mainwindow.changeTracingTrace(button.trace)
         self.updateLabel()
     

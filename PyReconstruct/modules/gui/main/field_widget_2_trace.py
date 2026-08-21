@@ -848,14 +848,14 @@ class FieldWidgetTrace(FieldWidgetBase):
             
             ## Get the selected names
             vscroll = None  # scroll bar if object list
-            data_table = self.table_manager.hasFocus()
-            
-            if isinstance(data_table, TraceTableWidget):
+            data_table = self.table_manager.activeTable(TraceTableWidget)
+
+            if data_table is not None:
                 selected_traces = data_table.getTraces(data_table.getSelected())
 
                 vscroll = data_table.table.verticalScrollBar()  # track scroll bar pos
                 scroll_pos = vscroll.value()
-            
+
             else:
                 selected_traces = self.section.selected_traces.copy()
                 
@@ -1009,20 +1009,31 @@ class FieldWidgetTrace(FieldWidgetBase):
     
     @trace_function
     @field_interaction
-    def mergeTraces(self, traces: list, merge_attrs_only=False, restrict: list=[]):
+    def mergeTraces(
+            self,
+            traces: list,
+            merge_attrs_only=False,
+            restrict: list=[],
+            attrs_from: Trace=None
+    ):
         """Merge traces.
-        
+
             Params:
                 traces (list): selected traces
                 merge_attrs_only (bool): True if only trace attributes should be merged
                 restrict (list): restrict merging to a list of traces
+                attrs_from (Trace): the trace whose attributes the merged trace
+                    keeps, one of the traces being merged. Defaults to the first
+                    of them, which is what the Merge action means by it; auto
+                    merge names the trace just drawn instead, so that the
+                    palette the user is tracing with is what survives.
         """
         if len(traces) < 2:
             notify("Please select two or more traces to merge.")
             return False
 
         to_merge = restrict if restrict else traces
-        first_trace = to_merge[0]
+        first_trace = attrs_from if attrs_from is not None else to_merge[0]
 
         # set attributes to be the first object selected
         if merge_attrs_only is True:
@@ -1211,9 +1222,9 @@ class FieldWidgetTrace(FieldWidgetBase):
         def wrapper(self, *args, **kwargs):
             # get the selected names
             vscroll = None  # scroll bar if object list
-            data_table = self.table_manager.hasFocus()
+            data_table = self.table_manager.activeTable(ZtraceTableWidget)
 
-            if isinstance(data_table, ZtraceTableWidget):
+            if data_table is not None:
                 selected_ztraces = data_table.getSelected()
                 vscroll = data_table.table.verticalScrollBar() # keep track of scroll bar position
                 scroll_pos = vscroll.value()

@@ -1,0 +1,38 @@
+# Routine dependency pull requests merge on their own once CI passes.
+#
+# Scope, stated plainly: a pull request opened by Dependabot whose update type
+# is patch or minor merges without a human reading it, after every required
+# check has passed. CI is the evidence for those merges. Major bumps get a
+# comment and wait for a maintainer.
+name: dependabot-auto
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: read the update type
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: enable auto-merge for patch and minor
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.meta.outputs.update-type)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+
+      - name: leave a major bump for a maintainer
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.html_url }}" \
+            --body "Major version bump, so this one waits for a maintainer."

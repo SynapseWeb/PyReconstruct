@@ -1,0 +1,29 @@
+# Dependency updates.
+#
+# Grouped on purpose: one pull request per ecosystem per week, rather than one
+# per package. A single package's CVE list can otherwise open dozens of pull
+# requests in a morning. Security updates still arrive immediately, outside
+# this schedule, because Dependabot handles those separately.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      routine:
+        update-types: ["patch", "minor"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      routine:
+        update-types: ["patch", "minor", "major"]
+    commit-message:
+      prefix: "ci(deps)"

@@ -29,8 +29,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
 
+      # Only when the pull request is opened. Without the action check this
+      # step also ran on `synchronize`, which is every push Dependabot makes to
+      # a branch it already opened, and Dependabot pushes a rebase moments
+      # after opening one. So three of the five major bumps opened on
+      # 2026-09-01 carried this comment twice, and a long-lived pull request
+      # would collect one per rebase for as long as it stayed open. The
+      # auto-merge step above is left on every event on purpose: `gh pr merge
+      # --auto` is idempotent, and re-running it re-arms a pull request whose
+      # auto-merge was cleared.
       - name: leave a major bump for a maintainer
-        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        if: |
+          github.event.action == 'opened' &&
+          steps.meta.outputs.update-type == 'version-update:semver-major'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

@@ -11,6 +11,6 @@ scipy==1.14.1
 shapely==2.1.1
 tifffile==2024.9.20
 trimesh==3.18.1
-vedo==2023.4.7
+vedo==2026.6.1
 vtk==9.3.1
 zarr==2.18.2

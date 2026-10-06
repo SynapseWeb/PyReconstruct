@@ -120,19 +120,26 @@ class FieldWidgetMouse(FieldWidgetData):
             return False
     
     def autoMerge(self):
-        """Automatically merge the selected traces of the same name."""
-        # merge with existing selected traces of the same name
+        """Merge the trace just drawn with the same-name traces it overlaps."""
         if not self.series.getOption("auto_merge"):
             return
-        traces_to_merge = []
-        for t in self.section.selected_traces:
-            if t.name == self.tracing_trace.name and t.closed:
-                traces_to_merge.append(t)
-        if len(traces_to_merge) < 2:
+
+        # the trace just drawn: newTrace appends it to its contour and selects
+        # it, so a draw that was refused leaves nothing to merge
+        contour = self.section.contours.get(self.tracing_trace.name)
+        if not contour:
+            return
+        new_trace = contour[-1]
+        if not new_trace.closed or new_trace not in self.section.selected_traces:
             return
 
-        # the trace just drawn: newTrace appends it to the selection
-        new_trace = traces_to_merge[-1]
+        # The candidates are the visible closed traces of the same name on this
+        # section, whether or not they are selected: tracing in polygon mode
+        # often leaves the existing trace unselected (issue #138).
+        candidates = [
+            t for t in contour
+            if t is not new_trace and t.closed and not t.hidden
+        ]
 
         # Only the traces the new stroke actually runs into are merged, and
         # transitively: it runs into A, A runs into B.
@@ -146,7 +153,6 @@ class FieldWidgetMouse(FieldWidgetData):
         # what is merely *selected*: the selection is a lineage that outlives
         # each merge, since the merged trace is what stays selected.
         group = [new_trace]
-        candidates = traces_to_merge[:-1]
         growing = True
         while growing:
             growing = False
@@ -168,6 +174,18 @@ class FieldWidgetMouse(FieldWidgetData):
             attrs.mergeTags(trace)
 
         self.mergeTraces(restrict=group, attrs_from=attrs)
+
+    def autoMergeDrawnTrace(self):
+        """Auto-merge the trace just drawn as part of the draw's undo step.
+
+        The draw has already saved an undo state and the merge saves another,
+        but to the user they are one action: one undo must restore the section
+        as it was before the draw, not leave the unmerged trace (issue #137).
+        """
+        section_states = self.series_states[self.series.current_section]
+        n_states = len(section_states.undo_states)
+        self.autoMerge()
+        section_states.dropStatesAfter(n_states)
 
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
@@ -597,7 +615,7 @@ class FieldWidgetMouse(FieldWidgetData):
             )
             
             if closed and len(self.current_trace) > 2:
-                self.autoMerge()
+                self.autoMergeDrawnTrace()
                 
             self.current_trace = []
     
@@ -633,8 +651,11 @@ class FieldWidgetMouse(FieldWidgetData):
                 # a no-op when the trace layer is hidden (@field_interaction) or
                 # when the retraced line collapses to < 2 points. The return
                 # value cannot be used here because it carries log_event, which
-                # is forced False while scissoring.
-                added_before = len(self.section.added_traces)
+                # is forced False while scissoring. Nor can added_traces: on a
+                # logged draw, the table refresh inside newTrace clears it
+                # (clearTracking) before newTrace returns. Count the contour.
+                name = self.tracing_trace.name
+                contour_before = len(self.section.contours.get(name, []))
 
                 self.newTrace(
                     current_trace_copy,
@@ -643,13 +664,18 @@ class FieldWidgetMouse(FieldWidgetData):
                     log_event=(log_event and (not self.is_scissoring))
                 )
                 
-                recreated = len(self.section.added_traces) > added_before
+                recreated = len(self.section.contours.get(name, [])) > contour_before
 
                 if recreated and log_event and self.is_scissoring:
                     self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
                     
-                if recreated and closed and len(self.current_trace) > 2:
-                    self.autoMerge()
+                # only a logged draw saved an undo state for the merge to join;
+                # a scissors edit is not a new draw and is not merged
+                if (
+                    recreated and closed and log_event and not self.is_scissoring
+                    and len(self.current_trace) > 2
+                ):
+                    self.autoMergeDrawnTrace()
                     
             self.current_trace = []
 

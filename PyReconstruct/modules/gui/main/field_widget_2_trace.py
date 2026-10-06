@@ -1028,11 +1028,14 @@ class FieldWidgetTrace(FieldWidgetBase):
                     merge names the trace just drawn instead, so that the
                     palette the user is tracing with is what survives.
         """
-        if len(traces) < 2:
+        to_merge = restrict if restrict else traces
+
+        # auto merge restricts to the traces it found overlapping, and only
+        # the trace just drawn among them is sure to be selected
+        if len(to_merge) < 2:
             notify("Please select two or more traces to merge.")
             return False
 
-        to_merge = restrict if restrict else traces
         first_trace = attrs_from if attrs_from is not None else to_merge[0]
 
         # set attributes to be the first object selected

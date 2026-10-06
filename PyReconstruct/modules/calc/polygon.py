@@ -13,22 +13,65 @@ from shapely.geometry import (
 )
 
 
+def uncuttable_closed_traces(trace_list) -> List[int]:
+    """Return the indices of traces that cannot be cut as closed polygons.
+
+    A closed cut is a polygon difference, so it needs a polygon shapely will
+    accept: at least three points, and an outline that does not cross itself.
+    Freehand tracing produces the second case often (a loop doubled back on, a
+    figure eight), and a two-point contour produces the first.
+
+    Callers use this to decide *before* they change anything, because the
+    alternative is to find out afterwards. `cut_closed_traces` used to drop such
+    a trace from its result, and its one caller in the field deletes the
+    originals before it looks at what came back, so the object was deleted and
+    nothing replaced it.
+
+        Params:
+            trace_list (list): traces, each a list of points
+        Returns:
+            (list): the indices in `trace_list` that cannot be cut
+    """
+    uncuttable = []
+
+    for i, trace in enumerate(trace_list):
+
+        if len(trace) < 3:  # Polygon() raises below three points
+            uncuttable.append(i)
+            continue
+
+        if not Polygon(trace).is_valid:
+            uncuttable.append(i)
+
+    return uncuttable
+
+
 def cut_closed_traces(trace_list, cut_trace, del_threshold=0.0) -> List[Any]:
     """Cut closed polygons."""
 
     # Convert cut_trace to a LineString
     cut_line = LineString(cut_trace)
-        
+
     # Create a list to store resulting traces
     new_traces = []
-        
+
     # Process each trace
     for trace in trace_list:
 
+        # A trace shapely cannot use as a polygon is kept, not dropped. The
+        # caller in the field deletes the originals before it inspects the
+        # result, so dropping one here deleted the user's object and returned
+        # nothing to put in its place. Use `uncuttable_closed_traces` to refuse
+        # the operation up front; this is the floor under that check, so that no
+        # caller of this function can lose a trace by reaching it.
+        if len(trace) < 3:
+            new_traces.append(trace)
+            continue
+
         poly = Polygon(trace)
 
-        # Skip invalid polygons
         if not poly.is_valid:
+            new_traces.append(trace)
             continue
 
         ## Determine trace area threshold

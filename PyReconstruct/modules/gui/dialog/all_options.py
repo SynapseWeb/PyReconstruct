@@ -204,13 +204,28 @@ class AllOptionsDialog(QDialog):
             ["When using the knife, objects smaller than this percent"],
             ["of the original trace area will be automatically deleted."],
             None,
-            ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold", use_defaults), (0, 100)), None]
+            ["Knife delete threshold (%):", ("float", self.series.getOption("knife_del_threshold", use_defaults), (0, 100)), None],
+            None,
+            ["A press of another mouse button while a cut is being drawn"],
+            ["can be ignored, so that a tablet's barrel button does not"],
+            ["cancel the cut and open the field menu over the object."],
+            None,
+            [
+                (
+                    "check",
+                    (
+                        "Ignore other mouse buttons while cutting",
+                        self.series.getOption("knife_ignore_secondary_click", use_defaults)
+                    )
+                )
+            ]
         ]
-        
+
         def setOption(response):
-            
+
             self.series.setOption("knife_del_threshold", response[0])
-            
+            self.series.setOption("knife_ignore_secondary_click", response[1][0][1])
+
         self.addOptionWidget("knife", structure, setOption)
 
         ## 3D options

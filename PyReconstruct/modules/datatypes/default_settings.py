@@ -67,6 +67,7 @@ default_settings = {
     "roll_knife_window": 10,
     "trace_mode": "combo",  # combo, poly, scribble  # MFO
     "knife_del_threshold": 1.0,  # MFO
+    "knife_ignore_secondary_click": True,  # MFO
     "grid": [1, 1, 1, 1, 1, 1],  # MFO
     "sampling_frame_grid": True,  # MFO
     "flag_name": "",  # MFO

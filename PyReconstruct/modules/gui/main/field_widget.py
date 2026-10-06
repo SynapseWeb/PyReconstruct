@@ -188,6 +188,31 @@ class FieldWidget(QWidget, FieldWidgetView):
         # check what was clicked
         self.lclick, self.mclick, self.rclick = get_clicked(event)
 
+        # A knife stroke in progress owns the gesture.
+        #
+        # A drawing tablet's barrel button, or any stray second press, used to
+        # fall through the "favor right click" branch below, which clears
+        # `current_trace` and drops `lclick`, and then raise the field context
+        # menu over the object being cut. The cut was lost and a menu nobody
+        # asked for appeared under a still-moving pen, one release away from
+        # "Delete selected". Ignoring the press keeps the stroke alive;
+        # `knifeRelease` still commits it when the pen comes up.
+        #
+        # `lclick` is forced back on because the press may report only the
+        # secondary button, and `knifeRelease` reads `lclick` to decide whether
+        # to cut. Same idea as `is_line_tracing` in `exclude_context` below: a
+        # gesture that is already underway is not a place for a context menu.
+        # The knife's right-click dialog turns this off for anyone who wants the
+        # old escape hatch.
+        if (
+            self.rclick
+            and self.mouse_mode == KNIFE
+            and self.current_trace
+            and self.series.getOption("knife_ignore_secondary_click")
+        ):
+            self.lclick, self.rclick, self.mclick = True, False, False
+            return
+
         # ignore middle clicks combined with other clicks
         if self.mclick and (self.lclick or self.rclick):
             if self.is_panzooming:

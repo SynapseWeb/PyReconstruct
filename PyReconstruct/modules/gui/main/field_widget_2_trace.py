@@ -20,8 +20,9 @@ from PyReconstruct.modules.calc import (
     pixmapPointToField,
     getExterior, 
     mergeTraces, 
-    reducePoints, 
+    reducePoints,
     cutTraces,
+    uncuttable_closed_traces,
 )
 from PyReconstruct.modules.gui.table import (
     CopyTableWidget, 
@@ -579,6 +580,24 @@ class FieldWidgetTrace(FieldWidgetBase):
         ## Pixelize the selected traces
         traces_to_cut = [self.section_layer.traceToPix(t) for t in traces]
 
+        ## Refuse a trace that cannot be cut, rather than deleting it
+        #
+        # A closed cut is a polygon difference and needs a polygon shapely will
+        # accept. A freehand outline that crosses itself is not one, and
+        # `cut_closed_traces` used to drop it from the result, which this
+        # method only inspects after `deleteTraces` has already run, so the
+        # object was deleted, nothing replaced it, no message was shown and the
+        # method returned True. Decide before anything is committed, and refuse
+        # the whole selection rather than cutting part of it.
+        if example_trace.closed and uncuttable_closed_traces(traces_to_cut):
+
+            notify(
+                "A selected trace crosses itself and cannot be cut.\n"
+                "The object was left unchanged."
+            )
+
+            return False
+
         ## Smooth cut if requested
         if self.series.getOption("roll_knife_average"):
             
@@ -597,6 +616,31 @@ class FieldWidgetTrace(FieldWidgetBase):
             self.series.getOption("knife_del_threshold"), 
             closed=example_trace.closed
         )
+
+        ## A cut line of fewer than two points is no cut at all
+        #
+        # `cutTraces` returns the list it was given, unchanged and by identity,
+        # for a degenerate cut line. A knife click with no drag produces one.
+        # Leave the section alone instead of deleting every selected trace and
+        # recreating it, which logged a modification and consumed a palette
+        # increment for a gesture that did nothing.
+        if cut_traces is traces_to_cut:
+            return False
+
+        ## Nothing to put back
+        #
+        # The last line of defense, for any path that returns no pieces at all
+        # (every piece under the delete threshold, an open trace shapely could
+        # not split). Deleting here is what loses an object, so refuse the whole
+        # operation rather than half-completing it.
+        if not cut_traces:
+
+            notify(
+                "The cut could not be completed.\n"
+                "The object was left unchanged."
+            )
+
+            return False
 
         ## Remove old traces
         self.section.deleteTraces(traces, log_event=False)

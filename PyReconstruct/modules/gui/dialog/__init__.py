@@ -22,6 +22,6 @@ from .import_series import ImportSeriesDialog, ImportAlignmentsDialog
 from .malformed_contours import (
     MalformedContoursDialog,
     PixelDustDialog,
-    DifferentlyNamedDuplicatesDialog,
+    DuplicateTracesDialog,
 )
 from .copy_to_sections import CopyToSectionsDialog, format_copy_result

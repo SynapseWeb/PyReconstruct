@@ -202,8 +202,7 @@ def return_series_menu(self):
                 "text": "Clean up",
                 "opts":
                 [
-                    ("removeduplicates_act", "Remove duplicate traces...", "", self.deleteDuplicateTraces),
-                    ("finddiffnamedduplicates_act", "Find duplicates named differently...", "", self.findDifferentlyNamedDuplicates),
+                    ("duplicates_act", "Duplicates...", "", self.reviewDuplicateTraces),
                     ("removepixeldust_act", "Remove pixel-dust traces...", "", self.removePixelDustTraces),
                     ("removeempty_act", "Remove empty traces...", "", self.removeEmptyTraces),
                 ]

@@ -60,7 +60,7 @@ from PyReconstruct.modules.gui.dialog import (
     BackupCommentDialog,
     ImportSeriesDialog,
     PixelDustDialog,
-    DifferentlyNamedDuplicatesDialog,
+    DuplicateTracesDialog,
     ImportAlignmentsDialog,
 )
 

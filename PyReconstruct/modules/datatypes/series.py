@@ -1653,7 +1653,7 @@ class Series():
 
     @classmethod
     def _duplicatePairs(cls, entries : list, threshold : float):
-        """Yield every pair of differently-named traces on a section that overlap.
+        """Yield every pair of traces on a section that overlap.
 
         ``entries`` is one tuple per trace,
         ``(xmin, ymin, xmax, ymax, area, name, index, trace)``, where the bounds
@@ -1663,9 +1663,10 @@ class Series():
         before ``b`` in (name, index) order so the output does not depend on
         which order the section's contours were walked in.
 
-        Comparing across names means comparing every trace on the section with
-        every other, and a dense autosegmented section carries enough traces
-        that measuring an overlap ratio for each of those pairs is not viable:
+        Duplicates can sit under one name or under two, so every trace on the
+        section is compared with every other, and a dense autosegmented section
+        carries enough traces that measuring an overlap ratio for each of those
+        pairs is not viable:
         Trace.getOverlapRatio rasterizes both polygons, which costs about 3 ms a
         pair. Two filters keep the number of ratios measured proportional to the
         number of traces rather than to its square:
@@ -1715,8 +1716,6 @@ class Series():
                 bxmin, bymin, bxmax, bymax, barea, bname, bindex, btrace = b
                 if bxmin > axmax + tol:
                     break  # sorted by xmin: nothing further can reach a
-                if aname == bname:
-                    continue  # same-name duplicates are deleteDuplicateTraces'
                 if atrace.closed != btrace.closed:
                     continue  # as in Trace.overlaps
                 if aymax + tol < bymin or bymax + tol < aymin:
@@ -1755,41 +1754,44 @@ class Series():
                 if Trace.ratioIsOverlap(ratio, threshold):
                     yield first, second, ratio, False
 
-    def findDifferentlyNamedDuplicates(self, threshold : float,
-                                       include_locked=False) -> list:
-        """Find traces that duplicate each other under two different names.
+    def findDuplicateTraces(self, threshold : float,
+                            include_locked=False) -> list:
+        """Find traces that duplicate each other, grouped by structure.
 
-        The same-name case is Series.deleteDuplicateTraces, and it stays exactly
-        as it is: that comparison only ever sees traces already grouped under one
-        contour name, so two people tracing one structure under two names produce
-        a duplicate it cannot find. This scans across names instead, comparing
-        every trace on a section with every other one, and reports what it finds.
+        One scan for both kinds of duplicate: a structure traced twice under
+        one name, and a structure traced under two names, which is what two
+        people tracing it produce. Every trace on a section is compared with
+        every other (see _duplicatePairs), and the overlapping pairs are
+        joined into groups: a structure traced three times is one group of
+        three, not three pairs. The joining is transitive, so A over B and B
+        over C is one group even if A and C fall just short of each other.
 
-        Reports only; nothing is modified. Which of the two names is the right
-        one is a judgment about the data rather than something geometry can
-        settle, so this operation does not choose, and the review list it feeds
-        offers no delete. Locked objects are skipped unless ``include_locked``
-        is True, matching findPixelDustTraces and findEmptyTraces.
+        This scan modifies nothing. Which name to keep is a question about the
+        data, so combineDuplicateTraces only acts on a name the caller picks.
+        Locked objects are skipped unless ``include_locked`` is True, matching
+        findPixelDustTraces and findEmptyTraces; even then, combining never
+        deletes a trace of a locked object (see combineDuplicateTraces).
 
-        Overlap is decided exactly as it is for same-name duplicates, by
-        Trace.overlaps' two tests: an identical point sequence, or an overlap
-        ratio above ``threshold``. See _duplicatePairs for how the comparison is
-        kept affordable across a whole section.
+        Overlap is decided as Trace.overlaps decides it: an identical point
+        sequence, or an overlap ratio above ``threshold``.
 
             Params:
                 threshold (float): the overlap ratio above which two traces
                     count as duplicates
                 include_locked (bool): True to also consider locked objects
             Returns:
-                (list): one record per pair (see _cleanupRecord), describing the
-                    first trace of the pair, with the second carried alongside
-                    under the "other_" keys, plus the measured "ratio"
+                (list): one dict per group, in section order: "section";
+                    "members", one record per trace (see _cleanupRecord) in
+                    (name, index) order; "names", the distinct object names,
+                    sorted; "count", the number of traces; "ratio", the lowest
+                    overlap ratio among the pairs that joined the group (1.0
+                    for a point-for-point match); and "location", the first
+                    member's
         """
-        candidates = []
+        groups = []
         for snum, section in self.enumerateSections(
-            message="Scanning for duplicates named differently...",
+            message="Scanning for duplicate traces...",
         ):
-            tform = section.tform
             entries = []
             for cname in section.contours:
                 if not include_locked and self.getAttr(cname, "locked"):
@@ -1800,44 +1802,181 @@ class Series():
                     xmin, ymin, xmax, ymax = trace.getBounds()
                     ## the untransformed polygon area, in the same coordinates
                     ## getOverlapRatio rasterizes, for the ceiling in
-                    ## _duplicatePairs. Not the physical area: that is measured
-                    ## through the section transform, below, for the pairs that
-                    ## survive.
+                    ## _duplicatePairs
                     entries.append((
                         xmin, ymin, xmax, ymax, abs(area(trace.points)),
                         cname, index, trace
                     ))
 
-            for first, second, ratio, points_match in self._duplicatePairs(
+            ## union-find over (name, index): each overlapping pair is an edge
+            ## and each group is a connected component
+            parent = {}
+
+            def find(key):
+                parent.setdefault(key, key)
+                while parent[key] != key:
+                    parent[key] = parent[parent[key]]
+                    key = parent[key]
+                return key
+
+            traces = {}
+            edges = []
+            for first, second, ratio, _points_match in self._duplicatePairs(
                 entries, threshold
             ):
-                fname, findex, ftrace = first[5], first[6], first[7]
-                sname, sindex, strace = second[5], second[6], second[7]
-                if points_match:
-                    reason = f"Point-for-point match with '{sname}'"
-                else:
-                    reason = (
-                        f"Overlap {ratio:.4g} with '{sname}' "
-                        f"(above {threshold:.4g})"
-                    )
-                record = self._cleanupRecord(
-                    fname, snum, findex, ftrace, reason=reason,
-                    area=self._traceArea(ftrace, tform),
-                )
-                other = self._cleanupRecord(
-                    sname, snum, sindex, strace, reason=reason,
-                    area=self._traceArea(strace, tform),
-                )
-                record["ratio"] = ratio
-                record["other_name"] = other["name"]
-                record["other_index"] = other["index"]
-                record["other_points"] = other["points"]
-                record["other_location"] = other["location"]
-                record["other_area"] = other["area"]
-                record["other_match"] = other["match"]
-                candidates.append(record)
+                fkey, skey = (first[5], first[6]), (second[5], second[6])
+                traces[fkey], traces[skey] = first[7], second[7]
+                froot, sroot = find(fkey), find(skey)
+                if froot != sroot:
+                    parent[sroot] = froot
+                edges.append((fkey, ratio))
+            if not edges:
+                continue
 
-        return candidates
+            keys_by_root = {}
+            for key in traces:
+                keys_by_root.setdefault(find(key), []).append(key)
+            lowest = {}
+            for key, ratio in edges:
+                root = find(key)
+                lowest[root] = min(lowest.get(root, ratio), ratio)
+
+            section_groups = []
+            for root, keys in keys_by_root.items():
+                keys.sort()
+                members = [
+                    self._cleanupRecord(
+                        name, snum, index, traces[(name, index)], reason=""
+                    )
+                    for name, index in keys
+                ]
+                section_groups.append({
+                    "section": snum,
+                    "members": members,
+                    "names": sorted({m["name"] for m in members}),
+                    "count": len(members),
+                    "ratio": float(lowest[root]),
+                    "location": members[0]["location"],
+                })
+            section_groups.sort(
+                key=lambda g: (g["members"][0]["name"], g["members"][0]["index"])
+            )
+            groups.extend(section_groups)
+
+        return groups
+
+    @staticmethod
+    def duplicateKeptMember(members : list, keep : str):
+        """The member of a duplicate group that combining under ``keep`` keeps.
+
+        A name can hold more than one trace of the group (a structure traced
+        twice under one name), so the name alone does not pick a trace. The
+        one with the most points is kept, as the most detailed tracing, then
+        the first in its contour.
+
+            Params:
+                members (list): the group's member records
+                keep (str): the object name chosen
+            Returns:
+                (dict): the member record kept, or None when no member has
+                    that name
+        """
+        candidates = [m for m in members if m["name"] == keep]
+        if not candidates:
+            return None
+        return min(candidates, key=lambda m: (-m["points"], m["index"]))
+
+    def combineDuplicateTraces(self, choices : list, series_states=None,
+                               log_event=True) -> list:
+        """Combine each chosen duplicate group into one trace.
+
+        Each choice is a ``(group, keep)`` tuple: ``group`` from
+        findDuplicateTraces and ``keep`` the object name to keep, one of the
+        group's own "names". One trace under that name survives (see
+        duplicateKeptMember) and takes the tags of every other trace in the
+        group; the others are deleted. A choice whose ``keep`` is empty or not
+        one of the group's names is skipped: the name is never guessed.
+
+        A locked object never loses a trace here: a group that would delete a
+        trace of a locked object is skipped whole. Keeping a locked trace is
+        allowed, since only its tags change.
+
+        A group is combined whole or not at all. Sections are reloaded fresh,
+        so each member is found again by its color and points, as
+        deleteMalformedTraces does. If any member cannot be found (it changed
+        or went after the scan), the group is left alone.
+
+        All the chosen groups are combined in one pass of enumerateSections,
+        so they are one undo step.
+
+            Params:
+                choices (list): (group, keep) tuples, described above
+                series_states (dict): optional dict of undo states for GUI
+                log_event (bool): True if events should be logged
+            Returns:
+                (list): the (group, keep) tuples that were combined
+        """
+        plans = {}
+        for choice in choices:
+            group, keep = choice
+            if not keep or keep not in group["names"]:
+                continue
+            kept = self.duplicateKeptMember(group["members"], keep)
+            doomed = [m for m in group["members"] if m is not kept]
+            if any(self.getAttr(m["name"], "locked") for m in doomed):
+                continue
+            plans.setdefault(group["section"], []).append(
+                (choice, [kept] + doomed)
+            )
+
+        if not plans:
+            return []
+
+        combined = []
+        for snum, section in self.enumerateSections(
+            message="Combining duplicate traces...",
+            series_states=series_states
+        ):
+            used = set()
+            kept_names = set()
+            for choice, members in plans.get(snum, []):
+                traces = []
+                for member in members:
+                    contour = section.contours.get(member["name"]) or []
+                    trace = next((
+                        t for t in contour
+                        if id(t) not in used
+                        and self._traceMatchesSignature(t, member["match"])
+                    ), None)
+                    if trace is None:
+                        break
+                    used.add(id(trace))
+                    traces.append(trace)
+                if len(traces) != len(members):
+                    ## changed since the scan: leave the group whole, and free
+                    ## the traces it claimed for the groups after it
+                    used.difference_update(id(t) for t in traces)
+                    continue
+                kept_trace = traces[0]
+                for trace in traces[1:]:
+                    kept_trace.mergeTags(trace)
+                    section.removeTrace(trace, log_event=log_event)
+                if log_event:
+                    self.addLog(
+                        kept_trace.name, snum, "Combine duplicate traces"
+                    )
+                kept_names.add(kept_trace.name)
+                combined.append(choice)
+
+            if kept_names:
+                ## mergeTags changed the kept traces in place: name their
+                ## contours as modified so the undo state records them
+                section.modified_contours.update(kept_names)
+                section.save()
+
+        if combined:
+            self.modified = True
+        return combined
 
     def editObjectRadius(self, obj_names : list, new_rad : float, series_states=None):
         """Change the radii of all traces of an object.
@@ -2421,48 +2560,6 @@ class Series():
                 g = group
         return g
     
-    def deleteDuplicateTraces(self, threshold : float, include_locked=False, series_states=None, log_event=True):
-        """Delete all duplicate traces in the series (keep tags).
-        
-            Params:
-                threshold (float): the threshold for overlapping traces to be considered duplicates
-                series_states (dict): optional dict of undo states for GUI
-                log_event (bool): True if event should be logged
-        """
-        removed = {}
-        for snum, section in self.enumerateSections(
-            message="Removing duplicate traces...",
-            series_states=series_states
-        ):
-            found_on_section = False
-            for cname in section.contours:
-                if not include_locked and self.getAttr(cname, "locked"):
-                    continue
-                i = 1
-                while i < len(section.contours[cname]):
-                    trace1 = section.contours[cname][i]
-                    # check against all previous traces
-                    for j in range(i-1, -1, -1):
-                        trace2 = section.contours[cname][j]
-                        # if overlaps, remove trace and break
-                        if trace1.overlaps(trace2, threshold=threshold):
-                            if snum not in removed:
-                                removed[snum] = set()
-                            removed[snum].add(cname)
-                            found_on_section = True
-                            trace1.mergeTags(trace2)
-                            section.removeTrace(trace2)
-                            i -= 1
-                            break
-                    i += 1
-            if found_on_section:
-                section.save()
-        
-        if log_event:
-            self.addLog(None, None, "Delete all duplicate traces")
-
-        return removed
-
     def addLog(self, obj_name : str, snum : int, event : str):
         """Add a log to the log set.
         

@@ -472,7 +472,16 @@ class Section():
                 add_tags (bool): True if tags should be added (rather than replaced)
                 log_event (bool): true if the event should be logged
         """
-        for trace in traces.copy():
+        # each trace once: this replaces every trace it is given, so a list that
+        # names one twice removes it on the first pass and then raises on the
+        # second, having already edited part of the selection. Identity, not
+        # equality, because two traces of an object can hold the same data.
+        unique_traces = []
+        for trace in traces:
+            if not any(trace is t for t in unique_traces):
+                unique_traces.append(trace)
+
+        for trace in unique_traces:
             # check if trace was highlighted
             if trace in self.selected_traces:
                 self.selected_traces.remove(trace)
@@ -492,7 +501,10 @@ class Section():
                     for tag in tags:
                         new_trace.tags.add(tag)
                 else:
-                    new_trace.tags = tags
+                    # a copy per trace: one set shared by the whole selection
+                    # (and, when pasting attributes, with the clipboard trace)
+                    # means a later in-place add lands on all of them
+                    new_trace.tags = set(tags)
             fill_mode = list(new_trace.fill_mode)
             if mode is not None:
                 style, condition = mode

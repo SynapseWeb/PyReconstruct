@@ -8,14 +8,21 @@ Two things have to happen before any test module imports the application:
   settings through ``QSettings("KHLab", "PyReconstruct")``, and
   ``Series.getOption`` writes a default back whenever a key is missing, so a
   test that touched an option would edit the settings of whoever ran it. Every
-  call site constructs ``QSettings(organization, application)``, which resolves
-  to the native backend: a plist through ``cfprefsd`` on macOS, the registry on
-  Windows. Neither ``setPath`` nor ``setDefaultFormat`` moves that (``setPath``
-  documents no effect on the native backends, and a native default is what the
-  two-argument constructor resolves to regardless), and redirecting ``$HOME``
-  does not either, because ``cfprefsd`` resolves the real user's domain. What
-  does work is binding the name the application imports to a subclass that
-  hands every instance an explicit INI file under a temporary directory.
+  call site constructs ``QSettings(organization, application)``, so the redirect
+  has to move where that two-argument form resolves to.
+
+  ``setPath`` does move it, for both the native and the INI backend. Rebinding
+  the name to a subclass does not: PySide6 resolves ``from PySide6.QtCore import
+  QSettings`` without consulting the patched module attribute, so the
+  application keeps constructing the real class while the patch looks like it
+  took. ``test_settings_isolation.py`` asserts the redirect through the
+  application's own modules rather than trusting either mechanism.
+
+  ``setPath`` is documented as having no effect on the native backend on Windows
+  and macOS (the registry, and a plist through ``cfprefsd``, which resolves the
+  real user's domain whatever ``$HOME`` says). The INI default below is set for
+  their sake, and the guard test fails there rather than letting a run edit real
+  settings quietly.
 """
 
 import os
@@ -25,29 +32,17 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 
-import PySide6.QtCore
+from PySide6.QtCore import QSettings
 
-_RealQSettings = PySide6.QtCore.QSettings
 _SETTINGS_DIR = tempfile.mkdtemp(prefix="pyrecon-test-settings-")
 
-
-class _TempQSettings(_RealQSettings):
-    """QSettings backed by a throwaway INI file, keyed by organization/app."""
-
-    def __init__(self, *args, **kwargs):
-        organization = args[0] if args else "test"
-        application = args[1] if len(args) > 1 else "test"
-        super().__init__(
-            os.path.join(_SETTINGS_DIR, f"{organization}.{application}.ini"),
-            _RealQSettings.Format.IniFormat,
-        )
-
-
-PySide6.QtCore.QSettings = _TempQSettings
+QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+for _format in (QSettings.Format.NativeFormat, QSettings.Format.IniFormat):
+    QSettings.setPath(_format, QSettings.Scope.UserScope, _SETTINGS_DIR)
+    QSettings.setPath(_format, QSettings.Scope.SystemScope, _SETTINGS_DIR)
 
 # for the test that guards the redirect
 SETTINGS_DIR = _SETTINGS_DIR
-REAL_QSETTINGS = _RealQSettings
 
 
 @pytest.fixture(scope="session")
@@ -81,6 +76,8 @@ def real_series(qapp, tmp_path):
     shutil.copyfile(src, fp)
 
     series = Series.openJser(fp)
+    assert series is not None, f"could not open test fixture: {fp}"
+
     data = SeriesData(series)
     data.refresh()
     series.data = data

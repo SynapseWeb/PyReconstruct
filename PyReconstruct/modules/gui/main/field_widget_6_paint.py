@@ -12,7 +12,7 @@ from PySide6.QtGui import (
     QFont,
 )
 
-from PyReconstruct.modules.calc import colorize
+from PyReconstruct.modules.backend.autoseg.palette import palette_color
 from PyReconstruct.modules.backend.view import drawArrow
 from PyReconstruct.modules.gui.utils import drawOutlinedText
 from PyReconstruct.modules.datatypes import Flag, Trace
@@ -197,7 +197,11 @@ class FieldWidgetPaint(FieldWidgetMouse):
                 # prioritize showing label name
                 if label_id is not None:
                     pos = self.mouse_x, self.mouse_y
-                    c = colorize(label_id)
+                    c = palette_color(
+                        label_id,
+                        self.series.getOption("autoseg_color_palette") or None,
+                        self.series.getOption("autoseg_color_seed") or 0,
+                    )
                     drawOutlinedText(
                         field_painter,
                         *pos,
@@ -436,18 +440,27 @@ class FieldWidgetPaint(FieldWidgetMouse):
         elif type(self.displayed_item) is Trace:
             t = self.displayed_item
             lines = []
-            # lines.append([f"<b>{t.name}</b>"])
             def addLine(header, desc):
                 if desc: lines.append(f"<b>{header}</b> {desc}")
-            
-            addLine("Host:", ", ".join(self.series.getObjHosts(t.name)))
-            addLine("Comment:", self.series.getAttr(t.name, "comment"))
-            addLine("Object Alignment:", self.series.getAttr(t.name, "alignment"))
-            addLine("Object Groups:", ", ".join(self.series.object_groups.getObjectGroups(t.name)))
-            addLine("Trace Tags:", ", ".join(t.tags))
-            cat_cols = self.series.getAttr(t.name, "user_columns")
-            for col_name, opt in cat_cols.items():
-                addLine(f"{col_name}:", opt)
+
+            enabled_columns = [col for col, enabled in self.hover_columns if enabled]
+            for col in enabled_columns:
+                if col == "Name":
+                    addLine("Name:", t.name)
+                elif col == "Host":
+                    addLine("Host:", ", ".join(self.series.getObjHosts(t.name)))
+                elif col == "Section Range":
+                    start = self.series.data.getStart(t.name)
+                    end = self.series.data.getEnd(t.name)
+                    addLine("Section Range:", f"{start}-{end}")
+                elif col == "Comment":
+                    addLine("Comment:", self.series.getAttr(t.name, "comment"))
+                elif col == "Object Alignment":
+                    addLine("Object Alignment:", self.series.getAttr(t.name, "alignment"))
+                elif col == "Object Groups":
+                    addLine("Object Groups:", ", ".join(self.series.object_groups.getObjectGroups(t.name)))
+                elif col == "Trace Tags":
+                    addLine("Trace Tags:", ", ".join(t.tags))
 
             text = "<hr>".join(lines)
         

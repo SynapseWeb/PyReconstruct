@@ -1,5 +1,7 @@
-from PySide6.QtWidgets import QPushButton, QColorDialog
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtWidgets import QPushButton
+from PySide6.QtGui import QPainter
+
+from PyReconstruct.modules.gui.utils import getColor
 
 class ColorButton(QPushButton):
 
@@ -17,10 +19,7 @@ class ColorButton(QPushButton):
 
     def selectColor(self):
         """Called when button is clicked: prompts user to change color"""
-        if self.color:
-            color = QColorDialog.getColor(QColor(*self.color))
-        else:
-            color = QColorDialog.getColor()
+        color = getColor(self.color)
         if color.isValid():
             self.setColor((color.red(), color.green(), color.blue()))
     

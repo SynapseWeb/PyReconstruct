@@ -75,7 +75,9 @@ class TraceTableWidget(DataTable):
             
         elif item_type == "Tags":
             
-            items.append(QTableWidgetItem(", ".join(trace_data.getTags())))
+            # sorted because the tags are a set: unsorted, the column lists them
+            # in a different order every time the row is rebuilt
+            items.append(QTableWidgetItem(", ".join(sorted(trace_data.getTags()))))
             
         elif item_type == "Hidden":
             
@@ -355,14 +357,13 @@ class TraceTableWidget(DataTable):
             self.temp_selected = None
             return selected_items
         
-        selected_indeces = self.table.selectedIndexes()
-        if len(selected_indeces) < 1:
+        selected_rows = self.selectedRows()
+        if len(selected_rows) < 1:
             return
-        
+
         selected_traces = []
         locked_objs = set()
-        for i in selected_indeces:
-            r = i.row()
+        for r in selected_rows:
             name = self.table.item(r, 0).text()
             index = self.rows[r].index
             if not include_locked and self.series.getAttr(name, "locked"):

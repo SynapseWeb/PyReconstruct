@@ -590,10 +590,8 @@ class ObjectTableWidget(DataTable):
             Returns:
                 (str | list): the object name(s)
         """
-        selected_indexes = self.table.selectedIndexes()
         obj_names = []
-        for i in selected_indexes:
-            r = i.row()
+        for r in self.selectedRows():
             n = self.table.item(r, 0).text()
             obj_names.append(n)
 

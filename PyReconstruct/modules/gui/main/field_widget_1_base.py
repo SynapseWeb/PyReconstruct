@@ -32,13 +32,13 @@ class FieldWidgetBase:
     """
     
     def initAttrs(self, series : Series, mainwindow : QMainWindow):
-        
+
         self.mainwindow                     = mainwindow
         self.series                         = series
 
         self.section : Section              = None
         self.b_section : Section            = None
-        
+
         self.pixmap_dim : tuple             = None
         self.section_layer : SectionLayer   = None
 
@@ -52,6 +52,8 @@ class FieldWidgetBase:
         self.show_all_traces : bool         = False
         self.hide_image : bool              = False
         self.blend_sections : bool          = False
+
+        self.hover_columns : list           = None
 
         self.current_trace : list           = []
         self.current_ztrace: list           = []
@@ -69,6 +71,7 @@ class FieldWidgetBase:
         self.is_gesturing : bool            = False
         self.is_scissoring : bool           = False
         self.is_z_tracing : bool            = False
+        self.is_image_loading : bool        = False
 
         self.closed_trace_shape             = "trace"
 
@@ -107,11 +110,16 @@ class FieldWidgetBase:
     
     def createField(self, series : Series):
         """Re-creates the field widget when a new series is opened.
-        
+
             Params:
                 series (Series): the new series to load
         """
-        self.series = series 
+        self.series = series
+
+        ## Initialize hover columns from series option
+        from PyReconstruct.modules.gui.dialog.hover_columns import HoverColumnsDialog
+        default_columns = [(col, True) for col in HoverColumnsDialog.AVAILABLE_COLUMNS]
+        self.hover_columns = self.series.getOption("hover_columns") or default_columns
 
         ## Close manager if exists
         if self.table_manager:
@@ -242,12 +250,15 @@ class FieldWidgetBase:
         """Generate the output view.
 
         Nothing is returned: self.field_pixmap is set with the view.
-        
+
             Params:
                 generate_image (bool): True if image should be regenerated
                 generate_traces (bool): True if traces should be regenerated
                 update (bool): True if view widget should be updated
         """
+        if generate_image:
+            self.is_image_loading = True
+
         ## Resize series window to match view proportions
         self.resizeWindow(self.pixmap_dim)
 
@@ -317,6 +328,9 @@ class FieldWidgetBase:
         self.mainwindow.checkActions()
         if update:
             self.update()
+
+        if generate_image:
+            self.is_image_loading = False
     
     def clearStates(self) -> None:
         """Create/clear the states for each section."""

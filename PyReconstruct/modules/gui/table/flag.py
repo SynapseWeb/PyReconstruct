@@ -1,11 +1,10 @@
 import re
 
 from PySide6.QtWidgets import (
-    QTableWidgetItem,  
-    QWidget, 
-    QInputDialog, 
-    QMenu, 
-    QColorDialog
+    QTableWidgetItem,
+    QWidget,
+    QInputDialog,
+    QMenu
 )
 from PySide6.QtGui import QColor
 
@@ -15,7 +14,8 @@ from PyReconstruct.modules.datatypes import Series, Section, Flag
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
     populateMenu,
-    notify
+    notify,
+    getColor
 )
 from PyReconstruct.modules.gui.dialog import (
     FlagDialog,
@@ -255,8 +255,7 @@ class FlagTableWidget(DataTable):
             Returns:
                 (str | list): the name of the object(s)
         """
-        selected_indexes = self.table.selectedIndexes()
-        selected_flags = [self.displayed_flags[i.row()] for i in selected_indexes]
+        selected_flags = [self.displayed_flags[r] for r in self.selectedRows()]
 
         if single:
             if len(selected_flags) != 1:
@@ -450,12 +449,7 @@ class FlagTableWidget(DataTable):
             flag = flags[0]
             self.color_filter = tuple(flag.color)
         else:
-            if self.color_filter:
-                c = QColorDialog.getColor(
-                    QColor(*self.color_filter)
-                )
-            else:
-                c = QColorDialog.getColor()
+            c = getColor(self.color_filter)
             if not c:
                 return
             self.color_filter = (c.red(), c.green(), c.blue())

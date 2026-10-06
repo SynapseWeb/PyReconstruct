@@ -1175,7 +1175,63 @@ class Series():
         self.modified = True
 
         return [f"{obj}_copy" for obj in obj_names]
-    
+
+    def copyTracesToSections(self, traces : list, section_numbers, series_states=None, log_event=True):
+        """Copy traces into multiple sections at the same field (x, y) location.
+
+        The traces' points must be given in FIELD (not SCREEN) coordinates.
+        Each target section stores the points through its own inverse
+        transform, so the traces land at the identical field x-y on every
+        section regardless of how each section is aligned.
+
+        An alignment lock protects a section's transform, not its trace
+        content, so traces are copied onto every chosen section regardless of
+        its lock status (just as traces can be drawn on a locked section).
+
+            Params:
+                traces (list): the traces to copy, points in field coordinates
+                section_numbers (iterable): the target section numbers
+                series_states (dict): section number : SectionStates (GUI undo)
+                log_event (bool): True if the trace creation should be logged
+            Returns:
+                (tuple): (list of section numbers that received the traces,
+                          list of section numbers skipped because their
+                          transform is not invertible)
+        """
+        targets = set(section_numbers)
+        copied_to = []
+        skipped = []
+
+        for snum, section in self.enumerateSections(
+            message="Copying traces to sections...",
+            series_states=series_states
+        ):
+            if snum not in targets:
+                continue
+
+            # obtain this section's inverse transform ONCE; a singular
+            # (non-invertible) transform cannot place the trace, so skip the
+            # section rather than crash or store garbage points
+            try:
+                inv_tform = section.tform.inverted()
+            except Exception:
+                skipped.append(snum)
+                continue
+
+            for trace in traces:
+                new_trace = trace.copy()
+                # re-project the shared field coordinates through this section's
+                # own inverse transform so the trace occupies the same field x-y
+                new_trace.points = [inv_tform.map(*p) for p in trace.points]
+                section.addTrace(new_trace, log_event=log_event)
+            section.save()
+            copied_to.append(snum)
+
+        if copied_to:
+            self.modified = True
+
+        return copied_to, skipped
+
     def deleteAllTraces(self, trace_name : str, tags : set = None, series_states=None):
         """Delete all traces with a certain name and tag set.
         
@@ -1211,6 +1267,7 @@ class Series():
             mode : tuple = None, 
             sections : list = None, 
             series_states=None,
+            add_tags : bool = True,
             log_event=True):
         """Edit the attributes of objects.
         
@@ -1218,10 +1275,17 @@ class Series():
                 obj_names (list): the names of the objects to rename
                 name (str): the new name for the objects
                 color (tuple): the new color for the objects
-                tags (set): the tags to ADD to the traces of the objects
+                tags (set): the tags for the traces of the objects
                 mode (tuple): the display mode to set for the traces
                 section (list): the section numbers to modify the object on (default: all)
                 series_states: the series states as store in the GUI
+                add_tags (bool): True if tags should be added to each trace's
+                    existing tags, False if they should REPLACE them. Only a
+                    replacement can remove a tag, so a caller that shows the user
+                    the current tags and takes an edited set back must pass False.
+                    Additive is the default because a caller working on a
+                    selection whose tags it never displayed cannot ask for a
+                    replacement without discarding tags the user never saw.
                 log_event (bool): True if event should be logged
         """
         ## Preemptively create log
@@ -1269,7 +1333,7 @@ class Series():
             if traces:
                 
                 section.editTraceAttributes(
-                    traces, name, color, tags, mode, add_tags=True, log_event=False
+                    traces, name, color, tags, mode, add_tags=add_tags, log_event=False
                 )
                 
                 ## Gather new traces

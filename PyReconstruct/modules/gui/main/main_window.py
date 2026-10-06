@@ -4,11 +4,21 @@
 from .main_imports import *
 
 
+## The platform's native style name, captured before any theme switch
+## (e.g. to the Fusion-based dark prototype) ever changes it, so "Default"
+## can restore the true original look rather than whatever was set last.
+_original_style_name = None
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, filename):
         """Constructs a skeleton for an empty main window."""
         super().__init__() # initialize QMainWindow
+
+        global _original_style_name
+        if _original_style_name is None:
+            _original_style_name = QApplication.instance().style().objectName()
 
         ## Catch all exceptions and display errors
         sys.excepthook = customExcepthook  # defined in gui.utils
@@ -110,6 +120,7 @@ class MainWindow(QMainWindow):
             self.objectmenu,
             self.cut_act,
             self.copy_act,
+            self.copytosections_act,
             self.pasteattributes_act,
         ]
         self.ztrace_actions = [
@@ -411,7 +422,7 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                f"\"{self.series.src_dir}\"",
+                self.series.src_dir,
                 zarr_fp
             ]
 
@@ -421,19 +432,20 @@ class MainWindow(QMainWindow):
                 str(zarr_converter.absolute()),
                 "convert_zarr",
                 str(cores),
-                f"\"{self.series.src_dir}\""
+                self.series.src_dir
             ]
 
+        # Pass argv as a list on every platform, never through a shell, so paths
+        # read from the series file stay single literal arguments.
         if os.name == 'nt':
 
             subprocess.Popen(
                 convert_cmd, creationflags=subprocess.CREATE_NO_WINDOW
             )
-            
+
         else:
 
-            convert_cmd = " ".join(convert_cmd)
-            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
+            subprocess.Popen(convert_cmd, stdout=None, stderr=None)
 
     def changeUsername(self, new_name : str = None):
         """Edit the login name used to track history.
@@ -871,6 +883,58 @@ class MainWindow(QMainWindow):
         if self.field:
             self.checkActions()
     
+    def importAlignmentsFromSeries(self, jser_fp : str = None):
+        """Import alignments from another series.
+
+        Same import that ImportSeriesDialog's Alignments tab performs, reached
+        from Alignments > Import alignments so that all three alignment sources
+        (.jser, .txt, SWiFT) sit together.
+
+            Params:
+                jser_fp (str): the filepath for the series to import from
+        """
+        if jser_fp is None:
+            jser_fp = FileDialog.get(
+                "file",
+                self,
+                "Select Series",
+                filter="*.jser"
+            )
+        if not jser_fp: return
+
+        self.saveAllData()
+
+        o_series = Series.openJser(jser_fp)
+
+        try:
+            if not checkMag(self.series, o_series):
+                return
+
+            import_as, confirmed = ImportAlignmentsDialog(
+                self, self.series, o_series
+            ).exec()
+            if not confirmed or not import_as:
+                return
+
+            self.series.importTransforms(
+                o_series,
+                import_as,
+                self.field.series_states
+            )
+        finally:
+            o_series.close()
+
+        # the alignment submenus list the series' alignments by name
+        self.createContextMenus()
+
+        # reload the section
+        self.field.reload()
+
+        # refresh the data and lists
+        self.field.table_manager.recreateTables()
+
+        notify("Alignments imported successfully.")
+
     def importTransforms(self, tforms_fp : str = None):
         """Import transforms from a text file.
         
@@ -1997,7 +2061,7 @@ class MainWindow(QMainWindow):
         convert_cmd = launch_prefix + [
             str(zarr_converter.absolute()),
             "create_ng_zarr",
-            f"\"{self.series.jser_fp}\""
+            self.series.jser_fp
         ]
 
         for argname, arg in args.items():
@@ -2010,24 +2074,25 @@ class MainWindow(QMainWindow):
 
                         convert_cmd += [
                             "--output",
-                            f"\"{arg}\""
+                            str(arg)
                         ]
-                        
+
                     else:
 
                         convert_cmd += [argname] + str(arg).split()
 
+        # Pass argv as a list on every platform, never through a shell, so paths
+        # read from the series file stay single literal arguments.
         if os.name == 'nt':
 
             subprocess.Popen(
                 convert_cmd,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
-            
+
         else:
 
-            convert_cmd = " ".join(convert_cmd)
-            subprocess.Popen(convert_cmd, shell=True, stdout=None, stderr=None)
+            subprocess.Popen(convert_cmd, stdout=None, stderr=None)
     
     # AUTOSEG FUNCTIONS TEMPORARILY REMOVED
 
@@ -2264,7 +2329,35 @@ class MainWindow(QMainWindow):
         
     #     self.field.zarr_layer.mergeLabels()
     #     self.field.generateView()
-    
+
+    def shuffleAutosegColors(self):
+        """Re-roll the autoseg import color arrangement and refresh the preview.
+
+        Backs the "Shuffle colors" button on the zarr import overlay. Picks a
+        new color seed (guaranteed to produce a different arrangement) and
+        regenerates the field view, which re-reads the seed and recolors the
+        label overlay in place -- so the user sees the new colors immediately
+        and the eventual import bakes in exactly those colors. Only the live
+        preview and future imports are affected; traces imported earlier keep
+        their already-assigned colors.
+        """
+        from PyReconstruct.modules.backend.autoseg.palette import next_shuffle_seed
+
+        current = self.series.getOption("autoseg_color_seed") or 0
+        palette = self.series.getOption("autoseg_color_palette") or None
+        # Enforce the "always reshuffles" guarantee over the labels actually
+        # visible on this section, not a fixed 1..63 range: with only a few
+        # labels on screen a new seed could recolor ids the user can't see and
+        # leave the visible ones unchanged (a no-op click). Fall back to the
+        # default range when the overlay can't supply present ids.
+        zarr_layer = self.field.zarr_layer
+        present_ids = zarr_layer.getPresentIds() if zarr_layer else None
+        self.series.setOption(
+            "autoseg_color_seed",
+            next_shuffle_seed(current, palette, ids=present_ids)
+        )
+        self.field.generateView()
+
     def hideSeriesTraces(self, hidden=True):
         """Hide or unhide all traces in the entire series.
         
@@ -2865,43 +2958,23 @@ class MainWindow(QMainWindow):
         
         self.viewer.setFocus()
     
-    def setTheme(self, new_theme=None):
+    def setTheme(self, new_theme):
         """Change the theme."""
-        if new_theme is None:
-            theme = self.series.getOption("theme")
-            structure = [
-                ["Theme:"],
-                [("radio", ("Default", theme=="default"), ("Dark", theme=="qdark"))]
-            ]
-            response, confirmed = QuickDialog.get(
-                self, structure, "Theme"
-            )
-            if not confirmed:
-                return
-            
-            if response[0][0][1]:
-                new_theme = "default"
-            elif response[0][1][1]:
-                new_theme = "qdark"
-            else:
-                return
-        
         app = QApplication.instance()
         if new_theme == "default":
             self.series.setOption("theme", "default")
             app.setStyleSheet("")
+            app.setStyle(QStyleFactory.create(_original_style_name))
             app.setPalette(app.style().standardPalette())
         elif new_theme == "qdark":
-            try:
-                import qdarkstyle
-            except:
-                notify("Unable to import dark theme.")
-                return
             self.series.setOption("theme", "qdark")
-            app.setStyleSheet(
-                qdarkstyle.load_stylesheet_pyside6() + 
-                qdark_addon
-            )
+            app.setStyleSheet("")
+            app.setStyle(QStyleFactory.create("Fusion"))
+            app.setPalette(fusion_dark_palette())
+
+        # rebuild the menu bar so its checkmarks reflect the new theme and
+        # every menu widget is (re)created under the new style/palette
+        self.createMenuBar()
     
     def addToRecentSeries(self, series_fp : str = None):
         """Add a series to the recently opened series list."""
@@ -3100,9 +3173,11 @@ class MainWindow(QMainWindow):
 
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
+            with suppressStderr():
+                tiff_image = QImage(self.field.section.src_fp)
             painter.drawImage(
                 exported_image.rect(),
-                QImage(self.field.section.src_fp),
+                tiff_image,
                 self.rect()
             )
 
@@ -3211,10 +3286,32 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
-qdark_addon = """
-QPushButton {border: 1px solid transparent}
-QComboBox {padding-right: 40px}
-"""
+def fusion_dark_palette():
+    """Build a dark QPalette for the Fusion style.
 
-## Removed following as it overrides background color of qtablewidgetitems
-## QTableWidget:item:alternate {background-color: #222C36;}  
+    A QPalette (rather than a QSS stylesheet, as a previous dark theme
+    used) doesn't route every widget through Qt's stylesheet engine --
+    which is what broke QColorDialog's spectrum picker (it would change
+    the selected color on mouse move instead of only on click).
+    """
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+    palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(127, 127, 127)
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(127, 127, 127)
+    )
+    return palette

@@ -7,8 +7,8 @@ import numpy as np
 from typing import List, Union
 from pathlib import Path
 
-from PySide6.QtWidgets import QMainWindow
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtWidgets import QMainWindow, QColorDialog
+from PySide6.QtGui import QKeyEvent, QColor
 from PySide6.QtCore import Qt
 
 from PyReconstruct.modules.gui.dialog import QuickDialog, FileDialog
@@ -112,7 +112,7 @@ class VPlotter(vedo.Plotter):
         self.pos_text.text(txt)                    # update text message
 
         self.render()
-    
+
     def updateSelected(self):
         """Update the selected names text."""
 
@@ -365,6 +365,60 @@ class VPlotter(vedo.Plotter):
         self.text_color = "black" if is_light(new_color) else "white"
 
         self.updateSelected()  # self.updateSelected() calls self.render()
+
+    def changeSelectedColor(self):
+        """Change the color of all selected objects."""
+        if not self.selected:
+            notify("No objects selected")
+            return
+
+        # Use the first selected object's color as the default
+        current_color = QColor(*self.selected[0].color)
+        new_color = QColorDialog.getColor(
+            current_color,
+            self.qt_parent,
+            "Change selected object(s) color",
+            QColorDialog.ColorDialogOption.DontUseNativeDialog
+        )
+
+        if not new_color.isValid():
+            return
+
+        self.saveState()
+        rgb = (new_color.red(), new_color.green(), new_color.blue())
+
+        for obj in self.selected:
+            obj.setColor(rgb)
+
+        self.render()
+
+    def revertSelectedColor(self):
+        """Revert the color of all selected objects to their original colors from the series."""
+        if not self.selected:
+            notify("No objects selected")
+            return
+
+        self.saveState()
+
+        for obj in self.selected:
+            # Get the original color from the series
+            if obj.type == "object":
+                # For objects, find the original trace color by loading all sections
+                found = False
+                for snum in self.series.sections.keys():
+                    if found:
+                        break
+                    section = self.series.loadSection(snum)
+                    if obj.name in section.contours:
+                        trace = section.contours[obj.name][0]
+                        obj.setColor(trace.color)
+                        found = True
+            elif obj.type == "ztrace":
+                # For ztraces, find the original ztrace color
+                if obj.name in self.series.ztraces:
+                    obj.setColor(self.series.ztraces[obj.name].color)
+
+        self.render()
 
     def incAlpha(self, i : float):
         """Increment the transparency of the selected meshes.
@@ -860,6 +914,15 @@ class CustomPlotter(QVTKRenderWindowInteractor):
                     ("organize_act", "Organize scene...", "Ctrl+Shift+H", self.organizeScene),
                     ("reload_act", "Reload selected", "Ctrl+Shift+R", self.reload),
                     ("backgroud_act", "Change background", "", self.plt.changeBackground),
+                    {
+                        "attr_name": "objectcolorsmenu",
+                        "text": "Object Colors",
+                        "opts":
+                        [
+                            ("changecolor_act", "Change selected...", "", self.plt.changeSelectedColor),
+                            ("revertcolor_act", "Revert selected...", "", self.plt.revertSelectedColor),
+                        ]
+                    },
                     None,
                     ("exportscene_act", "Export scene...", "", self.exportScene),
                     ("screenshot_act", "Save scene screenshot...", "", self.screenshot),

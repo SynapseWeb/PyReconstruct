@@ -128,8 +128,46 @@ class FieldWidgetMouse(FieldWidgetData):
         for t in self.section.selected_traces:
             if t.name == self.tracing_trace.name and t.closed:
                 traces_to_merge.append(t)
-        if len(traces_to_merge) > 1:
-            self.mergeTraces(restrict=traces_to_merge)
+        if len(traces_to_merge) < 2:
+            return
+
+        # the trace just drawn: newTrace appends it to the selection
+        new_trace = traces_to_merge[-1]
+
+        # Only the traces the new stroke actually runs into are merged, and
+        # transitively: it runs into A, A runs into B.
+        #
+        # Merging is destructive -- the traces are deleted and rebuilt from one
+        # set of attributes -- so a trace the stroke shares nothing with has to
+        # be left alone. Tags belong to a trace, not to the contour it is part
+        # of, and every trace of a contour can carry its own; rebuilding the
+        # whole selection from a single trace's attributes threw that away, in
+        # whichever direction. Which is also why nothing done here may depend on
+        # what is merely *selected*: the selection is a lineage that outlives
+        # each merge, since the merged trace is what stays selected.
+        group = [new_trace]
+        candidates = traces_to_merge[:-1]
+        growing = True
+        while growing:
+            growing = False
+            for trace in candidates.copy():
+                if any(trace.overlaps(g, threshold=0) for g in group):
+                    group.append(trace)
+                    candidates.remove(trace)
+                    growing = True
+
+        if len(group) < 2:  # a stroke on its own stays exactly as drawn
+            return
+
+        # What the merged trace keeps: the stroke's own attributes, which are
+        # the palette the user is tracing with, plus the tags of every trace it
+        # absorbed -- a tag on a trace being extended is not something the user
+        # asked to lose by extending it.
+        attrs = new_trace.copy()
+        for trace in group:
+            attrs.mergeTags(trace)
+
+        self.mergeTraces(restrict=group, attrs_from=attrs)
 
     def pointerPress(self, event):
         """Called when mouse is pressed in pointer mode.
@@ -269,6 +307,15 @@ class FieldWidgetMouse(FieldWidgetData):
                                 mode=self.selected_trace.fill_mode
                             )
 
+                            # Record the split as an undo state, in the same
+                            # order @field_interaction uses (issue #99). The
+                            # split renames a trace out of the focused object
+                            # and into a brand-new <obj>_split contour; without
+                            # a state naming BOTH contours, a later undo
+                            # restores the original trace while leaving the
+                            # <obj>_split copy in place -- one trace becomes
+                            # two.
+                            self.saveState()
                             self.generateView()
 
                         else:  ## incorporate into obj
@@ -441,7 +488,9 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def tracePress(self, event):
         """Called when mouse is pressed in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         if self.is_line_tracing:
             
             self.linePress(event)
@@ -462,7 +511,9 @@ class FieldWidgetMouse(FieldWidgetData):
 
     def traceMove(self, event):
         """Called when mouse is moved in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         if self.is_line_tracing:
             
             self.update()
@@ -473,7 +524,9 @@ class FieldWidgetMouse(FieldWidgetData):
     
     def traceRelease(self, event):
         """Called when mouse is released in trace mode."""
-        
+        if self.is_image_loading:
+            return
+
         trace_mode = self.series.getOption("trace_mode")
 
         ## User is already line tracing
@@ -570,10 +623,19 @@ class FieldWidgetMouse(FieldWidgetData):
 
             self.deactivateMouseBoundaryTimer()
 
+            recreated = False
+
             if len(self.current_trace) > 1:
                 
                 current_trace_copy = self.current_trace.copy()
                 
+                # detect whether newTrace actually added the replacement: it is
+                # a no-op when the trace layer is hidden (@field_interaction) or
+                # when the retraced line collapses to < 2 points. The return
+                # value cannot be used here because it carries log_event, which
+                # is forced False while scissoring.
+                added_before = len(self.section.added_traces)
+
                 self.newTrace(
                     current_trace_copy,
                     self.tracing_trace,
@@ -581,10 +643,12 @@ class FieldWidgetMouse(FieldWidgetData):
                     log_event=(log_event and (not self.is_scissoring))
                 )
                 
-                if log_event and self.is_scissoring:
+                recreated = len(self.section.added_traces) > added_before
+
+                if recreated and log_event and self.is_scissoring:
                     self.series.addLog(self.tracing_trace.name, self.section.n, "Modify trace(s)")
                     
-                if closed and len(self.current_trace) > 2:
+                if recreated and closed and len(self.current_trace) > 2:
                     self.autoMerge()
                     
             self.current_trace = []
@@ -592,6 +656,17 @@ class FieldWidgetMouse(FieldWidgetData):
             if self.is_scissoring:
                 
                 self.is_scissoring = False
+
+                # The scissors pickup deletes the original trace up front
+                # (scissorsPress) and relies on this completion to recreate it.
+                # If the replacement was never created -- most importantly while
+                # the trace layer is hidden, where newTrace is suppressed -- put
+                # the original trace back instead of silently destroying the
+                # user's work. See issue #51.
+                if not recreated and self.tracing_trace is not None:
+                    self.section.addTrace(self.tracing_trace, log_event=False)
+                    self.section.addSelectedTrace(self.tracing_trace)
+
                 self.setMouseMode(SCISSORS)
                 self.setTracingTrace(
                     self.series.palette_traces[self.series.palette_index[0]][self.series.palette_index[1]]

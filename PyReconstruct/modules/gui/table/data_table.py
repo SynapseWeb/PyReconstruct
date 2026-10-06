@@ -214,9 +214,33 @@ class DataTable(QDockWidget):
         h = event.size().height()
         self.table.resize(w, h-20)
 
+    def selectedRows(self) -> list:
+        """The rows the user has selected, in order, each one once.
+
+        The tables select cells rather than rows, so a row with several of its
+        cells selected -- dragged across the columns, or ctrl+A -- reports one
+        selected index per cell while still being one item. Every getSelected
+        below builds its list from these rows, because handing the same item on
+        repeatedly makes an operation apply to it repeatedly: one that replaces
+        the item, as editTraceAttributes does, removes it on the first pass and
+        then raises on the second, leaving the edit half applied and the lists
+        never refreshed.
+
+            Returns:
+                (list) the selected row indices
+        """
+        rows = []
+        seen = set()
+        for index in self.table.selectedIndexes():
+            r = index.row()
+            if r not in seen:
+                seen.add(r)
+                rows.append(r)
+        return rows
+
     def getSelected(self, single=False):
         """Get the selected data item(s).
-        
+
         Must be overwritten in child classes.
 
             Params:
@@ -234,7 +258,16 @@ class DataTable(QDockWidget):
         if not items:
             return
 
-        self.context_menu.exec(event.globalPos())   
+        # Record this list for the duration of the menu. Its actions are the
+        # field's own methods, which otherwise work out where they were invoked
+        # from by asking Qt for the focused table -- and no table has focus
+        # while the menu is up, so they fell back to the field's selection and
+        # applied themselves to traces the user had not selected here.
+        self.manager.context_table = self
+        try:
+            self.context_menu.exec(event.globalPos())
+        finally:
+            self.manager.context_table = None
 
     def itemChanged(self, item : QTableWidgetItem):
         """User checked a checkbox.

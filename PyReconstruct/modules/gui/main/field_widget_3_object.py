@@ -57,9 +57,9 @@ class FieldWidgetObject(FieldWidgetTrace):
 
                 ## Get selected names
                 vscroll = None  # scroll bar if object list
-                data_table = self.table_manager.hasFocus()
+                data_table = self.table_manager.activeTable(ObjectTableWidget)
 
-                if isinstance(data_table, ObjectTableWidget):
+                if data_table is not None:
                     selected_names = data_table.getSelected()
                     vscroll = data_table.table.verticalScrollBar()  # track scroll bar position
                     scroll_pos = vscroll.value()
@@ -123,12 +123,22 @@ class FieldWidgetObject(FieldWidgetTrace):
         """Edit the name of object(s) in the entire series."""
         
         ## Query user for new object name
+        ##
+        ## tags_displayed records whether the dialog is showing this selection's
+        ## real tags. It decides, further down, whether the set coming back is a
+        ## replacement or an addition: a set that was displayed and edited is the
+        ## user's intended final list, and is the only way a tag can be removed,
+        ## while a field that started blank for lack of a single value to show
+        ## cannot express a replacement without discarding tags the user never
+        ## saw.
         if len(obj_names) == 1:
             displayed_name = obj_names[0]
             tags = self.series.data.getTags(obj_names[0])
+            tags_displayed = True
         else:
             displayed_name = None
             tags=None
+            tags_displayed = False
         
         response, confirmed = TraceDialog(
             self, 
@@ -156,7 +166,8 @@ class FieldWidgetObject(FieldWidgetTrace):
             tags,
             mode,
             sections,
-            series_states=self.series_states
+            series_states=self.series_states,
+            add_tags=not tags_displayed,
         )
 
         ## Decorator will not know to update new name and host trees if name is changed

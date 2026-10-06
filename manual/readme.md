@@ -258,11 +258,11 @@ Saves the series/section data and closes PyReconstruct.
 
 ### Undo (Ctrl+Z)
 
-Undoes the last action you made on the trace field. Please note that this will NOT undo any action made through the object or section list.
+Undoes the last action you made on the trace field. Actions made through the lists can be undone as well. The few list actions that cannot be undone warn you before they run. If the action changed more than one section, PyReconstruct asks whether to undo it on all affected sections or only the current one.
 
 ### Redo (Ctrl+Y)
 
-Redoes the last undone action on the trace field. Like undo, this will NOT redo any action made through the object or section list.
+Redoes the last undone action on the trace field. Like undo, this also covers actions made through the lists.
 
 ### Cut (Ctrl+X)
 
@@ -471,11 +471,11 @@ Allows you to make the selected traces negative of positive (see General Concept
 
 ### Undo (Ctrl+Z)
 
-Undoes the last action you made on the trace field. Please note that this will NOT undo any action made through the object or section list.
+Undoes the last action you made on the trace field. Actions made through the lists can be undone as well. The few list actions that cannot be undone warn you before they run. If the action changed more than one section, PyReconstruct asks whether to undo it on all affected sections or only the current one.
 
 ### Redo (Ctrl+Y)
 
-Redoes the last undone action on the trace field. Like undo, this will NOT redo any action made through the object or section list.
+Redoes the last undone action on the trace field. Like undo, this also covers actions made through the lists.
 
 ### Cut (Ctrl+X)
 
@@ -617,7 +617,7 @@ Locates the last contour associated with the selected object on the object list.
 
 Pulls up a menu that allows the user to edit the name, color, tags, and fill style of all traces associated with the selected object(s).
 
-This action cannot be undone with Ctrl+Z or Edit>Undo.
+This action can be undone with Ctrl+Z or Edit>Undo. Because it changes every section the object appears on, undo asks whether to revert all of those sections or only the current one.
 
 ### Edit Radius
 
@@ -625,7 +625,7 @@ Allows the user to edit the radii of all traces associated with the selected obj
 
 This should **only** be done with objects that are known to be stamps.
 
-This action cannot be undone with Ctrl+Z or Edit>Undo.
+This action can be undone with Ctrl+Z or Edit>Undo.
 
 ### Remove All Tags
 

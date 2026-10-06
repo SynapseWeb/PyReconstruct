@@ -181,11 +181,11 @@ class ZtraceTableWidget(DataTable):
     
     def getSelected(self, single=False):
         """Get the ztrace names that iare selected by the user."""
-        selected_indeces = self.table.selectedIndexes()
-        if len(selected_indeces) < 1:
+        selected_rows = self.selectedRows()
+        if len(selected_rows) < 1:
             return
         selected = [
-            self.table.item(i.row(), 0).text() for i in selected_indeces
+            self.table.item(r, 0).text() for r in selected_rows
         ]
 
         if single:

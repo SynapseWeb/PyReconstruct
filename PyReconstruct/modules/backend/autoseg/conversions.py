@@ -11,7 +11,9 @@ import zarr
 from PyReconstruct.modules.datatypes import Series, Transform, Trace
 from PyReconstruct.modules.backend.view import SectionLayer
 from PyReconstruct.modules.backend.threading import ThreadPoolProgBar
-from PyReconstruct.modules.calc import colorize, reducePoints
+from PyReconstruct.modules.calc import reducePoints
+
+from .palette import DEFAULT_AUTOSEG_PALETTE, palette_color
 
 
 dt = None
@@ -546,12 +548,6 @@ def exterior_to_points(ext: list[np.ndarray], offset, resolution, raw, window, t
     return trace_points
 
 
-def colorize_id(id):
-    """Return color for ID."""
-
-    return tuple(map(int, colorize(id)))
-
-
 def exportSection(data_zg,
                   snum : int,
                   series : Series,
@@ -742,7 +738,12 @@ def importSection(data_zg, group, snum, series, ids=None):
     ## Iterate through label ids
     if ids is None:
         ids = np.unique(arr)
-        
+
+    ## Resolve the trace-color palette + seed once for this section.
+    ## An empty/unset override falls back to the shipped curated default.
+    palette = series.getOption("autoseg_color_palette") or DEFAULT_AUTOSEG_PALETTE
+    color_seed = series.getOption("autoseg_color_seed") or 0
+
     for id in ids:
         
         if id == 0:
@@ -755,7 +756,7 @@ def importSection(data_zg, group, snum, series, ids=None):
         for ext in exteriors:
 
             trace_name = f"autoseg_{id}"
-            trace_color = colorize_id(id)
+            trace_color = palette_color(id, palette, color_seed)
 
             trace = Trace(name=trace_name, color=trace_color)
             trace.points = exterior_to_points(ext, offset, resolution, raw, window, tform, mag)

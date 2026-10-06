@@ -12,10 +12,11 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
-    QInputDialog, 
+    QInputDialog,
     QApplication,
-    QMessageBox, 
-    QMenu
+    QMessageBox,
+    QMenu,
+    QStyleFactory
 )
 
 from PySide6.QtGui import (
@@ -25,7 +26,9 @@ from PySide6.QtGui import (
     QAction,
     QImage,
     QPainter,
-    QRegion
+    QRegion,
+    QPalette,
+    QColor
 )
 
 from PySide6.QtCore import (
@@ -58,6 +61,7 @@ from PyReconstruct.modules.gui.dialog import (
     ImportSeriesDialog,
     PixelDustDialog,
     DifferentlyNamedDuplicatesDialog,
+    ImportAlignmentsDialog,
 )
 
 from PyReconstruct.modules.gui.popup import (
@@ -101,7 +105,8 @@ from PyReconstruct.modules.backend.func import (
 )
 
 from PyReconstruct.modules.backend.view import (
-    optimizeSeriesBC
+    optimizeSeriesBC,
+    suppressStderr
 )
 
 from PyReconstruct.modules.backend.autoseg import (

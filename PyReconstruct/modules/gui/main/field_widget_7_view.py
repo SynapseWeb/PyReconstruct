@@ -289,3 +289,12 @@ class FieldWidgetView(FieldWidgetPaint):
         self.series.window[3] = new_h
 
         self.generateView()
+
+    def configureHoverColumns(self):
+        """Open dialog to configure which columns appear in hover tooltip."""
+        from PyReconstruct.modules.gui.dialog.hover_columns import HoverColumnsDialog
+
+        columns, confirmed = HoverColumnsDialog(self, self.hover_columns).exec()
+        if confirmed:
+            self.hover_columns = columns
+            self.series.setOption("hover_columns", columns)

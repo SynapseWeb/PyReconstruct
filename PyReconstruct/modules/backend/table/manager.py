@@ -37,6 +37,10 @@ class TableManager():
         self.section = section
         self.mainwindow = mainwindow
         self.series_states = series_states
+
+        # the list whose context menu is currently open, set by DataTable while
+        # the menu is up: see activeTable()
+        self.context_table = None
     
     def newTable(self, table_type : str, section=None):
         """Create a new object list widget."""
@@ -168,6 +172,30 @@ class TableManager():
         for table in self.tables["object"]:
             table.updateObjCols()
     
+    def activeTable(self, table_class):
+        """The list an action should operate on, if any.
+
+        An action in a list's context menu has to work on that list's selection,
+        and Qt focus cannot answer which list that is: while the menu is up the
+        menu itself is the active window, so no table has focus, and the action
+        fires before focus returns to the table. Asking hasFocus() alone made
+        every context-menu action in a list fall through to the field's
+        selection, which is a different set of traces entirely.
+
+        The menu's own list is therefore recorded while it is open, and is what
+        this returns; keyboard focus still answers for a shortcut pressed with a
+        list focused and no menu open.
+
+            Params:
+                table_class: the DataTable subclass the caller can work with
+            Returns:
+                the matching list, or None if the action came from the field
+        """
+        for table in (self.context_table, self.hasFocus()):
+            if isinstance(table, table_class):
+                return table
+        return None
+
     def hasFocus(self):
         """Check if one of the tables is focused."""
         for table_type in self.tables:

@@ -12,6 +12,8 @@ from PyReconstruct.modules.gui.dialog import (
     TraceDialog,
     ShapesDialog,
     ObjectGroupDialog,
+    CopyToSectionsDialog,
+    format_copy_result,
 )
 from PyReconstruct.modules.gui.utils import notify
 from PyReconstruct.modules.calc import (
@@ -846,14 +848,14 @@ class FieldWidgetTrace(FieldWidgetBase):
             
             ## Get the selected names
             vscroll = None  # scroll bar if object list
-            data_table = self.table_manager.hasFocus()
-            
-            if isinstance(data_table, TraceTableWidget):
+            data_table = self.table_manager.activeTable(TraceTableWidget)
+
+            if data_table is not None:
                 selected_traces = data_table.getTraces(data_table.getSelected())
 
                 vscroll = data_table.table.verticalScrollBar()  # track scroll bar pos
                 scroll_pos = vscroll.value()
-            
+
             else:
                 selected_traces = self.section.selected_traces.copy()
                 
@@ -885,7 +887,59 @@ class FieldWidgetTrace(FieldWidgetBase):
             # call to update is handled by field_interaction decorator
         
         return wrapper
-    
+
+    @trace_function
+    def copyTracesToSections(self, traces : list):
+        """Copy the selected trace(s) onto multiple chosen sections at the same
+        field (x, y) location."""
+        if self.hide_trace_layer:
+            return False
+
+        # convert the selection to field coordinates, exactly as the copy path
+        # does, so the traces can be re-projected onto each target section
+        tform = self.section.tform
+        field_traces = []
+        for trace in traces:
+            field_trace = trace.copy()
+            field_trace.points = [tform.map(*p) for p in trace.points]
+            field_traces.append(field_trace)
+
+        # choose the target sections
+        chosen, confirmed = CopyToSectionsDialog(self, self.series).get()
+        if not confirmed:
+            return False
+
+        # never copy onto the source (current) section
+        current = self.series.current_section
+        excluded_current = current in chosen
+        chosen.discard(current)
+
+        if not chosen:
+            notify("No other sections were selected to copy to.")
+            return False
+
+        names = list(set(t.name for t in field_traces))
+
+        copied_to, skipped = self.series.copyTracesToSections(
+            field_traces, chosen, self.series_states
+        )
+
+        # refresh the object/trace lists and the field view (only if anything
+        # actually changed)
+        if copied_to:
+            self.table_manager.updateObjects(names)
+            self.reload()
+
+        # report the outcome to the user, listing the sections that ACTUALLY
+        # received the trace(s) so the message reflects what was done
+        message = format_copy_result(
+            copied_to, skipped, current if excluded_current else None
+        )
+        if message:
+            notify(message)
+
+        return bool(copied_to)
+
     @trace_function
     @field_interaction
     def traceDialog(self, traces : list):
@@ -955,20 +1009,31 @@ class FieldWidgetTrace(FieldWidgetBase):
     
     @trace_function
     @field_interaction
-    def mergeTraces(self, traces: list, merge_attrs_only=False, restrict: list=[]):
+    def mergeTraces(
+            self,
+            traces: list,
+            merge_attrs_only=False,
+            restrict: list=[],
+            attrs_from: Trace=None
+    ):
         """Merge traces.
-        
+
             Params:
                 traces (list): selected traces
                 merge_attrs_only (bool): True if only trace attributes should be merged
                 restrict (list): restrict merging to a list of traces
+                attrs_from (Trace): the trace whose attributes the merged trace
+                    keeps, one of the traces being merged. Defaults to the first
+                    of them, which is what the Merge action means by it; auto
+                    merge names the trace just drawn instead, so that the
+                    palette the user is tracing with is what survives.
         """
         if len(traces) < 2:
             notify("Please select two or more traces to merge.")
             return False
 
         to_merge = restrict if restrict else traces
-        first_trace = to_merge[0]
+        first_trace = attrs_from if attrs_from is not None else to_merge[0]
 
         # set attributes to be the first object selected
         if merge_attrs_only is True:
@@ -1157,9 +1222,9 @@ class FieldWidgetTrace(FieldWidgetBase):
         def wrapper(self, *args, **kwargs):
             # get the selected names
             vscroll = None  # scroll bar if object list
-            data_table = self.table_manager.hasFocus()
+            data_table = self.table_manager.activeTable(ZtraceTableWidget)
 
-            if isinstance(data_table, ZtraceTableWidget):
+            if data_table is not None:
                 selected_ztraces = data_table.getSelected()
                 vscroll = data_table.table.verticalScrollBar() # keep track of scroll bar position
                 scroll_pos = vscroll.value()

@@ -46,6 +46,11 @@ class TraceDialog(QDialog):
         self.is_palette = is_palette
         self.is_obj_list = is_obj_list
 
+        # True when the traces passed do not agree on their tags, so the field
+        # below shows none of them: see exec(), where leaving that field alone
+        # has to mean "keep each trace's own tags" rather than "clear them all"
+        self.tags_differ = False
+
         # get the display values if traces have been provided
         if traces:
             trace = traces[0]
@@ -73,6 +78,7 @@ class TraceDialog(QDialog):
                     points = None
                 if trace.tags != tags:
                     tags = set()
+                    self.tags_differ = True
                 if trace.fill_mode[0] != fill_style:
                     fill_style = None
                 if trace.fill_mode[1] != fill_condition:
@@ -110,7 +116,16 @@ class TraceDialog(QDialog):
             shape_row.addStretch()
 
         tags_text = QLabel(self, text="Tags:")
-        self.tags_input = MultiInput(self, tags)
+        # sorted because trace.tags is a set: unsorted, a tag lands on a
+        # different row every time the dialog opens, so the row a user is part
+        # way through editing is not the row they left off on
+        self.tags_input = MultiInput(self, sorted(tags))
+
+        if self.tags_differ:
+            # the field is blank because there is no single set of tags to show,
+            # not because the traces are untagged
+            for w in self.tags_input.inputs:
+                w.setPlaceholderText("(tags differ -- left alone unless edited)")
 
         self.selected_input = QCheckBox("Fill when selected")
         if fill_condition in ("selected", "always"):
@@ -246,7 +261,17 @@ class TraceDialog(QDialog):
             trace.color = color
 
             # tags
+            #
+            # None means "leave each trace's tags as they are", the same thing a
+            # name of "*" and a color of None mean for their own fields. Tags
+            # need it for the case the other fields get for free: a selection
+            # that disagrees shows an empty field, and an empty field otherwise
+            # reads as a request to clear every tag. Editing a single trace, or
+            # a selection that agrees, still clears tags when the field is
+            # emptied -- there the field showed what it was clearing.
             tags = set(self.tags_input.getEntries())
+            if self.tags_differ and not self.tags_input.edited:
+                tags = None
             trace.tags = tags
 
             # shape

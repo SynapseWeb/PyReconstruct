@@ -1,9 +1,11 @@
 # Dependency updates.
 #
-# Grouped on purpose: one pull request per ecosystem per week, rather than one
-# per package. A single package's CVE list can otherwise open dozens of pull
-# requests in a morning. Security updates still arrive immediately, outside
-# this schedule, because Dependabot handles those separately.
+# Security updates only, since 2026-10-06. Both limits are 0, so Dependabot
+# opens no version-update pull requests: every run mailed everyone watching
+# the repo, and a config change or a stale branch made it open, close and
+# reopen pull requests in a burst. Versions are moved deliberately, by editing
+# the pins. Security updates still open a pull request when an advisory lands;
+# Dependabot handles those outside this schedule and outside the limit.
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -11,7 +13,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       routine:
         update-types: ["patch", "minor"]
@@ -46,6 +48,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 0
     groups:
       routine:
         update-types: ["patch", "minor", "major"]

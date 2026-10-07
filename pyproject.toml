@@ -34,7 +34,7 @@ dependencies = [
     "trimesh==3.18.1",
     "zarr==2.18.2",
     "numcodecs==0.15.0",
-    "cloud-volume==11.0.0",
+    "cloud-volume==12.15.1",
     "lxml==6.1.0",
     "tifffile==2024.9.20",
     "qdarkstyle==3.2.3",

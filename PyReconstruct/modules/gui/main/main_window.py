@@ -1067,7 +1067,7 @@ class MainWindow(QMainWindow):
                 ("Rectangle", current_shape == "rect"),
                 ("Ellipse", current_shape == "circle")
             )],
-            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))],
+            [("check", ("Automatically merge overlapping traces", self.series.getOption("auto_merge")))],
             [("check", ("Apply rolling average while scribbling", self.series.getOption("roll_average"))),
              ("int", self.series.getOption("roll_window"))]
         ]
@@ -1930,6 +1930,18 @@ class MainWindow(QMainWindow):
             [
                 ("check", ("Smooth cuts", self.series.getOption("roll_knife_average"))),
                 ("int", self.series.getOption("roll_knife_window"))
+            ],
+            [
+                "\nWhile a cut is being drawn:"
+            ],
+            [
+                (
+                    "check",
+                    (
+                        "Ignore the other mouse buttons",
+                        self.series.getOption("knife_ignore_secondary_click")
+                    )
+                )
             ]
         ]
         response, confirmed = QuickDialog.get(self, structure, "Knife")
@@ -1939,7 +1951,8 @@ class MainWindow(QMainWindow):
         self.series.setOption("knife_del_threshold", response[0])
         self.series.setOption("roll_knife_average", response[1][0][1])
         self.series.setOption("roll_knife_window", response[2])
-        
+        self.series.setOption("knife_ignore_secondary_click", response[3][0][1])
+
         self.seriesModified()
     
     def resetTracePalette(self):
@@ -2780,6 +2793,11 @@ class MainWindow(QMainWindow):
         for act_name, kbd in shortcuts_dict.items():
             getattr(self, act_name).setShortcut(kbd)
             self.series.setOption(act_name, kbd)
+
+        # the focus mode label names the focus_act shortcut
+        field = getattr(self, "field", None)
+        if field is not None:
+            field.updateFocusHint()
     
     def displayAbout(self):
         """Display the widget display information about the series."""

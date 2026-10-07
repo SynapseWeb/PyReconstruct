@@ -96,7 +96,7 @@ class MultiInput(QWidget):
         self.inputs = []
         for entry in entries:
             if self.is_combo:
-                w = CompleterBox(self, self.combo_items, allow_new=(not restrict_to_opts))
+                w = self.makeCombo()
                 w.setCurrentText(entry)
             else:
                 w = QLineEdit(self, text=entry)
@@ -138,10 +138,20 @@ class MultiInput(QWidget):
         else:
             w.textEdited.connect(mark)
 
+    def makeCombo(self):
+        """One dropdown row: the options, blank when free text is allowed."""
+        w = CompleterBox(self, self.combo_items, allow_new=(not self.restrict_to_opts))
+        if not self.restrict_to_opts:
+            # an editable combobox opens on its first option; a free-text row
+            # starts empty, like the line edit it replaces, so "+" does not
+            # silently propose the alphabetically first option
+            w.setCurrentText("")
+        return w
+
     def add(self):
         """Add a line edit row to the field."""
         if self.is_combo:
-            w = CompleterBox(self, self.combo_items)
+            w = self.makeCombo()
         else:
             w = QLineEdit(self)
         self._trackEdits(w)

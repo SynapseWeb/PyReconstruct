@@ -179,6 +179,17 @@ class SectionStates():
             updated_ztraces
         )
         
+    def dropStatesAfter(self, count : int):
+        """Drop the undo states saved after the first `count`.
+
+        Folds an action that saved more than one state into one undo step.
+        The current state is kept: it already reflects the finished action.
+
+            Params:
+                count (int): the number of undo states to keep
+        """
+        del self.undo_states[count:]
+
     def undoState(self, section : Section, series : Series) -> set:
         """Restore an undo state on the section.
         

@@ -47,7 +47,7 @@ jobs:
           - { os: macos-15-intel, plat: macOS,   arch: x86_64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0          # setuptools-scm needs full history + tags
 
@@ -113,7 +113,7 @@ jobs:
           ARCH="${{ matrix.arch }}" bash packaging/macos/make_dmg.sh
           mv PyReconstruct-*.dmg dist-assets/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: installer-${{ matrix.plat }}-${{ matrix.arch }}
           path: dist-assets/*
@@ -127,10 +127,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4          # needed for packaging/linux/ + release notes
+      - uses: actions/checkout@v7          # needed for packaging/linux/ + release notes
         with:
           fetch-depth: 0                   # full history + tags for the changelog link
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -173,7 +173,7 @@ jobs:
             fi
           } > release_body.md
           echo "----- release_body.md -----"; cat release_body.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           prerelease: false

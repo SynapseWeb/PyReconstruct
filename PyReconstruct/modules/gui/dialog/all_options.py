@@ -156,7 +156,7 @@ class AllOptionsDialog(QDialog):
                 ("Poly", trace_mode == "poly"),
                 ("Combo", trace_mode == "combo")
             )],
-            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge", use_defaults)))]
+            [("check", ("Automatically merge overlapping traces", self.series.getOption("auto_merge", use_defaults)))]
         ]
         def setOption(response):
             if response[0][0][1]:

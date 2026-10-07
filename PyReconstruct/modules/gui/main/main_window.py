@@ -1067,7 +1067,7 @@ class MainWindow(QMainWindow):
                 ("Rectangle", current_shape == "rect"),
                 ("Ellipse", current_shape == "circle")
             )],
-            [("check", ("Automatically merge selected traces", self.series.getOption("auto_merge")))],
+            [("check", ("Automatically merge overlapping traces", self.series.getOption("auto_merge")))],
             [("check", ("Apply rolling average while scribbling", self.series.getOption("roll_average"))),
              ("int", self.series.getOption("roll_window"))]
         ]

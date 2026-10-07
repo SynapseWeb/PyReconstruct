@@ -134,7 +134,8 @@ class PaletteButton(MoveableButton):
         t, confirmed = TraceDialog(
             self,
             [self.trace],
-            is_palette=True
+            is_palette=True,
+            used_tags=self.manager.mainwindow.series.data.usedTags(),
         ).exec()
         if not confirmed:
             return

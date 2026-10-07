@@ -29,13 +29,16 @@ class TraceDialog(QDialog):
             tags=None,
             is_palette=False,
             is_obj_list=False,
-            pos=None):
+            pos=None,
+            used_tags=None):
         """Create an attribute dialog.
         
             Params:
                 parent (QWidget): the parent widget
                 traces (list): a list of traces
                 pos (tuple): the point to create the dialog
+                used_tags (iterable): every tag already on a trace in the
+                    series, offered in the Tags rows (SeriesData.usedTags)
         """
         super().__init__(parent)
 
@@ -119,12 +122,28 @@ class TraceDialog(QDialog):
         # sorted because trace.tags is a set: unsorted, a tag lands on a
         # different row every time the dialog opens, so the row a user is part
         # way through editing is not the row they left off on
-        self.tags_input = MultiInput(self, sorted(tags))
+        #
+        # When the series already has tags, each row is a dropdown of them that
+        # completes as you type (issue #132). Typed text outside the list is
+        # still accepted, so a new tag is entered the same way as before.
+        known_tags = [t for t in (used_tags or ()) if t]
+        if known_tags:
+            self.tags_input = MultiInput(
+                self,
+                sorted(tags),
+                combo=True,
+                combo_items=known_tags,
+                restrict_to_opts=False,
+            )
+        else:
+            self.tags_input = MultiInput(self, sorted(tags))
 
         if self.tags_differ:
             # the field is blank because there is no single set of tags to show,
             # not because the traces are untagged
             for w in self.tags_input.inputs:
+                if self.tags_input.is_combo:
+                    w = w.lineEdit()
                 w.setPlaceholderText("(tags differ -- left alone unless edited)")
 
         self.selected_input = QCheckBox("Fill when selected")

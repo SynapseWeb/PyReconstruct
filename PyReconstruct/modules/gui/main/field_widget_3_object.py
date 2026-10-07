@@ -144,7 +144,8 @@ class FieldWidgetObject(FieldWidgetTrace):
             self, 
             name=displayed_name, 
             tags=tags, 
-            is_obj_list=True
+            is_obj_list=True,
+            used_tags=self.series.data.usedTags(),
         ).exec()
 
         if not confirmed:

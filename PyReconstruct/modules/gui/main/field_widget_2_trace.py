@@ -955,6 +955,7 @@ class FieldWidgetTrace(FieldWidgetBase):
         t, confirmed = TraceDialog(
             self,
             traces,
+            used_tags=self.series.data.usedTags(),
         ).exec()
         if not confirmed:
             return

@@ -5,6 +5,7 @@ import os
 import time
 
 from PySide6.QtWidgets import (
+    QLabel,
     QMainWindow, 
     QWidget,
     QGestureEvent,
@@ -98,6 +99,18 @@ class FieldWidget(QWidget, FieldWidgetView):
         # set the cursor
         self.mouse_mode = POINTER
         self.setCursor(QCursor(Qt.ArrowCursor))
+
+        # focus mode label, shown and placed by updateFocusHint. Its own style
+        # sheet so a theme's QLabel rule does not repaint it; plain text so an
+        # object name is never read as markup; clicks go through to the field.
+        self.focus_hint = QLabel(self)
+        self.focus_hint.setTextFormat(Qt.PlainText)
+        self.focus_hint.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.focus_hint.setStyleSheet(
+            "QLabel { background-color: rgba(0, 0, 0, 170); color: white;"
+            " border-radius: 4px; padding: 4px 8px; }"
+        )
+        self.focus_hint.hide()
 
         self.createField(series)
 

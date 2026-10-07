@@ -196,6 +196,37 @@ class SectionTableWidget(DataTable):
 
     # RIGHT CLICK FUNCTIONS
 
+    def loadSectionsWithProgress(self, section_numbers : list, text : str):
+        """Load each section in turn, with a progress bar for more than one.
+
+        Every operation here that edits a set of sections loads, changes and
+        saves each one, so a whole series takes a while with nothing on
+        screen. A single section (a lock checkbox toggle) shows no dialog.
+
+            Params:
+                section_numbers (list): the sections to load
+                text (str): the text for the progress bar
+            Returns:
+                (generator): yields (section number, section) pairs
+        """
+        progress = 0
+        final_value = len(section_numbers)
+        if final_value > 1:
+            progbar = getProgbar(text=text, cancel=False)
+        else:
+            progbar = None
+
+        try:
+            for snum in section_numbers:
+                yield snum, self.series.loadSection(snum)
+                progress += 1
+                if progbar is not None:
+                    progbar.setValue(progress/final_value * 100)
+        finally:
+            # make sure the dialog is closed if the loop exits early
+            if progbar is not None and progress < final_value:
+                progbar.close()
+
     def lockSections(self, lock=True, section_numbers=None, log_event=True):
         """Lock or unlock a set of sections.
         
@@ -210,31 +241,14 @@ class SectionTableWidget(DataTable):
         
         self.mainwindow.saveAllData()
 
-        # set up progress (skip for single sections, e.g. a lock checkbox toggle)
-        progress = 0
-        final_value = len(section_numbers)
-        if final_value > 1:
-            progbar = getProgbar(
-                text=f"{'Locking' if lock else 'Unlocking'} sections...",
-                cancel=False
-            )
-        else:
-            progbar = None
-
-        try:
-            for snum in section_numbers:
-                section = self.series.loadSection(snum)
-                section.align_locked = lock
-                section.save()
-                if log_event:
-                    self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
-                progress += 1
-                if progbar is not None:
-                    progbar.setValue(progress/final_value * 100)
-        finally:
-            # make sure the dialog is closed if the loop exits early
-            if progbar is not None and progress < final_value:
-                progbar.close()
+        for snum, section in self.loadSectionsWithProgress(
+            section_numbers,
+            f"{'Locking' if lock else 'Unlocking'} sections..."
+        ):
+            section.align_locked = lock
+            section.save()
+            if log_event:
+                self.series.addLog(None, snum, f"{'Lock' if lock else 'Unlock'} section")
 
         self.manager.updateSections(section_numbers)
         
@@ -269,8 +283,9 @@ class SectionTableWidget(DataTable):
 
         self.mainwindow.saveAllData()
 
-        for snum in section_numbers:
-            section = self.series.loadSection(snum)
+        for snum, section in self.loadSectionsWithProgress(
+            section_numbers, "Adjusting brightness/contrast..."
+        ):
             if b is not None:
                 if inc:
                     section.brightness += b
@@ -365,12 +380,14 @@ class SectionTableWidget(DataTable):
         modified_contours = set()
 
         # iterate through selected sections
-        for snum in section_numbers:
-            section = self.series.loadSection(snum)
+        for snum, section in self.loadSectionsWithProgress(
+            section_numbers, "Setting section thickness..."
+        ):
             section.thickness = thickness
             # flag all traces as modified because the thickness of the section has been changed
             section.modified_contours = set(section.contours.keys())
-            modified_contours.union(section.modified_contours)
+            # union() returns a new set, so the accumulator stayed empty
+            modified_contours |= section.modified_contours
             section.save()
             self.manager.updateObjects(section.modified_contours)
             if log_event:

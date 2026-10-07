@@ -2719,6 +2719,11 @@ class MainWindow(QMainWindow):
         for act_name, kbd in shortcuts_dict.items():
             getattr(self, act_name).setShortcut(kbd)
             self.series.setOption(act_name, kbd)
+
+        # the focus mode label names the focus_act shortcut
+        field = getattr(self, "field", None)
+        if field is not None:
+            field.updateFocusHint()
     
     def displayAbout(self):
         """Display the widget display information about the series."""

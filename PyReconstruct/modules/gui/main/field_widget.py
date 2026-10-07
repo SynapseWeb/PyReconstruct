@@ -5,6 +5,7 @@ import os
 import time
 
 from PySide6.QtWidgets import (
+    QLabel,
     QMainWindow, 
     QWidget,
     QGestureEvent,
@@ -99,6 +100,18 @@ class FieldWidget(QWidget, FieldWidgetView):
         self.mouse_mode = POINTER
         self.setCursor(QCursor(Qt.ArrowCursor))
 
+        # focus mode label, shown and placed by updateFocusHint. Its own style
+        # sheet so a theme's QLabel rule does not repaint it; plain text so an
+        # object name is never read as markup; clicks go through to the field.
+        self.focus_hint = QLabel(self)
+        self.focus_hint.setTextFormat(Qt.PlainText)
+        self.focus_hint.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.focus_hint.setStyleSheet(
+            "QLabel { background-color: rgba(0, 0, 0, 170); color: white;"
+            " border-radius: 4px; padding: 4px 8px; }"
+        )
+        self.focus_hint.hide()
+
         self.createField(series)
 
         self.show()
@@ -187,6 +200,31 @@ class FieldWidget(QWidget, FieldWidgetView):
         """
         # check what was clicked
         self.lclick, self.mclick, self.rclick = get_clicked(event)
+
+        # A knife stroke in progress owns the gesture.
+        #
+        # A drawing tablet's barrel button, or any stray second press, used to
+        # fall through the "favor right click" branch below, which clears
+        # `current_trace` and drops `lclick`, and then raise the field context
+        # menu over the object being cut. The cut was lost and a menu nobody
+        # asked for appeared under a still-moving pen, one release away from
+        # "Delete selected". Ignoring the press keeps the stroke alive;
+        # `knifeRelease` still commits it when the pen comes up.
+        #
+        # `lclick` is forced back on because the press may report only the
+        # secondary button, and `knifeRelease` reads `lclick` to decide whether
+        # to cut. Same idea as `is_line_tracing` in `exclude_context` below: a
+        # gesture that is already underway is not a place for a context menu.
+        # The knife's right-click dialog turns this off for anyone who wants the
+        # old escape hatch.
+        if (
+            self.rclick
+            and self.mouse_mode == KNIFE
+            and self.current_trace
+            and self.series.getOption("knife_ignore_secondary_click")
+        ):
+            self.lclick, self.rclick, self.mclick = True, False, False
+            return
 
         # ignore middle clicks combined with other clicks
         if self.mclick and (self.lclick or self.rclick):

@@ -2,13 +2,15 @@ import os
 import time
 
 from PySide6.QtWidgets import (
+    QLabel,
     QMainWindow,
     QTextEdit,
 )
 from PySide6.QtGui import (
     QPainter,
     QCursor,
-    QAction
+    QAction,
+    QKeySequence,
 )
 from PySide6.QtCore import (
     QTimer,
@@ -48,6 +50,8 @@ class FieldWidgetBase:
         self.propagate_tform : bool         = False
 
         self.focus_mode : bool              = False
+        # label over the field naming the focused object; built by FieldWidget
+        self.focus_hint : QLabel            = None
         self.hide_trace_layer : bool        = False
         self.show_all_traces : bool         = False
         self.hide_image : bool              = False
@@ -326,11 +330,49 @@ class FieldWidgetBase:
             self.mainwindow.mouse_palette.setScale()
 
         self.mainwindow.checkActions()
+        # every focus mode change and every resize ends in a redraw
+        self.updateFocusHint()
+
         if update:
             self.update()
 
         if generate_image:
             self.is_image_loading = False
+
+    def focusHintText(self) -> str:
+        """The focus mode label's text, naming the live `focus_act` shortcut."""
+        act = getattr(self.mainwindow, "focus_act", None)
+        key = act.shortcut().toString(QKeySequence.NativeText) if act is not None else ""
+        if key:
+            how = f"Press {key} to exit."
+        else:
+            how = "Use View > Toggle focus mode in the right-click menu to exit."
+        return f"Focus: {self.focus_mode}. {how}"
+
+    def updateFocusHint(self) -> None:
+        """Show the focus mode label while focus mode is on, centered at the top."""
+        hint = getattr(self, "focus_hint", None)
+        if hint is None:
+            return
+        if not self.focus_mode:
+            hint.hide()
+            return
+        text = self.focusHintText()
+        if hint.text() != text:
+            hint.setText(text)
+        # one line when it fits, wrapped to the field's width when it does not
+        hint.setWordWrap(False)
+        w = hint.sizeHint().width()
+        max_w = max(self.width() - 20, 1)
+        if w > max_w:
+            hint.setWordWrap(True)
+            w = max_w
+            hint.resize(w, hint.heightForWidth(w))
+        else:
+            hint.resize(w, hint.sizeHint().height())
+        hint.move((self.width() - w) // 2, 10)
+        hint.show()
+        hint.raise_()
     
     def clearStates(self) -> None:
         """Create/clear the states for each section."""

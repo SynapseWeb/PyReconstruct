@@ -323,7 +323,10 @@ def cutTraces(trace_list, cut_trace, del_threshold=0.0, closed=True):
     Returns:
         list: The newly cut traces
     """
-    if not trace_list or not cut_trace:
+    # A usable cut line needs at least two points; an empty or single-point
+    # cut (a knife click with no drag) would raise in shapely's LineString,
+    # so treat it as a no-op.
+    if not trace_list or not cut_trace or len(cut_trace) < 2:
         return trace_list
         
     if closed:

@@ -15,11 +15,13 @@ updates:
     groups:
       routine:
         update-types: ["patch", "minor"]
-    # Major versions of these four break the current stack (numpy 2.x fails at
-    # import under opencv-python 4.8; zarr 3 and opencv 5 change their APIs). Left
+    # Major versions of these break the current stack (numpy 2.x fails at
+    # import under opencv-python 4.8; zarr 3 and opencv 5 change their APIs;
+    # vedo, tifffile, trimesh and cloud-volume majors are untested here). Left
     # unignored they each hold a slot in open-pull-requests-limit indefinitely,
-    # which on 2026-09-01 blocked the numpy update that was actually needed. They
-    # are taken deliberately, by editing the pin, not by Dependabot.
+    # which on 2026-09-01 blocked the numpy update that was actually needed and
+    # on 2026-10-06 blocked the routine group. They are taken deliberately, by
+    # editing the pin, not by Dependabot.
     ignore:
       - dependency-name: "numpy"
         update-types: ["version-update:semver-major"]
@@ -28,6 +30,14 @@ updates:
       - dependency-name: "opencv-python-headless"
         update-types: ["version-update:semver-major"]
       - dependency-name: "zarr"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vedo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tifffile"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "trimesh"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "cloud-volume"
         update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"

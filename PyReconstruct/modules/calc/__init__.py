@@ -28,6 +28,9 @@ from .grid import (
     reducePoints,
     getExterior
 )
+from .polygon import (
+    uncuttable_closed_traces
+)
 from .image import (
     getImgDims,
     point_list_2_pix

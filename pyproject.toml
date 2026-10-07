@@ -31,7 +31,7 @@ dependencies = [
     "scipy==1.14.1",
     "scikit-image==0.23.2",
     "shapely==2.1.1",
-    "trimesh==3.18.1",
+    "trimesh==5.1.1",
     "zarr==2.18.2",
     "numcodecs==0.15.0",
     "cloud-volume==11.0.0",

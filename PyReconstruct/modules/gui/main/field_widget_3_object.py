@@ -258,6 +258,73 @@ class FieldWidgetObject(FieldWidgetTrace):
             )
 
         return deleted
+
+    def combineDuplicateTraces(self, choices: list) -> list:
+        """Combine the duplicate groups chosen in the duplicates list.
+
+        The callback behind the list's Combine buttons. Each choice is a
+        ``(group, keep)`` tuple naming the object to keep. Mirrors
+        deleteMalformedContours: save field data, combine through the series
+        (whose enumerateSections records one undo state for the batch), then
+        refresh the tables and field. Returns the choices actually combined
+        so the dialog can prune exactly those rows.
+
+        Series.combineDuplicateTraces refuses a group that would delete a
+        trace of a locked object, and one whose traces changed since the scan.
+        This layer says which, so no row goes uncombined without a reason.
+        """
+        if not choices:
+            return []
+
+        # the rows the series will refuse for a lock, named so the notice can
+        # explain itself; the series checks the lock again regardless
+        locked_names = set()
+        locked_rows = 0
+        for group, keep in choices:
+            kept = self.series.duplicateKeptMember(group["members"], keep)
+            names = {
+                m["name"] for m in group["members"] if m is not kept
+                and self.series.getAttr(m["name"], "locked")
+            }
+            if names:
+                locked_names |= names
+                locked_rows += 1
+
+        # persist field edits to section data before reloading sections
+        self.mainwindow.saveAllData()
+
+        applied = self.series.combineDuplicateTraces(
+            choices,
+            series_states=self.series_states,
+        )
+
+        if applied:
+            names = set()
+            for group, _keep in applied:
+                names.update(group["names"])
+            self.table_manager.updateObjects(names)
+            self.reload()
+            self.mainwindow.seriesModified(True)
+
+        if locked_names:
+            rows = "1 row was" if locked_rows == 1 else f"{locked_rows} rows were"
+            notify(
+                f"{rows} not combined because combining would delete "
+                "traces of locked objects:\n\n"
+                + "\n".join(sorted(locked_names))
+                + "\n\nUnlock them, or keep their names, and combine again."
+            )
+
+        missed = len(choices) - len(applied) - locked_rows
+        if missed > 0:
+            rows = "1 row was" if missed == 1 else f"{missed} rows were"
+            notify(
+                f"{rows} not combined because the traces changed after "
+                "the scan. Run the scan again to list them as "
+                "they are now."
+            )
+
+        return applied
     
     @object_function(update_objects=True, reload_field=False)
     def editComment(self, obj_names : list):

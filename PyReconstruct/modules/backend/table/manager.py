@@ -211,6 +211,27 @@ class TableManager():
         """
         self.recreateTables(refresh_data=True)
     
+    def refreshObjects(self, include):
+        """Reload the data for some objects only, then the object and trace lists.
+
+        The section, ztrace and flag lists are left alone: nothing they show
+        comes from object data, and the section values they show are not
+        reloaded here.
+
+            Params:
+                include (callable): takes an object name, returns True if that
+                    object should be reloaded (see SeriesData.refreshObjects)
+            Returns:
+                (set): the names reloaded
+        """
+        self.mainwindow.saveAllData()
+        refreshed = self.series.data.refreshObjects(include)
+
+        for table in self.tables["object"] + self.tables["trace"]:
+            self.recreateTable(table)
+
+        return refreshed
+
     def closeAll(self):
         """Close all tables."""
         for n, l in self.tables.items():

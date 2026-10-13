@@ -155,6 +155,57 @@ class SeriesData():
 
             self.updateSection(section, update_traces=True, log_events=False)
     
+    def refreshObjects(self, include) -> set:
+        """Refresh the data for some objects, leaving the others as they are.
+
+        Most of a full refresh is spent measuring traces (Feret diameters,
+        radius, centroid); reading the section files is the smaller part. This
+        still reads every section, so an object is found wherever its traces
+        are now, but measures only the traces of the objects asked for.
+
+        Section values (thickness, flags) are left as they are in the data:
+        the section and flag lists show them, and a full refresh reloads them.
+
+            Params:
+                include (callable): takes an object name, returns True if that
+                    object should be refreshed; asked about every object in the
+                    data and every object found on a section
+            Returns:
+                (set): the names refreshed, including any found on no section
+                    (those are removed from the data)
+        """
+        objects = self.data["objects"]
+
+        refreshed = {name for name in objects if include(name)}
+        skipped = set(objects) - refreshed
+
+        for name in refreshed:
+            del objects[name]
+
+        for snum, section in self.series.enumerateSections(
+            message="Refreshing object data..."
+        ):
+            ## addTrace needs the section's values
+            if section.n not in self.data["sections"]:
+                self.updateSection(section)
+
+            for name in section.contours:
+
+                if name in skipped:
+                    continue
+
+                if name not in refreshed:
+                    ## Not in the data before: ask once
+                    if not include(name):
+                        skipped.add(name)
+                        continue
+                    refreshed.add(name)
+
+                for trace in section.contours[name]:
+                    self.addTrace(trace, section)
+
+        return refreshed
+
     def updateSection(self, section : Section, update_traces=False, all_traces=True, log_events=True):
         """Update the existing section data.
         

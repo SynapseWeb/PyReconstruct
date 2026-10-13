@@ -410,15 +410,19 @@ class ObjectTableWidget(DataTable):
         
         return items
     
-    def passesFilters(self, name : str):
+    def passesFilters(self, name : str, use_trace_data=True):
         """Check if an object passes the filters.
         
             Params:
                 name (str): the name of the object
+                use_trace_data (bool): False to skip the checks that read the
+                    object's trace data (that it exists, its tags and its
+                    configuration), so an object whose data is stale or not
+                    yet loaded is judged on the other filters alone
         """
 
         ## Return False if obj does not exists
-        if name not in self.series.data["objects"]:
+        if use_trace_data and name not in self.series.data["objects"]:
             return False
         
         ## Check user columns
@@ -442,7 +446,7 @@ class ObjectTableWidget(DataTable):
         
         ## Check tags
         filters_len = len(self.tag_filters)
-        if filters_len != 0:
+        if use_trace_data and filters_len != 0:
             object_tags = self.series.data.getTags(name)
             object_len = len(object_tags)
             union_len = len(object_tags.union(self.tag_filters))
@@ -474,7 +478,7 @@ class ObjectTableWidget(DataTable):
                     return False
 
         ## Check config
-        if dict(self.columns)["Configuration"]:
+        if use_trace_data and dict(self.columns)["Configuration"]:
             
             req_configs = [
                 ori for ori, req
@@ -518,6 +522,41 @@ class ObjectTableWidget(DataTable):
             list(self.series.data["objects"].keys())
         )
         return sortList(filtered_list)
+
+    def isFiltered(self) -> bool:
+        """Return True if any filter can hide an object from this list.
+
+        Mirrors the checks in passesFilters: the curation and configuration
+        filters apply only while their column is shown.
+        """
+        columns = dict(self.columns)
+        return any((
+            bool(self.re_filters) and self.re_filters != {".*"},
+            bool(self.tag_filters),
+            bool(self.group_filters),
+            columns["Curate"] and (
+                bool(self.cr_user_filters) or not all(self.cr_status_filter.values())
+            ),
+            columns["Configuration"] and not all(self.config_filters.values()),
+            bool(self.user_col_filters),
+            bool(self.host_filters),
+        ))
+
+    def refresh(self):
+        """Reload the objects this list can show, or the whole series if unfiltered.
+
+        With a filter set, only the objects that pass it are reloaded, so a
+        refresh to check one object does not wait on the whole series. The tag
+        and configuration filters are not used to choose them: they read the
+        very data being reloaded, so an object could start passing them.
+        """
+        if not self.isFiltered():
+            super().refresh()
+            return
+
+        self.manager.refreshObjects(
+            lambda name: self.passesFilters(name, use_trace_data=False)
+        )
 
     def createTable(self):
         """Create the table widget."""

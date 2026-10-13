@@ -215,9 +215,9 @@ class TableManager():
         """Reload the data for some objects only, then the lists that show it.
 
         Section thicknesses are reloaded as well (see
-        SeriesData.refreshObjects), so the section list rows of any section
-        whose thickness changed are updated. The ztrace and flag lists are
-        left alone: nothing they show is reloaded here.
+        SeriesData.refreshObjects). If none changed, only the object and trace
+        lists are recreated. If any did, every list is: object volumes, the
+        section list and ztrace distances are all computed from thickness.
 
             Params:
                 include (callable): takes an object name, returns True if that
@@ -232,13 +232,17 @@ class TableManager():
 
         refreshed = self.series.data.refreshObjects(include)
 
-        for table in self.tables["object"] + self.tables["trace"]:
-            self.recreateTable(table)
+        thickness_changed = any(
+            thickness.get(snum) != d["thickness"]
+            for snum, d in sections.items()
+        )
+        if thickness_changed:
+            tables = [t for l in self.tables.values() for t in l]
+        else:
+            tables = self.tables["object"] + self.tables["trace"]
 
-        self.updateSections([
-            snum for snum, d in sections.items()
-            if thickness.get(snum) != d["thickness"]
-        ])
+        for table in tables:
+            self.recreateTable(table)
 
         return refreshed
 

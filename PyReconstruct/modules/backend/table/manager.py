@@ -212,23 +212,33 @@ class TableManager():
         self.recreateTables(refresh_data=True)
     
     def refreshObjects(self, include):
-        """Reload the data for some objects only, then the object and trace lists.
+        """Reload the data for some objects only, then the lists that show it.
 
-        The section, ztrace and flag lists are left alone: nothing they show
-        comes from object data, and the section values they show are not
-        reloaded here.
+        Section thicknesses are reloaded as well (see
+        SeriesData.refreshObjects), so the section list rows of any section
+        whose thickness changed are updated. The ztrace and flag lists are
+        left alone: nothing they show is reloaded here.
 
             Params:
                 include (callable): takes an object name, returns True if that
-                    object should be reloaded (see SeriesData.refreshObjects)
+                    object should be reloaded
             Returns:
                 (set): the names reloaded
         """
         self.mainwindow.saveAllData()
+
+        sections = self.series.data["sections"]
+        thickness = {snum: d["thickness"] for snum, d in sections.items()}
+
         refreshed = self.series.data.refreshObjects(include)
 
         for table in self.tables["object"] + self.tables["trace"]:
             self.recreateTable(table)
+
+        self.updateSections([
+            snum for snum, d in sections.items()
+            if thickness.get(snum) != d["thickness"]
+        ])
 
         return refreshed
 

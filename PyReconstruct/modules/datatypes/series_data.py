@@ -163,8 +163,10 @@ class SeriesData():
         still reads every section, so an object is found wherever its traces
         are now, but measures only the traces of the objects asked for.
 
-        Section values (thickness, flags) are left as they are in the data:
-        the section and flag lists show them, and a full refresh reloads them.
+        Each section's thickness is refreshed too, as volumes and flat areas
+        are computed from it; this changes those values for every object on
+        a section whose thickness changed. The other section values are left
+        for a full refresh.
 
             Params:
                 include (callable): takes an object name, returns True if that
@@ -185,8 +187,9 @@ class SeriesData():
         for snum, section in self.series.enumerateSections(
             message="Refreshing object data..."
         ):
-            ## addTrace needs the section's values
-            if section.n not in self.data["sections"]:
+            if section.n in self.data["sections"]:
+                self.data["sections"][section.n]["thickness"] = section.thickness
+            else:
                 self.updateSection(section)
 
             for name in section.contours:

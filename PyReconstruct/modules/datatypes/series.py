@@ -943,7 +943,11 @@ class Series():
         if z_points is None:
             z_points = []
 
-        if not z_points:  # append name with "_zlen" if creating from obj
+        # Decide this once, before the from-object branch below fills z_points:
+        # the alignment choice at the end must not see the filled list.
+        from_object = not z_points
+
+        if from_object:  # append name with "_zlen" if creating from obj
             ztrace_name = f"{obj_name}_zlen"
         else:  # use tracing_trace name
             ztrace_name = obj_name
@@ -954,7 +958,7 @@ class Series():
             del(self.ztraces[ztrace_name])
             if log_event: self.addLog(ztrace_name, None, "Updated ztrace")
 
-        if not z_points:  # generate points from already traced object if non provided
+        if from_object:  # generate points from already traced object if non provided
 
             ## If create on midpoints, make one point per section
 
@@ -996,7 +1000,7 @@ class Series():
         )
 
         ## Assign alignement to ztrace 
-        if not z_points:  # use obj alignment
+        if from_object:  # use obj alignment
             alignment = self.getAttr(obj_name, "alignment")
         else:  # use current alignment 
             alignment = self.alignment

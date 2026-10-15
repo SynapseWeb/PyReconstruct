@@ -368,7 +368,9 @@ class FieldWidgetObject(FieldWidgetTrace):
             self.series.setAttr(obj_name, "alignment", alignment)
             self.series.addLog(obj_name, None, "Edit default alignment")
         
-        self.table_manager.refresh()
+        # remeasure these objects' traces under the new alignment
+        edited = set(obj_names)
+        self.table_manager.refreshObjects(lambda name: name in edited)
 
         return True
     

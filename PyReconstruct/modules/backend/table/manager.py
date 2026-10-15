@@ -211,6 +211,41 @@ class TableManager():
         """
         self.recreateTables(refresh_data=True)
     
+    def refreshObjects(self, include):
+        """Reload the data for some objects only, then the lists that show it.
+
+        Section thicknesses are reloaded as well (see
+        SeriesData.refreshObjects). If none changed, only the object and trace
+        lists are recreated. If any did, every list is: object volumes, the
+        section list and ztrace distances are all computed from thickness.
+
+            Params:
+                include (callable): takes an object name, returns True if that
+                    object should be reloaded
+            Returns:
+                (set): the names reloaded
+        """
+        self.mainwindow.saveAllData()
+
+        sections = self.series.data["sections"]
+        thickness = {snum: d["thickness"] for snum, d in sections.items()}
+
+        refreshed = self.series.data.refreshObjects(include)
+
+        thickness_changed = any(
+            thickness.get(snum) != d["thickness"]
+            for snum, d in sections.items()
+        )
+        if thickness_changed:
+            tables = [t for l in self.tables.values() for t in l]
+        else:
+            tables = self.tables["object"] + self.tables["trace"]
+
+        for table in tables:
+            self.recreateTable(table)
+
+        return refreshed
+
     def closeAll(self):
         """Close all tables."""
         for n, l in self.tables.items():

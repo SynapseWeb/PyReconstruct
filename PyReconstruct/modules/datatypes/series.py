@@ -2420,10 +2420,19 @@ class Series():
             Params:
                 other (series): the series to import transforms from
                 import_as (list): the list of (alignment to import, name for alignment in current series)
-                series_states (dict): optiona dict of undo states for GUI
+                series_states (SeriesStates): the series undo states from the GUI
                 log_event (bool): True if the event should be logged
         """
-        for s_snum, s_section in self.enumerateSections(message="Importing alignments..."):
+        # breakable=False: this rewrites section.tforms on every section, so the
+        # undo has to be all-or-nothing. A breakable series state can be
+        # dissolved into per-section undos (SeriesStates.undoSection), which
+        # would leave the imported alignment present on some sections and absent
+        # on others, a state the Series.alignments property rejects outright.
+        for s_snum, s_section in self.enumerateSections(
+            message="Importing alignments...",
+            series_states=series_states,
+            breakable=False
+        ):
             if s_snum in other.sections:
                 o_section = other.loadSection(s_snum)
                 mags_match = abs(o_section.mag - s_section.mag) <= 1e-8

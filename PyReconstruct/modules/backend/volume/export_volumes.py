@@ -34,7 +34,7 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     reportSmoothingProblems([o.smoothing_problem for o in obj_data.values()], notify_user)
 
-    ## Name the files, and refuse to save two objects to one file
+    ## Name the files, and refuse to save two objects to one file or over a file already there
 
     output_files = {}
 
@@ -46,15 +46,23 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
             output_files[obj_name] = f"{obj_name}{suffix}.{export_type}"
 
-    clash = findExportClash(output_files)
+    clash = findExportClash(output_files, output_dir)
 
     if clash:
 
-        first, second = clash
-        message = (
-            f"The objects were not exported: {first} and {second} would both be saved as "
-            f"{output_files[first]}. Rename one of them, or export them to separate folders."
-        )
+        first, second, file_name = clash
+
+        if first is None:
+            message = (
+                f"The objects were not exported: {second} would be saved as {file_name}, which is "
+                "already in the folder. Move that file, or export to another folder."
+            )
+
+        else:
+            message = (
+                f"The objects were not exported: {first} and {second} would both be saved as "
+                f"{file_name}. Rename one of them, or export them to separate folders."
+            )
 
         if notify_user:
             notify(message)
@@ -167,11 +175,14 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
     return obj_data
 
 
-def findExportClash(file_names: dict):
-    """Return the first two keys that would be exported to the same file, or None.
+def findExportClash(file_names: dict, folder=None):
+    """Return the first two keys that would be exported to the same file, and that file, or None.
+
+        A file already in the folder clashes as if exported first, under the key None.
 
         Params:
             file_names (dict): key : the file name it is exported under
+            folder (str or Path): the folder it is exported to, or None to check the names only
     """
     exported = {}
 
@@ -180,7 +191,10 @@ def findExportClash(file_names: dict):
         folded = file_name.casefold()  # file names ignore case on macOS and Windows
 
         if folded in exported:
-            return exported[folded], key
+            return exported[folded], key, file_name
+
+        if folder is not None and (Path(folder) / file_name).exists():
+            return None, key, file_name
 
         exported[folded] = key
 

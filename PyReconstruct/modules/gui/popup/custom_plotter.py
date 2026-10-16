@@ -1287,7 +1287,7 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         # two objects saved to one file would overwrite each other
         clash = self.plt.objs.exportClash()
         if clash:
-            first, second = clash
+            first, second, _ = clash
             notify(
                 f"The scene was not exported: {first.name} and {second.name} would both be "
                 f"saved as {first.export_name}.obj. Remove one of them from the scene, "
@@ -1305,6 +1305,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         combo_obj_fp = Path(fp)
         export_dir = combo_obj_fp.parent
+
+        # each object is saved to its own files first, which would replace a file already there
+        clash = self.plt.objs.exportClash(export_dir)
+        if clash:
+            _, obj, file_name = clash
+            notify(
+                f"The scene was not exported: {obj.name} would be saved as {file_name} while the "
+                "scene is made, and that file is already in the folder. Move it, or save the "
+                "scene in another folder."
+            )
+            return
 
         obj_files = self.plt.objs.exportAsObjs(export_dir)
         mtl_files = [f.with_suffix(".mtl") for f in obj_files]
@@ -1616,9 +1627,20 @@ class SceneObjectList():
         
         return host_group
 
-    def exportClash(self):
-        """Return the first two objects that would be exported to the same file, or None."""
-        return findExportClash({obj: obj.export_name for obj in self.scene_objects.values()})
+    def exportClash(self, folder=None):
+        """Return the first two objects that would be exported to the same file, and that file, or None.
+
+            With a folder, an object whose obj or mtl file is already in it clashes with None.
+        """
+        for extension in ("obj", "mtl"):
+            clash = findExportClash(
+                {obj: f"{obj.export_name}.{extension}" for obj in self.scene_objects.values()},
+                folder,
+            )
+            if clash:
+                return clash
+
+        return None
 
     def exportAsObjs(self, export_dir):
         """Export scene objects as obj and mtl files."""

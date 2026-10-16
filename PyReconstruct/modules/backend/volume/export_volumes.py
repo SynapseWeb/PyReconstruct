@@ -1,5 +1,6 @@
 """Export 3D objects."""
 
+import csv
 from pathlib import Path
 from typing import List, Union
 
@@ -91,8 +92,7 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: bool=True) -> None:
     """Export quantitative data from meshes."""
 
-    sep = ","
-    csv_str = f"Series{sep}Name{sep}MeshType{sep}SurfaceArea{sep}Volume{sep}ZtraceSmoothing\n"
+    rows = [["Series", "Name", "MeshType", "SurfaceArea", "Volume", "ZtraceSmoothing"]]
     series_code = series.code
 
     errors = {}
@@ -111,7 +111,7 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
             volume = round(tm.volume, 5)
 
             # the mesh is smoothed along a ztrace if ZtraceSmoothing is not blank
-            csv_str += f"{series_code}{sep}{obj}{sep}{obj_type}{sep}{surface_area}{sep}{volume}{sep}{obj_data.smoothing}\n"
+            rows.append([series_code, obj, obj_type, surface_area, volume, obj_data.smoothing])
 
         except Exception as e:
 
@@ -121,8 +121,9 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
 
     if not errors:
 
-        with open(output_fp, "w") as fp:
-            fp.write(csv_str)
+        # a field with a comma in it, e.g. the label smooth-hand,edit, is quoted
+        with open(output_fp, "w", newline="") as fp:
+            csv.writer(fp, lineterminator="\n").writerows(rows)
 
         if notify_user:
             notify(f"Data exported to:\n\n{Path(output_fp).absolute()}\n")

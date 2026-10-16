@@ -34,22 +34,46 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     reportSmoothingProblems([o.smoothing_problem for o in obj_data.values()], notify_user)
 
+    ## Name the files, and refuse to save two objects to one file
+
+    output_files = {}
+
+    for obj_name, obj_3D in obj_data.items():
+
+        if type(obj_3D) is Surface or type(obj_3D) is Spheres:
+
+            # a smoothed mesh says so in its name, e.g. dendrite_smooth4.obj
+            suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
+            output_files[obj_name] = f"{obj_name}{suffix}.{export_type}"
+
+    clash = findExportClash(output_files)
+
+    if clash:
+
+        first, second = clash
+        message = (
+            f"The objects were not exported: {first} and {second} would both be saved as "
+            f"{output_files[first]}. Rename one of them, or export them to separate folders."
+        )
+
+        if notify_user:
+            notify(message)
+
+        else:
+            print(message)
+
+        return
+
     ## Iterate through objects and export 3D meshes
 
     output_directory = Path(output_dir)
 
-    for obj_name, obj_3D in obj_data.items():
+    for obj_name, file_name in output_files.items():
 
-        # a smoothed mesh says so in its name, e.g. dendrite_smooth4.obj
-        suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
-        output_file = output_directory / f"{obj_name}{suffix}.{export_type}"
-
-        if type(obj_3D) is Surface or type(obj_3D) is Spheres:
-
-            obj_3D.exportTrimesh(
-                output_file,
-                export_type,
-            )
+        obj_data[obj_name].exportTrimesh(
+            output_directory / file_name,
+            export_type,
+        )
 
     if notify_user:
         
@@ -141,6 +165,26 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
             obj_data.addTrace(trace, snum, tform)
     
     return obj_data
+
+
+def findExportClash(file_names: dict):
+    """Return the first two keys that would be exported to the same file, or None.
+
+        Params:
+            file_names (dict): key : the file name it is exported under
+    """
+    exported = {}
+
+    for key, file_name in file_names.items():
+
+        folded = file_name.casefold()  # file names ignore case on macOS and Windows
+
+        if folded in exported:
+            return exported[folded], key
+
+        exported[folded] = key
+
+    return None
 
 
 def reportSmoothingProblems(problems: list, notify_user: bool = True) -> None:

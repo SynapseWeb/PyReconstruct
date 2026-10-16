@@ -19,7 +19,8 @@ from PyReconstruct.modules.backend.volume import (
     convert_vedo_to_tm,
     return_mesh_mtl,
     combine_mtl_files,
-    combine_obj_files
+    combine_obj_files,
+    findExportClash
 )
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
@@ -108,7 +109,14 @@ class VPlotter(vedo.Plotter):
 
         pt = event.picked3d                # 3d coords of point under mouse
         x, y, s = self.getFieldCoords(msh, pt)
-        txt = f"{name}\nsection {s}\nx={x:.3f} y={y:.3f}"
+        section_txt = f"section {s}"
+        if obj.series_fp == self.series.jser_fp and s not in self.series.sections:
+            section_txt += " (removed)"
+        if obj.smoothing:
+            # a point on a mesh smoothed along a ztrace has no exact field x/y
+            txt = f"{name}\n{obj.smoothing}\n{section_txt}"
+        else:
+            txt = f"{name}\n{section_txt}\nx={x:.3f} y={y:.3f}"
         self.pos_text.text(txt)                    # update text message
 
         self.render()
@@ -182,9 +190,13 @@ class VPlotter(vedo.Plotter):
                 return
             pt = event.picked3d                # 3d coords of point under mouse
             x, y, s = self.getFieldCoords(msh, pt)
-            
-            self.mainwindow.field.moveTo(s, x, y)
-            self.mainwindow.activateWindow()
+
+            # the mesh was generated before the section was deleted
+            if s not in self.series.sections:
+                notify(f"Section {s} no longer exists. Generate {self.objs[msh].name} again to update the 3D scene.")
+            else:
+                self.mainwindow.field.moveTo(s, x, y)
+                self.mainwindow.activateWindow()
         
         msh = event.actor
         if not msh:
@@ -1606,13 +1618,7 @@ class SceneObjectList():
 
     def exportClash(self):
         """Return the first two objects that would be exported to the same file, or None."""
-        exported = {}
-        for obj in self.scene_objects.values():
-            key = obj.export_name.casefold()  # file names ignore case on macOS and Windows
-            if key in exported:
-                return exported[key], obj
-            exported[key] = obj
-        return None
+        return findExportClash({obj: obj.export_name for obj in self.scene_objects.values()})
 
     def exportAsObjs(self, export_dir):
         """Export scene objects as obj and mtl files."""

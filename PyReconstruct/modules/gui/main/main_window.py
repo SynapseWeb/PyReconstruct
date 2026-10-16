@@ -1489,6 +1489,10 @@ class MainWindow(QMainWindow):
         #     if button.isChecked():
         #         self.series.current_trace = button.trace
         self.field.section.save(update_series_data=False)
+        # the b section can hold unsaved edits (flicker changes section
+        # without saving), so it is written too
+        if self.field.b_section:
+            self.field.b_section.save(update_series_data=False)
         self.series.save()
     
     def backup(self, check_auto=False, comment=""):

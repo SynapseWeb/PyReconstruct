@@ -357,6 +357,9 @@ class Section():
     def tformsModified(self, scaling_only=False):
         if len(self.tforms_values_copy) != len(self.tforms):
             return True
+        # a renamed alignment keeps its matrix, so compare the names too
+        if not scaling_only and self.tforms_names_copy != list(self.tforms):
+            return True
         for t1, t2 in zip(self.tforms_values_copy, self.tforms.values()):
             if scaling_only:
                 if abs(t1.det - t2.det) > 1e-6:
@@ -372,6 +375,7 @@ class Section():
         self.removed_traces = []
         self.modified_contours = set()
         self.tforms_values_copy = [t.copy() for t in self.tforms.values()]
+        self.tforms_names_copy = list(self.tforms)
         self.flags_modified = False
     
     def setMag(self, new_mag : float):

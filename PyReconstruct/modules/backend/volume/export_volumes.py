@@ -32,6 +32,8 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
         obj_data[obj_name] = get_3D_mesh(series, obj_name)
 
+    reportSmoothingProblems([o.smoothing_problem for o in obj_data.values()], notify_user)
+
     ## Iterate through objects and export 3D meshes
 
     output_directory = Path(output_dir)
@@ -62,12 +64,14 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
     series_code = series.code
 
     errors = {}
+    problems = []
 
     for obj in obj_names:
 
         try:
 
             obj_data = get_3D_mesh(series, obj)
+            problems.append(obj_data.smoothing_problem)
             obj_type = type(obj_data).__name__.lower()
             tm = obj_data.generateTrimesh()
 
@@ -80,6 +84,8 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
         except Exception as e:
 
             errors[obj] = e
+
+    reportSmoothingProblems(problems, notify_user)
 
     if not errors:
 
@@ -113,7 +119,7 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
 
     ## Shifts if the object is smoothed along a ztrace
 
-    offsets, obj_data.smoothing = series.getZtraceSmoothing(obj_name)
+    obj_data.offsets, obj_data.smoothing, obj_data.smoothing_problem = series.getZtraceSmoothing(obj_name)
 
     ## Iterate through sections and collect data
 
@@ -127,7 +133,7 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
             continue
 
         ## Get alignment and smoothing shift
-        tform = meshTform(series, obj_name, snum, section, offsets)
+        tform = meshTform(series, obj_name, snum, section, obj_data.offsets)
 
         for trace in section.contours[obj_name]:
 
@@ -135,6 +141,24 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
             obj_data.addTrace(trace, snum, tform)
     
     return obj_data
+
+
+def reportSmoothingProblems(problems: list, notify_user: bool = True) -> None:
+    """Say which objects were meshed as traced because their ztrace smoothing cannot be applied."""
+
+    problems = [p for p in problems if p]
+
+    if not problems:
+
+        return
+
+    message = "\n\n".join(problems)
+
+    if notify_user:
+        notify(message)
+
+    else:
+        print(message)
 
 
 def convert_vedo_to_tm(obj) -> trimesh.Trimesh:

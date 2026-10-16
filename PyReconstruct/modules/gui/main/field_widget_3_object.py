@@ -1,5 +1,4 @@
 import math
-from statistics import median
 
 from .context_menu_list import get_context_menu_list_obj
 
@@ -395,20 +394,19 @@ class FieldWidgetObject(FieldWidgetTrace):
             elif f"{obj_names[0]}_zlen" in self.series.ztraces:
                 source = f"{obj_names[0]}_zlen"
 
-        obj_sections = set()
-        for name in obj_names:
-            if name in self.series.data["objects"]:
-                obj_sections.update(self.series.data["objects"][name].traces)
-        thickness = median(
-            self.series.data["sections"][snum]["thickness"] for snum in obj_sections
-        ) if obj_sections else self.series.avg_thickness
+        # how deep the window reaches depends on how far apart the ztrace's points are
+        span = self.series.ztraceWindowSpan(source, window) if source in self.series.ztraces else None
+        if span is None:
+            reach = "The confirmation shows how far N points reach on the chosen ztrace."
+        else:
+            reach = f"On ztrace {source}, N = {window} points span about {span:.3g} um."
 
         structure = [
             ["Source ztrace:", (True, "combo", ztrace_names, source)],
             ["Target ztrace (optional):", ("combo", ztrace_names, target)],
-            ["Window N (sections):", (True, "int", window)],
-            [f"Sections here are {thickness:.3g} um thick, so N = 4 spans {4 * thickness:.3g} um."],
-            ["Bends shorter than about 3N sections are smoothed away, real or not. Use the smallest N that removes the jitter."],
+            ["Window N (ztrace points):", (True, "int", window)],
+            [reach],
+            ["Bends shorter than about 3N ztrace points are smoothed away, real or not. Use the smallest N that removes the jitter."],
         ]
         response, confirmed = QuickDialog.get(self, structure, "Smooth Along Ztrace")
         if not confirmed:
@@ -431,7 +429,8 @@ class FieldWidgetObject(FieldWidgetTrace):
         if target:
             how = f"toward ztrace {target}"
         else:
-            how = f"with a window of {window} sections ({window * thickness:.3g} um)"
+            span = self.series.ztraceWindowSpan(source, window)
+            how = f"with a window of {window} ztrace points (about {span:.3g} um on this ztrace)"
         message = (
             f"Smooth {', '.join(obj_names)} along ztrace {source} {how}. "
             f"The largest shift is {largest:.3g} um.\n\n"

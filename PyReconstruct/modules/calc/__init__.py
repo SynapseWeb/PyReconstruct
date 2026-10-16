@@ -37,6 +37,7 @@ from .image import (
 )
 from .correlation import correlate
 from .smooth import (
+    windowDepthSpan,
     ztraceResiduals,
     ztraceDifferences,
     sectionOffsets

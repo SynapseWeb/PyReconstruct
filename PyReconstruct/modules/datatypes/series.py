@@ -23,6 +23,7 @@ from .host_tree import HostTree
 from PyReconstruct.modules.calc import (
     area,
     lineDistance,
+    windowDepthSpan,
     ztraceResiduals,
     ztraceDifferences,
     sectionOffsets
@@ -1034,6 +1035,13 @@ class Series():
                 for g in groups:
                     self.ztrace_groups.add(g, new_name)
                 self.ztrace_groups.removeObject(name)
+                # objects smoothed along the ztrace follow it to the new name
+                for obj_name in self._smoothedAlong(name):
+                    smoothing = dict(self.getAttr(obj_name, "3D_smooth"))
+                    for key in ("source", "target"):
+                        if smoothing[key] == name:
+                            smoothing[key] = new_name
+                    self.setAttr(obj_name, "3D_smooth", smoothing)
         if new_color:
             ztrace.color = new_color
         
@@ -1084,11 +1092,20 @@ class Series():
             if log_event:
                 self.addLog(name, None, "Smooth ztrace")
 
-    def deleteZtraces(self, names : list, log_event=True):
-        """Delete a list of ztraces:
+    def deleteZtraces(self, names : list, log_event=True) -> list:
+        """Delete a list of ztraces.
+
+        Objects smoothed along or toward a deleted ztrace are meshed as traced again.
+
             Params:
                 names (list): the names of the ztraces
+            Returns:
+                (list): the objects whose ztrace smoothing was removed
         """
+        unsmoothed = sorted(set(obj for name in names for obj in self._smoothedAlong(name)))
+        if unsmoothed:
+            self.removeZtraceSmoothing(unsmoothed, log_event)
+
         for name in names:
             del(self.ztraces[name])
             self.modified_ztraces.add(name)
@@ -1096,6 +1113,17 @@ class Series():
 
             if log_event:
                 self.addLog(name, None, "Delete ztrace")
+
+        return unsmoothed
+
+    def _smoothedAlong(self, ztrace_name : str) -> list:
+        """List the objects smoothed along or toward a ztrace."""
+        return [
+            obj_name for obj_name, attrs in self.obj_attrs.items()
+            if attrs.get("3D_smooth") and ztrace_name in (
+                attrs["3D_smooth"]["source"], attrs["3D_smooth"]["target"]
+            )
+        ]
 
     def _alignment3D(self, name : str, ztrace=False) -> str:
         """Return the alignment the 3D scene places an object or ztrace in."""
@@ -1119,7 +1147,7 @@ class Series():
                 obj_names (list): the objects to smooth
                 source (str): the ztrace the objects were traced along
                 target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
-                window (int): the smoothing window, in sections
+                window (int): the smoothing window, in ztrace points
             Returns:
                 (list): one message per problem; empty if smoothing can run
         """
@@ -1128,7 +1156,7 @@ class Series():
             if z not in self.ztraces:
                 return [f"Ztrace {z} does not exist."]
         if window < 2:
-            return ["The window must be at least 2 sections."]
+            return ["The window must be at least 2 ztrace points."]
 
         alignments = self.alignments
         z_align = self._alignment3D(source, ztrace=True)
@@ -1189,7 +1217,7 @@ class Series():
                 obj_name (str): the object to smooth
                 source (str): the ztrace the object was traced along
                 target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
-                window (int): the smoothing window, in sections
+                window (int): the smoothing window, in ztrace points
             Returns:
                 (dict): section number : (dx, dy) in field coordinates
         """
@@ -1204,6 +1232,25 @@ class Series():
 
         return sectionOffsets(residuals, self.sections)
 
+    def ztraceWindowSpan(self, ztrace_name : str, window : int) -> float:
+        """Return how far in depth a smoothing window reaches on a ztrace.
+
+            Params:
+                ztrace_name (str): the ztrace
+                window (int): the smoothing window, in ztrace points
+            Returns:
+                (float): the median depth a window of its points spans, in um; None if it has fewer than 2 points
+        """
+        zvalues = self.getZValues()
+        depths = [
+            zvalues[snum] for _, _, snum in self.ztraces[ztrace_name].points
+            if snum in zvalues
+        ]
+        if len(depths) < 2:
+            return None
+
+        return windowDepthSpan(depths, window)
+
     def getZtraceSmoothing(self, obj_name : str) -> tuple:
         """Return the shifts the 3D scene and mesh export apply to an object.
 
@@ -1212,22 +1259,22 @@ class Series():
             Returns:
                 (dict): section number : (dx, dy), or None if the object is meshed as traced
                 (str): the label for an exported mesh, e.g. smooth4; empty if not smoothed
+                (str): why a smoothing setting cannot be applied; empty if it can or there is none
         """
         smoothing = self.getAttr(obj_name, "3D_smooth")
         if not smoothing:
-            return None, ""
+            return None, "", ""
 
         source, target, window = smoothing["source"], smoothing["target"], smoothing["window"]
         problems = self.ztraceSmoothingProblems([obj_name], source, target, window)
         if problems:
-            print(f"{obj_name} is meshed as traced, without smoothing:")
-            print("\n".join(problems))
-            return None, ""
+            problem = f"{obj_name} is meshed as traced, without ztrace smoothing: " + " ".join(problems)
+            return None, "", problem
 
         offsets = self.ztraceSmoothingOffsets(obj_name, source, target, window)
         label = f"smooth-{target}" if target else f"smooth{window}"
 
-        return offsets, label
+        return offsets, label, ""
 
     def setZtraceSmoothing(self, obj_names : list, source : str, target : str, window : int, log_event=True):
         """Smooth objects in the 3D scene and mesh export along a ztrace.
@@ -1240,7 +1287,7 @@ class Series():
                 obj_names (list): the objects to smooth
                 source (str): the ztrace the objects were traced along
                 target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
-                window (int): the smoothing window, in sections
+                window (int): the smoothing window, in ztrace points
                 log_event (bool): True if event should be logged
         """
         target = target or None
@@ -2376,11 +2423,16 @@ class Series():
     
     def importObjAttrs(self, other, regex_filters=[], restrict_to=[]):
         """Import the object attributes from another series.
+
+        Ztrace smoothing is not imported: its ztraces may be renamed or missing here.
         
             Params:
                 other (Series): the other series
                 regex_filters (list): the regex filters for the objects to include
+            Returns:
+                (list): the objects whose ztrace smoothing was not imported
         """
+        skipped = []
 
         for obj_name, obj_data in other.obj_attrs.items():
 
@@ -2403,6 +2455,10 @@ class Series():
                 if attr_name == "user_columns":
                     continue
 
+                if attr_name == "3D_smooth":
+                    skipped.append(obj_name)
+                    continue
+
                 if obj_name not in self.obj_attrs:
                     self.obj_attrs[obj_name] = {}
                 
@@ -2414,6 +2470,8 @@ class Series():
                     other_date = attr_value[-1]
                     if other_date >= self_date:
                         self.obj_attrs[obj_name]["curation"] = attr_value
+
+        return skipped
     
     def importTraces(
             self,
@@ -2445,6 +2503,8 @@ class Series():
                 keep_below (str): the series that is favored in the case of a conflict (overlap not reaching the threshold; "self", "other", or "")
                 series_states (dict): optional dict of undo states for GUI
                 log_event (bool): True if event should be logged
+            Returns:
+                (list): the objects whose ztrace smoothing was not imported
         """
         # # ensure that the two series have the same sections
         # if sorted(list(self.sections.keys())) != sorted(list(other.sections.keys())):
@@ -2501,11 +2561,12 @@ class Series():
                 restrict_to += other_groups[gf]
 
         ## Import ALL object attributes
+        skipped = []
         if import_obj_attrs:
             
             self.importObjectGroups(other, regex_filters, group_filters)
             self.importHostTree(other, regex_filters, restrict_to)
-            self.importObjAttrs(other, regex_filters, restrict_to)
+            skipped = self.importObjAttrs(other, regex_filters, restrict_to)
             self.importUserCols(other, regex_filters, restrict_to)
 
         ## Import history
@@ -2524,6 +2585,8 @@ class Series():
             self.addLog(None, None, "Finish importing traces from another series")
         
         self.save()
+
+        return skipped
     
     def importZtraces(self, other, regex_filters : list = [], import_attrs : bool = True, series_states=None, log_event=True):
         """Import all the ztraces from another series.

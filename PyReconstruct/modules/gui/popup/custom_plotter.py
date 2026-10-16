@@ -539,13 +539,22 @@ class VPlotter(vedo.Plotter):
         # add objects and ztraces to scene
         mesh_data_list, series = result
         
+        problems = []
         for md in mesh_data_list:
             vm = vedo.Mesh([md["vertices"], md["faces"]], md["color"], md["alpha"])
             obj = self.objs.add(vm, series, md["name"], md["type"], md["color"], md["alpha"])
+            # an object smoothed along a ztrace keeps its label and shifts
+            obj.smoothing = md.get("smoothing", "")
+            obj.offsets = md.get("offsets")
+            if md.get("smoothing_problem"):
+                problems.append(md["smoothing_problem"])
             if md["tform"]:
                 obj.applyTform(md["tform"])
             self.add(vm)
         self.render()
+
+        if problems:
+            notify("\n\n".join(problems))
     
     def addToScene(self, objs : list, ztraces : list, remove_first=True, series=None, save_state=True):
         """Add objects to the scene.
@@ -731,6 +740,12 @@ class VPlotter(vedo.Plotter):
 
         # get the section
         s = self.getSectionFromZ(z)
+
+        # undo the shift of an object smoothed along a ztrace
+        offsets = self.objs[msh].offsets
+        if offsets and s in offsets:
+            dx, dy = offsets[s]
+            x, y = x - dx, y - dy
 
         return round(x, 3), round(y, 3), s
 
@@ -1327,6 +1342,8 @@ class SceneObject():
         self.color = color
         self.alpha = alpha
         self.id = None
+        self.smoothing = ""  # label of a ztrace smoothing applied to the mesh
+        self.offsets = None  # section number : (dx, dy) of that smoothing
     
     def setID(self, new_id : str):
         """Set the ID of the scene object."""
@@ -1574,7 +1591,10 @@ class SceneObjectList():
 
                 obj_name = obj.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
 
-                obj_fp = export_dir / f"{obj_name}.obj"
+                # a smoothed mesh says so in its name, e.g. dendrite_smooth4
+                label = f"{obj_name}_{obj.smoothing}" if obj.smoothing else obj_name
+
+                obj_fp = export_dir / f"{label}.obj"
                 mtl_fp = obj_fp.with_suffix(".mtl")
 
                 ## Write obj file
@@ -1587,7 +1607,7 @@ class SceneObjectList():
                 obj_lines = obj_lines.split("\n")
 
                 obj_lines.insert(1, f"mtllib {mtl_fp.name}")
-                obj_lines.insert(2, f"o {obj_name}")
+                obj_lines.insert(2, f"o {label}")
                 obj_lines.insert(3, f"usemtl {obj_name}")
 
                 with obj_fp.open("w") as f:

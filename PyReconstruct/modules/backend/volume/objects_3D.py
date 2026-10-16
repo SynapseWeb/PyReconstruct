@@ -73,6 +73,8 @@ class Object3D():
         self.tform = tform
         self.extremes = []  # xmin, xmax, ymin, ymax, zmin, zmax
         self.smoothing = ""  # label of a ztrace smoothing applied to the mesh
+        self.offsets = None  # section number : (dx, dy) of that smoothing
+        self.smoothing_problem = ""  # why a ztrace smoothing setting was not applied
     
     def addToExtremes(self, x, y, s):
         """Keep track of the extreme values."""

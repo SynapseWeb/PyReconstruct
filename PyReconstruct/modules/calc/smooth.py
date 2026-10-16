@@ -56,6 +56,29 @@ def smoothedPath(points : list, window : int, depths : list = None) -> list:
     return smoothed
 
 
+def windowDepthSpan(depths : list, window : int) -> float:
+    """Return how far in depth a smoothing window of path points reaches.
+
+    The window is the one smoothedPath fits a line through. Points can be
+    spaced unevenly, so this is the median over the path.
+
+        Params:
+            depths (list): the depth of each point, in path order
+            window (int): the smoothing window
+        Returns:
+            (float): the median depth from a window's first point to its last
+    """
+    n = len(depths)
+    width = min(2 * (window // 2) + 1, n)
+    spans = sorted(
+        abs(depths[start + width - 1] - depths[start])
+        for start in range(n - width + 1)
+    )
+    mid = len(spans) // 2
+
+    return spans[mid] if len(spans) % 2 else (spans[mid - 1] + spans[mid]) / 2
+
+
 def ztraceResiduals(field_points : list, window : int, depths : dict = None) -> list:
     """Return the smoothed-minus-raw offset of every z-trace point.
 

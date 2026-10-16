@@ -77,6 +77,8 @@ def get_context_menu_list_obj(self):
                 ("removeobjallgroups_act", "Remove from all groups", "", self.removeFromAllGroups),
                 None,
                 ("setobjalignment_act", "Change object alignment...", "", self.editAlignment),
+                ("smoothobjztrace_act", "Smooth along ztrace...", "", self.smoothAlongZtrace),
+                ("unsmoothobjztrace_act", "Remove ztrace smoothing", "", self.removeZtraceSmoothing),
                 None,
                 ("lockobj_act", "Lock", "", self.lockObjects),
                 ("unlockobj_act", "Unlock", "", lambda : self.lockObjects(False))

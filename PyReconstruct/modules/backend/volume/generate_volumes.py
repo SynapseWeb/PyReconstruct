@@ -1,6 +1,6 @@
 from typing import Union
 
-from .objects_3D import Surface, Spheres, Contours, Ztrace3D
+from .objects_3D import Surface, Spheres, Contours, Ztrace3D, meshTform
 
 from PyReconstruct.modules.datatypes import Series
 
@@ -51,6 +51,9 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
         elif mode == "contours":
             obj_data[name] = Contours(*args)
 
+    # the per-section shifts of objects smoothed along a ztrace
+    offsets = {name: series.getZtraceSmoothing(name)[0] for name in obj_data}
+
     # iterate through all sections and gather points (and colors)
     mags = []
     thicknesses = []
@@ -63,11 +66,7 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
         for obj_name in obj_data.keys():
             if obj_name in section.contours:
                 # get the transform sepcific to the object
-                alignment = series.getAttr(obj_name, "alignment")
-                if not alignment:
-                    tform = section.tform
-                else:
-                    tform = section.tforms[alignment]
+                tform = meshTform(series, obj_name, snum, section, offsets[obj_name])
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
                     obj_data[obj_name].addTrace(trace, snum, tform)

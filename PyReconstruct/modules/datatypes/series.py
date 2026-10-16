@@ -20,7 +20,13 @@ from .objects import Objects, SeriesObject
 from .default_settings import default_settings, default_series_settings
 from .host_tree import HostTree
 
-from PyReconstruct.modules.calc import area, lineDistance
+from PyReconstruct.modules.calc import (
+    area,
+    lineDistance,
+    ztraceResiduals,
+    ztraceDifferences,
+    sectionOffsets
+)
 
 from PyReconstruct.modules.constants import (
     createHiddenDir,
@@ -1090,7 +1096,189 @@ class Series():
 
             if log_event:
                 self.addLog(name, None, "Delete ztrace")
-        
+
+    def _alignment3D(self, name : str, ztrace=False) -> str:
+        """Return the alignment the 3D scene places an object or ztrace in."""
+        return self.getAttr(name, "alignment", ztrace=ztrace) or self.alignment
+
+    def _ztraceFieldPoints(self, ztrace_name : str, alignment : str) -> list:
+        """Return a ztrace's points in field coordinates under an alignment."""
+        sections = self.data["sections"]
+        points = []
+        for x, y, snum in self.ztraces[ztrace_name].points:
+            if snum not in sections:
+                continue
+            fx, fy = sections[snum]["tforms"][alignment].map(x, y)
+            points.append((fx, fy, snum))
+        return points
+
+    def ztraceSmoothingProblems(self, obj_names : list, source : str, target : str, window : int) -> list:
+        """List the reasons the objects cannot be smoothed along the ztrace.
+
+            Params:
+                obj_names (list): the objects to smooth
+                source (str): the ztrace the objects were traced along
+                target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
+                window (int): the smoothing window, in sections
+            Returns:
+                (list): one message per problem; empty if smoothing can run
+        """
+        ztraces = [z for z in (source, target) if z]
+        for z in ztraces:
+            if z not in self.ztraces:
+                return [f"Ztrace {z} does not exist."]
+        if window < 2:
+            return ["The window must be at least 2 sections."]
+
+        alignments = self.alignments
+        z_align = self._alignment3D(source, ztrace=True)
+        for z in ztraces:
+            a = self._alignment3D(z, ztrace=True)
+            if a not in alignments:
+                return [f"Ztrace {z} uses alignment {a}, which no longer exists."]
+            if a != z_align:
+                return [
+                    f"Ztrace {source} uses alignment {z_align} but ztrace "
+                    f"{target} uses {a}. Give them the same alignment first."
+                ]
+
+        z_points = self._ztraceFieldPoints(source, z_align)
+        if len(z_points) < 2:
+            return [f"Ztrace {source} has fewer than 2 points."]
+        z_sections = set(snum for _, _, snum in z_points)
+        if target:
+            t_sections = set(snum for _, _, snum in self._ztraceFieldPoints(target, z_align))
+            if not z_sections & t_sections:
+                return [f"Ztraces {source} and {target} share no section."]
+
+        problems = []
+        for obj_name in obj_names:
+            if obj_name not in self.data["objects"]:
+                problems.append(f"Object {obj_name} has no traces.")
+                continue
+
+            base = self._alignment3D(obj_name)
+            if base not in alignments:
+                problems.append(f"Object {obj_name} uses alignment {base}, which no longer exists.")
+                continue
+            if base != z_align:
+                problems.append(
+                    f"Object {obj_name} uses alignment {base} but ztrace "
+                    f"{source} uses {z_align}. Give them the same alignment first."
+                )
+
+            obj_sections = set(self.data["objects"][obj_name].traces)
+            covered = len(obj_sections & z_sections)
+            if covered < 3:
+                problems.append(
+                    f"Ztrace {source} covers {covered} of the sections "
+                    f"{obj_name} is on. It needs to cover at least 3."
+                )
+
+        return problems
+
+    def ztraceSmoothingOffsets(self, obj_name : str, source : str, target : str, window : int) -> dict:
+        """Return the shift for each section that smooths an object along a ztrace.
+
+        Without a target, each section moves from its source ztrace point to the
+        same point on a smoothed copy of the source. With a target, it moves from
+        the source point to the target point on the same section. Check
+        ztraceSmoothingProblems first.
+
+            Params:
+                obj_name (str): the object to smooth
+                source (str): the ztrace the object was traced along
+                target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
+                window (int): the smoothing window, in sections
+            Returns:
+                (dict): section number : (dx, dy) in field coordinates
+        """
+        alignment = self._alignment3D(obj_name)
+        source_points = self._ztraceFieldPoints(source, alignment)
+        if target:
+            residuals = ztraceDifferences(
+                source_points, self._ztraceFieldPoints(target, alignment)
+            )
+        else:
+            residuals = ztraceResiduals(source_points, window, self.getZValues())
+
+        return sectionOffsets(residuals, self.sections)
+
+    def getZtraceSmoothing(self, obj_name : str) -> tuple:
+        """Return the shifts the 3D scene and mesh export apply to an object.
+
+            Params:
+                obj_name (str): the object
+            Returns:
+                (dict): section number : (dx, dy), or None if the object is meshed as traced
+                (str): the label for an exported mesh, e.g. smooth4; empty if not smoothed
+        """
+        smoothing = self.getAttr(obj_name, "3D_smooth")
+        if not smoothing:
+            return None, ""
+
+        source, target, window = smoothing["source"], smoothing["target"], smoothing["window"]
+        problems = self.ztraceSmoothingProblems([obj_name], source, target, window)
+        if problems:
+            print(f"{obj_name} is meshed as traced, without smoothing:")
+            print("\n".join(problems))
+            return None, ""
+
+        offsets = self.ztraceSmoothingOffsets(obj_name, source, target, window)
+        label = f"smooth-{target}" if target else f"smooth{window}"
+
+        return offsets, label
+
+    def setZtraceSmoothing(self, obj_names : list, source : str, target : str, window : int, log_event=True):
+        """Smooth objects in the 3D scene and mesh export along a ztrace.
+
+        Stores the settings on each object. Nothing else changes: the shifts are
+        computed from the live ztraces each time the object is meshed, and the
+        traces, section transforms and measurements stay as traced.
+
+            Params:
+                obj_names (list): the objects to smooth
+                source (str): the ztrace the objects were traced along
+                target (str): the ztrace to move the source onto (None: a smoothed copy of the source)
+                window (int): the smoothing window, in sections
+                log_event (bool): True if event should be logged
+        """
+        target = target or None
+        problems = self.ztraceSmoothingProblems(obj_names, source, target, window)
+        if problems:
+            raise ValueError("\n".join(problems))
+
+        for obj_name in obj_names:
+            self.setAttr(
+                obj_name,
+                "3D_smooth",
+                {"source": source, "target": target, "window": window}
+            )
+            if log_event:
+                if target:
+                    event = f"Smooth along ztrace {source} toward {target}"
+                else:
+                    event = f"Smooth along ztrace {source} (window {window})"
+                self.addLog(obj_name, None, event)
+
+        self.modified = True
+
+    def removeZtraceSmoothing(self, obj_names : list, log_event=True):
+        """Mesh objects as traced again.
+
+            Params:
+                obj_names (list): the objects
+                log_event (bool): True if event should be logged
+        """
+        for obj_name in obj_names:
+            if self.getAttr(obj_name, "3D_smooth") is None:
+                continue
+            self.setAttr(obj_name, "3D_smooth", None)
+            if log_event:
+                self.addLog(obj_name, None, "Remove ztrace smoothing")
+
+        self.modified = True
+
     def rename(self, new_name : str):
         """Rename the series.
         

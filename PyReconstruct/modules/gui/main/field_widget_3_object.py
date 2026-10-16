@@ -1,3 +1,6 @@
+import math
+from statistics import median
+
 from .context_menu_list import get_context_menu_list_obj
 
 from PySide6.QtWidgets import (
@@ -17,7 +20,8 @@ from PyReconstruct.modules.gui.popup import (
     TextWidget,
 )
 from PyReconstruct.modules.gui.utils import (
-    notify
+    notify,
+    notifyConfirm
 )
 from PyReconstruct.modules.gui.table import (
     HistoryTableWidget,
@@ -373,7 +377,91 @@ class FieldWidgetObject(FieldWidgetTrace):
         self.table_manager.refreshObjects(lambda name: name in edited)
 
         return True
-    
+
+    @object_function(update_objects=False, reload_field=False)
+    def smoothAlongZtrace(self, obj_names : list):
+        """Smooth objects in the 3D scene and mesh export along a ztrace."""
+        ztrace_names = sorted(self.series.ztraces)
+        if not ztrace_names:
+            notify("There are no ztraces in this series.")
+            return False
+
+        # offer the current settings, else the object's own ztrace
+        source, target, window = None, None, 4
+        if len(obj_names) == 1:
+            current = self.series.getAttr(obj_names[0], "3D_smooth")
+            if current:
+                source, target, window = current["source"], current["target"], current["window"]
+            elif f"{obj_names[0]}_zlen" in self.series.ztraces:
+                source = f"{obj_names[0]}_zlen"
+
+        obj_sections = set()
+        for name in obj_names:
+            if name in self.series.data["objects"]:
+                obj_sections.update(self.series.data["objects"][name].traces)
+        thickness = median(
+            self.series.data["sections"][snum]["thickness"] for snum in obj_sections
+        ) if obj_sections else self.series.avg_thickness
+
+        structure = [
+            ["Source ztrace:", (True, "combo", ztrace_names, source)],
+            ["Target ztrace (optional):", ("combo", ztrace_names, target)],
+            ["Window N (sections):", (True, "int", window)],
+            [f"Sections here are {thickness:.3g} um thick, so N = 4 spans {4 * thickness:.3g} um."],
+            ["Bends shorter than about 3N sections are smoothed away, real or not. Use the smallest N that removes the jitter."],
+        ]
+        response, confirmed = QuickDialog.get(self, structure, "Smooth Along Ztrace")
+        if not confirmed:
+            return False
+        source, target, window = response
+        target = target or None
+
+        problems = self.series.ztraceSmoothingProblems(obj_names, source, target, window)
+        if problems:
+            notify("\n\n".join(problems))
+            return False
+
+        # the largest shift any section of these objects gets
+        largest = 0
+        for name in obj_names:
+            offsets = self.series.ztraceSmoothingOffsets(name, source, target, window)
+            for snum in self.series.data["objects"][name].traces:
+                largest = max(largest, math.hypot(*offsets[snum]))
+
+        if target:
+            how = f"toward ztrace {target}"
+        else:
+            how = f"with a window of {window} sections ({window * thickness:.3g} um)"
+        message = (
+            f"Smooth {', '.join(obj_names)} along ztrace {source} {how}. "
+            f"The largest shift is {largest:.3g} um.\n\n"
+            "Only the 3D scene and exported meshes move. Traces, the object "
+            "list and its measurements stay as traced. An object already in an "
+            "open 3D scene keeps its old shape until it is generated again."
+        )
+        if not notifyConfirm(message):
+            return False
+
+        self.series_states.addState()
+        self.series.setZtraceSmoothing(obj_names, source, target, window)
+        self.mainwindow.seriesModified(True)
+
+        return True
+
+    @object_function(update_objects=False, reload_field=False)
+    def removeZtraceSmoothing(self, obj_names : list):
+        """Mesh objects as traced again."""
+        smoothed = [n for n in obj_names if self.series.getAttr(n, "3D_smooth")]
+        if not smoothed:
+            notify("The selected objects are not smoothed along a ztrace.")
+            return False
+
+        self.series_states.addState()
+        self.series.removeZtraceSmoothing(smoothed)
+        self.mainwindow.seriesModified(True)
+
+        return True
+
     @object_function(update_objects=True, reload_field=True)
     def editRadius(self, obj_names : list):
         """Modify the radius of the trace on an entire object."""

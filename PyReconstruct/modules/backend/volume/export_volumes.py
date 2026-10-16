@@ -6,7 +6,7 @@ from typing import List, Union
 import numpy as np
 import trimesh
 
-from .objects_3D import Surface, Spheres, Contours
+from .objects_3D import Surface, Spheres, Contours, meshTform
 
 from PyReconstruct.modules.datatypes import Series
 from PyReconstruct.modules.gui.utils import notify
@@ -38,7 +38,9 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     for obj_name, obj_3D in obj_data.items():
 
-        output_file = output_directory / f"{obj_name}.{export_type}"
+        # a smoothed mesh says so in its name, e.g. dendrite_smooth4.obj
+        suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
+        output_file = output_directory / f"{obj_name}{suffix}.{export_type}"
 
         if type(obj_3D) is Surface or type(obj_3D) is Spheres:
 
@@ -56,7 +58,7 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
     """Export quantitative data from meshes."""
 
     sep = ","
-    csv_str = f"Series{sep}Name{sep}MeshType{sep}SurfaceArea{sep}Volume\n"
+    csv_str = f"Series{sep}Name{sep}MeshType{sep}SurfaceArea{sep}Volume{sep}ZtraceSmoothing\n"
     series_code = series.code
 
     errors = {}
@@ -72,7 +74,8 @@ def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: b
             surface_area = round(tm.area, 5)
             volume = round(tm.volume, 5)
 
-            csv_str += f"{series_code}{sep}{obj}{sep}{obj_type}{sep}{surface_area}{sep}{volume}\n"
+            # the mesh is smoothed along a ztrace if ZtraceSmoothing is not blank
+            csv_str += f"{series_code}{sep}{obj}{sep}{obj_type}{sep}{surface_area}{sep}{volume}{sep}{obj_data.smoothing}\n"
 
         except Exception as e:
 
@@ -108,6 +111,10 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
     elif mode == "contours":
         obj_data = Contours(obj_name, series)
 
+    ## Shifts if the object is smoothed along a ztrace
+
+    offsets, obj_data.smoothing = series.getZtraceSmoothing(obj_name)
+
     ## Iterate through sections and collect data
 
     for snum, section in series.enumerateSections(show_progress=False):
@@ -119,16 +126,8 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
 
             continue
 
-        ## Get alignment
-        obj_alignment = series.getAttr(obj_name, "alignment")
-
-        if not obj_alignment:
-
-            tform = section.tform
-
-        else:
-
-            tform = section.tforms[obj_alignment]
+        ## Get alignment and smoothing shift
+        tform = meshTform(series, obj_name, snum, section, offsets)
 
         for trace in section.contours[obj_name]:
 

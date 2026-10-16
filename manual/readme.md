@@ -635,6 +635,34 @@ Removes all tags on traces associated with the selected object(s)
 
 Allows the user to set the hidden status for all individual traces associated with an objects.
 
+### Object Attributes
+
+#### Smooth Along Ztrace
+
+Smooths the selected object(s) along a ztrace in the 3D scene and in exported meshes, without realigning the series.
+
+Choose a source ztrace, an optional target ztrace, and a window N in sections (default 4). The object's own `_zlen` ztrace (Create ztrace > On contour midpoints) is offered as the source. The dialog shows how far N sections span in um, and the confirmation shows the largest shift.
+
+- With no target, each section is shifted from its source ztrace point to the same point on a smoothed copy of the source. Each point is smoothed by fitting a straight line, against section depth, through it and N/2 neighbors on each side. A straight ztrace, slanted or not, is left where it is.
+- With a target, each section is shifted from its source ztrace point to the target ztrace point on the same section.
+- A section with several ztrace points is shifted by their average, a section the ztrace skips is interpolated from its neighbors, and a section past either end keeps the shift at that end.
+
+What moves: the object in the 3D scene and in exported meshes. What does not move: traces, images, section transforms, and the object list and its CSV export, including the object's flat area, volume and radius. Everything measured on an exported mesh is smoothed: 3D length, surface area and tortuosity, and also the mesh's own volume, because the surface is rebuilt between the shifted sections. The exported file name ends in `_smooth<N>` (or `_smooth-<target>` with a target), and Export quantitative data fills in the ZtraceSmoothing column for it.
+
+Smoothing cannot tell jitter from a real bend. Bends shorter than about 3N sections are smoothed away, real or not. Use the smallest N that removes the jitter.
+
+A step at a flaw, such as a fold or a lost section, is spread over the window but not removed. To remove it, make a second ztrace that follows the object as it should run (for example, Smooth on the source ztrace with a new ztrace), move its points on the sections around the flaw so it crosses the flaw without the step, and choose it as the target.
+
+The object and the ztraces must use the same alignment. The setting is saved with the series, and the shifts are computed from the ztraces each time the object is generated or exported, so an edited ztrace takes effect the next time. An object already in an open 3D scene keeps its old shape until it is generated again.
+
+This action can be undone with Ctrl+Z or Edit>Undo.
+
+#### Remove Ztrace Smoothing
+
+Generates and exports the selected object(s) as traced again.
+
+This action can be undone with Ctrl+Z or Edit>Undo.
+
 ### 3D
 
 #### Generate 3D

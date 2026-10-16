@@ -434,8 +434,8 @@ class FieldWidgetObject(FieldWidgetTrace):
         message = (
             f"Smooth {', '.join(obj_names)} along ztrace {source} {how}. "
             f"The largest shift is {largest:.3g} um.\n\n"
-            "Only the 3D scene and exported meshes move. Traces, the object "
-            "list and its measurements stay as traced. An object already in an "
+            "Only the 3D scene and exported meshes move. Traces and the "
+            "object list's measurements stay as traced. An object already in an "
             "open 3D scene keeps its old shape until it is generated again."
         )
         if not notifyConfirm(message):

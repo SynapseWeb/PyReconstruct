@@ -231,8 +231,8 @@ def notify(message):
         input("Press any key to continue...")
 
 
-def notifyConfirm(message, yn=False):
-    """Notify the user and give option to OK or cancel."""
+def notifyConfirm(message, yn=False, ok_text=None):
+    """Notify the user and give option to OK or cancel; ok_text names the OK button, e.g. Overwrite."""
 
     if yn:
 
@@ -256,6 +256,11 @@ def notifyConfirm(message, yn=False):
     else:
 
         if QApplication.instance() and not qt_offscreen:
+
+            if ok_text:
+                box = QMessageBox(QMessageBox.Warning, " ", message, QMessageBox.Ok | QMessageBox.Cancel, mainwindow)
+                box.button(QMessageBox.Ok).setText(ok_text)
+                return box.exec() == QMessageBox.Ok
         
             response = QMessageBox.warning(
                 mainwindow,

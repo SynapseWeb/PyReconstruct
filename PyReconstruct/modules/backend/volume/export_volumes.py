@@ -10,7 +10,7 @@ import trimesh
 from .objects_3D import Surface, Spheres, Contours, meshTform
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.gui.utils import notify
+from PyReconstruct.modules.gui.utils import notify, notifyConfirm
 
 
 def export3DObjects(series: Series, obj_names : list, output_dir : str, export_type: str, notify_user: bool = True) -> None:
@@ -35,7 +35,7 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
     reportSmoothingProblems([o.smoothing_problem for o in obj_data.values()], notify_user)
 
-    ## Name the files, and refuse to save two objects to one file or over a file already there
+    ## Name the files, refuse to save two objects to one file, and ask before replacing a file
 
     output_files = {}
 
@@ -47,23 +47,15 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
             output_files[obj_name] = f"{obj_name}{suffix}.{export_type}"
 
-    clash = findExportClash(output_files, output_dir)
+    same_file, existing = findExportClash(output_files, output_dir)
 
-    if clash:
+    if same_file:
 
-        first, second, file_name = clash
-
-        if first is None:
-            message = (
-                f"The objects were not exported: {second} would be saved as {file_name}, which is "
-                "already in the folder. Move that file, or export to another folder."
-            )
-
-        else:
-            message = (
-                f"The objects were not exported: {first} and {second} would both be saved as "
-                f"{file_name}. Rename one of them, or export them to separate folders."
-            )
+        first, second, file_name = same_file
+        message = (
+            f"The objects were not exported: {first} and {second} would both be saved as "
+            f"{file_name}. Rename one of them, or export them to separate folders."
+        )
 
         if notify_user:
             notify(message)
@@ -72,6 +64,17 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
             print(message)
 
         return
+
+    if existing and notify_user:
+
+        message = (
+            "These files are already in the folder and would be replaced:\n\n"
+            + "\n".join(existing)
+            + "\n\nOverwrite them?"
+        )
+
+        if not notifyConfirm(message, ok_text="Overwrite"):
+            return
 
     ## Iterate through objects and export 3D meshes
 
@@ -177,29 +180,33 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
 
 
 def findExportClash(file_names: dict, folder=None):
-    """Return the first two keys that would be exported to the same file, and that file, or None.
+    """Return the files an export would clash on, as (same_file, existing).
 
-        A file already in the folder clashes as if exported first, under the key None.
+        same_file is the first two keys that would be exported to the same file, and that file,
+        or None. existing lists the file names already in the folder, in export order.
 
         Params:
             file_names (dict): key : the file name it is exported under
             folder (str or Path): the folder it is exported to, or None to check the names only
     """
     exported = {}
+    same_file = None
+    existing = []
 
     for key, file_name in file_names.items():
 
         folded = file_name.casefold()  # file names ignore case on macOS and Windows
 
         if folded in exported:
-            return exported[folded], key, file_name
+            same_file = same_file or (exported[folded], key, file_name)
+            continue
 
         if folder is not None and (Path(folder) / file_name).exists():
-            return None, key, file_name
+            existing.append(file_name)
 
         exported[folded] = key
 
-    return None
+    return same_file, existing
 
 
 def reportSmoothingProblems(problems: list, notify_user: bool = True) -> None:

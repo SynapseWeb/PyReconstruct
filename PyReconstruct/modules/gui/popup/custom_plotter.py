@@ -1285,9 +1285,9 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         """Export 3D scene as an obj file."""
 
         # two objects saved to one file would overwrite each other
-        clash = self.plt.objs.exportClash()
-        if clash:
-            first, second, _ = clash
+        same_file, _ = self.plt.objs.exportClash()
+        if same_file:
+            first, second, _ = same_file
             notify(
                 f"The scene was not exported: {first.name} and {second.name} would both be "
                 f"saved as {first.export_name}.obj. Remove one of them from the scene, "
@@ -1307,15 +1307,16 @@ class CustomPlotter(QVTKRenderWindowInteractor):
         export_dir = combo_obj_fp.parent
 
         # each object is saved to its own files first, which would replace a file already there
-        clash = self.plt.objs.exportClash(export_dir)
-        if clash:
-            _, obj, file_name = clash
-            notify(
-                f"The scene was not exported: {obj.name} would be saved as {file_name} while the "
-                "scene is made, and that file is already in the folder. Move it, or save the "
-                "scene in another folder."
+        _, existing = self.plt.objs.exportClash(export_dir)
+        if existing:
+            message = (
+                "The scene is made from a file for each object, saved in the folder and then deleted. "
+                "These files are already in the folder and would be replaced, then deleted:\n\n"
+                + "\n".join(existing)
+                + "\n\nOverwrite them?"
             )
-            return
+            if not notifyConfirm(message, ok_text="Overwrite"):
+                return
 
         obj_files = self.plt.objs.exportAsObjs(export_dir)
         mtl_files = [f.with_suffix(".mtl") for f in obj_files]
@@ -1628,19 +1629,21 @@ class SceneObjectList():
         return host_group
 
     def exportClash(self, folder=None):
-        """Return the first two objects that would be exported to the same file, and that file, or None.
+        """Return the files the objects would be exported to that clash, as (same_file, existing).
 
-            With a folder, an object whose obj or mtl file is already in it clashes with None.
+            same_file is the first two objects that would be exported to the same file, and that
+            file, or None. existing lists the obj and mtl files already in the folder.
         """
+        same_file, existing = None, []
         for extension in ("obj", "mtl"):
-            clash = findExportClash(
+            pair, found = findExportClash(
                 {obj: f"{obj.export_name}.{extension}" for obj in self.scene_objects.values()},
                 folder,
             )
-            if clash:
-                return clash
+            same_file = same_file or pair
+            existing += found
 
-        return None
+        return same_file, existing
 
     def exportAsObjs(self, export_dir):
         """Export scene objects as obj and mtl files."""

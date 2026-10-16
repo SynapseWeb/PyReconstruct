@@ -546,6 +546,7 @@ class VPlotter(vedo.Plotter):
             # an object smoothed along a ztrace keeps its label and shifts
             obj.smoothing = md.get("smoothing", "")
             obj.offsets = md.get("offsets")
+            obj.section_depths = md.get("section_depths")
             if md.get("smoothing_problem"):
                 problems.append(md["smoothing_problem"])
             if md["tform"]:
@@ -738,11 +739,16 @@ class VPlotter(vedo.Plotter):
         # get the transform and apply its inverse to a point
         x, y, z = msh.get_transform().GetInverse().TransformFloatPoint(*pt)
 
-        # get the section
-        s = self.getSectionFromZ(z)
+        # get the section, from the depths the mesh was built with if known
+        scene_obj = self.objs[msh]
+        depths = scene_obj.section_depths
+        if depths:
+            s = min(depths, key=lambda snum: abs(depths[snum] - z))
+        else:
+            s = self.getSectionFromZ(z)
 
         # undo the shift of an object smoothed along a ztrace
-        offsets = self.objs[msh].offsets
+        offsets = scene_obj.offsets
         if offsets and s in offsets:
             dx, dy = offsets[s]
             x, y = x - dx, y - dy
@@ -1266,6 +1272,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     def exportScene(self):
         """Export 3D scene as an obj file."""
 
+        # two objects saved to one file would overwrite each other
+        clash = self.plt.objs.exportClash()
+        if clash:
+            first, second = clash
+            notify(
+                f"The scene was not exported: {first.name} and {second.name} would both be "
+                f"saved as {first.export_name}.obj. Remove one of them from the scene, "
+                "or rename it, and export again."
+            )
+            return
+
         fp = FileDialog.get(
             "save", self, "Save scene as obj",
             filter="*.obj",
@@ -1344,6 +1361,13 @@ class SceneObject():
         self.id = None
         self.smoothing = ""  # label of a ztrace smoothing applied to the mesh
         self.offsets = None  # section number : (dx, dy) of that smoothing
+        self.section_depths = None  # section number : z the section was meshed at
+
+    @property
+    def export_name(self):
+        """The name the object is exported under; a smoothed mesh says so, e.g. dendrite_smooth4."""
+        name = self.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
+        return f"{name}_{self.smoothing}" if self.smoothing else name
     
     def setID(self, new_id : str):
         """Set the ID of the scene object."""
@@ -1580,6 +1604,16 @@ class SceneObjectList():
         
         return host_group
 
+    def exportClash(self):
+        """Return the first two objects that would be exported to the same file, or None."""
+        exported = {}
+        for obj in self.scene_objects.values():
+            key = obj.export_name.casefold()  # file names ignore case on macOS and Windows
+            if key in exported:
+                return exported[key], obj
+            exported[key] = obj
+        return None
+
     def exportAsObjs(self, export_dir):
         """Export scene objects as obj and mtl files."""
 
@@ -1590,9 +1624,7 @@ class SceneObjectList():
             try:
 
                 obj_name = obj.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
-
-                # a smoothed mesh says so in its name, e.g. dendrite_smooth4
-                label = f"{obj_name}_{obj.smoothing}" if obj.smoothing else obj_name
+                label = obj.export_name
 
                 obj_fp = export_dir / f"{label}.obj"
                 mtl_fp = obj_fp.with_suffix(".mtl")

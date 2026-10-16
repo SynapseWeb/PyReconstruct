@@ -1035,6 +1035,9 @@ class Series():
                 for g in groups:
                     self.ztrace_groups.add(g, new_name)
                 self.ztrace_groups.removeObject(name)
+                # the ztrace keeps its attributes, such as its alignment
+                if name in self.ztrace_attrs:
+                    self.ztrace_attrs[new_name] = self.ztrace_attrs.pop(name)
                 # objects smoothed along the ztrace follow it to the new name
                 for obj_name in self._smoothedAlong(name):
                     smoothing = dict(self.getAttr(obj_name, "3D_smooth"))

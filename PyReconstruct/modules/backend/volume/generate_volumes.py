@@ -97,12 +97,16 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
         elif type(obj_3D) is Contours:
             mesh_data_list.append(obj_3D.generate3D())
 
+    # the depth each section was meshed at, to read a point's section back
+    section_depths = {snum: snum * series.avg_thickness for snum in series.sections}
+
     # the scene keeps each object's smoothing, to label exports and read field coordinates
     for mesh_data in mesh_data_list:
         obj_3D = obj_data[mesh_data["name"]]
         mesh_data["smoothing"] = obj_3D.smoothing
         mesh_data["offsets"] = obj_3D.offsets
         mesh_data["smoothing_problem"] = obj_3D.smoothing_problem
+        mesh_data["section_depths"] = section_depths
     
     for _, ztrace_3D in ztrace_data.items():
         mesh_data = ztrace_3D.generate3D()

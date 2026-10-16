@@ -3001,6 +3001,8 @@ class MainWindow(QMainWindow):
             o_series.close()
             return
         
+        not_smoothed = set()  # objects whose ztrace smoothing was not imported
+
         if "traces" in response:
             (
                 srange,
@@ -3014,7 +3016,7 @@ class MainWindow(QMainWindow):
                 keep_below,
             ) = tuple(response["traces"])
 
-            self.series.importTraces(
+            not_smoothed.update(self.series.importTraces(
                 o_series, 
                 srange, 
                 regex_filters,
@@ -3026,7 +3028,7 @@ class MainWindow(QMainWindow):
                 keep_above,
                 keep_below, 
                 self.field.series_states
-            )
+            ))
         
         if "z-traces" in response:
             regex_filters = response["z-traces"][0]
@@ -3060,7 +3062,7 @@ class MainWindow(QMainWindow):
             if bools[3]:
                 self.series.importZtraceGroups(o_series)
             if bools[4]:
-                self.series.importObjAttrs(o_series)
+                not_smoothed.update(self.series.importObjAttrs(o_series))
         
         if "alignments" in response:
             import_as = response["alignments"]
@@ -3093,6 +3095,12 @@ class MainWindow(QMainWindow):
         self.field.table_manager.refresh()
 
         notify("Import successful.")
+
+        if not_smoothed:
+            notify(
+                f"Ztrace smoothing was not imported for {', '.join(sorted(not_smoothed))}. "
+                "Smooth them along a ztrace in this series if needed."
+            )
     
     def importFromZarrLabels(self):
         """Import label data from a neuroglancer zarr."""

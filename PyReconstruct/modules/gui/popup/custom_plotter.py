@@ -19,7 +19,8 @@ from PyReconstruct.modules.backend.volume import (
     convert_vedo_to_tm,
     return_mesh_mtl,
     combine_mtl_files,
-    combine_obj_files
+    combine_obj_files,
+    findExportClash
 )
 from PyReconstruct.modules.gui.utils import (
     populateMenuBar,
@@ -108,7 +109,14 @@ class VPlotter(vedo.Plotter):
 
         pt = event.picked3d                # 3d coords of point under mouse
         x, y, s = self.getFieldCoords(msh, pt)
-        txt = f"{name}\nsection {s}\nx={x:.3f} y={y:.3f}"
+        section_txt = f"section {s}"
+        if obj.series_fp == self.series.jser_fp and s not in self.series.sections:
+            section_txt += " (removed)"
+        if obj.smoothing:
+            # a point on a mesh smoothed along a ztrace has no exact field x/y
+            txt = f"{name}\n{obj.smoothing}\n{section_txt}"
+        else:
+            txt = f"{name}\n{section_txt}\nx={x:.3f} y={y:.3f}"
         self.pos_text.text(txt)                    # update text message
 
         self.render()
@@ -182,9 +190,13 @@ class VPlotter(vedo.Plotter):
                 return
             pt = event.picked3d                # 3d coords of point under mouse
             x, y, s = self.getFieldCoords(msh, pt)
-            
-            self.mainwindow.field.moveTo(s, x, y)
-            self.mainwindow.activateWindow()
+
+            # the mesh was generated before the section was deleted
+            if s not in self.series.sections:
+                notify(f"Section {s} no longer exists. Generate {self.objs[msh].name} again to update the 3D scene.")
+            else:
+                self.mainwindow.field.moveTo(s, x, y)
+                self.mainwindow.activateWindow()
         
         msh = event.actor
         if not msh:
@@ -539,13 +551,23 @@ class VPlotter(vedo.Plotter):
         # add objects and ztraces to scene
         mesh_data_list, series = result
         
+        problems = []
         for md in mesh_data_list:
             vm = vedo.Mesh([md["vertices"], md["faces"]], md["color"], md["alpha"])
             obj = self.objs.add(vm, series, md["name"], md["type"], md["color"], md["alpha"])
+            # an object smoothed along a ztrace keeps its label and shifts
+            obj.smoothing = md.get("smoothing", "")
+            obj.offsets = md.get("offsets")
+            obj.section_depths = md.get("section_depths")
+            if md.get("smoothing_problem"):
+                problems.append(md["smoothing_problem"])
             if md["tform"]:
                 obj.applyTform(md["tform"])
             self.add(vm)
         self.render()
+
+        if problems:
+            notify("\n\n".join(problems))
     
     def addToScene(self, objs : list, ztraces : list, remove_first=True, series=None, save_state=True):
         """Add objects to the scene.
@@ -729,8 +751,19 @@ class VPlotter(vedo.Plotter):
         # get the transform and apply its inverse to a point
         x, y, z = msh.get_transform().GetInverse().TransformFloatPoint(*pt)
 
-        # get the section
-        s = self.getSectionFromZ(z)
+        # get the section, from the depths the mesh was built with if known
+        scene_obj = self.objs[msh]
+        depths = scene_obj.section_depths
+        if depths:
+            s = min(depths, key=lambda snum: abs(depths[snum] - z))
+        else:
+            s = self.getSectionFromZ(z)
+
+        # undo the shift of an object smoothed along a ztrace
+        offsets = scene_obj.offsets
+        if offsets and s in offsets:
+            dx, dy = offsets[s]
+            x, y = x - dx, y - dy
 
         return round(x, 3), round(y, 3), s
 
@@ -1251,6 +1284,17 @@ class CustomPlotter(QVTKRenderWindowInteractor):
     def exportScene(self):
         """Export 3D scene as an obj file."""
 
+        # two objects saved to one file would overwrite each other
+        same_file, _ = self.plt.objs.exportClash()
+        if same_file:
+            first, second, _ = same_file
+            notify(
+                f"The scene was not exported: {first.name} and {second.name} would both be "
+                f"saved as {first.export_name}.obj. Remove one of them from the scene, "
+                "or rename it, and export again."
+            )
+            return
+
         fp = FileDialog.get(
             "save", self, "Save scene as obj",
             filter="*.obj",
@@ -1261,6 +1305,18 @@ class CustomPlotter(QVTKRenderWindowInteractor):
 
         combo_obj_fp = Path(fp)
         export_dir = combo_obj_fp.parent
+
+        # each object is saved to its own files first, which would replace a file already there
+        _, existing = self.plt.objs.exportClash(export_dir)
+        if existing:
+            message = (
+                "The scene is made from a file for each object, saved in the folder and then deleted. "
+                "These files are already in the folder and would be replaced, then deleted:\n\n"
+                + "\n".join(existing)
+                + "\n\nOverwrite them?"
+            )
+            if not notifyConfirm(message, ok_text="Overwrite"):
+                return
 
         obj_files = self.plt.objs.exportAsObjs(export_dir)
         mtl_files = [f.with_suffix(".mtl") for f in obj_files]
@@ -1327,6 +1383,15 @@ class SceneObject():
         self.color = color
         self.alpha = alpha
         self.id = None
+        self.smoothing = ""  # label of a ztrace smoothing applied to the mesh
+        self.offsets = None  # section number : (dx, dy) of that smoothing
+        self.section_depths = None  # section number : z the section was meshed at
+
+    @property
+    def export_name(self):
+        """The name the object is exported under; a smoothed mesh says so, e.g. dendrite_smooth4."""
+        name = self.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
+        return f"{name}_{self.smoothing}" if self.smoothing else name
     
     def setID(self, new_id : str):
         """Set the ID of the scene object."""
@@ -1563,6 +1628,23 @@ class SceneObjectList():
         
         return host_group
 
+    def exportClash(self, folder=None):
+        """Return the files the objects would be exported to that clash, as (same_file, existing).
+
+            same_file is the first two objects that would be exported to the same file, and that
+            file, or None. existing lists the obj and mtl files already in the folder.
+        """
+        same_file, existing = None, []
+        for extension in ("obj", "mtl"):
+            pair, found = findExportClash(
+                {obj: f"{obj.export_name}.{extension}" for obj in self.scene_objects.values()},
+                folder,
+            )
+            same_file = same_file or pair
+            existing += found
+
+        return same_file, existing
+
     def exportAsObjs(self, export_dir):
         """Export scene objects as obj and mtl files."""
 
@@ -1573,8 +1655,9 @@ class SceneObjectList():
             try:
 
                 obj_name = obj.name.replace(" ", "_")  # "Scale_Cube" and not "Scale Cube"
+                label = obj.export_name
 
-                obj_fp = export_dir / f"{obj_name}.obj"
+                obj_fp = export_dir / f"{label}.obj"
                 mtl_fp = obj_fp.with_suffix(".mtl")
 
                 ## Write obj file
@@ -1587,7 +1670,7 @@ class SceneObjectList():
                 obj_lines = obj_lines.split("\n")
 
                 obj_lines.insert(1, f"mtllib {mtl_fp.name}")
-                obj_lines.insert(2, f"o {obj_name}")
+                obj_lines.insert(2, f"o {label}")
                 obj_lines.insert(3, f"usemtl {obj_name}")
 
                 with obj_fp.open("w") as f:

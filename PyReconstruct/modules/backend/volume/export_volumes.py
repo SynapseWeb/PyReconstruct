@@ -1,15 +1,16 @@
 """Export 3D objects."""
 
+import csv
 from pathlib import Path
 from typing import List, Union
 
 import numpy as np
 import trimesh
 
-from .objects_3D import Surface, Spheres, Contours
+from .objects_3D import Surface, Spheres, Contours, meshTform
 
 from PyReconstruct.modules.datatypes import Series
-from PyReconstruct.modules.gui.utils import notify
+from PyReconstruct.modules.gui.utils import notify, notifyConfirm
 
 
 def export3DObjects(series: Series, obj_names : list, output_dir : str, export_type: str, notify_user: bool = True) -> None:
@@ -32,20 +33,59 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 
         obj_data[obj_name] = get_3D_mesh(series, obj_name)
 
+    reportSmoothingProblems([o.smoothing_problem for o in obj_data.values()], notify_user)
+
+    ## Name the files, refuse to save two objects to one file, and ask before replacing a file
+
+    output_files = {}
+
+    for obj_name, obj_3D in obj_data.items():
+
+        if type(obj_3D) is Surface or type(obj_3D) is Spheres:
+
+            # a smoothed mesh says so in its name, e.g. dendrite_smooth4.obj
+            suffix = f"_{obj_3D.smoothing}" if obj_3D.smoothing else ""
+            output_files[obj_name] = f"{obj_name}{suffix}.{export_type}"
+
+    same_file, existing = findExportClash(output_files, output_dir)
+
+    if same_file:
+
+        first, second, file_name = same_file
+        message = (
+            f"The objects were not exported: {first} and {second} would both be saved as "
+            f"{file_name}. Rename one of them, or export them to separate folders."
+        )
+
+        if notify_user:
+            notify(message)
+
+        else:
+            print(message)
+
+        return
+
+    if existing and notify_user:
+
+        message = (
+            "These files are already in the folder and would be replaced:\n\n"
+            + "\n".join(existing)
+            + "\n\nOverwrite them?"
+        )
+
+        if not notifyConfirm(message, ok_text="Overwrite"):
+            return
+
     ## Iterate through objects and export 3D meshes
 
     output_directory = Path(output_dir)
 
-    for obj_name, obj_3D in obj_data.items():
+    for obj_name, file_name in output_files.items():
 
-        output_file = output_directory / f"{obj_name}.{export_type}"
-
-        if type(obj_3D) is Surface or type(obj_3D) is Spheres:
-
-            obj_3D.exportTrimesh(
-                output_file,
-                export_type,
-            )
+        obj_data[obj_name].exportTrimesh(
+            output_directory / file_name,
+            export_type,
+        )
 
     if notify_user:
         
@@ -55,33 +95,38 @@ def export3DObjects(series: Series, obj_names : list, output_dir : str, export_t
 def export3DData(series: Series, obj_names: list, output_fp: str, notify_user: bool=True) -> None:
     """Export quantitative data from meshes."""
 
-    sep = ","
-    csv_str = f"Series{sep}Name{sep}MeshType{sep}SurfaceArea{sep}Volume\n"
+    rows = [["Series", "Name", "MeshType", "SurfaceArea", "Volume", "ZtraceSmoothing"]]
     series_code = series.code
 
     errors = {}
+    problems = []
 
     for obj in obj_names:
 
         try:
 
             obj_data = get_3D_mesh(series, obj)
+            problems.append(obj_data.smoothing_problem)
             obj_type = type(obj_data).__name__.lower()
             tm = obj_data.generateTrimesh()
 
             surface_area = round(tm.area, 5)
             volume = round(tm.volume, 5)
 
-            csv_str += f"{series_code}{sep}{obj}{sep}{obj_type}{sep}{surface_area}{sep}{volume}\n"
+            # the mesh is smoothed along a ztrace if ZtraceSmoothing is not blank
+            rows.append([series_code, obj, obj_type, surface_area, volume, obj_data.smoothing])
 
         except Exception as e:
 
             errors[obj] = e
 
+    reportSmoothingProblems(problems, notify_user)
+
     if not errors:
 
-        with open(output_fp, "w") as fp:
-            fp.write(csv_str)
+        # a field with a comma in it, e.g. the label smooth-hand,edit, is quoted
+        with open(output_fp, "w", newline="") as fp:
+            csv.writer(fp, lineterminator="\n").writerows(rows)
 
         if notify_user:
             notify(f"Data exported to:\n\n{Path(output_fp).absolute()}\n")
@@ -108,6 +153,10 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
     elif mode == "contours":
         obj_data = Contours(obj_name, series)
 
+    ## Shifts if the object is smoothed along a ztrace
+
+    obj_data.offsets, obj_data.smoothing, obj_data.smoothing_problem = series.getZtraceSmoothing(obj_name)
+
     ## Iterate through sections and collect data
 
     for snum, section in series.enumerateSections(show_progress=False):
@@ -119,16 +168,8 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
 
             continue
 
-        ## Get alignment
-        obj_alignment = series.getAttr(obj_name, "alignment")
-
-        if not obj_alignment:
-
-            tform = section.tform
-
-        else:
-
-            tform = section.tforms[obj_alignment]
+        ## Get alignment and smoothing shift
+        tform = meshTform(series, obj_name, snum, section, obj_data.offsets)
 
         for trace in section.contours[obj_name]:
 
@@ -136,6 +177,54 @@ def get_3D_mesh(series: Series, obj_name: str) -> Union[Surface, Spheres, Contou
             obj_data.addTrace(trace, snum, tform)
     
     return obj_data
+
+
+def findExportClash(file_names: dict, folder=None):
+    """Return the files an export would clash on, as (same_file, existing).
+
+        same_file is the first two keys that would be exported to the same file, and that file,
+        or None. existing lists the file names already in the folder, in export order.
+
+        Params:
+            file_names (dict): key : the file name it is exported under
+            folder (str or Path): the folder it is exported to, or None to check the names only
+    """
+    exported = {}
+    same_file = None
+    existing = []
+
+    for key, file_name in file_names.items():
+
+        folded = file_name.casefold()  # file names ignore case on macOS and Windows
+
+        if folded in exported:
+            same_file = same_file or (exported[folded], key, file_name)
+            continue
+
+        if folder is not None and (Path(folder) / file_name).exists():
+            existing.append(file_name)
+
+        exported[folded] = key
+
+    return same_file, existing
+
+
+def reportSmoothingProblems(problems: list, notify_user: bool = True) -> None:
+    """Say which objects were meshed as traced because their ztrace smoothing cannot be applied."""
+
+    problems = [p for p in problems if p]
+
+    if not problems:
+
+        return
+
+    message = "\n\n".join(problems)
+
+    if notify_user:
+        notify(message)
+
+    else:
+        print(message)
 
 
 def convert_vedo_to_tm(obj) -> trimesh.Trimesh:

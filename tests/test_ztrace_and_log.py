@@ -157,7 +157,7 @@ def test_get_start_and_end():
 def test_magscale_scales_only_matching_section(section, prev_mag, new_mag, expected):
     zt = Ztrace("z", [1, 1, 1], [(3.0, 4.0, 0), (5.0, 6.0, 1)])
     zt.magScale(section, prev_mag=prev_mag, new_mag=new_mag)
-    assert zt.points == pytest.approx(expected)
+    assert zt.points == [pytest.approx(p) for p in expected]
 
 
 def test_get_distance_identity_transform():
@@ -209,7 +209,7 @@ def test_smooth_window_one_is_identity():
 
     zt.smooth(series, smooth=1)
 
-    assert zt.points == pytest.approx(pts)
+    assert zt.points == [pytest.approx(p) for p in pts]
 
 
 def test_smooth_is_transform_invariant_for_uniform_scale():
@@ -225,7 +225,7 @@ def test_smooth_is_transform_invariant_for_uniform_scale():
     zt_sc = Ztrace("z", [1, 1, 1], list(base))
     zt_sc.smooth(_make_series(SCALE2, {0: 0.0, 1: 1.0, 2: 2.0}), smooth=2)
 
-    assert zt_sc.points == pytest.approx(zt_id.points)
+    assert zt_sc.points == [pytest.approx(p) for p in zt_id.points]
 
 
 # --------------------------------------------------------------------------- #

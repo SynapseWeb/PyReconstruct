@@ -319,6 +319,11 @@ class Section():
         if self.series.isWelcomeSeries():
             return
 
+        # a deleted section can still be the b section: do not write its
+        # file back
+        if self.n not in self.series.sections:
+            return
+
         # update the series data
         if update_series_data:
             self.series.data.updateSection(self, update_traces=True)

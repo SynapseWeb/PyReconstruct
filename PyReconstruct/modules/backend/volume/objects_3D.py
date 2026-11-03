@@ -37,6 +37,32 @@ def exportMesh(tm, output_file, export_type):
                 fp.write(trimesh.exchange.dae.export_collada(tm))
                     
 
+def meshTform(series : Series, obj_name : str, snum : int, section, offsets : dict = None) -> Transform:
+    """Return the transform that places an object's traces on a section in 3D.
+
+        Params:
+            series (Series): the series containing the object
+            obj_name (str): the object
+            snum (int): the section number
+            section (Section): the section
+            offsets (dict): section number : (dx, dy) smoothing shifts (from Series.getZtraceSmoothing)
+        Returns:
+            (Transform): the object's alignment, then its smoothing shift
+    """
+    alignment = series.getAttr(obj_name, "alignment")
+    if not alignment:
+        tform = section.tform
+    else:
+        tform = section.tforms[alignment]
+
+    if offsets and snum in offsets:
+        dx, dy = offsets[snum]
+        # the left transform applies first: align, then shift
+        tform = tform * Transform([1, 0, dx, 0, 1, dy])
+
+    return tform
+
+
 class Object3D():
 
     def __init__(self, name, series : Series, color=None, alpha=None, tform=None):
@@ -46,6 +72,9 @@ class Object3D():
         self.alpha = alpha
         self.tform = tform
         self.extremes = []  # xmin, xmax, ymin, ymax, zmin, zmax
+        self.smoothing = ""  # label of a ztrace smoothing applied to the mesh
+        self.offsets = None  # section number : (dx, dy) of that smoothing
+        self.smoothing_problem = ""  # why a ztrace smoothing setting was not applied
     
     def addToExtremes(self, x, y, s):
         """Keep track of the extreme values."""

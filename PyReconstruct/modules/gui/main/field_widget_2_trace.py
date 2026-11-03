@@ -1454,6 +1454,11 @@ class FieldWidgetTrace(FieldWidgetBase):
         # save the series state
         self.series_states.addState()
         
-        self.series.deleteZtraces(names)
+        unsmoothed = self.series.deleteZtraces(names)
+        if unsmoothed:
+            notify(
+                f"Ztrace smoothing was removed from {', '.join(unsmoothed)}, "
+                "because it used a deleted ztrace."
+            )
 
         return True

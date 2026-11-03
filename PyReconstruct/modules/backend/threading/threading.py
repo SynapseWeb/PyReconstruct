@@ -19,6 +19,7 @@ from PySide6.QtCore import (
     Signal,
     QObject,
     QThreadPool,
+    QEventLoop,
     Qt
 )
 
@@ -140,13 +141,19 @@ class ThreadPoolProgBar(ThreadPool):
         
         counter = MemoryInt()
         for worker in self.workers:
-            QApplication.processEvents()
+            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
             worker.signals.finished.connect(counter.inc)
             worker.signals.finished.connect(lambda : progbar.setValue(counter.n))
             self.start(worker)
         
+        # Hold keyboard and mouse input until the workers finish. The workers
+        # read section files and series attributes while this loop runs; an
+        # undo, redo or any other edit let through here rewrites those files
+        # under them, and the result is built from a mix of old and new data.
+        # Posted events (worker signals, repaints) still get through, so the
+        # progress indicator keeps moving. Held input is delivered afterwards.
         while counter.n < final_value:
-            QApplication.processEvents()
+            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
         
         if maximum == 0:
             progbar.close()

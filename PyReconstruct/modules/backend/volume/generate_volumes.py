@@ -1,6 +1,6 @@
 from typing import Union
 
-from .objects_3D import Surface, Spheres, Contours, Ztrace3D
+from .objects_3D import Surface, Spheres, Contours, Ztrace3D, meshTform
 
 from PyReconstruct.modules.datatypes import Series
 
@@ -51,6 +51,10 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
         elif mode == "contours":
             obj_data[name] = Contours(*args)
 
+    # the per-section shifts of objects smoothed along a ztrace
+    for name, obj_3D in obj_data.items():
+        obj_3D.offsets, obj_3D.smoothing, obj_3D.smoothing_problem = series.getZtraceSmoothing(name)
+
     # iterate through all sections and gather points (and colors)
     mags = []
     thicknesses = []
@@ -63,11 +67,7 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
         for obj_name in obj_data.keys():
             if obj_name in section.contours:
                 # get the transform sepcific to the object
-                alignment = series.getAttr(obj_name, "alignment")
-                if not alignment:
-                    tform = section.tform
-                else:
-                    tform = section.tforms[alignment]
+                tform = meshTform(series, obj_name, snum, section, obj_data[obj_name].offsets)
                 for trace in section.contours[obj_name]:
                     # collect all points if generating a full surface
                     obj_data[obj_name].addTrace(trace, snum, tform)
@@ -96,6 +96,17 @@ def generateVolumes(series_like : Series_like_obj, objs : dict, ztraces : dict):
             mesh_data_list.append(obj_3D.generate3D())
         elif type(obj_3D) is Contours:
             mesh_data_list.append(obj_3D.generate3D())
+
+    # the depth each section was meshed at, to read a point's section back
+    section_depths = {snum: snum * series.avg_thickness for snum in series.sections}
+
+    # the scene keeps each object's smoothing, to label exports and read field coordinates
+    for mesh_data in mesh_data_list:
+        obj_3D = obj_data[mesh_data["name"]]
+        mesh_data["smoothing"] = obj_3D.smoothing
+        mesh_data["offsets"] = obj_3D.offsets
+        mesh_data["smoothing_problem"] = obj_3D.smoothing_problem
+        mesh_data["section_depths"] = section_depths
     
     for _, ztrace_3D in ztrace_data.items():
         mesh_data = ztrace_3D.generate3D()

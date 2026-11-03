@@ -36,3 +36,9 @@ from .image import (
     point_list_2_pix
 )
 from .correlation import correlate
+from .smooth import (
+    windowDepthSpan,
+    ztraceResiduals,
+    ztraceDifferences,
+    sectionOffsets
+)
